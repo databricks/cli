@@ -3,8 +3,6 @@
 package forecasting
 
 import (
-	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/forecasting/v1"
 )
 
@@ -19,22 +17,6 @@ const (
 	ForecastingExperiment_State_Failed      = sdk.ForecastingExperiment_State_Failed
 	ForecastingExperiment_State_Cancelled   = sdk.ForecastingExperiment_State_Cancelled
 )
-
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
 
 type CreateForecastingExperimentRequest struct {
 	// The fully qualified path of a Unity Catalog table, formatted as
@@ -98,51 +80,9 @@ type CreateForecastingExperimentRequest struct {
 	FutureFeatureDataPath *string `json:"future_feature_data_path,omitempty"`
 }
 
-func CreateForecastingExperimentRequestFromSDK(v *sdk.CreateForecastingExperimentRequest) (*CreateForecastingExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	forecastHorizonWireValue, err := int64ToWire(v.ForecastHorizon)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateForecastingExperimentRequest.ForecastHorizon", err)
-	}
-	maxRuntimeWireValue, err := int64ToWire(v.MaxRuntime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateForecastingExperimentRequest.MaxRuntime", err)
-	}
-	return &CreateForecastingExperimentRequest{
-		TrainDataPath:               v.TrainDataPath,
-		TargetColumn:                v.TargetColumn,
-		TimeColumn:                  v.TimeColumn,
-		ForecastGranularity:         v.ForecastGranularity,
-		ForecastHorizon:             forecastHorizonWireValue,
-		PrimaryMetric:               v.PrimaryMetric,
-		TrainingFrameworks:          v.TrainingFrameworks,
-		ExperimentPath:              v.ExperimentPath,
-		MaxRuntime:                  maxRuntimeWireValue,
-		SplitColumn:                 v.SplitColumn,
-		CustomWeightsColumn:         v.CustomWeightsColumn,
-		RegisterTo:                  v.RegisterTo,
-		HolidayRegions:              v.HolidayRegions,
-		TimeseriesIdentifierColumns: v.TimeseriesIdentifierColumns,
-		PredictionDataPath:          v.PredictionDataPath,
-		IncludeFeatures:             v.IncludeFeatures,
-		FutureFeatureDataPath:       v.FutureFeatureDataPath,
-	}, nil
-}
-
 type CreateForecastingExperimentResponse struct {
 	// The unique ID of the created forecasting experiment
 	ExperimentId *string `json:"experiment_id,omitempty"`
-}
-
-func CreateForecastingExperimentResponseToSDK(w *CreateForecastingExperimentResponse) (*sdk.CreateForecastingExperimentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateForecastingExperimentResponse{
-		ExperimentId: w.ExperimentId,
-	}, nil
 }
 
 // Represents a forecasting experiment with its unique identifier, URL, and
@@ -156,13 +96,98 @@ type ForecastingExperiment struct {
 	State ForecastingExperiment_State `json:"state,omitempty"`
 }
 
+// CreateForecastingExperimentRequestToSDK converts the mirror to the sdk-go type.
+func CreateForecastingExperimentRequestToSDK(w *CreateForecastingExperimentRequest) (*sdk.CreateForecastingExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateForecastingExperimentRequest{}
+	out.TrainDataPath = w.TrainDataPath
+	out.TargetColumn = w.TargetColumn
+	out.TimeColumn = w.TimeColumn
+	out.ForecastGranularity = w.ForecastGranularity
+	out.ForecastHorizon = w.ForecastHorizon
+	out.PrimaryMetric = w.PrimaryMetric
+	out.TrainingFrameworks = w.TrainingFrameworks
+	out.ExperimentPath = w.ExperimentPath
+	out.MaxRuntime = w.MaxRuntime
+	out.SplitColumn = w.SplitColumn
+	out.CustomWeightsColumn = w.CustomWeightsColumn
+	out.RegisterTo = w.RegisterTo
+	out.HolidayRegions = w.HolidayRegions
+	out.TimeseriesIdentifierColumns = w.TimeseriesIdentifierColumns
+	out.PredictionDataPath = w.PredictionDataPath
+	out.IncludeFeatures = w.IncludeFeatures
+	out.FutureFeatureDataPath = w.FutureFeatureDataPath
+	return out, nil
+}
+
+// CreateForecastingExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateForecastingExperimentRequestFromSDK(v *sdk.CreateForecastingExperimentRequest) (*CreateForecastingExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateForecastingExperimentRequest{}
+	out.TrainDataPath = v.TrainDataPath
+	out.TargetColumn = v.TargetColumn
+	out.TimeColumn = v.TimeColumn
+	out.ForecastGranularity = v.ForecastGranularity
+	out.ForecastHorizon = v.ForecastHorizon
+	out.PrimaryMetric = v.PrimaryMetric
+	out.TrainingFrameworks = v.TrainingFrameworks
+	out.ExperimentPath = v.ExperimentPath
+	out.MaxRuntime = v.MaxRuntime
+	out.SplitColumn = v.SplitColumn
+	out.CustomWeightsColumn = v.CustomWeightsColumn
+	out.RegisterTo = v.RegisterTo
+	out.HolidayRegions = v.HolidayRegions
+	out.TimeseriesIdentifierColumns = v.TimeseriesIdentifierColumns
+	out.PredictionDataPath = v.PredictionDataPath
+	out.IncludeFeatures = v.IncludeFeatures
+	out.FutureFeatureDataPath = v.FutureFeatureDataPath
+	return out, nil
+}
+
+// CreateForecastingExperimentResponseToSDK converts the mirror to the sdk-go type.
+func CreateForecastingExperimentResponseToSDK(w *CreateForecastingExperimentResponse) (*sdk.CreateForecastingExperimentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateForecastingExperimentResponse{}
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// CreateForecastingExperimentResponseFromSDK converts the sdk-go type to the mirror.
+func CreateForecastingExperimentResponseFromSDK(v *sdk.CreateForecastingExperimentResponse) (*CreateForecastingExperimentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateForecastingExperimentResponse{}
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// ForecastingExperimentToSDK converts the mirror to the sdk-go type.
 func ForecastingExperimentToSDK(w *ForecastingExperiment) (*sdk.ForecastingExperiment, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.ForecastingExperiment{
-		ExperimentId:      w.ExperimentId,
-		ExperimentPageUrl: w.ExperimentPageUrl,
-		State:             w.State,
-	}, nil
+	out := &sdk.ForecastingExperiment{}
+	out.ExperimentId = w.ExperimentId
+	out.ExperimentPageUrl = w.ExperimentPageUrl
+	out.State = w.State
+	return out, nil
+}
+
+// ForecastingExperimentFromSDK converts the sdk-go type to the mirror.
+func ForecastingExperimentFromSDK(v *sdk.ForecastingExperiment) (*ForecastingExperiment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ForecastingExperiment{}
+	out.ExperimentId = v.ExperimentId
+	out.ExperimentPageUrl = v.ExperimentPageUrl
+	out.State = v.State
+	return out, nil
 }

@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/aifunctions/v1"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // ai_classify.
 type AiClassifyOptions struct {
 	// Natural-language guidance that steers how the text is classified (up to
@@ -41,19 +25,6 @@ type AiClassifyOptions struct {
 	EnableRationales *bool `json:"enable_rationales,omitempty"`
 }
 
-func AiClassifyOptionsFromSDK(v *sdk.AiClassifyOptions) (*AiClassifyOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AiClassifyOptions{
-		Instructions:           v.Instructions,
-		Version:                v.Version,
-		Multilabel:             v.Multilabel,
-		EnableConfidenceScores: v.EnableConfidenceScores,
-		EnableRationales:       v.EnableRationales,
-	}, nil
-}
-
 type AiClassifyRequest struct {
 	// The content to classify. It accepts a plain string or the response object of
 	// [ai_parse_document](:method:AiFunctions/AiParseDocument).
@@ -67,21 +38,6 @@ type AiClassifyRequest struct {
 	Options *AiClassifyOptions `json:"options,omitempty"`
 }
 
-func AiClassifyRequestFromSDK(v *sdk.AiClassifyRequest) (*AiClassifyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	optionsWireValue, err := AiClassifyOptionsFromSDK(v.Options)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiClassifyRequest.Options", err)
-	}
-	return &AiClassifyRequest{
-		Content: v.Content,
-		Labels:  v.Labels,
-		Options: optionsWireValue,
-	}, nil
-}
-
 type AiClassifyResponse struct {
 	// The function result as a JSON value. An array of per-label objects: one
 	// element in single-label mode (the default), or multiple elements when
@@ -93,32 +49,9 @@ type AiClassifyResponse struct {
 	Metadata *AiClassifyResponseMetadata `json:"metadata,omitempty"`
 }
 
-func AiClassifyResponseToSDK(w *AiClassifyResponse) (*sdk.AiClassifyResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metadataPublicValue, err := AiClassifyResponseMetadataToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiClassifyResponse.Metadata", err)
-	}
-	return &sdk.AiClassifyResponse{
-		Response: w.Response,
-		Metadata: metadataPublicValue,
-	}, nil
-}
-
 type AiClassifyResponseMetadata struct {
 	// The resolved function version.
 	Version *string `json:"version,omitempty"`
-}
-
-func AiClassifyResponseMetadataToSDK(w *AiClassifyResponseMetadata) (*sdk.AiClassifyResponseMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AiClassifyResponseMetadata{
-		Version: w.Version,
-	}, nil
 }
 
 // ai_decide.
@@ -126,15 +59,6 @@ type AiDecideOptions struct {
 	// The function API version to invoke. Defaults to "1.0". Supported versions:
 	// ["1.0"].
 	Version *string `json:"version,omitempty"`
-}
-
-func AiDecideOptionsFromSDK(v *sdk.AiDecideOptions) (*AiDecideOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AiDecideOptions{
-		Version: v.Version,
-	}, nil
 }
 
 type AiDecideRequest struct {
@@ -196,21 +120,6 @@ type AiDecideRequest struct {
 	Options *AiDecideOptions `json:"options,omitempty"`
 }
 
-func AiDecideRequestFromSDK(v *sdk.AiDecideRequest) (*AiDecideRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	optionsWireValue, err := AiDecideOptionsFromSDK(v.Options)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiDecideRequest.Options", err)
-	}
-	return &AiDecideRequest{
-		State:     v.State,
-		Questions: v.Questions,
-		Options:   optionsWireValue,
-	}, nil
-}
-
 type AiDecideResponse struct {
 	// A JSON object containing an `answers` map with one answer for each question,
 	// keyed by the same IDs as `questions`.
@@ -249,32 +158,9 @@ type AiDecideResponse struct {
 	Metadata *AiDecideResponseMetadata `json:"metadata,omitempty"`
 }
 
-func AiDecideResponseToSDK(w *AiDecideResponse) (*sdk.AiDecideResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metadataPublicValue, err := AiDecideResponseMetadataToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiDecideResponse.Metadata", err)
-	}
-	return &sdk.AiDecideResponse{
-		Response: w.Response,
-		Metadata: metadataPublicValue,
-	}, nil
-}
-
 type AiDecideResponseMetadata struct {
 	// The function API version used to evaluate the request.
 	Version *string `json:"version,omitempty"`
-}
-
-func AiDecideResponseMetadataToSDK(w *AiDecideResponseMetadata) (*sdk.AiDecideResponseMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AiDecideResponseMetadata{
-		Version: w.Version,
-	}, nil
 }
 
 // A bounding box on a source page; used by bbox-input citations..
@@ -283,24 +169,6 @@ type AiExtractBbox struct {
 	Coord []int64 `json:"coord,omitempty"`
 	// 0-based page index the box is on.
 	PageId *int64 `json:"page_id,omitempty"`
-}
-
-func AiExtractBboxToSDK(w *AiExtractBbox) (*sdk.AiExtractBbox, error) {
-	if w == nil {
-		return nil, nil
-	}
-	coordPublicValue, err := convertSlice(w.Coord, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractBbox.Coord", err)
-	}
-	pageIdPublicValue, err := int64FromWire(w.PageId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractBbox.PageId", err)
-	}
-	return &sdk.AiExtractBbox{
-		Coord:  coordPublicValue,
-		PageId: pageIdPublicValue,
-	}, nil
 }
 
 // A citation locating an extracted value in the source. start/stop are set for
@@ -318,34 +186,6 @@ type AiExtractCitation struct {
 	// Bounding boxes locating the citation on the source pages; set for bbox
 	// citations.
 	Bbox []AiExtractBbox `json:"bbox,omitempty"`
-}
-
-func AiExtractCitationToSDK(w *AiExtractCitation) (*sdk.AiExtractCitation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	idPublicValue, err := int64FromWire(w.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Id", err)
-	}
-	startPublicValue, err := int64FromWire(w.Start)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Start", err)
-	}
-	stopPublicValue, err := int64FromWire(w.Stop)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Stop", err)
-	}
-	bboxPublicValue, err := convertSlice(w.Bbox, AiExtractBboxToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Bbox", err)
-	}
-	return &sdk.AiExtractCitation{
-		Id:    idPublicValue,
-		Start: startPublicValue,
-		Stop:  stopPublicValue,
-		Bbox:  bboxPublicValue,
-	}, nil
 }
 
 // ai_extract.
@@ -381,19 +221,6 @@ type AiExtractOptions struct {
 	EnableConfidenceScores *bool `json:"enable_confidence_scores,omitempty"`
 }
 
-func AiExtractOptionsFromSDK(v *sdk.AiExtractOptions) (*AiExtractOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AiExtractOptions{
-		Instructions:           v.Instructions,
-		Version:                v.Version,
-		Mode:                   v.Mode,
-		EnableCitations:        v.EnableCitations,
-		EnableConfidenceScores: v.EnableConfidenceScores,
-	}, nil
-}
-
 type AiExtractRequest struct {
 	// The text to extract from. It accepts a plain string or the response object of
 	// [ai_parse_document](:method:AiFunctions/AiParseDocument).
@@ -409,21 +236,6 @@ type AiExtractRequest struct {
 	Options *AiExtractOptions `json:"options,omitempty"`
 }
 
-func AiExtractRequestFromSDK(v *sdk.AiExtractRequest) (*AiExtractRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	optionsWireValue, err := AiExtractOptionsFromSDK(v.Options)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractRequest.Options", err)
-	}
-	return &AiExtractRequest{
-		Content: v.Content,
-		Schema:  v.Schema,
-		Options: optionsWireValue,
-	}, nil
-}
-
 type AiExtractResponse struct {
 	// The function result as a JSON value. When `enable_confidence_scores` and
 	// `enable_citations` are true, `confidence` and `citation_ids` are included in
@@ -431,20 +243,6 @@ type AiExtractResponse struct {
 	Response json.RawMessage `json:"response,omitempty"`
 	// Additional metadata returned by AI Extract.
 	Metadata *AiExtractResponseMetadata `json:"metadata,omitempty"`
-}
-
-func AiExtractResponseToSDK(w *AiExtractResponse) (*sdk.AiExtractResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metadataPublicValue, err := AiExtractResponseMetadataToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractResponse.Metadata", err)
-	}
-	return &sdk.AiExtractResponse{
-		Response: w.Response,
-		Metadata: metadataPublicValue,
-	}, nil
 }
 
 type AiExtractResponseMetadata struct {
@@ -460,22 +258,6 @@ type AiExtractResponseMetadata struct {
 	Citations []AiExtractCitation `json:"citations,omitempty"`
 }
 
-func AiExtractResponseMetadataToSDK(w *AiExtractResponseMetadata) (*sdk.AiExtractResponseMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	citationsPublicValue, err := convertSlice(w.Citations, AiExtractCitationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiExtractResponseMetadata.Citations", err)
-	}
-	return &sdk.AiExtractResponseMetadata{
-		Version:   w.Version,
-		Mode:      w.Mode,
-		ChunkType: w.ChunkType,
-		Citations: citationsPublicValue,
-	}, nil
-}
-
 // Metadata about the source file; present only for file-path input..
 type AiParseDocumentFileMetadata struct {
 	// Unity Catalog volume path of the source file.
@@ -486,22 +268,6 @@ type AiParseDocumentFileMetadata struct {
 	FileSize *int64 `json:"file_size,omitempty"`
 	// Last-modified timestamp of the source file, as an HTTP date string.
 	FileModificationTime *string `json:"file_modification_time,omitempty"`
-}
-
-func AiParseDocumentFileMetadataToSDK(w *AiParseDocumentFileMetadata) (*sdk.AiParseDocumentFileMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileSizePublicValue, err := int64FromWire(w.FileSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiParseDocumentFileMetadata.FileSize", err)
-	}
-	return &sdk.AiParseDocumentFileMetadata{
-		FilePath:             w.FilePath,
-		FileName:             w.FileName,
-		FileSize:             fileSizePublicValue,
-		FileModificationTime: w.FileModificationTime,
-	}, nil
 }
 
 // ai_parse_document.
@@ -521,38 +287,12 @@ type AiParseDocumentOptions struct {
 	PageRange *string `json:"page_range,omitempty"`
 }
 
-func AiParseDocumentOptionsFromSDK(v *sdk.AiParseDocumentOptions) (*AiParseDocumentOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AiParseDocumentOptions{
-		Version:                 v.Version,
-		DescriptionElementTypes: v.DescriptionElementTypes,
-		ImageOutputPath:         v.ImageOutputPath,
-		PageRange:               v.PageRange,
-	}, nil
-}
-
 // A single page that failed to parse while the overall request succeeded..
 type AiParseDocumentPageError struct {
 	// Message describing why the page failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
 	// 0-based index of the page that failed.
 	PageId *int64 `json:"page_id,omitempty"`
-}
-
-func AiParseDocumentPageErrorToSDK(w *AiParseDocumentPageError) (*sdk.AiParseDocumentPageError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pageIdPublicValue, err := int64FromWire(w.PageId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiParseDocumentPageError.PageId", err)
-	}
-	return &sdk.AiParseDocumentPageError{
-		ErrorMessage: w.ErrorMessage,
-		PageId:       pageIdPublicValue,
-	}, nil
 }
 
 type AiParseDocumentRequest struct {
@@ -567,20 +307,6 @@ type AiParseDocumentRequest struct {
 	Options *AiParseDocumentOptions `json:"options,omitempty"`
 }
 
-func AiParseDocumentRequestFromSDK(v *sdk.AiParseDocumentRequest) (*AiParseDocumentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	optionsWireValue, err := AiParseDocumentOptionsFromSDK(v.Options)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiParseDocumentRequest.Options", err)
-	}
-	return &AiParseDocumentRequest{
-		Content: v.Content,
-		Options: optionsWireValue,
-	}, nil
-}
-
 type AiParseDocumentResponse struct {
 	// The parsed document as a JSON value, containing the extracted pages and
 	// elements.
@@ -592,25 +318,6 @@ type AiParseDocumentResponse struct {
 	Metadata *AiParseDocumentResponseMetadata `json:"metadata,omitempty"`
 }
 
-func AiParseDocumentResponseToSDK(w *AiParseDocumentResponse) (*sdk.AiParseDocumentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	errorStatusPublicValue, err := convertSlice(w.ErrorStatus, AiParseDocumentPageErrorToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.ErrorStatus", err)
-	}
-	metadataPublicValue, err := AiParseDocumentResponseMetadataToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.Metadata", err)
-	}
-	return &sdk.AiParseDocumentResponse{
-		Document:    w.Document,
-		ErrorStatus: errorStatusPublicValue,
-		Metadata:    metadataPublicValue,
-	}, nil
-}
-
 type AiParseDocumentResponseMetadata struct {
 	// Unique identifier for the parse request.
 	Id *string `json:"id,omitempty"`
@@ -620,19 +327,572 @@ type AiParseDocumentResponseMetadata struct {
 	FileMetadata *AiParseDocumentFileMetadata `json:"file_metadata,omitempty"`
 }
 
+// AiClassifyOptionsToSDK converts the mirror to the sdk-go type.
+func AiClassifyOptionsToSDK(w *AiClassifyOptions) (*sdk.AiClassifyOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiClassifyOptions{}
+	out.Instructions = w.Instructions
+	out.Version = w.Version
+	out.Multilabel = w.Multilabel
+	out.EnableConfidenceScores = w.EnableConfidenceScores
+	out.EnableRationales = w.EnableRationales
+	return out, nil
+}
+
+// AiClassifyOptionsFromSDK converts the sdk-go type to the mirror.
+func AiClassifyOptionsFromSDK(v *sdk.AiClassifyOptions) (*AiClassifyOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiClassifyOptions{}
+	out.Instructions = v.Instructions
+	out.Version = v.Version
+	out.Multilabel = v.Multilabel
+	out.EnableConfidenceScores = v.EnableConfidenceScores
+	out.EnableRationales = v.EnableRationales
+	return out, nil
+}
+
+// AiClassifyRequestToSDK converts the mirror to the sdk-go type.
+func AiClassifyRequestToSDK(w *AiClassifyRequest) (*sdk.AiClassifyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiClassifyRequest{}
+	out.Content = w.Content
+	out.Labels = w.Labels
+	conv1, err := AiClassifyOptionsToSDK(w.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiClassifyRequest.Options", err)
+	}
+	out.Options = conv1
+	return out, nil
+}
+
+// AiClassifyRequestFromSDK converts the sdk-go type to the mirror.
+func AiClassifyRequestFromSDK(v *sdk.AiClassifyRequest) (*AiClassifyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiClassifyRequest{}
+	out.Content = v.Content
+	out.Labels = v.Labels
+	conv2, err := AiClassifyOptionsFromSDK(v.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiClassifyRequest.Options", err)
+	}
+	out.Options = conv2
+	return out, nil
+}
+
+// AiClassifyResponseToSDK converts the mirror to the sdk-go type.
+func AiClassifyResponseToSDK(w *AiClassifyResponse) (*sdk.AiClassifyResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiClassifyResponse{}
+	out.Response = w.Response
+	conv3, err := AiClassifyResponseMetadataToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiClassifyResponse.Metadata", err)
+	}
+	out.Metadata = conv3
+	return out, nil
+}
+
+// AiClassifyResponseFromSDK converts the sdk-go type to the mirror.
+func AiClassifyResponseFromSDK(v *sdk.AiClassifyResponse) (*AiClassifyResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiClassifyResponse{}
+	out.Response = v.Response
+	conv4, err := AiClassifyResponseMetadataFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiClassifyResponse.Metadata", err)
+	}
+	out.Metadata = conv4
+	return out, nil
+}
+
+// AiClassifyResponseMetadataToSDK converts the mirror to the sdk-go type.
+func AiClassifyResponseMetadataToSDK(w *AiClassifyResponseMetadata) (*sdk.AiClassifyResponseMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiClassifyResponseMetadata{}
+	out.Version = w.Version
+	return out, nil
+}
+
+// AiClassifyResponseMetadataFromSDK converts the sdk-go type to the mirror.
+func AiClassifyResponseMetadataFromSDK(v *sdk.AiClassifyResponseMetadata) (*AiClassifyResponseMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiClassifyResponseMetadata{}
+	out.Version = v.Version
+	return out, nil
+}
+
+// AiDecideOptionsToSDK converts the mirror to the sdk-go type.
+func AiDecideOptionsToSDK(w *AiDecideOptions) (*sdk.AiDecideOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiDecideOptions{}
+	out.Version = w.Version
+	return out, nil
+}
+
+// AiDecideOptionsFromSDK converts the sdk-go type to the mirror.
+func AiDecideOptionsFromSDK(v *sdk.AiDecideOptions) (*AiDecideOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiDecideOptions{}
+	out.Version = v.Version
+	return out, nil
+}
+
+// AiDecideRequestToSDK converts the mirror to the sdk-go type.
+func AiDecideRequestToSDK(w *AiDecideRequest) (*sdk.AiDecideRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiDecideRequest{}
+	out.State = w.State
+	out.Questions = w.Questions
+	conv5, err := AiDecideOptionsToSDK(w.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiDecideRequest.Options", err)
+	}
+	out.Options = conv5
+	return out, nil
+}
+
+// AiDecideRequestFromSDK converts the sdk-go type to the mirror.
+func AiDecideRequestFromSDK(v *sdk.AiDecideRequest) (*AiDecideRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiDecideRequest{}
+	out.State = v.State
+	out.Questions = v.Questions
+	conv6, err := AiDecideOptionsFromSDK(v.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiDecideRequest.Options", err)
+	}
+	out.Options = conv6
+	return out, nil
+}
+
+// AiDecideResponseToSDK converts the mirror to the sdk-go type.
+func AiDecideResponseToSDK(w *AiDecideResponse) (*sdk.AiDecideResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiDecideResponse{}
+	out.Response = w.Response
+	conv7, err := AiDecideResponseMetadataToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiDecideResponse.Metadata", err)
+	}
+	out.Metadata = conv7
+	return out, nil
+}
+
+// AiDecideResponseFromSDK converts the sdk-go type to the mirror.
+func AiDecideResponseFromSDK(v *sdk.AiDecideResponse) (*AiDecideResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiDecideResponse{}
+	out.Response = v.Response
+	conv8, err := AiDecideResponseMetadataFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiDecideResponse.Metadata", err)
+	}
+	out.Metadata = conv8
+	return out, nil
+}
+
+// AiDecideResponseMetadataToSDK converts the mirror to the sdk-go type.
+func AiDecideResponseMetadataToSDK(w *AiDecideResponseMetadata) (*sdk.AiDecideResponseMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiDecideResponseMetadata{}
+	out.Version = w.Version
+	return out, nil
+}
+
+// AiDecideResponseMetadataFromSDK converts the sdk-go type to the mirror.
+func AiDecideResponseMetadataFromSDK(v *sdk.AiDecideResponseMetadata) (*AiDecideResponseMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiDecideResponseMetadata{}
+	out.Version = v.Version
+	return out, nil
+}
+
+// AiExtractBboxToSDK converts the mirror to the sdk-go type.
+func AiExtractBboxToSDK(w *AiExtractBbox) (*sdk.AiExtractBbox, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractBbox{}
+	out.Coord = w.Coord
+	out.PageId = w.PageId
+	return out, nil
+}
+
+// AiExtractBboxFromSDK converts the sdk-go type to the mirror.
+func AiExtractBboxFromSDK(v *sdk.AiExtractBbox) (*AiExtractBbox, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractBbox{}
+	out.Coord = v.Coord
+	out.PageId = v.PageId
+	return out, nil
+}
+
+// AiExtractCitationToSDK converts the mirror to the sdk-go type.
+func AiExtractCitationToSDK(w *AiExtractCitation) (*sdk.AiExtractCitation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractCitation{}
+	out.Id = w.Id
+	out.Start = w.Start
+	out.Stop = w.Stop
+	conv9, err := convertSlice(w.Bbox, AiExtractBboxToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Bbox", err)
+	}
+	out.Bbox = conv9
+	return out, nil
+}
+
+// AiExtractCitationFromSDK converts the sdk-go type to the mirror.
+func AiExtractCitationFromSDK(v *sdk.AiExtractCitation) (*AiExtractCitation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractCitation{}
+	out.Id = v.Id
+	out.Start = v.Start
+	out.Stop = v.Stop
+	conv10, err := convertSlice(v.Bbox, AiExtractBboxFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractCitation.Bbox", err)
+	}
+	out.Bbox = conv10
+	return out, nil
+}
+
+// AiExtractOptionsToSDK converts the mirror to the sdk-go type.
+func AiExtractOptionsToSDK(w *AiExtractOptions) (*sdk.AiExtractOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractOptions{}
+	out.Instructions = w.Instructions
+	out.Version = w.Version
+	out.Mode = w.Mode
+	out.EnableCitations = w.EnableCitations
+	out.EnableConfidenceScores = w.EnableConfidenceScores
+	return out, nil
+}
+
+// AiExtractOptionsFromSDK converts the sdk-go type to the mirror.
+func AiExtractOptionsFromSDK(v *sdk.AiExtractOptions) (*AiExtractOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractOptions{}
+	out.Instructions = v.Instructions
+	out.Version = v.Version
+	out.Mode = v.Mode
+	out.EnableCitations = v.EnableCitations
+	out.EnableConfidenceScores = v.EnableConfidenceScores
+	return out, nil
+}
+
+// AiExtractRequestToSDK converts the mirror to the sdk-go type.
+func AiExtractRequestToSDK(w *AiExtractRequest) (*sdk.AiExtractRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractRequest{}
+	out.Content = w.Content
+	out.Schema = w.Schema
+	conv11, err := AiExtractOptionsToSDK(w.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractRequest.Options", err)
+	}
+	out.Options = conv11
+	return out, nil
+}
+
+// AiExtractRequestFromSDK converts the sdk-go type to the mirror.
+func AiExtractRequestFromSDK(v *sdk.AiExtractRequest) (*AiExtractRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractRequest{}
+	out.Content = v.Content
+	out.Schema = v.Schema
+	conv12, err := AiExtractOptionsFromSDK(v.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractRequest.Options", err)
+	}
+	out.Options = conv12
+	return out, nil
+}
+
+// AiExtractResponseToSDK converts the mirror to the sdk-go type.
+func AiExtractResponseToSDK(w *AiExtractResponse) (*sdk.AiExtractResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractResponse{}
+	out.Response = w.Response
+	conv13, err := AiExtractResponseMetadataToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractResponse.Metadata", err)
+	}
+	out.Metadata = conv13
+	return out, nil
+}
+
+// AiExtractResponseFromSDK converts the sdk-go type to the mirror.
+func AiExtractResponseFromSDK(v *sdk.AiExtractResponse) (*AiExtractResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractResponse{}
+	out.Response = v.Response
+	conv14, err := AiExtractResponseMetadataFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractResponse.Metadata", err)
+	}
+	out.Metadata = conv14
+	return out, nil
+}
+
+// AiExtractResponseMetadataToSDK converts the mirror to the sdk-go type.
+func AiExtractResponseMetadataToSDK(w *AiExtractResponseMetadata) (*sdk.AiExtractResponseMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiExtractResponseMetadata{}
+	out.Version = w.Version
+	out.Mode = w.Mode
+	out.ChunkType = w.ChunkType
+	conv15, err := convertSlice(w.Citations, AiExtractCitationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractResponseMetadata.Citations", err)
+	}
+	out.Citations = conv15
+	return out, nil
+}
+
+// AiExtractResponseMetadataFromSDK converts the sdk-go type to the mirror.
+func AiExtractResponseMetadataFromSDK(v *sdk.AiExtractResponseMetadata) (*AiExtractResponseMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiExtractResponseMetadata{}
+	out.Version = v.Version
+	out.Mode = v.Mode
+	out.ChunkType = v.ChunkType
+	conv16, err := convertSlice(v.Citations, AiExtractCitationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiExtractResponseMetadata.Citations", err)
+	}
+	out.Citations = conv16
+	return out, nil
+}
+
+// AiParseDocumentFileMetadataToSDK converts the mirror to the sdk-go type.
+func AiParseDocumentFileMetadataToSDK(w *AiParseDocumentFileMetadata) (*sdk.AiParseDocumentFileMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiParseDocumentFileMetadata{}
+	out.FilePath = w.FilePath
+	out.FileName = w.FileName
+	out.FileSize = w.FileSize
+	out.FileModificationTime = w.FileModificationTime
+	return out, nil
+}
+
+// AiParseDocumentFileMetadataFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentFileMetadataFromSDK(v *sdk.AiParseDocumentFileMetadata) (*AiParseDocumentFileMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentFileMetadata{}
+	out.FilePath = v.FilePath
+	out.FileName = v.FileName
+	out.FileSize = v.FileSize
+	out.FileModificationTime = v.FileModificationTime
+	return out, nil
+}
+
+// AiParseDocumentOptionsToSDK converts the mirror to the sdk-go type.
+func AiParseDocumentOptionsToSDK(w *AiParseDocumentOptions) (*sdk.AiParseDocumentOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiParseDocumentOptions{}
+	out.Version = w.Version
+	out.DescriptionElementTypes = w.DescriptionElementTypes
+	out.ImageOutputPath = w.ImageOutputPath
+	out.PageRange = w.PageRange
+	return out, nil
+}
+
+// AiParseDocumentOptionsFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentOptionsFromSDK(v *sdk.AiParseDocumentOptions) (*AiParseDocumentOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentOptions{}
+	out.Version = v.Version
+	out.DescriptionElementTypes = v.DescriptionElementTypes
+	out.ImageOutputPath = v.ImageOutputPath
+	out.PageRange = v.PageRange
+	return out, nil
+}
+
+// AiParseDocumentPageErrorToSDK converts the mirror to the sdk-go type.
+func AiParseDocumentPageErrorToSDK(w *AiParseDocumentPageError) (*sdk.AiParseDocumentPageError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiParseDocumentPageError{}
+	out.ErrorMessage = w.ErrorMessage
+	out.PageId = w.PageId
+	return out, nil
+}
+
+// AiParseDocumentPageErrorFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentPageErrorFromSDK(v *sdk.AiParseDocumentPageError) (*AiParseDocumentPageError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentPageError{}
+	out.ErrorMessage = v.ErrorMessage
+	out.PageId = v.PageId
+	return out, nil
+}
+
+// AiParseDocumentRequestToSDK converts the mirror to the sdk-go type.
+func AiParseDocumentRequestToSDK(w *AiParseDocumentRequest) (*sdk.AiParseDocumentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiParseDocumentRequest{}
+	out.Content = w.Content
+	conv17, err := AiParseDocumentOptionsToSDK(w.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentRequest.Options", err)
+	}
+	out.Options = conv17
+	return out, nil
+}
+
+// AiParseDocumentRequestFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentRequestFromSDK(v *sdk.AiParseDocumentRequest) (*AiParseDocumentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentRequest{}
+	out.Content = v.Content
+	conv18, err := AiParseDocumentOptionsFromSDK(v.Options)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentRequest.Options", err)
+	}
+	out.Options = conv18
+	return out, nil
+}
+
+// AiParseDocumentResponseToSDK converts the mirror to the sdk-go type.
+func AiParseDocumentResponseToSDK(w *AiParseDocumentResponse) (*sdk.AiParseDocumentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiParseDocumentResponse{}
+	out.Document = w.Document
+	conv19, err := convertSlice(w.ErrorStatus, AiParseDocumentPageErrorToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.ErrorStatus", err)
+	}
+	out.ErrorStatus = conv19
+	conv20, err := AiParseDocumentResponseMetadataToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.Metadata", err)
+	}
+	out.Metadata = conv20
+	return out, nil
+}
+
+// AiParseDocumentResponseFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentResponseFromSDK(v *sdk.AiParseDocumentResponse) (*AiParseDocumentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentResponse{}
+	out.Document = v.Document
+	conv21, err := convertSlice(v.ErrorStatus, AiParseDocumentPageErrorFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.ErrorStatus", err)
+	}
+	out.ErrorStatus = conv21
+	conv22, err := AiParseDocumentResponseMetadataFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponse.Metadata", err)
+	}
+	out.Metadata = conv22
+	return out, nil
+}
+
+// AiParseDocumentResponseMetadataToSDK converts the mirror to the sdk-go type.
 func AiParseDocumentResponseMetadataToSDK(w *AiParseDocumentResponseMetadata) (*sdk.AiParseDocumentResponseMetadata, error) {
 	if w == nil {
 		return nil, nil
 	}
-	fileMetadataPublicValue, err := AiParseDocumentFileMetadataToSDK(w.FileMetadata)
+	out := &sdk.AiParseDocumentResponseMetadata{}
+	out.Id = w.Id
+	out.Version = w.Version
+	conv23, err := AiParseDocumentFileMetadataToSDK(w.FileMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponseMetadata.FileMetadata", err)
 	}
-	return &sdk.AiParseDocumentResponseMetadata{
-		Id:           w.Id,
-		Version:      w.Version,
-		FileMetadata: fileMetadataPublicValue,
-	}, nil
+	out.FileMetadata = conv23
+	return out, nil
+}
+
+// AiParseDocumentResponseMetadataFromSDK converts the sdk-go type to the mirror.
+func AiParseDocumentResponseMetadataFromSDK(v *sdk.AiParseDocumentResponseMetadata) (*AiParseDocumentResponseMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiParseDocumentResponseMetadata{}
+	out.Id = v.Id
+	out.Version = v.Version
+	conv24, err := AiParseDocumentFileMetadataFromSDK(v.FileMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiParseDocumentResponseMetadata.FileMetadata", err)
+	}
+	out.FileMetadata = conv24
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

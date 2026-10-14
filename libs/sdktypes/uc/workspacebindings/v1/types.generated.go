@@ -18,38 +18,9 @@ const (
 	BindingType_BindingTypeReadOnly  = sdk.BindingType_BindingTypeReadOnly
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type GetCatalogWorkspaceBindingsResponse struct {
 	// A list of workspace IDs
 	Workspaces []int64 `json:"workspaces,omitempty"`
-}
-
-func GetCatalogWorkspaceBindingsResponseToSDK(w *GetCatalogWorkspaceBindingsResponse) (*sdk.GetCatalogWorkspaceBindingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspacesPublicValue, err := convertSlice(w.Workspaces, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetCatalogWorkspaceBindingsResponse.Workspaces", err)
-	}
-	return &sdk.GetCatalogWorkspaceBindingsResponse{
-		Workspaces: workspacesPublicValue,
-	}, nil
 }
 
 type GetWorkspaceBindingsRequest struct {
@@ -69,18 +40,6 @@ type GetWorkspaceBindingsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GetWorkspaceBindingsRequestFromSDK(v *sdk.GetWorkspaceBindingsRequest) (*GetWorkspaceBindingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetWorkspaceBindingsRequest{
-		SecurableType:     v.SecurableType,
-		SecurableFullName: v.SecurableFullName,
-		MaxResults:        v.MaxResults,
-		PageToken:         v.PageToken,
-	}, nil
-}
-
 type GetWorkspaceBindingsResponse struct {
 	// List of workspace bindings
 	Bindings []WorkspaceBindingInfo `json:"bindings,omitempty"`
@@ -88,20 +47,6 @@ type GetWorkspaceBindingsResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GetWorkspaceBindingsResponseToSDK(w *GetWorkspaceBindingsResponse) (*sdk.GetWorkspaceBindingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	bindingsPublicValue, err := convertSlice(w.Bindings, WorkspaceBindingInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceBindingsResponse.Bindings", err)
-	}
-	return &sdk.GetWorkspaceBindingsResponse{
-		Bindings:      bindingsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type UpdateCatalogWorkspaceBindingsRequest struct {
@@ -113,41 +58,9 @@ type UpdateCatalogWorkspaceBindingsRequest struct {
 	UnassignWorkspaces []int64 `json:"unassign_workspaces,omitempty"`
 }
 
-func UpdateCatalogWorkspaceBindingsRequestFromSDK(v *sdk.UpdateCatalogWorkspaceBindingsRequest) (*UpdateCatalogWorkspaceBindingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	assignWorkspacesWireValue, err := convertSlice(v.AssignWorkspaces, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogWorkspaceBindingsRequest.AssignWorkspaces", err)
-	}
-	unassignWorkspacesWireValue, err := convertSlice(v.UnassignWorkspaces, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogWorkspaceBindingsRequest.UnassignWorkspaces", err)
-	}
-	return &UpdateCatalogWorkspaceBindingsRequest{
-		CatalogName:        v.CatalogName,
-		AssignWorkspaces:   assignWorkspacesWireValue,
-		UnassignWorkspaces: unassignWorkspacesWireValue,
-	}, nil
-}
-
 type UpdateCatalogWorkspaceBindingsResponse struct {
 	// A list of workspace IDs
 	Workspaces []int64 `json:"workspaces,omitempty"`
-}
-
-func UpdateCatalogWorkspaceBindingsResponseToSDK(w *UpdateCatalogWorkspaceBindingsResponse) (*sdk.UpdateCatalogWorkspaceBindingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspacesPublicValue, err := convertSlice(w.Workspaces, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogWorkspaceBindingsResponse.Workspaces", err)
-	}
-	return &sdk.UpdateCatalogWorkspaceBindingsResponse{
-		Workspaces: workspacesPublicValue,
-	}, nil
 }
 
 type UpdateWorkspaceBindingsRequest struct {
@@ -164,43 +77,10 @@ type UpdateWorkspaceBindingsRequest struct {
 	Remove []WorkspaceBindingInfo `json:"remove,omitempty"`
 }
 
-func UpdateWorkspaceBindingsRequestFromSDK(v *sdk.UpdateWorkspaceBindingsRequest) (*UpdateWorkspaceBindingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	addWireValue, err := convertSlice(v.Add, WorkspaceBindingInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Add", err)
-	}
-	removeWireValue, err := convertSlice(v.Remove, WorkspaceBindingInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Remove", err)
-	}
-	return &UpdateWorkspaceBindingsRequest{
-		SecurableType:     v.SecurableType,
-		SecurableFullName: v.SecurableFullName,
-		Add:               addWireValue,
-		Remove:            removeWireValue,
-	}, nil
-}
-
 // A list of workspace IDs that are bound to the securable.
 type UpdateWorkspaceBindingsResponse struct {
 	// List of workspace bindings.
 	Bindings []WorkspaceBindingInfo `json:"bindings,omitempty"`
-}
-
-func UpdateWorkspaceBindingsResponseToSDK(w *UpdateWorkspaceBindingsResponse) (*sdk.UpdateWorkspaceBindingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	bindingsPublicValue, err := convertSlice(w.Bindings, WorkspaceBindingInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsResponse.Bindings", err)
-	}
-	return &sdk.UpdateWorkspaceBindingsResponse{
-		Bindings: bindingsPublicValue,
-	}, nil
 }
 
 type WorkspaceBindingInfo struct {
@@ -210,32 +90,216 @@ type WorkspaceBindingInfo struct {
 	BindingType BindingType `json:"binding_type,omitempty"`
 }
 
-func WorkspaceBindingInfoFromSDK(v *sdk.WorkspaceBindingInfo) (*WorkspaceBindingInfo, error) {
+// GetCatalogWorkspaceBindingsResponseToSDK converts the mirror to the sdk-go type.
+func GetCatalogWorkspaceBindingsResponseToSDK(w *GetCatalogWorkspaceBindingsResponse) (*sdk.GetCatalogWorkspaceBindingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCatalogWorkspaceBindingsResponse{}
+	out.Workspaces = w.Workspaces
+	return out, nil
+}
+
+// GetCatalogWorkspaceBindingsResponseFromSDK converts the sdk-go type to the mirror.
+func GetCatalogWorkspaceBindingsResponseFromSDK(v *sdk.GetCatalogWorkspaceBindingsResponse) (*GetCatalogWorkspaceBindingsResponse, error) {
 	if v == nil {
 		return nil, nil
 	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceBindingInfo.WorkspaceId", err)
-	}
-	return &WorkspaceBindingInfo{
-		WorkspaceId: workspaceIdWireValue,
-		BindingType: v.BindingType,
-	}, nil
+	out := &GetCatalogWorkspaceBindingsResponse{}
+	out.Workspaces = v.Workspaces
+	return out, nil
 }
 
+// GetWorkspaceBindingsRequestToSDK converts the mirror to the sdk-go type.
+func GetWorkspaceBindingsRequestToSDK(w *GetWorkspaceBindingsRequest) (*sdk.GetWorkspaceBindingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetWorkspaceBindingsRequest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableFullName = w.SecurableFullName
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GetWorkspaceBindingsRequestFromSDK converts the sdk-go type to the mirror.
+func GetWorkspaceBindingsRequestFromSDK(v *sdk.GetWorkspaceBindingsRequest) (*GetWorkspaceBindingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetWorkspaceBindingsRequest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableFullName = v.SecurableFullName
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GetWorkspaceBindingsResponseToSDK converts the mirror to the sdk-go type.
+func GetWorkspaceBindingsResponseToSDK(w *GetWorkspaceBindingsResponse) (*sdk.GetWorkspaceBindingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetWorkspaceBindingsResponse{}
+	conv1, err := convertSlice(w.Bindings, WorkspaceBindingInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceBindingsResponse.Bindings", err)
+	}
+	out.Bindings = conv1
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetWorkspaceBindingsResponseFromSDK converts the sdk-go type to the mirror.
+func GetWorkspaceBindingsResponseFromSDK(v *sdk.GetWorkspaceBindingsResponse) (*GetWorkspaceBindingsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetWorkspaceBindingsResponse{}
+	conv2, err := convertSlice(v.Bindings, WorkspaceBindingInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceBindingsResponse.Bindings", err)
+	}
+	out.Bindings = conv2
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// UpdateCatalogWorkspaceBindingsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCatalogWorkspaceBindingsRequestToSDK(w *UpdateCatalogWorkspaceBindingsRequest) (*sdk.UpdateCatalogWorkspaceBindingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCatalogWorkspaceBindingsRequest{}
+	out.CatalogName = w.CatalogName
+	out.AssignWorkspaces = w.AssignWorkspaces
+	out.UnassignWorkspaces = w.UnassignWorkspaces
+	return out, nil
+}
+
+// UpdateCatalogWorkspaceBindingsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCatalogWorkspaceBindingsRequestFromSDK(v *sdk.UpdateCatalogWorkspaceBindingsRequest) (*UpdateCatalogWorkspaceBindingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCatalogWorkspaceBindingsRequest{}
+	out.CatalogName = v.CatalogName
+	out.AssignWorkspaces = v.AssignWorkspaces
+	out.UnassignWorkspaces = v.UnassignWorkspaces
+	return out, nil
+}
+
+// UpdateCatalogWorkspaceBindingsResponseToSDK converts the mirror to the sdk-go type.
+func UpdateCatalogWorkspaceBindingsResponseToSDK(w *UpdateCatalogWorkspaceBindingsResponse) (*sdk.UpdateCatalogWorkspaceBindingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCatalogWorkspaceBindingsResponse{}
+	out.Workspaces = w.Workspaces
+	return out, nil
+}
+
+// UpdateCatalogWorkspaceBindingsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateCatalogWorkspaceBindingsResponseFromSDK(v *sdk.UpdateCatalogWorkspaceBindingsResponse) (*UpdateCatalogWorkspaceBindingsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCatalogWorkspaceBindingsResponse{}
+	out.Workspaces = v.Workspaces
+	return out, nil
+}
+
+// UpdateWorkspaceBindingsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspaceBindingsRequestToSDK(w *UpdateWorkspaceBindingsRequest) (*sdk.UpdateWorkspaceBindingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspaceBindingsRequest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableFullName = w.SecurableFullName
+	conv3, err := convertSlice(w.Add, WorkspaceBindingInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Add", err)
+	}
+	out.Add = conv3
+	conv4, err := convertSlice(w.Remove, WorkspaceBindingInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Remove", err)
+	}
+	out.Remove = conv4
+	return out, nil
+}
+
+// UpdateWorkspaceBindingsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspaceBindingsRequestFromSDK(v *sdk.UpdateWorkspaceBindingsRequest) (*UpdateWorkspaceBindingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspaceBindingsRequest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableFullName = v.SecurableFullName
+	conv5, err := convertSlice(v.Add, WorkspaceBindingInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Add", err)
+	}
+	out.Add = conv5
+	conv6, err := convertSlice(v.Remove, WorkspaceBindingInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsRequest.Remove", err)
+	}
+	out.Remove = conv6
+	return out, nil
+}
+
+// UpdateWorkspaceBindingsResponseToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspaceBindingsResponseToSDK(w *UpdateWorkspaceBindingsResponse) (*sdk.UpdateWorkspaceBindingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspaceBindingsResponse{}
+	conv7, err := convertSlice(w.Bindings, WorkspaceBindingInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsResponse.Bindings", err)
+	}
+	out.Bindings = conv7
+	return out, nil
+}
+
+// UpdateWorkspaceBindingsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspaceBindingsResponseFromSDK(v *sdk.UpdateWorkspaceBindingsResponse) (*UpdateWorkspaceBindingsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspaceBindingsResponse{}
+	conv8, err := convertSlice(v.Bindings, WorkspaceBindingInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBindingsResponse.Bindings", err)
+	}
+	out.Bindings = conv8
+	return out, nil
+}
+
+// WorkspaceBindingInfoToSDK converts the mirror to the sdk-go type.
 func WorkspaceBindingInfoToSDK(w *WorkspaceBindingInfo) (*sdk.WorkspaceBindingInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceBindingInfo.WorkspaceId", err)
+	out := &sdk.WorkspaceBindingInfo{}
+	out.WorkspaceId = w.WorkspaceId
+	out.BindingType = w.BindingType
+	return out, nil
+}
+
+// WorkspaceBindingInfoFromSDK converts the sdk-go type to the mirror.
+func WorkspaceBindingInfoFromSDK(v *sdk.WorkspaceBindingInfo) (*WorkspaceBindingInfo, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return &sdk.WorkspaceBindingInfo{
-		WorkspaceId: workspaceIdPublicValue,
-		BindingType: w.BindingType,
-	}, nil
+	out := &WorkspaceBindingInfo{}
+	out.WorkspaceId = v.WorkspaceId
+	out.BindingType = v.BindingType
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

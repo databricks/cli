@@ -62,44 +62,10 @@ const (
 	FunctionInfo_SqlDataAccess_NoSql        = sdk.FunctionInfo_SqlDataAccess_NoSql
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // A connection that is dependent on a SQL object..
 type ConnectionDependency struct {
 	// Full name of the dependent connection, in the form of __connection_name__.
 	ConnectionName *string `json:"connection_name,omitempty"`
-}
-
-func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConnectionDependency{
-		ConnectionName: v.ConnectionName,
-	}, nil
-}
-
-func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConnectionDependency{
-		ConnectionName: w.ConnectionName,
-	}, nil
 }
 
 type CreateFunction struct {
@@ -172,80 +138,9 @@ type CreateFunction struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func CreateFunctionFromSDK(v *sdk.CreateFunction) (*CreateFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inputParamsWireValue, err := FunctionParameterInfosFromSDK(v.InputParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunction.InputParams", err)
-	}
-	returnParamsWireValue, err := FunctionParameterInfosFromSDK(v.ReturnParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunction.ReturnParams", err)
-	}
-	routineDependenciesWireValue, err := DependencyListFromSDK(v.RoutineDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunction.RoutineDependencies", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunction.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunction.UpdatedAt", err)
-	}
-	return &CreateFunction{
-		Name:                v.Name,
-		CatalogName:         v.CatalogName,
-		SchemaName:          v.SchemaName,
-		InputParams:         inputParamsWireValue,
-		DataType:            v.DataType,
-		FullDataType:        v.FullDataType,
-		RoutineBody:         v.RoutineBody,
-		RoutineDefinition:   v.RoutineDefinition,
-		ParameterStyle:      v.ParameterStyle,
-		IsDeterministic:     v.IsDeterministic,
-		SqlDataAccess:       v.SqlDataAccess,
-		IsNullCall:          v.IsNullCall,
-		SecurityType:        v.SecurityType,
-		SpecificName:        v.SpecificName,
-		ReturnParams:        returnParamsWireValue,
-		ExternalName:        v.ExternalName,
-		ExternalLanguage:    v.ExternalLanguage,
-		SqlPath:             v.SqlPath,
-		Owner:               v.Owner,
-		Comment:             v.Comment,
-		Properties:          v.Properties,
-		RoutineDependencies: routineDependenciesWireValue,
-		MetastoreId:         v.MetastoreId,
-		FullName:            v.FullName,
-		CreatedAt:           createdAtWireValue,
-		CreatedBy:           v.CreatedBy,
-		UpdatedAt:           updatedAtWireValue,
-		UpdatedBy:           v.UpdatedBy,
-		FunctionId:          v.FunctionId,
-		BrowseOnly:          v.BrowseOnly,
-	}, nil
-}
-
 type CreateFunctionRequest struct {
 	// Partial __FunctionInfo__ specifying the function to be created.
 	FunctionInfo *CreateFunction `json:"function_info,omitempty"`
-}
-
-func CreateFunctionRequestFromSDK(v *sdk.CreateFunctionRequest) (*CreateFunctionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	functionInfoWireValue, err := CreateFunctionFromSDK(v.FunctionInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFunctionRequest.FunctionInfo", err)
-	}
-	return &CreateFunctionRequest{
-		FunctionInfo: functionInfoWireValue,
-	}, nil
 }
 
 // A credential that is dependent on a SQL object..
@@ -254,40 +149,12 @@ type CredentialDependency struct {
 	CredentialName *string `json:"credential_name,omitempty"`
 }
 
-func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CredentialDependency{
-		CredentialName: v.CredentialName,
-	}, nil
-}
-
-func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CredentialDependency{
-		CredentialName: w.CredentialName,
-	}, nil
-}
-
 type DeleteFunctionRequest struct {
 	// The fully-qualified name of the function (of the form
 	// __catalog_name__.__schema_name__.__function__name__) .
 	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// Force deletion even if the function is notempty.
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteFunctionRequestFromSDK(v *sdk.DeleteFunctionRequest) (*DeleteFunctionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteFunctionRequest{
-		FullNameArg: v.FullNameArg,
-		Force:       v.Force,
-	}, nil
 }
 
 // A dependency of a SQL object. One of the following fields must be defined:
@@ -300,141 +167,10 @@ type Dependency struct {
 	Credential *CredentialDependency `json:"credential,omitempty"`
 }
 
-func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueTableWire *TableDependency
-	var valueFunctionWire *FunctionDependency
-	var valueConnectionWire *ConnectionDependency
-	var valueCredentialWire *CredentialDependency
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.Dependency_Value_Table:
-		if value != nil {
-			valueTableConverted, err := TableDependencyFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-			}
-			valueTableWire = valueTableConverted
-		}
-	case *sdk.Dependency_Value_Function:
-		if value != nil {
-			valueFunctionConverted, err := FunctionDependencyFromSDK(&value.Function)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-			}
-			valueFunctionWire = valueFunctionConverted
-		}
-	case *sdk.Dependency_Value_Connection:
-		if value != nil {
-			valueConnectionConverted, err := ConnectionDependencyFromSDK(&value.Connection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-			}
-			valueConnectionWire = valueConnectionConverted
-		}
-	case *sdk.Dependency_Value_Credential:
-		if value != nil {
-			valueCredentialConverted, err := CredentialDependencyFromSDK(&value.Credential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-			}
-			valueCredentialWire = valueCredentialConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Dependency.Value", value)
-	}
-	return &Dependency{
-		Table:      valueTableWire,
-		Function:   valueFunctionWire,
-		Connection: valueConnectionWire,
-		Credential: valueCredentialWire,
-	}, nil
-}
-
-func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.Table != nil {
-		valueMembers++
-	}
-	if w.Function != nil {
-		valueMembers++
-	}
-	if w.Connection != nil {
-		valueMembers++
-	}
-	if w.Credential != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
-	}
-	valueSelection := (&sdk.Dependency{}).Value
-	switch {
-	case w.Table != nil:
-		valueTableConverted, err := TableDependencyToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Table{Table: *valueTableConverted}
-	case w.Function != nil:
-		valueFunctionConverted, err := FunctionDependencyToSDK(w.Function)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Function{Function: *valueFunctionConverted}
-	case w.Connection != nil:
-		valueConnectionConverted, err := ConnectionDependencyToSDK(w.Connection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Connection{Connection: *valueConnectionConverted}
-	case w.Credential != nil:
-		valueCredentialConverted, err := CredentialDependencyToSDK(w.Credential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Credential{Credential: *valueCredentialConverted}
-	}
-	return &sdk.Dependency{
-		Value: valueSelection,
-	}, nil
-}
-
 // A list of dependencies..
 type DependencyList struct {
 	// Array of dependencies.
 	Dependencies []Dependency `json:"dependencies,omitempty"`
-}
-
-func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dependenciesWireValue, err := convertSlice(v.Dependencies, DependencyFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &DependencyList{
-		Dependencies: dependenciesWireValue,
-	}, nil
-}
-
-func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dependenciesPublicValue, err := convertSlice(w.Dependencies, DependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &sdk.DependencyList{
-		Dependencies: dependenciesPublicValue,
-	}, nil
 }
 
 // A function that is dependent on a SQL object..
@@ -442,24 +178,6 @@ type FunctionDependency struct {
 	// Full name of the dependent function, in the form of
 	// __catalog_name__.__schema_name__.__function_name__.
 	FunctionFullName *string `json:"function_full_name,omitempty"`
-}
-
-func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FunctionDependency{
-		FunctionFullName: v.FunctionFullName,
-	}, nil
-}
-
-func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionDependency{
-		FunctionFullName: w.FunctionFullName,
-	}, nil
 }
 
 type FunctionInfo struct {
@@ -532,64 +250,6 @@ type FunctionInfo struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func FunctionInfoToSDK(w *FunctionInfo) (*sdk.FunctionInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	inputParamsPublicValue, err := FunctionParameterInfosToSDK(w.InputParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionInfo.InputParams", err)
-	}
-	returnParamsPublicValue, err := FunctionParameterInfosToSDK(w.ReturnParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionInfo.ReturnParams", err)
-	}
-	routineDependenciesPublicValue, err := DependencyListToSDK(w.RoutineDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionInfo.RoutineDependencies", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionInfo.UpdatedAt", err)
-	}
-	return &sdk.FunctionInfo{
-		Name:                w.Name,
-		CatalogName:         w.CatalogName,
-		SchemaName:          w.SchemaName,
-		InputParams:         inputParamsPublicValue,
-		DataType:            w.DataType,
-		FullDataType:        w.FullDataType,
-		RoutineBody:         w.RoutineBody,
-		RoutineDefinition:   w.RoutineDefinition,
-		ParameterStyle:      w.ParameterStyle,
-		IsDeterministic:     w.IsDeterministic,
-		SqlDataAccess:       w.SqlDataAccess,
-		IsNullCall:          w.IsNullCall,
-		SecurityType:        w.SecurityType,
-		SpecificName:        w.SpecificName,
-		ReturnParams:        returnParamsPublicValue,
-		ExternalName:        w.ExternalName,
-		ExternalLanguage:    w.ExternalLanguage,
-		SqlPath:             w.SqlPath,
-		Owner:               w.Owner,
-		Comment:             w.Comment,
-		Properties:          w.Properties,
-		RoutineDependencies: routineDependenciesPublicValue,
-		MetastoreId:         w.MetastoreId,
-		FullName:            w.FullName,
-		CreatedAt:           createdAtPublicValue,
-		CreatedBy:           w.CreatedBy,
-		UpdatedAt:           updatedAtPublicValue,
-		UpdatedBy:           w.UpdatedBy,
-		FunctionId:          w.FunctionId,
-		BrowseOnly:          w.BrowseOnly,
-	}, nil
-}
-
 type FunctionParameterInfo struct {
 	// Name of Parameter.
 	Name *string `json:"name,omitempty"`
@@ -617,74 +277,8 @@ type FunctionParameterInfo struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func FunctionParameterInfoFromSDK(v *sdk.FunctionParameterInfo) (*FunctionParameterInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FunctionParameterInfo{
-		Name:             v.Name,
-		TypeText:         v.TypeText,
-		TypeJson:         v.TypeJson,
-		TypeName:         v.TypeName,
-		TypePrecision:    v.TypePrecision,
-		TypeScale:        v.TypeScale,
-		TypeIntervalType: v.TypeIntervalType,
-		Position:         v.Position,
-		ParameterMode:    v.ParameterMode,
-		ParameterType:    v.ParameterType,
-		ParameterDefault: v.ParameterDefault,
-		Comment:          v.Comment,
-	}, nil
-}
-
-func FunctionParameterInfoToSDK(w *FunctionParameterInfo) (*sdk.FunctionParameterInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionParameterInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeJson:         w.TypeJson,
-		TypeName:         w.TypeName,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-		Position:         w.Position,
-		ParameterMode:    w.ParameterMode,
-		ParameterType:    w.ParameterType,
-		ParameterDefault: w.ParameterDefault,
-		Comment:          w.Comment,
-	}, nil
-}
-
 type FunctionParameterInfos struct {
 	Parameters []FunctionParameterInfo `json:"parameters,omitempty"`
-}
-
-func FunctionParameterInfosFromSDK(v *sdk.FunctionParameterInfos) (*FunctionParameterInfos, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, FunctionParameterInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
-	}
-	return &FunctionParameterInfos{
-		Parameters: parametersWireValue,
-	}, nil
-}
-
-func FunctionParameterInfosToSDK(w *FunctionParameterInfos) (*sdk.FunctionParameterInfos, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, FunctionParameterInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
-	}
-	return &sdk.FunctionParameterInfos{
-		Parameters: parametersPublicValue,
-	}, nil
 }
 
 type GetFunctionRequest struct {
@@ -694,16 +288,6 @@ type GetFunctionRequest struct {
 	// Whether to include functions in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetFunctionRequestFromSDK(v *sdk.GetFunctionRequest) (*GetFunctionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetFunctionRequest{
-		FullNameArg:   v.FullNameArg,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
 }
 
 type ListFunctionsRequest struct {
@@ -724,19 +308,6 @@ type ListFunctionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListFunctionsRequestFromSDK(v *sdk.ListFunctionsRequest) (*ListFunctionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListFunctionsRequest{
-		CatalogName:   v.CatalogName,
-		SchemaName:    v.SchemaName,
-		IncludeBrowse: v.IncludeBrowse,
-		MaxResults:    v.MaxResults,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListFunctionsResponse struct {
 	// An array of function information objects.
 	Functions []FunctionInfo `json:"functions,omitempty"`
@@ -746,43 +317,11 @@ type ListFunctionsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListFunctionsResponseToSDK(w *ListFunctionsResponse) (*sdk.ListFunctionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	functionsPublicValue, err := convertSlice(w.Functions, FunctionInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFunctionsResponse.Functions", err)
-	}
-	return &sdk.ListFunctionsResponse{
-		Functions:     functionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // A table that is dependent on a SQL object..
 type TableDependency struct {
 	// Full name of the dependent table, in the form of
 	// __catalog_name__.__schema_name__.__table_name__.
 	TableFullName *string `json:"table_full_name,omitempty"`
-}
-
-func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TableDependency{
-		TableFullName: v.TableFullName,
-	}, nil
-}
-
-func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableDependency{
-		TableFullName: w.TableFullName,
-	}, nil
 }
 
 type UpdateFunctionRequest struct {
@@ -858,63 +397,716 @@ type UpdateFunctionRequest struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
+// ConnectionDependencyToSDK converts the mirror to the sdk-go type.
+func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectionDependency{}
+	out.ConnectionName = w.ConnectionName
+	return out, nil
+}
+
+// ConnectionDependencyFromSDK converts the sdk-go type to the mirror.
+func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectionDependency{}
+	out.ConnectionName = v.ConnectionName
+	return out, nil
+}
+
+// CreateFunctionToSDK converts the mirror to the sdk-go type.
+func CreateFunctionToSDK(w *CreateFunction) (*sdk.CreateFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFunction{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	conv1, err := FunctionParameterInfosToSDK(w.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.InputParams", err)
+	}
+	out.InputParams = conv1
+	out.DataType = w.DataType
+	out.FullDataType = w.FullDataType
+	out.RoutineBody = w.RoutineBody
+	out.RoutineDefinition = w.RoutineDefinition
+	out.ParameterStyle = w.ParameterStyle
+	out.IsDeterministic = w.IsDeterministic
+	out.SqlDataAccess = w.SqlDataAccess
+	out.IsNullCall = w.IsNullCall
+	out.SecurityType = w.SecurityType
+	out.SpecificName = w.SpecificName
+	conv2, err := FunctionParameterInfosToSDK(w.ReturnParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.ReturnParams", err)
+	}
+	out.ReturnParams = conv2
+	out.ExternalName = w.ExternalName
+	out.ExternalLanguage = w.ExternalLanguage
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.Properties = w.Properties
+	conv3, err := DependencyListToSDK(w.RoutineDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.RoutineDependencies", err)
+	}
+	out.RoutineDependencies = conv3
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.FunctionId = w.FunctionId
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// CreateFunctionFromSDK converts the sdk-go type to the mirror.
+func CreateFunctionFromSDK(v *sdk.CreateFunction) (*CreateFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFunction{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	conv4, err := FunctionParameterInfosFromSDK(v.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.InputParams", err)
+	}
+	out.InputParams = conv4
+	out.DataType = v.DataType
+	out.FullDataType = v.FullDataType
+	out.RoutineBody = v.RoutineBody
+	out.RoutineDefinition = v.RoutineDefinition
+	out.ParameterStyle = v.ParameterStyle
+	out.IsDeterministic = v.IsDeterministic
+	out.SqlDataAccess = v.SqlDataAccess
+	out.IsNullCall = v.IsNullCall
+	out.SecurityType = v.SecurityType
+	out.SpecificName = v.SpecificName
+	conv5, err := FunctionParameterInfosFromSDK(v.ReturnParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.ReturnParams", err)
+	}
+	out.ReturnParams = conv5
+	out.ExternalName = v.ExternalName
+	out.ExternalLanguage = v.ExternalLanguage
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.Properties = v.Properties
+	conv6, err := DependencyListFromSDK(v.RoutineDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunction.RoutineDependencies", err)
+	}
+	out.RoutineDependencies = conv6
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.FunctionId = v.FunctionId
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// CreateFunctionRequestToSDK converts the mirror to the sdk-go type.
+func CreateFunctionRequestToSDK(w *CreateFunctionRequest) (*sdk.CreateFunctionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFunctionRequest{}
+	conv7, err := CreateFunctionToSDK(w.FunctionInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunctionRequest.FunctionInfo", err)
+	}
+	out.FunctionInfo = conv7
+	return out, nil
+}
+
+// CreateFunctionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateFunctionRequestFromSDK(v *sdk.CreateFunctionRequest) (*CreateFunctionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFunctionRequest{}
+	conv8, err := CreateFunctionFromSDK(v.FunctionInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFunctionRequest.FunctionInfo", err)
+	}
+	out.FunctionInfo = conv8
+	return out, nil
+}
+
+// CredentialDependencyToSDK converts the mirror to the sdk-go type.
+func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CredentialDependency{}
+	out.CredentialName = w.CredentialName
+	return out, nil
+}
+
+// CredentialDependencyFromSDK converts the sdk-go type to the mirror.
+func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CredentialDependency{}
+	out.CredentialName = v.CredentialName
+	return out, nil
+}
+
+// DeleteFunctionRequestToSDK converts the mirror to the sdk-go type.
+func DeleteFunctionRequestToSDK(w *DeleteFunctionRequest) (*sdk.DeleteFunctionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteFunctionRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteFunctionRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteFunctionRequestFromSDK(v *sdk.DeleteFunctionRequest) (*DeleteFunctionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteFunctionRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// DependencyToSDK converts the mirror to the sdk-go type.
+func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dependency{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Function != nil {
+			members++
+		}
+		if w.Connection != nil {
+			members++
+		}
+		if w.Credential != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv9, err := TableDependencyToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Table{Table: *conv9}
+	case w.Function != nil:
+		conv10, err := FunctionDependencyToSDK(w.Function)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Function{Function: *conv10}
+	case w.Connection != nil:
+		conv11, err := ConnectionDependencyToSDK(w.Connection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Connection{Connection: *conv11}
+	case w.Credential != nil:
+		conv12, err := CredentialDependencyToSDK(w.Credential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Credential{Credential: *conv12}
+	}
+	return out, nil
+}
+
+// DependencyFromSDK converts the sdk-go type to the mirror.
+func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dependency{}
+	switch value := v.Value.(type) {
+	case *sdk.Dependency_Value_Table:
+		if value != nil {
+			conv13, err := TableDependencyFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Table = conv13
+		}
+	case *sdk.Dependency_Value_Function:
+		if value != nil {
+			conv14, err := FunctionDependencyFromSDK(&value.Function)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Function = conv14
+		}
+	case *sdk.Dependency_Value_Connection:
+		if value != nil {
+			conv15, err := ConnectionDependencyFromSDK(&value.Connection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Connection = conv15
+		}
+	case *sdk.Dependency_Value_Credential:
+		if value != nil {
+			conv16, err := CredentialDependencyFromSDK(&value.Credential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Credential = conv16
+		}
+	}
+	return out, nil
+}
+
+// DependencyListToSDK converts the mirror to the sdk-go type.
+func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DependencyList{}
+	conv17, err := convertSlice(w.Dependencies, DependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv17
+	return out, nil
+}
+
+// DependencyListFromSDK converts the sdk-go type to the mirror.
+func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DependencyList{}
+	conv18, err := convertSlice(v.Dependencies, DependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv18
+	return out, nil
+}
+
+// FunctionDependencyToSDK converts the mirror to the sdk-go type.
+func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionDependency{}
+	out.FunctionFullName = w.FunctionFullName
+	return out, nil
+}
+
+// FunctionDependencyFromSDK converts the sdk-go type to the mirror.
+func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionDependency{}
+	out.FunctionFullName = v.FunctionFullName
+	return out, nil
+}
+
+// FunctionInfoToSDK converts the mirror to the sdk-go type.
+func FunctionInfoToSDK(w *FunctionInfo) (*sdk.FunctionInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	conv19, err := FunctionParameterInfosToSDK(w.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.InputParams", err)
+	}
+	out.InputParams = conv19
+	out.DataType = w.DataType
+	out.FullDataType = w.FullDataType
+	out.RoutineBody = w.RoutineBody
+	out.RoutineDefinition = w.RoutineDefinition
+	out.ParameterStyle = w.ParameterStyle
+	out.IsDeterministic = w.IsDeterministic
+	out.SqlDataAccess = w.SqlDataAccess
+	out.IsNullCall = w.IsNullCall
+	out.SecurityType = w.SecurityType
+	out.SpecificName = w.SpecificName
+	conv20, err := FunctionParameterInfosToSDK(w.ReturnParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.ReturnParams", err)
+	}
+	out.ReturnParams = conv20
+	out.ExternalName = w.ExternalName
+	out.ExternalLanguage = w.ExternalLanguage
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.Properties = w.Properties
+	conv21, err := DependencyListToSDK(w.RoutineDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.RoutineDependencies", err)
+	}
+	out.RoutineDependencies = conv21
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.FunctionId = w.FunctionId
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// FunctionInfoFromSDK converts the sdk-go type to the mirror.
+func FunctionInfoFromSDK(v *sdk.FunctionInfo) (*FunctionInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	conv22, err := FunctionParameterInfosFromSDK(v.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.InputParams", err)
+	}
+	out.InputParams = conv22
+	out.DataType = v.DataType
+	out.FullDataType = v.FullDataType
+	out.RoutineBody = v.RoutineBody
+	out.RoutineDefinition = v.RoutineDefinition
+	out.ParameterStyle = v.ParameterStyle
+	out.IsDeterministic = v.IsDeterministic
+	out.SqlDataAccess = v.SqlDataAccess
+	out.IsNullCall = v.IsNullCall
+	out.SecurityType = v.SecurityType
+	out.SpecificName = v.SpecificName
+	conv23, err := FunctionParameterInfosFromSDK(v.ReturnParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.ReturnParams", err)
+	}
+	out.ReturnParams = conv23
+	out.ExternalName = v.ExternalName
+	out.ExternalLanguage = v.ExternalLanguage
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.Properties = v.Properties
+	conv24, err := DependencyListFromSDK(v.RoutineDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionInfo.RoutineDependencies", err)
+	}
+	out.RoutineDependencies = conv24
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.FunctionId = v.FunctionId
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// FunctionParameterInfoToSDK converts the mirror to the sdk-go type.
+func FunctionParameterInfoToSDK(w *FunctionParameterInfo) (*sdk.FunctionParameterInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionParameterInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeJson = w.TypeJson
+	out.TypeName = w.TypeName
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	out.Position = w.Position
+	out.ParameterMode = w.ParameterMode
+	out.ParameterType = w.ParameterType
+	out.ParameterDefault = w.ParameterDefault
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// FunctionParameterInfoFromSDK converts the sdk-go type to the mirror.
+func FunctionParameterInfoFromSDK(v *sdk.FunctionParameterInfo) (*FunctionParameterInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionParameterInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeJson = v.TypeJson
+	out.TypeName = v.TypeName
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	out.Position = v.Position
+	out.ParameterMode = v.ParameterMode
+	out.ParameterType = v.ParameterType
+	out.ParameterDefault = v.ParameterDefault
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// FunctionParameterInfosToSDK converts the mirror to the sdk-go type.
+func FunctionParameterInfosToSDK(w *FunctionParameterInfos) (*sdk.FunctionParameterInfos, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionParameterInfos{}
+	conv25, err := convertSlice(w.Parameters, FunctionParameterInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
+	}
+	out.Parameters = conv25
+	return out, nil
+}
+
+// FunctionParameterInfosFromSDK converts the sdk-go type to the mirror.
+func FunctionParameterInfosFromSDK(v *sdk.FunctionParameterInfos) (*FunctionParameterInfos, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionParameterInfos{}
+	conv26, err := convertSlice(v.Parameters, FunctionParameterInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
+	}
+	out.Parameters = conv26
+	return out, nil
+}
+
+// GetFunctionRequestToSDK converts the mirror to the sdk-go type.
+func GetFunctionRequestToSDK(w *GetFunctionRequest) (*sdk.GetFunctionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetFunctionRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetFunctionRequestFromSDK converts the sdk-go type to the mirror.
+func GetFunctionRequestFromSDK(v *sdk.GetFunctionRequest) (*GetFunctionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetFunctionRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListFunctionsRequestToSDK converts the mirror to the sdk-go type.
+func ListFunctionsRequestToSDK(w *ListFunctionsRequest) (*sdk.ListFunctionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFunctionsRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.IncludeBrowse = w.IncludeBrowse
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListFunctionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListFunctionsRequestFromSDK(v *sdk.ListFunctionsRequest) (*ListFunctionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFunctionsRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.IncludeBrowse = v.IncludeBrowse
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListFunctionsResponseToSDK converts the mirror to the sdk-go type.
+func ListFunctionsResponseToSDK(w *ListFunctionsResponse) (*sdk.ListFunctionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFunctionsResponse{}
+	conv27, err := convertSlice(w.Functions, FunctionInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFunctionsResponse.Functions", err)
+	}
+	out.Functions = conv27
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFunctionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListFunctionsResponseFromSDK(v *sdk.ListFunctionsResponse) (*ListFunctionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFunctionsResponse{}
+	conv28, err := convertSlice(v.Functions, FunctionInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFunctionsResponse.Functions", err)
+	}
+	out.Functions = conv28
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// TableDependencyToSDK converts the mirror to the sdk-go type.
+func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableDependency{}
+	out.TableFullName = w.TableFullName
+	return out, nil
+}
+
+// TableDependencyFromSDK converts the sdk-go type to the mirror.
+func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableDependency{}
+	out.TableFullName = v.TableFullName
+	return out, nil
+}
+
+// UpdateFunctionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateFunctionRequestToSDK(w *UpdateFunctionRequest) (*sdk.UpdateFunctionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateFunctionRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	conv29, err := FunctionParameterInfosToSDK(w.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.InputParams", err)
+	}
+	out.InputParams = conv29
+	out.DataType = w.DataType
+	out.FullDataType = w.FullDataType
+	out.RoutineBody = w.RoutineBody
+	out.RoutineDefinition = w.RoutineDefinition
+	out.ParameterStyle = w.ParameterStyle
+	out.IsDeterministic = w.IsDeterministic
+	out.SqlDataAccess = w.SqlDataAccess
+	out.IsNullCall = w.IsNullCall
+	out.SecurityType = w.SecurityType
+	out.SpecificName = w.SpecificName
+	conv30, err := FunctionParameterInfosToSDK(w.ReturnParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.ReturnParams", err)
+	}
+	out.ReturnParams = conv30
+	out.ExternalName = w.ExternalName
+	out.ExternalLanguage = w.ExternalLanguage
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.Properties = w.Properties
+	conv31, err := DependencyListToSDK(w.RoutineDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.RoutineDependencies", err)
+	}
+	out.RoutineDependencies = conv31
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.FunctionId = w.FunctionId
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// UpdateFunctionRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateFunctionRequestFromSDK(v *sdk.UpdateFunctionRequest) (*UpdateFunctionRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	inputParamsWireValue, err := FunctionParameterInfosFromSDK(v.InputParams)
+	out := &UpdateFunctionRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	conv32, err := FunctionParameterInfosFromSDK(v.InputParams)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.InputParams", err)
 	}
-	returnParamsWireValue, err := FunctionParameterInfosFromSDK(v.ReturnParams)
+	out.InputParams = conv32
+	out.DataType = v.DataType
+	out.FullDataType = v.FullDataType
+	out.RoutineBody = v.RoutineBody
+	out.RoutineDefinition = v.RoutineDefinition
+	out.ParameterStyle = v.ParameterStyle
+	out.IsDeterministic = v.IsDeterministic
+	out.SqlDataAccess = v.SqlDataAccess
+	out.IsNullCall = v.IsNullCall
+	out.SecurityType = v.SecurityType
+	out.SpecificName = v.SpecificName
+	conv33, err := FunctionParameterInfosFromSDK(v.ReturnParams)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.ReturnParams", err)
 	}
-	routineDependenciesWireValue, err := DependencyListFromSDK(v.RoutineDependencies)
+	out.ReturnParams = conv33
+	out.ExternalName = v.ExternalName
+	out.ExternalLanguage = v.ExternalLanguage
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.Properties = v.Properties
+	conv34, err := DependencyListFromSDK(v.RoutineDependencies)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.RoutineDependencies", err)
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateFunctionRequest.UpdatedAt", err)
-	}
-	return &UpdateFunctionRequest{
-		FullNameArg:         v.FullNameArg,
-		Name:                v.Name,
-		CatalogName:         v.CatalogName,
-		SchemaName:          v.SchemaName,
-		InputParams:         inputParamsWireValue,
-		DataType:            v.DataType,
-		FullDataType:        v.FullDataType,
-		RoutineBody:         v.RoutineBody,
-		RoutineDefinition:   v.RoutineDefinition,
-		ParameterStyle:      v.ParameterStyle,
-		IsDeterministic:     v.IsDeterministic,
-		SqlDataAccess:       v.SqlDataAccess,
-		IsNullCall:          v.IsNullCall,
-		SecurityType:        v.SecurityType,
-		SpecificName:        v.SpecificName,
-		ReturnParams:        returnParamsWireValue,
-		ExternalName:        v.ExternalName,
-		ExternalLanguage:    v.ExternalLanguage,
-		SqlPath:             v.SqlPath,
-		Owner:               v.Owner,
-		Comment:             v.Comment,
-		Properties:          v.Properties,
-		RoutineDependencies: routineDependenciesWireValue,
-		MetastoreId:         v.MetastoreId,
-		FullName:            v.FullName,
-		CreatedAt:           createdAtWireValue,
-		CreatedBy:           v.CreatedBy,
-		UpdatedAt:           updatedAtWireValue,
-		UpdatedBy:           v.UpdatedBy,
-		FunctionId:          v.FunctionId,
-		BrowseOnly:          v.BrowseOnly,
-	}, nil
+	out.RoutineDependencies = conv34
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.FunctionId = v.FunctionId
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

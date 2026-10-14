@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/customllms/v1"
+	strings "strings"
 )
 
 type (
@@ -22,25 +23,8 @@ const (
 	State_Cancelled   = sdk.State_Cancelled
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CancelCustomLlmOptimizationRunRequest struct {
 	Id *string `json:"id,omitempty"`
-}
-
-func CancelCustomLlmOptimizationRunRequestFromSDK(v *sdk.CancelCustomLlmOptimizationRunRequest) (*CancelCustomLlmOptimizationRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CancelCustomLlmOptimizationRunRequest{
-		Id: v.Id,
-	}, nil
 }
 
 type CreateCustomLlmRequest struct {
@@ -58,23 +42,6 @@ type CreateCustomLlmRequest struct {
 	// destination path where you have write permissions. Please provide this in
 	// catalog.schema format.
 	AgentArtifactPath *string `json:"agent_artifact_path,omitempty"`
-}
-
-func CreateCustomLlmRequestFromSDK(v *sdk.CreateCustomLlmRequest) (*CreateCustomLlmRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	datasetsWireValue, err := convertSlice(v.Datasets, DatasetFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCustomLlmRequest.Datasets", err)
-	}
-	return &CreateCustomLlmRequest{
-		Name:              v.Name,
-		Instructions:      v.Instructions,
-		Datasets:          datasetsWireValue,
-		Guidelines:        v.Guidelines,
-		AgentArtifactPath: v.AgentArtifactPath,
-	}, nil
 }
 
 type CustomLlm struct {
@@ -98,92 +65,13 @@ type CustomLlm struct {
 	AgentArtifactPath *string     `json:"agent_artifact_path,omitempty"`
 }
 
-func CustomLlmFromSDK(v *sdk.CustomLlm) (*CustomLlm, error) {
-	if v == nil {
-		return nil, nil
-	}
-	datasetsWireValue, err := convertSlice(v.Datasets, DatasetFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomLlm.Datasets", err)
-	}
-	return &CustomLlm{
-		Id:                v.Id,
-		Name:              v.Name,
-		EndpointName:      v.EndpointName,
-		Instructions:      v.Instructions,
-		Datasets:          datasetsWireValue,
-		Guidelines:        v.Guidelines,
-		OptimizationState: v.OptimizationState,
-		Creator:           v.Creator,
-		CreationTime:      v.CreationTime,
-		AgentArtifactPath: v.AgentArtifactPath,
-	}, nil
-}
-
-func CustomLlmToSDK(w *CustomLlm) (*sdk.CustomLlm, error) {
-	if w == nil {
-		return nil, nil
-	}
-	datasetsPublicValue, err := convertSlice(w.Datasets, DatasetToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomLlm.Datasets", err)
-	}
-	return &sdk.CustomLlm{
-		Id:                w.Id,
-		Name:              w.Name,
-		EndpointName:      w.EndpointName,
-		Instructions:      w.Instructions,
-		Datasets:          datasetsPublicValue,
-		Guidelines:        w.Guidelines,
-		OptimizationState: w.OptimizationState,
-		Creator:           w.Creator,
-		CreationTime:      w.CreationTime,
-		AgentArtifactPath: w.AgentArtifactPath,
-	}, nil
-}
-
 type Dataset struct {
 	Table *Table `json:"table,omitempty"`
-}
-
-func DatasetFromSDK(v *sdk.Dataset) (*Dataset, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableWireValue, err := TableFromSDK(v.Table)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Dataset.Table", err)
-	}
-	return &Dataset{
-		Table: tableWireValue,
-	}, nil
-}
-
-func DatasetToSDK(w *Dataset) (*sdk.Dataset, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tablePublicValue, err := TableToSDK(w.Table)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Dataset.Table", err)
-	}
-	return &sdk.Dataset{
-		Table: tablePublicValue,
-	}, nil
 }
 
 type StartCustomLlmOptimizationRunRequest struct {
 	// The Id of the tile.
 	Id *string `json:"id,omitempty"`
-}
-
-func StartCustomLlmOptimizationRunRequestFromSDK(v *sdk.StartCustomLlmOptimizationRunRequest) (*StartCustomLlmOptimizationRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StartCustomLlmOptimizationRunRequest{
-		Id: v.Id,
-	}, nil
 }
 
 type Table struct {
@@ -193,28 +81,6 @@ type Table struct {
 	RequestCol *string `json:"request_col,omitempty"`
 	// Optional: Name of the response column if the data is labeled
 	ResponseCol *string `json:"response_col,omitempty"`
-}
-
-func TableFromSDK(v *sdk.Table) (*Table, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Table{
-		TablePath:   v.TablePath,
-		RequestCol:  v.RequestCol,
-		ResponseCol: v.ResponseCol,
-	}, nil
-}
-
-func TableToSDK(w *Table) (*sdk.Table, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Table{
-		TablePath:   w.TablePath,
-		RequestCol:  w.RequestCol,
-		ResponseCol: w.ResponseCol,
-	}, nil
 }
 
 type UpdateCustomLlmRequest struct {
@@ -227,19 +93,214 @@ type UpdateCustomLlmRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CancelCustomLlmOptimizationRunRequestToSDK converts the mirror to the sdk-go type.
+func CancelCustomLlmOptimizationRunRequestToSDK(w *CancelCustomLlmOptimizationRunRequest) (*sdk.CancelCustomLlmOptimizationRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelCustomLlmOptimizationRunRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CancelCustomLlmOptimizationRunRequestFromSDK converts the sdk-go type to the mirror.
+func CancelCustomLlmOptimizationRunRequestFromSDK(v *sdk.CancelCustomLlmOptimizationRunRequest) (*CancelCustomLlmOptimizationRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelCustomLlmOptimizationRunRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// CreateCustomLlmRequestToSDK converts the mirror to the sdk-go type.
+func CreateCustomLlmRequestToSDK(w *CreateCustomLlmRequest) (*sdk.CreateCustomLlmRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCustomLlmRequest{}
+	out.Name = w.Name
+	out.Instructions = w.Instructions
+	conv1, err := convertSlice(w.Datasets, DatasetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomLlmRequest.Datasets", err)
+	}
+	out.Datasets = conv1
+	out.Guidelines = w.Guidelines
+	out.AgentArtifactPath = w.AgentArtifactPath
+	return out, nil
+}
+
+// CreateCustomLlmRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCustomLlmRequestFromSDK(v *sdk.CreateCustomLlmRequest) (*CreateCustomLlmRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCustomLlmRequest{}
+	out.Name = v.Name
+	out.Instructions = v.Instructions
+	conv2, err := convertSlice(v.Datasets, DatasetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomLlmRequest.Datasets", err)
+	}
+	out.Datasets = conv2
+	out.Guidelines = v.Guidelines
+	out.AgentArtifactPath = v.AgentArtifactPath
+	return out, nil
+}
+
+// CustomLlmToSDK converts the mirror to the sdk-go type.
+func CustomLlmToSDK(w *CustomLlm) (*sdk.CustomLlm, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomLlm{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.EndpointName = w.EndpointName
+	out.Instructions = w.Instructions
+	conv3, err := convertSlice(w.Datasets, DatasetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomLlm.Datasets", err)
+	}
+	out.Datasets = conv3
+	out.Guidelines = w.Guidelines
+	out.OptimizationState = w.OptimizationState
+	out.Creator = w.Creator
+	out.CreationTime = w.CreationTime
+	out.AgentArtifactPath = w.AgentArtifactPath
+	return out, nil
+}
+
+// CustomLlmFromSDK converts the sdk-go type to the mirror.
+func CustomLlmFromSDK(v *sdk.CustomLlm) (*CustomLlm, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomLlm{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.EndpointName = v.EndpointName
+	out.Instructions = v.Instructions
+	conv4, err := convertSlice(v.Datasets, DatasetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomLlm.Datasets", err)
+	}
+	out.Datasets = conv4
+	out.Guidelines = v.Guidelines
+	out.OptimizationState = v.OptimizationState
+	out.Creator = v.Creator
+	out.CreationTime = v.CreationTime
+	out.AgentArtifactPath = v.AgentArtifactPath
+	return out, nil
+}
+
+// DatasetToSDK converts the mirror to the sdk-go type.
+func DatasetToSDK(w *Dataset) (*sdk.Dataset, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dataset{}
+	conv5, err := TableToSDK(w.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Dataset.Table", err)
+	}
+	out.Table = conv5
+	return out, nil
+}
+
+// DatasetFromSDK converts the sdk-go type to the mirror.
+func DatasetFromSDK(v *sdk.Dataset) (*Dataset, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dataset{}
+	conv6, err := TableFromSDK(v.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Dataset.Table", err)
+	}
+	out.Table = conv6
+	return out, nil
+}
+
+// StartCustomLlmOptimizationRunRequestToSDK converts the mirror to the sdk-go type.
+func StartCustomLlmOptimizationRunRequestToSDK(w *StartCustomLlmOptimizationRunRequest) (*sdk.StartCustomLlmOptimizationRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartCustomLlmOptimizationRunRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// StartCustomLlmOptimizationRunRequestFromSDK converts the sdk-go type to the mirror.
+func StartCustomLlmOptimizationRunRequestFromSDK(v *sdk.StartCustomLlmOptimizationRunRequest) (*StartCustomLlmOptimizationRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartCustomLlmOptimizationRunRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// TableToSDK converts the mirror to the sdk-go type.
+func TableToSDK(w *Table) (*sdk.Table, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Table{}
+	out.TablePath = w.TablePath
+	out.RequestCol = w.RequestCol
+	out.ResponseCol = w.ResponseCol
+	return out, nil
+}
+
+// TableFromSDK converts the sdk-go type to the mirror.
+func TableFromSDK(v *sdk.Table) (*Table, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Table{}
+	out.TablePath = v.TablePath
+	out.RequestCol = v.RequestCol
+	out.ResponseCol = v.ResponseCol
+	return out, nil
+}
+
+// UpdateCustomLlmRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCustomLlmRequestToSDK(w *UpdateCustomLlmRequest) (*sdk.UpdateCustomLlmRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCustomLlmRequest{}
+	out.Id = w.Id
+	conv7, err := CustomLlmToSDK(w.CustomLlm)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomLlmRequest.CustomLlm", err)
+	}
+	out.CustomLlm = conv7
+	mask8, err := fieldMaskFromString[sdk.CustomLlm](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomLlmRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask8
+	return out, nil
+}
+
+// UpdateCustomLlmRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateCustomLlmRequestFromSDK(v *sdk.UpdateCustomLlmRequest) (*UpdateCustomLlmRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	customLlmWireValue, err := CustomLlmFromSDK(v.CustomLlm)
+	out := &UpdateCustomLlmRequest{}
+	out.Id = v.Id
+	conv9, err := CustomLlmFromSDK(v.CustomLlm)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCustomLlmRequest.CustomLlm", err)
 	}
-	return &UpdateCustomLlmRequest{
-		Id:         v.Id,
-		CustomLlm:  customLlmWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.CustomLlm = conv9
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -255,4 +316,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

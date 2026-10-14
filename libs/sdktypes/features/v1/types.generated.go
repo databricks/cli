@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/features/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -163,30 +164,6 @@ const (
 	StreamingMode_StreamingModeType_StreamingModeTypeMbm  = sdk.StreamingMode_StreamingModeType_StreamingModeTypeMbm
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // An aggregation function applied over a time window..
 type AggregationFunction struct {
 	Avg                 *AvgFunction                 `json:"avg,omitempty"`
@@ -210,386 +187,12 @@ type AggregationFunction struct {
 	TimeWindow *TimeWindow `json:"time_window,omitempty"`
 }
 
-func AggregationFunctionFromSDK(v *sdk.AggregationFunction) (*AggregationFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	timeWindowWireValue, err := TimeWindowFromSDK(v.TimeWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AggregationFunction.TimeWindow", err)
-	}
-	var operationAvgWire *AvgFunction
-	var operationCountFunctionWire *CountFunction
-	var operationSumWire *SumFunction
-	var operationMinWire *MinFunction
-	var operationMaxWire *MaxFunction
-	var operationFirstWire *FirstFunction
-	var operationLastWire *LastFunction
-	var operationApproxCountDistinctWire *ApproxCountDistinctFunction
-	var operationApproxPercentileWire *ApproxPercentileFunction
-	var operationStddevPopWire *StddevPopFunction
-	var operationStddevSampWire *StddevSampFunction
-	var operationVarPopWire *VarPopFunction
-	var operationVarSampWire *VarSampFunction
-	var operationFirstNWire *FirstNFunction
-	var operationLastNWire *LastNFunction
-	var operationFirstDistinctWire *FirstDistinctFunction
-	var operationLastDistinctWire *LastDistinctFunction
-	switch value := v.Operation.(type) {
-	case nil:
-	case *sdk.AggregationFunction_Operation_Avg:
-		if value != nil {
-			operationAvgConverted, err := AvgFunctionFromSDK(&value.Avg)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Avg", err)
-			}
-			operationAvgWire = operationAvgConverted
-		}
-	case *sdk.AggregationFunction_Operation_CountFunction:
-		if value != nil {
-			operationCountFunctionConverted, err := CountFunctionFromSDK(&value.CountFunction)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.CountFunction", err)
-			}
-			operationCountFunctionWire = operationCountFunctionConverted
-		}
-	case *sdk.AggregationFunction_Operation_Sum:
-		if value != nil {
-			operationSumConverted, err := SumFunctionFromSDK(&value.Sum)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Sum", err)
-			}
-			operationSumWire = operationSumConverted
-		}
-	case *sdk.AggregationFunction_Operation_Min:
-		if value != nil {
-			operationMinConverted, err := MinFunctionFromSDK(&value.Min)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Min", err)
-			}
-			operationMinWire = operationMinConverted
-		}
-	case *sdk.AggregationFunction_Operation_Max:
-		if value != nil {
-			operationMaxConverted, err := MaxFunctionFromSDK(&value.Max)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Max", err)
-			}
-			operationMaxWire = operationMaxConverted
-		}
-	case *sdk.AggregationFunction_Operation_First:
-		if value != nil {
-			operationFirstConverted, err := FirstFunctionFromSDK(&value.First)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.First", err)
-			}
-			operationFirstWire = operationFirstConverted
-		}
-	case *sdk.AggregationFunction_Operation_Last:
-		if value != nil {
-			operationLastConverted, err := LastFunctionFromSDK(&value.Last)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Last", err)
-			}
-			operationLastWire = operationLastConverted
-		}
-	case *sdk.AggregationFunction_Operation_ApproxCountDistinct:
-		if value != nil {
-			operationApproxCountDistinctConverted, err := ApproxCountDistinctFunctionFromSDK(&value.ApproxCountDistinct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.ApproxCountDistinct", err)
-			}
-			operationApproxCountDistinctWire = operationApproxCountDistinctConverted
-		}
-	case *sdk.AggregationFunction_Operation_ApproxPercentile:
-		if value != nil {
-			operationApproxPercentileConverted, err := ApproxPercentileFunctionFromSDK(&value.ApproxPercentile)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.ApproxPercentile", err)
-			}
-			operationApproxPercentileWire = operationApproxPercentileConverted
-		}
-	case *sdk.AggregationFunction_Operation_StddevPop:
-		if value != nil {
-			operationStddevPopConverted, err := StddevPopFunctionFromSDK(&value.StddevPop)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.StddevPop", err)
-			}
-			operationStddevPopWire = operationStddevPopConverted
-		}
-	case *sdk.AggregationFunction_Operation_StddevSamp:
-		if value != nil {
-			operationStddevSampConverted, err := StddevSampFunctionFromSDK(&value.StddevSamp)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.StddevSamp", err)
-			}
-			operationStddevSampWire = operationStddevSampConverted
-		}
-	case *sdk.AggregationFunction_Operation_VarPop:
-		if value != nil {
-			operationVarPopConverted, err := VarPopFunctionFromSDK(&value.VarPop)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.VarPop", err)
-			}
-			operationVarPopWire = operationVarPopConverted
-		}
-	case *sdk.AggregationFunction_Operation_VarSamp:
-		if value != nil {
-			operationVarSampConverted, err := VarSampFunctionFromSDK(&value.VarSamp)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.VarSamp", err)
-			}
-			operationVarSampWire = operationVarSampConverted
-		}
-	case *sdk.AggregationFunction_Operation_FirstN:
-		if value != nil {
-			operationFirstNConverted, err := FirstNFunctionFromSDK(&value.FirstN)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.FirstN", err)
-			}
-			operationFirstNWire = operationFirstNConverted
-		}
-	case *sdk.AggregationFunction_Operation_LastN:
-		if value != nil {
-			operationLastNConverted, err := LastNFunctionFromSDK(&value.LastN)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.LastN", err)
-			}
-			operationLastNWire = operationLastNConverted
-		}
-	case *sdk.AggregationFunction_Operation_FirstDistinct:
-		if value != nil {
-			operationFirstDistinctConverted, err := FirstDistinctFunctionFromSDK(&value.FirstDistinct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.FirstDistinct", err)
-			}
-			operationFirstDistinctWire = operationFirstDistinctConverted
-		}
-	case *sdk.AggregationFunction_Operation_LastDistinct:
-		if value != nil {
-			operationLastDistinctConverted, err := LastDistinctFunctionFromSDK(&value.LastDistinct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.LastDistinct", err)
-			}
-			operationLastDistinctWire = operationLastDistinctConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AggregationFunction.Operation", value)
-	}
-	return &AggregationFunction{
-		Avg:                 operationAvgWire,
-		CountFunction:       operationCountFunctionWire,
-		Sum:                 operationSumWire,
-		Min:                 operationMinWire,
-		Max:                 operationMaxWire,
-		First:               operationFirstWire,
-		Last:                operationLastWire,
-		ApproxCountDistinct: operationApproxCountDistinctWire,
-		ApproxPercentile:    operationApproxPercentileWire,
-		StddevPop:           operationStddevPopWire,
-		StddevSamp:          operationStddevSampWire,
-		VarPop:              operationVarPopWire,
-		VarSamp:             operationVarSampWire,
-		FirstN:              operationFirstNWire,
-		LastN:               operationLastNWire,
-		FirstDistinct:       operationFirstDistinctWire,
-		LastDistinct:        operationLastDistinctWire,
-		TimeWindow:          timeWindowWireValue,
-	}, nil
-}
-
-func AggregationFunctionToSDK(w *AggregationFunction) (*sdk.AggregationFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	operationMembers := 0
-	if w.Avg != nil {
-		operationMembers++
-	}
-	if w.CountFunction != nil {
-		operationMembers++
-	}
-	if w.Sum != nil {
-		operationMembers++
-	}
-	if w.Min != nil {
-		operationMembers++
-	}
-	if w.Max != nil {
-		operationMembers++
-	}
-	if w.First != nil {
-		operationMembers++
-	}
-	if w.Last != nil {
-		operationMembers++
-	}
-	if w.ApproxCountDistinct != nil {
-		operationMembers++
-	}
-	if w.ApproxPercentile != nil {
-		operationMembers++
-	}
-	if w.StddevPop != nil {
-		operationMembers++
-	}
-	if w.StddevSamp != nil {
-		operationMembers++
-	}
-	if w.VarPop != nil {
-		operationMembers++
-	}
-	if w.VarSamp != nil {
-		operationMembers++
-	}
-	if w.FirstN != nil {
-		operationMembers++
-	}
-	if w.LastN != nil {
-		operationMembers++
-	}
-	if w.FirstDistinct != nil {
-		operationMembers++
-	}
-	if w.LastDistinct != nil {
-		operationMembers++
-	}
-	if operationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AggregationFunction.Operation")
-	}
-	timeWindowPublicValue, err := TimeWindowToSDK(w.TimeWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AggregationFunction.TimeWindow", err)
-	}
-	operationSelection := (&sdk.AggregationFunction{}).Operation
-	switch {
-	case w.Avg != nil:
-		operationAvgConverted, err := AvgFunctionToSDK(w.Avg)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Avg", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_Avg{Avg: *operationAvgConverted}
-	case w.CountFunction != nil:
-		operationCountFunctionConverted, err := CountFunctionToSDK(w.CountFunction)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.CountFunction", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_CountFunction{CountFunction: *operationCountFunctionConverted}
-	case w.Sum != nil:
-		operationSumConverted, err := SumFunctionToSDK(w.Sum)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Sum", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_Sum{Sum: *operationSumConverted}
-	case w.Min != nil:
-		operationMinConverted, err := MinFunctionToSDK(w.Min)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Min", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_Min{Min: *operationMinConverted}
-	case w.Max != nil:
-		operationMaxConverted, err := MaxFunctionToSDK(w.Max)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Max", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_Max{Max: *operationMaxConverted}
-	case w.First != nil:
-		operationFirstConverted, err := FirstFunctionToSDK(w.First)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.First", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_First{First: *operationFirstConverted}
-	case w.Last != nil:
-		operationLastConverted, err := LastFunctionToSDK(w.Last)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.Last", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_Last{Last: *operationLastConverted}
-	case w.ApproxCountDistinct != nil:
-		operationApproxCountDistinctConverted, err := ApproxCountDistinctFunctionToSDK(w.ApproxCountDistinct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.ApproxCountDistinct", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_ApproxCountDistinct{ApproxCountDistinct: *operationApproxCountDistinctConverted}
-	case w.ApproxPercentile != nil:
-		operationApproxPercentileConverted, err := ApproxPercentileFunctionToSDK(w.ApproxPercentile)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.ApproxPercentile", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_ApproxPercentile{ApproxPercentile: *operationApproxPercentileConverted}
-	case w.StddevPop != nil:
-		operationStddevPopConverted, err := StddevPopFunctionToSDK(w.StddevPop)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.StddevPop", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_StddevPop{StddevPop: *operationStddevPopConverted}
-	case w.StddevSamp != nil:
-		operationStddevSampConverted, err := StddevSampFunctionToSDK(w.StddevSamp)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.StddevSamp", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_StddevSamp{StddevSamp: *operationStddevSampConverted}
-	case w.VarPop != nil:
-		operationVarPopConverted, err := VarPopFunctionToSDK(w.VarPop)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.VarPop", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_VarPop{VarPop: *operationVarPopConverted}
-	case w.VarSamp != nil:
-		operationVarSampConverted, err := VarSampFunctionToSDK(w.VarSamp)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.VarSamp", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_VarSamp{VarSamp: *operationVarSampConverted}
-	case w.FirstN != nil:
-		operationFirstNConverted, err := FirstNFunctionToSDK(w.FirstN)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.FirstN", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_FirstN{FirstN: *operationFirstNConverted}
-	case w.LastN != nil:
-		operationLastNConverted, err := LastNFunctionToSDK(w.LastN)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.LastN", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_LastN{LastN: *operationLastNConverted}
-	case w.FirstDistinct != nil:
-		operationFirstDistinctConverted, err := FirstDistinctFunctionToSDK(w.FirstDistinct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.FirstDistinct", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_FirstDistinct{FirstDistinct: *operationFirstDistinctConverted}
-	case w.LastDistinct != nil:
-		operationLastDistinctConverted, err := LastDistinctFunctionToSDK(w.LastDistinct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation.LastDistinct", err)
-		}
-		operationSelection = &sdk.AggregationFunction_Operation_LastDistinct{LastDistinct: *operationLastDistinctConverted}
-	}
-	return &sdk.AggregationFunction{
-		TimeWindow: timeWindowPublicValue,
-		Operation:  operationSelection,
-	}, nil
-}
-
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
 	Details    []json.RawMessage `json:"details,omitempty"`
-}
-
-func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiError{
-		ErrorCode:  w.ErrorCode,
-		Message:    w.Message,
-		StackTrace: w.StackTrace,
-		Details:    w.Details,
-	}, nil
 }
 
 // Computes the approximate count of distinct values..
@@ -599,26 +202,6 @@ type ApproxCountDistinctFunction struct {
 	Input *string `json:"input,omitempty"`
 	// The maximum relative standard deviation allowed (default defined by Spark).
 	RelativeSd *float64 `json:"relative_sd,omitempty"`
-}
-
-func ApproxCountDistinctFunctionFromSDK(v *sdk.ApproxCountDistinctFunction) (*ApproxCountDistinctFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApproxCountDistinctFunction{
-		Input:      v.Input,
-		RelativeSd: v.RelativeSd,
-	}, nil
-}
-
-func ApproxCountDistinctFunctionToSDK(w *ApproxCountDistinctFunction) (*sdk.ApproxCountDistinctFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApproxCountDistinctFunction{
-		Input:      w.Input,
-		RelativeSd: w.RelativeSd,
-	}, nil
 }
 
 // Computes the approximate percentile of values..
@@ -631,98 +214,9 @@ type ApproxPercentileFunction struct {
 	Accuracy *int64 `json:"accuracy,omitempty"`
 }
 
-func ApproxPercentileFunctionFromSDK(v *sdk.ApproxPercentileFunction) (*ApproxPercentileFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accuracyWireValue, err := int64ToWire(v.Accuracy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ApproxPercentileFunction.Accuracy", err)
-	}
-	return &ApproxPercentileFunction{
-		Input:      v.Input,
-		Percentile: v.Percentile,
-		Accuracy:   accuracyWireValue,
-	}, nil
-}
-
-func ApproxPercentileFunctionToSDK(w *ApproxPercentileFunction) (*sdk.ApproxPercentileFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	accuracyPublicValue, err := int64FromWire(w.Accuracy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ApproxPercentileFunction.Accuracy", err)
-	}
-	return &sdk.ApproxPercentileFunction{
-		Input:      w.Input,
-		Percentile: w.Percentile,
-		Accuracy:   accuracyPublicValue,
-	}, nil
-}
-
 type AuthConfig struct {
 	UcServiceCredentialName *string     `json:"uc_service_credential_name,omitempty"`
 	MtlsConfig              *MtlsConfig `json:"mtls_config,omitempty"`
-}
-
-func AuthConfigFromSDK(v *sdk.AuthConfig) (*AuthConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authConfigUcServiceCredentialNameWire *string
-	var authConfigMtlsConfigWire *MtlsConfig
-	switch value := v.AuthConfig.(type) {
-	case nil:
-	case *sdk.AuthConfig_AuthConfig_UcServiceCredentialName:
-		if value != nil {
-			authConfigUcServiceCredentialNameWire = new(value.UcServiceCredentialName)
-		}
-	case *sdk.AuthConfig_AuthConfig_MtlsConfig:
-		if value != nil {
-			authConfigMtlsConfigConverted, err := MtlsConfigFromSDK(&value.MtlsConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AuthConfig.AuthConfig.MtlsConfig", err)
-			}
-			authConfigMtlsConfigWire = authConfigMtlsConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AuthConfig.AuthConfig", value)
-	}
-	return &AuthConfig{
-		UcServiceCredentialName: authConfigUcServiceCredentialNameWire,
-		MtlsConfig:              authConfigMtlsConfigWire,
-	}, nil
-}
-
-func AuthConfigToSDK(w *AuthConfig) (*sdk.AuthConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authConfigMembers := 0
-	if w.UcServiceCredentialName != nil {
-		authConfigMembers++
-	}
-	if w.MtlsConfig != nil {
-		authConfigMembers++
-	}
-	if authConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AuthConfig.AuthConfig")
-	}
-	authConfigSelection := (&sdk.AuthConfig{}).AuthConfig
-	switch {
-	case w.UcServiceCredentialName != nil:
-		authConfigSelection = &sdk.AuthConfig_AuthConfig_UcServiceCredentialName{UcServiceCredentialName: *w.UcServiceCredentialName}
-	case w.MtlsConfig != nil:
-		authConfigMtlsConfigConverted, err := MtlsConfigToSDK(w.MtlsConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AuthConfig.AuthConfig.MtlsConfig", err)
-		}
-		authConfigSelection = &sdk.AuthConfig_AuthConfig_MtlsConfig{MtlsConfig: *authConfigMtlsConfigConverted}
-	}
-	return &sdk.AuthConfig{
-		AuthConfig: authConfigSelection,
-	}, nil
 }
 
 // Computes the average of values..
@@ -733,24 +227,6 @@ type AvgFunction struct {
 	// supported for backwards compatibility but is deprecated; migrate to dot
 	// notation.
 	Input *string `json:"input,omitempty"`
-}
-
-func AvgFunctionFromSDK(v *sdk.AvgFunction) (*AvgFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AvgFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func AvgFunctionToSDK(w *AvgFunction) (*sdk.AvgFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AvgFunction{
-		Input: w.Input,
-	}, nil
 }
 
 type BackfillFeaturesRequest struct {
@@ -774,32 +250,8 @@ type BackfillFeaturesRequest struct {
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
-func BackfillFeaturesRequestFromSDK(v *sdk.BackfillFeaturesRequest) (*BackfillFeaturesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	backfillRangesWireValue, err := convertSlice(v.BackfillRanges, BackfillRangeFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BackfillFeaturesRequest.BackfillRanges", err)
-	}
-	return &BackfillFeaturesRequest{
-		FeatureFullNames: v.FeatureFullNames,
-		BackfillRanges:   backfillRangesWireValue,
-		RequestId:        v.RequestId,
-		Tags:             v.Tags,
-		BudgetPolicyId:   v.BudgetPolicyId,
-	}, nil
-}
-
 // Result of a completed backfill..
 type BackfillFeaturesResponse struct {
-}
-
-func BackfillFeaturesResponseToSDK(w *BackfillFeaturesResponse) (*sdk.BackfillFeaturesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BackfillFeaturesResponse{}, nil
 }
 
 // Progress and configuration for a backfill..
@@ -812,21 +264,6 @@ type BackfillOperationMetadata struct {
 	State BackfillOperationMetadata_State `json:"state,omitempty"`
 }
 
-func BackfillOperationMetadataToSDK(w *BackfillOperationMetadata) (*sdk.BackfillOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	backfillRangesPublicValue, err := convertSlice(w.BackfillRanges, BackfillRangeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BackfillOperationMetadata.BackfillRanges", err)
-	}
-	return &sdk.BackfillOperationMetadata{
-		FeatureFullNames: w.FeatureFullNames,
-		BackfillRanges:   backfillRangesPublicValue,
-		State:            w.State,
-	}, nil
-}
-
 // A time range for a backfill..
 type BackfillRange struct {
 	// Start of the backfill range, inclusive. If unset, defaults to the earliest
@@ -836,88 +273,9 @@ type BackfillRange struct {
 	EndTime *types.Time `json:"end_time,omitempty"`
 }
 
-func BackfillRangeFromSDK(v *sdk.BackfillRange) (*BackfillRange, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BackfillRange{
-		StartTime: v.StartTime,
-		EndTime:   v.EndTime,
-	}, nil
-}
-
-func BackfillRangeToSDK(w *BackfillRange) (*sdk.BackfillRange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BackfillRange{
-		StartTime: w.StartTime,
-		EndTime:   w.EndTime,
-	}, nil
-}
-
 type BackfillSource struct {
 	DeltaTableSource *DeltaTableSource `json:"delta_table_source,omitempty"`
 	DeltaTableName   *string           `json:"delta_table_name,omitempty"`
-}
-
-func BackfillSourceFromSDK(v *sdk.BackfillSource) (*BackfillSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var backfillSourceDeltaTableSourceWire *DeltaTableSource
-	var backfillSourceDeltaTableNameWire *string
-	switch value := v.BackfillSource.(type) {
-	case nil:
-	case *sdk.BackfillSource_BackfillSource_DeltaTableSource:
-		if value != nil {
-			backfillSourceDeltaTableSourceConverted, err := DeltaTableSourceFromSDK(&value.DeltaTableSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "BackfillSource.BackfillSource.DeltaTableSource", err)
-			}
-			backfillSourceDeltaTableSourceWire = backfillSourceDeltaTableSourceConverted
-		}
-	case *sdk.BackfillSource_BackfillSource_DeltaTableName:
-		if value != nil {
-			backfillSourceDeltaTableNameWire = new(value.DeltaTableName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "BackfillSource.BackfillSource", value)
-	}
-	return &BackfillSource{
-		DeltaTableSource: backfillSourceDeltaTableSourceWire,
-		DeltaTableName:   backfillSourceDeltaTableNameWire,
-	}, nil
-}
-
-func BackfillSourceToSDK(w *BackfillSource) (*sdk.BackfillSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	backfillSourceMembers := 0
-	if w.DeltaTableSource != nil {
-		backfillSourceMembers++
-	}
-	if w.DeltaTableName != nil {
-		backfillSourceMembers++
-	}
-	if backfillSourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "BackfillSource.BackfillSource")
-	}
-	backfillSourceSelection := (&sdk.BackfillSource{}).BackfillSource
-	switch {
-	case w.DeltaTableSource != nil:
-		backfillSourceDeltaTableSourceConverted, err := DeltaTableSourceToSDK(w.DeltaTableSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "BackfillSource.BackfillSource.DeltaTableSource", err)
-		}
-		backfillSourceSelection = &sdk.BackfillSource_BackfillSource_DeltaTableSource{DeltaTableSource: *backfillSourceDeltaTableSourceConverted}
-	case w.DeltaTableName != nil:
-		backfillSourceSelection = &sdk.BackfillSource_BackfillSource_DeltaTableName{DeltaTableName: *w.DeltaTableName}
-	}
-	return &sdk.BackfillSource{
-		BackfillSource: backfillSourceSelection,
-	}, nil
 }
 
 type BatchCreateMaterializedFeaturesRequest struct {
@@ -925,35 +283,9 @@ type BatchCreateMaterializedFeaturesRequest struct {
 	Requests []CreateMaterializedFeatureRequest `json:"requests,omitempty"`
 }
 
-func BatchCreateMaterializedFeaturesRequestFromSDK(v *sdk.BatchCreateMaterializedFeaturesRequest) (*BatchCreateMaterializedFeaturesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	requestsWireValue, err := convertSlice(v.Requests, CreateMaterializedFeatureRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesRequest.Requests", err)
-	}
-	return &BatchCreateMaterializedFeaturesRequest{
-		Requests: requestsWireValue,
-	}, nil
-}
-
 type BatchCreateMaterializedFeaturesResponse struct {
 	// The created materialized features with assigned IDs.
 	MaterializedFeatures []MaterializedFeature `json:"materialized_features,omitempty"`
-}
-
-func BatchCreateMaterializedFeaturesResponseToSDK(w *BatchCreateMaterializedFeaturesResponse) (*sdk.BatchCreateMaterializedFeaturesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	materializedFeaturesPublicValue, err := convertSlice(w.MaterializedFeatures, MaterializedFeatureToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesResponse.MaterializedFeatures", err)
-	}
-	return &sdk.BatchCreateMaterializedFeaturesResponse{
-		MaterializedFeatures: materializedFeaturesPublicValue,
-	}, nil
 }
 
 // The request message for `CancelOperation` method..
@@ -962,36 +294,9 @@ type CancelOperationRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func CancelOperationRequestFromSDK(v *sdk.CancelOperationRequest) (*CancelOperationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CancelOperationRequest{
-		Name: v.Name,
-	}, nil
-}
-
 type ColumnIdentifier struct {
 	// String representation of the column name using dot-prefixed path notation.
 	VariantExprPath *string `json:"variant_expr_path,omitempty"`
-}
-
-func ColumnIdentifierFromSDK(v *sdk.ColumnIdentifier) (*ColumnIdentifier, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ColumnIdentifier{
-		VariantExprPath: v.VariantExprPath,
-	}, nil
-}
-
-func ColumnIdentifierToSDK(w *ColumnIdentifier) (*sdk.ColumnIdentifier, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnIdentifier{
-		VariantExprPath: w.VariantExprPath,
-	}, nil
 }
 
 // A ColumnSelection function, equivalent to the LAST() record of an entity over
@@ -1001,49 +306,11 @@ type ColumnSelection struct {
 	Column *string `json:"column,omitempty"`
 }
 
-func ColumnSelectionFromSDK(v *sdk.ColumnSelection) (*ColumnSelection, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ColumnSelection{
-		Column: v.Column,
-	}, nil
-}
-
-func ColumnSelectionToSDK(w *ColumnSelection) (*sdk.ColumnSelection, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnSelection{
-		Column: w.Column,
-	}, nil
-}
-
 type ContinuousWindow struct {
 	// The duration of the continuous window (must be positive).
 	WindowDuration *types.Duration `json:"window_duration,omitempty"`
 	// The offset of the continuous window (must be non-positive).
 	Offset *types.Duration `json:"offset,omitempty"`
-}
-
-func ContinuousWindowFromSDK(v *sdk.ContinuousWindow) (*ContinuousWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ContinuousWindow{
-		WindowDuration: v.WindowDuration,
-		Offset:         v.Offset,
-	}, nil
-}
-
-func ContinuousWindowToSDK(w *ContinuousWindow) (*sdk.ContinuousWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ContinuousWindow{
-		WindowDuration: w.WindowDuration,
-		Offset:         w.Offset,
-	}, nil
 }
 
 // Computes the count of values..
@@ -1056,57 +323,13 @@ type CountFunction struct {
 	Input *string `json:"input,omitempty"`
 }
 
-func CountFunctionFromSDK(v *sdk.CountFunction) (*CountFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CountFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func CountFunctionToSDK(w *CountFunction) (*sdk.CountFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CountFunction{
-		Input: w.Input,
-	}, nil
-}
-
 type CreateFeatureRequest struct {
 	// Feature to create.
 	Feature *Feature `json:"feature,omitempty"`
 }
 
-func CreateFeatureRequestFromSDK(v *sdk.CreateFeatureRequest) (*CreateFeatureRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	featureWireValue, err := FeatureFromSDK(v.Feature)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFeatureRequest.Feature", err)
-	}
-	return &CreateFeatureRequest{
-		Feature: featureWireValue,
-	}, nil
-}
-
 type CreateKafkaConfigRequest struct {
 	KafkaConfig *KafkaConfig `json:"kafka_config,omitempty"`
-}
-
-func CreateKafkaConfigRequestFromSDK(v *sdk.CreateKafkaConfigRequest) (*CreateKafkaConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	kafkaConfigWireValue, err := KafkaConfigFromSDK(v.KafkaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateKafkaConfigRequest.KafkaConfig", err)
-	}
-	return &CreateKafkaConfigRequest{
-		KafkaConfig: kafkaConfigWireValue,
-	}, nil
 }
 
 type CreateMaterializedFeatureRequest struct {
@@ -1114,37 +337,11 @@ type CreateMaterializedFeatureRequest struct {
 	MaterializedFeature *MaterializedFeature `json:"materialized_feature,omitempty"`
 }
 
-func CreateMaterializedFeatureRequestFromSDK(v *sdk.CreateMaterializedFeatureRequest) (*CreateMaterializedFeatureRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	materializedFeatureWireValue, err := MaterializedFeatureFromSDK(v.MaterializedFeature)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMaterializedFeatureRequest.MaterializedFeature", err)
-	}
-	return &CreateMaterializedFeatureRequest{
-		MaterializedFeature: materializedFeatureWireValue,
-	}, nil
-}
-
 // Create a Stream, a governed UC entity representing an external streaming data
 // source..
 type CreateStreamRequest struct {
 	// The Stream to create.
 	Stream *Stream `json:"stream,omitempty"`
-}
-
-func CreateStreamRequestFromSDK(v *sdk.CreateStreamRequest) (*CreateStreamRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	streamWireValue, err := StreamFromSDK(v.Stream)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateStreamRequest.Stream", err)
-	}
-	return &CreateStreamRequest{
-		Stream: streamWireValue,
-	}, nil
 }
 
 // A cron-based schedule trigger for the materialization pipeline..
@@ -1163,28 +360,6 @@ type CronSchedule struct {
 	TimezoneId *string `json:"timezone_id,omitempty"`
 }
 
-func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronSchedule{
-		CronExpression: v.CronExpression,
-		Mode:           v.Mode,
-		TimezoneId:     v.TimezoneId,
-	}, nil
-}
-
-func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronSchedule{
-		CronExpression: w.CronExpression,
-		Mode:           w.Mode,
-		TimezoneId:     w.TimezoneId,
-	}, nil
-}
-
 // A CustomUdf function applies a registered Unity Catalog function row-wise to
 // source columns, producing a single output column per row..
 type CustomUdf struct {
@@ -1193,34 +368,6 @@ type CustomUdf struct {
 	// Binds each UC function parameter to a source column. May be empty for
 	// zero-argument functions (e.g. a timestamp generator).
 	InputBindings []InputBinding `json:"input_bindings,omitempty"`
-}
-
-func CustomUdfFromSDK(v *sdk.CustomUdf) (*CustomUdf, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inputBindingsWireValue, err := convertSlice(v.InputBindings, InputBindingFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomUdf.InputBindings", err)
-	}
-	return &CustomUdf{
-		FunctionPath:  v.FunctionPath,
-		InputBindings: inputBindingsWireValue,
-	}, nil
-}
-
-func CustomUdfToSDK(w *CustomUdf) (*sdk.CustomUdf, error) {
-	if w == nil {
-		return nil, nil
-	}
-	inputBindingsPublicValue, err := convertSlice(w.InputBindings, InputBindingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomUdf.InputBindings", err)
-	}
-	return &sdk.CustomUdf{
-		FunctionPath:  w.FunctionPath,
-		InputBindings: inputBindingsPublicValue,
-	}, nil
 }
 
 // Specifies the data source backing a feature. Exactly one source type must be
@@ -1235,140 +382,6 @@ type DataSource struct {
 	// is part of the Feature definition; it does not modify the underlying table or
 	// stream.
 	Lateness *SourceLateness `json:"lateness,omitempty"`
-}
-
-func DataSourceFromSDK(v *sdk.DataSource) (*DataSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	latenessWireValue, err := SourceLatenessFromSDK(v.Lateness)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataSource.Lateness", err)
-	}
-	var dataSourceDeltaTableSourceWire *DeltaTableSource
-	var dataSourceKafkaSourceWire *KafkaSource
-	var dataSourceRequestSourceWire *RequestSource
-	var dataSourceStreamSourceWire *StreamSource
-	var dataSourceFeatureViewSourceWire *FeatureViewSource
-	switch value := v.DataSource.(type) {
-	case nil:
-	case *sdk.DataSource_DataSource_DeltaTableSource:
-		if value != nil {
-			dataSourceDeltaTableSourceConverted, err := DeltaTableSourceFromSDK(&value.DeltaTableSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.DeltaTableSource", err)
-			}
-			dataSourceDeltaTableSourceWire = dataSourceDeltaTableSourceConverted
-		}
-	case *sdk.DataSource_DataSource_KafkaSource:
-		if value != nil {
-			dataSourceKafkaSourceConverted, err := KafkaSourceFromSDK(&value.KafkaSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.KafkaSource", err)
-			}
-			dataSourceKafkaSourceWire = dataSourceKafkaSourceConverted
-		}
-	case *sdk.DataSource_DataSource_RequestSource:
-		if value != nil {
-			dataSourceRequestSourceConverted, err := RequestSourceFromSDK(&value.RequestSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.RequestSource", err)
-			}
-			dataSourceRequestSourceWire = dataSourceRequestSourceConverted
-		}
-	case *sdk.DataSource_DataSource_StreamSource:
-		if value != nil {
-			dataSourceStreamSourceConverted, err := StreamSourceFromSDK(&value.StreamSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.StreamSource", err)
-			}
-			dataSourceStreamSourceWire = dataSourceStreamSourceConverted
-		}
-	case *sdk.DataSource_DataSource_FeatureViewSource:
-		if value != nil {
-			dataSourceFeatureViewSourceConverted, err := FeatureViewSourceFromSDK(&value.FeatureViewSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.FeatureViewSource", err)
-			}
-			dataSourceFeatureViewSourceWire = dataSourceFeatureViewSourceConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DataSource.DataSource", value)
-	}
-	return &DataSource{
-		DeltaTableSource:  dataSourceDeltaTableSourceWire,
-		KafkaSource:       dataSourceKafkaSourceWire,
-		RequestSource:     dataSourceRequestSourceWire,
-		StreamSource:      dataSourceStreamSourceWire,
-		FeatureViewSource: dataSourceFeatureViewSourceWire,
-		Lateness:          latenessWireValue,
-	}, nil
-}
-
-func DataSourceToSDK(w *DataSource) (*sdk.DataSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dataSourceMembers := 0
-	if w.DeltaTableSource != nil {
-		dataSourceMembers++
-	}
-	if w.KafkaSource != nil {
-		dataSourceMembers++
-	}
-	if w.RequestSource != nil {
-		dataSourceMembers++
-	}
-	if w.StreamSource != nil {
-		dataSourceMembers++
-	}
-	if w.FeatureViewSource != nil {
-		dataSourceMembers++
-	}
-	if dataSourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DataSource.DataSource")
-	}
-	latenessPublicValue, err := SourceLatenessToSDK(w.Lateness)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataSource.Lateness", err)
-	}
-	dataSourceSelection := (&sdk.DataSource{}).DataSource
-	switch {
-	case w.DeltaTableSource != nil:
-		dataSourceDeltaTableSourceConverted, err := DeltaTableSourceToSDK(w.DeltaTableSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.DeltaTableSource", err)
-		}
-		dataSourceSelection = &sdk.DataSource_DataSource_DeltaTableSource{DeltaTableSource: *dataSourceDeltaTableSourceConverted}
-	case w.KafkaSource != nil:
-		dataSourceKafkaSourceConverted, err := KafkaSourceToSDK(w.KafkaSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.KafkaSource", err)
-		}
-		dataSourceSelection = &sdk.DataSource_DataSource_KafkaSource{KafkaSource: *dataSourceKafkaSourceConverted}
-	case w.RequestSource != nil:
-		dataSourceRequestSourceConverted, err := RequestSourceToSDK(w.RequestSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.RequestSource", err)
-		}
-		dataSourceSelection = &sdk.DataSource_DataSource_RequestSource{RequestSource: *dataSourceRequestSourceConverted}
-	case w.StreamSource != nil:
-		dataSourceStreamSourceConverted, err := StreamSourceToSDK(w.StreamSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.StreamSource", err)
-		}
-		dataSourceSelection = &sdk.DataSource_DataSource_StreamSource{StreamSource: *dataSourceStreamSourceConverted}
-	case w.FeatureViewSource != nil:
-		dataSourceFeatureViewSourceConverted, err := FeatureViewSourceToSDK(w.FeatureViewSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource.FeatureViewSource", err)
-		}
-		dataSourceSelection = &sdk.DataSource_DataSource_FeatureViewSource{FeatureViewSource: *dataSourceFeatureViewSourceConverted}
-	}
-	return &sdk.DataSource{
-		Lateness:   latenessPublicValue,
-		DataSource: dataSourceSelection,
-	}, nil
 }
 
 type DeltaTableSource struct {
@@ -1393,34 +406,6 @@ type DeltaTableSource struct {
 	DataframeSchema *string `json:"dataframe_schema,omitempty"`
 }
 
-func DeltaTableSourceFromSDK(v *sdk.DeltaTableSource) (*DeltaTableSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeltaTableSource{
-		FullName:          v.FullName,
-		EntityColumns:     v.EntityColumns,
-		TimeseriesColumn:  v.TimeseriesColumn,
-		FilterCondition:   v.FilterCondition,
-		TransformationSql: v.TransformationSql,
-		DataframeSchema:   v.DataframeSchema,
-	}, nil
-}
-
-func DeltaTableSourceToSDK(w *DeltaTableSource) (*sdk.DeltaTableSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DeltaTableSource{
-		FullName:          w.FullName,
-		EntityColumns:     w.EntityColumns,
-		TimeseriesColumn:  w.TimeseriesColumn,
-		FilterCondition:   w.FilterCondition,
-		TransformationSql: w.TransformationSql,
-		DataframeSchema:   w.DataframeSchema,
-	}, nil
-}
-
 // Direct connection configs for mTLS, as Kafka Connections do not support mTLS
 // yet..
 type DirectMtlsConfig struct {
@@ -1428,34 +413,6 @@ type DirectMtlsConfig struct {
 	BootstrapServers *string `json:"bootstrap_servers,omitempty"`
 	// Mutual-TLS authentication configuration.
 	MtlsConfig *MtlsConfig `json:"mtls_config,omitempty"`
-}
-
-func DirectMtlsConfigFromSDK(v *sdk.DirectMtlsConfig) (*DirectMtlsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	mtlsConfigWireValue, err := MtlsConfigFromSDK(v.MtlsConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectMtlsConfig.MtlsConfig", err)
-	}
-	return &DirectMtlsConfig{
-		BootstrapServers: v.BootstrapServers,
-		MtlsConfig:       mtlsConfigWireValue,
-	}, nil
-}
-
-func DirectMtlsConfigToSDK(w *DirectMtlsConfig) (*sdk.DirectMtlsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	mtlsConfigPublicValue, err := MtlsConfigToSDK(w.MtlsConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectMtlsConfig.MtlsConfig", err)
-	}
-	return &sdk.DirectMtlsConfig{
-		BootstrapServers: w.BootstrapServers,
-		MtlsConfig:       mtlsConfigPublicValue,
-	}, nil
 }
 
 // Schema definitions provided directly on the Stream, as opposed to referencing
@@ -1471,42 +428,6 @@ type DirectSchemas struct {
 	KeySchema *SchemaConfig `json:"key_schema,omitempty"`
 }
 
-func DirectSchemasFromSDK(v *sdk.DirectSchemas) (*DirectSchemas, error) {
-	if v == nil {
-		return nil, nil
-	}
-	payloadSchemaWireValue, err := SchemaConfigFromSDK(v.PayloadSchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectSchemas.PayloadSchema", err)
-	}
-	keySchemaWireValue, err := SchemaConfigFromSDK(v.KeySchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectSchemas.KeySchema", err)
-	}
-	return &DirectSchemas{
-		PayloadSchema: payloadSchemaWireValue,
-		KeySchema:     keySchemaWireValue,
-	}, nil
-}
-
-func DirectSchemasToSDK(w *DirectSchemas) (*sdk.DirectSchemas, error) {
-	if w == nil {
-		return nil, nil
-	}
-	payloadSchemaPublicValue, err := SchemaConfigToSDK(w.PayloadSchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectSchemas.PayloadSchema", err)
-	}
-	keySchemaPublicValue, err := SchemaConfigToSDK(w.KeySchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectSchemas.KeySchema", err)
-	}
-	return &sdk.DirectSchemas{
-		PayloadSchema: payloadSchemaPublicValue,
-		KeySchema:     keySchemaPublicValue,
-	}, nil
-}
-
 type EntityColumn struct {
 	// The name of the entity column. For Kafka sources, use dot-prefixed path
 	// notation to reference fields within the key or value schema (e.g.,
@@ -1516,24 +437,6 @@ type EntityColumn struct {
 	// notation (e.g., "value:user_id") is supported for backwards compatibility but
 	// is deprecated; migrate to dot notation.
 	Name *string `json:"name,omitempty"`
-}
-
-func EntityColumnFromSDK(v *sdk.EntityColumn) (*EntityColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EntityColumn{
-		Name: v.Name,
-	}, nil
-}
-
-func EntityColumnToSDK(w *EntityColumn) (*sdk.EntityColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EntityColumn{
-		Name: w.Name,
-	}, nil
 }
 
 type Feature struct {
@@ -1577,100 +480,6 @@ type Feature struct {
 	CreatedBy *string `json:"created_by,omitempty"`
 }
 
-func FeatureFromSDK(v *sdk.Feature) (*Feature, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sourceWireValue, err := DataSourceFromSDK(v.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Source", err)
-	}
-	functionWireValue, err := FunctionFromSDK(v.Function)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Function", err)
-	}
-	timeWindowWireValue, err := TimeWindowFromSDK(v.TimeWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.TimeWindow", err)
-	}
-	lineageContextWireValue, err := LineageContextFromSDK(v.LineageContext)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.LineageContext", err)
-	}
-	entitiesWireValue, err := convertSlice(v.Entities, EntityColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Entities", err)
-	}
-	timeseriesColumnWireValue, err := TimeseriesColumnFromSDK(v.TimeseriesColumn)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.TimeseriesColumn", err)
-	}
-	return &Feature{
-		FullName:         v.FullName,
-		Source:           sourceWireValue,
-		Inputs:           v.Inputs,
-		Function:         functionWireValue,
-		TimeWindow:       timeWindowWireValue,
-		Description:      v.Description,
-		FilterCondition:  v.FilterCondition,
-		LineageContext:   lineageContextWireValue,
-		Entities:         entitiesWireValue,
-		TimeseriesColumn: timeseriesColumnWireValue,
-		CatalogName:      v.CatalogName,
-		SchemaName:       v.SchemaName,
-		Name:             v.Name,
-		CreatedAt:        v.CreatedAt,
-		CreatedBy:        v.CreatedBy,
-	}, nil
-}
-
-func FeatureToSDK(w *Feature) (*sdk.Feature, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourcePublicValue, err := DataSourceToSDK(w.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Source", err)
-	}
-	functionPublicValue, err := FunctionToSDK(w.Function)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Function", err)
-	}
-	timeWindowPublicValue, err := TimeWindowToSDK(w.TimeWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.TimeWindow", err)
-	}
-	lineageContextPublicValue, err := LineageContextToSDK(w.LineageContext)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.LineageContext", err)
-	}
-	entitiesPublicValue, err := convertSlice(w.Entities, EntityColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.Entities", err)
-	}
-	timeseriesColumnPublicValue, err := TimeseriesColumnToSDK(w.TimeseriesColumn)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Feature.TimeseriesColumn", err)
-	}
-	return &sdk.Feature{
-		FullName:         w.FullName,
-		Source:           sourcePublicValue,
-		Inputs:           w.Inputs,
-		Function:         functionPublicValue,
-		TimeWindow:       timeWindowPublicValue,
-		Description:      w.Description,
-		FilterCondition:  w.FilterCondition,
-		LineageContext:   lineageContextPublicValue,
-		Entities:         entitiesPublicValue,
-		TimeseriesColumn: timeseriesColumnPublicValue,
-		CatalogName:      w.CatalogName,
-		SchemaName:       w.SchemaName,
-		Name:             w.Name,
-		CreatedAt:        w.CreatedAt,
-		CreatedBy:        w.CreatedBy,
-	}, nil
-}
-
 // A reference to one registered upstream Feature. A message rather than a bare
 // name so an upstream can later be pinned more precisely (e.g. by version)
 // without a breaking type change..
@@ -1679,54 +488,10 @@ type FeatureReference struct {
 	Feature *string `json:"feature,omitempty"`
 }
 
-func FeatureReferenceFromSDK(v *sdk.FeatureReference) (*FeatureReference, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FeatureReference{
-		Feature: v.Feature,
-	}, nil
-}
-
-func FeatureReferenceToSDK(w *FeatureReference) (*sdk.FeatureReference, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FeatureReference{
-		Feature: w.Feature,
-	}, nil
-}
-
 // A data source composed from registered upstream Features..
 type FeatureViewSource struct {
 	// The upstream Features this source reads. Must include at least one feature.
 	FeatureReferences []FeatureReference `json:"feature_references,omitempty"`
-}
-
-func FeatureViewSourceFromSDK(v *sdk.FeatureViewSource) (*FeatureViewSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	featureReferencesWireValue, err := convertSlice(v.FeatureReferences, FeatureReferenceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FeatureViewSource.FeatureReferences", err)
-	}
-	return &FeatureViewSource{
-		FeatureReferences: featureReferencesWireValue,
-	}, nil
-}
-
-func FeatureViewSourceToSDK(w *FeatureViewSource) (*sdk.FeatureViewSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	featureReferencesPublicValue, err := convertSlice(w.FeatureReferences, FeatureReferenceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FeatureViewSource.FeatureReferences", err)
-	}
-	return &sdk.FeatureViewSource{
-		FeatureReferences: featureReferencesPublicValue,
-	}, nil
 }
 
 // A single field definition within a FlatSchema, specifying the field name and
@@ -1739,26 +504,6 @@ type FieldDefinition struct {
 	DataType ScalarDataType `json:"data_type,omitempty"`
 }
 
-func FieldDefinitionFromSDK(v *sdk.FieldDefinition) (*FieldDefinition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FieldDefinition{
-		Name:     v.Name,
-		DataType: v.DataType,
-	}, nil
-}
-
-func FieldDefinitionToSDK(w *FieldDefinition) (*sdk.FieldDefinition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FieldDefinition{
-		Name:     w.Name,
-		DataType: w.DataType,
-	}, nil
-}
-
 // Returns the first N distinct values, ordered by the feature's timeseries
 // column..
 type FirstDistinctFunction struct {
@@ -1768,56 +513,10 @@ type FirstDistinctFunction struct {
 	N *int64 `json:"n,omitempty"`
 }
 
-func FirstDistinctFunctionFromSDK(v *sdk.FirstDistinctFunction) (*FirstDistinctFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	nWireValue, err := int64ToWire(v.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FirstDistinctFunction.N", err)
-	}
-	return &FirstDistinctFunction{
-		Input: v.Input,
-		N:     nWireValue,
-	}, nil
-}
-
-func FirstDistinctFunctionToSDK(w *FirstDistinctFunction) (*sdk.FirstDistinctFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nPublicValue, err := int64FromWire(w.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FirstDistinctFunction.N", err)
-	}
-	return &sdk.FirstDistinctFunction{
-		Input: w.Input,
-		N:     nPublicValue,
-	}, nil
-}
-
 // Returns the first value..
 type FirstFunction struct {
 	// The input column from which the first value is returned.
 	Input *string `json:"input,omitempty"`
-}
-
-func FirstFunctionFromSDK(v *sdk.FirstFunction) (*FirstFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FirstFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func FirstFunctionToSDK(w *FirstFunction) (*sdk.FirstFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FirstFunction{
-		Input: w.Input,
-	}, nil
 }
 
 // Returns the first N values, ordered by the feature's timeseries column..
@@ -1828,65 +527,11 @@ type FirstNFunction struct {
 	N *int64 `json:"n,omitempty"`
 }
 
-func FirstNFunctionFromSDK(v *sdk.FirstNFunction) (*FirstNFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	nWireValue, err := int64ToWire(v.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FirstNFunction.N", err)
-	}
-	return &FirstNFunction{
-		Input: v.Input,
-		N:     nWireValue,
-	}, nil
-}
-
-func FirstNFunctionToSDK(w *FirstNFunction) (*sdk.FirstNFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nPublicValue, err := int64FromWire(w.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FirstNFunction.N", err)
-	}
-	return &sdk.FirstNFunction{
-		Input: w.Input,
-		N:     nPublicValue,
-	}, nil
-}
-
 // A flat (non-nested) schema for request-time fields, defined as an ordered
 // list of field definitions. This schema only supports scalar types..
 type FlatSchema struct {
 	// The list of fields in this schema.
 	Fields []FieldDefinition `json:"fields,omitempty"`
-}
-
-func FlatSchemaFromSDK(v *sdk.FlatSchema) (*FlatSchema, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fieldsWireValue, err := convertSlice(v.Fields, FieldDefinitionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FlatSchema.Fields", err)
-	}
-	return &FlatSchema{
-		Fields: fieldsWireValue,
-	}, nil
-}
-
-func FlatSchemaToSDK(w *FlatSchema) (*sdk.FlatSchema, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fieldsPublicValue, err := convertSlice(w.Fields, FieldDefinitionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FlatSchema.Fields", err)
-	}
-	return &sdk.FlatSchema{
-		Fields: fieldsPublicValue,
-	}, nil
 }
 
 type Function struct {
@@ -1897,129 +542,11 @@ type Function struct {
 	CustomUdf           *CustomUdf               `json:"custom_udf,omitempty"`
 }
 
-func FunctionFromSDK(v *sdk.Function) (*Function, error) {
-	if v == nil {
-		return nil, nil
-	}
-	extraParametersWireValue, err := convertSlice(v.ExtraParameters, FunctionExtraParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.ExtraParameters", err)
-	}
-	var functionAggregationFunctionWire *AggregationFunction
-	var functionColumnSelectionWire *ColumnSelection
-	var functionCustomUdfWire *CustomUdf
-	switch value := v.Function.(type) {
-	case nil:
-	case *sdk.Function_Function_AggregationFunction:
-		if value != nil {
-			functionAggregationFunctionConverted, err := AggregationFunctionFromSDK(&value.AggregationFunction)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Function.Function.AggregationFunction", err)
-			}
-			functionAggregationFunctionWire = functionAggregationFunctionConverted
-		}
-	case *sdk.Function_Function_ColumnSelection:
-		if value != nil {
-			functionColumnSelectionConverted, err := ColumnSelectionFromSDK(&value.ColumnSelection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Function.Function.ColumnSelection", err)
-			}
-			functionColumnSelectionWire = functionColumnSelectionConverted
-		}
-	case *sdk.Function_Function_CustomUdf:
-		if value != nil {
-			functionCustomUdfConverted, err := CustomUdfFromSDK(&value.CustomUdf)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Function.Function.CustomUdf", err)
-			}
-			functionCustomUdfWire = functionCustomUdfConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Function.Function", value)
-	}
-	return &Function{
-		FunctionType:        v.FunctionType,
-		ExtraParameters:     extraParametersWireValue,
-		AggregationFunction: functionAggregationFunctionWire,
-		ColumnSelection:     functionColumnSelectionWire,
-		CustomUdf:           functionCustomUdfWire,
-	}, nil
-}
-
-func FunctionToSDK(w *Function) (*sdk.Function, error) {
-	if w == nil {
-		return nil, nil
-	}
-	functionMembers := 0
-	if w.AggregationFunction != nil {
-		functionMembers++
-	}
-	if w.ColumnSelection != nil {
-		functionMembers++
-	}
-	if w.CustomUdf != nil {
-		functionMembers++
-	}
-	if functionMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Function.Function")
-	}
-	extraParametersPublicValue, err := convertSlice(w.ExtraParameters, FunctionExtraParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.ExtraParameters", err)
-	}
-	functionSelection := (&sdk.Function{}).Function
-	switch {
-	case w.AggregationFunction != nil:
-		functionAggregationFunctionConverted, err := AggregationFunctionToSDK(w.AggregationFunction)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Function.Function.AggregationFunction", err)
-		}
-		functionSelection = &sdk.Function_Function_AggregationFunction{AggregationFunction: *functionAggregationFunctionConverted}
-	case w.ColumnSelection != nil:
-		functionColumnSelectionConverted, err := ColumnSelectionToSDK(w.ColumnSelection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Function.Function.ColumnSelection", err)
-		}
-		functionSelection = &sdk.Function_Function_ColumnSelection{ColumnSelection: *functionColumnSelectionConverted}
-	case w.CustomUdf != nil:
-		functionCustomUdfConverted, err := CustomUdfToSDK(w.CustomUdf)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Function.Function.CustomUdf", err)
-		}
-		functionSelection = &sdk.Function_Function_CustomUdf{CustomUdf: *functionCustomUdfConverted}
-	}
-	return &sdk.Function{
-		FunctionType:    w.FunctionType,
-		ExtraParameters: extraParametersPublicValue,
-		Function:        functionSelection,
-	}, nil
-}
-
 type FunctionExtraParameter struct {
 	// The name of the parameter.
 	Key *string `json:"key,omitempty"`
 	// The value of the parameter.
 	Value *string `json:"value,omitempty"`
-}
-
-func FunctionExtraParameterFromSDK(v *sdk.FunctionExtraParameter) (*FunctionExtraParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FunctionExtraParameter{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func FunctionExtraParameterToSDK(w *FunctionExtraParameter) (*sdk.FunctionExtraParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionExtraParameter{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 // Configuration for the <Databricks>-managed ingestion pipeline. Groups the
@@ -2065,114 +592,10 @@ type IngestionConfig struct {
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
-func IngestionConfigFromSDK(v *sdk.IngestionConfig) (*IngestionConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	ingestionDestinationWireValue, err := IngestionDestinationFromSDK(v.IngestionDestination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionDestination", err)
-	}
-	backfillSourceWireValue, err := BackfillSourceFromSDK(v.BackfillSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillSource", err)
-	}
-	ingestionJobIdWireValue, err := int64ToWire(v.IngestionJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionJobId", err)
-	}
-	backfillJobIdWireValue, err := int64ToWire(v.BackfillJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillJobId", err)
-	}
-	return &IngestionConfig{
-		IngestionDestination: ingestionDestinationWireValue,
-		BackfillSource:       backfillSourceWireValue,
-		DeduplicationColumns: v.DeduplicationColumns,
-		IngestionPipelineId:  v.IngestionPipelineId,
-		IngestionJobId:       ingestionJobIdWireValue,
-		BackfillJobId:        backfillJobIdWireValue,
-		Tags:                 v.Tags,
-		BudgetPolicyId:       v.BudgetPolicyId,
-	}, nil
-}
-
-func IngestionConfigToSDK(w *IngestionConfig) (*sdk.IngestionConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ingestionDestinationPublicValue, err := IngestionDestinationToSDK(w.IngestionDestination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionDestination", err)
-	}
-	backfillSourcePublicValue, err := BackfillSourceToSDK(w.BackfillSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillSource", err)
-	}
-	ingestionJobIdPublicValue, err := int64FromWire(w.IngestionJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionJobId", err)
-	}
-	backfillJobIdPublicValue, err := int64FromWire(w.BackfillJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillJobId", err)
-	}
-	return &sdk.IngestionConfig{
-		IngestionDestination: ingestionDestinationPublicValue,
-		BackfillSource:       backfillSourcePublicValue,
-		DeduplicationColumns: w.DeduplicationColumns,
-		IngestionPipelineId:  w.IngestionPipelineId,
-		IngestionJobId:       ingestionJobIdPublicValue,
-		BackfillJobId:        backfillJobIdPublicValue,
-		Tags:                 w.Tags,
-		BudgetPolicyId:       w.BudgetPolicyId,
-	}, nil
-}
-
 // Destination for the <Databricks>-managed Delta table that holds an offline
 // copy of the streaming data for querying and training..
 type IngestionDestination struct {
 	DeltaTableName *string `json:"delta_table_name,omitempty"`
-}
-
-func IngestionDestinationFromSDK(v *sdk.IngestionDestination) (*IngestionDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var ingestionDestinationDeltaTableNameWire *string
-	switch value := v.IngestionDestination.(type) {
-	case nil:
-	case *sdk.IngestionDestination_IngestionDestination_DeltaTableName:
-		if value != nil {
-			ingestionDestinationDeltaTableNameWire = new(value.DeltaTableName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngestionDestination.IngestionDestination", value)
-	}
-	return &IngestionDestination{
-		DeltaTableName: ingestionDestinationDeltaTableNameWire,
-	}, nil
-}
-
-func IngestionDestinationToSDK(w *IngestionDestination) (*sdk.IngestionDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ingestionDestinationMembers := 0
-	if w.DeltaTableName != nil {
-		ingestionDestinationMembers++
-	}
-	if ingestionDestinationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionDestination.IngestionDestination")
-	}
-	ingestionDestinationSelection := (&sdk.IngestionDestination{}).IngestionDestination
-	switch {
-	case w.DeltaTableName != nil:
-		ingestionDestinationSelection = &sdk.IngestionDestination_IngestionDestination_DeltaTableName{DeltaTableName: *w.DeltaTableName}
-	}
-	return &sdk.IngestionDestination{
-		IngestionDestination: ingestionDestinationSelection,
-	}, nil
 }
 
 // Binds a single UC function parameter to a source column..
@@ -2183,67 +606,11 @@ type InputBinding struct {
 	Column *string `json:"column,omitempty"`
 }
 
-func InputBindingFromSDK(v *sdk.InputBinding) (*InputBinding, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InputBinding{
-		Parameter: v.Parameter,
-		Column:    v.Column,
-	}, nil
-}
-
-func InputBindingToSDK(w *InputBinding) (*sdk.InputBinding, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InputBinding{
-		Parameter: w.Parameter,
-		Column:    w.Column,
-	}, nil
-}
-
 type JobContext struct {
 	// The job ID where this API invoked.
 	JobId *int64 `json:"job_id,omitempty"`
 	// The job run ID where this API was invoked.
 	JobRunId *int64 `json:"job_run_id,omitempty"`
-}
-
-func JobContextFromSDK(v *sdk.JobContext) (*JobContext, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobContext.JobId", err)
-	}
-	jobRunIdWireValue, err := int64ToWire(v.JobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobContext.JobRunId", err)
-	}
-	return &JobContext{
-		JobId:    jobIdWireValue,
-		JobRunId: jobRunIdWireValue,
-	}, nil
-}
-
-func JobContextToSDK(w *JobContext) (*sdk.JobContext, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobContext.JobId", err)
-	}
-	jobRunIdPublicValue, err := int64FromWire(w.JobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobContext.JobRunId", err)
-	}
-	return &sdk.JobContext{
-		JobId:    jobIdPublicValue,
-		JobRunId: jobRunIdPublicValue,
-	}, nil
 }
 
 type KafkaConfig struct {
@@ -2277,88 +644,6 @@ type KafkaConfig struct {
 	IngestionConfig *IngestionConfig `json:"ingestion_config,omitempty"`
 }
 
-func KafkaConfigFromSDK(v *sdk.KafkaConfig) (*KafkaConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionModeWireValue, err := SubscriptionModeFromSDK(v.SubscriptionMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.SubscriptionMode", err)
-	}
-	authConfigWireValue, err := AuthConfigFromSDK(v.AuthConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.AuthConfig", err)
-	}
-	keySchemaWireValue, err := SchemaConfigFromSDK(v.KeySchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.KeySchema", err)
-	}
-	valueSchemaWireValue, err := SchemaConfigFromSDK(v.ValueSchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.ValueSchema", err)
-	}
-	backfillSourceWireValue, err := BackfillSourceFromSDK(v.BackfillSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.BackfillSource", err)
-	}
-	ingestionConfigWireValue, err := IngestionConfigFromSDK(v.IngestionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.IngestionConfig", err)
-	}
-	return &KafkaConfig{
-		Name:             v.Name,
-		BootstrapServers: v.BootstrapServers,
-		SubscriptionMode: subscriptionModeWireValue,
-		AuthConfig:       authConfigWireValue,
-		KeySchema:        keySchemaWireValue,
-		ValueSchema:      valueSchemaWireValue,
-		ExtraOptions:     v.ExtraOptions,
-		BackfillSource:   backfillSourceWireValue,
-		IngestionConfig:  ingestionConfigWireValue,
-	}, nil
-}
-
-func KafkaConfigToSDK(w *KafkaConfig) (*sdk.KafkaConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionModePublicValue, err := SubscriptionModeToSDK(w.SubscriptionMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.SubscriptionMode", err)
-	}
-	authConfigPublicValue, err := AuthConfigToSDK(w.AuthConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.AuthConfig", err)
-	}
-	keySchemaPublicValue, err := SchemaConfigToSDK(w.KeySchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.KeySchema", err)
-	}
-	valueSchemaPublicValue, err := SchemaConfigToSDK(w.ValueSchema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.ValueSchema", err)
-	}
-	backfillSourcePublicValue, err := BackfillSourceToSDK(w.BackfillSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.BackfillSource", err)
-	}
-	ingestionConfigPublicValue, err := IngestionConfigToSDK(w.IngestionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaConfig.IngestionConfig", err)
-	}
-	return &sdk.KafkaConfig{
-		Name:             w.Name,
-		BootstrapServers: w.BootstrapServers,
-		SubscriptionMode: subscriptionModePublicValue,
-		AuthConfig:       authConfigPublicValue,
-		KeySchema:        keySchemaPublicValue,
-		ValueSchema:      valueSchemaPublicValue,
-		ExtraOptions:     w.ExtraOptions,
-		BackfillSource:   backfillSourcePublicValue,
-		IngestionConfig:  ingestionConfigPublicValue,
-	}, nil
-}
-
 type KafkaSource struct {
 	// Name of the Kafka source, used to identify it. This is used to look up the
 	// corresponding KafkaConfig object. Can be distinct from topic name.
@@ -2367,46 +652,6 @@ type KafkaSource struct {
 	TimeseriesColumnIdentifier *ColumnIdentifier  `json:"timeseries_column_identifier,omitempty"`
 	// The filter condition applied to the source data before aggregation.
 	FilterCondition *string `json:"filter_condition,omitempty"`
-}
-
-func KafkaSourceFromSDK(v *sdk.KafkaSource) (*KafkaSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	entityColumnIdentifiersWireValue, err := convertSlice(v.EntityColumnIdentifiers, ColumnIdentifierFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaSource.EntityColumnIdentifiers", err)
-	}
-	timeseriesColumnIdentifierWireValue, err := ColumnIdentifierFromSDK(v.TimeseriesColumnIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaSource.TimeseriesColumnIdentifier", err)
-	}
-	return &KafkaSource{
-		Name:                       v.Name,
-		EntityColumnIdentifiers:    entityColumnIdentifiersWireValue,
-		TimeseriesColumnIdentifier: timeseriesColumnIdentifierWireValue,
-		FilterCondition:            v.FilterCondition,
-	}, nil
-}
-
-func KafkaSourceToSDK(w *KafkaSource) (*sdk.KafkaSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	entityColumnIdentifiersPublicValue, err := convertSlice(w.EntityColumnIdentifiers, ColumnIdentifierToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaSource.EntityColumnIdentifiers", err)
-	}
-	timeseriesColumnIdentifierPublicValue, err := ColumnIdentifierToSDK(w.TimeseriesColumnIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaSource.TimeseriesColumnIdentifier", err)
-	}
-	return &sdk.KafkaSource{
-		Name:                       w.Name,
-		EntityColumnIdentifiers:    entityColumnIdentifiersPublicValue,
-		TimeseriesColumnIdentifier: timeseriesColumnIdentifierPublicValue,
-		FilterCondition:            w.FilterCondition,
-	}, nil
 }
 
 // Kafka-specific configuration for a Stream..
@@ -2424,102 +669,12 @@ type KafkaStreamConfig struct {
 	ExtraOptions map[string]string `json:"extra_options,omitempty"`
 }
 
-func KafkaStreamConfigFromSDK(v *sdk.KafkaStreamConfig) (*KafkaStreamConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionModeWireValue, err := KafkaSubscriptionModeFromSDK(v.SubscriptionMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaStreamConfig.SubscriptionMode", err)
-	}
-	return &KafkaStreamConfig{
-		SubscriptionMode: subscriptionModeWireValue,
-		ExtraOptions:     v.ExtraOptions,
-	}, nil
-}
-
-func KafkaStreamConfigToSDK(w *KafkaStreamConfig) (*sdk.KafkaStreamConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionModePublicValue, err := KafkaSubscriptionModeToSDK(w.SubscriptionMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaStreamConfig.SubscriptionMode", err)
-	}
-	return &sdk.KafkaStreamConfig{
-		SubscriptionMode: subscriptionModePublicValue,
-		ExtraOptions:     w.ExtraOptions,
-	}, nil
-}
-
 // Subscription mode for Kafka topic selection, matching standard Spark
 // Structured Streaming options..
 type KafkaSubscriptionMode struct {
 	Assign           *string `json:"assign,omitempty"`
 	Subscribe        *string `json:"subscribe,omitempty"`
 	SubscribePattern *string `json:"subscribe_pattern,omitempty"`
-}
-
-func KafkaSubscriptionModeFromSDK(v *sdk.KafkaSubscriptionMode) (*KafkaSubscriptionMode, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriptionModeAssignWire *string
-	var subscriptionModeSubscribeWire *string
-	var subscriptionModeSubscribePatternWire *string
-	switch value := v.SubscriptionMode.(type) {
-	case nil:
-	case *sdk.KafkaSubscriptionMode_SubscriptionMode_Assign:
-		if value != nil {
-			subscriptionModeAssignWire = new(value.Assign)
-		}
-	case *sdk.KafkaSubscriptionMode_SubscriptionMode_Subscribe:
-		if value != nil {
-			subscriptionModeSubscribeWire = new(value.Subscribe)
-		}
-	case *sdk.KafkaSubscriptionMode_SubscriptionMode_SubscribePattern:
-		if value != nil {
-			subscriptionModeSubscribePatternWire = new(value.SubscribePattern)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "KafkaSubscriptionMode.SubscriptionMode", value)
-	}
-	return &KafkaSubscriptionMode{
-		Assign:           subscriptionModeAssignWire,
-		Subscribe:        subscriptionModeSubscribeWire,
-		SubscribePattern: subscriptionModeSubscribePatternWire,
-	}, nil
-}
-
-func KafkaSubscriptionModeToSDK(w *KafkaSubscriptionMode) (*sdk.KafkaSubscriptionMode, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionModeMembers := 0
-	if w.Assign != nil {
-		subscriptionModeMembers++
-	}
-	if w.Subscribe != nil {
-		subscriptionModeMembers++
-	}
-	if w.SubscribePattern != nil {
-		subscriptionModeMembers++
-	}
-	if subscriptionModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "KafkaSubscriptionMode.SubscriptionMode")
-	}
-	subscriptionModeSelection := (&sdk.KafkaSubscriptionMode{}).SubscriptionMode
-	switch {
-	case w.Assign != nil:
-		subscriptionModeSelection = &sdk.KafkaSubscriptionMode_SubscriptionMode_Assign{Assign: *w.Assign}
-	case w.Subscribe != nil:
-		subscriptionModeSelection = &sdk.KafkaSubscriptionMode_SubscriptionMode_Subscribe{Subscribe: *w.Subscribe}
-	case w.SubscribePattern != nil:
-		subscriptionModeSelection = &sdk.KafkaSubscriptionMode_SubscriptionMode_SubscribePattern{SubscribePattern: *w.SubscribePattern}
-	}
-	return &sdk.KafkaSubscriptionMode{
-		SubscriptionMode: subscriptionModeSelection,
-	}, nil
 }
 
 // Kinesis-specific configuration for a Stream. For the underlying connector and
@@ -2540,75 +695,6 @@ type KinesisStreamConfig struct {
 	ExtraOptions map[string]string `json:"extra_options,omitempty"`
 }
 
-func KinesisStreamConfigFromSDK(v *sdk.KinesisStreamConfig) (*KinesisStreamConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var streamIdentifierStreamNamesWire *StreamNameList
-	var streamIdentifierStreamArnsWire *StreamArnList
-	switch value := v.StreamIdentifier.(type) {
-	case nil:
-	case *sdk.KinesisStreamConfig_StreamIdentifier_StreamNames:
-		if value != nil {
-			streamIdentifierStreamNamesConverted, err := StreamNameListFromSDK(&value.StreamNames)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier.StreamNames", err)
-			}
-			streamIdentifierStreamNamesWire = streamIdentifierStreamNamesConverted
-		}
-	case *sdk.KinesisStreamConfig_StreamIdentifier_StreamArns:
-		if value != nil {
-			streamIdentifierStreamArnsConverted, err := StreamArnListFromSDK(&value.StreamArns)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier.StreamArns", err)
-			}
-			streamIdentifierStreamArnsWire = streamIdentifierStreamArnsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "KinesisStreamConfig.StreamIdentifier", value)
-	}
-	return &KinesisStreamConfig{
-		StreamNames:  streamIdentifierStreamNamesWire,
-		StreamArns:   streamIdentifierStreamArnsWire,
-		ExtraOptions: v.ExtraOptions,
-	}, nil
-}
-
-func KinesisStreamConfigToSDK(w *KinesisStreamConfig) (*sdk.KinesisStreamConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	streamIdentifierMembers := 0
-	if w.StreamNames != nil {
-		streamIdentifierMembers++
-	}
-	if w.StreamArns != nil {
-		streamIdentifierMembers++
-	}
-	if streamIdentifierMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "KinesisStreamConfig.StreamIdentifier")
-	}
-	streamIdentifierSelection := (&sdk.KinesisStreamConfig{}).StreamIdentifier
-	switch {
-	case w.StreamNames != nil:
-		streamIdentifierStreamNamesConverted, err := StreamNameListToSDK(w.StreamNames)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier.StreamNames", err)
-		}
-		streamIdentifierSelection = &sdk.KinesisStreamConfig_StreamIdentifier_StreamNames{StreamNames: *streamIdentifierStreamNamesConverted}
-	case w.StreamArns != nil:
-		streamIdentifierStreamArnsConverted, err := StreamArnListToSDK(w.StreamArns)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier.StreamArns", err)
-		}
-		streamIdentifierSelection = &sdk.KinesisStreamConfig_StreamIdentifier_StreamArns{StreamArns: *streamIdentifierStreamArnsConverted}
-	}
-	return &sdk.KinesisStreamConfig{
-		ExtraOptions:     w.ExtraOptions,
-		StreamIdentifier: streamIdentifierSelection,
-	}, nil
-}
-
 // Returns the last N distinct values, ordered by the feature's timeseries
 // column..
 type LastDistinctFunction struct {
@@ -2618,56 +704,10 @@ type LastDistinctFunction struct {
 	N *int64 `json:"n,omitempty"`
 }
 
-func LastDistinctFunctionFromSDK(v *sdk.LastDistinctFunction) (*LastDistinctFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	nWireValue, err := int64ToWire(v.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LastDistinctFunction.N", err)
-	}
-	return &LastDistinctFunction{
-		Input: v.Input,
-		N:     nWireValue,
-	}, nil
-}
-
-func LastDistinctFunctionToSDK(w *LastDistinctFunction) (*sdk.LastDistinctFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nPublicValue, err := int64FromWire(w.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LastDistinctFunction.N", err)
-	}
-	return &sdk.LastDistinctFunction{
-		Input: w.Input,
-		N:     nPublicValue,
-	}, nil
-}
-
 // Returns the last value..
 type LastFunction struct {
 	// The input column from which the last value is returned.
 	Input *string `json:"input,omitempty"`
-}
-
-func LastFunctionFromSDK(v *sdk.LastFunction) (*LastFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LastFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func LastFunctionToSDK(w *LastFunction) (*sdk.LastFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LastFunction{
-		Input: w.Input,
-	}, nil
 }
 
 // Returns the last N values, ordered by the feature's timeseries column..
@@ -2678,34 +718,6 @@ type LastNFunction struct {
 	N *int64 `json:"n,omitempty"`
 }
 
-func LastNFunctionFromSDK(v *sdk.LastNFunction) (*LastNFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	nWireValue, err := int64ToWire(v.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LastNFunction.N", err)
-	}
-	return &LastNFunction{
-		Input: v.Input,
-		N:     nWireValue,
-	}, nil
-}
-
-func LastNFunctionToSDK(w *LastNFunction) (*sdk.LastNFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nPublicValue, err := int64FromWire(w.N)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LastNFunction.N", err)
-	}
-	return &sdk.LastNFunction{
-		Input: w.Input,
-		N:     nPublicValue,
-	}, nil
-}
-
 // Lineage context information for tracking where an API was invoked. This will
 // allow us to track lineage, which currently uses caller entity information for
 // use across the Lineage Client and Observability in Lumberjack..
@@ -2714,42 +726,6 @@ type LineageContext struct {
 	NotebookId *int64 `json:"notebook_id,omitempty"`
 	// Job context information including job ID and run ID.
 	JobContext *JobContext `json:"job_context,omitempty"`
-}
-
-func LineageContextFromSDK(v *sdk.LineageContext) (*LineageContext, error) {
-	if v == nil {
-		return nil, nil
-	}
-	notebookIdWireValue, err := int64ToWire(v.NotebookId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LineageContext.NotebookId", err)
-	}
-	jobContextWireValue, err := JobContextFromSDK(v.JobContext)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LineageContext.JobContext", err)
-	}
-	return &LineageContext{
-		NotebookId: notebookIdWireValue,
-		JobContext: jobContextWireValue,
-	}, nil
-}
-
-func LineageContextToSDK(w *LineageContext) (*sdk.LineageContext, error) {
-	if w == nil {
-		return nil, nil
-	}
-	notebookIdPublicValue, err := int64FromWire(w.NotebookId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LineageContext.NotebookId", err)
-	}
-	jobContextPublicValue, err := JobContextToSDK(w.JobContext)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LineageContext.JobContext", err)
-	}
-	return &sdk.LineageContext{
-		NotebookId: notebookIdPublicValue,
-		JobContext: jobContextPublicValue,
-	}, nil
 }
 
 // Request to list features. Listing is always scoped to a single catalog and
@@ -2765,37 +741,11 @@ type ListFeaturesRequest struct {
 	SchemaName *string `json:"schema_name,omitempty"`
 }
 
-func ListFeaturesRequestFromSDK(v *sdk.ListFeaturesRequest) (*ListFeaturesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListFeaturesRequest{
-		PageToken:   v.PageToken,
-		PageSize:    v.PageSize,
-		CatalogName: v.CatalogName,
-		SchemaName:  v.SchemaName,
-	}, nil
-}
-
 type ListFeaturesResponse struct {
 	// List of features.
 	Features []Feature `json:"features,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListFeaturesResponseToSDK(w *ListFeaturesResponse) (*sdk.ListFeaturesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	featuresPublicValue, err := convertSlice(w.Features, FeatureToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFeaturesResponse.Features", err)
-	}
-	return &sdk.ListFeaturesResponse{
-		Features:      featuresPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListKafkaConfigsRequest struct {
@@ -2805,35 +755,11 @@ type ListKafkaConfigsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListKafkaConfigsRequestFromSDK(v *sdk.ListKafkaConfigsRequest) (*ListKafkaConfigsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListKafkaConfigsRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListKafkaConfigsResponse struct {
 	// List of Kafka configs. Schemas are not included in the response.
 	KafkaConfigs []KafkaConfig `json:"kafka_configs,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListKafkaConfigsResponseToSDK(w *ListKafkaConfigsResponse) (*sdk.ListKafkaConfigsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	kafkaConfigsPublicValue, err := convertSlice(w.KafkaConfigs, KafkaConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListKafkaConfigsResponse.KafkaConfigs", err)
-	}
-	return &sdk.ListKafkaConfigsResponse{
-		KafkaConfigs:  kafkaConfigsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListMaterializedFeaturesRequest struct {
@@ -2847,36 +773,11 @@ type ListMaterializedFeaturesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListMaterializedFeaturesRequestFromSDK(v *sdk.ListMaterializedFeaturesRequest) (*ListMaterializedFeaturesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListMaterializedFeaturesRequest{
-		FeatureName: v.FeatureName,
-		PageToken:   v.PageToken,
-		PageSize:    v.PageSize,
-	}, nil
-}
-
 type ListMaterializedFeaturesResponse struct {
 	// List of materialized features.
 	MaterializedFeatures []MaterializedFeature `json:"materialized_features,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListMaterializedFeaturesResponseToSDK(w *ListMaterializedFeaturesResponse) (*sdk.ListMaterializedFeaturesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	materializedFeaturesPublicValue, err := convertSlice(w.MaterializedFeatures, MaterializedFeatureToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListMaterializedFeaturesResponse.MaterializedFeatures", err)
-	}
-	return &sdk.ListMaterializedFeaturesResponse{
-		MaterializedFeatures: materializedFeaturesPublicValue,
-		NextPageToken:        w.NextPageToken,
-	}, nil
 }
 
 // List Streams under a given parent.
@@ -2896,17 +797,6 @@ type ListStreamsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListStreamsRequestFromSDK(v *sdk.ListStreamsRequest) (*ListStreamsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListStreamsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response to a ListStreamsRequest.
 //
 // NOTE: Results are post-filtered by access permission on each stream's
@@ -2920,20 +810,6 @@ type ListStreamsResponse struct {
 	Streams []Stream `json:"streams,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListStreamsResponseToSDK(w *ListStreamsResponse) (*sdk.ListStreamsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	streamsPublicValue, err := convertSlice(w.Streams, StreamToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListStreamsResponse.Streams", err)
-	}
-	return &sdk.ListStreamsResponse{
-		Streams:       streamsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Recipients to notify when a materialization run fails..
@@ -2959,28 +835,6 @@ type MaterializationFailureNotification struct {
 	FinalAttemptOnly *bool `json:"final_attempt_only,omitempty"`
 }
 
-func MaterializationFailureNotificationFromSDK(v *sdk.MaterializationFailureNotification) (*MaterializationFailureNotification, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MaterializationFailureNotification{
-		EmailAddresses:   v.EmailAddresses,
-		DestinationIds:   v.DestinationIds,
-		FinalAttemptOnly: v.FinalAttemptOnly,
-	}, nil
-}
-
-func MaterializationFailureNotificationToSDK(w *MaterializationFailureNotification) (*sdk.MaterializationFailureNotification, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MaterializationFailureNotification{
-		EmailAddresses:   w.EmailAddresses,
-		DestinationIds:   w.DestinationIds,
-		FinalAttemptOnly: w.FinalAttemptOnly,
-	}, nil
-}
-
 // Notifications for the jobs and pipelines that materialize a feature, one
 // field per trigger..
 type MaterializationNotifications struct {
@@ -2988,42 +842,6 @@ type MaterializationNotifications struct {
 	OnSuccess *MaterializationSuccessNotification `json:"on_success,omitempty"`
 	// Who to notify when a run fails, and on which attempts.
 	OnFailure *MaterializationFailureNotification `json:"on_failure,omitempty"`
-}
-
-func MaterializationNotificationsFromSDK(v *sdk.MaterializationNotifications) (*MaterializationNotifications, error) {
-	if v == nil {
-		return nil, nil
-	}
-	onSuccessWireValue, err := MaterializationSuccessNotificationFromSDK(v.OnSuccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnSuccess", err)
-	}
-	onFailureWireValue, err := MaterializationFailureNotificationFromSDK(v.OnFailure)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnFailure", err)
-	}
-	return &MaterializationNotifications{
-		OnSuccess: onSuccessWireValue,
-		OnFailure: onFailureWireValue,
-	}, nil
-}
-
-func MaterializationNotificationsToSDK(w *MaterializationNotifications) (*sdk.MaterializationNotifications, error) {
-	if w == nil {
-		return nil, nil
-	}
-	onSuccessPublicValue, err := MaterializationSuccessNotificationToSDK(w.OnSuccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnSuccess", err)
-	}
-	onFailurePublicValue, err := MaterializationFailureNotificationToSDK(w.OnFailure)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnFailure", err)
-	}
-	return &sdk.MaterializationNotifications{
-		OnSuccess: onSuccessPublicValue,
-		OnFailure: onFailurePublicValue,
-	}, nil
 }
 
 // Recipients to notify when a materialization run succeeds..
@@ -3034,26 +852,6 @@ type MaterializationSuccessNotification struct {
 	// PagerDuty, or a generic webhook) to notify. Not supported for streaming
 	// materialized features.
 	DestinationIds []string `json:"destination_ids,omitempty"`
-}
-
-func MaterializationSuccessNotificationFromSDK(v *sdk.MaterializationSuccessNotification) (*MaterializationSuccessNotification, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MaterializationSuccessNotification{
-		EmailAddresses: v.EmailAddresses,
-		DestinationIds: v.DestinationIds,
-	}, nil
-}
-
-func MaterializationSuccessNotificationToSDK(w *MaterializationSuccessNotification) (*sdk.MaterializationSuccessNotification, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MaterializationSuccessNotification{
-		EmailAddresses: w.EmailAddresses,
-		DestinationIds: w.DestinationIds,
-	}, nil
 }
 
 // A materialized feature represents a feature that is continuously computed and
@@ -3110,231 +908,16 @@ type MaterializedFeature struct {
 	Notifications *MaterializationNotifications `json:"notifications,omitempty"`
 }
 
-func MaterializedFeatureFromSDK(v *sdk.MaterializedFeature) (*MaterializedFeature, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.JobId", err)
-	}
-	notificationsWireValue, err := MaterializationNotificationsFromSDK(v.Notifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Notifications", err)
-	}
-	var destinationOfflineStoreConfigWire *OfflineStoreConfig
-	var destinationOnlineStoreConfigWire *OnlineStoreConfig
-	switch value := v.Destination.(type) {
-	case nil:
-	case *sdk.MaterializedFeature_Destination_OfflineStoreConfig:
-		if value != nil {
-			destinationOfflineStoreConfigConverted, err := OfflineStoreConfigFromSDK(&value.OfflineStoreConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination.OfflineStoreConfig", err)
-			}
-			destinationOfflineStoreConfigWire = destinationOfflineStoreConfigConverted
-		}
-	case *sdk.MaterializedFeature_Destination_OnlineStoreConfig:
-		if value != nil {
-			destinationOnlineStoreConfigConverted, err := OnlineStoreConfigFromSDK(&value.OnlineStoreConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination.OnlineStoreConfig", err)
-			}
-			destinationOnlineStoreConfigWire = destinationOnlineStoreConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "MaterializedFeature.Destination", value)
-	}
-	var triggerCronScheduleTriggerWire *CronSchedule
-	var triggerTableTriggerWire *TableTrigger
-	var triggerStreamingModeWire *StreamingMode
-	switch value := v.Trigger.(type) {
-	case nil:
-	case *sdk.MaterializedFeature_Trigger_CronScheduleTrigger:
-		if value != nil {
-			triggerCronScheduleTriggerConverted, err := CronScheduleFromSDK(&value.CronScheduleTrigger)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.CronScheduleTrigger", err)
-			}
-			triggerCronScheduleTriggerWire = triggerCronScheduleTriggerConverted
-		}
-	case *sdk.MaterializedFeature_Trigger_TableTrigger:
-		if value != nil {
-			triggerTableTriggerConverted, err := TableTriggerFromSDK(&value.TableTrigger)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.TableTrigger", err)
-			}
-			triggerTableTriggerWire = triggerTableTriggerConverted
-		}
-	case *sdk.MaterializedFeature_Trigger_StreamingMode:
-		if value != nil {
-			triggerStreamingModeConverted, err := StreamingModeFromSDK(&value.StreamingMode)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.StreamingMode", err)
-			}
-			triggerStreamingModeWire = triggerStreamingModeConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "MaterializedFeature.Trigger", value)
-	}
-	return &MaterializedFeature{
-		MaterializedFeatureId:   v.MaterializedFeatureId,
-		FeatureName:             v.FeatureName,
-		OfflineStoreConfig:      destinationOfflineStoreConfigWire,
-		OnlineStoreConfig:       destinationOnlineStoreConfigWire,
-		TableName:               v.TableName,
-		PipelineScheduleState:   v.PipelineScheduleState,
-		LastMaterializationTime: v.LastMaterializationTime,
-		CronSchedule:            v.CronSchedule,
-		IsOnline:                v.IsOnline,
-		CronScheduleTrigger:     triggerCronScheduleTriggerWire,
-		TableTrigger:            triggerTableTriggerWire,
-		StreamingMode:           triggerStreamingModeWire,
-		LatestBackfillOperation: v.LatestBackfillOperation,
-		Tags:                    v.Tags,
-		BudgetPolicyId:          v.BudgetPolicyId,
-		PipelineId:              v.PipelineId,
-		JobId:                   jobIdWireValue,
-		Notifications:           notificationsWireValue,
-	}, nil
-}
-
-func MaterializedFeatureToSDK(w *MaterializedFeature) (*sdk.MaterializedFeature, error) {
-	if w == nil {
-		return nil, nil
-	}
-	destinationMembers := 0
-	if w.OfflineStoreConfig != nil {
-		destinationMembers++
-	}
-	if w.OnlineStoreConfig != nil {
-		destinationMembers++
-	}
-	if destinationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Destination")
-	}
-	triggerMembers := 0
-	if w.CronScheduleTrigger != nil {
-		triggerMembers++
-	}
-	if w.TableTrigger != nil {
-		triggerMembers++
-	}
-	if w.StreamingMode != nil {
-		triggerMembers++
-	}
-	if triggerMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Trigger")
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.JobId", err)
-	}
-	notificationsPublicValue, err := MaterializationNotificationsToSDK(w.Notifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Notifications", err)
-	}
-	destinationSelection := (&sdk.MaterializedFeature{}).Destination
-	switch {
-	case w.OfflineStoreConfig != nil:
-		destinationOfflineStoreConfigConverted, err := OfflineStoreConfigToSDK(w.OfflineStoreConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination.OfflineStoreConfig", err)
-		}
-		destinationSelection = &sdk.MaterializedFeature_Destination_OfflineStoreConfig{OfflineStoreConfig: *destinationOfflineStoreConfigConverted}
-	case w.OnlineStoreConfig != nil:
-		destinationOnlineStoreConfigConverted, err := OnlineStoreConfigToSDK(w.OnlineStoreConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination.OnlineStoreConfig", err)
-		}
-		destinationSelection = &sdk.MaterializedFeature_Destination_OnlineStoreConfig{OnlineStoreConfig: *destinationOnlineStoreConfigConverted}
-	}
-	triggerSelection := (&sdk.MaterializedFeature{}).Trigger
-	switch {
-	case w.CronScheduleTrigger != nil:
-		triggerCronScheduleTriggerConverted, err := CronScheduleToSDK(w.CronScheduleTrigger)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.CronScheduleTrigger", err)
-		}
-		triggerSelection = &sdk.MaterializedFeature_Trigger_CronScheduleTrigger{CronScheduleTrigger: *triggerCronScheduleTriggerConverted}
-	case w.TableTrigger != nil:
-		triggerTableTriggerConverted, err := TableTriggerToSDK(w.TableTrigger)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.TableTrigger", err)
-		}
-		triggerSelection = &sdk.MaterializedFeature_Trigger_TableTrigger{TableTrigger: *triggerTableTriggerConverted}
-	case w.StreamingMode != nil:
-		triggerStreamingModeConverted, err := StreamingModeToSDK(w.StreamingMode)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger.StreamingMode", err)
-		}
-		triggerSelection = &sdk.MaterializedFeature_Trigger_StreamingMode{StreamingMode: *triggerStreamingModeConverted}
-	}
-	return &sdk.MaterializedFeature{
-		MaterializedFeatureId:   w.MaterializedFeatureId,
-		FeatureName:             w.FeatureName,
-		TableName:               w.TableName,
-		PipelineScheduleState:   w.PipelineScheduleState,
-		LastMaterializationTime: w.LastMaterializationTime,
-		CronSchedule:            w.CronSchedule,
-		IsOnline:                w.IsOnline,
-		LatestBackfillOperation: w.LatestBackfillOperation,
-		Tags:                    w.Tags,
-		BudgetPolicyId:          w.BudgetPolicyId,
-		PipelineId:              w.PipelineId,
-		JobId:                   jobIdPublicValue,
-		Notifications:           notificationsPublicValue,
-		Destination:             destinationSelection,
-		Trigger:                 triggerSelection,
-	}, nil
-}
-
 // Computes the maximum value..
 type MaxFunction struct {
 	// The input column from which the maximum is computed.
 	Input *string `json:"input,omitempty"`
 }
 
-func MaxFunctionFromSDK(v *sdk.MaxFunction) (*MaxFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MaxFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func MaxFunctionToSDK(w *MaxFunction) (*sdk.MaxFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MaxFunction{
-		Input: w.Input,
-	}, nil
-}
-
 // Computes the minimum value..
 type MinFunction struct {
 	// The input column from which the minimum is computed.
 	Input *string `json:"input,omitempty"`
-}
-
-func MinFunctionFromSDK(v *sdk.MinFunction) (*MinFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MinFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func MinFunctionToSDK(w *MinFunction) (*sdk.MinFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MinFunction{
-		Input: w.Input,
-	}, nil
 }
 
 // Mutual-TLS (mTLS) authentication configuration. The keystore (client
@@ -3373,58 +956,6 @@ type MtlsConfig struct {
 	DisableHostnameVerification *bool `json:"disable_hostname_verification,omitempty"`
 }
 
-func MtlsConfigFromSDK(v *sdk.MtlsConfig) (*MtlsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	keystorePasswordRefWireValue, err := SecretScopeReferenceFromSDK(v.KeystorePasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeystorePasswordRef", err)
-	}
-	keyPasswordRefWireValue, err := SecretScopeReferenceFromSDK(v.KeyPasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeyPasswordRef", err)
-	}
-	truststorePasswordRefWireValue, err := SecretScopeReferenceFromSDK(v.TruststorePasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.TruststorePasswordRef", err)
-	}
-	return &MtlsConfig{
-		KeystoreLocation:            v.KeystoreLocation,
-		KeystorePasswordRef:         keystorePasswordRefWireValue,
-		KeyPasswordRef:              keyPasswordRefWireValue,
-		TruststoreLocation:          v.TruststoreLocation,
-		TruststorePasswordRef:       truststorePasswordRefWireValue,
-		DisableHostnameVerification: v.DisableHostnameVerification,
-	}, nil
-}
-
-func MtlsConfigToSDK(w *MtlsConfig) (*sdk.MtlsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	keystorePasswordRefPublicValue, err := SecretScopeReferenceToSDK(w.KeystorePasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeystorePasswordRef", err)
-	}
-	keyPasswordRefPublicValue, err := SecretScopeReferenceToSDK(w.KeyPasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeyPasswordRef", err)
-	}
-	truststorePasswordRefPublicValue, err := SecretScopeReferenceToSDK(w.TruststorePasswordRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MtlsConfig.TruststorePasswordRef", err)
-	}
-	return &sdk.MtlsConfig{
-		KeystoreLocation:            w.KeystoreLocation,
-		KeystorePasswordRef:         keystorePasswordRefPublicValue,
-		KeyPasswordRef:              keyPasswordRefPublicValue,
-		TruststoreLocation:          w.TruststoreLocation,
-		TruststorePasswordRef:       truststorePasswordRefPublicValue,
-		DisableHostnameVerification: w.DisableHostnameVerification,
-	}, nil
-}
-
 // Configuration for offline store destination..
 type OfflineStoreConfig struct {
 	// The Unity Catalog catalog name.
@@ -3434,28 +965,6 @@ type OfflineStoreConfig struct {
 	// Prefix for Unity Catalog table name. The materialized feature will be stored
 	// in a table with this prefix and a generated postfix.
 	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
-}
-
-func OfflineStoreConfigFromSDK(v *sdk.OfflineStoreConfig) (*OfflineStoreConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OfflineStoreConfig{
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		TableNamePrefix: v.TableNamePrefix,
-	}, nil
-}
-
-func OfflineStoreConfigToSDK(w *OfflineStoreConfig) (*sdk.OfflineStoreConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OfflineStoreConfig{
-		CatalogName:     w.CatalogName,
-		SchemaName:      w.SchemaName,
-		TableNamePrefix: w.TableNamePrefix,
-	}, nil
 }
 
 // Configuration for online store destination..
@@ -3473,30 +982,6 @@ type OnlineStoreConfig struct {
 	TableNamePrefix *string `json:"table_name_prefix,omitempty"`
 	// The name of the target online store.
 	OnlineStoreName *string `json:"online_store_name,omitempty"`
-}
-
-func OnlineStoreConfigFromSDK(v *sdk.OnlineStoreConfig) (*OnlineStoreConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OnlineStoreConfig{
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		TableNamePrefix: v.TableNamePrefix,
-		OnlineStoreName: v.OnlineStoreName,
-	}, nil
-}
-
-func OnlineStoreConfigToSDK(w *OnlineStoreConfig) (*sdk.OnlineStoreConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OnlineStoreConfig{
-		CatalogName:     w.CatalogName,
-		SchemaName:      w.SchemaName,
-		TableNamePrefix: w.TableNamePrefix,
-		OnlineStoreName: w.OnlineStoreName,
-	}, nil
 }
 
 // This resource represents a long-running operation that is the result of a
@@ -3518,39 +1003,6 @@ type Operation struct {
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
-func OperationToSDK(w *Operation) (*sdk.Operation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultMembers := 0
-	if w.Error != nil {
-		resultMembers++
-	}
-	if w.Response != nil {
-		resultMembers++
-	}
-	if resultMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
-	}
-	resultSelection := (&sdk.Operation{}).Result
-	switch {
-	case w.Error != nil:
-		resultErrorConverted, err := ApiErrorToSDK(w.Error)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Operation.Result.Error", err)
-		}
-		resultSelection = &sdk.Operation_Result_Error{Error: *resultErrorConverted}
-	case w.Response != nil:
-		resultSelection = &sdk.Operation_Result_Response{Response: w.Response}
-	}
-	return &sdk.Operation{
-		Name:     w.Name,
-		Metadata: w.Metadata,
-		Done:     w.Done,
-		Result:   resultSelection,
-	}, nil
-}
-
 // A Protocol Buffer schema paired with the name of the message within it that
 // describes the Kafka payload. A .proto file may declare multiple messages;
 // message_name disambiguates..
@@ -3565,26 +1017,6 @@ type ProtoSchemaSpec struct {
 	// .proto file may declare multiple messages but only one represents the
 	// payload. Must not be empty.
 	MessageName *string `json:"message_name,omitempty"`
-}
-
-func ProtoSchemaSpecFromSDK(v *sdk.ProtoSchemaSpec) (*ProtoSchemaSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ProtoSchemaSpec{
-		SchemaText:  v.SchemaText,
-		MessageName: v.MessageName,
-	}, nil
-}
-
-func ProtoSchemaSpecToSDK(w *ProtoSchemaSpec) (*sdk.ProtoSchemaSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProtoSchemaSpec{
-		SchemaText:  w.SchemaText,
-		MessageName: w.MessageName,
-	}, nil
 }
 
 // Progress and configuration for a feature entity purge..
@@ -3602,24 +1034,6 @@ type PurgeFeatureEntitiesMetadata struct {
 	State PurgeFeatureEntitiesMetadata_State `json:"state,omitempty"`
 	// ID of the job that executes this purge.
 	JobId *int64 `json:"job_id,omitempty"`
-}
-
-func PurgeFeatureEntitiesMetadataToSDK(w *PurgeFeatureEntitiesMetadata) (*sdk.PurgeFeatureEntitiesMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesMetadata.JobId", err)
-	}
-	return &sdk.PurgeFeatureEntitiesMetadata{
-		Features:             w.Features,
-		EntitiesTable:        w.EntitiesTable,
-		EntitiesTableVersion: w.EntitiesTableVersion,
-		CreateTime:           w.CreateTime,
-		State:                w.State,
-		JobId:                jobIdPublicValue,
-	}, nil
 }
 
 // Request to purge materialized feature values for entities listed in a Unity
@@ -3646,29 +1060,6 @@ type PurgeFeatureEntitiesRequest struct {
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
-func PurgeFeatureEntitiesRequestFromSDK(v *sdk.PurgeFeatureEntitiesRequest) (*PurgeFeatureEntitiesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var entitiesEntitiesTableWire *string
-	switch value := v.Entities.(type) {
-	case nil:
-	case *sdk.PurgeFeatureEntitiesRequest_Entities_EntitiesTable:
-		if value != nil {
-			entitiesEntitiesTableWire = new(value.EntitiesTable)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PurgeFeatureEntitiesRequest.Entities", value)
-	}
-	return &PurgeFeatureEntitiesRequest{
-		Features:       v.Features,
-		EntitiesTable:  entitiesEntitiesTableWire,
-		RequestId:      v.RequestId,
-		Tags:           v.Tags,
-		BudgetPolicyId: v.BudgetPolicyId,
-	}, nil
-}
-
 // Result of a completed feature entity purge..
 type PurgeFeatureEntitiesResponse struct {
 	// Metadata about the purge operation.
@@ -3680,30 +1071,6 @@ type PurgeFeatureEntitiesResponse struct {
 	// Operation-level error, if the purge failed outside an individual feature
 	// target.
 	Error *ApiError `json:"error,omitempty"`
-}
-
-func PurgeFeatureEntitiesResponseToSDK(w *PurgeFeatureEntitiesResponse) (*sdk.PurgeFeatureEntitiesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metadataPublicValue, err := PurgeFeatureEntitiesMetadataToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Metadata", err)
-	}
-	resultsPublicValue, err := convertSlice(w.Results, PurgeFeatureEntitiesResultToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Results", err)
-	}
-	errorPublicValue, err := ApiErrorToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Error", err)
-	}
-	return &sdk.PurgeFeatureEntitiesResponse{
-		Metadata: metadataPublicValue,
-		Results:  resultsPublicValue,
-		State:    w.State,
-		Error:    errorPublicValue,
-	}, nil
 }
 
 // Result of purging one feature..
@@ -3718,86 +1085,11 @@ type PurgeFeatureEntitiesResult struct {
 	Error *ApiError `json:"error,omitempty"`
 }
 
-func PurgeFeatureEntitiesResultToSDK(w *PurgeFeatureEntitiesResult) (*sdk.PurgeFeatureEntitiesResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	errorPublicValue, err := ApiErrorToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResult.Error", err)
-	}
-	return &sdk.PurgeFeatureEntitiesResult{
-		Feature:      w.Feature,
-		OfflineState: w.OfflineState,
-		OnlineState:  w.OnlineState,
-		Error:        errorPublicValue,
-	}, nil
-}
-
 // A request-time data source whose value is provided at inference time: offline
 // batch scoring or online serving endpoint.
 type RequestSource struct {
 	FlatSchema      *FlatSchema `json:"flat_schema,omitempty"`
 	DataframeSchema *string     `json:"dataframe_schema,omitempty"`
-}
-
-func RequestSourceFromSDK(v *sdk.RequestSource) (*RequestSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var schemaFlatSchemaWire *FlatSchema
-	var schemaDataframeSchemaWire *string
-	switch value := v.Schema.(type) {
-	case nil:
-	case *sdk.RequestSource_Schema_FlatSchema:
-		if value != nil {
-			schemaFlatSchemaConverted, err := FlatSchemaFromSDK(&value.FlatSchema)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RequestSource.Schema.FlatSchema", err)
-			}
-			schemaFlatSchemaWire = schemaFlatSchemaConverted
-		}
-	case *sdk.RequestSource_Schema_DataframeSchema:
-		if value != nil {
-			schemaDataframeSchemaWire = new(value.DataframeSchema)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RequestSource.Schema", value)
-	}
-	return &RequestSource{
-		FlatSchema:      schemaFlatSchemaWire,
-		DataframeSchema: schemaDataframeSchemaWire,
-	}, nil
-}
-
-func RequestSourceToSDK(w *RequestSource) (*sdk.RequestSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaMembers := 0
-	if w.FlatSchema != nil {
-		schemaMembers++
-	}
-	if w.DataframeSchema != nil {
-		schemaMembers++
-	}
-	if schemaMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "RequestSource.Schema")
-	}
-	schemaSelection := (&sdk.RequestSource{}).Schema
-	switch {
-	case w.FlatSchema != nil:
-		schemaFlatSchemaConverted, err := FlatSchemaToSDK(w.FlatSchema)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RequestSource.Schema.FlatSchema", err)
-		}
-		schemaSelection = &sdk.RequestSource_Schema_FlatSchema{FlatSchema: *schemaFlatSchemaConverted}
-	case w.DataframeSchema != nil:
-		schemaSelection = &sdk.RequestSource_Schema_DataframeSchema{DataframeSchema: *w.DataframeSchema}
-	}
-	return &sdk.RequestSource{
-		Schema: schemaSelection,
-	}, nil
 }
 
 // A rolling time window with an optional non-negative delay..
@@ -3810,26 +1102,6 @@ type RollingWindow struct {
 	// count as of one week ago. If unset, the analytic lag is zero. It composes
 	// with source.lateness when both are set.
 	Delay *types.Duration `json:"delay,omitempty"`
-}
-
-func RollingWindowFromSDK(v *sdk.RollingWindow) (*RollingWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RollingWindow{
-		WindowDuration: v.WindowDuration,
-		Delay:          v.Delay,
-	}, nil
-}
-
-func RollingWindowToSDK(w *RollingWindow) (*sdk.RollingWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RollingWindow{
-		WindowDuration: w.WindowDuration,
-		Delay:          w.Delay,
-	}, nil
 }
 
 // A sawtooth window served via the hybrid batch + streaming path. The batch
@@ -3849,100 +1121,10 @@ type SawtoothWindow struct {
 	Delay *types.Duration `json:"delay,omitempty"`
 }
 
-func SawtoothWindowFromSDK(v *sdk.SawtoothWindow) (*SawtoothWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SawtoothWindow{
-		WindowDuration: v.WindowDuration,
-		Delay:          v.Delay,
-	}, nil
-}
-
-func SawtoothWindowToSDK(w *SawtoothWindow) (*sdk.SawtoothWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SawtoothWindow{
-		WindowDuration: w.WindowDuration,
-		Delay:          w.Delay,
-	}, nil
-}
-
 type SchemaConfig struct {
 	JsonSchema  *string          `json:"json_schema,omitempty"`
 	AvroSchema  *string          `json:"avro_schema,omitempty"`
 	ProtoSchema *ProtoSchemaSpec `json:"proto_schema,omitempty"`
-}
-
-func SchemaConfigFromSDK(v *sdk.SchemaConfig) (*SchemaConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var schemaJsonSchemaWire *string
-	var schemaAvroSchemaWire *string
-	var schemaProtoSchemaWire *ProtoSchemaSpec
-	switch value := v.Schema.(type) {
-	case nil:
-	case *sdk.SchemaConfig_Schema_JsonSchema:
-		if value != nil {
-			schemaJsonSchemaWire = new(value.JsonSchema)
-		}
-	case *sdk.SchemaConfig_Schema_AvroSchema:
-		if value != nil {
-			schemaAvroSchemaWire = new(value.AvroSchema)
-		}
-	case *sdk.SchemaConfig_Schema_ProtoSchema:
-		if value != nil {
-			schemaProtoSchemaConverted, err := ProtoSchemaSpecFromSDK(&value.ProtoSchema)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SchemaConfig.Schema.ProtoSchema", err)
-			}
-			schemaProtoSchemaWire = schemaProtoSchemaConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SchemaConfig.Schema", value)
-	}
-	return &SchemaConfig{
-		JsonSchema:  schemaJsonSchemaWire,
-		AvroSchema:  schemaAvroSchemaWire,
-		ProtoSchema: schemaProtoSchemaWire,
-	}, nil
-}
-
-func SchemaConfigToSDK(w *SchemaConfig) (*sdk.SchemaConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaMembers := 0
-	if w.JsonSchema != nil {
-		schemaMembers++
-	}
-	if w.AvroSchema != nil {
-		schemaMembers++
-	}
-	if w.ProtoSchema != nil {
-		schemaMembers++
-	}
-	if schemaMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaConfig.Schema")
-	}
-	schemaSelection := (&sdk.SchemaConfig{}).Schema
-	switch {
-	case w.JsonSchema != nil:
-		schemaSelection = &sdk.SchemaConfig_Schema_JsonSchema{JsonSchema: *w.JsonSchema}
-	case w.AvroSchema != nil:
-		schemaSelection = &sdk.SchemaConfig_Schema_AvroSchema{AvroSchema: *w.AvroSchema}
-	case w.ProtoSchema != nil:
-		schemaProtoSchemaConverted, err := ProtoSchemaSpecToSDK(w.ProtoSchema)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SchemaConfig.Schema.ProtoSchema", err)
-		}
-		schemaSelection = &sdk.SchemaConfig_Schema_ProtoSchema{ProtoSchema: *schemaProtoSchemaConverted}
-	}
-	return &sdk.SchemaConfig{
-		Schema: schemaSelection,
-	}, nil
 }
 
 // Schema locator for one side (payload or key) of a message. Identifies which
@@ -3951,56 +1133,6 @@ type SchemaLocator struct {
 	ConfluentSchema *SchemaLocator_ConfluentSchema `json:"confluent_schema,omitempty"`
 	// Serialization format for this schema.
 	Format SchemaLocator_Format `json:"format,omitempty"`
-}
-
-func SchemaLocatorFromSDK(v *sdk.SchemaLocator) (*SchemaLocator, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var registrySchemaConfluentSchemaWire *SchemaLocator_ConfluentSchema
-	switch value := v.RegistrySchema.(type) {
-	case nil:
-	case *sdk.SchemaLocator_RegistrySchema_ConfluentSchema:
-		if value != nil {
-			registrySchemaConfluentSchemaConverted, err := SchemaLocator_ConfluentSchemaFromSDK(&value.ConfluentSchema)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SchemaLocator.RegistrySchema.ConfluentSchema", err)
-			}
-			registrySchemaConfluentSchemaWire = registrySchemaConfluentSchemaConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SchemaLocator.RegistrySchema", value)
-	}
-	return &SchemaLocator{
-		ConfluentSchema: registrySchemaConfluentSchemaWire,
-		Format:          v.Format,
-	}, nil
-}
-
-func SchemaLocatorToSDK(w *SchemaLocator) (*sdk.SchemaLocator, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registrySchemaMembers := 0
-	if w.ConfluentSchema != nil {
-		registrySchemaMembers++
-	}
-	if registrySchemaMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaLocator.RegistrySchema")
-	}
-	registrySchemaSelection := (&sdk.SchemaLocator{}).RegistrySchema
-	switch {
-	case w.ConfluentSchema != nil:
-		registrySchemaConfluentSchemaConverted, err := SchemaLocator_ConfluentSchemaToSDK(w.ConfluentSchema)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SchemaLocator.RegistrySchema.ConfluentSchema", err)
-		}
-		registrySchemaSelection = &sdk.SchemaLocator_RegistrySchema_ConfluentSchema{ConfluentSchema: *registrySchemaConfluentSchemaConverted}
-	}
-	return &sdk.SchemaLocator{
-		Format:         w.Format,
-		RegistrySchema: registrySchemaSelection,
-	}, nil
 }
 
 // Confluent Schema Registry schema locator. The value to provide for `subject`
@@ -4015,24 +1147,6 @@ func SchemaLocatorToSDK(w *SchemaLocator) (*sdk.SchemaLocator, error) {
 type SchemaLocator_ConfluentSchema struct {
 	// The Confluent schema registry subject name.
 	Subject *string `json:"subject,omitempty"`
-}
-
-func SchemaLocator_ConfluentSchemaFromSDK(v *sdk.SchemaLocator_ConfluentSchema) (*SchemaLocator_ConfluentSchema, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SchemaLocator_ConfluentSchema{
-		Subject: v.Subject,
-	}, nil
-}
-
-func SchemaLocator_ConfluentSchemaToSDK(w *SchemaLocator_ConfluentSchema) (*sdk.SchemaLocator_ConfluentSchema, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SchemaLocator_ConfluentSchema{
-		Subject: w.Subject,
-	}, nil
 }
 
 // Configuration for resolving a Stream's schema from an external schema
@@ -4051,80 +1165,12 @@ type SchemaRegistryConfig struct {
 	KeySchemaLocator *SchemaLocator `json:"key_schema_locator,omitempty"`
 }
 
-func SchemaRegistryConfigFromSDK(v *sdk.SchemaRegistryConfig) (*SchemaRegistryConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	apiSecretRefWireValue, err := SecretScopeReferenceFromSDK(v.ApiSecretRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ApiSecretRef", err)
-	}
-	payloadSchemaLocatorWireValue, err := SchemaLocatorFromSDK(v.PayloadSchemaLocator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.PayloadSchemaLocator", err)
-	}
-	keySchemaLocatorWireValue, err := SchemaLocatorFromSDK(v.KeySchemaLocator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.KeySchemaLocator", err)
-	}
-	return &SchemaRegistryConfig{
-		UcConnection:         v.UcConnection,
-		ApiSecretRef:         apiSecretRefWireValue,
-		PayloadSchemaLocator: payloadSchemaLocatorWireValue,
-		KeySchemaLocator:     keySchemaLocatorWireValue,
-	}, nil
-}
-
-func SchemaRegistryConfigToSDK(w *SchemaRegistryConfig) (*sdk.SchemaRegistryConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	apiSecretRefPublicValue, err := SecretScopeReferenceToSDK(w.ApiSecretRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ApiSecretRef", err)
-	}
-	payloadSchemaLocatorPublicValue, err := SchemaLocatorToSDK(w.PayloadSchemaLocator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.PayloadSchemaLocator", err)
-	}
-	keySchemaLocatorPublicValue, err := SchemaLocatorToSDK(w.KeySchemaLocator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.KeySchemaLocator", err)
-	}
-	return &sdk.SchemaRegistryConfig{
-		UcConnection:         w.UcConnection,
-		ApiSecretRef:         apiSecretRefPublicValue,
-		PayloadSchemaLocator: payloadSchemaLocatorPublicValue,
-		KeySchemaLocator:     keySchemaLocatorPublicValue,
-	}, nil
-}
-
 // Reference to an entry in a <Databricks> secret scope..
 type SecretScopeReference struct {
 	// The <Databricks> secret scope name.
 	Scope *string `json:"scope,omitempty"`
 	// The key within the scope.
 	Key *string `json:"key,omitempty"`
-}
-
-func SecretScopeReferenceFromSDK(v *sdk.SecretScopeReference) (*SecretScopeReference, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SecretScopeReference{
-		Scope: v.Scope,
-		Key:   v.Key,
-	}, nil
-}
-
-func SecretScopeReferenceToSDK(w *SecretScopeReference) (*sdk.SecretScopeReference, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SecretScopeReference{
-		Scope: w.Scope,
-		Key:   w.Key,
-	}, nil
 }
 
 type SlidingWindow struct {
@@ -4146,30 +1192,6 @@ type SlidingWindow struct {
 	Offset *types.Duration `json:"offset,omitempty"`
 }
 
-func SlidingWindowFromSDK(v *sdk.SlidingWindow) (*SlidingWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SlidingWindow{
-		WindowDuration: v.WindowDuration,
-		SlideDuration:  v.SlideDuration,
-		Delay:          v.Delay,
-		Offset:         v.Offset,
-	}, nil
-}
-
-func SlidingWindowToSDK(w *SlidingWindow) (*sdk.SlidingWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SlidingWindow{
-		WindowDuration: w.WindowDuration,
-		SlideDuration:  w.SlideDuration,
-		Delay:          w.Delay,
-		Offset:         w.Offset,
-	}, nil
-}
-
 // Configures when event-time data from this source is considered complete for a
 // Feature..
 type SourceLateness struct {
@@ -4179,24 +1201,6 @@ type SourceLateness struct {
 	// Materialization waits for the duration to elapse before publishing the
 	// window. If unset, source data is considered settled immediately.
 	SettlingDelay *types.Duration `json:"settling_delay,omitempty"`
-}
-
-func SourceLatenessFromSDK(v *sdk.SourceLateness) (*SourceLateness, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SourceLateness{
-		SettlingDelay: v.SettlingDelay,
-	}, nil
-}
-
-func SourceLatenessToSDK(w *SourceLateness) (*sdk.SourceLateness, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SourceLateness{
-		SettlingDelay: w.SettlingDelay,
-	}, nil
 }
 
 // Computes the population standard deviation..
@@ -4209,46 +1213,10 @@ type StddevPopFunction struct {
 	Input *string `json:"input,omitempty"`
 }
 
-func StddevPopFunctionFromSDK(v *sdk.StddevPopFunction) (*StddevPopFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StddevPopFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func StddevPopFunctionToSDK(w *StddevPopFunction) (*sdk.StddevPopFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StddevPopFunction{
-		Input: w.Input,
-	}, nil
-}
-
 // Computes the sample standard deviation..
 type StddevSampFunction struct {
 	// The input column from which the sample standard deviation is computed.
 	Input *string `json:"input,omitempty"`
-}
-
-func StddevSampFunctionFromSDK(v *sdk.StddevSampFunction) (*StddevSampFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StddevSampFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func StddevSampFunctionToSDK(w *StddevSampFunction) (*sdk.StddevSampFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StddevSampFunction{
-		Input: w.Input,
-	}, nil
 }
 
 // A Stream is a governed UC entity representing an external streaming data
@@ -4297,103 +1265,11 @@ type Stream struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func StreamFromSDK(v *sdk.Stream) (*Stream, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sourceConfigWireValue, err := StreamSourceConfigFromSDK(v.SourceConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.SourceConfig", err)
-	}
-	connectionConfigWireValue, err := StreamConnectionConfigFromSDK(v.ConnectionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.ConnectionConfig", err)
-	}
-	schemaConfigWireValue, err := StreamSchemaConfigFromSDK(v.SchemaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.SchemaConfig", err)
-	}
-	ingestionConfigWireValue, err := IngestionConfigFromSDK(v.IngestionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.IngestionConfig", err)
-	}
-	return &Stream{
-		Name:             v.Name,
-		Description:      v.Description,
-		SourceConfig:     sourceConfigWireValue,
-		ConnectionConfig: connectionConfigWireValue,
-		SchemaConfig:     schemaConfigWireValue,
-		IngestionConfig:  ingestionConfigWireValue,
-		RecordTypeFilter: v.RecordTypeFilter,
-		ExcludedColumns:  v.ExcludedColumns,
-		CreateTime:       v.CreateTime,
-		CreatedBy:        v.CreatedBy,
-		UpdateTime:       v.UpdateTime,
-		UpdatedBy:        v.UpdatedBy,
-		BrowseOnly:       v.BrowseOnly,
-	}, nil
-}
-
-func StreamToSDK(w *Stream) (*sdk.Stream, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceConfigPublicValue, err := StreamSourceConfigToSDK(w.SourceConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.SourceConfig", err)
-	}
-	connectionConfigPublicValue, err := StreamConnectionConfigToSDK(w.ConnectionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.ConnectionConfig", err)
-	}
-	schemaConfigPublicValue, err := StreamSchemaConfigToSDK(w.SchemaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.SchemaConfig", err)
-	}
-	ingestionConfigPublicValue, err := IngestionConfigToSDK(w.IngestionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Stream.IngestionConfig", err)
-	}
-	return &sdk.Stream{
-		Name:             w.Name,
-		Description:      w.Description,
-		SourceConfig:     sourceConfigPublicValue,
-		ConnectionConfig: connectionConfigPublicValue,
-		SchemaConfig:     schemaConfigPublicValue,
-		IngestionConfig:  ingestionConfigPublicValue,
-		RecordTypeFilter: w.RecordTypeFilter,
-		ExcludedColumns:  w.ExcludedColumns,
-		CreateTime:       w.CreateTime,
-		CreatedBy:        w.CreatedBy,
-		UpdateTime:       w.UpdateTime,
-		UpdatedBy:        w.UpdatedBy,
-		BrowseOnly:       w.BrowseOnly,
-	}, nil
-}
-
 // A list of Kinesis stream ARNs to read from..
 type StreamArnList struct {
 	// Kinesis stream ARNs to read from. For example,
 	// 'arn:aws:kinesis:us-west-2:111122223333:stream/stream-a'.
 	Arns []string `json:"arns,omitempty"`
-}
-
-func StreamArnListFromSDK(v *sdk.StreamArnList) (*StreamArnList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StreamArnList{
-		Arns: v.Arns,
-	}, nil
-}
-
-func StreamArnListToSDK(w *StreamArnList) (*sdk.StreamArnList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StreamArnList{
-		Arns: w.Arns,
-	}, nil
 }
 
 // Specifies how to connect and authenticate to the stream platform..
@@ -4402,87 +1278,10 @@ type StreamConnectionConfig struct {
 	DirectMtlsConfig *DirectMtlsConfig `json:"direct_mtls_config,omitempty"`
 }
 
-func StreamConnectionConfigFromSDK(v *sdk.StreamConnectionConfig) (*StreamConnectionConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var connectionConfigUcConnectionNameWire *string
-	var connectionConfigDirectMtlsConfigWire *DirectMtlsConfig
-	switch value := v.ConnectionConfig.(type) {
-	case nil:
-	case *sdk.StreamConnectionConfig_ConnectionConfig_UcConnectionName:
-		if value != nil {
-			connectionConfigUcConnectionNameWire = new(value.UcConnectionName)
-		}
-	case *sdk.StreamConnectionConfig_ConnectionConfig_DirectMtlsConfig:
-		if value != nil {
-			connectionConfigDirectMtlsConfigConverted, err := DirectMtlsConfigFromSDK(&value.DirectMtlsConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "StreamConnectionConfig.ConnectionConfig.DirectMtlsConfig", err)
-			}
-			connectionConfigDirectMtlsConfigWire = connectionConfigDirectMtlsConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "StreamConnectionConfig.ConnectionConfig", value)
-	}
-	return &StreamConnectionConfig{
-		UcConnectionName: connectionConfigUcConnectionNameWire,
-		DirectMtlsConfig: connectionConfigDirectMtlsConfigWire,
-	}, nil
-}
-
-func StreamConnectionConfigToSDK(w *StreamConnectionConfig) (*sdk.StreamConnectionConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	connectionConfigMembers := 0
-	if w.UcConnectionName != nil {
-		connectionConfigMembers++
-	}
-	if w.DirectMtlsConfig != nil {
-		connectionConfigMembers++
-	}
-	if connectionConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "StreamConnectionConfig.ConnectionConfig")
-	}
-	connectionConfigSelection := (&sdk.StreamConnectionConfig{}).ConnectionConfig
-	switch {
-	case w.UcConnectionName != nil:
-		connectionConfigSelection = &sdk.StreamConnectionConfig_ConnectionConfig_UcConnectionName{UcConnectionName: *w.UcConnectionName}
-	case w.DirectMtlsConfig != nil:
-		connectionConfigDirectMtlsConfigConverted, err := DirectMtlsConfigToSDK(w.DirectMtlsConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StreamConnectionConfig.ConnectionConfig.DirectMtlsConfig", err)
-		}
-		connectionConfigSelection = &sdk.StreamConnectionConfig_ConnectionConfig_DirectMtlsConfig{DirectMtlsConfig: *connectionConfigDirectMtlsConfigConverted}
-	}
-	return &sdk.StreamConnectionConfig{
-		ConnectionConfig: connectionConfigSelection,
-	}, nil
-}
-
 // A list of Kinesis stream names to read from..
 type StreamNameList struct {
 	// Kinesis stream names to read from.
 	Names []string `json:"names,omitempty"`
-}
-
-func StreamNameListFromSDK(v *sdk.StreamNameList) (*StreamNameList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StreamNameList{
-		Names: v.Names,
-	}, nil
-}
-
-func StreamNameListToSDK(w *StreamNameList) (*sdk.StreamNameList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StreamNameList{
-		Names: w.Names,
-	}, nil
 }
 
 // Schema definitions for the stream. Feature store supports both direct schemas
@@ -4490,73 +1289,6 @@ func StreamNameListToSDK(w *StreamNameList) (*sdk.StreamNameList, error) {
 type StreamSchemaConfig struct {
 	DirectSchemas        *DirectSchemas        `json:"direct_schemas,omitempty"`
 	SchemaRegistryConfig *SchemaRegistryConfig `json:"schema_registry_config,omitempty"`
-}
-
-func StreamSchemaConfigFromSDK(v *sdk.StreamSchemaConfig) (*StreamSchemaConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var schemaConfigDirectSchemasWire *DirectSchemas
-	var schemaConfigSchemaRegistryConfigWire *SchemaRegistryConfig
-	switch value := v.SchemaConfig.(type) {
-	case nil:
-	case *sdk.StreamSchemaConfig_SchemaConfig_DirectSchemas:
-		if value != nil {
-			schemaConfigDirectSchemasConverted, err := DirectSchemasFromSDK(&value.DirectSchemas)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig.DirectSchemas", err)
-			}
-			schemaConfigDirectSchemasWire = schemaConfigDirectSchemasConverted
-		}
-	case *sdk.StreamSchemaConfig_SchemaConfig_SchemaRegistryConfig:
-		if value != nil {
-			schemaConfigSchemaRegistryConfigConverted, err := SchemaRegistryConfigFromSDK(&value.SchemaRegistryConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig.SchemaRegistryConfig", err)
-			}
-			schemaConfigSchemaRegistryConfigWire = schemaConfigSchemaRegistryConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "StreamSchemaConfig.SchemaConfig", value)
-	}
-	return &StreamSchemaConfig{
-		DirectSchemas:        schemaConfigDirectSchemasWire,
-		SchemaRegistryConfig: schemaConfigSchemaRegistryConfigWire,
-	}, nil
-}
-
-func StreamSchemaConfigToSDK(w *StreamSchemaConfig) (*sdk.StreamSchemaConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaConfigMembers := 0
-	if w.DirectSchemas != nil {
-		schemaConfigMembers++
-	}
-	if w.SchemaRegistryConfig != nil {
-		schemaConfigMembers++
-	}
-	if schemaConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSchemaConfig.SchemaConfig")
-	}
-	schemaConfigSelection := (&sdk.StreamSchemaConfig{}).SchemaConfig
-	switch {
-	case w.DirectSchemas != nil:
-		schemaConfigDirectSchemasConverted, err := DirectSchemasToSDK(w.DirectSchemas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig.DirectSchemas", err)
-		}
-		schemaConfigSelection = &sdk.StreamSchemaConfig_SchemaConfig_DirectSchemas{DirectSchemas: *schemaConfigDirectSchemasConverted}
-	case w.SchemaRegistryConfig != nil:
-		schemaConfigSchemaRegistryConfigConverted, err := SchemaRegistryConfigToSDK(w.SchemaRegistryConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig.SchemaRegistryConfig", err)
-		}
-		schemaConfigSelection = &sdk.StreamSchemaConfig_SchemaConfig_SchemaRegistryConfig{SchemaRegistryConfig: *schemaConfigSchemaRegistryConfigConverted}
-	}
-	return &sdk.StreamSchemaConfig{
-		SchemaConfig: schemaConfigSelection,
-	}, nil
 }
 
 // A Stream entity used as a data source for a feature..
@@ -4574,101 +1306,10 @@ type StreamSource struct {
 	DataframeSchema *string `json:"dataframe_schema,omitempty"`
 }
 
-func StreamSourceFromSDK(v *sdk.StreamSource) (*StreamSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StreamSource{
-		FullName:          v.FullName,
-		FilterCondition:   v.FilterCondition,
-		TransformationSql: v.TransformationSql,
-		DataframeSchema:   v.DataframeSchema,
-	}, nil
-}
-
-func StreamSourceToSDK(w *StreamSource) (*sdk.StreamSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StreamSource{
-		FullName:          w.FullName,
-		FilterCondition:   w.FilterCondition,
-		TransformationSql: w.TransformationSql,
-		DataframeSchema:   w.DataframeSchema,
-	}, nil
-}
-
 // Source-specific configuration. Determines the streaming platform source..
 type StreamSourceConfig struct {
 	KafkaStreamConfig   *KafkaStreamConfig   `json:"kafka_stream_config,omitempty"`
 	KinesisStreamConfig *KinesisStreamConfig `json:"kinesis_stream_config,omitempty"`
-}
-
-func StreamSourceConfigFromSDK(v *sdk.StreamSourceConfig) (*StreamSourceConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceConfigKafkaStreamConfigWire *KafkaStreamConfig
-	var sourceConfigKinesisStreamConfigWire *KinesisStreamConfig
-	switch value := v.SourceConfig.(type) {
-	case nil:
-	case *sdk.StreamSourceConfig_SourceConfig_KafkaStreamConfig:
-		if value != nil {
-			sourceConfigKafkaStreamConfigConverted, err := KafkaStreamConfigFromSDK(&value.KafkaStreamConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig.KafkaStreamConfig", err)
-			}
-			sourceConfigKafkaStreamConfigWire = sourceConfigKafkaStreamConfigConverted
-		}
-	case *sdk.StreamSourceConfig_SourceConfig_KinesisStreamConfig:
-		if value != nil {
-			sourceConfigKinesisStreamConfigConverted, err := KinesisStreamConfigFromSDK(&value.KinesisStreamConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig.KinesisStreamConfig", err)
-			}
-			sourceConfigKinesisStreamConfigWire = sourceConfigKinesisStreamConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "StreamSourceConfig.SourceConfig", value)
-	}
-	return &StreamSourceConfig{
-		KafkaStreamConfig:   sourceConfigKafkaStreamConfigWire,
-		KinesisStreamConfig: sourceConfigKinesisStreamConfigWire,
-	}, nil
-}
-
-func StreamSourceConfigToSDK(w *StreamSourceConfig) (*sdk.StreamSourceConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceConfigMembers := 0
-	if w.KafkaStreamConfig != nil {
-		sourceConfigMembers++
-	}
-	if w.KinesisStreamConfig != nil {
-		sourceConfigMembers++
-	}
-	if sourceConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSourceConfig.SourceConfig")
-	}
-	sourceConfigSelection := (&sdk.StreamSourceConfig{}).SourceConfig
-	switch {
-	case w.KafkaStreamConfig != nil:
-		sourceConfigKafkaStreamConfigConverted, err := KafkaStreamConfigToSDK(w.KafkaStreamConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig.KafkaStreamConfig", err)
-		}
-		sourceConfigSelection = &sdk.StreamSourceConfig_SourceConfig_KafkaStreamConfig{KafkaStreamConfig: *sourceConfigKafkaStreamConfigConverted}
-	case w.KinesisStreamConfig != nil:
-		sourceConfigKinesisStreamConfigConverted, err := KinesisStreamConfigToSDK(w.KinesisStreamConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig.KinesisStreamConfig", err)
-		}
-		sourceConfigSelection = &sdk.StreamSourceConfig_SourceConfig_KinesisStreamConfig{KinesisStreamConfig: *sourceConfigKinesisStreamConfigConverted}
-	}
-	return &sdk.StreamSourceConfig{
-		SourceConfig: sourceConfigSelection,
-	}, nil
 }
 
 // The streaming mode configuration for a streaming materialization pipeline..
@@ -4685,95 +1326,11 @@ type StreamingMode struct {
 	ShufflePartitions *int `json:"shuffle_partitions,omitempty"`
 }
 
-func StreamingModeFromSDK(v *sdk.StreamingMode) (*StreamingMode, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StreamingMode{
-		Mode:              v.Mode,
-		FreshnessTarget:   v.FreshnessTarget,
-		ShufflePartitions: v.ShufflePartitions,
-	}, nil
-}
-
-func StreamingModeToSDK(w *StreamingMode) (*sdk.StreamingMode, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StreamingMode{
-		Mode:              w.Mode,
-		FreshnessTarget:   w.FreshnessTarget,
-		ShufflePartitions: w.ShufflePartitions,
-	}, nil
-}
-
 // Deprecated: Use KafkaSubscriptionMode instead..
 type SubscriptionMode struct {
 	Assign           *string `json:"assign,omitempty"`
 	Subscribe        *string `json:"subscribe,omitempty"`
 	SubscribePattern *string `json:"subscribe_pattern,omitempty"`
-}
-
-func SubscriptionModeFromSDK(v *sdk.SubscriptionMode) (*SubscriptionMode, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriptionModeAssignWire *string
-	var subscriptionModeSubscribeWire *string
-	var subscriptionModeSubscribePatternWire *string
-	switch value := v.SubscriptionMode.(type) {
-	case nil:
-	case *sdk.SubscriptionMode_SubscriptionMode_Assign:
-		if value != nil {
-			subscriptionModeAssignWire = new(value.Assign)
-		}
-	case *sdk.SubscriptionMode_SubscriptionMode_Subscribe:
-		if value != nil {
-			subscriptionModeSubscribeWire = new(value.Subscribe)
-		}
-	case *sdk.SubscriptionMode_SubscriptionMode_SubscribePattern:
-		if value != nil {
-			subscriptionModeSubscribePatternWire = new(value.SubscribePattern)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SubscriptionMode.SubscriptionMode", value)
-	}
-	return &SubscriptionMode{
-		Assign:           subscriptionModeAssignWire,
-		Subscribe:        subscriptionModeSubscribeWire,
-		SubscribePattern: subscriptionModeSubscribePatternWire,
-	}, nil
-}
-
-func SubscriptionModeToSDK(w *SubscriptionMode) (*sdk.SubscriptionMode, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionModeMembers := 0
-	if w.Assign != nil {
-		subscriptionModeMembers++
-	}
-	if w.Subscribe != nil {
-		subscriptionModeMembers++
-	}
-	if w.SubscribePattern != nil {
-		subscriptionModeMembers++
-	}
-	if subscriptionModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SubscriptionMode.SubscriptionMode")
-	}
-	subscriptionModeSelection := (&sdk.SubscriptionMode{}).SubscriptionMode
-	switch {
-	case w.Assign != nil:
-		subscriptionModeSelection = &sdk.SubscriptionMode_SubscriptionMode_Assign{Assign: *w.Assign}
-	case w.Subscribe != nil:
-		subscriptionModeSelection = &sdk.SubscriptionMode_SubscriptionMode_Subscribe{Subscribe: *w.Subscribe}
-	case w.SubscribePattern != nil:
-		subscriptionModeSelection = &sdk.SubscriptionMode_SubscriptionMode_SubscribePattern{SubscribePattern: *w.SubscribePattern}
-	}
-	return &sdk.SubscriptionMode{
-		SubscriptionMode: subscriptionModeSelection,
-	}, nil
 }
 
 // Computes the sum of values..
@@ -4786,40 +1343,8 @@ type SumFunction struct {
 	Input *string `json:"input,omitempty"`
 }
 
-func SumFunctionFromSDK(v *sdk.SumFunction) (*SumFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SumFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func SumFunctionToSDK(w *SumFunction) (*sdk.SumFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SumFunction{
-		Input: w.Input,
-	}, nil
-}
-
 // A trigger that fires when the upstream source table changes..
 type TableTrigger struct {
-}
-
-func TableTriggerFromSDK(v *sdk.TableTrigger) (*TableTrigger, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TableTrigger{}, nil
-}
-
-func TableTriggerToSDK(w *TableTrigger) (*sdk.TableTrigger, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableTrigger{}, nil
 }
 
 type TimeWindow struct {
@@ -4840,132 +1365,6 @@ type TimeWindow struct {
 	StartTime *types.Time `json:"start_time,omitempty"`
 }
 
-func TimeWindowFromSDK(v *sdk.TimeWindow) (*TimeWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var windowTypeContinuousWire *ContinuousWindow
-	var windowTypeTumblingWire *TumblingWindow
-	var windowTypeSlidingWire *SlidingWindow
-	var windowTypeRollingWire *RollingWindow
-	var windowTypeSawtoothWire *SawtoothWindow
-	switch value := v.WindowType.(type) {
-	case nil:
-	case *sdk.TimeWindow_WindowType_Continuous:
-		if value != nil {
-			windowTypeContinuousConverted, err := ContinuousWindowFromSDK(&value.Continuous)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Continuous", err)
-			}
-			windowTypeContinuousWire = windowTypeContinuousConverted
-		}
-	case *sdk.TimeWindow_WindowType_Tumbling:
-		if value != nil {
-			windowTypeTumblingConverted, err := TumblingWindowFromSDK(&value.Tumbling)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Tumbling", err)
-			}
-			windowTypeTumblingWire = windowTypeTumblingConverted
-		}
-	case *sdk.TimeWindow_WindowType_Sliding:
-		if value != nil {
-			windowTypeSlidingConverted, err := SlidingWindowFromSDK(&value.Sliding)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Sliding", err)
-			}
-			windowTypeSlidingWire = windowTypeSlidingConverted
-		}
-	case *sdk.TimeWindow_WindowType_Rolling:
-		if value != nil {
-			windowTypeRollingConverted, err := RollingWindowFromSDK(&value.Rolling)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Rolling", err)
-			}
-			windowTypeRollingWire = windowTypeRollingConverted
-		}
-	case *sdk.TimeWindow_WindowType_Sawtooth:
-		if value != nil {
-			windowTypeSawtoothConverted, err := SawtoothWindowFromSDK(&value.Sawtooth)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Sawtooth", err)
-			}
-			windowTypeSawtoothWire = windowTypeSawtoothConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TimeWindow.WindowType", value)
-	}
-	return &TimeWindow{
-		Continuous: windowTypeContinuousWire,
-		Tumbling:   windowTypeTumblingWire,
-		Sliding:    windowTypeSlidingWire,
-		Rolling:    windowTypeRollingWire,
-		Sawtooth:   windowTypeSawtoothWire,
-		StartTime:  v.StartTime,
-	}, nil
-}
-
-func TimeWindowToSDK(w *TimeWindow) (*sdk.TimeWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	windowTypeMembers := 0
-	if w.Continuous != nil {
-		windowTypeMembers++
-	}
-	if w.Tumbling != nil {
-		windowTypeMembers++
-	}
-	if w.Sliding != nil {
-		windowTypeMembers++
-	}
-	if w.Rolling != nil {
-		windowTypeMembers++
-	}
-	if w.Sawtooth != nil {
-		windowTypeMembers++
-	}
-	if windowTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TimeWindow.WindowType")
-	}
-	windowTypeSelection := (&sdk.TimeWindow{}).WindowType
-	switch {
-	case w.Continuous != nil:
-		windowTypeContinuousConverted, err := ContinuousWindowToSDK(w.Continuous)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Continuous", err)
-		}
-		windowTypeSelection = &sdk.TimeWindow_WindowType_Continuous{Continuous: *windowTypeContinuousConverted}
-	case w.Tumbling != nil:
-		windowTypeTumblingConverted, err := TumblingWindowToSDK(w.Tumbling)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Tumbling", err)
-		}
-		windowTypeSelection = &sdk.TimeWindow_WindowType_Tumbling{Tumbling: *windowTypeTumblingConverted}
-	case w.Sliding != nil:
-		windowTypeSlidingConverted, err := SlidingWindowToSDK(w.Sliding)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Sliding", err)
-		}
-		windowTypeSelection = &sdk.TimeWindow_WindowType_Sliding{Sliding: *windowTypeSlidingConverted}
-	case w.Rolling != nil:
-		windowTypeRollingConverted, err := RollingWindowToSDK(w.Rolling)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Rolling", err)
-		}
-		windowTypeSelection = &sdk.TimeWindow_WindowType_Rolling{Rolling: *windowTypeRollingConverted}
-	case w.Sawtooth != nil:
-		windowTypeSawtoothConverted, err := SawtoothWindowToSDK(w.Sawtooth)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType.Sawtooth", err)
-		}
-		windowTypeSelection = &sdk.TimeWindow_WindowType_Sawtooth{Sawtooth: *windowTypeSawtoothConverted}
-	}
-	return &sdk.TimeWindow{
-		StartTime:  w.StartTime,
-		WindowType: windowTypeSelection,
-	}, nil
-}
-
 type TimeseriesColumn struct {
 	// The name of the timeseries column. For Kafka sources, use dot-prefixed path
 	// notation to reference fields within the key or value schema (e.g.,
@@ -4975,24 +1374,6 @@ type TimeseriesColumn struct {
 	// Colon-prefixed notation (e.g., "value:event_timestamp") is supported for
 	// backwards compatibility but is deprecated; migrate to dot notation.
 	Name *string `json:"name,omitempty"`
-}
-
-func TimeseriesColumnFromSDK(v *sdk.TimeseriesColumn) (*TimeseriesColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TimeseriesColumn{
-		Name: v.Name,
-	}, nil
-}
-
-func TimeseriesColumnToSDK(w *TimeseriesColumn) (*sdk.TimeseriesColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TimeseriesColumn{
-		Name: w.Name,
-	}, nil
 }
 
 type TumblingWindow struct {
@@ -5011,28 +1392,6 @@ type TumblingWindow struct {
 	Offset *types.Duration `json:"offset,omitempty"`
 }
 
-func TumblingWindowFromSDK(v *sdk.TumblingWindow) (*TumblingWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TumblingWindow{
-		WindowDuration: v.WindowDuration,
-		Delay:          v.Delay,
-		Offset:         v.Offset,
-	}, nil
-}
-
-func TumblingWindowToSDK(w *TumblingWindow) (*sdk.TumblingWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TumblingWindow{
-		WindowDuration: w.WindowDuration,
-		Delay:          w.Delay,
-		Offset:         w.Offset,
-	}, nil
-}
-
 type UpdateFeatureRequest struct {
 	// Feature whose full_name identifies the target. Only description is mutable.
 	Feature *Feature `json:"feature,omitempty"`
@@ -5040,39 +1399,11 @@ type UpdateFeatureRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateFeatureRequestFromSDK(v *sdk.UpdateFeatureRequest) (*UpdateFeatureRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	featureWireValue, err := FeatureFromSDK(v.Feature)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateFeatureRequest.Feature", err)
-	}
-	return &UpdateFeatureRequest{
-		Feature:    featureWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateKafkaConfigRequest struct {
 	// The Kafka config to update.
 	KafkaConfig *KafkaConfig `json:"kafka_config,omitempty"`
 	// The list of fields to update.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateKafkaConfigRequestFromSDK(v *sdk.UpdateKafkaConfigRequest) (*UpdateKafkaConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	kafkaConfigWireValue, err := KafkaConfigFromSDK(v.KafkaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateKafkaConfigRequest.KafkaConfig", err)
-	}
-	return &UpdateKafkaConfigRequest{
-		KafkaConfig: kafkaConfigWireValue,
-		UpdateMask:  fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateMaterializedFeatureRequest struct {
@@ -5083,20 +1414,6 @@ type UpdateMaterializedFeatureRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateMaterializedFeatureRequestFromSDK(v *sdk.UpdateMaterializedFeatureRequest) (*UpdateMaterializedFeatureRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	materializedFeatureWireValue, err := MaterializedFeatureFromSDK(v.MaterializedFeature)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMaterializedFeatureRequest.MaterializedFeature", err)
-	}
-	return &UpdateMaterializedFeatureRequest{
-		MaterializedFeature: materializedFeatureWireValue,
-		UpdateMask:          fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Update a Stream. Only fields listed in `update_mask` are mutated..
 type UpdateStreamRequest struct {
 	// The Stream to update.
@@ -5105,42 +1422,10 @@ type UpdateStreamRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateStreamRequestFromSDK(v *sdk.UpdateStreamRequest) (*UpdateStreamRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	streamWireValue, err := StreamFromSDK(v.Stream)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateStreamRequest.Stream", err)
-	}
-	return &UpdateStreamRequest{
-		Stream:     streamWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Computes the population variance..
 type VarPopFunction struct {
 	// The input column from which the population variance is computed.
 	Input *string `json:"input,omitempty"`
-}
-
-func VarPopFunctionFromSDK(v *sdk.VarPopFunction) (*VarPopFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &VarPopFunction{
-		Input: v.Input,
-	}, nil
-}
-
-func VarPopFunctionToSDK(w *VarPopFunction) (*sdk.VarPopFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.VarPopFunction{
-		Input: w.Input,
-	}, nil
 }
 
 // Computes the sample variance..
@@ -5149,22 +1434,4075 @@ type VarSampFunction struct {
 	Input *string `json:"input,omitempty"`
 }
 
-func VarSampFunctionFromSDK(v *sdk.VarSampFunction) (*VarSampFunction, error) {
+// AggregationFunctionToSDK converts the mirror to the sdk-go type.
+func AggregationFunctionToSDK(w *AggregationFunction) (*sdk.AggregationFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AggregationFunction{}
+	{
+		members := 0
+		if w.Avg != nil {
+			members++
+		}
+		if w.CountFunction != nil {
+			members++
+		}
+		if w.Sum != nil {
+			members++
+		}
+		if w.Min != nil {
+			members++
+		}
+		if w.Max != nil {
+			members++
+		}
+		if w.First != nil {
+			members++
+		}
+		if w.Last != nil {
+			members++
+		}
+		if w.ApproxCountDistinct != nil {
+			members++
+		}
+		if w.ApproxPercentile != nil {
+			members++
+		}
+		if w.StddevPop != nil {
+			members++
+		}
+		if w.StddevSamp != nil {
+			members++
+		}
+		if w.VarPop != nil {
+			members++
+		}
+		if w.VarSamp != nil {
+			members++
+		}
+		if w.FirstN != nil {
+			members++
+		}
+		if w.LastN != nil {
+			members++
+		}
+		if w.FirstDistinct != nil {
+			members++
+		}
+		if w.LastDistinct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AggregationFunction.Operation")
+		}
+	}
+	switch {
+	case w.Avg != nil:
+		conv1, err := AvgFunctionToSDK(w.Avg)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_Avg{Avg: *conv1}
+	case w.CountFunction != nil:
+		conv2, err := CountFunctionToSDK(w.CountFunction)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_CountFunction{CountFunction: *conv2}
+	case w.Sum != nil:
+		conv3, err := SumFunctionToSDK(w.Sum)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_Sum{Sum: *conv3}
+	case w.Min != nil:
+		conv4, err := MinFunctionToSDK(w.Min)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_Min{Min: *conv4}
+	case w.Max != nil:
+		conv5, err := MaxFunctionToSDK(w.Max)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_Max{Max: *conv5}
+	case w.First != nil:
+		conv6, err := FirstFunctionToSDK(w.First)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_First{First: *conv6}
+	case w.Last != nil:
+		conv7, err := LastFunctionToSDK(w.Last)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_Last{Last: *conv7}
+	case w.ApproxCountDistinct != nil:
+		conv8, err := ApproxCountDistinctFunctionToSDK(w.ApproxCountDistinct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_ApproxCountDistinct{ApproxCountDistinct: *conv8}
+	case w.ApproxPercentile != nil:
+		conv9, err := ApproxPercentileFunctionToSDK(w.ApproxPercentile)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_ApproxPercentile{ApproxPercentile: *conv9}
+	case w.StddevPop != nil:
+		conv10, err := StddevPopFunctionToSDK(w.StddevPop)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_StddevPop{StddevPop: *conv10}
+	case w.StddevSamp != nil:
+		conv11, err := StddevSampFunctionToSDK(w.StddevSamp)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_StddevSamp{StddevSamp: *conv11}
+	case w.VarPop != nil:
+		conv12, err := VarPopFunctionToSDK(w.VarPop)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_VarPop{VarPop: *conv12}
+	case w.VarSamp != nil:
+		conv13, err := VarSampFunctionToSDK(w.VarSamp)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_VarSamp{VarSamp: *conv13}
+	case w.FirstN != nil:
+		conv14, err := FirstNFunctionToSDK(w.FirstN)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_FirstN{FirstN: *conv14}
+	case w.LastN != nil:
+		conv15, err := LastNFunctionToSDK(w.LastN)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_LastN{LastN: *conv15}
+	case w.FirstDistinct != nil:
+		conv16, err := FirstDistinctFunctionToSDK(w.FirstDistinct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_FirstDistinct{FirstDistinct: *conv16}
+	case w.LastDistinct != nil:
+		conv17, err := LastDistinctFunctionToSDK(w.LastDistinct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+		}
+		out.Operation = &sdk.AggregationFunction_Operation_LastDistinct{LastDistinct: *conv17}
+	}
+	conv18, err := TimeWindowToSDK(w.TimeWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AggregationFunction.TimeWindow", err)
+	}
+	out.TimeWindow = conv18
+	return out, nil
+}
+
+// AggregationFunctionFromSDK converts the sdk-go type to the mirror.
+func AggregationFunctionFromSDK(v *sdk.AggregationFunction) (*AggregationFunction, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &VarSampFunction{
-		Input: v.Input,
-	}, nil
+	out := &AggregationFunction{}
+	switch value := v.Operation.(type) {
+	case *sdk.AggregationFunction_Operation_Avg:
+		if value != nil {
+			conv19, err := AvgFunctionFromSDK(&value.Avg)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.Avg = conv19
+		}
+	case *sdk.AggregationFunction_Operation_CountFunction:
+		if value != nil {
+			conv20, err := CountFunctionFromSDK(&value.CountFunction)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.CountFunction = conv20
+		}
+	case *sdk.AggregationFunction_Operation_Sum:
+		if value != nil {
+			conv21, err := SumFunctionFromSDK(&value.Sum)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.Sum = conv21
+		}
+	case *sdk.AggregationFunction_Operation_Min:
+		if value != nil {
+			conv22, err := MinFunctionFromSDK(&value.Min)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.Min = conv22
+		}
+	case *sdk.AggregationFunction_Operation_Max:
+		if value != nil {
+			conv23, err := MaxFunctionFromSDK(&value.Max)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.Max = conv23
+		}
+	case *sdk.AggregationFunction_Operation_First:
+		if value != nil {
+			conv24, err := FirstFunctionFromSDK(&value.First)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.First = conv24
+		}
+	case *sdk.AggregationFunction_Operation_Last:
+		if value != nil {
+			conv25, err := LastFunctionFromSDK(&value.Last)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.Last = conv25
+		}
+	case *sdk.AggregationFunction_Operation_ApproxCountDistinct:
+		if value != nil {
+			conv26, err := ApproxCountDistinctFunctionFromSDK(&value.ApproxCountDistinct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.ApproxCountDistinct = conv26
+		}
+	case *sdk.AggregationFunction_Operation_ApproxPercentile:
+		if value != nil {
+			conv27, err := ApproxPercentileFunctionFromSDK(&value.ApproxPercentile)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.ApproxPercentile = conv27
+		}
+	case *sdk.AggregationFunction_Operation_StddevPop:
+		if value != nil {
+			conv28, err := StddevPopFunctionFromSDK(&value.StddevPop)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.StddevPop = conv28
+		}
+	case *sdk.AggregationFunction_Operation_StddevSamp:
+		if value != nil {
+			conv29, err := StddevSampFunctionFromSDK(&value.StddevSamp)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.StddevSamp = conv29
+		}
+	case *sdk.AggregationFunction_Operation_VarPop:
+		if value != nil {
+			conv30, err := VarPopFunctionFromSDK(&value.VarPop)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.VarPop = conv30
+		}
+	case *sdk.AggregationFunction_Operation_VarSamp:
+		if value != nil {
+			conv31, err := VarSampFunctionFromSDK(&value.VarSamp)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.VarSamp = conv31
+		}
+	case *sdk.AggregationFunction_Operation_FirstN:
+		if value != nil {
+			conv32, err := FirstNFunctionFromSDK(&value.FirstN)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.FirstN = conv32
+		}
+	case *sdk.AggregationFunction_Operation_LastN:
+		if value != nil {
+			conv33, err := LastNFunctionFromSDK(&value.LastN)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.LastN = conv33
+		}
+	case *sdk.AggregationFunction_Operation_FirstDistinct:
+		if value != nil {
+			conv34, err := FirstDistinctFunctionFromSDK(&value.FirstDistinct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.FirstDistinct = conv34
+		}
+	case *sdk.AggregationFunction_Operation_LastDistinct:
+		if value != nil {
+			conv35, err := LastDistinctFunctionFromSDK(&value.LastDistinct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AggregationFunction.Operation", err)
+			}
+			out.LastDistinct = conv35
+		}
+	}
+	conv36, err := TimeWindowFromSDK(v.TimeWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AggregationFunction.TimeWindow", err)
+	}
+	out.TimeWindow = conv36
+	return out, nil
 }
 
+// ApiErrorToSDK converts the mirror to the sdk-go type.
+func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiError{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	out.StackTrace = w.StackTrace
+	out.Details = w.Details
+	return out, nil
+}
+
+// ApiErrorFromSDK converts the sdk-go type to the mirror.
+func ApiErrorFromSDK(v *sdk.ApiError) (*ApiError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApiError{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	out.StackTrace = v.StackTrace
+	out.Details = v.Details
+	return out, nil
+}
+
+// ApproxCountDistinctFunctionToSDK converts the mirror to the sdk-go type.
+func ApproxCountDistinctFunctionToSDK(w *ApproxCountDistinctFunction) (*sdk.ApproxCountDistinctFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApproxCountDistinctFunction{}
+	out.Input = w.Input
+	out.RelativeSd = w.RelativeSd
+	return out, nil
+}
+
+// ApproxCountDistinctFunctionFromSDK converts the sdk-go type to the mirror.
+func ApproxCountDistinctFunctionFromSDK(v *sdk.ApproxCountDistinctFunction) (*ApproxCountDistinctFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApproxCountDistinctFunction{}
+	out.Input = v.Input
+	out.RelativeSd = v.RelativeSd
+	return out, nil
+}
+
+// ApproxPercentileFunctionToSDK converts the mirror to the sdk-go type.
+func ApproxPercentileFunctionToSDK(w *ApproxPercentileFunction) (*sdk.ApproxPercentileFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApproxPercentileFunction{}
+	out.Input = w.Input
+	out.Percentile = w.Percentile
+	out.Accuracy = w.Accuracy
+	return out, nil
+}
+
+// ApproxPercentileFunctionFromSDK converts the sdk-go type to the mirror.
+func ApproxPercentileFunctionFromSDK(v *sdk.ApproxPercentileFunction) (*ApproxPercentileFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApproxPercentileFunction{}
+	out.Input = v.Input
+	out.Percentile = v.Percentile
+	out.Accuracy = v.Accuracy
+	return out, nil
+}
+
+// AuthConfigToSDK converts the mirror to the sdk-go type.
+func AuthConfigToSDK(w *AuthConfig) (*sdk.AuthConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AuthConfig{}
+	{
+		members := 0
+		if w.UcServiceCredentialName != nil {
+			members++
+		}
+		if w.MtlsConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AuthConfig.AuthConfig")
+		}
+	}
+	switch {
+	case w.UcServiceCredentialName != nil:
+		out.AuthConfig = &sdk.AuthConfig_AuthConfig_UcServiceCredentialName{UcServiceCredentialName: *w.UcServiceCredentialName}
+	case w.MtlsConfig != nil:
+		conv37, err := MtlsConfigToSDK(w.MtlsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AuthConfig.AuthConfig", err)
+		}
+		out.AuthConfig = &sdk.AuthConfig_AuthConfig_MtlsConfig{MtlsConfig: *conv37}
+	}
+	return out, nil
+}
+
+// AuthConfigFromSDK converts the sdk-go type to the mirror.
+func AuthConfigFromSDK(v *sdk.AuthConfig) (*AuthConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AuthConfig{}
+	switch value := v.AuthConfig.(type) {
+	case *sdk.AuthConfig_AuthConfig_UcServiceCredentialName:
+		if value != nil {
+			out.UcServiceCredentialName = new(value.UcServiceCredentialName)
+		}
+	case *sdk.AuthConfig_AuthConfig_MtlsConfig:
+		if value != nil {
+			conv38, err := MtlsConfigFromSDK(&value.MtlsConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AuthConfig.AuthConfig", err)
+			}
+			out.MtlsConfig = conv38
+		}
+	}
+	return out, nil
+}
+
+// AvgFunctionToSDK converts the mirror to the sdk-go type.
+func AvgFunctionToSDK(w *AvgFunction) (*sdk.AvgFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AvgFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// AvgFunctionFromSDK converts the sdk-go type to the mirror.
+func AvgFunctionFromSDK(v *sdk.AvgFunction) (*AvgFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AvgFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// BackfillFeaturesRequestToSDK converts the mirror to the sdk-go type.
+func BackfillFeaturesRequestToSDK(w *BackfillFeaturesRequest) (*sdk.BackfillFeaturesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BackfillFeaturesRequest{}
+	out.FeatureFullNames = w.FeatureFullNames
+	conv39, err := convertSlice(w.BackfillRanges, BackfillRangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BackfillFeaturesRequest.BackfillRanges", err)
+	}
+	out.BackfillRanges = conv39
+	out.RequestId = w.RequestId
+	out.Tags = w.Tags
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// BackfillFeaturesRequestFromSDK converts the sdk-go type to the mirror.
+func BackfillFeaturesRequestFromSDK(v *sdk.BackfillFeaturesRequest) (*BackfillFeaturesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BackfillFeaturesRequest{}
+	out.FeatureFullNames = v.FeatureFullNames
+	conv40, err := convertSlice(v.BackfillRanges, BackfillRangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BackfillFeaturesRequest.BackfillRanges", err)
+	}
+	out.BackfillRanges = conv40
+	out.RequestId = v.RequestId
+	out.Tags = v.Tags
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// BackfillFeaturesResponseToSDK converts the mirror to the sdk-go type.
+func BackfillFeaturesResponseToSDK(w *BackfillFeaturesResponse) (*sdk.BackfillFeaturesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BackfillFeaturesResponse{}
+	return out, nil
+}
+
+// BackfillFeaturesResponseFromSDK converts the sdk-go type to the mirror.
+func BackfillFeaturesResponseFromSDK(v *sdk.BackfillFeaturesResponse) (*BackfillFeaturesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BackfillFeaturesResponse{}
+	return out, nil
+}
+
+// BackfillOperationMetadataToSDK converts the mirror to the sdk-go type.
+func BackfillOperationMetadataToSDK(w *BackfillOperationMetadata) (*sdk.BackfillOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BackfillOperationMetadata{}
+	out.FeatureFullNames = w.FeatureFullNames
+	conv41, err := convertSlice(w.BackfillRanges, BackfillRangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BackfillOperationMetadata.BackfillRanges", err)
+	}
+	out.BackfillRanges = conv41
+	out.State = w.State
+	return out, nil
+}
+
+// BackfillOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func BackfillOperationMetadataFromSDK(v *sdk.BackfillOperationMetadata) (*BackfillOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BackfillOperationMetadata{}
+	out.FeatureFullNames = v.FeatureFullNames
+	conv42, err := convertSlice(v.BackfillRanges, BackfillRangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BackfillOperationMetadata.BackfillRanges", err)
+	}
+	out.BackfillRanges = conv42
+	out.State = v.State
+	return out, nil
+}
+
+// BackfillRangeToSDK converts the mirror to the sdk-go type.
+func BackfillRangeToSDK(w *BackfillRange) (*sdk.BackfillRange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BackfillRange{}
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	return out, nil
+}
+
+// BackfillRangeFromSDK converts the sdk-go type to the mirror.
+func BackfillRangeFromSDK(v *sdk.BackfillRange) (*BackfillRange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BackfillRange{}
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	return out, nil
+}
+
+// BackfillSourceToSDK converts the mirror to the sdk-go type.
+func BackfillSourceToSDK(w *BackfillSource) (*sdk.BackfillSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BackfillSource{}
+	{
+		members := 0
+		if w.DeltaTableSource != nil {
+			members++
+		}
+		if w.DeltaTableName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "BackfillSource.BackfillSource")
+		}
+	}
+	switch {
+	case w.DeltaTableSource != nil:
+		conv43, err := DeltaTableSourceToSDK(w.DeltaTableSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "BackfillSource.BackfillSource", err)
+		}
+		out.BackfillSource = &sdk.BackfillSource_BackfillSource_DeltaTableSource{DeltaTableSource: *conv43}
+	case w.DeltaTableName != nil:
+		out.BackfillSource = &sdk.BackfillSource_BackfillSource_DeltaTableName{DeltaTableName: *w.DeltaTableName}
+	}
+	return out, nil
+}
+
+// BackfillSourceFromSDK converts the sdk-go type to the mirror.
+func BackfillSourceFromSDK(v *sdk.BackfillSource) (*BackfillSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BackfillSource{}
+	switch value := v.BackfillSource.(type) {
+	case *sdk.BackfillSource_BackfillSource_DeltaTableSource:
+		if value != nil {
+			conv44, err := DeltaTableSourceFromSDK(&value.DeltaTableSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "BackfillSource.BackfillSource", err)
+			}
+			out.DeltaTableSource = conv44
+		}
+	case *sdk.BackfillSource_BackfillSource_DeltaTableName:
+		if value != nil {
+			out.DeltaTableName = new(value.DeltaTableName)
+		}
+	}
+	return out, nil
+}
+
+// BatchCreateMaterializedFeaturesRequestToSDK converts the mirror to the sdk-go type.
+func BatchCreateMaterializedFeaturesRequestToSDK(w *BatchCreateMaterializedFeaturesRequest) (*sdk.BatchCreateMaterializedFeaturesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchCreateMaterializedFeaturesRequest{}
+	conv45, err := convertSlice(w.Requests, CreateMaterializedFeatureRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesRequest.Requests", err)
+	}
+	out.Requests = conv45
+	return out, nil
+}
+
+// BatchCreateMaterializedFeaturesRequestFromSDK converts the sdk-go type to the mirror.
+func BatchCreateMaterializedFeaturesRequestFromSDK(v *sdk.BatchCreateMaterializedFeaturesRequest) (*BatchCreateMaterializedFeaturesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchCreateMaterializedFeaturesRequest{}
+	conv46, err := convertSlice(v.Requests, CreateMaterializedFeatureRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesRequest.Requests", err)
+	}
+	out.Requests = conv46
+	return out, nil
+}
+
+// BatchCreateMaterializedFeaturesResponseToSDK converts the mirror to the sdk-go type.
+func BatchCreateMaterializedFeaturesResponseToSDK(w *BatchCreateMaterializedFeaturesResponse) (*sdk.BatchCreateMaterializedFeaturesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchCreateMaterializedFeaturesResponse{}
+	conv47, err := convertSlice(w.MaterializedFeatures, MaterializedFeatureToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesResponse.MaterializedFeatures", err)
+	}
+	out.MaterializedFeatures = conv47
+	return out, nil
+}
+
+// BatchCreateMaterializedFeaturesResponseFromSDK converts the sdk-go type to the mirror.
+func BatchCreateMaterializedFeaturesResponseFromSDK(v *sdk.BatchCreateMaterializedFeaturesResponse) (*BatchCreateMaterializedFeaturesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchCreateMaterializedFeaturesResponse{}
+	conv48, err := convertSlice(v.MaterializedFeatures, MaterializedFeatureFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateMaterializedFeaturesResponse.MaterializedFeatures", err)
+	}
+	out.MaterializedFeatures = conv48
+	return out, nil
+}
+
+// CancelOperationRequestToSDK converts the mirror to the sdk-go type.
+func CancelOperationRequestToSDK(w *CancelOperationRequest) (*sdk.CancelOperationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelOperationRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// CancelOperationRequestFromSDK converts the sdk-go type to the mirror.
+func CancelOperationRequestFromSDK(v *sdk.CancelOperationRequest) (*CancelOperationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelOperationRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// ColumnIdentifierToSDK converts the mirror to the sdk-go type.
+func ColumnIdentifierToSDK(w *ColumnIdentifier) (*sdk.ColumnIdentifier, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnIdentifier{}
+	out.VariantExprPath = w.VariantExprPath
+	return out, nil
+}
+
+// ColumnIdentifierFromSDK converts the sdk-go type to the mirror.
+func ColumnIdentifierFromSDK(v *sdk.ColumnIdentifier) (*ColumnIdentifier, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnIdentifier{}
+	out.VariantExprPath = v.VariantExprPath
+	return out, nil
+}
+
+// ColumnSelectionToSDK converts the mirror to the sdk-go type.
+func ColumnSelectionToSDK(w *ColumnSelection) (*sdk.ColumnSelection, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnSelection{}
+	out.Column = w.Column
+	return out, nil
+}
+
+// ColumnSelectionFromSDK converts the sdk-go type to the mirror.
+func ColumnSelectionFromSDK(v *sdk.ColumnSelection) (*ColumnSelection, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnSelection{}
+	out.Column = v.Column
+	return out, nil
+}
+
+// ContinuousWindowToSDK converts the mirror to the sdk-go type.
+func ContinuousWindowToSDK(w *ContinuousWindow) (*sdk.ContinuousWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContinuousWindow{}
+	out.WindowDuration = w.WindowDuration
+	out.Offset = w.Offset
+	return out, nil
+}
+
+// ContinuousWindowFromSDK converts the sdk-go type to the mirror.
+func ContinuousWindowFromSDK(v *sdk.ContinuousWindow) (*ContinuousWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ContinuousWindow{}
+	out.WindowDuration = v.WindowDuration
+	out.Offset = v.Offset
+	return out, nil
+}
+
+// CountFunctionToSDK converts the mirror to the sdk-go type.
+func CountFunctionToSDK(w *CountFunction) (*sdk.CountFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CountFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// CountFunctionFromSDK converts the sdk-go type to the mirror.
+func CountFunctionFromSDK(v *sdk.CountFunction) (*CountFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CountFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// CreateFeatureRequestToSDK converts the mirror to the sdk-go type.
+func CreateFeatureRequestToSDK(w *CreateFeatureRequest) (*sdk.CreateFeatureRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFeatureRequest{}
+	conv49, err := FeatureToSDK(w.Feature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFeatureRequest.Feature", err)
+	}
+	out.Feature = conv49
+	return out, nil
+}
+
+// CreateFeatureRequestFromSDK converts the sdk-go type to the mirror.
+func CreateFeatureRequestFromSDK(v *sdk.CreateFeatureRequest) (*CreateFeatureRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFeatureRequest{}
+	conv50, err := FeatureFromSDK(v.Feature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFeatureRequest.Feature", err)
+	}
+	out.Feature = conv50
+	return out, nil
+}
+
+// CreateKafkaConfigRequestToSDK converts the mirror to the sdk-go type.
+func CreateKafkaConfigRequestToSDK(w *CreateKafkaConfigRequest) (*sdk.CreateKafkaConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateKafkaConfigRequest{}
+	conv51, err := KafkaConfigToSDK(w.KafkaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKafkaConfigRequest.KafkaConfig", err)
+	}
+	out.KafkaConfig = conv51
+	return out, nil
+}
+
+// CreateKafkaConfigRequestFromSDK converts the sdk-go type to the mirror.
+func CreateKafkaConfigRequestFromSDK(v *sdk.CreateKafkaConfigRequest) (*CreateKafkaConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateKafkaConfigRequest{}
+	conv52, err := KafkaConfigFromSDK(v.KafkaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKafkaConfigRequest.KafkaConfig", err)
+	}
+	out.KafkaConfig = conv52
+	return out, nil
+}
+
+// CreateMaterializedFeatureRequestToSDK converts the mirror to the sdk-go type.
+func CreateMaterializedFeatureRequestToSDK(w *CreateMaterializedFeatureRequest) (*sdk.CreateMaterializedFeatureRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMaterializedFeatureRequest{}
+	conv53, err := MaterializedFeatureToSDK(w.MaterializedFeature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMaterializedFeatureRequest.MaterializedFeature", err)
+	}
+	out.MaterializedFeature = conv53
+	return out, nil
+}
+
+// CreateMaterializedFeatureRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMaterializedFeatureRequestFromSDK(v *sdk.CreateMaterializedFeatureRequest) (*CreateMaterializedFeatureRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMaterializedFeatureRequest{}
+	conv54, err := MaterializedFeatureFromSDK(v.MaterializedFeature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMaterializedFeatureRequest.MaterializedFeature", err)
+	}
+	out.MaterializedFeature = conv54
+	return out, nil
+}
+
+// CreateStreamRequestToSDK converts the mirror to the sdk-go type.
+func CreateStreamRequestToSDK(w *CreateStreamRequest) (*sdk.CreateStreamRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateStreamRequest{}
+	conv55, err := StreamToSDK(w.Stream)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStreamRequest.Stream", err)
+	}
+	out.Stream = conv55
+	return out, nil
+}
+
+// CreateStreamRequestFromSDK converts the sdk-go type to the mirror.
+func CreateStreamRequestFromSDK(v *sdk.CreateStreamRequest) (*CreateStreamRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateStreamRequest{}
+	conv56, err := StreamFromSDK(v.Stream)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStreamRequest.Stream", err)
+	}
+	out.Stream = conv56
+	return out, nil
+}
+
+// CronScheduleToSDK converts the mirror to the sdk-go type.
+func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronSchedule{}
+	out.CronExpression = w.CronExpression
+	out.Mode = w.Mode
+	out.TimezoneId = w.TimezoneId
+	return out, nil
+}
+
+// CronScheduleFromSDK converts the sdk-go type to the mirror.
+func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronSchedule{}
+	out.CronExpression = v.CronExpression
+	out.Mode = v.Mode
+	out.TimezoneId = v.TimezoneId
+	return out, nil
+}
+
+// CustomUdfToSDK converts the mirror to the sdk-go type.
+func CustomUdfToSDK(w *CustomUdf) (*sdk.CustomUdf, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomUdf{}
+	out.FunctionPath = w.FunctionPath
+	conv57, err := convertSlice(w.InputBindings, InputBindingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomUdf.InputBindings", err)
+	}
+	out.InputBindings = conv57
+	return out, nil
+}
+
+// CustomUdfFromSDK converts the sdk-go type to the mirror.
+func CustomUdfFromSDK(v *sdk.CustomUdf) (*CustomUdf, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomUdf{}
+	out.FunctionPath = v.FunctionPath
+	conv58, err := convertSlice(v.InputBindings, InputBindingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomUdf.InputBindings", err)
+	}
+	out.InputBindings = conv58
+	return out, nil
+}
+
+// DataSourceToSDK converts the mirror to the sdk-go type.
+func DataSourceToSDK(w *DataSource) (*sdk.DataSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataSource{}
+	{
+		members := 0
+		if w.DeltaTableSource != nil {
+			members++
+		}
+		if w.KafkaSource != nil {
+			members++
+		}
+		if w.RequestSource != nil {
+			members++
+		}
+		if w.StreamSource != nil {
+			members++
+		}
+		if w.FeatureViewSource != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DataSource.DataSource")
+		}
+	}
+	switch {
+	case w.DeltaTableSource != nil:
+		conv59, err := DeltaTableSourceToSDK(w.DeltaTableSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+		}
+		out.DataSource = &sdk.DataSource_DataSource_DeltaTableSource{DeltaTableSource: *conv59}
+	case w.KafkaSource != nil:
+		conv60, err := KafkaSourceToSDK(w.KafkaSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+		}
+		out.DataSource = &sdk.DataSource_DataSource_KafkaSource{KafkaSource: *conv60}
+	case w.RequestSource != nil:
+		conv61, err := RequestSourceToSDK(w.RequestSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+		}
+		out.DataSource = &sdk.DataSource_DataSource_RequestSource{RequestSource: *conv61}
+	case w.StreamSource != nil:
+		conv62, err := StreamSourceToSDK(w.StreamSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+		}
+		out.DataSource = &sdk.DataSource_DataSource_StreamSource{StreamSource: *conv62}
+	case w.FeatureViewSource != nil:
+		conv63, err := FeatureViewSourceToSDK(w.FeatureViewSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+		}
+		out.DataSource = &sdk.DataSource_DataSource_FeatureViewSource{FeatureViewSource: *conv63}
+	}
+	conv64, err := SourceLatenessToSDK(w.Lateness)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataSource.Lateness", err)
+	}
+	out.Lateness = conv64
+	return out, nil
+}
+
+// DataSourceFromSDK converts the sdk-go type to the mirror.
+func DataSourceFromSDK(v *sdk.DataSource) (*DataSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataSource{}
+	switch value := v.DataSource.(type) {
+	case *sdk.DataSource_DataSource_DeltaTableSource:
+		if value != nil {
+			conv65, err := DeltaTableSourceFromSDK(&value.DeltaTableSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+			}
+			out.DeltaTableSource = conv65
+		}
+	case *sdk.DataSource_DataSource_KafkaSource:
+		if value != nil {
+			conv66, err := KafkaSourceFromSDK(&value.KafkaSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+			}
+			out.KafkaSource = conv66
+		}
+	case *sdk.DataSource_DataSource_RequestSource:
+		if value != nil {
+			conv67, err := RequestSourceFromSDK(&value.RequestSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+			}
+			out.RequestSource = conv67
+		}
+	case *sdk.DataSource_DataSource_StreamSource:
+		if value != nil {
+			conv68, err := StreamSourceFromSDK(&value.StreamSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+			}
+			out.StreamSource = conv68
+		}
+	case *sdk.DataSource_DataSource_FeatureViewSource:
+		if value != nil {
+			conv69, err := FeatureViewSourceFromSDK(&value.FeatureViewSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataSource.DataSource", err)
+			}
+			out.FeatureViewSource = conv69
+		}
+	}
+	conv70, err := SourceLatenessFromSDK(v.Lateness)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataSource.Lateness", err)
+	}
+	out.Lateness = conv70
+	return out, nil
+}
+
+// DeltaTableSourceToSDK converts the mirror to the sdk-go type.
+func DeltaTableSourceToSDK(w *DeltaTableSource) (*sdk.DeltaTableSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaTableSource{}
+	out.FullName = w.FullName
+	out.EntityColumns = w.EntityColumns
+	out.TimeseriesColumn = w.TimeseriesColumn
+	out.FilterCondition = w.FilterCondition
+	out.TransformationSql = w.TransformationSql
+	out.DataframeSchema = w.DataframeSchema
+	return out, nil
+}
+
+// DeltaTableSourceFromSDK converts the sdk-go type to the mirror.
+func DeltaTableSourceFromSDK(v *sdk.DeltaTableSource) (*DeltaTableSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaTableSource{}
+	out.FullName = v.FullName
+	out.EntityColumns = v.EntityColumns
+	out.TimeseriesColumn = v.TimeseriesColumn
+	out.FilterCondition = v.FilterCondition
+	out.TransformationSql = v.TransformationSql
+	out.DataframeSchema = v.DataframeSchema
+	return out, nil
+}
+
+// DirectMtlsConfigToSDK converts the mirror to the sdk-go type.
+func DirectMtlsConfigToSDK(w *DirectMtlsConfig) (*sdk.DirectMtlsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DirectMtlsConfig{}
+	out.BootstrapServers = w.BootstrapServers
+	conv71, err := MtlsConfigToSDK(w.MtlsConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectMtlsConfig.MtlsConfig", err)
+	}
+	out.MtlsConfig = conv71
+	return out, nil
+}
+
+// DirectMtlsConfigFromSDK converts the sdk-go type to the mirror.
+func DirectMtlsConfigFromSDK(v *sdk.DirectMtlsConfig) (*DirectMtlsConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DirectMtlsConfig{}
+	out.BootstrapServers = v.BootstrapServers
+	conv72, err := MtlsConfigFromSDK(v.MtlsConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectMtlsConfig.MtlsConfig", err)
+	}
+	out.MtlsConfig = conv72
+	return out, nil
+}
+
+// DirectSchemasToSDK converts the mirror to the sdk-go type.
+func DirectSchemasToSDK(w *DirectSchemas) (*sdk.DirectSchemas, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DirectSchemas{}
+	conv73, err := SchemaConfigToSDK(w.PayloadSchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectSchemas.PayloadSchema", err)
+	}
+	out.PayloadSchema = conv73
+	conv74, err := SchemaConfigToSDK(w.KeySchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectSchemas.KeySchema", err)
+	}
+	out.KeySchema = conv74
+	return out, nil
+}
+
+// DirectSchemasFromSDK converts the sdk-go type to the mirror.
+func DirectSchemasFromSDK(v *sdk.DirectSchemas) (*DirectSchemas, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DirectSchemas{}
+	conv75, err := SchemaConfigFromSDK(v.PayloadSchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectSchemas.PayloadSchema", err)
+	}
+	out.PayloadSchema = conv75
+	conv76, err := SchemaConfigFromSDK(v.KeySchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectSchemas.KeySchema", err)
+	}
+	out.KeySchema = conv76
+	return out, nil
+}
+
+// EntityColumnToSDK converts the mirror to the sdk-go type.
+func EntityColumnToSDK(w *EntityColumn) (*sdk.EntityColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EntityColumn{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// EntityColumnFromSDK converts the sdk-go type to the mirror.
+func EntityColumnFromSDK(v *sdk.EntityColumn) (*EntityColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EntityColumn{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// FeatureToSDK converts the mirror to the sdk-go type.
+func FeatureToSDK(w *Feature) (*sdk.Feature, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Feature{}
+	out.FullName = w.FullName
+	conv77, err := DataSourceToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Source", err)
+	}
+	out.Source = conv77
+	out.Inputs = w.Inputs
+	conv78, err := FunctionToSDK(w.Function)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Function", err)
+	}
+	out.Function = conv78
+	conv79, err := TimeWindowToSDK(w.TimeWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.TimeWindow", err)
+	}
+	out.TimeWindow = conv79
+	out.Description = w.Description
+	out.FilterCondition = w.FilterCondition
+	conv80, err := LineageContextToSDK(w.LineageContext)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.LineageContext", err)
+	}
+	out.LineageContext = conv80
+	conv81, err := convertSlice(w.Entities, EntityColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Entities", err)
+	}
+	out.Entities = conv81
+	conv82, err := TimeseriesColumnToSDK(w.TimeseriesColumn)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.TimeseriesColumn", err)
+	}
+	out.TimeseriesColumn = conv82
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Name = w.Name
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	return out, nil
+}
+
+// FeatureFromSDK converts the sdk-go type to the mirror.
+func FeatureFromSDK(v *sdk.Feature) (*Feature, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Feature{}
+	out.FullName = v.FullName
+	conv83, err := DataSourceFromSDK(v.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Source", err)
+	}
+	out.Source = conv83
+	out.Inputs = v.Inputs
+	conv84, err := FunctionFromSDK(v.Function)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Function", err)
+	}
+	out.Function = conv84
+	conv85, err := TimeWindowFromSDK(v.TimeWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.TimeWindow", err)
+	}
+	out.TimeWindow = conv85
+	out.Description = v.Description
+	out.FilterCondition = v.FilterCondition
+	conv86, err := LineageContextFromSDK(v.LineageContext)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.LineageContext", err)
+	}
+	out.LineageContext = conv86
+	conv87, err := convertSlice(v.Entities, EntityColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.Entities", err)
+	}
+	out.Entities = conv87
+	conv88, err := TimeseriesColumnFromSDK(v.TimeseriesColumn)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Feature.TimeseriesColumn", err)
+	}
+	out.TimeseriesColumn = conv88
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Name = v.Name
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	return out, nil
+}
+
+// FeatureReferenceToSDK converts the mirror to the sdk-go type.
+func FeatureReferenceToSDK(w *FeatureReference) (*sdk.FeatureReference, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FeatureReference{}
+	out.Feature = w.Feature
+	return out, nil
+}
+
+// FeatureReferenceFromSDK converts the sdk-go type to the mirror.
+func FeatureReferenceFromSDK(v *sdk.FeatureReference) (*FeatureReference, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FeatureReference{}
+	out.Feature = v.Feature
+	return out, nil
+}
+
+// FeatureViewSourceToSDK converts the mirror to the sdk-go type.
+func FeatureViewSourceToSDK(w *FeatureViewSource) (*sdk.FeatureViewSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FeatureViewSource{}
+	conv89, err := convertSlice(w.FeatureReferences, FeatureReferenceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FeatureViewSource.FeatureReferences", err)
+	}
+	out.FeatureReferences = conv89
+	return out, nil
+}
+
+// FeatureViewSourceFromSDK converts the sdk-go type to the mirror.
+func FeatureViewSourceFromSDK(v *sdk.FeatureViewSource) (*FeatureViewSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FeatureViewSource{}
+	conv90, err := convertSlice(v.FeatureReferences, FeatureReferenceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FeatureViewSource.FeatureReferences", err)
+	}
+	out.FeatureReferences = conv90
+	return out, nil
+}
+
+// FieldDefinitionToSDK converts the mirror to the sdk-go type.
+func FieldDefinitionToSDK(w *FieldDefinition) (*sdk.FieldDefinition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FieldDefinition{}
+	out.Name = w.Name
+	out.DataType = w.DataType
+	return out, nil
+}
+
+// FieldDefinitionFromSDK converts the sdk-go type to the mirror.
+func FieldDefinitionFromSDK(v *sdk.FieldDefinition) (*FieldDefinition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FieldDefinition{}
+	out.Name = v.Name
+	out.DataType = v.DataType
+	return out, nil
+}
+
+// FirstDistinctFunctionToSDK converts the mirror to the sdk-go type.
+func FirstDistinctFunctionToSDK(w *FirstDistinctFunction) (*sdk.FirstDistinctFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FirstDistinctFunction{}
+	out.Input = w.Input
+	out.N = w.N
+	return out, nil
+}
+
+// FirstDistinctFunctionFromSDK converts the sdk-go type to the mirror.
+func FirstDistinctFunctionFromSDK(v *sdk.FirstDistinctFunction) (*FirstDistinctFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FirstDistinctFunction{}
+	out.Input = v.Input
+	out.N = v.N
+	return out, nil
+}
+
+// FirstFunctionToSDK converts the mirror to the sdk-go type.
+func FirstFunctionToSDK(w *FirstFunction) (*sdk.FirstFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FirstFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// FirstFunctionFromSDK converts the sdk-go type to the mirror.
+func FirstFunctionFromSDK(v *sdk.FirstFunction) (*FirstFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FirstFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// FirstNFunctionToSDK converts the mirror to the sdk-go type.
+func FirstNFunctionToSDK(w *FirstNFunction) (*sdk.FirstNFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FirstNFunction{}
+	out.Input = w.Input
+	out.N = w.N
+	return out, nil
+}
+
+// FirstNFunctionFromSDK converts the sdk-go type to the mirror.
+func FirstNFunctionFromSDK(v *sdk.FirstNFunction) (*FirstNFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FirstNFunction{}
+	out.Input = v.Input
+	out.N = v.N
+	return out, nil
+}
+
+// FlatSchemaToSDK converts the mirror to the sdk-go type.
+func FlatSchemaToSDK(w *FlatSchema) (*sdk.FlatSchema, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FlatSchema{}
+	conv91, err := convertSlice(w.Fields, FieldDefinitionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FlatSchema.Fields", err)
+	}
+	out.Fields = conv91
+	return out, nil
+}
+
+// FlatSchemaFromSDK converts the sdk-go type to the mirror.
+func FlatSchemaFromSDK(v *sdk.FlatSchema) (*FlatSchema, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FlatSchema{}
+	conv92, err := convertSlice(v.Fields, FieldDefinitionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FlatSchema.Fields", err)
+	}
+	out.Fields = conv92
+	return out, nil
+}
+
+// FunctionToSDK converts the mirror to the sdk-go type.
+func FunctionToSDK(w *Function) (*sdk.Function, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Function{}
+	out.FunctionType = w.FunctionType
+	conv93, err := convertSlice(w.ExtraParameters, FunctionExtraParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.ExtraParameters", err)
+	}
+	out.ExtraParameters = conv93
+	{
+		members := 0
+		if w.AggregationFunction != nil {
+			members++
+		}
+		if w.ColumnSelection != nil {
+			members++
+		}
+		if w.CustomUdf != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Function.Function")
+		}
+	}
+	switch {
+	case w.AggregationFunction != nil:
+		conv94, err := AggregationFunctionToSDK(w.AggregationFunction)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+		}
+		out.Function = &sdk.Function_Function_AggregationFunction{AggregationFunction: *conv94}
+	case w.ColumnSelection != nil:
+		conv95, err := ColumnSelectionToSDK(w.ColumnSelection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+		}
+		out.Function = &sdk.Function_Function_ColumnSelection{ColumnSelection: *conv95}
+	case w.CustomUdf != nil:
+		conv96, err := CustomUdfToSDK(w.CustomUdf)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+		}
+		out.Function = &sdk.Function_Function_CustomUdf{CustomUdf: *conv96}
+	}
+	return out, nil
+}
+
+// FunctionFromSDK converts the sdk-go type to the mirror.
+func FunctionFromSDK(v *sdk.Function) (*Function, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Function{}
+	out.FunctionType = v.FunctionType
+	conv97, err := convertSlice(v.ExtraParameters, FunctionExtraParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.ExtraParameters", err)
+	}
+	out.ExtraParameters = conv97
+	switch value := v.Function.(type) {
+	case *sdk.Function_Function_AggregationFunction:
+		if value != nil {
+			conv98, err := AggregationFunctionFromSDK(&value.AggregationFunction)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+			}
+			out.AggregationFunction = conv98
+		}
+	case *sdk.Function_Function_ColumnSelection:
+		if value != nil {
+			conv99, err := ColumnSelectionFromSDK(&value.ColumnSelection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+			}
+			out.ColumnSelection = conv99
+		}
+	case *sdk.Function_Function_CustomUdf:
+		if value != nil {
+			conv100, err := CustomUdfFromSDK(&value.CustomUdf)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Function.Function", err)
+			}
+			out.CustomUdf = conv100
+		}
+	}
+	return out, nil
+}
+
+// FunctionExtraParameterToSDK converts the mirror to the sdk-go type.
+func FunctionExtraParameterToSDK(w *FunctionExtraParameter) (*sdk.FunctionExtraParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionExtraParameter{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// FunctionExtraParameterFromSDK converts the sdk-go type to the mirror.
+func FunctionExtraParameterFromSDK(v *sdk.FunctionExtraParameter) (*FunctionExtraParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionExtraParameter{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// IngestionConfigToSDK converts the mirror to the sdk-go type.
+func IngestionConfigToSDK(w *IngestionConfig) (*sdk.IngestionConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionConfig{}
+	conv101, err := IngestionDestinationToSDK(w.IngestionDestination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionDestination", err)
+	}
+	out.IngestionDestination = conv101
+	conv102, err := BackfillSourceToSDK(w.BackfillSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillSource", err)
+	}
+	out.BackfillSource = conv102
+	out.DeduplicationColumns = w.DeduplicationColumns
+	out.IngestionPipelineId = w.IngestionPipelineId
+	out.IngestionJobId = w.IngestionJobId
+	out.BackfillJobId = w.BackfillJobId
+	out.Tags = w.Tags
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// IngestionConfigFromSDK converts the sdk-go type to the mirror.
+func IngestionConfigFromSDK(v *sdk.IngestionConfig) (*IngestionConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionConfig{}
+	conv103, err := IngestionDestinationFromSDK(v.IngestionDestination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionConfig.IngestionDestination", err)
+	}
+	out.IngestionDestination = conv103
+	conv104, err := BackfillSourceFromSDK(v.BackfillSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionConfig.BackfillSource", err)
+	}
+	out.BackfillSource = conv104
+	out.DeduplicationColumns = v.DeduplicationColumns
+	out.IngestionPipelineId = v.IngestionPipelineId
+	out.IngestionJobId = v.IngestionJobId
+	out.BackfillJobId = v.BackfillJobId
+	out.Tags = v.Tags
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// IngestionDestinationToSDK converts the mirror to the sdk-go type.
+func IngestionDestinationToSDK(w *IngestionDestination) (*sdk.IngestionDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionDestination{}
+	{
+		members := 0
+		if w.DeltaTableName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionDestination.IngestionDestination")
+		}
+	}
+	switch {
+	case w.DeltaTableName != nil:
+		out.IngestionDestination = &sdk.IngestionDestination_IngestionDestination_DeltaTableName{DeltaTableName: *w.DeltaTableName}
+	}
+	return out, nil
+}
+
+// IngestionDestinationFromSDK converts the sdk-go type to the mirror.
+func IngestionDestinationFromSDK(v *sdk.IngestionDestination) (*IngestionDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionDestination{}
+	switch value := v.IngestionDestination.(type) {
+	case *sdk.IngestionDestination_IngestionDestination_DeltaTableName:
+		if value != nil {
+			out.DeltaTableName = new(value.DeltaTableName)
+		}
+	}
+	return out, nil
+}
+
+// InputBindingToSDK converts the mirror to the sdk-go type.
+func InputBindingToSDK(w *InputBinding) (*sdk.InputBinding, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InputBinding{}
+	out.Parameter = w.Parameter
+	out.Column = w.Column
+	return out, nil
+}
+
+// InputBindingFromSDK converts the sdk-go type to the mirror.
+func InputBindingFromSDK(v *sdk.InputBinding) (*InputBinding, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InputBinding{}
+	out.Parameter = v.Parameter
+	out.Column = v.Column
+	return out, nil
+}
+
+// JobContextToSDK converts the mirror to the sdk-go type.
+func JobContextToSDK(w *JobContext) (*sdk.JobContext, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobContext{}
+	out.JobId = w.JobId
+	out.JobRunId = w.JobRunId
+	return out, nil
+}
+
+// JobContextFromSDK converts the sdk-go type to the mirror.
+func JobContextFromSDK(v *sdk.JobContext) (*JobContext, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobContext{}
+	out.JobId = v.JobId
+	out.JobRunId = v.JobRunId
+	return out, nil
+}
+
+// KafkaConfigToSDK converts the mirror to the sdk-go type.
+func KafkaConfigToSDK(w *KafkaConfig) (*sdk.KafkaConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KafkaConfig{}
+	out.Name = w.Name
+	out.BootstrapServers = w.BootstrapServers
+	conv105, err := SubscriptionModeToSDK(w.SubscriptionMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.SubscriptionMode", err)
+	}
+	out.SubscriptionMode = conv105
+	conv106, err := AuthConfigToSDK(w.AuthConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.AuthConfig", err)
+	}
+	out.AuthConfig = conv106
+	conv107, err := SchemaConfigToSDK(w.KeySchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.KeySchema", err)
+	}
+	out.KeySchema = conv107
+	conv108, err := SchemaConfigToSDK(w.ValueSchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.ValueSchema", err)
+	}
+	out.ValueSchema = conv108
+	out.ExtraOptions = w.ExtraOptions
+	conv109, err := BackfillSourceToSDK(w.BackfillSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.BackfillSource", err)
+	}
+	out.BackfillSource = conv109
+	conv110, err := IngestionConfigToSDK(w.IngestionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.IngestionConfig", err)
+	}
+	out.IngestionConfig = conv110
+	return out, nil
+}
+
+// KafkaConfigFromSDK converts the sdk-go type to the mirror.
+func KafkaConfigFromSDK(v *sdk.KafkaConfig) (*KafkaConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KafkaConfig{}
+	out.Name = v.Name
+	out.BootstrapServers = v.BootstrapServers
+	conv111, err := SubscriptionModeFromSDK(v.SubscriptionMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.SubscriptionMode", err)
+	}
+	out.SubscriptionMode = conv111
+	conv112, err := AuthConfigFromSDK(v.AuthConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.AuthConfig", err)
+	}
+	out.AuthConfig = conv112
+	conv113, err := SchemaConfigFromSDK(v.KeySchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.KeySchema", err)
+	}
+	out.KeySchema = conv113
+	conv114, err := SchemaConfigFromSDK(v.ValueSchema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.ValueSchema", err)
+	}
+	out.ValueSchema = conv114
+	out.ExtraOptions = v.ExtraOptions
+	conv115, err := BackfillSourceFromSDK(v.BackfillSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.BackfillSource", err)
+	}
+	out.BackfillSource = conv115
+	conv116, err := IngestionConfigFromSDK(v.IngestionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaConfig.IngestionConfig", err)
+	}
+	out.IngestionConfig = conv116
+	return out, nil
+}
+
+// KafkaSourceToSDK converts the mirror to the sdk-go type.
+func KafkaSourceToSDK(w *KafkaSource) (*sdk.KafkaSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KafkaSource{}
+	out.Name = w.Name
+	conv117, err := convertSlice(w.EntityColumnIdentifiers, ColumnIdentifierToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaSource.EntityColumnIdentifiers", err)
+	}
+	out.EntityColumnIdentifiers = conv117
+	conv118, err := ColumnIdentifierToSDK(w.TimeseriesColumnIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaSource.TimeseriesColumnIdentifier", err)
+	}
+	out.TimeseriesColumnIdentifier = conv118
+	out.FilterCondition = w.FilterCondition
+	return out, nil
+}
+
+// KafkaSourceFromSDK converts the sdk-go type to the mirror.
+func KafkaSourceFromSDK(v *sdk.KafkaSource) (*KafkaSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KafkaSource{}
+	out.Name = v.Name
+	conv119, err := convertSlice(v.EntityColumnIdentifiers, ColumnIdentifierFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaSource.EntityColumnIdentifiers", err)
+	}
+	out.EntityColumnIdentifiers = conv119
+	conv120, err := ColumnIdentifierFromSDK(v.TimeseriesColumnIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaSource.TimeseriesColumnIdentifier", err)
+	}
+	out.TimeseriesColumnIdentifier = conv120
+	out.FilterCondition = v.FilterCondition
+	return out, nil
+}
+
+// KafkaStreamConfigToSDK converts the mirror to the sdk-go type.
+func KafkaStreamConfigToSDK(w *KafkaStreamConfig) (*sdk.KafkaStreamConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KafkaStreamConfig{}
+	conv121, err := KafkaSubscriptionModeToSDK(w.SubscriptionMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaStreamConfig.SubscriptionMode", err)
+	}
+	out.SubscriptionMode = conv121
+	out.ExtraOptions = w.ExtraOptions
+	return out, nil
+}
+
+// KafkaStreamConfigFromSDK converts the sdk-go type to the mirror.
+func KafkaStreamConfigFromSDK(v *sdk.KafkaStreamConfig) (*KafkaStreamConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KafkaStreamConfig{}
+	conv122, err := KafkaSubscriptionModeFromSDK(v.SubscriptionMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaStreamConfig.SubscriptionMode", err)
+	}
+	out.SubscriptionMode = conv122
+	out.ExtraOptions = v.ExtraOptions
+	return out, nil
+}
+
+// KafkaSubscriptionModeToSDK converts the mirror to the sdk-go type.
+func KafkaSubscriptionModeToSDK(w *KafkaSubscriptionMode) (*sdk.KafkaSubscriptionMode, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KafkaSubscriptionMode{}
+	{
+		members := 0
+		if w.Assign != nil {
+			members++
+		}
+		if w.Subscribe != nil {
+			members++
+		}
+		if w.SubscribePattern != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "KafkaSubscriptionMode.SubscriptionMode")
+		}
+	}
+	switch {
+	case w.Assign != nil:
+		out.SubscriptionMode = &sdk.KafkaSubscriptionMode_SubscriptionMode_Assign{Assign: *w.Assign}
+	case w.Subscribe != nil:
+		out.SubscriptionMode = &sdk.KafkaSubscriptionMode_SubscriptionMode_Subscribe{Subscribe: *w.Subscribe}
+	case w.SubscribePattern != nil:
+		out.SubscriptionMode = &sdk.KafkaSubscriptionMode_SubscriptionMode_SubscribePattern{SubscribePattern: *w.SubscribePattern}
+	}
+	return out, nil
+}
+
+// KafkaSubscriptionModeFromSDK converts the sdk-go type to the mirror.
+func KafkaSubscriptionModeFromSDK(v *sdk.KafkaSubscriptionMode) (*KafkaSubscriptionMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KafkaSubscriptionMode{}
+	switch value := v.SubscriptionMode.(type) {
+	case *sdk.KafkaSubscriptionMode_SubscriptionMode_Assign:
+		if value != nil {
+			out.Assign = new(value.Assign)
+		}
+	case *sdk.KafkaSubscriptionMode_SubscriptionMode_Subscribe:
+		if value != nil {
+			out.Subscribe = new(value.Subscribe)
+		}
+	case *sdk.KafkaSubscriptionMode_SubscriptionMode_SubscribePattern:
+		if value != nil {
+			out.SubscribePattern = new(value.SubscribePattern)
+		}
+	}
+	return out, nil
+}
+
+// KinesisStreamConfigToSDK converts the mirror to the sdk-go type.
+func KinesisStreamConfigToSDK(w *KinesisStreamConfig) (*sdk.KinesisStreamConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KinesisStreamConfig{}
+	{
+		members := 0
+		if w.StreamNames != nil {
+			members++
+		}
+		if w.StreamArns != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "KinesisStreamConfig.StreamIdentifier")
+		}
+	}
+	switch {
+	case w.StreamNames != nil:
+		conv123, err := StreamNameListToSDK(w.StreamNames)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier", err)
+		}
+		out.StreamIdentifier = &sdk.KinesisStreamConfig_StreamIdentifier_StreamNames{StreamNames: *conv123}
+	case w.StreamArns != nil:
+		conv124, err := StreamArnListToSDK(w.StreamArns)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier", err)
+		}
+		out.StreamIdentifier = &sdk.KinesisStreamConfig_StreamIdentifier_StreamArns{StreamArns: *conv124}
+	}
+	out.ExtraOptions = w.ExtraOptions
+	return out, nil
+}
+
+// KinesisStreamConfigFromSDK converts the sdk-go type to the mirror.
+func KinesisStreamConfigFromSDK(v *sdk.KinesisStreamConfig) (*KinesisStreamConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KinesisStreamConfig{}
+	switch value := v.StreamIdentifier.(type) {
+	case *sdk.KinesisStreamConfig_StreamIdentifier_StreamNames:
+		if value != nil {
+			conv125, err := StreamNameListFromSDK(&value.StreamNames)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier", err)
+			}
+			out.StreamNames = conv125
+		}
+	case *sdk.KinesisStreamConfig_StreamIdentifier_StreamArns:
+		if value != nil {
+			conv126, err := StreamArnListFromSDK(&value.StreamArns)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "KinesisStreamConfig.StreamIdentifier", err)
+			}
+			out.StreamArns = conv126
+		}
+	}
+	out.ExtraOptions = v.ExtraOptions
+	return out, nil
+}
+
+// LastDistinctFunctionToSDK converts the mirror to the sdk-go type.
+func LastDistinctFunctionToSDK(w *LastDistinctFunction) (*sdk.LastDistinctFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LastDistinctFunction{}
+	out.Input = w.Input
+	out.N = w.N
+	return out, nil
+}
+
+// LastDistinctFunctionFromSDK converts the sdk-go type to the mirror.
+func LastDistinctFunctionFromSDK(v *sdk.LastDistinctFunction) (*LastDistinctFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LastDistinctFunction{}
+	out.Input = v.Input
+	out.N = v.N
+	return out, nil
+}
+
+// LastFunctionToSDK converts the mirror to the sdk-go type.
+func LastFunctionToSDK(w *LastFunction) (*sdk.LastFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LastFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// LastFunctionFromSDK converts the sdk-go type to the mirror.
+func LastFunctionFromSDK(v *sdk.LastFunction) (*LastFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LastFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// LastNFunctionToSDK converts the mirror to the sdk-go type.
+func LastNFunctionToSDK(w *LastNFunction) (*sdk.LastNFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LastNFunction{}
+	out.Input = w.Input
+	out.N = w.N
+	return out, nil
+}
+
+// LastNFunctionFromSDK converts the sdk-go type to the mirror.
+func LastNFunctionFromSDK(v *sdk.LastNFunction) (*LastNFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LastNFunction{}
+	out.Input = v.Input
+	out.N = v.N
+	return out, nil
+}
+
+// LineageContextToSDK converts the mirror to the sdk-go type.
+func LineageContextToSDK(w *LineageContext) (*sdk.LineageContext, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LineageContext{}
+	out.NotebookId = w.NotebookId
+	conv127, err := JobContextToSDK(w.JobContext)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LineageContext.JobContext", err)
+	}
+	out.JobContext = conv127
+	return out, nil
+}
+
+// LineageContextFromSDK converts the sdk-go type to the mirror.
+func LineageContextFromSDK(v *sdk.LineageContext) (*LineageContext, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LineageContext{}
+	out.NotebookId = v.NotebookId
+	conv128, err := JobContextFromSDK(v.JobContext)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LineageContext.JobContext", err)
+	}
+	out.JobContext = conv128
+	return out, nil
+}
+
+// ListFeaturesRequestToSDK converts the mirror to the sdk-go type.
+func ListFeaturesRequestToSDK(w *ListFeaturesRequest) (*sdk.ListFeaturesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFeaturesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	return out, nil
+}
+
+// ListFeaturesRequestFromSDK converts the sdk-go type to the mirror.
+func ListFeaturesRequestFromSDK(v *sdk.ListFeaturesRequest) (*ListFeaturesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFeaturesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	return out, nil
+}
+
+// ListFeaturesResponseToSDK converts the mirror to the sdk-go type.
+func ListFeaturesResponseToSDK(w *ListFeaturesResponse) (*sdk.ListFeaturesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFeaturesResponse{}
+	conv129, err := convertSlice(w.Features, FeatureToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFeaturesResponse.Features", err)
+	}
+	out.Features = conv129
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFeaturesResponseFromSDK converts the sdk-go type to the mirror.
+func ListFeaturesResponseFromSDK(v *sdk.ListFeaturesResponse) (*ListFeaturesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFeaturesResponse{}
+	conv130, err := convertSlice(v.Features, FeatureFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFeaturesResponse.Features", err)
+	}
+	out.Features = conv130
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListKafkaConfigsRequestToSDK converts the mirror to the sdk-go type.
+func ListKafkaConfigsRequestToSDK(w *ListKafkaConfigsRequest) (*sdk.ListKafkaConfigsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKafkaConfigsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListKafkaConfigsRequestFromSDK converts the sdk-go type to the mirror.
+func ListKafkaConfigsRequestFromSDK(v *sdk.ListKafkaConfigsRequest) (*ListKafkaConfigsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKafkaConfigsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListKafkaConfigsResponseToSDK converts the mirror to the sdk-go type.
+func ListKafkaConfigsResponseToSDK(w *ListKafkaConfigsResponse) (*sdk.ListKafkaConfigsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKafkaConfigsResponse{}
+	conv131, err := convertSlice(w.KafkaConfigs, KafkaConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKafkaConfigsResponse.KafkaConfigs", err)
+	}
+	out.KafkaConfigs = conv131
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListKafkaConfigsResponseFromSDK converts the sdk-go type to the mirror.
+func ListKafkaConfigsResponseFromSDK(v *sdk.ListKafkaConfigsResponse) (*ListKafkaConfigsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKafkaConfigsResponse{}
+	conv132, err := convertSlice(v.KafkaConfigs, KafkaConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKafkaConfigsResponse.KafkaConfigs", err)
+	}
+	out.KafkaConfigs = conv132
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListMaterializedFeaturesRequestToSDK converts the mirror to the sdk-go type.
+func ListMaterializedFeaturesRequestToSDK(w *ListMaterializedFeaturesRequest) (*sdk.ListMaterializedFeaturesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMaterializedFeaturesRequest{}
+	out.FeatureName = w.FeatureName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListMaterializedFeaturesRequestFromSDK converts the sdk-go type to the mirror.
+func ListMaterializedFeaturesRequestFromSDK(v *sdk.ListMaterializedFeaturesRequest) (*ListMaterializedFeaturesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMaterializedFeaturesRequest{}
+	out.FeatureName = v.FeatureName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListMaterializedFeaturesResponseToSDK converts the mirror to the sdk-go type.
+func ListMaterializedFeaturesResponseToSDK(w *ListMaterializedFeaturesResponse) (*sdk.ListMaterializedFeaturesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMaterializedFeaturesResponse{}
+	conv133, err := convertSlice(w.MaterializedFeatures, MaterializedFeatureToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMaterializedFeaturesResponse.MaterializedFeatures", err)
+	}
+	out.MaterializedFeatures = conv133
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListMaterializedFeaturesResponseFromSDK converts the sdk-go type to the mirror.
+func ListMaterializedFeaturesResponseFromSDK(v *sdk.ListMaterializedFeaturesResponse) (*ListMaterializedFeaturesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMaterializedFeaturesResponse{}
+	conv134, err := convertSlice(v.MaterializedFeatures, MaterializedFeatureFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMaterializedFeaturesResponse.MaterializedFeatures", err)
+	}
+	out.MaterializedFeatures = conv134
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListStreamsRequestToSDK converts the mirror to the sdk-go type.
+func ListStreamsRequestToSDK(w *ListStreamsRequest) (*sdk.ListStreamsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStreamsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListStreamsRequestFromSDK converts the sdk-go type to the mirror.
+func ListStreamsRequestFromSDK(v *sdk.ListStreamsRequest) (*ListStreamsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStreamsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListStreamsResponseToSDK converts the mirror to the sdk-go type.
+func ListStreamsResponseToSDK(w *ListStreamsResponse) (*sdk.ListStreamsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStreamsResponse{}
+	conv135, err := convertSlice(w.Streams, StreamToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStreamsResponse.Streams", err)
+	}
+	out.Streams = conv135
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListStreamsResponseFromSDK converts the sdk-go type to the mirror.
+func ListStreamsResponseFromSDK(v *sdk.ListStreamsResponse) (*ListStreamsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStreamsResponse{}
+	conv136, err := convertSlice(v.Streams, StreamFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStreamsResponse.Streams", err)
+	}
+	out.Streams = conv136
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MaterializationFailureNotificationToSDK converts the mirror to the sdk-go type.
+func MaterializationFailureNotificationToSDK(w *MaterializationFailureNotification) (*sdk.MaterializationFailureNotification, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaterializationFailureNotification{}
+	out.EmailAddresses = w.EmailAddresses
+	out.DestinationIds = w.DestinationIds
+	out.FinalAttemptOnly = w.FinalAttemptOnly
+	return out, nil
+}
+
+// MaterializationFailureNotificationFromSDK converts the sdk-go type to the mirror.
+func MaterializationFailureNotificationFromSDK(v *sdk.MaterializationFailureNotification) (*MaterializationFailureNotification, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaterializationFailureNotification{}
+	out.EmailAddresses = v.EmailAddresses
+	out.DestinationIds = v.DestinationIds
+	out.FinalAttemptOnly = v.FinalAttemptOnly
+	return out, nil
+}
+
+// MaterializationNotificationsToSDK converts the mirror to the sdk-go type.
+func MaterializationNotificationsToSDK(w *MaterializationNotifications) (*sdk.MaterializationNotifications, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaterializationNotifications{}
+	conv137, err := MaterializationSuccessNotificationToSDK(w.OnSuccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnSuccess", err)
+	}
+	out.OnSuccess = conv137
+	conv138, err := MaterializationFailureNotificationToSDK(w.OnFailure)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnFailure", err)
+	}
+	out.OnFailure = conv138
+	return out, nil
+}
+
+// MaterializationNotificationsFromSDK converts the sdk-go type to the mirror.
+func MaterializationNotificationsFromSDK(v *sdk.MaterializationNotifications) (*MaterializationNotifications, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaterializationNotifications{}
+	conv139, err := MaterializationSuccessNotificationFromSDK(v.OnSuccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnSuccess", err)
+	}
+	out.OnSuccess = conv139
+	conv140, err := MaterializationFailureNotificationFromSDK(v.OnFailure)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializationNotifications.OnFailure", err)
+	}
+	out.OnFailure = conv140
+	return out, nil
+}
+
+// MaterializationSuccessNotificationToSDK converts the mirror to the sdk-go type.
+func MaterializationSuccessNotificationToSDK(w *MaterializationSuccessNotification) (*sdk.MaterializationSuccessNotification, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaterializationSuccessNotification{}
+	out.EmailAddresses = w.EmailAddresses
+	out.DestinationIds = w.DestinationIds
+	return out, nil
+}
+
+// MaterializationSuccessNotificationFromSDK converts the sdk-go type to the mirror.
+func MaterializationSuccessNotificationFromSDK(v *sdk.MaterializationSuccessNotification) (*MaterializationSuccessNotification, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaterializationSuccessNotification{}
+	out.EmailAddresses = v.EmailAddresses
+	out.DestinationIds = v.DestinationIds
+	return out, nil
+}
+
+// MaterializedFeatureToSDK converts the mirror to the sdk-go type.
+func MaterializedFeatureToSDK(w *MaterializedFeature) (*sdk.MaterializedFeature, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaterializedFeature{}
+	out.MaterializedFeatureId = w.MaterializedFeatureId
+	out.FeatureName = w.FeatureName
+	{
+		members := 0
+		if w.OfflineStoreConfig != nil {
+			members++
+		}
+		if w.OnlineStoreConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Destination")
+		}
+	}
+	switch {
+	case w.OfflineStoreConfig != nil:
+		conv141, err := OfflineStoreConfigToSDK(w.OfflineStoreConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination", err)
+		}
+		out.Destination = &sdk.MaterializedFeature_Destination_OfflineStoreConfig{OfflineStoreConfig: *conv141}
+	case w.OnlineStoreConfig != nil:
+		conv142, err := OnlineStoreConfigToSDK(w.OnlineStoreConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination", err)
+		}
+		out.Destination = &sdk.MaterializedFeature_Destination_OnlineStoreConfig{OnlineStoreConfig: *conv142}
+	}
+	out.TableName = w.TableName
+	out.PipelineScheduleState = w.PipelineScheduleState
+	out.LastMaterializationTime = w.LastMaterializationTime
+	out.CronSchedule = w.CronSchedule
+	out.IsOnline = w.IsOnline
+	{
+		members := 0
+		if w.CronScheduleTrigger != nil {
+			members++
+		}
+		if w.TableTrigger != nil {
+			members++
+		}
+		if w.StreamingMode != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "MaterializedFeature.Trigger")
+		}
+	}
+	switch {
+	case w.CronScheduleTrigger != nil:
+		conv143, err := CronScheduleToSDK(w.CronScheduleTrigger)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+		}
+		out.Trigger = &sdk.MaterializedFeature_Trigger_CronScheduleTrigger{CronScheduleTrigger: *conv143}
+	case w.TableTrigger != nil:
+		conv144, err := TableTriggerToSDK(w.TableTrigger)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+		}
+		out.Trigger = &sdk.MaterializedFeature_Trigger_TableTrigger{TableTrigger: *conv144}
+	case w.StreamingMode != nil:
+		conv145, err := StreamingModeToSDK(w.StreamingMode)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+		}
+		out.Trigger = &sdk.MaterializedFeature_Trigger_StreamingMode{StreamingMode: *conv145}
+	}
+	out.LatestBackfillOperation = w.LatestBackfillOperation
+	out.Tags = w.Tags
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.PipelineId = w.PipelineId
+	out.JobId = w.JobId
+	conv146, err := MaterializationNotificationsToSDK(w.Notifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Notifications", err)
+	}
+	out.Notifications = conv146
+	return out, nil
+}
+
+// MaterializedFeatureFromSDK converts the sdk-go type to the mirror.
+func MaterializedFeatureFromSDK(v *sdk.MaterializedFeature) (*MaterializedFeature, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaterializedFeature{}
+	out.MaterializedFeatureId = v.MaterializedFeatureId
+	out.FeatureName = v.FeatureName
+	switch value := v.Destination.(type) {
+	case *sdk.MaterializedFeature_Destination_OfflineStoreConfig:
+		if value != nil {
+			conv147, err := OfflineStoreConfigFromSDK(&value.OfflineStoreConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination", err)
+			}
+			out.OfflineStoreConfig = conv147
+		}
+	case *sdk.MaterializedFeature_Destination_OnlineStoreConfig:
+		if value != nil {
+			conv148, err := OnlineStoreConfigFromSDK(&value.OnlineStoreConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Destination", err)
+			}
+			out.OnlineStoreConfig = conv148
+		}
+	}
+	out.TableName = v.TableName
+	out.PipelineScheduleState = v.PipelineScheduleState
+	out.LastMaterializationTime = v.LastMaterializationTime
+	out.CronSchedule = v.CronSchedule
+	out.IsOnline = v.IsOnline
+	switch value := v.Trigger.(type) {
+	case *sdk.MaterializedFeature_Trigger_CronScheduleTrigger:
+		if value != nil {
+			conv149, err := CronScheduleFromSDK(&value.CronScheduleTrigger)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+			}
+			out.CronScheduleTrigger = conv149
+		}
+	case *sdk.MaterializedFeature_Trigger_TableTrigger:
+		if value != nil {
+			conv150, err := TableTriggerFromSDK(&value.TableTrigger)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+			}
+			out.TableTrigger = conv150
+		}
+	case *sdk.MaterializedFeature_Trigger_StreamingMode:
+		if value != nil {
+			conv151, err := StreamingModeFromSDK(&value.StreamingMode)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Trigger", err)
+			}
+			out.StreamingMode = conv151
+		}
+	}
+	out.LatestBackfillOperation = v.LatestBackfillOperation
+	out.Tags = v.Tags
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.PipelineId = v.PipelineId
+	out.JobId = v.JobId
+	conv152, err := MaterializationNotificationsFromSDK(v.Notifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MaterializedFeature.Notifications", err)
+	}
+	out.Notifications = conv152
+	return out, nil
+}
+
+// MaxFunctionToSDK converts the mirror to the sdk-go type.
+func MaxFunctionToSDK(w *MaxFunction) (*sdk.MaxFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaxFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// MaxFunctionFromSDK converts the sdk-go type to the mirror.
+func MaxFunctionFromSDK(v *sdk.MaxFunction) (*MaxFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaxFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// MinFunctionToSDK converts the mirror to the sdk-go type.
+func MinFunctionToSDK(w *MinFunction) (*sdk.MinFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MinFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// MinFunctionFromSDK converts the sdk-go type to the mirror.
+func MinFunctionFromSDK(v *sdk.MinFunction) (*MinFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MinFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// MtlsConfigToSDK converts the mirror to the sdk-go type.
+func MtlsConfigToSDK(w *MtlsConfig) (*sdk.MtlsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MtlsConfig{}
+	out.KeystoreLocation = w.KeystoreLocation
+	conv153, err := SecretScopeReferenceToSDK(w.KeystorePasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeystorePasswordRef", err)
+	}
+	out.KeystorePasswordRef = conv153
+	conv154, err := SecretScopeReferenceToSDK(w.KeyPasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeyPasswordRef", err)
+	}
+	out.KeyPasswordRef = conv154
+	out.TruststoreLocation = w.TruststoreLocation
+	conv155, err := SecretScopeReferenceToSDK(w.TruststorePasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.TruststorePasswordRef", err)
+	}
+	out.TruststorePasswordRef = conv155
+	out.DisableHostnameVerification = w.DisableHostnameVerification
+	return out, nil
+}
+
+// MtlsConfigFromSDK converts the sdk-go type to the mirror.
+func MtlsConfigFromSDK(v *sdk.MtlsConfig) (*MtlsConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MtlsConfig{}
+	out.KeystoreLocation = v.KeystoreLocation
+	conv156, err := SecretScopeReferenceFromSDK(v.KeystorePasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeystorePasswordRef", err)
+	}
+	out.KeystorePasswordRef = conv156
+	conv157, err := SecretScopeReferenceFromSDK(v.KeyPasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.KeyPasswordRef", err)
+	}
+	out.KeyPasswordRef = conv157
+	out.TruststoreLocation = v.TruststoreLocation
+	conv158, err := SecretScopeReferenceFromSDK(v.TruststorePasswordRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MtlsConfig.TruststorePasswordRef", err)
+	}
+	out.TruststorePasswordRef = conv158
+	out.DisableHostnameVerification = v.DisableHostnameVerification
+	return out, nil
+}
+
+// OfflineStoreConfigToSDK converts the mirror to the sdk-go type.
+func OfflineStoreConfigToSDK(w *OfflineStoreConfig) (*sdk.OfflineStoreConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OfflineStoreConfig{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableNamePrefix = w.TableNamePrefix
+	return out, nil
+}
+
+// OfflineStoreConfigFromSDK converts the sdk-go type to the mirror.
+func OfflineStoreConfigFromSDK(v *sdk.OfflineStoreConfig) (*OfflineStoreConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OfflineStoreConfig{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableNamePrefix = v.TableNamePrefix
+	return out, nil
+}
+
+// OnlineStoreConfigToSDK converts the mirror to the sdk-go type.
+func OnlineStoreConfigToSDK(w *OnlineStoreConfig) (*sdk.OnlineStoreConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineStoreConfig{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableNamePrefix = w.TableNamePrefix
+	out.OnlineStoreName = w.OnlineStoreName
+	return out, nil
+}
+
+// OnlineStoreConfigFromSDK converts the sdk-go type to the mirror.
+func OnlineStoreConfigFromSDK(v *sdk.OnlineStoreConfig) (*OnlineStoreConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineStoreConfig{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableNamePrefix = v.TableNamePrefix
+	out.OnlineStoreName = v.OnlineStoreName
+	return out, nil
+}
+
+// OperationToSDK converts the mirror to the sdk-go type.
+func OperationToSDK(w *Operation) (*sdk.Operation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Operation{}
+	out.Name = w.Name
+	out.Metadata = w.Metadata
+	out.Done = w.Done
+	{
+		members := 0
+		if w.Error != nil {
+			members++
+		}
+		if w.Response != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		}
+	}
+	switch {
+	case w.Error != nil:
+		conv159, err := ApiErrorToSDK(w.Error)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+		}
+		out.Result = &sdk.Operation_Result_Error{Error: *conv159}
+	case w.Response != nil:
+		out.Result = &sdk.Operation_Result_Response{Response: w.Response}
+	}
+	return out, nil
+}
+
+// OperationFromSDK converts the sdk-go type to the mirror.
+func OperationFromSDK(v *sdk.Operation) (*Operation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Operation{}
+	out.Name = v.Name
+	out.Metadata = v.Metadata
+	out.Done = v.Done
+	switch value := v.Result.(type) {
+	case *sdk.Operation_Result_Error:
+		if value != nil {
+			conv160, err := ApiErrorFromSDK(&value.Error)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+			}
+			out.Error = conv160
+		}
+	case *sdk.Operation_Result_Response:
+		if value != nil {
+			out.Response = value.Response
+		}
+	}
+	return out, nil
+}
+
+// ProtoSchemaSpecToSDK converts the mirror to the sdk-go type.
+func ProtoSchemaSpecToSDK(w *ProtoSchemaSpec) (*sdk.ProtoSchemaSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProtoSchemaSpec{}
+	out.SchemaText = w.SchemaText
+	out.MessageName = w.MessageName
+	return out, nil
+}
+
+// ProtoSchemaSpecFromSDK converts the sdk-go type to the mirror.
+func ProtoSchemaSpecFromSDK(v *sdk.ProtoSchemaSpec) (*ProtoSchemaSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProtoSchemaSpec{}
+	out.SchemaText = v.SchemaText
+	out.MessageName = v.MessageName
+	return out, nil
+}
+
+// PurgeFeatureEntitiesMetadataToSDK converts the mirror to the sdk-go type.
+func PurgeFeatureEntitiesMetadataToSDK(w *PurgeFeatureEntitiesMetadata) (*sdk.PurgeFeatureEntitiesMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PurgeFeatureEntitiesMetadata{}
+	out.Features = w.Features
+	out.EntitiesTable = w.EntitiesTable
+	out.EntitiesTableVersion = w.EntitiesTableVersion
+	out.CreateTime = w.CreateTime
+	out.State = w.State
+	out.JobId = w.JobId
+	return out, nil
+}
+
+// PurgeFeatureEntitiesMetadataFromSDK converts the sdk-go type to the mirror.
+func PurgeFeatureEntitiesMetadataFromSDK(v *sdk.PurgeFeatureEntitiesMetadata) (*PurgeFeatureEntitiesMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PurgeFeatureEntitiesMetadata{}
+	out.Features = v.Features
+	out.EntitiesTable = v.EntitiesTable
+	out.EntitiesTableVersion = v.EntitiesTableVersion
+	out.CreateTime = v.CreateTime
+	out.State = v.State
+	out.JobId = v.JobId
+	return out, nil
+}
+
+// PurgeFeatureEntitiesRequestToSDK converts the mirror to the sdk-go type.
+func PurgeFeatureEntitiesRequestToSDK(w *PurgeFeatureEntitiesRequest) (*sdk.PurgeFeatureEntitiesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PurgeFeatureEntitiesRequest{}
+	out.Features = w.Features
+	{
+		members := 0
+		if w.EntitiesTable != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PurgeFeatureEntitiesRequest.Entities")
+		}
+	}
+	switch {
+	case w.EntitiesTable != nil:
+		out.Entities = &sdk.PurgeFeatureEntitiesRequest_Entities_EntitiesTable{EntitiesTable: *w.EntitiesTable}
+	}
+	out.RequestId = w.RequestId
+	out.Tags = w.Tags
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// PurgeFeatureEntitiesRequestFromSDK converts the sdk-go type to the mirror.
+func PurgeFeatureEntitiesRequestFromSDK(v *sdk.PurgeFeatureEntitiesRequest) (*PurgeFeatureEntitiesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PurgeFeatureEntitiesRequest{}
+	out.Features = v.Features
+	switch value := v.Entities.(type) {
+	case *sdk.PurgeFeatureEntitiesRequest_Entities_EntitiesTable:
+		if value != nil {
+			out.EntitiesTable = new(value.EntitiesTable)
+		}
+	}
+	out.RequestId = v.RequestId
+	out.Tags = v.Tags
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// PurgeFeatureEntitiesResponseToSDK converts the mirror to the sdk-go type.
+func PurgeFeatureEntitiesResponseToSDK(w *PurgeFeatureEntitiesResponse) (*sdk.PurgeFeatureEntitiesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PurgeFeatureEntitiesResponse{}
+	conv161, err := PurgeFeatureEntitiesMetadataToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Metadata", err)
+	}
+	out.Metadata = conv161
+	conv162, err := convertSlice(w.Results, PurgeFeatureEntitiesResultToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Results", err)
+	}
+	out.Results = conv162
+	out.State = w.State
+	conv163, err := ApiErrorToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Error", err)
+	}
+	out.Error = conv163
+	return out, nil
+}
+
+// PurgeFeatureEntitiesResponseFromSDK converts the sdk-go type to the mirror.
+func PurgeFeatureEntitiesResponseFromSDK(v *sdk.PurgeFeatureEntitiesResponse) (*PurgeFeatureEntitiesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PurgeFeatureEntitiesResponse{}
+	conv164, err := PurgeFeatureEntitiesMetadataFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Metadata", err)
+	}
+	out.Metadata = conv164
+	conv165, err := convertSlice(v.Results, PurgeFeatureEntitiesResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Results", err)
+	}
+	out.Results = conv165
+	out.State = v.State
+	conv166, err := ApiErrorFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResponse.Error", err)
+	}
+	out.Error = conv166
+	return out, nil
+}
+
+// PurgeFeatureEntitiesResultToSDK converts the mirror to the sdk-go type.
+func PurgeFeatureEntitiesResultToSDK(w *PurgeFeatureEntitiesResult) (*sdk.PurgeFeatureEntitiesResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PurgeFeatureEntitiesResult{}
+	out.Feature = w.Feature
+	out.OfflineState = w.OfflineState
+	out.OnlineState = w.OnlineState
+	conv167, err := ApiErrorToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResult.Error", err)
+	}
+	out.Error = conv167
+	return out, nil
+}
+
+// PurgeFeatureEntitiesResultFromSDK converts the sdk-go type to the mirror.
+func PurgeFeatureEntitiesResultFromSDK(v *sdk.PurgeFeatureEntitiesResult) (*PurgeFeatureEntitiesResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PurgeFeatureEntitiesResult{}
+	out.Feature = v.Feature
+	out.OfflineState = v.OfflineState
+	out.OnlineState = v.OnlineState
+	conv168, err := ApiErrorFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PurgeFeatureEntitiesResult.Error", err)
+	}
+	out.Error = conv168
+	return out, nil
+}
+
+// RequestSourceToSDK converts the mirror to the sdk-go type.
+func RequestSourceToSDK(w *RequestSource) (*sdk.RequestSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RequestSource{}
+	{
+		members := 0
+		if w.FlatSchema != nil {
+			members++
+		}
+		if w.DataframeSchema != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestSource.Schema")
+		}
+	}
+	switch {
+	case w.FlatSchema != nil:
+		conv169, err := FlatSchemaToSDK(w.FlatSchema)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RequestSource.Schema", err)
+		}
+		out.Schema = &sdk.RequestSource_Schema_FlatSchema{FlatSchema: *conv169}
+	case w.DataframeSchema != nil:
+		out.Schema = &sdk.RequestSource_Schema_DataframeSchema{DataframeSchema: *w.DataframeSchema}
+	}
+	return out, nil
+}
+
+// RequestSourceFromSDK converts the sdk-go type to the mirror.
+func RequestSourceFromSDK(v *sdk.RequestSource) (*RequestSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RequestSource{}
+	switch value := v.Schema.(type) {
+	case *sdk.RequestSource_Schema_FlatSchema:
+		if value != nil {
+			conv170, err := FlatSchemaFromSDK(&value.FlatSchema)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RequestSource.Schema", err)
+			}
+			out.FlatSchema = conv170
+		}
+	case *sdk.RequestSource_Schema_DataframeSchema:
+		if value != nil {
+			out.DataframeSchema = new(value.DataframeSchema)
+		}
+	}
+	return out, nil
+}
+
+// RollingWindowToSDK converts the mirror to the sdk-go type.
+func RollingWindowToSDK(w *RollingWindow) (*sdk.RollingWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RollingWindow{}
+	out.WindowDuration = w.WindowDuration
+	out.Delay = w.Delay
+	return out, nil
+}
+
+// RollingWindowFromSDK converts the sdk-go type to the mirror.
+func RollingWindowFromSDK(v *sdk.RollingWindow) (*RollingWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RollingWindow{}
+	out.WindowDuration = v.WindowDuration
+	out.Delay = v.Delay
+	return out, nil
+}
+
+// SawtoothWindowToSDK converts the mirror to the sdk-go type.
+func SawtoothWindowToSDK(w *SawtoothWindow) (*sdk.SawtoothWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SawtoothWindow{}
+	out.WindowDuration = w.WindowDuration
+	out.Delay = w.Delay
+	return out, nil
+}
+
+// SawtoothWindowFromSDK converts the sdk-go type to the mirror.
+func SawtoothWindowFromSDK(v *sdk.SawtoothWindow) (*SawtoothWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SawtoothWindow{}
+	out.WindowDuration = v.WindowDuration
+	out.Delay = v.Delay
+	return out, nil
+}
+
+// SchemaConfigToSDK converts the mirror to the sdk-go type.
+func SchemaConfigToSDK(w *SchemaConfig) (*sdk.SchemaConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaConfig{}
+	{
+		members := 0
+		if w.JsonSchema != nil {
+			members++
+		}
+		if w.AvroSchema != nil {
+			members++
+		}
+		if w.ProtoSchema != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaConfig.Schema")
+		}
+	}
+	switch {
+	case w.JsonSchema != nil:
+		out.Schema = &sdk.SchemaConfig_Schema_JsonSchema{JsonSchema: *w.JsonSchema}
+	case w.AvroSchema != nil:
+		out.Schema = &sdk.SchemaConfig_Schema_AvroSchema{AvroSchema: *w.AvroSchema}
+	case w.ProtoSchema != nil:
+		conv171, err := ProtoSchemaSpecToSDK(w.ProtoSchema)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SchemaConfig.Schema", err)
+		}
+		out.Schema = &sdk.SchemaConfig_Schema_ProtoSchema{ProtoSchema: *conv171}
+	}
+	return out, nil
+}
+
+// SchemaConfigFromSDK converts the sdk-go type to the mirror.
+func SchemaConfigFromSDK(v *sdk.SchemaConfig) (*SchemaConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaConfig{}
+	switch value := v.Schema.(type) {
+	case *sdk.SchemaConfig_Schema_JsonSchema:
+		if value != nil {
+			out.JsonSchema = new(value.JsonSchema)
+		}
+	case *sdk.SchemaConfig_Schema_AvroSchema:
+		if value != nil {
+			out.AvroSchema = new(value.AvroSchema)
+		}
+	case *sdk.SchemaConfig_Schema_ProtoSchema:
+		if value != nil {
+			conv172, err := ProtoSchemaSpecFromSDK(&value.ProtoSchema)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SchemaConfig.Schema", err)
+			}
+			out.ProtoSchema = conv172
+		}
+	}
+	return out, nil
+}
+
+// SchemaLocatorToSDK converts the mirror to the sdk-go type.
+func SchemaLocatorToSDK(w *SchemaLocator) (*sdk.SchemaLocator, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaLocator{}
+	{
+		members := 0
+		if w.ConfluentSchema != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SchemaLocator.RegistrySchema")
+		}
+	}
+	switch {
+	case w.ConfluentSchema != nil:
+		conv173, err := SchemaLocator_ConfluentSchemaToSDK(w.ConfluentSchema)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SchemaLocator.RegistrySchema", err)
+		}
+		out.RegistrySchema = &sdk.SchemaLocator_RegistrySchema_ConfluentSchema{ConfluentSchema: *conv173}
+	}
+	out.Format = w.Format
+	return out, nil
+}
+
+// SchemaLocatorFromSDK converts the sdk-go type to the mirror.
+func SchemaLocatorFromSDK(v *sdk.SchemaLocator) (*SchemaLocator, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaLocator{}
+	switch value := v.RegistrySchema.(type) {
+	case *sdk.SchemaLocator_RegistrySchema_ConfluentSchema:
+		if value != nil {
+			conv174, err := SchemaLocator_ConfluentSchemaFromSDK(&value.ConfluentSchema)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SchemaLocator.RegistrySchema", err)
+			}
+			out.ConfluentSchema = conv174
+		}
+	}
+	out.Format = v.Format
+	return out, nil
+}
+
+// SchemaLocator_ConfluentSchemaToSDK converts the mirror to the sdk-go type.
+func SchemaLocator_ConfluentSchemaToSDK(w *SchemaLocator_ConfluentSchema) (*sdk.SchemaLocator_ConfluentSchema, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaLocator_ConfluentSchema{}
+	out.Subject = w.Subject
+	return out, nil
+}
+
+// SchemaLocator_ConfluentSchemaFromSDK converts the sdk-go type to the mirror.
+func SchemaLocator_ConfluentSchemaFromSDK(v *sdk.SchemaLocator_ConfluentSchema) (*SchemaLocator_ConfluentSchema, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaLocator_ConfluentSchema{}
+	out.Subject = v.Subject
+	return out, nil
+}
+
+// SchemaRegistryConfigToSDK converts the mirror to the sdk-go type.
+func SchemaRegistryConfigToSDK(w *SchemaRegistryConfig) (*sdk.SchemaRegistryConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaRegistryConfig{}
+	out.UcConnection = w.UcConnection
+	conv175, err := SecretScopeReferenceToSDK(w.ApiSecretRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ApiSecretRef", err)
+	}
+	out.ApiSecretRef = conv175
+	conv176, err := SchemaLocatorToSDK(w.PayloadSchemaLocator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.PayloadSchemaLocator", err)
+	}
+	out.PayloadSchemaLocator = conv176
+	conv177, err := SchemaLocatorToSDK(w.KeySchemaLocator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.KeySchemaLocator", err)
+	}
+	out.KeySchemaLocator = conv177
+	return out, nil
+}
+
+// SchemaRegistryConfigFromSDK converts the sdk-go type to the mirror.
+func SchemaRegistryConfigFromSDK(v *sdk.SchemaRegistryConfig) (*SchemaRegistryConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaRegistryConfig{}
+	out.UcConnection = v.UcConnection
+	conv178, err := SecretScopeReferenceFromSDK(v.ApiSecretRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ApiSecretRef", err)
+	}
+	out.ApiSecretRef = conv178
+	conv179, err := SchemaLocatorFromSDK(v.PayloadSchemaLocator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.PayloadSchemaLocator", err)
+	}
+	out.PayloadSchemaLocator = conv179
+	conv180, err := SchemaLocatorFromSDK(v.KeySchemaLocator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.KeySchemaLocator", err)
+	}
+	out.KeySchemaLocator = conv180
+	return out, nil
+}
+
+// SecretScopeReferenceToSDK converts the mirror to the sdk-go type.
+func SecretScopeReferenceToSDK(w *SecretScopeReference) (*sdk.SecretScopeReference, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SecretScopeReference{}
+	out.Scope = w.Scope
+	out.Key = w.Key
+	return out, nil
+}
+
+// SecretScopeReferenceFromSDK converts the sdk-go type to the mirror.
+func SecretScopeReferenceFromSDK(v *sdk.SecretScopeReference) (*SecretScopeReference, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SecretScopeReference{}
+	out.Scope = v.Scope
+	out.Key = v.Key
+	return out, nil
+}
+
+// SlidingWindowToSDK converts the mirror to the sdk-go type.
+func SlidingWindowToSDK(w *SlidingWindow) (*sdk.SlidingWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SlidingWindow{}
+	out.WindowDuration = w.WindowDuration
+	out.SlideDuration = w.SlideDuration
+	out.Delay = w.Delay
+	out.Offset = w.Offset
+	return out, nil
+}
+
+// SlidingWindowFromSDK converts the sdk-go type to the mirror.
+func SlidingWindowFromSDK(v *sdk.SlidingWindow) (*SlidingWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SlidingWindow{}
+	out.WindowDuration = v.WindowDuration
+	out.SlideDuration = v.SlideDuration
+	out.Delay = v.Delay
+	out.Offset = v.Offset
+	return out, nil
+}
+
+// SourceLatenessToSDK converts the mirror to the sdk-go type.
+func SourceLatenessToSDK(w *SourceLateness) (*sdk.SourceLateness, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SourceLateness{}
+	out.SettlingDelay = w.SettlingDelay
+	return out, nil
+}
+
+// SourceLatenessFromSDK converts the sdk-go type to the mirror.
+func SourceLatenessFromSDK(v *sdk.SourceLateness) (*SourceLateness, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SourceLateness{}
+	out.SettlingDelay = v.SettlingDelay
+	return out, nil
+}
+
+// StddevPopFunctionToSDK converts the mirror to the sdk-go type.
+func StddevPopFunctionToSDK(w *StddevPopFunction) (*sdk.StddevPopFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StddevPopFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// StddevPopFunctionFromSDK converts the sdk-go type to the mirror.
+func StddevPopFunctionFromSDK(v *sdk.StddevPopFunction) (*StddevPopFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StddevPopFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// StddevSampFunctionToSDK converts the mirror to the sdk-go type.
+func StddevSampFunctionToSDK(w *StddevSampFunction) (*sdk.StddevSampFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StddevSampFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// StddevSampFunctionFromSDK converts the sdk-go type to the mirror.
+func StddevSampFunctionFromSDK(v *sdk.StddevSampFunction) (*StddevSampFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StddevSampFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// StreamToSDK converts the mirror to the sdk-go type.
+func StreamToSDK(w *Stream) (*sdk.Stream, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Stream{}
+	out.Name = w.Name
+	out.Description = w.Description
+	conv181, err := StreamSourceConfigToSDK(w.SourceConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.SourceConfig", err)
+	}
+	out.SourceConfig = conv181
+	conv182, err := StreamConnectionConfigToSDK(w.ConnectionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.ConnectionConfig", err)
+	}
+	out.ConnectionConfig = conv182
+	conv183, err := StreamSchemaConfigToSDK(w.SchemaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.SchemaConfig", err)
+	}
+	out.SchemaConfig = conv183
+	conv184, err := IngestionConfigToSDK(w.IngestionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.IngestionConfig", err)
+	}
+	out.IngestionConfig = conv184
+	out.RecordTypeFilter = w.RecordTypeFilter
+	out.ExcludedColumns = w.ExcludedColumns
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// StreamFromSDK converts the sdk-go type to the mirror.
+func StreamFromSDK(v *sdk.Stream) (*Stream, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Stream{}
+	out.Name = v.Name
+	out.Description = v.Description
+	conv185, err := StreamSourceConfigFromSDK(v.SourceConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.SourceConfig", err)
+	}
+	out.SourceConfig = conv185
+	conv186, err := StreamConnectionConfigFromSDK(v.ConnectionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.ConnectionConfig", err)
+	}
+	out.ConnectionConfig = conv186
+	conv187, err := StreamSchemaConfigFromSDK(v.SchemaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.SchemaConfig", err)
+	}
+	out.SchemaConfig = conv187
+	conv188, err := IngestionConfigFromSDK(v.IngestionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Stream.IngestionConfig", err)
+	}
+	out.IngestionConfig = conv188
+	out.RecordTypeFilter = v.RecordTypeFilter
+	out.ExcludedColumns = v.ExcludedColumns
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// StreamArnListToSDK converts the mirror to the sdk-go type.
+func StreamArnListToSDK(w *StreamArnList) (*sdk.StreamArnList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamArnList{}
+	out.Arns = w.Arns
+	return out, nil
+}
+
+// StreamArnListFromSDK converts the sdk-go type to the mirror.
+func StreamArnListFromSDK(v *sdk.StreamArnList) (*StreamArnList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamArnList{}
+	out.Arns = v.Arns
+	return out, nil
+}
+
+// StreamConnectionConfigToSDK converts the mirror to the sdk-go type.
+func StreamConnectionConfigToSDK(w *StreamConnectionConfig) (*sdk.StreamConnectionConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamConnectionConfig{}
+	{
+		members := 0
+		if w.UcConnectionName != nil {
+			members++
+		}
+		if w.DirectMtlsConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamConnectionConfig.ConnectionConfig")
+		}
+	}
+	switch {
+	case w.UcConnectionName != nil:
+		out.ConnectionConfig = &sdk.StreamConnectionConfig_ConnectionConfig_UcConnectionName{UcConnectionName: *w.UcConnectionName}
+	case w.DirectMtlsConfig != nil:
+		conv189, err := DirectMtlsConfigToSDK(w.DirectMtlsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StreamConnectionConfig.ConnectionConfig", err)
+		}
+		out.ConnectionConfig = &sdk.StreamConnectionConfig_ConnectionConfig_DirectMtlsConfig{DirectMtlsConfig: *conv189}
+	}
+	return out, nil
+}
+
+// StreamConnectionConfigFromSDK converts the sdk-go type to the mirror.
+func StreamConnectionConfigFromSDK(v *sdk.StreamConnectionConfig) (*StreamConnectionConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamConnectionConfig{}
+	switch value := v.ConnectionConfig.(type) {
+	case *sdk.StreamConnectionConfig_ConnectionConfig_UcConnectionName:
+		if value != nil {
+			out.UcConnectionName = new(value.UcConnectionName)
+		}
+	case *sdk.StreamConnectionConfig_ConnectionConfig_DirectMtlsConfig:
+		if value != nil {
+			conv190, err := DirectMtlsConfigFromSDK(&value.DirectMtlsConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StreamConnectionConfig.ConnectionConfig", err)
+			}
+			out.DirectMtlsConfig = conv190
+		}
+	}
+	return out, nil
+}
+
+// StreamNameListToSDK converts the mirror to the sdk-go type.
+func StreamNameListToSDK(w *StreamNameList) (*sdk.StreamNameList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamNameList{}
+	out.Names = w.Names
+	return out, nil
+}
+
+// StreamNameListFromSDK converts the sdk-go type to the mirror.
+func StreamNameListFromSDK(v *sdk.StreamNameList) (*StreamNameList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamNameList{}
+	out.Names = v.Names
+	return out, nil
+}
+
+// StreamSchemaConfigToSDK converts the mirror to the sdk-go type.
+func StreamSchemaConfigToSDK(w *StreamSchemaConfig) (*sdk.StreamSchemaConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamSchemaConfig{}
+	{
+		members := 0
+		if w.DirectSchemas != nil {
+			members++
+		}
+		if w.SchemaRegistryConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSchemaConfig.SchemaConfig")
+		}
+	}
+	switch {
+	case w.DirectSchemas != nil:
+		conv191, err := DirectSchemasToSDK(w.DirectSchemas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig", err)
+		}
+		out.SchemaConfig = &sdk.StreamSchemaConfig_SchemaConfig_DirectSchemas{DirectSchemas: *conv191}
+	case w.SchemaRegistryConfig != nil:
+		conv192, err := SchemaRegistryConfigToSDK(w.SchemaRegistryConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig", err)
+		}
+		out.SchemaConfig = &sdk.StreamSchemaConfig_SchemaConfig_SchemaRegistryConfig{SchemaRegistryConfig: *conv192}
+	}
+	return out, nil
+}
+
+// StreamSchemaConfigFromSDK converts the sdk-go type to the mirror.
+func StreamSchemaConfigFromSDK(v *sdk.StreamSchemaConfig) (*StreamSchemaConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamSchemaConfig{}
+	switch value := v.SchemaConfig.(type) {
+	case *sdk.StreamSchemaConfig_SchemaConfig_DirectSchemas:
+		if value != nil {
+			conv193, err := DirectSchemasFromSDK(&value.DirectSchemas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig", err)
+			}
+			out.DirectSchemas = conv193
+		}
+	case *sdk.StreamSchemaConfig_SchemaConfig_SchemaRegistryConfig:
+		if value != nil {
+			conv194, err := SchemaRegistryConfigFromSDK(&value.SchemaRegistryConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StreamSchemaConfig.SchemaConfig", err)
+			}
+			out.SchemaRegistryConfig = conv194
+		}
+	}
+	return out, nil
+}
+
+// StreamSourceToSDK converts the mirror to the sdk-go type.
+func StreamSourceToSDK(w *StreamSource) (*sdk.StreamSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamSource{}
+	out.FullName = w.FullName
+	out.FilterCondition = w.FilterCondition
+	out.TransformationSql = w.TransformationSql
+	out.DataframeSchema = w.DataframeSchema
+	return out, nil
+}
+
+// StreamSourceFromSDK converts the sdk-go type to the mirror.
+func StreamSourceFromSDK(v *sdk.StreamSource) (*StreamSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamSource{}
+	out.FullName = v.FullName
+	out.FilterCondition = v.FilterCondition
+	out.TransformationSql = v.TransformationSql
+	out.DataframeSchema = v.DataframeSchema
+	return out, nil
+}
+
+// StreamSourceConfigToSDK converts the mirror to the sdk-go type.
+func StreamSourceConfigToSDK(w *StreamSourceConfig) (*sdk.StreamSourceConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamSourceConfig{}
+	{
+		members := 0
+		if w.KafkaStreamConfig != nil {
+			members++
+		}
+		if w.KinesisStreamConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "StreamSourceConfig.SourceConfig")
+		}
+	}
+	switch {
+	case w.KafkaStreamConfig != nil:
+		conv195, err := KafkaStreamConfigToSDK(w.KafkaStreamConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig", err)
+		}
+		out.SourceConfig = &sdk.StreamSourceConfig_SourceConfig_KafkaStreamConfig{KafkaStreamConfig: *conv195}
+	case w.KinesisStreamConfig != nil:
+		conv196, err := KinesisStreamConfigToSDK(w.KinesisStreamConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig", err)
+		}
+		out.SourceConfig = &sdk.StreamSourceConfig_SourceConfig_KinesisStreamConfig{KinesisStreamConfig: *conv196}
+	}
+	return out, nil
+}
+
+// StreamSourceConfigFromSDK converts the sdk-go type to the mirror.
+func StreamSourceConfigFromSDK(v *sdk.StreamSourceConfig) (*StreamSourceConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamSourceConfig{}
+	switch value := v.SourceConfig.(type) {
+	case *sdk.StreamSourceConfig_SourceConfig_KafkaStreamConfig:
+		if value != nil {
+			conv197, err := KafkaStreamConfigFromSDK(&value.KafkaStreamConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig", err)
+			}
+			out.KafkaStreamConfig = conv197
+		}
+	case *sdk.StreamSourceConfig_SourceConfig_KinesisStreamConfig:
+		if value != nil {
+			conv198, err := KinesisStreamConfigFromSDK(&value.KinesisStreamConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StreamSourceConfig.SourceConfig", err)
+			}
+			out.KinesisStreamConfig = conv198
+		}
+	}
+	return out, nil
+}
+
+// StreamingModeToSDK converts the mirror to the sdk-go type.
+func StreamingModeToSDK(w *StreamingMode) (*sdk.StreamingMode, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StreamingMode{}
+	out.Mode = w.Mode
+	out.FreshnessTarget = w.FreshnessTarget
+	out.ShufflePartitions = w.ShufflePartitions
+	return out, nil
+}
+
+// StreamingModeFromSDK converts the sdk-go type to the mirror.
+func StreamingModeFromSDK(v *sdk.StreamingMode) (*StreamingMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StreamingMode{}
+	out.Mode = v.Mode
+	out.FreshnessTarget = v.FreshnessTarget
+	out.ShufflePartitions = v.ShufflePartitions
+	return out, nil
+}
+
+// SubscriptionModeToSDK converts the mirror to the sdk-go type.
+func SubscriptionModeToSDK(w *SubscriptionMode) (*sdk.SubscriptionMode, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SubscriptionMode{}
+	{
+		members := 0
+		if w.Assign != nil {
+			members++
+		}
+		if w.Subscribe != nil {
+			members++
+		}
+		if w.SubscribePattern != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SubscriptionMode.SubscriptionMode")
+		}
+	}
+	switch {
+	case w.Assign != nil:
+		out.SubscriptionMode = &sdk.SubscriptionMode_SubscriptionMode_Assign{Assign: *w.Assign}
+	case w.Subscribe != nil:
+		out.SubscriptionMode = &sdk.SubscriptionMode_SubscriptionMode_Subscribe{Subscribe: *w.Subscribe}
+	case w.SubscribePattern != nil:
+		out.SubscriptionMode = &sdk.SubscriptionMode_SubscriptionMode_SubscribePattern{SubscribePattern: *w.SubscribePattern}
+	}
+	return out, nil
+}
+
+// SubscriptionModeFromSDK converts the sdk-go type to the mirror.
+func SubscriptionModeFromSDK(v *sdk.SubscriptionMode) (*SubscriptionMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SubscriptionMode{}
+	switch value := v.SubscriptionMode.(type) {
+	case *sdk.SubscriptionMode_SubscriptionMode_Assign:
+		if value != nil {
+			out.Assign = new(value.Assign)
+		}
+	case *sdk.SubscriptionMode_SubscriptionMode_Subscribe:
+		if value != nil {
+			out.Subscribe = new(value.Subscribe)
+		}
+	case *sdk.SubscriptionMode_SubscriptionMode_SubscribePattern:
+		if value != nil {
+			out.SubscribePattern = new(value.SubscribePattern)
+		}
+	}
+	return out, nil
+}
+
+// SumFunctionToSDK converts the mirror to the sdk-go type.
+func SumFunctionToSDK(w *SumFunction) (*sdk.SumFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SumFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// SumFunctionFromSDK converts the sdk-go type to the mirror.
+func SumFunctionFromSDK(v *sdk.SumFunction) (*SumFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SumFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// TableTriggerToSDK converts the mirror to the sdk-go type.
+func TableTriggerToSDK(w *TableTrigger) (*sdk.TableTrigger, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableTrigger{}
+	return out, nil
+}
+
+// TableTriggerFromSDK converts the sdk-go type to the mirror.
+func TableTriggerFromSDK(v *sdk.TableTrigger) (*TableTrigger, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableTrigger{}
+	return out, nil
+}
+
+// TimeWindowToSDK converts the mirror to the sdk-go type.
+func TimeWindowToSDK(w *TimeWindow) (*sdk.TimeWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TimeWindow{}
+	{
+		members := 0
+		if w.Continuous != nil {
+			members++
+		}
+		if w.Tumbling != nil {
+			members++
+		}
+		if w.Sliding != nil {
+			members++
+		}
+		if w.Rolling != nil {
+			members++
+		}
+		if w.Sawtooth != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TimeWindow.WindowType")
+		}
+	}
+	switch {
+	case w.Continuous != nil:
+		conv199, err := ContinuousWindowToSDK(w.Continuous)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+		}
+		out.WindowType = &sdk.TimeWindow_WindowType_Continuous{Continuous: *conv199}
+	case w.Tumbling != nil:
+		conv200, err := TumblingWindowToSDK(w.Tumbling)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+		}
+		out.WindowType = &sdk.TimeWindow_WindowType_Tumbling{Tumbling: *conv200}
+	case w.Sliding != nil:
+		conv201, err := SlidingWindowToSDK(w.Sliding)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+		}
+		out.WindowType = &sdk.TimeWindow_WindowType_Sliding{Sliding: *conv201}
+	case w.Rolling != nil:
+		conv202, err := RollingWindowToSDK(w.Rolling)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+		}
+		out.WindowType = &sdk.TimeWindow_WindowType_Rolling{Rolling: *conv202}
+	case w.Sawtooth != nil:
+		conv203, err := SawtoothWindowToSDK(w.Sawtooth)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+		}
+		out.WindowType = &sdk.TimeWindow_WindowType_Sawtooth{Sawtooth: *conv203}
+	}
+	out.StartTime = w.StartTime
+	return out, nil
+}
+
+// TimeWindowFromSDK converts the sdk-go type to the mirror.
+func TimeWindowFromSDK(v *sdk.TimeWindow) (*TimeWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TimeWindow{}
+	switch value := v.WindowType.(type) {
+	case *sdk.TimeWindow_WindowType_Continuous:
+		if value != nil {
+			conv204, err := ContinuousWindowFromSDK(&value.Continuous)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+			}
+			out.Continuous = conv204
+		}
+	case *sdk.TimeWindow_WindowType_Tumbling:
+		if value != nil {
+			conv205, err := TumblingWindowFromSDK(&value.Tumbling)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+			}
+			out.Tumbling = conv205
+		}
+	case *sdk.TimeWindow_WindowType_Sliding:
+		if value != nil {
+			conv206, err := SlidingWindowFromSDK(&value.Sliding)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+			}
+			out.Sliding = conv206
+		}
+	case *sdk.TimeWindow_WindowType_Rolling:
+		if value != nil {
+			conv207, err := RollingWindowFromSDK(&value.Rolling)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+			}
+			out.Rolling = conv207
+		}
+	case *sdk.TimeWindow_WindowType_Sawtooth:
+		if value != nil {
+			conv208, err := SawtoothWindowFromSDK(&value.Sawtooth)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TimeWindow.WindowType", err)
+			}
+			out.Sawtooth = conv208
+		}
+	}
+	out.StartTime = v.StartTime
+	return out, nil
+}
+
+// TimeseriesColumnToSDK converts the mirror to the sdk-go type.
+func TimeseriesColumnToSDK(w *TimeseriesColumn) (*sdk.TimeseriesColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TimeseriesColumn{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// TimeseriesColumnFromSDK converts the sdk-go type to the mirror.
+func TimeseriesColumnFromSDK(v *sdk.TimeseriesColumn) (*TimeseriesColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TimeseriesColumn{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// TumblingWindowToSDK converts the mirror to the sdk-go type.
+func TumblingWindowToSDK(w *TumblingWindow) (*sdk.TumblingWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TumblingWindow{}
+	out.WindowDuration = w.WindowDuration
+	out.Delay = w.Delay
+	out.Offset = w.Offset
+	return out, nil
+}
+
+// TumblingWindowFromSDK converts the sdk-go type to the mirror.
+func TumblingWindowFromSDK(v *sdk.TumblingWindow) (*TumblingWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TumblingWindow{}
+	out.WindowDuration = v.WindowDuration
+	out.Delay = v.Delay
+	out.Offset = v.Offset
+	return out, nil
+}
+
+// UpdateFeatureRequestToSDK converts the mirror to the sdk-go type.
+func UpdateFeatureRequestToSDK(w *UpdateFeatureRequest) (*sdk.UpdateFeatureRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateFeatureRequest{}
+	conv209, err := FeatureToSDK(w.Feature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFeatureRequest.Feature", err)
+	}
+	out.Feature = conv209
+	mask210, err := fieldMaskFromString[sdk.Feature](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFeatureRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask210
+	return out, nil
+}
+
+// UpdateFeatureRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateFeatureRequestFromSDK(v *sdk.UpdateFeatureRequest) (*UpdateFeatureRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateFeatureRequest{}
+	conv211, err := FeatureFromSDK(v.Feature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFeatureRequest.Feature", err)
+	}
+	out.Feature = conv211
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateKafkaConfigRequestToSDK converts the mirror to the sdk-go type.
+func UpdateKafkaConfigRequestToSDK(w *UpdateKafkaConfigRequest) (*sdk.UpdateKafkaConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateKafkaConfigRequest{}
+	conv212, err := KafkaConfigToSDK(w.KafkaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKafkaConfigRequest.KafkaConfig", err)
+	}
+	out.KafkaConfig = conv212
+	mask213, err := fieldMaskFromString[sdk.KafkaConfig](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKafkaConfigRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask213
+	return out, nil
+}
+
+// UpdateKafkaConfigRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateKafkaConfigRequestFromSDK(v *sdk.UpdateKafkaConfigRequest) (*UpdateKafkaConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateKafkaConfigRequest{}
+	conv214, err := KafkaConfigFromSDK(v.KafkaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKafkaConfigRequest.KafkaConfig", err)
+	}
+	out.KafkaConfig = conv214
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateMaterializedFeatureRequestToSDK converts the mirror to the sdk-go type.
+func UpdateMaterializedFeatureRequestToSDK(w *UpdateMaterializedFeatureRequest) (*sdk.UpdateMaterializedFeatureRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateMaterializedFeatureRequest{}
+	conv215, err := MaterializedFeatureToSDK(w.MaterializedFeature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMaterializedFeatureRequest.MaterializedFeature", err)
+	}
+	out.MaterializedFeature = conv215
+	mask216, err := fieldMaskFromString[sdk.MaterializedFeature](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMaterializedFeatureRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask216
+	return out, nil
+}
+
+// UpdateMaterializedFeatureRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateMaterializedFeatureRequestFromSDK(v *sdk.UpdateMaterializedFeatureRequest) (*UpdateMaterializedFeatureRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateMaterializedFeatureRequest{}
+	conv217, err := MaterializedFeatureFromSDK(v.MaterializedFeature)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMaterializedFeatureRequest.MaterializedFeature", err)
+	}
+	out.MaterializedFeature = conv217
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateStreamRequestToSDK converts the mirror to the sdk-go type.
+func UpdateStreamRequestToSDK(w *UpdateStreamRequest) (*sdk.UpdateStreamRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateStreamRequest{}
+	conv218, err := StreamToSDK(w.Stream)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateStreamRequest.Stream", err)
+	}
+	out.Stream = conv218
+	mask219, err := fieldMaskFromString[sdk.Stream](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateStreamRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask219
+	return out, nil
+}
+
+// UpdateStreamRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateStreamRequestFromSDK(v *sdk.UpdateStreamRequest) (*UpdateStreamRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateStreamRequest{}
+	conv220, err := StreamFromSDK(v.Stream)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateStreamRequest.Stream", err)
+	}
+	out.Stream = conv220
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// VarPopFunctionToSDK converts the mirror to the sdk-go type.
+func VarPopFunctionToSDK(w *VarPopFunction) (*sdk.VarPopFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.VarPopFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// VarPopFunctionFromSDK converts the sdk-go type to the mirror.
+func VarPopFunctionFromSDK(v *sdk.VarPopFunction) (*VarPopFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VarPopFunction{}
+	out.Input = v.Input
+	return out, nil
+}
+
+// VarSampFunctionToSDK converts the mirror to the sdk-go type.
 func VarSampFunctionToSDK(w *VarSampFunction) (*sdk.VarSampFunction, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.VarSampFunction{
-		Input: w.Input,
-	}, nil
+	out := &sdk.VarSampFunction{}
+	out.Input = w.Input
+	return out, nil
+}
+
+// VarSampFunctionFromSDK converts the sdk-go type to the mirror.
+func VarSampFunctionFromSDK(v *sdk.VarSampFunction) (*VarSampFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VarSampFunction{}
+	out.Input = v.Input
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -5180,4 +5518,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

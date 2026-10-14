@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/gitcredentials/v1"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateCredentialsRequest struct {
 	// Git provider. This field is case-insensitive. The available Git providers are
 	// `gitHub`, `bitbucketCloud`, `gitLab`, `azureDevOpsServices` (Azure DevOps
@@ -58,25 +42,6 @@ type CreateCredentialsRequest struct {
 	GitEmail *string `json:"git_email,omitempty"`
 }
 
-func CreateCredentialsRequestFromSDK(v *sdk.CreateCredentialsRequest) (*CreateCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCredentialsRequest.PrincipalId", err)
-	}
-	return &CreateCredentialsRequest{
-		GitProvider:          v.GitProvider,
-		GitUsername:          v.GitUsername,
-		PersonalAccessToken:  v.PersonalAccessToken,
-		PrincipalId:          principalIdWireValue,
-		Name:                 v.Name,
-		IsDefaultForProvider: v.IsDefaultForProvider,
-		GitEmail:             v.GitEmail,
-	}, nil
-}
-
 type CreateCredentialsResponse struct {
 	// ID of the credential object in the workspace.
 	CredentialId *int64 `json:"credential_id,omitempty"`
@@ -98,24 +63,6 @@ type CreateCredentialsResponse struct {
 	// CodeCommit. Learn more at
 	// https://docs.databricks.com/aws/en/repos/get-access-tokens-from-git-provider
 	GitEmail *string `json:"git_email,omitempty"`
-}
-
-func CreateCredentialsResponseToSDK(w *CreateCredentialsResponse) (*sdk.CreateCredentialsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialIdPublicValue, err := int64FromWire(w.CredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCredentialsResponse.CredentialId", err)
-	}
-	return &sdk.CreateCredentialsResponse{
-		CredentialId:         credentialIdPublicValue,
-		GitProvider:          w.GitProvider,
-		GitUsername:          w.GitUsername,
-		Name:                 w.Name,
-		IsDefaultForProvider: w.IsDefaultForProvider,
-		GitEmail:             w.GitEmail,
-	}, nil
 }
 
 type Credential struct {
@@ -145,24 +92,6 @@ type Credential struct {
 	GitEmail *string `json:"git_email,omitempty"`
 }
 
-func CredentialToSDK(w *Credential) (*sdk.Credential, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialIdPublicValue, err := int64FromWire(w.CredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Credential.CredentialId", err)
-	}
-	return &sdk.Credential{
-		CredentialId:         credentialIdPublicValue,
-		GitProvider:          w.GitProvider,
-		GitUsername:          w.GitUsername,
-		Name:                 w.Name,
-		IsDefaultForProvider: w.IsDefaultForProvider,
-		GitEmail:             w.GitEmail,
-	}, nil
-}
-
 type DeleteCredentialsRequest struct {
 	// The ID for the corresponding credential to access.
 	Id *int64 `json:"id,omitempty"`
@@ -171,48 +100,12 @@ type DeleteCredentialsRequest struct {
 	PrincipalId *int64 `json:"principal_id,omitempty"`
 }
 
-func DeleteCredentialsRequestFromSDK(v *sdk.DeleteCredentialsRequest) (*DeleteCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	idWireValue, err := int64ToWire(v.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteCredentialsRequest.Id", err)
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteCredentialsRequest.PrincipalId", err)
-	}
-	return &DeleteCredentialsRequest{
-		Id:          idWireValue,
-		PrincipalId: principalIdWireValue,
-	}, nil
-}
-
 type GetCredentialsRequest struct {
 	// The ID for the corresponding credential to access.
 	Id *int64 `json:"id,omitempty"`
 	// The ID of the service principal whose credentials will be modified. Only
 	// service principal managers can perform this action.
 	PrincipalId *int64 `json:"principal_id,omitempty"`
-}
-
-func GetCredentialsRequestFromSDK(v *sdk.GetCredentialsRequest) (*GetCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	idWireValue, err := int64ToWire(v.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetCredentialsRequest.Id", err)
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetCredentialsRequest.PrincipalId", err)
-	}
-	return &GetCredentialsRequest{
-		Id:          idWireValue,
-		PrincipalId: principalIdWireValue,
-	}, nil
 }
 
 type GetCredentialsResponse struct {
@@ -238,59 +131,15 @@ type GetCredentialsResponse struct {
 	GitEmail *string `json:"git_email,omitempty"`
 }
 
-func GetCredentialsResponseToSDK(w *GetCredentialsResponse) (*sdk.GetCredentialsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialIdPublicValue, err := int64FromWire(w.CredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetCredentialsResponse.CredentialId", err)
-	}
-	return &sdk.GetCredentialsResponse{
-		CredentialId:         credentialIdPublicValue,
-		GitProvider:          w.GitProvider,
-		GitUsername:          w.GitUsername,
-		Name:                 w.Name,
-		IsDefaultForProvider: w.IsDefaultForProvider,
-		GitEmail:             w.GitEmail,
-	}, nil
-}
-
 type ListCredentialsRequest struct {
 	// The ID of the service principal whose credentials will be listed. Only
 	// service principal managers can perform this action.
 	PrincipalId *int64 `json:"principal_id,omitempty"`
 }
 
-func ListCredentialsRequestFromSDK(v *sdk.ListCredentialsRequest) (*ListCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCredentialsRequest.PrincipalId", err)
-	}
-	return &ListCredentialsRequest{
-		PrincipalId: principalIdWireValue,
-	}, nil
-}
-
 type ListCredentialsResponse struct {
 	// List of credentials.
 	Credentials []Credential `json:"credentials,omitempty"`
-}
-
-func ListCredentialsResponseToSDK(w *ListCredentialsResponse) (*sdk.ListCredentialsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsPublicValue, err := convertSlice(w.Credentials, CredentialToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCredentialsResponse.Credentials", err)
-	}
-	return &sdk.ListCredentialsResponse{
-		Credentials: credentialsPublicValue,
-	}, nil
 }
 
 type UpdateCredentialsRequest struct {
@@ -329,28 +178,252 @@ type UpdateCredentialsRequest struct {
 	GitEmail *string `json:"git_email,omitempty"`
 }
 
+// CreateCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func CreateCredentialsRequestToSDK(w *CreateCredentialsRequest) (*sdk.CreateCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCredentialsRequest{}
+	out.GitProvider = w.GitProvider
+	out.GitUsername = w.GitUsername
+	out.PersonalAccessToken = w.PersonalAccessToken
+	out.PrincipalId = w.PrincipalId
+	out.Name = w.Name
+	out.IsDefaultForProvider = w.IsDefaultForProvider
+	out.GitEmail = w.GitEmail
+	return out, nil
+}
+
+// CreateCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCredentialsRequestFromSDK(v *sdk.CreateCredentialsRequest) (*CreateCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCredentialsRequest{}
+	out.GitProvider = v.GitProvider
+	out.GitUsername = v.GitUsername
+	out.PersonalAccessToken = v.PersonalAccessToken
+	out.PrincipalId = v.PrincipalId
+	out.Name = v.Name
+	out.IsDefaultForProvider = v.IsDefaultForProvider
+	out.GitEmail = v.GitEmail
+	return out, nil
+}
+
+// CreateCredentialsResponseToSDK converts the mirror to the sdk-go type.
+func CreateCredentialsResponseToSDK(w *CreateCredentialsResponse) (*sdk.CreateCredentialsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCredentialsResponse{}
+	out.CredentialId = w.CredentialId
+	out.GitProvider = w.GitProvider
+	out.GitUsername = w.GitUsername
+	out.Name = w.Name
+	out.IsDefaultForProvider = w.IsDefaultForProvider
+	out.GitEmail = w.GitEmail
+	return out, nil
+}
+
+// CreateCredentialsResponseFromSDK converts the sdk-go type to the mirror.
+func CreateCredentialsResponseFromSDK(v *sdk.CreateCredentialsResponse) (*CreateCredentialsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCredentialsResponse{}
+	out.CredentialId = v.CredentialId
+	out.GitProvider = v.GitProvider
+	out.GitUsername = v.GitUsername
+	out.Name = v.Name
+	out.IsDefaultForProvider = v.IsDefaultForProvider
+	out.GitEmail = v.GitEmail
+	return out, nil
+}
+
+// CredentialToSDK converts the mirror to the sdk-go type.
+func CredentialToSDK(w *Credential) (*sdk.Credential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Credential{}
+	out.CredentialId = w.CredentialId
+	out.GitProvider = w.GitProvider
+	out.GitUsername = w.GitUsername
+	out.Name = w.Name
+	out.IsDefaultForProvider = w.IsDefaultForProvider
+	out.GitEmail = w.GitEmail
+	return out, nil
+}
+
+// CredentialFromSDK converts the sdk-go type to the mirror.
+func CredentialFromSDK(v *sdk.Credential) (*Credential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Credential{}
+	out.CredentialId = v.CredentialId
+	out.GitProvider = v.GitProvider
+	out.GitUsername = v.GitUsername
+	out.Name = v.Name
+	out.IsDefaultForProvider = v.IsDefaultForProvider
+	out.GitEmail = v.GitEmail
+	return out, nil
+}
+
+// DeleteCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func DeleteCredentialsRequestToSDK(w *DeleteCredentialsRequest) (*sdk.DeleteCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteCredentialsRequest{}
+	out.Id = w.Id
+	out.PrincipalId = w.PrincipalId
+	return out, nil
+}
+
+// DeleteCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteCredentialsRequestFromSDK(v *sdk.DeleteCredentialsRequest) (*DeleteCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteCredentialsRequest{}
+	out.Id = v.Id
+	out.PrincipalId = v.PrincipalId
+	return out, nil
+}
+
+// GetCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func GetCredentialsRequestToSDK(w *GetCredentialsRequest) (*sdk.GetCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCredentialsRequest{}
+	out.Id = w.Id
+	out.PrincipalId = w.PrincipalId
+	return out, nil
+}
+
+// GetCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func GetCredentialsRequestFromSDK(v *sdk.GetCredentialsRequest) (*GetCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetCredentialsRequest{}
+	out.Id = v.Id
+	out.PrincipalId = v.PrincipalId
+	return out, nil
+}
+
+// GetCredentialsResponseToSDK converts the mirror to the sdk-go type.
+func GetCredentialsResponseToSDK(w *GetCredentialsResponse) (*sdk.GetCredentialsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCredentialsResponse{}
+	out.CredentialId = w.CredentialId
+	out.GitProvider = w.GitProvider
+	out.GitUsername = w.GitUsername
+	out.Name = w.Name
+	out.IsDefaultForProvider = w.IsDefaultForProvider
+	out.GitEmail = w.GitEmail
+	return out, nil
+}
+
+// GetCredentialsResponseFromSDK converts the sdk-go type to the mirror.
+func GetCredentialsResponseFromSDK(v *sdk.GetCredentialsResponse) (*GetCredentialsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetCredentialsResponse{}
+	out.CredentialId = v.CredentialId
+	out.GitProvider = v.GitProvider
+	out.GitUsername = v.GitUsername
+	out.Name = v.Name
+	out.IsDefaultForProvider = v.IsDefaultForProvider
+	out.GitEmail = v.GitEmail
+	return out, nil
+}
+
+// ListCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func ListCredentialsRequestToSDK(w *ListCredentialsRequest) (*sdk.ListCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCredentialsRequest{}
+	out.PrincipalId = w.PrincipalId
+	return out, nil
+}
+
+// ListCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCredentialsRequestFromSDK(v *sdk.ListCredentialsRequest) (*ListCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCredentialsRequest{}
+	out.PrincipalId = v.PrincipalId
+	return out, nil
+}
+
+// ListCredentialsResponseToSDK converts the mirror to the sdk-go type.
+func ListCredentialsResponseToSDK(w *ListCredentialsResponse) (*sdk.ListCredentialsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCredentialsResponse{}
+	conv1, err := convertSlice(w.Credentials, CredentialToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCredentialsResponse.Credentials", err)
+	}
+	out.Credentials = conv1
+	return out, nil
+}
+
+// ListCredentialsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCredentialsResponseFromSDK(v *sdk.ListCredentialsResponse) (*ListCredentialsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCredentialsResponse{}
+	conv2, err := convertSlice(v.Credentials, CredentialFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCredentialsResponse.Credentials", err)
+	}
+	out.Credentials = conv2
+	return out, nil
+}
+
+// UpdateCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCredentialsRequestToSDK(w *UpdateCredentialsRequest) (*sdk.UpdateCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCredentialsRequest{}
+	out.Id = w.Id
+	out.PersonalAccessToken = w.PersonalAccessToken
+	out.GitProvider = w.GitProvider
+	out.GitUsername = w.GitUsername
+	out.PrincipalId = w.PrincipalId
+	out.Name = w.Name
+	out.IsDefaultForProvider = w.IsDefaultForProvider
+	out.GitEmail = w.GitEmail
+	return out, nil
+}
+
+// UpdateCredentialsRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateCredentialsRequestFromSDK(v *sdk.UpdateCredentialsRequest) (*UpdateCredentialsRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	idWireValue, err := int64ToWire(v.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCredentialsRequest.Id", err)
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCredentialsRequest.PrincipalId", err)
-	}
-	return &UpdateCredentialsRequest{
-		Id:                   idWireValue,
-		PersonalAccessToken:  v.PersonalAccessToken,
-		GitProvider:          v.GitProvider,
-		GitUsername:          v.GitUsername,
-		PrincipalId:          principalIdWireValue,
-		Name:                 v.Name,
-		IsDefaultForProvider: v.IsDefaultForProvider,
-		GitEmail:             v.GitEmail,
-	}, nil
+	out := &UpdateCredentialsRequest{}
+	out.Id = v.Id
+	out.PersonalAccessToken = v.PersonalAccessToken
+	out.GitProvider = v.GitProvider
+	out.GitUsername = v.GitUsername
+	out.PrincipalId = v.PrincipalId
+	out.Name = v.Name
+	out.IsDefaultForProvider = v.IsDefaultForProvider
+	out.GitEmail = v.GitEmail
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

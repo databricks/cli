@@ -61,88 +61,16 @@ type AibiDashboardEmbeddingAccessPolicy struct {
 	AccessPolicyType AibiDashboardEmbeddingAccessPolicy_AccessPolicyType `json:"access_policy_type,omitempty"`
 }
 
-func AibiDashboardEmbeddingAccessPolicyFromSDK(v *sdk.AibiDashboardEmbeddingAccessPolicy) (*AibiDashboardEmbeddingAccessPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AibiDashboardEmbeddingAccessPolicy{
-		AccessPolicyType: v.AccessPolicyType,
-	}, nil
-}
-
-func AibiDashboardEmbeddingAccessPolicyToSDK(w *AibiDashboardEmbeddingAccessPolicy) (*sdk.AibiDashboardEmbeddingAccessPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AibiDashboardEmbeddingAccessPolicy{
-		AccessPolicyType: w.AccessPolicyType,
-	}, nil
-}
-
 type AibiDashboardEmbeddingApprovedDomains struct {
 	ApprovedDomains []string `json:"approved_domains,omitempty"`
-}
-
-func AibiDashboardEmbeddingApprovedDomainsFromSDK(v *sdk.AibiDashboardEmbeddingApprovedDomains) (*AibiDashboardEmbeddingApprovedDomains, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AibiDashboardEmbeddingApprovedDomains{
-		ApprovedDomains: v.ApprovedDomains,
-	}, nil
-}
-
-func AibiDashboardEmbeddingApprovedDomainsToSDK(w *AibiDashboardEmbeddingApprovedDomains) (*sdk.AibiDashboardEmbeddingApprovedDomains, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AibiDashboardEmbeddingApprovedDomains{
-		ApprovedDomains: w.ApprovedDomains,
-	}, nil
 }
 
 type AllowedAppsUserApiScopesMessage struct {
 	AllowedScopes []string `json:"allowed_scopes,omitempty"`
 }
 
-func AllowedAppsUserApiScopesMessageFromSDK(v *sdk.AllowedAppsUserApiScopesMessage) (*AllowedAppsUserApiScopesMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AllowedAppsUserApiScopesMessage{
-		AllowedScopes: v.AllowedScopes,
-	}, nil
-}
-
-func AllowedAppsUserApiScopesMessageToSDK(w *AllowedAppsUserApiScopesMessage) (*sdk.AllowedAppsUserApiScopesMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AllowedAppsUserApiScopesMessage{
-		AllowedScopes: w.AllowedScopes,
-	}, nil
-}
-
 type BooleanMessage struct {
 	Value *bool `json:"value,omitempty"`
-}
-
-func BooleanMessageFromSDK(v *sdk.BooleanMessage) (*BooleanMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BooleanMessage{
-		Value: v.Value,
-	}, nil
-}
-
-func BooleanMessageToSDK(w *BooleanMessage) (*sdk.BooleanMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BooleanMessage{
-		Value: w.Value,
-	}, nil
 }
 
 type ClusterAutoRestartMessage struct {
@@ -151,48 +79,6 @@ type ClusterAutoRestartMessage struct {
 	MaintenanceWindow               *ClusterAutoRestartMessage_MaintenanceWindow `json:"maintenance_window,omitempty"`
 	EnablementDetails               *ClusterAutoRestartMessage_EnablementDetails `json:"enablement_details,omitempty"`
 	RestartEvenIfNoUpdatesAvailable *bool                                        `json:"restart_even_if_no_updates_available,omitempty"`
-}
-
-func ClusterAutoRestartMessageFromSDK(v *sdk.ClusterAutoRestartMessage) (*ClusterAutoRestartMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maintenanceWindowWireValue, err := ClusterAutoRestartMessage_MaintenanceWindowFromSDK(v.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.MaintenanceWindow", err)
-	}
-	enablementDetailsWireValue, err := ClusterAutoRestartMessage_EnablementDetailsFromSDK(v.EnablementDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.EnablementDetails", err)
-	}
-	return &ClusterAutoRestartMessage{
-		Enabled:                         v.Enabled,
-		CanToggle:                       v.CanToggle,
-		MaintenanceWindow:               maintenanceWindowWireValue,
-		EnablementDetails:               enablementDetailsWireValue,
-		RestartEvenIfNoUpdatesAvailable: v.RestartEvenIfNoUpdatesAvailable,
-	}, nil
-}
-
-func ClusterAutoRestartMessageToSDK(w *ClusterAutoRestartMessage) (*sdk.ClusterAutoRestartMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maintenanceWindowPublicValue, err := ClusterAutoRestartMessage_MaintenanceWindowToSDK(w.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.MaintenanceWindow", err)
-	}
-	enablementDetailsPublicValue, err := ClusterAutoRestartMessage_EnablementDetailsToSDK(w.EnablementDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.EnablementDetails", err)
-	}
-	return &sdk.ClusterAutoRestartMessage{
-		Enabled:                         w.Enabled,
-		CanToggle:                       w.CanToggle,
-		MaintenanceWindow:               maintenanceWindowPublicValue,
-		EnablementDetails:               enablementDetailsPublicValue,
-		RestartEvenIfNoUpdatesAvailable: w.RestartEvenIfNoUpdatesAvailable,
-	}, nil
 }
 
 // Contains an information about the enablement status judging (e.g. whether the
@@ -211,56 +97,8 @@ type ClusterAutoRestartMessage_EnablementDetails struct {
 	ForcedForComplianceMode *bool `json:"forced_for_compliance_mode,omitempty"`
 }
 
-func ClusterAutoRestartMessage_EnablementDetailsFromSDK(v *sdk.ClusterAutoRestartMessage_EnablementDetails) (*ClusterAutoRestartMessage_EnablementDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ClusterAutoRestartMessage_EnablementDetails{
-		UnavailableForNonEnterpriseTier:   v.UnavailableForNonEnterpriseTier,
-		UnavailableForDisabledEntitlement: v.UnavailableForDisabledEntitlement,
-		ForcedForComplianceMode:           v.ForcedForComplianceMode,
-	}, nil
-}
-
-func ClusterAutoRestartMessage_EnablementDetailsToSDK(w *ClusterAutoRestartMessage_EnablementDetails) (*sdk.ClusterAutoRestartMessage_EnablementDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ClusterAutoRestartMessage_EnablementDetails{
-		UnavailableForNonEnterpriseTier:   w.UnavailableForNonEnterpriseTier,
-		UnavailableForDisabledEntitlement: w.UnavailableForDisabledEntitlement,
-		ForcedForComplianceMode:           w.ForcedForComplianceMode,
-	}, nil
-}
-
 type ClusterAutoRestartMessage_MaintenanceWindow struct {
 	WeekDayBasedSchedule *ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule `json:"week_day_based_schedule,omitempty"`
-}
-
-func ClusterAutoRestartMessage_MaintenanceWindowFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow) (*ClusterAutoRestartMessage_MaintenanceWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	weekDayBasedScheduleWireValue, err := ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleFromSDK(v.WeekDayBasedSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow.WeekDayBasedSchedule", err)
-	}
-	return &ClusterAutoRestartMessage_MaintenanceWindow{
-		WeekDayBasedSchedule: weekDayBasedScheduleWireValue,
-	}, nil
-}
-
-func ClusterAutoRestartMessage_MaintenanceWindowToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	weekDayBasedSchedulePublicValue, err := ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleToSDK(w.WeekDayBasedSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow.WeekDayBasedSchedule", err)
-	}
-	return &sdk.ClusterAutoRestartMessage_MaintenanceWindow{
-		WeekDayBasedSchedule: weekDayBasedSchedulePublicValue,
-	}, nil
 }
 
 type ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule struct {
@@ -269,59 +107,9 @@ type ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule struct {
 	WindowStartTime *ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime `json:"window_start_time,omitempty"`
 }
 
-func ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule) (*ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	windowStartTimeWireValue, err := ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeFromSDK(v.WindowStartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule.WindowStartTime", err)
-	}
-	return &ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule{
-		Frequency:       v.Frequency,
-		DayOfWeek:       v.DayOfWeek,
-		WindowStartTime: windowStartTimeWireValue,
-	}, nil
-}
-
-func ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	windowStartTimePublicValue, err := ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeToSDK(w.WindowStartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule.WindowStartTime", err)
-	}
-	return &sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule{
-		Frequency:       w.Frequency,
-		DayOfWeek:       w.DayOfWeek,
-		WindowStartTime: windowStartTimePublicValue,
-	}, nil
-}
-
 type ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime struct {
 	Hours   *int `json:"hours,omitempty"`
 	Minutes *int `json:"minutes,omitempty"`
-}
-
-func ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime) (*ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime{
-		Hours:   v.Hours,
-		Minutes: v.Minutes,
-	}, nil
-}
-
-func ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime{
-		Hours:   w.Hours,
-		Minutes: w.Minutes,
-	}, nil
 }
 
 // Controls which external collaboration platforms (Slack, Microsoft Teams) can
@@ -330,44 +118,8 @@ type CollaborationPlatformConnectivityMessage struct {
 	Connectivity CollaborationPlatformConnectivityMessage_Connectivity `json:"connectivity,omitempty"`
 }
 
-func CollaborationPlatformConnectivityMessageFromSDK(v *sdk.CollaborationPlatformConnectivityMessage) (*CollaborationPlatformConnectivityMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CollaborationPlatformConnectivityMessage{
-		Connectivity: v.Connectivity,
-	}, nil
-}
-
-func CollaborationPlatformConnectivityMessageToSDK(w *CollaborationPlatformConnectivityMessage) (*sdk.CollaborationPlatformConnectivityMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CollaborationPlatformConnectivityMessage{
-		Connectivity: w.Connectivity,
-	}, nil
-}
-
 type IntegerMessage struct {
 	Value *int `json:"value,omitempty"`
-}
-
-func IntegerMessageFromSDK(v *sdk.IntegerMessage) (*IntegerMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IntegerMessage{
-		Value: v.Value,
-	}, nil
-}
-
-func IntegerMessageToSDK(w *IntegerMessage) (*sdk.IntegerMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IntegerMessage{
-		Value: w.Value,
-	}, nil
 }
 
 type ListAccountSettingsMetadataRequest struct {
@@ -386,37 +138,12 @@ type ListAccountSettingsMetadataRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListAccountSettingsMetadataRequestFromSDK(v *sdk.ListAccountSettingsMetadataRequest) (*ListAccountSettingsMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAccountSettingsMetadataRequest{
-		AccountId: v.AccountId,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListAccountSettingsMetadataResponse struct {
 	// List of all settings available via public APIs and their metadata
 	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListAccountSettingsMetadataResponseToSDK(w *ListAccountSettingsMetadataResponse) (*sdk.ListAccountSettingsMetadataResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	settingsMetadataPublicValue, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountSettingsMetadataResponse.SettingsMetadata", err)
-	}
-	return &sdk.ListAccountSettingsMetadataResponse{
-		SettingsMetadata: settingsMetadataPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ListAccountUserPreferencesMetadataRequest struct {
@@ -438,38 +165,12 @@ type ListAccountUserPreferencesMetadataRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListAccountUserPreferencesMetadataRequestFromSDK(v *sdk.ListAccountUserPreferencesMetadataRequest) (*ListAccountUserPreferencesMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAccountUserPreferencesMetadataRequest{
-		AccountId: v.AccountId,
-		UserId:    v.UserId,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListAccountUserPreferencesMetadataResponse struct {
 	// List of all settings available via public APIs and their metadata
 	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListAccountUserPreferencesMetadataResponseToSDK(w *ListAccountUserPreferencesMetadataResponse) (*sdk.ListAccountUserPreferencesMetadataResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	settingsMetadataPublicValue, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountUserPreferencesMetadataResponse.SettingsMetadata", err)
-	}
-	return &sdk.ListAccountUserPreferencesMetadataResponse{
-		SettingsMetadata: settingsMetadataPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ListWorkspaceSettingsMetadataRequest struct {
@@ -486,16 +187,6 @@ type ListWorkspaceSettingsMetadataRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListWorkspaceSettingsMetadataRequestFromSDK(v *sdk.ListWorkspaceSettingsMetadataRequest) (*ListWorkspaceSettingsMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListWorkspaceSettingsMetadataRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListWorkspaceSettingsMetadataResponse struct {
 	// List of all settings available via public APIs and their metadata
 	SettingsMetadata []SettingsMetadata `json:"settings_metadata,omitempty"`
@@ -504,40 +195,8 @@ type ListWorkspaceSettingsMetadataResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListWorkspaceSettingsMetadataResponseToSDK(w *ListWorkspaceSettingsMetadataResponse) (*sdk.ListWorkspaceSettingsMetadataResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	settingsMetadataPublicValue, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWorkspaceSettingsMetadataResponse.SettingsMetadata", err)
-	}
-	return &sdk.ListWorkspaceSettingsMetadataResponse{
-		SettingsMetadata: settingsMetadataPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
-}
-
 type OperationalEmailCustomRecipientMessage struct {
 	Email *string `json:"email,omitempty"`
-}
-
-func OperationalEmailCustomRecipientMessageFromSDK(v *sdk.OperationalEmailCustomRecipientMessage) (*OperationalEmailCustomRecipientMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OperationalEmailCustomRecipientMessage{
-		Email: v.Email,
-	}, nil
-}
-
-func OperationalEmailCustomRecipientMessageToSDK(w *OperationalEmailCustomRecipientMessage) (*sdk.OperationalEmailCustomRecipientMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OperationalEmailCustomRecipientMessage{
-		Email: w.Email,
-	}, nil
 }
 
 type PatchPublicAccountSettingRequest struct {
@@ -545,21 +204,6 @@ type PatchPublicAccountSettingRequest struct {
 	AccountId *string  `json:"account_id,omitempty"`
 	Name      *string  `json:"name,omitempty"`
 	Setting   *Setting `json:"setting,omitempty"`
-}
-
-func PatchPublicAccountSettingRequestFromSDK(v *sdk.PatchPublicAccountSettingRequest) (*PatchPublicAccountSettingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	settingWireValue, err := SettingFromSDK(v.Setting)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountSettingRequest.Setting", err)
-	}
-	return &PatchPublicAccountSettingRequest{
-		AccountId: v.AccountId,
-		Name:      v.Name,
-		Setting:   settingWireValue,
-	}, nil
 }
 
 type PatchPublicAccountUserPreferenceRequest struct {
@@ -571,62 +215,14 @@ type PatchPublicAccountUserPreferenceRequest struct {
 	Setting *UserPreference `json:"setting,omitempty"`
 }
 
-func PatchPublicAccountUserPreferenceRequestFromSDK(v *sdk.PatchPublicAccountUserPreferenceRequest) (*PatchPublicAccountUserPreferenceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	settingWireValue, err := UserPreferenceFromSDK(v.Setting)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountUserPreferenceRequest.Setting", err)
-	}
-	return &PatchPublicAccountUserPreferenceRequest{
-		AccountId: v.AccountId,
-		UserId:    v.UserId,
-		Name:      v.Name,
-		Setting:   settingWireValue,
-	}, nil
-}
-
 type PatchPublicWorkspaceSettingRequest struct {
 	// Name of the setting
 	Name    *string  `json:"name,omitempty"`
 	Setting *Setting `json:"setting,omitempty"`
 }
 
-func PatchPublicWorkspaceSettingRequestFromSDK(v *sdk.PatchPublicWorkspaceSettingRequest) (*PatchPublicWorkspaceSettingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	settingWireValue, err := SettingFromSDK(v.Setting)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchPublicWorkspaceSettingRequest.Setting", err)
-	}
-	return &PatchPublicWorkspaceSettingRequest{
-		Name:    v.Name,
-		Setting: settingWireValue,
-	}, nil
-}
-
 type PersonalComputeMessage struct {
 	Value PersonalComputeMessage_PersonalComputeMessageEnum `json:"value,omitempty"`
-}
-
-func PersonalComputeMessageFromSDK(v *sdk.PersonalComputeMessage) (*PersonalComputeMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PersonalComputeMessage{
-		Value: v.Value,
-	}, nil
-}
-
-func PersonalComputeMessageToSDK(w *PersonalComputeMessage) (*sdk.PersonalComputeMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PersonalComputeMessage{
-		Value: w.Value,
-	}, nil
 }
 
 type RestrictWorkspaceAdminsMessage struct {
@@ -634,26 +230,6 @@ type RestrictWorkspaceAdminsMessage struct {
 	// When true, workspace admins cannot create governance tags. ALLOW_ALL status
 	// does not override this; they are independent.
 	DisableGovTagCreation *bool `json:"disable_gov_tag_creation,omitempty"`
-}
-
-func RestrictWorkspaceAdminsMessageFromSDK(v *sdk.RestrictWorkspaceAdminsMessage) (*RestrictWorkspaceAdminsMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RestrictWorkspaceAdminsMessage{
-		Status:                v.Status,
-		DisableGovTagCreation: v.DisableGovTagCreation,
-	}, nil
-}
-
-func RestrictWorkspaceAdminsMessageToSDK(w *RestrictWorkspaceAdminsMessage) (*sdk.RestrictWorkspaceAdminsMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RestrictWorkspaceAdminsMessage{
-		Status:                w.Status,
-		DisableGovTagCreation: w.DisableGovTagCreation,
-	}, nil
 }
 
 type Setting struct {
@@ -685,506 +261,6 @@ type Setting struct {
 	EffectiveCollaborationPlatformConnectivity     *CollaborationPlatformConnectivityMessage `json:"effective_collaboration_platform_connectivity,omitempty"`
 }
 
-func SettingFromSDK(v *sdk.Setting) (*Setting, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueBooleanValWire *BooleanMessage
-	var valueStringValWire *StringMessage
-	var valueIntegerValWire *IntegerMessage
-	var valueAutomaticClusterUpdateWorkspaceWire *ClusterAutoRestartMessage
-	var valueAibiDashboardEmbeddingApprovedDomainsWire *AibiDashboardEmbeddingApprovedDomains
-	var valueAibiDashboardEmbeddingAccessPolicyWire *AibiDashboardEmbeddingAccessPolicy
-	var valueRestrictWorkspaceAdminsWire *RestrictWorkspaceAdminsMessage
-	var valuePersonalComputeWire *PersonalComputeMessage
-	var valueWorkspaceLabelWire *WorkspaceLabelMessage
-	var valueAllowedAppsUserApiScopesWire *AllowedAppsUserApiScopesMessage
-	var valueOperationalEmailCustomRecipientWire *OperationalEmailCustomRecipientMessage
-	var valueCollaborationPlatformConnectivityWire *CollaborationPlatformConnectivityMessage
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.Setting_Value_BooleanVal:
-		if value != nil {
-			valueBooleanValConverted, err := BooleanMessageFromSDK(&value.BooleanVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.BooleanVal", err)
-			}
-			valueBooleanValWire = valueBooleanValConverted
-		}
-	case *sdk.Setting_Value_StringVal:
-		if value != nil {
-			valueStringValConverted, err := StringMessageFromSDK(&value.StringVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.StringVal", err)
-			}
-			valueStringValWire = valueStringValConverted
-		}
-	case *sdk.Setting_Value_IntegerVal:
-		if value != nil {
-			valueIntegerValConverted, err := IntegerMessageFromSDK(&value.IntegerVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.IntegerVal", err)
-			}
-			valueIntegerValWire = valueIntegerValConverted
-		}
-	case *sdk.Setting_Value_AutomaticClusterUpdateWorkspace:
-		if value != nil {
-			valueAutomaticClusterUpdateWorkspaceConverted, err := ClusterAutoRestartMessageFromSDK(&value.AutomaticClusterUpdateWorkspace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.AutomaticClusterUpdateWorkspace", err)
-			}
-			valueAutomaticClusterUpdateWorkspaceWire = valueAutomaticClusterUpdateWorkspaceConverted
-		}
-	case *sdk.Setting_Value_AibiDashboardEmbeddingApprovedDomains:
-		if value != nil {
-			valueAibiDashboardEmbeddingApprovedDomainsConverted, err := AibiDashboardEmbeddingApprovedDomainsFromSDK(&value.AibiDashboardEmbeddingApprovedDomains)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.AibiDashboardEmbeddingApprovedDomains", err)
-			}
-			valueAibiDashboardEmbeddingApprovedDomainsWire = valueAibiDashboardEmbeddingApprovedDomainsConverted
-		}
-	case *sdk.Setting_Value_AibiDashboardEmbeddingAccessPolicy:
-		if value != nil {
-			valueAibiDashboardEmbeddingAccessPolicyConverted, err := AibiDashboardEmbeddingAccessPolicyFromSDK(&value.AibiDashboardEmbeddingAccessPolicy)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.AibiDashboardEmbeddingAccessPolicy", err)
-			}
-			valueAibiDashboardEmbeddingAccessPolicyWire = valueAibiDashboardEmbeddingAccessPolicyConverted
-		}
-	case *sdk.Setting_Value_RestrictWorkspaceAdmins:
-		if value != nil {
-			valueRestrictWorkspaceAdminsConverted, err := RestrictWorkspaceAdminsMessageFromSDK(&value.RestrictWorkspaceAdmins)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.RestrictWorkspaceAdmins", err)
-			}
-			valueRestrictWorkspaceAdminsWire = valueRestrictWorkspaceAdminsConverted
-		}
-	case *sdk.Setting_Value_PersonalCompute:
-		if value != nil {
-			valuePersonalComputeConverted, err := PersonalComputeMessageFromSDK(&value.PersonalCompute)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.PersonalCompute", err)
-			}
-			valuePersonalComputeWire = valuePersonalComputeConverted
-		}
-	case *sdk.Setting_Value_WorkspaceLabel:
-		if value != nil {
-			valueWorkspaceLabelConverted, err := WorkspaceLabelMessageFromSDK(&value.WorkspaceLabel)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.WorkspaceLabel", err)
-			}
-			valueWorkspaceLabelWire = valueWorkspaceLabelConverted
-		}
-	case *sdk.Setting_Value_AllowedAppsUserApiScopes:
-		if value != nil {
-			valueAllowedAppsUserApiScopesConverted, err := AllowedAppsUserApiScopesMessageFromSDK(&value.AllowedAppsUserApiScopes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.AllowedAppsUserApiScopes", err)
-			}
-			valueAllowedAppsUserApiScopesWire = valueAllowedAppsUserApiScopesConverted
-		}
-	case *sdk.Setting_Value_OperationalEmailCustomRecipient:
-		if value != nil {
-			valueOperationalEmailCustomRecipientConverted, err := OperationalEmailCustomRecipientMessageFromSDK(&value.OperationalEmailCustomRecipient)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.OperationalEmailCustomRecipient", err)
-			}
-			valueOperationalEmailCustomRecipientWire = valueOperationalEmailCustomRecipientConverted
-		}
-	case *sdk.Setting_Value_CollaborationPlatformConnectivity:
-		if value != nil {
-			valueCollaborationPlatformConnectivityConverted, err := CollaborationPlatformConnectivityMessageFromSDK(&value.CollaborationPlatformConnectivity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.Value.CollaborationPlatformConnectivity", err)
-			}
-			valueCollaborationPlatformConnectivityWire = valueCollaborationPlatformConnectivityConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Setting.Value", value)
-	}
-	var effectiveValueEffectiveBooleanValWire *BooleanMessage
-	var effectiveValueEffectiveStringValWire *StringMessage
-	var effectiveValueEffectiveIntegerValWire *IntegerMessage
-	var effectiveValueEffectiveAutomaticClusterUpdateWorkspaceWire *ClusterAutoRestartMessage
-	var effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsWire *AibiDashboardEmbeddingApprovedDomains
-	var effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyWire *AibiDashboardEmbeddingAccessPolicy
-	var effectiveValueEffectiveRestrictWorkspaceAdminsWire *RestrictWorkspaceAdminsMessage
-	var effectiveValueEffectivePersonalComputeWire *PersonalComputeMessage
-	var effectiveValueEffectiveWorkspaceLabelWire *WorkspaceLabelMessage
-	var effectiveValueEffectiveAllowedAppsUserApiScopesWire *AllowedAppsUserApiScopesMessage
-	var effectiveValueEffectiveOperationalEmailCustomRecipientWire *OperationalEmailCustomRecipientMessage
-	var effectiveValueEffectiveCollaborationPlatformConnectivityWire *CollaborationPlatformConnectivityMessage
-	switch value := v.EffectiveValue.(type) {
-	case nil:
-	case *sdk.Setting_EffectiveValue_EffectiveBooleanVal:
-		if value != nil {
-			effectiveValueEffectiveBooleanValConverted, err := BooleanMessageFromSDK(&value.EffectiveBooleanVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveBooleanVal", err)
-			}
-			effectiveValueEffectiveBooleanValWire = effectiveValueEffectiveBooleanValConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveStringVal:
-		if value != nil {
-			effectiveValueEffectiveStringValConverted, err := StringMessageFromSDK(&value.EffectiveStringVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveStringVal", err)
-			}
-			effectiveValueEffectiveStringValWire = effectiveValueEffectiveStringValConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveIntegerVal:
-		if value != nil {
-			effectiveValueEffectiveIntegerValConverted, err := IntegerMessageFromSDK(&value.EffectiveIntegerVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveIntegerVal", err)
-			}
-			effectiveValueEffectiveIntegerValWire = effectiveValueEffectiveIntegerValConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveAutomaticClusterUpdateWorkspace:
-		if value != nil {
-			effectiveValueEffectiveAutomaticClusterUpdateWorkspaceConverted, err := ClusterAutoRestartMessageFromSDK(&value.EffectiveAutomaticClusterUpdateWorkspace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAutomaticClusterUpdateWorkspace", err)
-			}
-			effectiveValueEffectiveAutomaticClusterUpdateWorkspaceWire = effectiveValueEffectiveAutomaticClusterUpdateWorkspaceConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingApprovedDomains:
-		if value != nil {
-			effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsConverted, err := AibiDashboardEmbeddingApprovedDomainsFromSDK(&value.EffectiveAibiDashboardEmbeddingApprovedDomains)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAibiDashboardEmbeddingApprovedDomains", err)
-			}
-			effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsWire = effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingAccessPolicy:
-		if value != nil {
-			effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyConverted, err := AibiDashboardEmbeddingAccessPolicyFromSDK(&value.EffectiveAibiDashboardEmbeddingAccessPolicy)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAibiDashboardEmbeddingAccessPolicy", err)
-			}
-			effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyWire = effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveRestrictWorkspaceAdmins:
-		if value != nil {
-			effectiveValueEffectiveRestrictWorkspaceAdminsConverted, err := RestrictWorkspaceAdminsMessageFromSDK(&value.EffectiveRestrictWorkspaceAdmins)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveRestrictWorkspaceAdmins", err)
-			}
-			effectiveValueEffectiveRestrictWorkspaceAdminsWire = effectiveValueEffectiveRestrictWorkspaceAdminsConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectivePersonalCompute:
-		if value != nil {
-			effectiveValueEffectivePersonalComputeConverted, err := PersonalComputeMessageFromSDK(&value.EffectivePersonalCompute)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectivePersonalCompute", err)
-			}
-			effectiveValueEffectivePersonalComputeWire = effectiveValueEffectivePersonalComputeConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveWorkspaceLabel:
-		if value != nil {
-			effectiveValueEffectiveWorkspaceLabelConverted, err := WorkspaceLabelMessageFromSDK(&value.EffectiveWorkspaceLabel)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveWorkspaceLabel", err)
-			}
-			effectiveValueEffectiveWorkspaceLabelWire = effectiveValueEffectiveWorkspaceLabelConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveAllowedAppsUserApiScopes:
-		if value != nil {
-			effectiveValueEffectiveAllowedAppsUserApiScopesConverted, err := AllowedAppsUserApiScopesMessageFromSDK(&value.EffectiveAllowedAppsUserApiScopes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAllowedAppsUserApiScopes", err)
-			}
-			effectiveValueEffectiveAllowedAppsUserApiScopesWire = effectiveValueEffectiveAllowedAppsUserApiScopesConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveOperationalEmailCustomRecipient:
-		if value != nil {
-			effectiveValueEffectiveOperationalEmailCustomRecipientConverted, err := OperationalEmailCustomRecipientMessageFromSDK(&value.EffectiveOperationalEmailCustomRecipient)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveOperationalEmailCustomRecipient", err)
-			}
-			effectiveValueEffectiveOperationalEmailCustomRecipientWire = effectiveValueEffectiveOperationalEmailCustomRecipientConverted
-		}
-	case *sdk.Setting_EffectiveValue_EffectiveCollaborationPlatformConnectivity:
-		if value != nil {
-			effectiveValueEffectiveCollaborationPlatformConnectivityConverted, err := CollaborationPlatformConnectivityMessageFromSDK(&value.EffectiveCollaborationPlatformConnectivity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveCollaborationPlatformConnectivity", err)
-			}
-			effectiveValueEffectiveCollaborationPlatformConnectivityWire = effectiveValueEffectiveCollaborationPlatformConnectivityConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Setting.EffectiveValue", value)
-	}
-	return &Setting{
-		Name:                                           v.Name,
-		BooleanVal:                                     valueBooleanValWire,
-		StringVal:                                      valueStringValWire,
-		IntegerVal:                                     valueIntegerValWire,
-		AutomaticClusterUpdateWorkspace:                valueAutomaticClusterUpdateWorkspaceWire,
-		AibiDashboardEmbeddingApprovedDomains:          valueAibiDashboardEmbeddingApprovedDomainsWire,
-		AibiDashboardEmbeddingAccessPolicy:             valueAibiDashboardEmbeddingAccessPolicyWire,
-		RestrictWorkspaceAdmins:                        valueRestrictWorkspaceAdminsWire,
-		PersonalCompute:                                valuePersonalComputeWire,
-		WorkspaceLabel:                                 valueWorkspaceLabelWire,
-		AllowedAppsUserApiScopes:                       valueAllowedAppsUserApiScopesWire,
-		OperationalEmailCustomRecipient:                valueOperationalEmailCustomRecipientWire,
-		CollaborationPlatformConnectivity:              valueCollaborationPlatformConnectivityWire,
-		EffectiveBooleanVal:                            effectiveValueEffectiveBooleanValWire,
-		EffectiveStringVal:                             effectiveValueEffectiveStringValWire,
-		EffectiveIntegerVal:                            effectiveValueEffectiveIntegerValWire,
-		EffectiveAutomaticClusterUpdateWorkspace:       effectiveValueEffectiveAutomaticClusterUpdateWorkspaceWire,
-		EffectiveAibiDashboardEmbeddingApprovedDomains: effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsWire,
-		EffectiveAibiDashboardEmbeddingAccessPolicy:    effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyWire,
-		EffectiveRestrictWorkspaceAdmins:               effectiveValueEffectiveRestrictWorkspaceAdminsWire,
-		EffectivePersonalCompute:                       effectiveValueEffectivePersonalComputeWire,
-		EffectiveWorkspaceLabel:                        effectiveValueEffectiveWorkspaceLabelWire,
-		EffectiveAllowedAppsUserApiScopes:              effectiveValueEffectiveAllowedAppsUserApiScopesWire,
-		EffectiveOperationalEmailCustomRecipient:       effectiveValueEffectiveOperationalEmailCustomRecipientWire,
-		EffectiveCollaborationPlatformConnectivity:     effectiveValueEffectiveCollaborationPlatformConnectivityWire,
-	}, nil
-}
-
-func SettingToSDK(w *Setting) (*sdk.Setting, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.BooleanVal != nil {
-		valueMembers++
-	}
-	if w.StringVal != nil {
-		valueMembers++
-	}
-	if w.IntegerVal != nil {
-		valueMembers++
-	}
-	if w.AutomaticClusterUpdateWorkspace != nil {
-		valueMembers++
-	}
-	if w.AibiDashboardEmbeddingApprovedDomains != nil {
-		valueMembers++
-	}
-	if w.AibiDashboardEmbeddingAccessPolicy != nil {
-		valueMembers++
-	}
-	if w.RestrictWorkspaceAdmins != nil {
-		valueMembers++
-	}
-	if w.PersonalCompute != nil {
-		valueMembers++
-	}
-	if w.WorkspaceLabel != nil {
-		valueMembers++
-	}
-	if w.AllowedAppsUserApiScopes != nil {
-		valueMembers++
-	}
-	if w.OperationalEmailCustomRecipient != nil {
-		valueMembers++
-	}
-	if w.CollaborationPlatformConnectivity != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.Value")
-	}
-	effectiveValueMembers := 0
-	if w.EffectiveBooleanVal != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveStringVal != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveIntegerVal != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveAutomaticClusterUpdateWorkspace != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveAibiDashboardEmbeddingApprovedDomains != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveAibiDashboardEmbeddingAccessPolicy != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveRestrictWorkspaceAdmins != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectivePersonalCompute != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveWorkspaceLabel != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveAllowedAppsUserApiScopes != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveOperationalEmailCustomRecipient != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveCollaborationPlatformConnectivity != nil {
-		effectiveValueMembers++
-	}
-	if effectiveValueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.EffectiveValue")
-	}
-	valueSelection := (&sdk.Setting{}).Value
-	switch {
-	case w.BooleanVal != nil:
-		valueBooleanValConverted, err := BooleanMessageToSDK(w.BooleanVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.BooleanVal", err)
-		}
-		valueSelection = &sdk.Setting_Value_BooleanVal{BooleanVal: *valueBooleanValConverted}
-	case w.StringVal != nil:
-		valueStringValConverted, err := StringMessageToSDK(w.StringVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.StringVal", err)
-		}
-		valueSelection = &sdk.Setting_Value_StringVal{StringVal: *valueStringValConverted}
-	case w.IntegerVal != nil:
-		valueIntegerValConverted, err := IntegerMessageToSDK(w.IntegerVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.IntegerVal", err)
-		}
-		valueSelection = &sdk.Setting_Value_IntegerVal{IntegerVal: *valueIntegerValConverted}
-	case w.AutomaticClusterUpdateWorkspace != nil:
-		valueAutomaticClusterUpdateWorkspaceConverted, err := ClusterAutoRestartMessageToSDK(w.AutomaticClusterUpdateWorkspace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.AutomaticClusterUpdateWorkspace", err)
-		}
-		valueSelection = &sdk.Setting_Value_AutomaticClusterUpdateWorkspace{AutomaticClusterUpdateWorkspace: *valueAutomaticClusterUpdateWorkspaceConverted}
-	case w.AibiDashboardEmbeddingApprovedDomains != nil:
-		valueAibiDashboardEmbeddingApprovedDomainsConverted, err := AibiDashboardEmbeddingApprovedDomainsToSDK(w.AibiDashboardEmbeddingApprovedDomains)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.AibiDashboardEmbeddingApprovedDomains", err)
-		}
-		valueSelection = &sdk.Setting_Value_AibiDashboardEmbeddingApprovedDomains{AibiDashboardEmbeddingApprovedDomains: *valueAibiDashboardEmbeddingApprovedDomainsConverted}
-	case w.AibiDashboardEmbeddingAccessPolicy != nil:
-		valueAibiDashboardEmbeddingAccessPolicyConverted, err := AibiDashboardEmbeddingAccessPolicyToSDK(w.AibiDashboardEmbeddingAccessPolicy)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.AibiDashboardEmbeddingAccessPolicy", err)
-		}
-		valueSelection = &sdk.Setting_Value_AibiDashboardEmbeddingAccessPolicy{AibiDashboardEmbeddingAccessPolicy: *valueAibiDashboardEmbeddingAccessPolicyConverted}
-	case w.RestrictWorkspaceAdmins != nil:
-		valueRestrictWorkspaceAdminsConverted, err := RestrictWorkspaceAdminsMessageToSDK(w.RestrictWorkspaceAdmins)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.RestrictWorkspaceAdmins", err)
-		}
-		valueSelection = &sdk.Setting_Value_RestrictWorkspaceAdmins{RestrictWorkspaceAdmins: *valueRestrictWorkspaceAdminsConverted}
-	case w.PersonalCompute != nil:
-		valuePersonalComputeConverted, err := PersonalComputeMessageToSDK(w.PersonalCompute)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.PersonalCompute", err)
-		}
-		valueSelection = &sdk.Setting_Value_PersonalCompute{PersonalCompute: *valuePersonalComputeConverted}
-	case w.WorkspaceLabel != nil:
-		valueWorkspaceLabelConverted, err := WorkspaceLabelMessageToSDK(w.WorkspaceLabel)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.WorkspaceLabel", err)
-		}
-		valueSelection = &sdk.Setting_Value_WorkspaceLabel{WorkspaceLabel: *valueWorkspaceLabelConverted}
-	case w.AllowedAppsUserApiScopes != nil:
-		valueAllowedAppsUserApiScopesConverted, err := AllowedAppsUserApiScopesMessageToSDK(w.AllowedAppsUserApiScopes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.AllowedAppsUserApiScopes", err)
-		}
-		valueSelection = &sdk.Setting_Value_AllowedAppsUserApiScopes{AllowedAppsUserApiScopes: *valueAllowedAppsUserApiScopesConverted}
-	case w.OperationalEmailCustomRecipient != nil:
-		valueOperationalEmailCustomRecipientConverted, err := OperationalEmailCustomRecipientMessageToSDK(w.OperationalEmailCustomRecipient)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.OperationalEmailCustomRecipient", err)
-		}
-		valueSelection = &sdk.Setting_Value_OperationalEmailCustomRecipient{OperationalEmailCustomRecipient: *valueOperationalEmailCustomRecipientConverted}
-	case w.CollaborationPlatformConnectivity != nil:
-		valueCollaborationPlatformConnectivityConverted, err := CollaborationPlatformConnectivityMessageToSDK(w.CollaborationPlatformConnectivity)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.Value.CollaborationPlatformConnectivity", err)
-		}
-		valueSelection = &sdk.Setting_Value_CollaborationPlatformConnectivity{CollaborationPlatformConnectivity: *valueCollaborationPlatformConnectivityConverted}
-	}
-	effectiveValueSelection := (&sdk.Setting{}).EffectiveValue
-	switch {
-	case w.EffectiveBooleanVal != nil:
-		effectiveValueEffectiveBooleanValConverted, err := BooleanMessageToSDK(w.EffectiveBooleanVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveBooleanVal", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveBooleanVal{EffectiveBooleanVal: *effectiveValueEffectiveBooleanValConverted}
-	case w.EffectiveStringVal != nil:
-		effectiveValueEffectiveStringValConverted, err := StringMessageToSDK(w.EffectiveStringVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveStringVal", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveStringVal{EffectiveStringVal: *effectiveValueEffectiveStringValConverted}
-	case w.EffectiveIntegerVal != nil:
-		effectiveValueEffectiveIntegerValConverted, err := IntegerMessageToSDK(w.EffectiveIntegerVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveIntegerVal", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveIntegerVal{EffectiveIntegerVal: *effectiveValueEffectiveIntegerValConverted}
-	case w.EffectiveAutomaticClusterUpdateWorkspace != nil:
-		effectiveValueEffectiveAutomaticClusterUpdateWorkspaceConverted, err := ClusterAutoRestartMessageToSDK(w.EffectiveAutomaticClusterUpdateWorkspace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAutomaticClusterUpdateWorkspace", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveAutomaticClusterUpdateWorkspace{EffectiveAutomaticClusterUpdateWorkspace: *effectiveValueEffectiveAutomaticClusterUpdateWorkspaceConverted}
-	case w.EffectiveAibiDashboardEmbeddingApprovedDomains != nil:
-		effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsConverted, err := AibiDashboardEmbeddingApprovedDomainsToSDK(w.EffectiveAibiDashboardEmbeddingApprovedDomains)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAibiDashboardEmbeddingApprovedDomains", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingApprovedDomains{EffectiveAibiDashboardEmbeddingApprovedDomains: *effectiveValueEffectiveAibiDashboardEmbeddingApprovedDomainsConverted}
-	case w.EffectiveAibiDashboardEmbeddingAccessPolicy != nil:
-		effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyConverted, err := AibiDashboardEmbeddingAccessPolicyToSDK(w.EffectiveAibiDashboardEmbeddingAccessPolicy)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAibiDashboardEmbeddingAccessPolicy", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingAccessPolicy{EffectiveAibiDashboardEmbeddingAccessPolicy: *effectiveValueEffectiveAibiDashboardEmbeddingAccessPolicyConverted}
-	case w.EffectiveRestrictWorkspaceAdmins != nil:
-		effectiveValueEffectiveRestrictWorkspaceAdminsConverted, err := RestrictWorkspaceAdminsMessageToSDK(w.EffectiveRestrictWorkspaceAdmins)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveRestrictWorkspaceAdmins", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveRestrictWorkspaceAdmins{EffectiveRestrictWorkspaceAdmins: *effectiveValueEffectiveRestrictWorkspaceAdminsConverted}
-	case w.EffectivePersonalCompute != nil:
-		effectiveValueEffectivePersonalComputeConverted, err := PersonalComputeMessageToSDK(w.EffectivePersonalCompute)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectivePersonalCompute", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectivePersonalCompute{EffectivePersonalCompute: *effectiveValueEffectivePersonalComputeConverted}
-	case w.EffectiveWorkspaceLabel != nil:
-		effectiveValueEffectiveWorkspaceLabelConverted, err := WorkspaceLabelMessageToSDK(w.EffectiveWorkspaceLabel)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveWorkspaceLabel", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveWorkspaceLabel{EffectiveWorkspaceLabel: *effectiveValueEffectiveWorkspaceLabelConverted}
-	case w.EffectiveAllowedAppsUserApiScopes != nil:
-		effectiveValueEffectiveAllowedAppsUserApiScopesConverted, err := AllowedAppsUserApiScopesMessageToSDK(w.EffectiveAllowedAppsUserApiScopes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveAllowedAppsUserApiScopes", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveAllowedAppsUserApiScopes{EffectiveAllowedAppsUserApiScopes: *effectiveValueEffectiveAllowedAppsUserApiScopesConverted}
-	case w.EffectiveOperationalEmailCustomRecipient != nil:
-		effectiveValueEffectiveOperationalEmailCustomRecipientConverted, err := OperationalEmailCustomRecipientMessageToSDK(w.EffectiveOperationalEmailCustomRecipient)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveOperationalEmailCustomRecipient", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveOperationalEmailCustomRecipient{EffectiveOperationalEmailCustomRecipient: *effectiveValueEffectiveOperationalEmailCustomRecipientConverted}
-	case w.EffectiveCollaborationPlatformConnectivity != nil:
-		effectiveValueEffectiveCollaborationPlatformConnectivityConverted, err := CollaborationPlatformConnectivityMessageToSDK(w.EffectiveCollaborationPlatformConnectivity)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue.EffectiveCollaborationPlatformConnectivity", err)
-		}
-		effectiveValueSelection = &sdk.Setting_EffectiveValue_EffectiveCollaborationPlatformConnectivity{EffectiveCollaborationPlatformConnectivity: *effectiveValueEffectiveCollaborationPlatformConnectivityConverted}
-	}
-	return &sdk.Setting{
-		Name:           w.Name,
-		Value:          valueSelection,
-		EffectiveValue: effectiveValueSelection,
-	}, nil
-}
-
 type SettingsMetadata struct {
 	// Name of the setting.
 	Name *string `json:"name,omitempty"`
@@ -1203,41 +279,9 @@ type SettingsMetadata struct {
 	DisplayName *string `json:"display_name,omitempty"`
 }
 
-func SettingsMetadataToSDK(w *SettingsMetadata) (*sdk.SettingsMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SettingsMetadata{
-		Name:         w.Name,
-		Description:  w.Description,
-		Type:         w.Type,
-		DocsLink:     w.DocsLink,
-		PreviewPhase: w.PreviewPhase,
-		DisplayName:  w.DisplayName,
-	}, nil
-}
-
 type StringMessage struct {
 	// Represents a generic string value.
 	Value *string `json:"value,omitempty"`
-}
-
-func StringMessageFromSDK(v *sdk.StringMessage) (*StringMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StringMessage{
-		Value: v.Value,
-	}, nil
-}
-
-func StringMessageToSDK(w *StringMessage) (*sdk.StringMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StringMessage{
-		Value: w.Value,
-	}, nil
 }
 
 // User Preference represents a user-specific setting scoped to an individual
@@ -1255,152 +299,1230 @@ type UserPreference struct {
 	EffectiveStringVal  *StringMessage  `json:"effective_string_val,omitempty"`
 }
 
-func UserPreferenceFromSDK(v *sdk.UserPreference) (*UserPreference, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueBooleanValWire *BooleanMessage
-	var valueStringValWire *StringMessage
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.UserPreference_Value_BooleanVal:
-		if value != nil {
-			valueBooleanValConverted, err := BooleanMessageFromSDK(&value.BooleanVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UserPreference.Value.BooleanVal", err)
-			}
-			valueBooleanValWire = valueBooleanValConverted
-		}
-	case *sdk.UserPreference_Value_StringVal:
-		if value != nil {
-			valueStringValConverted, err := StringMessageFromSDK(&value.StringVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UserPreference.Value.StringVal", err)
-			}
-			valueStringValWire = valueStringValConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UserPreference.Value", value)
-	}
-	var effectiveValueEffectiveBooleanValWire *BooleanMessage
-	var effectiveValueEffectiveStringValWire *StringMessage
-	switch value := v.EffectiveValue.(type) {
-	case nil:
-	case *sdk.UserPreference_EffectiveValue_EffectiveBooleanVal:
-		if value != nil {
-			effectiveValueEffectiveBooleanValConverted, err := BooleanMessageFromSDK(&value.EffectiveBooleanVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue.EffectiveBooleanVal", err)
-			}
-			effectiveValueEffectiveBooleanValWire = effectiveValueEffectiveBooleanValConverted
-		}
-	case *sdk.UserPreference_EffectiveValue_EffectiveStringVal:
-		if value != nil {
-			effectiveValueEffectiveStringValConverted, err := StringMessageFromSDK(&value.EffectiveStringVal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue.EffectiveStringVal", err)
-			}
-			effectiveValueEffectiveStringValWire = effectiveValueEffectiveStringValConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UserPreference.EffectiveValue", value)
-	}
-	return &UserPreference{
-		Name:                v.Name,
-		UserId:              v.UserId,
-		BooleanVal:          valueBooleanValWire,
-		StringVal:           valueStringValWire,
-		EffectiveBooleanVal: effectiveValueEffectiveBooleanValWire,
-		EffectiveStringVal:  effectiveValueEffectiveStringValWire,
-	}, nil
-}
-
-func UserPreferenceToSDK(w *UserPreference) (*sdk.UserPreference, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.BooleanVal != nil {
-		valueMembers++
-	}
-	if w.StringVal != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.Value")
-	}
-	effectiveValueMembers := 0
-	if w.EffectiveBooleanVal != nil {
-		effectiveValueMembers++
-	}
-	if w.EffectiveStringVal != nil {
-		effectiveValueMembers++
-	}
-	if effectiveValueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.EffectiveValue")
-	}
-	valueSelection := (&sdk.UserPreference{}).Value
-	switch {
-	case w.BooleanVal != nil:
-		valueBooleanValConverted, err := BooleanMessageToSDK(w.BooleanVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "UserPreference.Value.BooleanVal", err)
-		}
-		valueSelection = &sdk.UserPreference_Value_BooleanVal{BooleanVal: *valueBooleanValConverted}
-	case w.StringVal != nil:
-		valueStringValConverted, err := StringMessageToSDK(w.StringVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "UserPreference.Value.StringVal", err)
-		}
-		valueSelection = &sdk.UserPreference_Value_StringVal{StringVal: *valueStringValConverted}
-	}
-	effectiveValueSelection := (&sdk.UserPreference{}).EffectiveValue
-	switch {
-	case w.EffectiveBooleanVal != nil:
-		effectiveValueEffectiveBooleanValConverted, err := BooleanMessageToSDK(w.EffectiveBooleanVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue.EffectiveBooleanVal", err)
-		}
-		effectiveValueSelection = &sdk.UserPreference_EffectiveValue_EffectiveBooleanVal{EffectiveBooleanVal: *effectiveValueEffectiveBooleanValConverted}
-	case w.EffectiveStringVal != nil:
-		effectiveValueEffectiveStringValConverted, err := StringMessageToSDK(w.EffectiveStringVal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue.EffectiveStringVal", err)
-		}
-		effectiveValueSelection = &sdk.UserPreference_EffectiveValue_EffectiveStringVal{EffectiveStringVal: *effectiveValueEffectiveStringValConverted}
-	}
-	return &sdk.UserPreference{
-		Name:           w.Name,
-		UserId:         w.UserId,
-		Value:          valueSelection,
-		EffectiveValue: effectiveValueSelection,
-	}, nil
-}
-
 // Workspace label and color for display (e.g. in account console)..
 type WorkspaceLabelMessage struct {
 	Label *string `json:"label,omitempty"`
 	Color *string `json:"color,omitempty"`
 }
 
-func WorkspaceLabelMessageFromSDK(v *sdk.WorkspaceLabelMessage) (*WorkspaceLabelMessage, error) {
+// AibiDashboardEmbeddingAccessPolicyToSDK converts the mirror to the sdk-go type.
+func AibiDashboardEmbeddingAccessPolicyToSDK(w *AibiDashboardEmbeddingAccessPolicy) (*sdk.AibiDashboardEmbeddingAccessPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AibiDashboardEmbeddingAccessPolicy{}
+	out.AccessPolicyType = w.AccessPolicyType
+	return out, nil
+}
+
+// AibiDashboardEmbeddingAccessPolicyFromSDK converts the sdk-go type to the mirror.
+func AibiDashboardEmbeddingAccessPolicyFromSDK(v *sdk.AibiDashboardEmbeddingAccessPolicy) (*AibiDashboardEmbeddingAccessPolicy, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &WorkspaceLabelMessage{
-		Label: v.Label,
-		Color: v.Color,
-	}, nil
+	out := &AibiDashboardEmbeddingAccessPolicy{}
+	out.AccessPolicyType = v.AccessPolicyType
+	return out, nil
 }
 
+// AibiDashboardEmbeddingApprovedDomainsToSDK converts the mirror to the sdk-go type.
+func AibiDashboardEmbeddingApprovedDomainsToSDK(w *AibiDashboardEmbeddingApprovedDomains) (*sdk.AibiDashboardEmbeddingApprovedDomains, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AibiDashboardEmbeddingApprovedDomains{}
+	out.ApprovedDomains = w.ApprovedDomains
+	return out, nil
+}
+
+// AibiDashboardEmbeddingApprovedDomainsFromSDK converts the sdk-go type to the mirror.
+func AibiDashboardEmbeddingApprovedDomainsFromSDK(v *sdk.AibiDashboardEmbeddingApprovedDomains) (*AibiDashboardEmbeddingApprovedDomains, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AibiDashboardEmbeddingApprovedDomains{}
+	out.ApprovedDomains = v.ApprovedDomains
+	return out, nil
+}
+
+// AllowedAppsUserApiScopesMessageToSDK converts the mirror to the sdk-go type.
+func AllowedAppsUserApiScopesMessageToSDK(w *AllowedAppsUserApiScopesMessage) (*sdk.AllowedAppsUserApiScopesMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AllowedAppsUserApiScopesMessage{}
+	out.AllowedScopes = w.AllowedScopes
+	return out, nil
+}
+
+// AllowedAppsUserApiScopesMessageFromSDK converts the sdk-go type to the mirror.
+func AllowedAppsUserApiScopesMessageFromSDK(v *sdk.AllowedAppsUserApiScopesMessage) (*AllowedAppsUserApiScopesMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AllowedAppsUserApiScopesMessage{}
+	out.AllowedScopes = v.AllowedScopes
+	return out, nil
+}
+
+// BooleanMessageToSDK converts the mirror to the sdk-go type.
+func BooleanMessageToSDK(w *BooleanMessage) (*sdk.BooleanMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BooleanMessage{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// BooleanMessageFromSDK converts the sdk-go type to the mirror.
+func BooleanMessageFromSDK(v *sdk.BooleanMessage) (*BooleanMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BooleanMessage{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// ClusterAutoRestartMessageToSDK converts the mirror to the sdk-go type.
+func ClusterAutoRestartMessageToSDK(w *ClusterAutoRestartMessage) (*sdk.ClusterAutoRestartMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAutoRestartMessage{}
+	out.Enabled = w.Enabled
+	out.CanToggle = w.CanToggle
+	conv1, err := ClusterAutoRestartMessage_MaintenanceWindowToSDK(w.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv1
+	conv2, err := ClusterAutoRestartMessage_EnablementDetailsToSDK(w.EnablementDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.EnablementDetails", err)
+	}
+	out.EnablementDetails = conv2
+	out.RestartEvenIfNoUpdatesAvailable = w.RestartEvenIfNoUpdatesAvailable
+	return out, nil
+}
+
+// ClusterAutoRestartMessageFromSDK converts the sdk-go type to the mirror.
+func ClusterAutoRestartMessageFromSDK(v *sdk.ClusterAutoRestartMessage) (*ClusterAutoRestartMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAutoRestartMessage{}
+	out.Enabled = v.Enabled
+	out.CanToggle = v.CanToggle
+	conv3, err := ClusterAutoRestartMessage_MaintenanceWindowFromSDK(v.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv3
+	conv4, err := ClusterAutoRestartMessage_EnablementDetailsFromSDK(v.EnablementDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage.EnablementDetails", err)
+	}
+	out.EnablementDetails = conv4
+	out.RestartEvenIfNoUpdatesAvailable = v.RestartEvenIfNoUpdatesAvailable
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_EnablementDetailsToSDK converts the mirror to the sdk-go type.
+func ClusterAutoRestartMessage_EnablementDetailsToSDK(w *ClusterAutoRestartMessage_EnablementDetails) (*sdk.ClusterAutoRestartMessage_EnablementDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAutoRestartMessage_EnablementDetails{}
+	out.UnavailableForNonEnterpriseTier = w.UnavailableForNonEnterpriseTier
+	out.UnavailableForDisabledEntitlement = w.UnavailableForDisabledEntitlement
+	out.ForcedForComplianceMode = w.ForcedForComplianceMode
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_EnablementDetailsFromSDK converts the sdk-go type to the mirror.
+func ClusterAutoRestartMessage_EnablementDetailsFromSDK(v *sdk.ClusterAutoRestartMessage_EnablementDetails) (*ClusterAutoRestartMessage_EnablementDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAutoRestartMessage_EnablementDetails{}
+	out.UnavailableForNonEnterpriseTier = v.UnavailableForNonEnterpriseTier
+	out.UnavailableForDisabledEntitlement = v.UnavailableForDisabledEntitlement
+	out.ForcedForComplianceMode = v.ForcedForComplianceMode
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindowToSDK converts the mirror to the sdk-go type.
+func ClusterAutoRestartMessage_MaintenanceWindowToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAutoRestartMessage_MaintenanceWindow{}
+	conv5, err := ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleToSDK(w.WeekDayBasedSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow.WeekDayBasedSchedule", err)
+	}
+	out.WeekDayBasedSchedule = conv5
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindowFromSDK converts the sdk-go type to the mirror.
+func ClusterAutoRestartMessage_MaintenanceWindowFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow) (*ClusterAutoRestartMessage_MaintenanceWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAutoRestartMessage_MaintenanceWindow{}
+	conv6, err := ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleFromSDK(v.WeekDayBasedSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow.WeekDayBasedSchedule", err)
+	}
+	out.WeekDayBasedSchedule = conv6
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleToSDK converts the mirror to the sdk-go type.
+func ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule{}
+	out.Frequency = w.Frequency
+	out.DayOfWeek = w.DayOfWeek
+	conv7, err := ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeToSDK(w.WindowStartTime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule.WindowStartTime", err)
+	}
+	out.WindowStartTime = conv7
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleFromSDK converts the sdk-go type to the mirror.
+func ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedScheduleFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule) (*ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule{}
+	out.Frequency = v.Frequency
+	out.DayOfWeek = v.DayOfWeek
+	conv8, err := ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeFromSDK(v.WindowStartTime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAutoRestartMessage_MaintenanceWindow_WeekDayBasedSchedule.WindowStartTime", err)
+	}
+	out.WindowStartTime = conv8
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeToSDK converts the mirror to the sdk-go type.
+func ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeToSDK(w *ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime) (*sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime{}
+	out.Hours = w.Hours
+	out.Minutes = w.Minutes
+	return out, nil
+}
+
+// ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeFromSDK converts the sdk-go type to the mirror.
+func ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTimeFromSDK(v *sdk.ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime) (*ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAutoRestartMessage_MaintenanceWindow_WindowStartTime{}
+	out.Hours = v.Hours
+	out.Minutes = v.Minutes
+	return out, nil
+}
+
+// CollaborationPlatformConnectivityMessageToSDK converts the mirror to the sdk-go type.
+func CollaborationPlatformConnectivityMessageToSDK(w *CollaborationPlatformConnectivityMessage) (*sdk.CollaborationPlatformConnectivityMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CollaborationPlatformConnectivityMessage{}
+	out.Connectivity = w.Connectivity
+	return out, nil
+}
+
+// CollaborationPlatformConnectivityMessageFromSDK converts the sdk-go type to the mirror.
+func CollaborationPlatformConnectivityMessageFromSDK(v *sdk.CollaborationPlatformConnectivityMessage) (*CollaborationPlatformConnectivityMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CollaborationPlatformConnectivityMessage{}
+	out.Connectivity = v.Connectivity
+	return out, nil
+}
+
+// IntegerMessageToSDK converts the mirror to the sdk-go type.
+func IntegerMessageToSDK(w *IntegerMessage) (*sdk.IntegerMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IntegerMessage{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// IntegerMessageFromSDK converts the sdk-go type to the mirror.
+func IntegerMessageFromSDK(v *sdk.IntegerMessage) (*IntegerMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IntegerMessage{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// ListAccountSettingsMetadataRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountSettingsMetadataRequestToSDK(w *ListAccountSettingsMetadataRequest) (*sdk.ListAccountSettingsMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountSettingsMetadataRequest{}
+	out.AccountId = w.AccountId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListAccountSettingsMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountSettingsMetadataRequestFromSDK(v *sdk.ListAccountSettingsMetadataRequest) (*ListAccountSettingsMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountSettingsMetadataRequest{}
+	out.AccountId = v.AccountId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListAccountSettingsMetadataResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountSettingsMetadataResponseToSDK(w *ListAccountSettingsMetadataResponse) (*sdk.ListAccountSettingsMetadataResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountSettingsMetadataResponse{}
+	conv9, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountSettingsMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAccountSettingsMetadataResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountSettingsMetadataResponseFromSDK(v *sdk.ListAccountSettingsMetadataResponse) (*ListAccountSettingsMetadataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountSettingsMetadataResponse{}
+	conv10, err := convertSlice(v.SettingsMetadata, SettingsMetadataFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountSettingsMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListAccountUserPreferencesMetadataRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountUserPreferencesMetadataRequestToSDK(w *ListAccountUserPreferencesMetadataRequest) (*sdk.ListAccountUserPreferencesMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountUserPreferencesMetadataRequest{}
+	out.AccountId = w.AccountId
+	out.UserId = w.UserId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListAccountUserPreferencesMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountUserPreferencesMetadataRequestFromSDK(v *sdk.ListAccountUserPreferencesMetadataRequest) (*ListAccountUserPreferencesMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountUserPreferencesMetadataRequest{}
+	out.AccountId = v.AccountId
+	out.UserId = v.UserId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListAccountUserPreferencesMetadataResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountUserPreferencesMetadataResponseToSDK(w *ListAccountUserPreferencesMetadataResponse) (*sdk.ListAccountUserPreferencesMetadataResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountUserPreferencesMetadataResponse{}
+	conv11, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountUserPreferencesMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAccountUserPreferencesMetadataResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountUserPreferencesMetadataResponseFromSDK(v *sdk.ListAccountUserPreferencesMetadataResponse) (*ListAccountUserPreferencesMetadataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountUserPreferencesMetadataResponse{}
+	conv12, err := convertSlice(v.SettingsMetadata, SettingsMetadataFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountUserPreferencesMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListWorkspaceSettingsMetadataRequestToSDK converts the mirror to the sdk-go type.
+func ListWorkspaceSettingsMetadataRequestToSDK(w *ListWorkspaceSettingsMetadataRequest) (*sdk.ListWorkspaceSettingsMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspaceSettingsMetadataRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListWorkspaceSettingsMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func ListWorkspaceSettingsMetadataRequestFromSDK(v *sdk.ListWorkspaceSettingsMetadataRequest) (*ListWorkspaceSettingsMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspaceSettingsMetadataRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListWorkspaceSettingsMetadataResponseToSDK converts the mirror to the sdk-go type.
+func ListWorkspaceSettingsMetadataResponseToSDK(w *ListWorkspaceSettingsMetadataResponse) (*sdk.ListWorkspaceSettingsMetadataResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspaceSettingsMetadataResponse{}
+	conv13, err := convertSlice(w.SettingsMetadata, SettingsMetadataToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspaceSettingsMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListWorkspaceSettingsMetadataResponseFromSDK converts the sdk-go type to the mirror.
+func ListWorkspaceSettingsMetadataResponseFromSDK(v *sdk.ListWorkspaceSettingsMetadataResponse) (*ListWorkspaceSettingsMetadataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspaceSettingsMetadataResponse{}
+	conv14, err := convertSlice(v.SettingsMetadata, SettingsMetadataFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspaceSettingsMetadataResponse.SettingsMetadata", err)
+	}
+	out.SettingsMetadata = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OperationalEmailCustomRecipientMessageToSDK converts the mirror to the sdk-go type.
+func OperationalEmailCustomRecipientMessageToSDK(w *OperationalEmailCustomRecipientMessage) (*sdk.OperationalEmailCustomRecipientMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OperationalEmailCustomRecipientMessage{}
+	out.Email = w.Email
+	return out, nil
+}
+
+// OperationalEmailCustomRecipientMessageFromSDK converts the sdk-go type to the mirror.
+func OperationalEmailCustomRecipientMessageFromSDK(v *sdk.OperationalEmailCustomRecipientMessage) (*OperationalEmailCustomRecipientMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OperationalEmailCustomRecipientMessage{}
+	out.Email = v.Email
+	return out, nil
+}
+
+// PatchPublicAccountSettingRequestToSDK converts the mirror to the sdk-go type.
+func PatchPublicAccountSettingRequestToSDK(w *PatchPublicAccountSettingRequest) (*sdk.PatchPublicAccountSettingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchPublicAccountSettingRequest{}
+	out.AccountId = w.AccountId
+	out.Name = w.Name
+	conv15, err := SettingToSDK(w.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountSettingRequest.Setting", err)
+	}
+	out.Setting = conv15
+	return out, nil
+}
+
+// PatchPublicAccountSettingRequestFromSDK converts the sdk-go type to the mirror.
+func PatchPublicAccountSettingRequestFromSDK(v *sdk.PatchPublicAccountSettingRequest) (*PatchPublicAccountSettingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchPublicAccountSettingRequest{}
+	out.AccountId = v.AccountId
+	out.Name = v.Name
+	conv16, err := SettingFromSDK(v.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountSettingRequest.Setting", err)
+	}
+	out.Setting = conv16
+	return out, nil
+}
+
+// PatchPublicAccountUserPreferenceRequestToSDK converts the mirror to the sdk-go type.
+func PatchPublicAccountUserPreferenceRequestToSDK(w *PatchPublicAccountUserPreferenceRequest) (*sdk.PatchPublicAccountUserPreferenceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchPublicAccountUserPreferenceRequest{}
+	out.AccountId = w.AccountId
+	out.UserId = w.UserId
+	out.Name = w.Name
+	conv17, err := UserPreferenceToSDK(w.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountUserPreferenceRequest.Setting", err)
+	}
+	out.Setting = conv17
+	return out, nil
+}
+
+// PatchPublicAccountUserPreferenceRequestFromSDK converts the sdk-go type to the mirror.
+func PatchPublicAccountUserPreferenceRequestFromSDK(v *sdk.PatchPublicAccountUserPreferenceRequest) (*PatchPublicAccountUserPreferenceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchPublicAccountUserPreferenceRequest{}
+	out.AccountId = v.AccountId
+	out.UserId = v.UserId
+	out.Name = v.Name
+	conv18, err := UserPreferenceFromSDK(v.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicAccountUserPreferenceRequest.Setting", err)
+	}
+	out.Setting = conv18
+	return out, nil
+}
+
+// PatchPublicWorkspaceSettingRequestToSDK converts the mirror to the sdk-go type.
+func PatchPublicWorkspaceSettingRequestToSDK(w *PatchPublicWorkspaceSettingRequest) (*sdk.PatchPublicWorkspaceSettingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchPublicWorkspaceSettingRequest{}
+	out.Name = w.Name
+	conv19, err := SettingToSDK(w.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicWorkspaceSettingRequest.Setting", err)
+	}
+	out.Setting = conv19
+	return out, nil
+}
+
+// PatchPublicWorkspaceSettingRequestFromSDK converts the sdk-go type to the mirror.
+func PatchPublicWorkspaceSettingRequestFromSDK(v *sdk.PatchPublicWorkspaceSettingRequest) (*PatchPublicWorkspaceSettingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchPublicWorkspaceSettingRequest{}
+	out.Name = v.Name
+	conv20, err := SettingFromSDK(v.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchPublicWorkspaceSettingRequest.Setting", err)
+	}
+	out.Setting = conv20
+	return out, nil
+}
+
+// PersonalComputeMessageToSDK converts the mirror to the sdk-go type.
+func PersonalComputeMessageToSDK(w *PersonalComputeMessage) (*sdk.PersonalComputeMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PersonalComputeMessage{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// PersonalComputeMessageFromSDK converts the sdk-go type to the mirror.
+func PersonalComputeMessageFromSDK(v *sdk.PersonalComputeMessage) (*PersonalComputeMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PersonalComputeMessage{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// RestrictWorkspaceAdminsMessageToSDK converts the mirror to the sdk-go type.
+func RestrictWorkspaceAdminsMessageToSDK(w *RestrictWorkspaceAdminsMessage) (*sdk.RestrictWorkspaceAdminsMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestrictWorkspaceAdminsMessage{}
+	out.Status = w.Status
+	out.DisableGovTagCreation = w.DisableGovTagCreation
+	return out, nil
+}
+
+// RestrictWorkspaceAdminsMessageFromSDK converts the sdk-go type to the mirror.
+func RestrictWorkspaceAdminsMessageFromSDK(v *sdk.RestrictWorkspaceAdminsMessage) (*RestrictWorkspaceAdminsMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestrictWorkspaceAdminsMessage{}
+	out.Status = v.Status
+	out.DisableGovTagCreation = v.DisableGovTagCreation
+	return out, nil
+}
+
+// SettingToSDK converts the mirror to the sdk-go type.
+func SettingToSDK(w *Setting) (*sdk.Setting, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Setting{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.BooleanVal != nil {
+			members++
+		}
+		if w.StringVal != nil {
+			members++
+		}
+		if w.IntegerVal != nil {
+			members++
+		}
+		if w.AutomaticClusterUpdateWorkspace != nil {
+			members++
+		}
+		if w.AibiDashboardEmbeddingApprovedDomains != nil {
+			members++
+		}
+		if w.AibiDashboardEmbeddingAccessPolicy != nil {
+			members++
+		}
+		if w.RestrictWorkspaceAdmins != nil {
+			members++
+		}
+		if w.PersonalCompute != nil {
+			members++
+		}
+		if w.WorkspaceLabel != nil {
+			members++
+		}
+		if w.AllowedAppsUserApiScopes != nil {
+			members++
+		}
+		if w.OperationalEmailCustomRecipient != nil {
+			members++
+		}
+		if w.CollaborationPlatformConnectivity != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.Value")
+		}
+	}
+	switch {
+	case w.BooleanVal != nil:
+		conv21, err := BooleanMessageToSDK(w.BooleanVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_BooleanVal{BooleanVal: *conv21}
+	case w.StringVal != nil:
+		conv22, err := StringMessageToSDK(w.StringVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_StringVal{StringVal: *conv22}
+	case w.IntegerVal != nil:
+		conv23, err := IntegerMessageToSDK(w.IntegerVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_IntegerVal{IntegerVal: *conv23}
+	case w.AutomaticClusterUpdateWorkspace != nil:
+		conv24, err := ClusterAutoRestartMessageToSDK(w.AutomaticClusterUpdateWorkspace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_AutomaticClusterUpdateWorkspace{AutomaticClusterUpdateWorkspace: *conv24}
+	case w.AibiDashboardEmbeddingApprovedDomains != nil:
+		conv25, err := AibiDashboardEmbeddingApprovedDomainsToSDK(w.AibiDashboardEmbeddingApprovedDomains)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_AibiDashboardEmbeddingApprovedDomains{AibiDashboardEmbeddingApprovedDomains: *conv25}
+	case w.AibiDashboardEmbeddingAccessPolicy != nil:
+		conv26, err := AibiDashboardEmbeddingAccessPolicyToSDK(w.AibiDashboardEmbeddingAccessPolicy)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_AibiDashboardEmbeddingAccessPolicy{AibiDashboardEmbeddingAccessPolicy: *conv26}
+	case w.RestrictWorkspaceAdmins != nil:
+		conv27, err := RestrictWorkspaceAdminsMessageToSDK(w.RestrictWorkspaceAdmins)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_RestrictWorkspaceAdmins{RestrictWorkspaceAdmins: *conv27}
+	case w.PersonalCompute != nil:
+		conv28, err := PersonalComputeMessageToSDK(w.PersonalCompute)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_PersonalCompute{PersonalCompute: *conv28}
+	case w.WorkspaceLabel != nil:
+		conv29, err := WorkspaceLabelMessageToSDK(w.WorkspaceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_WorkspaceLabel{WorkspaceLabel: *conv29}
+	case w.AllowedAppsUserApiScopes != nil:
+		conv30, err := AllowedAppsUserApiScopesMessageToSDK(w.AllowedAppsUserApiScopes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_AllowedAppsUserApiScopes{AllowedAppsUserApiScopes: *conv30}
+	case w.OperationalEmailCustomRecipient != nil:
+		conv31, err := OperationalEmailCustomRecipientMessageToSDK(w.OperationalEmailCustomRecipient)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_OperationalEmailCustomRecipient{OperationalEmailCustomRecipient: *conv31}
+	case w.CollaborationPlatformConnectivity != nil:
+		conv32, err := CollaborationPlatformConnectivityMessageToSDK(w.CollaborationPlatformConnectivity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+		}
+		out.Value = &sdk.Setting_Value_CollaborationPlatformConnectivity{CollaborationPlatformConnectivity: *conv32}
+	}
+	{
+		members := 0
+		if w.EffectiveBooleanVal != nil {
+			members++
+		}
+		if w.EffectiveStringVal != nil {
+			members++
+		}
+		if w.EffectiveIntegerVal != nil {
+			members++
+		}
+		if w.EffectiveAutomaticClusterUpdateWorkspace != nil {
+			members++
+		}
+		if w.EffectiveAibiDashboardEmbeddingApprovedDomains != nil {
+			members++
+		}
+		if w.EffectiveAibiDashboardEmbeddingAccessPolicy != nil {
+			members++
+		}
+		if w.EffectiveRestrictWorkspaceAdmins != nil {
+			members++
+		}
+		if w.EffectivePersonalCompute != nil {
+			members++
+		}
+		if w.EffectiveWorkspaceLabel != nil {
+			members++
+		}
+		if w.EffectiveAllowedAppsUserApiScopes != nil {
+			members++
+		}
+		if w.EffectiveOperationalEmailCustomRecipient != nil {
+			members++
+		}
+		if w.EffectiveCollaborationPlatformConnectivity != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Setting.EffectiveValue")
+		}
+	}
+	switch {
+	case w.EffectiveBooleanVal != nil:
+		conv33, err := BooleanMessageToSDK(w.EffectiveBooleanVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveBooleanVal{EffectiveBooleanVal: *conv33}
+	case w.EffectiveStringVal != nil:
+		conv34, err := StringMessageToSDK(w.EffectiveStringVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveStringVal{EffectiveStringVal: *conv34}
+	case w.EffectiveIntegerVal != nil:
+		conv35, err := IntegerMessageToSDK(w.EffectiveIntegerVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveIntegerVal{EffectiveIntegerVal: *conv35}
+	case w.EffectiveAutomaticClusterUpdateWorkspace != nil:
+		conv36, err := ClusterAutoRestartMessageToSDK(w.EffectiveAutomaticClusterUpdateWorkspace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveAutomaticClusterUpdateWorkspace{EffectiveAutomaticClusterUpdateWorkspace: *conv36}
+	case w.EffectiveAibiDashboardEmbeddingApprovedDomains != nil:
+		conv37, err := AibiDashboardEmbeddingApprovedDomainsToSDK(w.EffectiveAibiDashboardEmbeddingApprovedDomains)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingApprovedDomains{EffectiveAibiDashboardEmbeddingApprovedDomains: *conv37}
+	case w.EffectiveAibiDashboardEmbeddingAccessPolicy != nil:
+		conv38, err := AibiDashboardEmbeddingAccessPolicyToSDK(w.EffectiveAibiDashboardEmbeddingAccessPolicy)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingAccessPolicy{EffectiveAibiDashboardEmbeddingAccessPolicy: *conv38}
+	case w.EffectiveRestrictWorkspaceAdmins != nil:
+		conv39, err := RestrictWorkspaceAdminsMessageToSDK(w.EffectiveRestrictWorkspaceAdmins)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveRestrictWorkspaceAdmins{EffectiveRestrictWorkspaceAdmins: *conv39}
+	case w.EffectivePersonalCompute != nil:
+		conv40, err := PersonalComputeMessageToSDK(w.EffectivePersonalCompute)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectivePersonalCompute{EffectivePersonalCompute: *conv40}
+	case w.EffectiveWorkspaceLabel != nil:
+		conv41, err := WorkspaceLabelMessageToSDK(w.EffectiveWorkspaceLabel)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveWorkspaceLabel{EffectiveWorkspaceLabel: *conv41}
+	case w.EffectiveAllowedAppsUserApiScopes != nil:
+		conv42, err := AllowedAppsUserApiScopesMessageToSDK(w.EffectiveAllowedAppsUserApiScopes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveAllowedAppsUserApiScopes{EffectiveAllowedAppsUserApiScopes: *conv42}
+	case w.EffectiveOperationalEmailCustomRecipient != nil:
+		conv43, err := OperationalEmailCustomRecipientMessageToSDK(w.EffectiveOperationalEmailCustomRecipient)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveOperationalEmailCustomRecipient{EffectiveOperationalEmailCustomRecipient: *conv43}
+	case w.EffectiveCollaborationPlatformConnectivity != nil:
+		conv44, err := CollaborationPlatformConnectivityMessageToSDK(w.EffectiveCollaborationPlatformConnectivity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.Setting_EffectiveValue_EffectiveCollaborationPlatformConnectivity{EffectiveCollaborationPlatformConnectivity: *conv44}
+	}
+	return out, nil
+}
+
+// SettingFromSDK converts the sdk-go type to the mirror.
+func SettingFromSDK(v *sdk.Setting) (*Setting, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Setting{}
+	out.Name = v.Name
+	switch value := v.Value.(type) {
+	case *sdk.Setting_Value_BooleanVal:
+		if value != nil {
+			conv45, err := BooleanMessageFromSDK(&value.BooleanVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.BooleanVal = conv45
+		}
+	case *sdk.Setting_Value_StringVal:
+		if value != nil {
+			conv46, err := StringMessageFromSDK(&value.StringVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.StringVal = conv46
+		}
+	case *sdk.Setting_Value_IntegerVal:
+		if value != nil {
+			conv47, err := IntegerMessageFromSDK(&value.IntegerVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.IntegerVal = conv47
+		}
+	case *sdk.Setting_Value_AutomaticClusterUpdateWorkspace:
+		if value != nil {
+			conv48, err := ClusterAutoRestartMessageFromSDK(&value.AutomaticClusterUpdateWorkspace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.AutomaticClusterUpdateWorkspace = conv48
+		}
+	case *sdk.Setting_Value_AibiDashboardEmbeddingApprovedDomains:
+		if value != nil {
+			conv49, err := AibiDashboardEmbeddingApprovedDomainsFromSDK(&value.AibiDashboardEmbeddingApprovedDomains)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.AibiDashboardEmbeddingApprovedDomains = conv49
+		}
+	case *sdk.Setting_Value_AibiDashboardEmbeddingAccessPolicy:
+		if value != nil {
+			conv50, err := AibiDashboardEmbeddingAccessPolicyFromSDK(&value.AibiDashboardEmbeddingAccessPolicy)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.AibiDashboardEmbeddingAccessPolicy = conv50
+		}
+	case *sdk.Setting_Value_RestrictWorkspaceAdmins:
+		if value != nil {
+			conv51, err := RestrictWorkspaceAdminsMessageFromSDK(&value.RestrictWorkspaceAdmins)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.RestrictWorkspaceAdmins = conv51
+		}
+	case *sdk.Setting_Value_PersonalCompute:
+		if value != nil {
+			conv52, err := PersonalComputeMessageFromSDK(&value.PersonalCompute)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.PersonalCompute = conv52
+		}
+	case *sdk.Setting_Value_WorkspaceLabel:
+		if value != nil {
+			conv53, err := WorkspaceLabelMessageFromSDK(&value.WorkspaceLabel)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.WorkspaceLabel = conv53
+		}
+	case *sdk.Setting_Value_AllowedAppsUserApiScopes:
+		if value != nil {
+			conv54, err := AllowedAppsUserApiScopesMessageFromSDK(&value.AllowedAppsUserApiScopes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.AllowedAppsUserApiScopes = conv54
+		}
+	case *sdk.Setting_Value_OperationalEmailCustomRecipient:
+		if value != nil {
+			conv55, err := OperationalEmailCustomRecipientMessageFromSDK(&value.OperationalEmailCustomRecipient)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.OperationalEmailCustomRecipient = conv55
+		}
+	case *sdk.Setting_Value_CollaborationPlatformConnectivity:
+		if value != nil {
+			conv56, err := CollaborationPlatformConnectivityMessageFromSDK(&value.CollaborationPlatformConnectivity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.Value", err)
+			}
+			out.CollaborationPlatformConnectivity = conv56
+		}
+	}
+	switch value := v.EffectiveValue.(type) {
+	case *sdk.Setting_EffectiveValue_EffectiveBooleanVal:
+		if value != nil {
+			conv57, err := BooleanMessageFromSDK(&value.EffectiveBooleanVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveBooleanVal = conv57
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveStringVal:
+		if value != nil {
+			conv58, err := StringMessageFromSDK(&value.EffectiveStringVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveStringVal = conv58
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveIntegerVal:
+		if value != nil {
+			conv59, err := IntegerMessageFromSDK(&value.EffectiveIntegerVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveIntegerVal = conv59
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveAutomaticClusterUpdateWorkspace:
+		if value != nil {
+			conv60, err := ClusterAutoRestartMessageFromSDK(&value.EffectiveAutomaticClusterUpdateWorkspace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveAutomaticClusterUpdateWorkspace = conv60
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingApprovedDomains:
+		if value != nil {
+			conv61, err := AibiDashboardEmbeddingApprovedDomainsFromSDK(&value.EffectiveAibiDashboardEmbeddingApprovedDomains)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveAibiDashboardEmbeddingApprovedDomains = conv61
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveAibiDashboardEmbeddingAccessPolicy:
+		if value != nil {
+			conv62, err := AibiDashboardEmbeddingAccessPolicyFromSDK(&value.EffectiveAibiDashboardEmbeddingAccessPolicy)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveAibiDashboardEmbeddingAccessPolicy = conv62
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveRestrictWorkspaceAdmins:
+		if value != nil {
+			conv63, err := RestrictWorkspaceAdminsMessageFromSDK(&value.EffectiveRestrictWorkspaceAdmins)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveRestrictWorkspaceAdmins = conv63
+		}
+	case *sdk.Setting_EffectiveValue_EffectivePersonalCompute:
+		if value != nil {
+			conv64, err := PersonalComputeMessageFromSDK(&value.EffectivePersonalCompute)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectivePersonalCompute = conv64
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveWorkspaceLabel:
+		if value != nil {
+			conv65, err := WorkspaceLabelMessageFromSDK(&value.EffectiveWorkspaceLabel)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveWorkspaceLabel = conv65
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveAllowedAppsUserApiScopes:
+		if value != nil {
+			conv66, err := AllowedAppsUserApiScopesMessageFromSDK(&value.EffectiveAllowedAppsUserApiScopes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveAllowedAppsUserApiScopes = conv66
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveOperationalEmailCustomRecipient:
+		if value != nil {
+			conv67, err := OperationalEmailCustomRecipientMessageFromSDK(&value.EffectiveOperationalEmailCustomRecipient)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveOperationalEmailCustomRecipient = conv67
+		}
+	case *sdk.Setting_EffectiveValue_EffectiveCollaborationPlatformConnectivity:
+		if value != nil {
+			conv68, err := CollaborationPlatformConnectivityMessageFromSDK(&value.EffectiveCollaborationPlatformConnectivity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Setting.EffectiveValue", err)
+			}
+			out.EffectiveCollaborationPlatformConnectivity = conv68
+		}
+	}
+	return out, nil
+}
+
+// SettingsMetadataToSDK converts the mirror to the sdk-go type.
+func SettingsMetadataToSDK(w *SettingsMetadata) (*sdk.SettingsMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SettingsMetadata{}
+	out.Name = w.Name
+	out.Description = w.Description
+	out.Type = w.Type
+	out.DocsLink = w.DocsLink
+	out.PreviewPhase = w.PreviewPhase
+	out.DisplayName = w.DisplayName
+	return out, nil
+}
+
+// SettingsMetadataFromSDK converts the sdk-go type to the mirror.
+func SettingsMetadataFromSDK(v *sdk.SettingsMetadata) (*SettingsMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SettingsMetadata{}
+	out.Name = v.Name
+	out.Description = v.Description
+	out.Type = v.Type
+	out.DocsLink = v.DocsLink
+	out.PreviewPhase = v.PreviewPhase
+	out.DisplayName = v.DisplayName
+	return out, nil
+}
+
+// StringMessageToSDK converts the mirror to the sdk-go type.
+func StringMessageToSDK(w *StringMessage) (*sdk.StringMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StringMessage{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// StringMessageFromSDK converts the sdk-go type to the mirror.
+func StringMessageFromSDK(v *sdk.StringMessage) (*StringMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StringMessage{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// UserPreferenceToSDK converts the mirror to the sdk-go type.
+func UserPreferenceToSDK(w *UserPreference) (*sdk.UserPreference, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UserPreference{}
+	out.Name = w.Name
+	out.UserId = w.UserId
+	{
+		members := 0
+		if w.BooleanVal != nil {
+			members++
+		}
+		if w.StringVal != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.Value")
+		}
+	}
+	switch {
+	case w.BooleanVal != nil:
+		conv69, err := BooleanMessageToSDK(w.BooleanVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UserPreference.Value", err)
+		}
+		out.Value = &sdk.UserPreference_Value_BooleanVal{BooleanVal: *conv69}
+	case w.StringVal != nil:
+		conv70, err := StringMessageToSDK(w.StringVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UserPreference.Value", err)
+		}
+		out.Value = &sdk.UserPreference_Value_StringVal{StringVal: *conv70}
+	}
+	{
+		members := 0
+		if w.EffectiveBooleanVal != nil {
+			members++
+		}
+		if w.EffectiveStringVal != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UserPreference.EffectiveValue")
+		}
+	}
+	switch {
+	case w.EffectiveBooleanVal != nil:
+		conv71, err := BooleanMessageToSDK(w.EffectiveBooleanVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.UserPreference_EffectiveValue_EffectiveBooleanVal{EffectiveBooleanVal: *conv71}
+	case w.EffectiveStringVal != nil:
+		conv72, err := StringMessageToSDK(w.EffectiveStringVal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue", err)
+		}
+		out.EffectiveValue = &sdk.UserPreference_EffectiveValue_EffectiveStringVal{EffectiveStringVal: *conv72}
+	}
+	return out, nil
+}
+
+// UserPreferenceFromSDK converts the sdk-go type to the mirror.
+func UserPreferenceFromSDK(v *sdk.UserPreference) (*UserPreference, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UserPreference{}
+	out.Name = v.Name
+	out.UserId = v.UserId
+	switch value := v.Value.(type) {
+	case *sdk.UserPreference_Value_BooleanVal:
+		if value != nil {
+			conv73, err := BooleanMessageFromSDK(&value.BooleanVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UserPreference.Value", err)
+			}
+			out.BooleanVal = conv73
+		}
+	case *sdk.UserPreference_Value_StringVal:
+		if value != nil {
+			conv74, err := StringMessageFromSDK(&value.StringVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UserPreference.Value", err)
+			}
+			out.StringVal = conv74
+		}
+	}
+	switch value := v.EffectiveValue.(type) {
+	case *sdk.UserPreference_EffectiveValue_EffectiveBooleanVal:
+		if value != nil {
+			conv75, err := BooleanMessageFromSDK(&value.EffectiveBooleanVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue", err)
+			}
+			out.EffectiveBooleanVal = conv75
+		}
+	case *sdk.UserPreference_EffectiveValue_EffectiveStringVal:
+		if value != nil {
+			conv76, err := StringMessageFromSDK(&value.EffectiveStringVal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UserPreference.EffectiveValue", err)
+			}
+			out.EffectiveStringVal = conv76
+		}
+	}
+	return out, nil
+}
+
+// WorkspaceLabelMessageToSDK converts the mirror to the sdk-go type.
 func WorkspaceLabelMessageToSDK(w *WorkspaceLabelMessage) (*sdk.WorkspaceLabelMessage, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WorkspaceLabelMessage{
-		Label: w.Label,
-		Color: w.Color,
-	}, nil
+	out := &sdk.WorkspaceLabelMessage{}
+	out.Label = w.Label
+	out.Color = w.Color
+	return out, nil
+}
+
+// WorkspaceLabelMessageFromSDK converts the sdk-go type to the mirror.
+func WorkspaceLabelMessageFromSDK(v *sdk.WorkspaceLabelMessage) (*WorkspaceLabelMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceLabelMessage{}
+	out.Label = v.Label
+	out.Color = v.Color
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

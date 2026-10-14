@@ -20,3 +20,16 @@ func TestJobSettingsRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, input, string(out))
 }
+
+func TestResponseRoundTrip(t *testing.T) {
+	input := `{"job_id":5,"settings":{"name":"x","tasks":[{"task_key":"a","spark_python_task":{"python_file":"f.py"},"new_cluster":{"spark_version":"13","num_workers":0}}]},"trigger_state":{}}`
+	var m GetJobResponse
+	require.NoError(t, json.Unmarshal([]byte(input), &m))
+	s, err := GetJobResponseToSDK(&m)
+	require.NoError(t, err)
+	back, err := GetJobResponseFromSDK(s)
+	require.NoError(t, err)
+	out, err := json.Marshal(back)
+	require.NoError(t, err)
+	assert.JSONEq(t, input, string(out))
+}

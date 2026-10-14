@@ -19,44 +19,10 @@ const (
 	ModelVersionStatus_Ready               = sdk.ModelVersionStatus_Ready
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // A connection that is dependent on a SQL object..
 type ConnectionDependency struct {
 	// Full name of the dependent connection, in the form of __connection_name__.
 	ConnectionName *string `json:"connection_name,omitempty"`
-}
-
-func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConnectionDependency{
-		ConnectionName: v.ConnectionName,
-	}, nil
-}
-
-func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConnectionDependency{
-		ConnectionName: w.ConnectionName,
-	}, nil
 }
 
 type CreateRegisteredModelRequest struct {
@@ -95,62 +61,10 @@ type CreateRegisteredModelRequest struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func CreateRegisteredModelRequestFromSDK(v *sdk.CreateRegisteredModelRequest) (*CreateRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.UpdatedAt", err)
-	}
-	aliasesWireValue, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Aliases", err)
-	}
-	return &CreateRegisteredModelRequest{
-		Name:            v.Name,
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		Owner:           v.Owner,
-		Comment:         v.Comment,
-		StorageLocation: v.StorageLocation,
-		MetastoreId:     v.MetastoreId,
-		FullName:        v.FullName,
-		CreatedAt:       createdAtWireValue,
-		CreatedBy:       v.CreatedBy,
-		UpdatedAt:       updatedAtWireValue,
-		UpdatedBy:       v.UpdatedBy,
-		Aliases:         aliasesWireValue,
-		BrowseOnly:      v.BrowseOnly,
-	}, nil
-}
-
 // A credential that is dependent on a SQL object..
 type CredentialDependency struct {
 	// Full name of the dependent credential, in the form of __credential_name__.
 	CredentialName *string `json:"credential_name,omitempty"`
-}
-
-func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CredentialDependency{
-		CredentialName: v.CredentialName,
-	}, nil
-}
-
-func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CredentialDependency{
-		CredentialName: w.CredentialName,
-	}, nil
 }
 
 // A dependency of a SQL object. One of the following fields must be defined:
@@ -163,141 +77,10 @@ type Dependency struct {
 	Credential *CredentialDependency `json:"credential,omitempty"`
 }
 
-func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueTableWire *TableDependency
-	var valueFunctionWire *FunctionDependency
-	var valueConnectionWire *ConnectionDependency
-	var valueCredentialWire *CredentialDependency
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.Dependency_Value_Table:
-		if value != nil {
-			valueTableConverted, err := TableDependencyFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-			}
-			valueTableWire = valueTableConverted
-		}
-	case *sdk.Dependency_Value_Function:
-		if value != nil {
-			valueFunctionConverted, err := FunctionDependencyFromSDK(&value.Function)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-			}
-			valueFunctionWire = valueFunctionConverted
-		}
-	case *sdk.Dependency_Value_Connection:
-		if value != nil {
-			valueConnectionConverted, err := ConnectionDependencyFromSDK(&value.Connection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-			}
-			valueConnectionWire = valueConnectionConverted
-		}
-	case *sdk.Dependency_Value_Credential:
-		if value != nil {
-			valueCredentialConverted, err := CredentialDependencyFromSDK(&value.Credential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-			}
-			valueCredentialWire = valueCredentialConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Dependency.Value", value)
-	}
-	return &Dependency{
-		Table:      valueTableWire,
-		Function:   valueFunctionWire,
-		Connection: valueConnectionWire,
-		Credential: valueCredentialWire,
-	}, nil
-}
-
-func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.Table != nil {
-		valueMembers++
-	}
-	if w.Function != nil {
-		valueMembers++
-	}
-	if w.Connection != nil {
-		valueMembers++
-	}
-	if w.Credential != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
-	}
-	valueSelection := (&sdk.Dependency{}).Value
-	switch {
-	case w.Table != nil:
-		valueTableConverted, err := TableDependencyToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Table{Table: *valueTableConverted}
-	case w.Function != nil:
-		valueFunctionConverted, err := FunctionDependencyToSDK(w.Function)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Function{Function: *valueFunctionConverted}
-	case w.Connection != nil:
-		valueConnectionConverted, err := ConnectionDependencyToSDK(w.Connection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Connection{Connection: *valueConnectionConverted}
-	case w.Credential != nil:
-		valueCredentialConverted, err := CredentialDependencyToSDK(w.Credential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Credential{Credential: *valueCredentialConverted}
-	}
-	return &sdk.Dependency{
-		Value: valueSelection,
-	}, nil
-}
-
 // A list of dependencies..
 type DependencyList struct {
 	// Array of dependencies.
 	Dependencies []Dependency `json:"dependencies,omitempty"`
-}
-
-func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dependenciesWireValue, err := convertSlice(v.Dependencies, DependencyFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &DependencyList{
-		Dependencies: dependenciesWireValue,
-	}, nil
-}
-
-func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dependenciesPublicValue, err := convertSlice(w.Dependencies, DependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &sdk.DependencyList{
-		Dependencies: dependenciesPublicValue,
-	}, nil
 }
 
 // A function that is dependent on a SQL object..
@@ -307,24 +90,6 @@ type FunctionDependency struct {
 	FunctionFullName *string `json:"function_full_name,omitempty"`
 }
 
-func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FunctionDependency{
-		FunctionFullName: v.FunctionFullName,
-	}, nil
-}
-
-func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionDependency{
-		FunctionFullName: w.FunctionFullName,
-	}, nil
-}
-
 type GetModelVersionByAliasRequest struct {
 	// The three-level (fully qualified) name of the registered model
 	FullNameArg *string `json:"full_name_arg,omitempty"`
@@ -332,17 +97,6 @@ type GetModelVersionByAliasRequest struct {
 	AliasArg *string `json:"alias_arg,omitempty"`
 	// Whether to include aliases associated with the model version in the response
 	IncludeAliases *bool `json:"include_aliases,omitempty"`
-}
-
-func GetModelVersionByAliasRequestFromSDK(v *sdk.GetModelVersionByAliasRequest) (*GetModelVersionByAliasRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetModelVersionByAliasRequest{
-		FullNameArg:    v.FullNameArg,
-		AliasArg:       v.AliasArg,
-		IncludeAliases: v.IncludeAliases,
-	}, nil
 }
 
 type GetModelVersionRequest struct {
@@ -357,22 +111,6 @@ type GetModelVersionRequest struct {
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
 }
 
-func GetModelVersionRequestFromSDK(v *sdk.GetModelVersionRequest) (*GetModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionArgWireValue, err := int64ToWire(v.VersionArg)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetModelVersionRequest.VersionArg", err)
-	}
-	return &GetModelVersionRequest{
-		FullNameArg:    v.FullNameArg,
-		VersionArg:     versionArgWireValue,
-		IncludeAliases: v.IncludeAliases,
-		IncludeBrowse:  v.IncludeBrowse,
-	}, nil
-}
-
 type GetRegisteredModelRequest struct {
 	// The three-level (fully qualified) name of the registered model
 	FullNameArg *string `json:"full_name_arg,omitempty"`
@@ -381,17 +119,6 @@ type GetRegisteredModelRequest struct {
 	// Whether to include registered models in the response for which the principal
 	// can only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetRegisteredModelRequestFromSDK(v *sdk.GetRegisteredModelRequest) (*GetRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetRegisteredModelRequest{
-		FullNameArg:    v.FullNameArg,
-		IncludeAliases: v.IncludeAliases,
-		IncludeBrowse:  v.IncludeBrowse,
-	}, nil
 }
 
 type ListModelVersionsRequest struct {
@@ -412,42 +139,12 @@ type ListModelVersionsRequest struct {
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
 }
 
-func ListModelVersionsRequestFromSDK(v *sdk.ListModelVersionsRequest) (*ListModelVersionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListModelVersionsRequest.MaxResults", err)
-	}
-	return &ListModelVersionsRequest{
-		FullNameArg:   v.FullNameArg,
-		MaxResults:    maxResultsWireValue,
-		PageToken:     v.PageToken,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
-}
-
 type ListModelVersionsResponse struct {
 	ModelVersions []ModelVersionInfo `json:"model_versions,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListModelVersionsResponseToSDK(w *ListModelVersionsResponse) (*sdk.ListModelVersionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionsPublicValue, err := convertSlice(w.ModelVersions, ModelVersionInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListModelVersionsResponse.ModelVersions", err)
-	}
-	return &sdk.ListModelVersionsResponse{
-		ModelVersions: modelVersionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListRegisteredModelsRequest struct {
@@ -478,42 +175,11 @@ type ListRegisteredModelsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListRegisteredModelsRequestFromSDK(v *sdk.ListRegisteredModelsRequest) (*ListRegisteredModelsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsRequest.MaxResults", err)
-	}
-	return &ListRegisteredModelsRequest{
-		CatalogName:   v.CatalogName,
-		SchemaName:    v.SchemaName,
-		IncludeBrowse: v.IncludeBrowse,
-		MaxResults:    maxResultsWireValue,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListRegisteredModelsResponse struct {
 	RegisteredModels []RegisteredModelInfo `json:"registered_models,omitempty"`
 	// Opaque token for pagination. Omitted if there are no more results. page_token
 	// should be set to this value for fetching the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListRegisteredModelsResponseToSDK(w *ListRegisteredModelsResponse) (*sdk.ListRegisteredModelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelsPublicValue, err := convertSlice(w.RegisteredModels, RegisteredModelInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
-	}
-	return &sdk.ListRegisteredModelsResponse{
-		RegisteredModels: registeredModelsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ModelVersionInfo struct {
@@ -563,56 +229,6 @@ type ModelVersionInfo struct {
 	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
 }
 
-func ModelVersionInfoToSDK(w *ModelVersionInfo) (*sdk.ModelVersionInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runWorkspaceIdPublicValue, err := int64FromWire(w.RunWorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.RunWorkspaceId", err)
-	}
-	modelVersionDependenciesPublicValue, err := DependencyListToSDK(w.ModelVersionDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.ModelVersionDependencies", err)
-	}
-	versionPublicValue, err := int64FromWire(w.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.Version", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.UpdatedAt", err)
-	}
-	aliasesPublicValue, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.Aliases", err)
-	}
-	return &sdk.ModelVersionInfo{
-		ModelName:                w.ModelName,
-		CatalogName:              w.CatalogName,
-		SchemaName:               w.SchemaName,
-		Source:                   w.Source,
-		Comment:                  w.Comment,
-		RunId:                    w.RunId,
-		RunWorkspaceId:           runWorkspaceIdPublicValue,
-		ModelVersionDependencies: modelVersionDependenciesPublicValue,
-		Status:                   w.Status,
-		Version:                  versionPublicValue,
-		StorageLocation:          w.StorageLocation,
-		MetastoreId:              w.MetastoreId,
-		CreatedAt:                createdAtPublicValue,
-		CreatedBy:                w.CreatedBy,
-		UpdatedAt:                updatedAtPublicValue,
-		UpdatedBy:                w.UpdatedBy,
-		Id:                       w.Id,
-		Aliases:                  aliasesPublicValue,
-	}, nil
-}
-
 type RegisteredModelAliasInfo struct {
 	// Name of the alias, e.g. 'champion' or 'latest_stable'
 	AliasName *string `json:"alias_name,omitempty"`
@@ -628,42 +244,6 @@ type RegisteredModelAliasInfo struct {
 	// The name of the schema containing the model version, relative to parent
 	// catalog
 	SchemaName *string `json:"schema_name,omitempty"`
-}
-
-func RegisteredModelAliasInfoFromSDK(v *sdk.RegisteredModelAliasInfo) (*RegisteredModelAliasInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionNumWireValue, err := int64ToWire(v.VersionNum)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelAliasInfo.VersionNum", err)
-	}
-	return &RegisteredModelAliasInfo{
-		AliasName:   v.AliasName,
-		VersionNum:  versionNumWireValue,
-		Id:          v.Id,
-		ModelName:   v.ModelName,
-		CatalogName: v.CatalogName,
-		SchemaName:  v.SchemaName,
-	}, nil
-}
-
-func RegisteredModelAliasInfoToSDK(w *RegisteredModelAliasInfo) (*sdk.RegisteredModelAliasInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionNumPublicValue, err := int64FromWire(w.VersionNum)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelAliasInfo.VersionNum", err)
-	}
-	return &sdk.RegisteredModelAliasInfo{
-		AliasName:   w.AliasName,
-		VersionNum:  versionNumPublicValue,
-		Id:          w.Id,
-		ModelName:   w.ModelName,
-		CatalogName: w.CatalogName,
-		SchemaName:  w.SchemaName,
-	}, nil
 }
 
 type RegisteredModelInfo struct {
@@ -702,40 +282,6 @@ type RegisteredModelInfo struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func RegisteredModelInfoToSDK(w *RegisteredModelInfo) (*sdk.RegisteredModelInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelInfo.UpdatedAt", err)
-	}
-	aliasesPublicValue, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelInfo.Aliases", err)
-	}
-	return &sdk.RegisteredModelInfo{
-		Name:            w.Name,
-		CatalogName:     w.CatalogName,
-		SchemaName:      w.SchemaName,
-		Owner:           w.Owner,
-		Comment:         w.Comment,
-		StorageLocation: w.StorageLocation,
-		MetastoreId:     w.MetastoreId,
-		FullName:        w.FullName,
-		CreatedAt:       createdAtPublicValue,
-		CreatedBy:       w.CreatedBy,
-		UpdatedAt:       updatedAtPublicValue,
-		UpdatedBy:       w.UpdatedBy,
-		Aliases:         aliasesPublicValue,
-		BrowseOnly:      w.BrowseOnly,
-	}, nil
-}
-
 type SetRegisteredModelAliasRequest struct {
 	// The three-level (fully qualified) name of the registered model
 	FullNameArg *string `json:"full_name_arg,omitempty"`
@@ -745,44 +291,11 @@ type SetRegisteredModelAliasRequest struct {
 	VersionNum *int64 `json:"version_num,omitempty"`
 }
 
-func SetRegisteredModelAliasRequestFromSDK(v *sdk.SetRegisteredModelAliasRequest) (*SetRegisteredModelAliasRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionNumWireValue, err := int64ToWire(v.VersionNum)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetRegisteredModelAliasRequest.VersionNum", err)
-	}
-	return &SetRegisteredModelAliasRequest{
-		FullNameArg: v.FullNameArg,
-		AliasArg:    v.AliasArg,
-		VersionNum:  versionNumWireValue,
-	}, nil
-}
-
 // A table that is dependent on a SQL object..
 type TableDependency struct {
 	// Full name of the dependent table, in the form of
 	// __catalog_name__.__schema_name__.__table_name__.
 	TableFullName *string `json:"table_full_name,omitempty"`
-}
-
-func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TableDependency{
-		TableFullName: v.TableFullName,
-	}, nil
-}
-
-func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableDependency{
-		TableFullName: w.TableFullName,
-	}, nil
 }
 
 type UpdateModelVersionRequest struct {
@@ -836,62 +349,6 @@ type UpdateModelVersionRequest struct {
 	Aliases []RegisteredModelAliasInfo `json:"aliases,omitempty"`
 }
 
-func UpdateModelVersionRequestFromSDK(v *sdk.UpdateModelVersionRequest) (*UpdateModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionArgWireValue, err := int64ToWire(v.VersionArg)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.VersionArg", err)
-	}
-	runWorkspaceIdWireValue, err := int64ToWire(v.RunWorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.RunWorkspaceId", err)
-	}
-	modelVersionDependenciesWireValue, err := DependencyListFromSDK(v.ModelVersionDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.ModelVersionDependencies", err)
-	}
-	versionWireValue, err := int64ToWire(v.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.Version", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.UpdatedAt", err)
-	}
-	aliasesWireValue, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.Aliases", err)
-	}
-	return &UpdateModelVersionRequest{
-		FullNameArg:              v.FullNameArg,
-		VersionArg:               versionArgWireValue,
-		ModelName:                v.ModelName,
-		CatalogName:              v.CatalogName,
-		SchemaName:               v.SchemaName,
-		Source:                   v.Source,
-		Comment:                  v.Comment,
-		RunId:                    v.RunId,
-		RunWorkspaceId:           runWorkspaceIdWireValue,
-		ModelVersionDependencies: modelVersionDependenciesWireValue,
-		Status:                   v.Status,
-		Version:                  versionWireValue,
-		StorageLocation:          v.StorageLocation,
-		MetastoreId:              v.MetastoreId,
-		CreatedAt:                createdAtWireValue,
-		CreatedBy:                v.CreatedBy,
-		UpdatedAt:                updatedAtWireValue,
-		UpdatedBy:                v.UpdatedBy,
-		Id:                       v.Id,
-		Aliases:                  aliasesWireValue,
-	}, nil
-}
-
 type UpdateRegisteredModelRequest struct {
 	// The three-level (fully qualified) name of the registered model
 	FullNameArg *string `json:"full_name_arg,omitempty"`
@@ -932,40 +389,760 @@ type UpdateRegisteredModelRequest struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
+// ConnectionDependencyToSDK converts the mirror to the sdk-go type.
+func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectionDependency{}
+	out.ConnectionName = w.ConnectionName
+	return out, nil
+}
+
+// ConnectionDependencyFromSDK converts the sdk-go type to the mirror.
+func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectionDependency{}
+	out.ConnectionName = v.ConnectionName
+	return out, nil
+}
+
+// CreateRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func CreateRegisteredModelRequestToSDK(w *CreateRegisteredModelRequest) (*sdk.CreateRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRegisteredModelRequest{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageLocation = w.StorageLocation
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	conv1, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Aliases", err)
+	}
+	out.Aliases = conv1
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// CreateRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRegisteredModelRequestFromSDK(v *sdk.CreateRegisteredModelRequest) (*CreateRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRegisteredModelRequest{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageLocation = v.StorageLocation
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	conv2, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Aliases", err)
+	}
+	out.Aliases = conv2
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// CredentialDependencyToSDK converts the mirror to the sdk-go type.
+func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CredentialDependency{}
+	out.CredentialName = w.CredentialName
+	return out, nil
+}
+
+// CredentialDependencyFromSDK converts the sdk-go type to the mirror.
+func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CredentialDependency{}
+	out.CredentialName = v.CredentialName
+	return out, nil
+}
+
+// DependencyToSDK converts the mirror to the sdk-go type.
+func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dependency{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Function != nil {
+			members++
+		}
+		if w.Connection != nil {
+			members++
+		}
+		if w.Credential != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv3, err := TableDependencyToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Table{Table: *conv3}
+	case w.Function != nil:
+		conv4, err := FunctionDependencyToSDK(w.Function)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Function{Function: *conv4}
+	case w.Connection != nil:
+		conv5, err := ConnectionDependencyToSDK(w.Connection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Connection{Connection: *conv5}
+	case w.Credential != nil:
+		conv6, err := CredentialDependencyToSDK(w.Credential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Credential{Credential: *conv6}
+	}
+	return out, nil
+}
+
+// DependencyFromSDK converts the sdk-go type to the mirror.
+func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dependency{}
+	switch value := v.Value.(type) {
+	case *sdk.Dependency_Value_Table:
+		if value != nil {
+			conv7, err := TableDependencyFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Table = conv7
+		}
+	case *sdk.Dependency_Value_Function:
+		if value != nil {
+			conv8, err := FunctionDependencyFromSDK(&value.Function)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Function = conv8
+		}
+	case *sdk.Dependency_Value_Connection:
+		if value != nil {
+			conv9, err := ConnectionDependencyFromSDK(&value.Connection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Connection = conv9
+		}
+	case *sdk.Dependency_Value_Credential:
+		if value != nil {
+			conv10, err := CredentialDependencyFromSDK(&value.Credential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Credential = conv10
+		}
+	}
+	return out, nil
+}
+
+// DependencyListToSDK converts the mirror to the sdk-go type.
+func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DependencyList{}
+	conv11, err := convertSlice(w.Dependencies, DependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv11
+	return out, nil
+}
+
+// DependencyListFromSDK converts the sdk-go type to the mirror.
+func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DependencyList{}
+	conv12, err := convertSlice(v.Dependencies, DependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv12
+	return out, nil
+}
+
+// FunctionDependencyToSDK converts the mirror to the sdk-go type.
+func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionDependency{}
+	out.FunctionFullName = w.FunctionFullName
+	return out, nil
+}
+
+// FunctionDependencyFromSDK converts the sdk-go type to the mirror.
+func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionDependency{}
+	out.FunctionFullName = v.FunctionFullName
+	return out, nil
+}
+
+// GetModelVersionByAliasRequestToSDK converts the mirror to the sdk-go type.
+func GetModelVersionByAliasRequestToSDK(w *GetModelVersionByAliasRequest) (*sdk.GetModelVersionByAliasRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionByAliasRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.AliasArg = w.AliasArg
+	out.IncludeAliases = w.IncludeAliases
+	return out, nil
+}
+
+// GetModelVersionByAliasRequestFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionByAliasRequestFromSDK(v *sdk.GetModelVersionByAliasRequest) (*GetModelVersionByAliasRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionByAliasRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.AliasArg = v.AliasArg
+	out.IncludeAliases = v.IncludeAliases
+	return out, nil
+}
+
+// GetModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func GetModelVersionRequestToSDK(w *GetModelVersionRequest) (*sdk.GetModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.VersionArg = w.VersionArg
+	out.IncludeAliases = w.IncludeAliases
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionRequestFromSDK(v *sdk.GetModelVersionRequest) (*GetModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.VersionArg = v.VersionArg
+	out.IncludeAliases = v.IncludeAliases
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// GetRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func GetRegisteredModelRequestToSDK(w *GetRegisteredModelRequest) (*sdk.GetRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRegisteredModelRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.IncludeAliases = w.IncludeAliases
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func GetRegisteredModelRequestFromSDK(v *sdk.GetRegisteredModelRequest) (*GetRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRegisteredModelRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.IncludeAliases = v.IncludeAliases
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListModelVersionsRequestToSDK converts the mirror to the sdk-go type.
+func ListModelVersionsRequestToSDK(w *ListModelVersionsRequest) (*sdk.ListModelVersionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelVersionsRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// ListModelVersionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListModelVersionsRequestFromSDK(v *sdk.ListModelVersionsRequest) (*ListModelVersionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelVersionsRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListModelVersionsResponseToSDK converts the mirror to the sdk-go type.
+func ListModelVersionsResponseToSDK(w *ListModelVersionsResponse) (*sdk.ListModelVersionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelVersionsResponse{}
+	conv13, err := convertSlice(w.ModelVersions, ModelVersionInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListModelVersionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListModelVersionsResponseFromSDK(v *sdk.ListModelVersionsResponse) (*ListModelVersionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelVersionsResponse{}
+	conv14, err := convertSlice(v.ModelVersions, ModelVersionInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListRegisteredModelsRequestToSDK converts the mirror to the sdk-go type.
+func ListRegisteredModelsRequestToSDK(w *ListRegisteredModelsRequest) (*sdk.ListRegisteredModelsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegisteredModelsRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.IncludeBrowse = w.IncludeBrowse
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListRegisteredModelsRequestFromSDK converts the sdk-go type to the mirror.
+func ListRegisteredModelsRequestFromSDK(v *sdk.ListRegisteredModelsRequest) (*ListRegisteredModelsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegisteredModelsRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.IncludeBrowse = v.IncludeBrowse
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListRegisteredModelsResponseToSDK converts the mirror to the sdk-go type.
+func ListRegisteredModelsResponseToSDK(w *ListRegisteredModelsResponse) (*sdk.ListRegisteredModelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegisteredModelsResponse{}
+	conv15, err := convertSlice(w.RegisteredModels, RegisteredModelInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv15
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRegisteredModelsResponseFromSDK converts the sdk-go type to the mirror.
+func ListRegisteredModelsResponseFromSDK(v *sdk.ListRegisteredModelsResponse) (*ListRegisteredModelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegisteredModelsResponse{}
+	conv16, err := convertSlice(v.RegisteredModels, RegisteredModelInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv16
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ModelVersionInfoToSDK converts the mirror to the sdk-go type.
+func ModelVersionInfoToSDK(w *ModelVersionInfo) (*sdk.ModelVersionInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelVersionInfo{}
+	out.ModelName = w.ModelName
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Source = w.Source
+	out.Comment = w.Comment
+	out.RunId = w.RunId
+	out.RunWorkspaceId = w.RunWorkspaceId
+	conv17, err := DependencyListToSDK(w.ModelVersionDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.ModelVersionDependencies", err)
+	}
+	out.ModelVersionDependencies = conv17
+	out.Status = w.Status
+	out.Version = w.Version
+	out.StorageLocation = w.StorageLocation
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Id = w.Id
+	conv18, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.Aliases", err)
+	}
+	out.Aliases = conv18
+	return out, nil
+}
+
+// ModelVersionInfoFromSDK converts the sdk-go type to the mirror.
+func ModelVersionInfoFromSDK(v *sdk.ModelVersionInfo) (*ModelVersionInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelVersionInfo{}
+	out.ModelName = v.ModelName
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Source = v.Source
+	out.Comment = v.Comment
+	out.RunId = v.RunId
+	out.RunWorkspaceId = v.RunWorkspaceId
+	conv19, err := DependencyListFromSDK(v.ModelVersionDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.ModelVersionDependencies", err)
+	}
+	out.ModelVersionDependencies = conv19
+	out.Status = v.Status
+	out.Version = v.Version
+	out.StorageLocation = v.StorageLocation
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Id = v.Id
+	conv20, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionInfo.Aliases", err)
+	}
+	out.Aliases = conv20
+	return out, nil
+}
+
+// RegisteredModelAliasInfoToSDK converts the mirror to the sdk-go type.
+func RegisteredModelAliasInfoToSDK(w *RegisteredModelAliasInfo) (*sdk.RegisteredModelAliasInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModelAliasInfo{}
+	out.AliasName = w.AliasName
+	out.VersionNum = w.VersionNum
+	out.Id = w.Id
+	out.ModelName = w.ModelName
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	return out, nil
+}
+
+// RegisteredModelAliasInfoFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelAliasInfoFromSDK(v *sdk.RegisteredModelAliasInfo) (*RegisteredModelAliasInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModelAliasInfo{}
+	out.AliasName = v.AliasName
+	out.VersionNum = v.VersionNum
+	out.Id = v.Id
+	out.ModelName = v.ModelName
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	return out, nil
+}
+
+// RegisteredModelInfoToSDK converts the mirror to the sdk-go type.
+func RegisteredModelInfoToSDK(w *RegisteredModelInfo) (*sdk.RegisteredModelInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModelInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageLocation = w.StorageLocation
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	conv21, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelInfo.Aliases", err)
+	}
+	out.Aliases = conv21
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// RegisteredModelInfoFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelInfoFromSDK(v *sdk.RegisteredModelInfo) (*RegisteredModelInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModelInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageLocation = v.StorageLocation
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	conv22, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelInfo.Aliases", err)
+	}
+	out.Aliases = conv22
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// SetRegisteredModelAliasRequestToSDK converts the mirror to the sdk-go type.
+func SetRegisteredModelAliasRequestToSDK(w *SetRegisteredModelAliasRequest) (*sdk.SetRegisteredModelAliasRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetRegisteredModelAliasRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.AliasArg = w.AliasArg
+	out.VersionNum = w.VersionNum
+	return out, nil
+}
+
+// SetRegisteredModelAliasRequestFromSDK converts the sdk-go type to the mirror.
+func SetRegisteredModelAliasRequestFromSDK(v *sdk.SetRegisteredModelAliasRequest) (*SetRegisteredModelAliasRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetRegisteredModelAliasRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.AliasArg = v.AliasArg
+	out.VersionNum = v.VersionNum
+	return out, nil
+}
+
+// TableDependencyToSDK converts the mirror to the sdk-go type.
+func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableDependency{}
+	out.TableFullName = w.TableFullName
+	return out, nil
+}
+
+// TableDependencyFromSDK converts the sdk-go type to the mirror.
+func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableDependency{}
+	out.TableFullName = v.TableFullName
+	return out, nil
+}
+
+// UpdateModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateModelVersionRequestToSDK(w *UpdateModelVersionRequest) (*sdk.UpdateModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateModelVersionRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.VersionArg = w.VersionArg
+	out.ModelName = w.ModelName
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Source = w.Source
+	out.Comment = w.Comment
+	out.RunId = w.RunId
+	out.RunWorkspaceId = w.RunWorkspaceId
+	conv23, err := DependencyListToSDK(w.ModelVersionDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.ModelVersionDependencies", err)
+	}
+	out.ModelVersionDependencies = conv23
+	out.Status = w.Status
+	out.Version = w.Version
+	out.StorageLocation = w.StorageLocation
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Id = w.Id
+	conv24, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.Aliases", err)
+	}
+	out.Aliases = conv24
+	return out, nil
+}
+
+// UpdateModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateModelVersionRequestFromSDK(v *sdk.UpdateModelVersionRequest) (*UpdateModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateModelVersionRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.VersionArg = v.VersionArg
+	out.ModelName = v.ModelName
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Source = v.Source
+	out.Comment = v.Comment
+	out.RunId = v.RunId
+	out.RunWorkspaceId = v.RunWorkspaceId
+	conv25, err := DependencyListFromSDK(v.ModelVersionDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.ModelVersionDependencies", err)
+	}
+	out.ModelVersionDependencies = conv25
+	out.Status = v.Status
+	out.Version = v.Version
+	out.StorageLocation = v.StorageLocation
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Id = v.Id
+	conv26, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionRequest.Aliases", err)
+	}
+	out.Aliases = conv26
+	return out, nil
+}
+
+// UpdateRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRegisteredModelRequestToSDK(w *UpdateRegisteredModelRequest) (*sdk.UpdateRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRegisteredModelRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageLocation = w.StorageLocation
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	conv27, err := convertSlice(w.Aliases, RegisteredModelAliasInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelRequest.Aliases", err)
+	}
+	out.Aliases = conv27
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// UpdateRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateRegisteredModelRequestFromSDK(v *sdk.UpdateRegisteredModelRequest) (*UpdateRegisteredModelRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelRequest.UpdatedAt", err)
-	}
-	aliasesWireValue, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
+	out := &UpdateRegisteredModelRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageLocation = v.StorageLocation
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	conv28, err := convertSlice(v.Aliases, RegisteredModelAliasInfoFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelRequest.Aliases", err)
 	}
-	return &UpdateRegisteredModelRequest{
-		FullNameArg:     v.FullNameArg,
-		NewName:         v.NewName,
-		Name:            v.Name,
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		Owner:           v.Owner,
-		Comment:         v.Comment,
-		StorageLocation: v.StorageLocation,
-		MetastoreId:     v.MetastoreId,
-		FullName:        v.FullName,
-		CreatedAt:       createdAtWireValue,
-		CreatedBy:       v.CreatedBy,
-		UpdatedAt:       updatedAtWireValue,
-		UpdatedBy:       v.UpdatedBy,
-		Aliases:         aliasesWireValue,
-		BrowseOnly:      v.BrowseOnly,
-	}, nil
+	out.Aliases = conv28
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/domains/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -90,49 +91,11 @@ const (
 	DomainIcon_Name_VectorThree       = sdk.DomainIcon_Name_VectorThree
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateDomainRequest struct {
 	Domain *Domain `json:"domain,omitempty"`
 	// Client-supplied resource ID for the new domain. If omitted, the server
 	// generates one.
 	DomainId *string `json:"domain_id,omitempty"`
-}
-
-func CreateDomainRequestFromSDK(v *sdk.CreateDomainRequest) (*CreateDomainRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	domainWireValue, err := DomainFromSDK(v.Domain)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDomainRequest.Domain", err)
-	}
-	return &CreateDomainRequest{
-		Domain:   domainWireValue,
-		DomainId: v.DomainId,
-	}, nil
 }
 
 type DeleteDomainRequest struct {
@@ -142,16 +105,6 @@ type DeleteDomainRequest struct {
 	// the domain still has Glossary pages. When true, those pages are deleted first
 	// and then the domain is removed.
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteDomainRequestFromSDK(v *sdk.DeleteDomainRequest) (*DeleteDomainRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteDomainRequest{
-		Name:  v.Name,
-		Force: v.Force,
-	}, nil
 }
 
 type Domain struct {
@@ -189,97 +142,11 @@ type Domain struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func DomainFromSDK(v *sdk.Domain) (*Domain, error) {
-	if v == nil {
-		return nil, nil
-	}
-	iconWireValue, err := DomainIconFromSDK(v.Icon)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.Icon", err)
-	}
-	technicalOwnerIdsWireValue, err := convertSlice(v.TechnicalOwnerIds, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.TechnicalOwnerIds", err)
-	}
-	businessOwnerIdsWireValue, err := convertSlice(v.BusinessOwnerIds, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.BusinessOwnerIds", err)
-	}
-	return &Domain{
-		DomainId:          v.DomainId,
-		TagKey:            v.TagKey,
-		Draft:             v.Draft,
-		EffectiveDraft:    v.EffectiveDraft,
-		Icon:              iconWireValue,
-		Subtitle:          v.Subtitle,
-		Description:       v.Description,
-		CreateTime:        v.CreateTime,
-		TechnicalOwnerIds: technicalOwnerIdsWireValue,
-		BusinessOwnerIds:  businessOwnerIdsWireValue,
-		ParentDomainId:    v.ParentDomainId,
-		Name:              v.Name,
-		UpdateTime:        v.UpdateTime,
-	}, nil
-}
-
-func DomainToSDK(w *Domain) (*sdk.Domain, error) {
-	if w == nil {
-		return nil, nil
-	}
-	iconPublicValue, err := DomainIconToSDK(w.Icon)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.Icon", err)
-	}
-	technicalOwnerIdsPublicValue, err := convertSlice(w.TechnicalOwnerIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.TechnicalOwnerIds", err)
-	}
-	businessOwnerIdsPublicValue, err := convertSlice(w.BusinessOwnerIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Domain.BusinessOwnerIds", err)
-	}
-	return &sdk.Domain{
-		DomainId:          w.DomainId,
-		TagKey:            w.TagKey,
-		Draft:             w.Draft,
-		EffectiveDraft:    w.EffectiveDraft,
-		Icon:              iconPublicValue,
-		Subtitle:          w.Subtitle,
-		Description:       w.Description,
-		CreateTime:        w.CreateTime,
-		TechnicalOwnerIds: technicalOwnerIdsPublicValue,
-		BusinessOwnerIds:  businessOwnerIdsPublicValue,
-		ParentDomainId:    w.ParentDomainId,
-		Name:              w.Name,
-		UpdateTime:        w.UpdateTime,
-	}, nil
-}
-
 // Icon configuration for a domain..
 type DomainIcon struct {
 	Name DomainIcon_Name `json:"name,omitempty"`
 	// Hex color code with # prefix (e.g., "#FF5733").
 	Color *string `json:"color,omitempty"`
-}
-
-func DomainIconFromSDK(v *sdk.DomainIcon) (*DomainIcon, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DomainIcon{
-		Name:  v.Name,
-		Color: v.Color,
-	}, nil
-}
-
-func DomainIconToSDK(w *DomainIcon) (*sdk.DomainIcon, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DomainIcon{
-		Name:  w.Name,
-		Color: w.Color,
-	}, nil
 }
 
 type ListDomainsRequest struct {
@@ -290,34 +157,9 @@ type ListDomainsRequest struct {
 	ParentDomainId *string `json:"parent_domain_id,omitempty"`
 }
 
-func ListDomainsRequestFromSDK(v *sdk.ListDomainsRequest) (*ListDomainsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDomainsRequest{
-		PageSize:       v.PageSize,
-		PageToken:      v.PageToken,
-		ParentDomainId: v.ParentDomainId,
-	}, nil
-}
-
 type ListDomainsResponse struct {
 	Domains       []Domain `json:"domains,omitempty"`
 	NextPageToken *string  `json:"next_page_token,omitempty"`
-}
-
-func ListDomainsResponseToSDK(w *ListDomainsResponse) (*sdk.ListDomainsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	domainsPublicValue, err := convertSlice(w.Domains, DomainToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDomainsResponse.Domains", err)
-	}
-	return &sdk.ListDomainsResponse{
-		Domains:       domainsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type UpdateDomainRequest struct {
@@ -325,18 +167,218 @@ type UpdateDomainRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateDomainRequestToSDK converts the mirror to the sdk-go type.
+func CreateDomainRequestToSDK(w *CreateDomainRequest) (*sdk.CreateDomainRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDomainRequest{}
+	conv1, err := DomainToSDK(w.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDomainRequest.Domain", err)
+	}
+	out.Domain = conv1
+	out.DomainId = w.DomainId
+	return out, nil
+}
+
+// CreateDomainRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDomainRequestFromSDK(v *sdk.CreateDomainRequest) (*CreateDomainRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDomainRequest{}
+	conv2, err := DomainFromSDK(v.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDomainRequest.Domain", err)
+	}
+	out.Domain = conv2
+	out.DomainId = v.DomainId
+	return out, nil
+}
+
+// DeleteDomainRequestToSDK converts the mirror to the sdk-go type.
+func DeleteDomainRequestToSDK(w *DeleteDomainRequest) (*sdk.DeleteDomainRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteDomainRequest{}
+	out.Name = w.Name
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteDomainRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteDomainRequestFromSDK(v *sdk.DeleteDomainRequest) (*DeleteDomainRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteDomainRequest{}
+	out.Name = v.Name
+	out.Force = v.Force
+	return out, nil
+}
+
+// DomainToSDK converts the mirror to the sdk-go type.
+func DomainToSDK(w *Domain) (*sdk.Domain, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Domain{}
+	out.DomainId = w.DomainId
+	out.TagKey = w.TagKey
+	out.Draft = w.Draft
+	out.EffectiveDraft = w.EffectiveDraft
+	conv3, err := DomainIconToSDK(w.Icon)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Domain.Icon", err)
+	}
+	out.Icon = conv3
+	out.Subtitle = w.Subtitle
+	out.Description = w.Description
+	out.CreateTime = w.CreateTime
+	out.TechnicalOwnerIds = w.TechnicalOwnerIds
+	out.BusinessOwnerIds = w.BusinessOwnerIds
+	out.ParentDomainId = w.ParentDomainId
+	out.Name = w.Name
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// DomainFromSDK converts the sdk-go type to the mirror.
+func DomainFromSDK(v *sdk.Domain) (*Domain, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Domain{}
+	out.DomainId = v.DomainId
+	out.TagKey = v.TagKey
+	out.Draft = v.Draft
+	out.EffectiveDraft = v.EffectiveDraft
+	conv4, err := DomainIconFromSDK(v.Icon)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Domain.Icon", err)
+	}
+	out.Icon = conv4
+	out.Subtitle = v.Subtitle
+	out.Description = v.Description
+	out.CreateTime = v.CreateTime
+	out.TechnicalOwnerIds = v.TechnicalOwnerIds
+	out.BusinessOwnerIds = v.BusinessOwnerIds
+	out.ParentDomainId = v.ParentDomainId
+	out.Name = v.Name
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// DomainIconToSDK converts the mirror to the sdk-go type.
+func DomainIconToSDK(w *DomainIcon) (*sdk.DomainIcon, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DomainIcon{}
+	out.Name = w.Name
+	out.Color = w.Color
+	return out, nil
+}
+
+// DomainIconFromSDK converts the sdk-go type to the mirror.
+func DomainIconFromSDK(v *sdk.DomainIcon) (*DomainIcon, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DomainIcon{}
+	out.Name = v.Name
+	out.Color = v.Color
+	return out, nil
+}
+
+// ListDomainsRequestToSDK converts the mirror to the sdk-go type.
+func ListDomainsRequestToSDK(w *ListDomainsRequest) (*sdk.ListDomainsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDomainsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.ParentDomainId = w.ParentDomainId
+	return out, nil
+}
+
+// ListDomainsRequestFromSDK converts the sdk-go type to the mirror.
+func ListDomainsRequestFromSDK(v *sdk.ListDomainsRequest) (*ListDomainsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDomainsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.ParentDomainId = v.ParentDomainId
+	return out, nil
+}
+
+// ListDomainsResponseToSDK converts the mirror to the sdk-go type.
+func ListDomainsResponseToSDK(w *ListDomainsResponse) (*sdk.ListDomainsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDomainsResponse{}
+	conv5, err := convertSlice(w.Domains, DomainToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDomainsResponse.Domains", err)
+	}
+	out.Domains = conv5
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDomainsResponseFromSDK converts the sdk-go type to the mirror.
+func ListDomainsResponseFromSDK(v *sdk.ListDomainsResponse) (*ListDomainsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDomainsResponse{}
+	conv6, err := convertSlice(v.Domains, DomainFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDomainsResponse.Domains", err)
+	}
+	out.Domains = conv6
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// UpdateDomainRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDomainRequestToSDK(w *UpdateDomainRequest) (*sdk.UpdateDomainRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDomainRequest{}
+	conv7, err := DomainToSDK(w.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDomainRequest.Domain", err)
+	}
+	out.Domain = conv7
+	mask8, err := fieldMaskFromString[sdk.Domain](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDomainRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask8
+	return out, nil
+}
+
+// UpdateDomainRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateDomainRequestFromSDK(v *sdk.UpdateDomainRequest) (*UpdateDomainRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	domainWireValue, err := DomainFromSDK(v.Domain)
+	out := &UpdateDomainRequest{}
+	conv9, err := DomainFromSDK(v.Domain)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateDomainRequest.Domain", err)
 	}
-	return &UpdateDomainRequest{
-		Domain:     domainWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Domain = conv9
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -352,4 +394,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

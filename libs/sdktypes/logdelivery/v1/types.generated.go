@@ -33,22 +33,6 @@ const (
 	LogDeliveryType_AuditLogs           = sdk.LogDeliveryType_AuditLogs
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // * Log Delivery Configuration.
 type CreateLogDeliveryConfigurationParams struct {
 	// The unique UUID of log delivery configuration
@@ -127,60 +111,9 @@ type CreateLogDeliveryConfigurationParams struct {
 	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 }
 
-func CreateLogDeliveryConfigurationParamsFromSDK(v *sdk.CreateLogDeliveryConfigurationParams) (*CreateLogDeliveryConfigurationParams, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdsFilterWireValue, err := convertSlice(v.WorkspaceIdsFilter, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.WorkspaceIdsFilter", err)
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.CreationTime", err)
-	}
-	updateTimeWireValue, err := int64ToWire(v.UpdateTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.UpdateTime", err)
-	}
-	logDeliveryStatusWireValue, err := LogDeliveryStatusFromSDK(v.LogDeliveryStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.LogDeliveryStatus", err)
-	}
-	return &CreateLogDeliveryConfigurationParams{
-		ConfigId:               v.ConfigId,
-		ConfigName:             v.ConfigName,
-		LogType:                v.LogType,
-		OutputFormat:           v.OutputFormat,
-		AccountId:              v.AccountId,
-		CredentialsId:          v.CredentialsId,
-		StorageConfigurationId: v.StorageConfigurationId,
-		WorkspaceIdsFilter:     workspaceIdsFilterWireValue,
-		DeliveryPathPrefix:     v.DeliveryPathPrefix,
-		DeliveryStartTime:      v.DeliveryStartTime,
-		Status:                 v.Status,
-		CreationTime:           creationTimeWireValue,
-		UpdateTime:             updateTimeWireValue,
-		LogDeliveryStatus:      logDeliveryStatusWireValue,
-	}, nil
-}
-
 // * Properties of the new log delivery configuration..
 type CreateLogDeliveryConfigurationRequest struct {
 	LogDeliveryConfiguration *CreateLogDeliveryConfigurationParams `json:"log_delivery_configuration,omitempty"`
-}
-
-func CreateLogDeliveryConfigurationRequestFromSDK(v *sdk.CreateLogDeliveryConfigurationRequest) (*CreateLogDeliveryConfigurationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	logDeliveryConfigurationWireValue, err := CreateLogDeliveryConfigurationParamsFromSDK(v.LogDeliveryConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationRequest.LogDeliveryConfiguration", err)
-	}
-	return &CreateLogDeliveryConfigurationRequest{
-		LogDeliveryConfiguration: logDeliveryConfigurationWireValue,
-	}, nil
 }
 
 type CreateLogDeliveryConfigurationResponse struct {
@@ -188,35 +121,9 @@ type CreateLogDeliveryConfigurationResponse struct {
 	LogDeliveryConfiguration *LogDeliveryConfiguration `json:"log_delivery_configuration,omitempty"`
 }
 
-func CreateLogDeliveryConfigurationResponseToSDK(w *CreateLogDeliveryConfigurationResponse) (*sdk.CreateLogDeliveryConfigurationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logDeliveryConfigurationPublicValue, err := LogDeliveryConfigurationToSDK(w.LogDeliveryConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
-	}
-	return &sdk.CreateLogDeliveryConfigurationResponse{
-		LogDeliveryConfiguration: logDeliveryConfigurationPublicValue,
-	}, nil
-}
-
 type GetLogDeliveryConfigurationResponse struct {
 	// The fetched log delivery configuration
 	LogDeliveryConfiguration *LogDeliveryConfiguration `json:"log_delivery_configuration,omitempty"`
-}
-
-func GetLogDeliveryConfigurationResponseToSDK(w *GetLogDeliveryConfigurationResponse) (*sdk.GetLogDeliveryConfigurationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logDeliveryConfigurationPublicValue, err := LogDeliveryConfigurationToSDK(w.LogDeliveryConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
-	}
-	return &sdk.GetLogDeliveryConfigurationResponse{
-		LogDeliveryConfiguration: logDeliveryConfigurationPublicValue,
-	}, nil
 }
 
 // * List Log Delivery Configuration.
@@ -235,39 +142,12 @@ type ListLogDeliveryConfigurationRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListLogDeliveryConfigurationRequestFromSDK(v *sdk.ListLogDeliveryConfigurationRequest) (*ListLogDeliveryConfigurationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListLogDeliveryConfigurationRequest{
-		AccountId:              v.AccountId,
-		CredentialsId:          v.CredentialsId,
-		StorageConfigurationId: v.StorageConfigurationId,
-		Status:                 v.Status,
-		PageToken:              v.PageToken,
-	}, nil
-}
-
 type ListLogDeliveryConfigurationResponse struct {
 	// Log delivery configurations were returned successfully.
 	LogDeliveryConfigurations []LogDeliveryConfiguration `json:"log_delivery_configurations,omitempty"`
 	// Token which can be sent as `page_token` to retrieve the next page of results.
 	// If this field is omitted, there are no subsequent budgets.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListLogDeliveryConfigurationResponseToSDK(w *ListLogDeliveryConfigurationResponse) (*sdk.ListLogDeliveryConfigurationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logDeliveryConfigurationsPublicValue, err := convertSlice(w.LogDeliveryConfigurations, LogDeliveryConfigurationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListLogDeliveryConfigurationResponse.LogDeliveryConfigurations", err)
-	}
-	return &sdk.ListLogDeliveryConfigurationResponse{
-		LogDeliveryConfigurations: logDeliveryConfigurationsPublicValue,
-		NextPageToken:             w.NextPageToken,
-	}, nil
 }
 
 // * Log Delivery Configuration.
@@ -348,44 +228,6 @@ type LogDeliveryConfiguration struct {
 	LogDeliveryStatus *LogDeliveryStatus `json:"log_delivery_status,omitempty"`
 }
 
-func LogDeliveryConfigurationToSDK(w *LogDeliveryConfiguration) (*sdk.LogDeliveryConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdsFilterPublicValue, err := convertSlice(w.WorkspaceIdsFilter, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.WorkspaceIdsFilter", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.CreationTime", err)
-	}
-	updateTimePublicValue, err := int64FromWire(w.UpdateTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.UpdateTime", err)
-	}
-	logDeliveryStatusPublicValue, err := LogDeliveryStatusToSDK(w.LogDeliveryStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.LogDeliveryStatus", err)
-	}
-	return &sdk.LogDeliveryConfiguration{
-		ConfigId:               w.ConfigId,
-		ConfigName:             w.ConfigName,
-		LogType:                w.LogType,
-		OutputFormat:           w.OutputFormat,
-		AccountId:              w.AccountId,
-		CredentialsId:          w.CredentialsId,
-		StorageConfigurationId: w.StorageConfigurationId,
-		WorkspaceIdsFilter:     workspaceIdsFilterPublicValue,
-		DeliveryPathPrefix:     w.DeliveryPathPrefix,
-		DeliveryStartTime:      w.DeliveryStartTime,
-		Status:                 w.Status,
-		CreationTime:           creationTimePublicValue,
-		UpdateTime:             updateTimePublicValue,
-		LogDeliveryStatus:      logDeliveryStatusPublicValue,
-	}, nil
-}
-
 type LogDeliveryStatus struct {
 	// Enum that describes the status. Possible values are: * `CREATED`: There were
 	// no log delivery attempts since the config was created. * `SUCCEEDED`: The
@@ -407,30 +249,6 @@ type LogDeliveryStatus struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func LogDeliveryStatusFromSDK(v *sdk.LogDeliveryStatus) (*LogDeliveryStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LogDeliveryStatus{
-		Status:                    v.Status,
-		LastAttemptTime:           v.LastAttemptTime,
-		LastSuccessfulAttemptTime: v.LastSuccessfulAttemptTime,
-		Message:                   v.Message,
-	}, nil
-}
-
-func LogDeliveryStatusToSDK(w *LogDeliveryStatus) (*sdk.LogDeliveryStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LogDeliveryStatus{
-		Status:                    w.Status,
-		LastAttemptTime:           w.LastAttemptTime,
-		LastSuccessfulAttemptTime: w.LastSuccessfulAttemptTime,
-		Message:                   w.Message,
-	}, nil
-}
-
 // * Update Log Delivery Configuration.
 type UpdateLogDeliveryConfigurationRequest struct {
 	// The log delivery configuration id of customer
@@ -448,15 +266,304 @@ type UpdateLogDeliveryConfigurationRequest struct {
 	Status LogDeliveryConfigStatus `json:"status,omitempty"`
 }
 
+// CreateLogDeliveryConfigurationParamsToSDK converts the mirror to the sdk-go type.
+func CreateLogDeliveryConfigurationParamsToSDK(w *CreateLogDeliveryConfigurationParams) (*sdk.CreateLogDeliveryConfigurationParams, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateLogDeliveryConfigurationParams{}
+	out.ConfigId = w.ConfigId
+	out.ConfigName = w.ConfigName
+	out.LogType = w.LogType
+	out.OutputFormat = w.OutputFormat
+	out.AccountId = w.AccountId
+	out.CredentialsId = w.CredentialsId
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.WorkspaceIdsFilter = w.WorkspaceIdsFilter
+	out.DeliveryPathPrefix = w.DeliveryPathPrefix
+	out.DeliveryStartTime = w.DeliveryStartTime
+	out.Status = w.Status
+	out.CreationTime = w.CreationTime
+	out.UpdateTime = w.UpdateTime
+	conv1, err := LogDeliveryStatusToSDK(w.LogDeliveryStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.LogDeliveryStatus", err)
+	}
+	out.LogDeliveryStatus = conv1
+	return out, nil
+}
+
+// CreateLogDeliveryConfigurationParamsFromSDK converts the sdk-go type to the mirror.
+func CreateLogDeliveryConfigurationParamsFromSDK(v *sdk.CreateLogDeliveryConfigurationParams) (*CreateLogDeliveryConfigurationParams, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateLogDeliveryConfigurationParams{}
+	out.ConfigId = v.ConfigId
+	out.ConfigName = v.ConfigName
+	out.LogType = v.LogType
+	out.OutputFormat = v.OutputFormat
+	out.AccountId = v.AccountId
+	out.CredentialsId = v.CredentialsId
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.WorkspaceIdsFilter = v.WorkspaceIdsFilter
+	out.DeliveryPathPrefix = v.DeliveryPathPrefix
+	out.DeliveryStartTime = v.DeliveryStartTime
+	out.Status = v.Status
+	out.CreationTime = v.CreationTime
+	out.UpdateTime = v.UpdateTime
+	conv2, err := LogDeliveryStatusFromSDK(v.LogDeliveryStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationParams.LogDeliveryStatus", err)
+	}
+	out.LogDeliveryStatus = conv2
+	return out, nil
+}
+
+// CreateLogDeliveryConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func CreateLogDeliveryConfigurationRequestToSDK(w *CreateLogDeliveryConfigurationRequest) (*sdk.CreateLogDeliveryConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateLogDeliveryConfigurationRequest{}
+	conv3, err := CreateLogDeliveryConfigurationParamsToSDK(w.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationRequest.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv3
+	return out, nil
+}
+
+// CreateLogDeliveryConfigurationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateLogDeliveryConfigurationRequestFromSDK(v *sdk.CreateLogDeliveryConfigurationRequest) (*CreateLogDeliveryConfigurationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateLogDeliveryConfigurationRequest{}
+	conv4, err := CreateLogDeliveryConfigurationParamsFromSDK(v.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationRequest.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv4
+	return out, nil
+}
+
+// CreateLogDeliveryConfigurationResponseToSDK converts the mirror to the sdk-go type.
+func CreateLogDeliveryConfigurationResponseToSDK(w *CreateLogDeliveryConfigurationResponse) (*sdk.CreateLogDeliveryConfigurationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateLogDeliveryConfigurationResponse{}
+	conv5, err := LogDeliveryConfigurationToSDK(w.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv5
+	return out, nil
+}
+
+// CreateLogDeliveryConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func CreateLogDeliveryConfigurationResponseFromSDK(v *sdk.CreateLogDeliveryConfigurationResponse) (*CreateLogDeliveryConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateLogDeliveryConfigurationResponse{}
+	conv6, err := LogDeliveryConfigurationFromSDK(v.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv6
+	return out, nil
+}
+
+// GetLogDeliveryConfigurationResponseToSDK converts the mirror to the sdk-go type.
+func GetLogDeliveryConfigurationResponseToSDK(w *GetLogDeliveryConfigurationResponse) (*sdk.GetLogDeliveryConfigurationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetLogDeliveryConfigurationResponse{}
+	conv7, err := LogDeliveryConfigurationToSDK(w.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv7
+	return out, nil
+}
+
+// GetLogDeliveryConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func GetLogDeliveryConfigurationResponseFromSDK(v *sdk.GetLogDeliveryConfigurationResponse) (*GetLogDeliveryConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetLogDeliveryConfigurationResponse{}
+	conv8, err := LogDeliveryConfigurationFromSDK(v.LogDeliveryConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLogDeliveryConfigurationResponse.LogDeliveryConfiguration", err)
+	}
+	out.LogDeliveryConfiguration = conv8
+	return out, nil
+}
+
+// ListLogDeliveryConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func ListLogDeliveryConfigurationRequestToSDK(w *ListLogDeliveryConfigurationRequest) (*sdk.ListLogDeliveryConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListLogDeliveryConfigurationRequest{}
+	out.AccountId = w.AccountId
+	out.CredentialsId = w.CredentialsId
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.Status = w.Status
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListLogDeliveryConfigurationRequestFromSDK converts the sdk-go type to the mirror.
+func ListLogDeliveryConfigurationRequestFromSDK(v *sdk.ListLogDeliveryConfigurationRequest) (*ListLogDeliveryConfigurationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListLogDeliveryConfigurationRequest{}
+	out.AccountId = v.AccountId
+	out.CredentialsId = v.CredentialsId
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.Status = v.Status
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListLogDeliveryConfigurationResponseToSDK converts the mirror to the sdk-go type.
+func ListLogDeliveryConfigurationResponseToSDK(w *ListLogDeliveryConfigurationResponse) (*sdk.ListLogDeliveryConfigurationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListLogDeliveryConfigurationResponse{}
+	conv9, err := convertSlice(w.LogDeliveryConfigurations, LogDeliveryConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListLogDeliveryConfigurationResponse.LogDeliveryConfigurations", err)
+	}
+	out.LogDeliveryConfigurations = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListLogDeliveryConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func ListLogDeliveryConfigurationResponseFromSDK(v *sdk.ListLogDeliveryConfigurationResponse) (*ListLogDeliveryConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListLogDeliveryConfigurationResponse{}
+	conv10, err := convertSlice(v.LogDeliveryConfigurations, LogDeliveryConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListLogDeliveryConfigurationResponse.LogDeliveryConfigurations", err)
+	}
+	out.LogDeliveryConfigurations = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// LogDeliveryConfigurationToSDK converts the mirror to the sdk-go type.
+func LogDeliveryConfigurationToSDK(w *LogDeliveryConfiguration) (*sdk.LogDeliveryConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogDeliveryConfiguration{}
+	out.ConfigId = w.ConfigId
+	out.ConfigName = w.ConfigName
+	out.LogType = w.LogType
+	out.OutputFormat = w.OutputFormat
+	out.AccountId = w.AccountId
+	out.CredentialsId = w.CredentialsId
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.WorkspaceIdsFilter = w.WorkspaceIdsFilter
+	out.DeliveryPathPrefix = w.DeliveryPathPrefix
+	out.DeliveryStartTime = w.DeliveryStartTime
+	out.Status = w.Status
+	out.CreationTime = w.CreationTime
+	out.UpdateTime = w.UpdateTime
+	conv11, err := LogDeliveryStatusToSDK(w.LogDeliveryStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.LogDeliveryStatus", err)
+	}
+	out.LogDeliveryStatus = conv11
+	return out, nil
+}
+
+// LogDeliveryConfigurationFromSDK converts the sdk-go type to the mirror.
+func LogDeliveryConfigurationFromSDK(v *sdk.LogDeliveryConfiguration) (*LogDeliveryConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogDeliveryConfiguration{}
+	out.ConfigId = v.ConfigId
+	out.ConfigName = v.ConfigName
+	out.LogType = v.LogType
+	out.OutputFormat = v.OutputFormat
+	out.AccountId = v.AccountId
+	out.CredentialsId = v.CredentialsId
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.WorkspaceIdsFilter = v.WorkspaceIdsFilter
+	out.DeliveryPathPrefix = v.DeliveryPathPrefix
+	out.DeliveryStartTime = v.DeliveryStartTime
+	out.Status = v.Status
+	out.CreationTime = v.CreationTime
+	out.UpdateTime = v.UpdateTime
+	conv12, err := LogDeliveryStatusFromSDK(v.LogDeliveryStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogDeliveryConfiguration.LogDeliveryStatus", err)
+	}
+	out.LogDeliveryStatus = conv12
+	return out, nil
+}
+
+// LogDeliveryStatusToSDK converts the mirror to the sdk-go type.
+func LogDeliveryStatusToSDK(w *LogDeliveryStatus) (*sdk.LogDeliveryStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogDeliveryStatus{}
+	out.Status = w.Status
+	out.LastAttemptTime = w.LastAttemptTime
+	out.LastSuccessfulAttemptTime = w.LastSuccessfulAttemptTime
+	out.Message = w.Message
+	return out, nil
+}
+
+// LogDeliveryStatusFromSDK converts the sdk-go type to the mirror.
+func LogDeliveryStatusFromSDK(v *sdk.LogDeliveryStatus) (*LogDeliveryStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogDeliveryStatus{}
+	out.Status = v.Status
+	out.LastAttemptTime = v.LastAttemptTime
+	out.LastSuccessfulAttemptTime = v.LastSuccessfulAttemptTime
+	out.Message = v.Message
+	return out, nil
+}
+
+// UpdateLogDeliveryConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateLogDeliveryConfigurationRequestToSDK(w *UpdateLogDeliveryConfigurationRequest) (*sdk.UpdateLogDeliveryConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateLogDeliveryConfigurationRequest{}
+	out.ConfigId = w.ConfigId
+	out.AccountId = w.AccountId
+	out.Status = w.Status
+	return out, nil
+}
+
+// UpdateLogDeliveryConfigurationRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateLogDeliveryConfigurationRequestFromSDK(v *sdk.UpdateLogDeliveryConfigurationRequest) (*UpdateLogDeliveryConfigurationRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &UpdateLogDeliveryConfigurationRequest{
-		ConfigId:  v.ConfigId,
-		AccountId: v.AccountId,
-		Status:    v.Status,
-	}, nil
+	out := &UpdateLogDeliveryConfigurationRequest{}
+	out.ConfigId = v.ConfigId
+	out.AccountId = v.AccountId
+	out.Status = v.Status
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

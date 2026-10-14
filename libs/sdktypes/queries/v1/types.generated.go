@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/queries/v1"
+	strings "strings"
 )
 
 type (
@@ -50,34 +51,12 @@ const (
 	DateValue_DynamicDate_Yesterday              = sdk.DateValue_DynamicDate_Yesterday
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateQueryRequest struct {
 	Query *CreateQueryRequestQuery `json:"query,omitempty"`
 	// If true, automatically resolve query display name conflicts. Otherwise, fail
 	// the request if the query's display name conflicts with an existing query's
 	// display name.
 	AutoResolveDisplayName *bool `json:"auto_resolve_display_name,omitempty"`
-}
-
-func CreateQueryRequestFromSDK(v *sdk.CreateQueryRequest) (*CreateQueryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	queryWireValue, err := CreateQueryRequestQueryFromSDK(v.Query)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateQueryRequest.Query", err)
-	}
-	return &CreateQueryRequest{
-		Query:                  queryWireValue,
-		AutoResolveDisplayName: v.AutoResolveDisplayName,
-	}, nil
 }
 
 type CreateQueryRequestQuery struct {
@@ -106,52 +85,9 @@ type CreateQueryRequestQuery struct {
 	Schema *string `json:"schema,omitempty"`
 }
 
-func CreateQueryRequestQueryFromSDK(v *sdk.CreateQueryRequestQuery) (*CreateQueryRequestQuery, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, QueryParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateQueryRequestQuery.Parameters", err)
-	}
-	return &CreateQueryRequestQuery{
-		DisplayName:    v.DisplayName,
-		Description:    v.Description,
-		WarehouseId:    v.WarehouseId,
-		QueryText:      v.QueryText,
-		RunAsMode:      v.RunAsMode,
-		ParentPath:     v.ParentPath,
-		Tags:           v.Tags,
-		Parameters:     parametersWireValue,
-		ApplyAutoLimit: v.ApplyAutoLimit,
-		Catalog:        v.Catalog,
-		Schema:         v.Schema,
-	}, nil
-}
-
 type DateRange struct {
 	Start *string `json:"start,omitempty"`
 	End   *string `json:"end,omitempty"`
-}
-
-func DateRangeFromSDK(v *sdk.DateRange) (*DateRange, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DateRange{
-		Start: v.Start,
-		End:   v.End,
-	}, nil
-}
-
-func DateRangeToSDK(w *DateRange) (*sdk.DateRange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DateRange{
-		Start: w.Start,
-		End:   w.End,
-	}, nil
 }
 
 type DateRangeValue struct {
@@ -163,128 +99,12 @@ type DateRangeValue struct {
 	StartDayOfWeek *int          `json:"start_day_of_week,omitempty"`
 }
 
-func DateRangeValueFromSDK(v *sdk.DateRangeValue) (*DateRangeValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueDynamicDateRangeValueWire sdk.DateRangeValue_DynamicDateRange
-	var valueDateRangeValueWire *DateRange
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.DateRangeValue_Value_DynamicDateRangeValue:
-		if value != nil {
-			valueDynamicDateRangeValueWire = value.DynamicDateRangeValue
-		}
-	case *sdk.DateRangeValue_Value_DateRangeValue:
-		if value != nil {
-			valueDateRangeValueConverted, err := DateRangeFromSDK(&value.DateRangeValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DateRangeValue.Value.DateRangeValue", err)
-			}
-			valueDateRangeValueWire = valueDateRangeValueConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DateRangeValue.Value", value)
-	}
-	return &DateRangeValue{
-		DynamicDateRangeValue: valueDynamicDateRangeValueWire,
-		DateRangeValue:        valueDateRangeValueWire,
-		Precision:             v.Precision,
-		StartDayOfWeek:        v.StartDayOfWeek,
-	}, nil
-}
-
-func DateRangeValueToSDK(w *DateRangeValue) (*sdk.DateRangeValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.DynamicDateRangeValue != "" {
-		valueMembers++
-	}
-	if w.DateRangeValue != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DateRangeValue.Value")
-	}
-	valueSelection := (&sdk.DateRangeValue{}).Value
-	switch {
-	case w.DynamicDateRangeValue != "":
-		valueSelection = &sdk.DateRangeValue_Value_DynamicDateRangeValue{DynamicDateRangeValue: w.DynamicDateRangeValue}
-	case w.DateRangeValue != nil:
-		valueDateRangeValueConverted, err := DateRangeToSDK(w.DateRangeValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DateRangeValue.Value.DateRangeValue", err)
-		}
-		valueSelection = &sdk.DateRangeValue_Value_DateRangeValue{DateRangeValue: *valueDateRangeValueConverted}
-	}
-	return &sdk.DateRangeValue{
-		Precision:      w.Precision,
-		StartDayOfWeek: w.StartDayOfWeek,
-		Value:          valueSelection,
-	}, nil
-}
-
 type DateValue struct {
 	DynamicDateValue DateValue_DynamicDate `json:"dynamic_date_value,omitempty"`
 	DateValue        *string               `json:"date_value,omitempty"`
 	// Date-time precision to format the value into when the query is run. Defaults
 	// to DAY_PRECISION (YYYY-MM-DD).
 	Precision DatePrecision `json:"precision,omitempty"`
-}
-
-func DateValueFromSDK(v *sdk.DateValue) (*DateValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueDynamicDateValueWire sdk.DateValue_DynamicDate
-	var valueDateValueWire *string
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.DateValue_Value_DynamicDateValue:
-		if value != nil {
-			valueDynamicDateValueWire = value.DynamicDateValue
-		}
-	case *sdk.DateValue_Value_DateValue:
-		if value != nil {
-			valueDateValueWire = new(value.DateValue)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DateValue.Value", value)
-	}
-	return &DateValue{
-		DynamicDateValue: valueDynamicDateValueWire,
-		DateValue:        valueDateValueWire,
-		Precision:        v.Precision,
-	}, nil
-}
-
-func DateValueToSDK(w *DateValue) (*sdk.DateValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.DynamicDateValue != "" {
-		valueMembers++
-	}
-	if w.DateValue != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DateValue.Value")
-	}
-	valueSelection := (&sdk.DateValue{}).Value
-	switch {
-	case w.DynamicDateValue != "":
-		valueSelection = &sdk.DateValue_Value_DynamicDateValue{DynamicDateValue: w.DynamicDateValue}
-	case w.DateValue != nil:
-		valueSelection = &sdk.DateValue_Value_DateValue{DateValue: *w.DateValue}
-	}
-	return &sdk.DateValue{
-		Precision: w.Precision,
-		Value:     valueSelection,
-	}, nil
 }
 
 type EnumValue struct {
@@ -296,68 +116,14 @@ type EnumValue struct {
 	MultiValuesOptions *MultiValuesOptions `json:"multi_values_options,omitempty"`
 }
 
-func EnumValueFromSDK(v *sdk.EnumValue) (*EnumValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	multiValuesOptionsWireValue, err := MultiValuesOptionsFromSDK(v.MultiValuesOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnumValue.MultiValuesOptions", err)
-	}
-	return &EnumValue{
-		Values:             v.Values,
-		EnumOptions:        v.EnumOptions,
-		MultiValuesOptions: multiValuesOptionsWireValue,
-	}, nil
-}
-
-func EnumValueToSDK(w *EnumValue) (*sdk.EnumValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	multiValuesOptionsPublicValue, err := MultiValuesOptionsToSDK(w.MultiValuesOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnumValue.MultiValuesOptions", err)
-	}
-	return &sdk.EnumValue{
-		Values:             w.Values,
-		EnumOptions:        w.EnumOptions,
-		MultiValuesOptions: multiValuesOptionsPublicValue,
-	}, nil
-}
-
 type ListQueriesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListQueriesRequestFromSDK(v *sdk.ListQueriesRequest) (*ListQueriesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListQueriesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListQueriesResponse struct {
 	Results       []ListQueryObjectsResponseQuery `json:"results,omitempty"`
 	NextPageToken *string                         `json:"next_page_token,omitempty"`
-}
-
-func ListQueriesResponseToSDK(w *ListQueriesResponse) (*sdk.ListQueriesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultsPublicValue, err := convertSlice(w.Results, ListQueryObjectsResponseQueryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Results", err)
-	}
-	return &sdk.ListQueriesResponse{
-		Results:       resultsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListQueryObjectsResponseQuery struct {
@@ -396,68 +162,15 @@ type ListQueryObjectsResponseQuery struct {
 	Schema *string `json:"schema,omitempty"`
 }
 
-func ListQueryObjectsResponseQueryToSDK(w *ListQueryObjectsResponseQuery) (*sdk.ListQueryObjectsResponseQuery, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, QueryParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListQueryObjectsResponseQuery.Parameters", err)
-	}
-	return &sdk.ListQueryObjectsResponseQuery{
-		Id:                   w.Id,
-		DisplayName:          w.DisplayName,
-		Description:          w.Description,
-		OwnerUserName:        w.OwnerUserName,
-		WarehouseId:          w.WarehouseId,
-		QueryText:            w.QueryText,
-		RunAsMode:            w.RunAsMode,
-		LifecycleState:       w.LifecycleState,
-		LastModifierUserName: w.LastModifierUserName,
-		Tags:                 w.Tags,
-		CreateTime:           w.CreateTime,
-		UpdateTime:           w.UpdateTime,
-		Parameters:           parametersPublicValue,
-		ApplyAutoLimit:       w.ApplyAutoLimit,
-		Catalog:              w.Catalog,
-		Schema:               w.Schema,
-	}, nil
-}
-
 type ListVisualizationsForQueryRequest struct {
 	Id        *string `json:"id,omitempty"`
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListVisualizationsForQueryRequestFromSDK(v *sdk.ListVisualizationsForQueryRequest) (*ListVisualizationsForQueryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListVisualizationsForQueryRequest{
-		Id:        v.Id,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListVisualizationsForQueryResponse struct {
 	Results       []Visualization `json:"results,omitempty"`
 	NextPageToken *string         `json:"next_page_token,omitempty"`
-}
-
-func ListVisualizationsForQueryResponseToSDK(w *ListVisualizationsForQueryResponse) (*sdk.ListVisualizationsForQueryResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultsPublicValue, err := convertSlice(w.Results, VisualizationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListVisualizationsForQueryResponse.Results", err)
-	}
-	return &sdk.ListVisualizationsForQueryResponse{
-		Results:       resultsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type MultiValuesOptions struct {
@@ -469,48 +182,8 @@ type MultiValuesOptions struct {
 	Suffix *string `json:"suffix,omitempty"`
 }
 
-func MultiValuesOptionsFromSDK(v *sdk.MultiValuesOptions) (*MultiValuesOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MultiValuesOptions{
-		Prefix:    v.Prefix,
-		Separator: v.Separator,
-		Suffix:    v.Suffix,
-	}, nil
-}
-
-func MultiValuesOptionsToSDK(w *MultiValuesOptions) (*sdk.MultiValuesOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MultiValuesOptions{
-		Prefix:    w.Prefix,
-		Separator: w.Separator,
-		Suffix:    w.Suffix,
-	}, nil
-}
-
 type NumericValue struct {
 	Value *float64 `json:"value,omitempty"`
-}
-
-func NumericValueFromSDK(v *sdk.NumericValue) (*NumericValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NumericValue{
-		Value: v.Value,
-	}, nil
-}
-
-func NumericValueToSDK(w *NumericValue) (*sdk.NumericValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NumericValue{
-		Value: w.Value,
-	}, nil
 }
 
 type Query struct {
@@ -551,35 +224,6 @@ type Query struct {
 	Schema *string `json:"schema,omitempty"`
 }
 
-func QueryToSDK(w *Query) (*sdk.Query, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, QueryParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Query.Parameters", err)
-	}
-	return &sdk.Query{
-		Id:                   w.Id,
-		DisplayName:          w.DisplayName,
-		Description:          w.Description,
-		OwnerUserName:        w.OwnerUserName,
-		WarehouseId:          w.WarehouseId,
-		QueryText:            w.QueryText,
-		RunAsMode:            w.RunAsMode,
-		LifecycleState:       w.LifecycleState,
-		LastModifierUserName: w.LastModifierUserName,
-		ParentPath:           w.ParentPath,
-		Tags:                 w.Tags,
-		CreateTime:           w.CreateTime,
-		UpdateTime:           w.UpdateTime,
-		Parameters:           parametersPublicValue,
-		ApplyAutoLimit:       w.ApplyAutoLimit,
-		Catalog:              w.Catalog,
-		Schema:               w.Schema,
-	}, nil
-}
-
 type QueryBackedValue struct {
 	// List of selected query parameter values.
 	Values []string `json:"values,omitempty"`
@@ -587,36 +231,6 @@ type QueryBackedValue struct {
 	QueryId *string `json:"query_id,omitempty"`
 	// If specified, allows multiple values to be selected for this parameter.
 	MultiValuesOptions *MultiValuesOptions `json:"multi_values_options,omitempty"`
-}
-
-func QueryBackedValueFromSDK(v *sdk.QueryBackedValue) (*QueryBackedValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	multiValuesOptionsWireValue, err := MultiValuesOptionsFromSDK(v.MultiValuesOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryBackedValue.MultiValuesOptions", err)
-	}
-	return &QueryBackedValue{
-		Values:             v.Values,
-		QueryId:            v.QueryId,
-		MultiValuesOptions: multiValuesOptionsWireValue,
-	}, nil
-}
-
-func QueryBackedValueToSDK(w *QueryBackedValue) (*sdk.QueryBackedValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	multiValuesOptionsPublicValue, err := MultiValuesOptionsToSDK(w.MultiValuesOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryBackedValue.MultiValuesOptions", err)
-	}
-	return &sdk.QueryBackedValue{
-		Values:             w.Values,
-		QueryId:            w.QueryId,
-		MultiValuesOptions: multiValuesOptionsPublicValue,
-	}, nil
 }
 
 type QueryParameter struct {
@@ -633,173 +247,8 @@ type QueryParameter struct {
 	QueryBackedValue *QueryBackedValue `json:"query_backed_value,omitempty"`
 }
 
-func QueryParameterFromSDK(v *sdk.QueryParameter) (*QueryParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var parameterValueTextValueWire *TextValue
-	var parameterValueNumericValueWire *NumericValue
-	var parameterValueEnumValueWire *EnumValue
-	var parameterValueDateValueWire *DateValue
-	var parameterValueDateRangeValueWire *DateRangeValue
-	var parameterValueQueryBackedValueWire *QueryBackedValue
-	switch value := v.ParameterValue.(type) {
-	case nil:
-	case *sdk.QueryParameter_ParameterValue_TextValue:
-		if value != nil {
-			parameterValueTextValueConverted, err := TextValueFromSDK(&value.TextValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.TextValue", err)
-			}
-			parameterValueTextValueWire = parameterValueTextValueConverted
-		}
-	case *sdk.QueryParameter_ParameterValue_NumericValue:
-		if value != nil {
-			parameterValueNumericValueConverted, err := NumericValueFromSDK(&value.NumericValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.NumericValue", err)
-			}
-			parameterValueNumericValueWire = parameterValueNumericValueConverted
-		}
-	case *sdk.QueryParameter_ParameterValue_EnumValue:
-		if value != nil {
-			parameterValueEnumValueConverted, err := EnumValueFromSDK(&value.EnumValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.EnumValue", err)
-			}
-			parameterValueEnumValueWire = parameterValueEnumValueConverted
-		}
-	case *sdk.QueryParameter_ParameterValue_DateValue:
-		if value != nil {
-			parameterValueDateValueConverted, err := DateValueFromSDK(&value.DateValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.DateValue", err)
-			}
-			parameterValueDateValueWire = parameterValueDateValueConverted
-		}
-	case *sdk.QueryParameter_ParameterValue_DateRangeValue:
-		if value != nil {
-			parameterValueDateRangeValueConverted, err := DateRangeValueFromSDK(&value.DateRangeValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.DateRangeValue", err)
-			}
-			parameterValueDateRangeValueWire = parameterValueDateRangeValueConverted
-		}
-	case *sdk.QueryParameter_ParameterValue_QueryBackedValue:
-		if value != nil {
-			parameterValueQueryBackedValueConverted, err := QueryBackedValueFromSDK(&value.QueryBackedValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.QueryBackedValue", err)
-			}
-			parameterValueQueryBackedValueWire = parameterValueQueryBackedValueConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "QueryParameter.ParameterValue", value)
-	}
-	return &QueryParameter{
-		Title:            v.Title,
-		Name:             v.Name,
-		TextValue:        parameterValueTextValueWire,
-		NumericValue:     parameterValueNumericValueWire,
-		EnumValue:        parameterValueEnumValueWire,
-		DateValue:        parameterValueDateValueWire,
-		DateRangeValue:   parameterValueDateRangeValueWire,
-		QueryBackedValue: parameterValueQueryBackedValueWire,
-	}, nil
-}
-
-func QueryParameterToSDK(w *QueryParameter) (*sdk.QueryParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parameterValueMembers := 0
-	if w.TextValue != nil {
-		parameterValueMembers++
-	}
-	if w.NumericValue != nil {
-		parameterValueMembers++
-	}
-	if w.EnumValue != nil {
-		parameterValueMembers++
-	}
-	if w.DateValue != nil {
-		parameterValueMembers++
-	}
-	if w.DateRangeValue != nil {
-		parameterValueMembers++
-	}
-	if w.QueryBackedValue != nil {
-		parameterValueMembers++
-	}
-	if parameterValueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "QueryParameter.ParameterValue")
-	}
-	parameterValueSelection := (&sdk.QueryParameter{}).ParameterValue
-	switch {
-	case w.TextValue != nil:
-		parameterValueTextValueConverted, err := TextValueToSDK(w.TextValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.TextValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_TextValue{TextValue: *parameterValueTextValueConverted}
-	case w.NumericValue != nil:
-		parameterValueNumericValueConverted, err := NumericValueToSDK(w.NumericValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.NumericValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_NumericValue{NumericValue: *parameterValueNumericValueConverted}
-	case w.EnumValue != nil:
-		parameterValueEnumValueConverted, err := EnumValueToSDK(w.EnumValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.EnumValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_EnumValue{EnumValue: *parameterValueEnumValueConverted}
-	case w.DateValue != nil:
-		parameterValueDateValueConverted, err := DateValueToSDK(w.DateValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.DateValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_DateValue{DateValue: *parameterValueDateValueConverted}
-	case w.DateRangeValue != nil:
-		parameterValueDateRangeValueConverted, err := DateRangeValueToSDK(w.DateRangeValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.DateRangeValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_DateRangeValue{DateRangeValue: *parameterValueDateRangeValueConverted}
-	case w.QueryBackedValue != nil:
-		parameterValueQueryBackedValueConverted, err := QueryBackedValueToSDK(w.QueryBackedValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue.QueryBackedValue", err)
-		}
-		parameterValueSelection = &sdk.QueryParameter_ParameterValue_QueryBackedValue{QueryBackedValue: *parameterValueQueryBackedValueConverted}
-	}
-	return &sdk.QueryParameter{
-		Title:          w.Title,
-		Name:           w.Name,
-		ParameterValue: parameterValueSelection,
-	}, nil
-}
-
 type TextValue struct {
 	Value *string `json:"value,omitempty"`
-}
-
-func TextValueFromSDK(v *sdk.TextValue) (*TextValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TextValue{
-		Value: v.Value,
-	}, nil
-}
-
-func TextValueToSDK(w *TextValue) (*sdk.TextValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TextValue{
-		Value: w.Value,
-	}, nil
 }
 
 type UpdateQueryRequest struct {
@@ -810,22 +259,6 @@ type UpdateQueryRequest struct {
 	// the request if the alert's display name conflicts with an existing alert's
 	// display name.
 	AutoResolveDisplayName *bool `json:"auto_resolve_display_name,omitempty"`
-}
-
-func UpdateQueryRequestFromSDK(v *sdk.UpdateQueryRequest) (*UpdateQueryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	queryWireValue, err := UpdateQueryRequestQueryFromSDK(v.Query)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequest.Query", err)
-	}
-	return &UpdateQueryRequest{
-		Query:                  queryWireValue,
-		UpdateMask:             fieldMaskToWire(v.UpdateMask),
-		Id:                     v.Id,
-		AutoResolveDisplayName: v.AutoResolveDisplayName,
-	}, nil
 }
 
 type UpdateQueryRequestQuery struct {
@@ -854,29 +287,6 @@ type UpdateQueryRequestQuery struct {
 	Schema *string `json:"schema,omitempty"`
 }
 
-func UpdateQueryRequestQueryFromSDK(v *sdk.UpdateQueryRequestQuery) (*UpdateQueryRequestQuery, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, QueryParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequestQuery.Parameters", err)
-	}
-	return &UpdateQueryRequestQuery{
-		DisplayName:    v.DisplayName,
-		Description:    v.Description,
-		OwnerUserName:  v.OwnerUserName,
-		WarehouseId:    v.WarehouseId,
-		QueryText:      v.QueryText,
-		RunAsMode:      v.RunAsMode,
-		Tags:           v.Tags,
-		Parameters:     parametersWireValue,
-		ApplyAutoLimit: v.ApplyAutoLimit,
-		Catalog:        v.Catalog,
-		Schema:         v.Schema,
-	}, nil
-}
-
 type Visualization struct {
 	// UUID identifying the visualization.
 	Id *string `json:"id,omitempty"`
@@ -900,20 +310,816 @@ type Visualization struct {
 	QueryId *string `json:"query_id,omitempty"`
 }
 
+// CreateQueryRequestToSDK converts the mirror to the sdk-go type.
+func CreateQueryRequestToSDK(w *CreateQueryRequest) (*sdk.CreateQueryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateQueryRequest{}
+	conv1, err := CreateQueryRequestQueryToSDK(w.Query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateQueryRequest.Query", err)
+	}
+	out.Query = conv1
+	out.AutoResolveDisplayName = w.AutoResolveDisplayName
+	return out, nil
+}
+
+// CreateQueryRequestFromSDK converts the sdk-go type to the mirror.
+func CreateQueryRequestFromSDK(v *sdk.CreateQueryRequest) (*CreateQueryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateQueryRequest{}
+	conv2, err := CreateQueryRequestQueryFromSDK(v.Query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateQueryRequest.Query", err)
+	}
+	out.Query = conv2
+	out.AutoResolveDisplayName = v.AutoResolveDisplayName
+	return out, nil
+}
+
+// CreateQueryRequestQueryToSDK converts the mirror to the sdk-go type.
+func CreateQueryRequestQueryToSDK(w *CreateQueryRequestQuery) (*sdk.CreateQueryRequestQuery, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateQueryRequestQuery{}
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.WarehouseId = w.WarehouseId
+	out.QueryText = w.QueryText
+	out.RunAsMode = w.RunAsMode
+	out.ParentPath = w.ParentPath
+	out.Tags = w.Tags
+	conv3, err := convertSlice(w.Parameters, QueryParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateQueryRequestQuery.Parameters", err)
+	}
+	out.Parameters = conv3
+	out.ApplyAutoLimit = w.ApplyAutoLimit
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	return out, nil
+}
+
+// CreateQueryRequestQueryFromSDK converts the sdk-go type to the mirror.
+func CreateQueryRequestQueryFromSDK(v *sdk.CreateQueryRequestQuery) (*CreateQueryRequestQuery, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateQueryRequestQuery{}
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.WarehouseId = v.WarehouseId
+	out.QueryText = v.QueryText
+	out.RunAsMode = v.RunAsMode
+	out.ParentPath = v.ParentPath
+	out.Tags = v.Tags
+	conv4, err := convertSlice(v.Parameters, QueryParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateQueryRequestQuery.Parameters", err)
+	}
+	out.Parameters = conv4
+	out.ApplyAutoLimit = v.ApplyAutoLimit
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	return out, nil
+}
+
+// DateRangeToSDK converts the mirror to the sdk-go type.
+func DateRangeToSDK(w *DateRange) (*sdk.DateRange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DateRange{}
+	out.Start = w.Start
+	out.End = w.End
+	return out, nil
+}
+
+// DateRangeFromSDK converts the sdk-go type to the mirror.
+func DateRangeFromSDK(v *sdk.DateRange) (*DateRange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DateRange{}
+	out.Start = v.Start
+	out.End = v.End
+	return out, nil
+}
+
+// DateRangeValueToSDK converts the mirror to the sdk-go type.
+func DateRangeValueToSDK(w *DateRangeValue) (*sdk.DateRangeValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DateRangeValue{}
+	{
+		members := 0
+		if w.DynamicDateRangeValue != "" {
+			members++
+		}
+		if w.DateRangeValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DateRangeValue.Value")
+		}
+	}
+	switch {
+	case w.DynamicDateRangeValue != "":
+		out.Value = &sdk.DateRangeValue_Value_DynamicDateRangeValue{DynamicDateRangeValue: w.DynamicDateRangeValue}
+	case w.DateRangeValue != nil:
+		conv5, err := DateRangeToSDK(w.DateRangeValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DateRangeValue.Value", err)
+		}
+		out.Value = &sdk.DateRangeValue_Value_DateRangeValue{DateRangeValue: *conv5}
+	}
+	out.Precision = w.Precision
+	out.StartDayOfWeek = w.StartDayOfWeek
+	return out, nil
+}
+
+// DateRangeValueFromSDK converts the sdk-go type to the mirror.
+func DateRangeValueFromSDK(v *sdk.DateRangeValue) (*DateRangeValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DateRangeValue{}
+	switch value := v.Value.(type) {
+	case *sdk.DateRangeValue_Value_DynamicDateRangeValue:
+		if value != nil {
+			out.DynamicDateRangeValue = value.DynamicDateRangeValue
+		}
+	case *sdk.DateRangeValue_Value_DateRangeValue:
+		if value != nil {
+			conv6, err := DateRangeFromSDK(&value.DateRangeValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DateRangeValue.Value", err)
+			}
+			out.DateRangeValue = conv6
+		}
+	}
+	out.Precision = v.Precision
+	out.StartDayOfWeek = v.StartDayOfWeek
+	return out, nil
+}
+
+// DateValueToSDK converts the mirror to the sdk-go type.
+func DateValueToSDK(w *DateValue) (*sdk.DateValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DateValue{}
+	{
+		members := 0
+		if w.DynamicDateValue != "" {
+			members++
+		}
+		if w.DateValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DateValue.Value")
+		}
+	}
+	switch {
+	case w.DynamicDateValue != "":
+		out.Value = &sdk.DateValue_Value_DynamicDateValue{DynamicDateValue: w.DynamicDateValue}
+	case w.DateValue != nil:
+		out.Value = &sdk.DateValue_Value_DateValue{DateValue: *w.DateValue}
+	}
+	out.Precision = w.Precision
+	return out, nil
+}
+
+// DateValueFromSDK converts the sdk-go type to the mirror.
+func DateValueFromSDK(v *sdk.DateValue) (*DateValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DateValue{}
+	switch value := v.Value.(type) {
+	case *sdk.DateValue_Value_DynamicDateValue:
+		if value != nil {
+			out.DynamicDateValue = value.DynamicDateValue
+		}
+	case *sdk.DateValue_Value_DateValue:
+		if value != nil {
+			out.DateValue = new(value.DateValue)
+		}
+	}
+	out.Precision = v.Precision
+	return out, nil
+}
+
+// EnumValueToSDK converts the mirror to the sdk-go type.
+func EnumValueToSDK(w *EnumValue) (*sdk.EnumValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnumValue{}
+	out.Values = w.Values
+	out.EnumOptions = w.EnumOptions
+	conv7, err := MultiValuesOptionsToSDK(w.MultiValuesOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnumValue.MultiValuesOptions", err)
+	}
+	out.MultiValuesOptions = conv7
+	return out, nil
+}
+
+// EnumValueFromSDK converts the sdk-go type to the mirror.
+func EnumValueFromSDK(v *sdk.EnumValue) (*EnumValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnumValue{}
+	out.Values = v.Values
+	out.EnumOptions = v.EnumOptions
+	conv8, err := MultiValuesOptionsFromSDK(v.MultiValuesOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnumValue.MultiValuesOptions", err)
+	}
+	out.MultiValuesOptions = conv8
+	return out, nil
+}
+
+// ListQueriesRequestToSDK converts the mirror to the sdk-go type.
+func ListQueriesRequestToSDK(w *ListQueriesRequest) (*sdk.ListQueriesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQueriesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListQueriesRequestFromSDK converts the sdk-go type to the mirror.
+func ListQueriesRequestFromSDK(v *sdk.ListQueriesRequest) (*ListQueriesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQueriesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListQueriesResponseToSDK converts the mirror to the sdk-go type.
+func ListQueriesResponseToSDK(w *ListQueriesResponse) (*sdk.ListQueriesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQueriesResponse{}
+	conv9, err := convertSlice(w.Results, ListQueryObjectsResponseQueryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Results", err)
+	}
+	out.Results = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListQueriesResponseFromSDK converts the sdk-go type to the mirror.
+func ListQueriesResponseFromSDK(v *sdk.ListQueriesResponse) (*ListQueriesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQueriesResponse{}
+	conv10, err := convertSlice(v.Results, ListQueryObjectsResponseQueryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Results", err)
+	}
+	out.Results = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListQueryObjectsResponseQueryToSDK converts the mirror to the sdk-go type.
+func ListQueryObjectsResponseQueryToSDK(w *ListQueryObjectsResponseQuery) (*sdk.ListQueryObjectsResponseQuery, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQueryObjectsResponseQuery{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.OwnerUserName = w.OwnerUserName
+	out.WarehouseId = w.WarehouseId
+	out.QueryText = w.QueryText
+	out.RunAsMode = w.RunAsMode
+	out.LifecycleState = w.LifecycleState
+	out.LastModifierUserName = w.LastModifierUserName
+	out.Tags = w.Tags
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv11, err := convertSlice(w.Parameters, QueryParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueryObjectsResponseQuery.Parameters", err)
+	}
+	out.Parameters = conv11
+	out.ApplyAutoLimit = w.ApplyAutoLimit
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	return out, nil
+}
+
+// ListQueryObjectsResponseQueryFromSDK converts the sdk-go type to the mirror.
+func ListQueryObjectsResponseQueryFromSDK(v *sdk.ListQueryObjectsResponseQuery) (*ListQueryObjectsResponseQuery, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQueryObjectsResponseQuery{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.OwnerUserName = v.OwnerUserName
+	out.WarehouseId = v.WarehouseId
+	out.QueryText = v.QueryText
+	out.RunAsMode = v.RunAsMode
+	out.LifecycleState = v.LifecycleState
+	out.LastModifierUserName = v.LastModifierUserName
+	out.Tags = v.Tags
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv12, err := convertSlice(v.Parameters, QueryParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueryObjectsResponseQuery.Parameters", err)
+	}
+	out.Parameters = conv12
+	out.ApplyAutoLimit = v.ApplyAutoLimit
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	return out, nil
+}
+
+// ListVisualizationsForQueryRequestToSDK converts the mirror to the sdk-go type.
+func ListVisualizationsForQueryRequestToSDK(w *ListVisualizationsForQueryRequest) (*sdk.ListVisualizationsForQueryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVisualizationsForQueryRequest{}
+	out.Id = w.Id
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListVisualizationsForQueryRequestFromSDK converts the sdk-go type to the mirror.
+func ListVisualizationsForQueryRequestFromSDK(v *sdk.ListVisualizationsForQueryRequest) (*ListVisualizationsForQueryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVisualizationsForQueryRequest{}
+	out.Id = v.Id
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListVisualizationsForQueryResponseToSDK converts the mirror to the sdk-go type.
+func ListVisualizationsForQueryResponseToSDK(w *ListVisualizationsForQueryResponse) (*sdk.ListVisualizationsForQueryResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVisualizationsForQueryResponse{}
+	conv13, err := convertSlice(w.Results, VisualizationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVisualizationsForQueryResponse.Results", err)
+	}
+	out.Results = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListVisualizationsForQueryResponseFromSDK converts the sdk-go type to the mirror.
+func ListVisualizationsForQueryResponseFromSDK(v *sdk.ListVisualizationsForQueryResponse) (*ListVisualizationsForQueryResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVisualizationsForQueryResponse{}
+	conv14, err := convertSlice(v.Results, VisualizationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVisualizationsForQueryResponse.Results", err)
+	}
+	out.Results = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MultiValuesOptionsToSDK converts the mirror to the sdk-go type.
+func MultiValuesOptionsToSDK(w *MultiValuesOptions) (*sdk.MultiValuesOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MultiValuesOptions{}
+	out.Prefix = w.Prefix
+	out.Separator = w.Separator
+	out.Suffix = w.Suffix
+	return out, nil
+}
+
+// MultiValuesOptionsFromSDK converts the sdk-go type to the mirror.
+func MultiValuesOptionsFromSDK(v *sdk.MultiValuesOptions) (*MultiValuesOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MultiValuesOptions{}
+	out.Prefix = v.Prefix
+	out.Separator = v.Separator
+	out.Suffix = v.Suffix
+	return out, nil
+}
+
+// NumericValueToSDK converts the mirror to the sdk-go type.
+func NumericValueToSDK(w *NumericValue) (*sdk.NumericValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NumericValue{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// NumericValueFromSDK converts the sdk-go type to the mirror.
+func NumericValueFromSDK(v *sdk.NumericValue) (*NumericValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NumericValue{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// QueryToSDK converts the mirror to the sdk-go type.
+func QueryToSDK(w *Query) (*sdk.Query, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Query{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.OwnerUserName = w.OwnerUserName
+	out.WarehouseId = w.WarehouseId
+	out.QueryText = w.QueryText
+	out.RunAsMode = w.RunAsMode
+	out.LifecycleState = w.LifecycleState
+	out.LastModifierUserName = w.LastModifierUserName
+	out.ParentPath = w.ParentPath
+	out.Tags = w.Tags
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv15, err := convertSlice(w.Parameters, QueryParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Query.Parameters", err)
+	}
+	out.Parameters = conv15
+	out.ApplyAutoLimit = w.ApplyAutoLimit
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	return out, nil
+}
+
+// QueryFromSDK converts the sdk-go type to the mirror.
+func QueryFromSDK(v *sdk.Query) (*Query, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Query{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.OwnerUserName = v.OwnerUserName
+	out.WarehouseId = v.WarehouseId
+	out.QueryText = v.QueryText
+	out.RunAsMode = v.RunAsMode
+	out.LifecycleState = v.LifecycleState
+	out.LastModifierUserName = v.LastModifierUserName
+	out.ParentPath = v.ParentPath
+	out.Tags = v.Tags
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv16, err := convertSlice(v.Parameters, QueryParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Query.Parameters", err)
+	}
+	out.Parameters = conv16
+	out.ApplyAutoLimit = v.ApplyAutoLimit
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	return out, nil
+}
+
+// QueryBackedValueToSDK converts the mirror to the sdk-go type.
+func QueryBackedValueToSDK(w *QueryBackedValue) (*sdk.QueryBackedValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryBackedValue{}
+	out.Values = w.Values
+	out.QueryId = w.QueryId
+	conv17, err := MultiValuesOptionsToSDK(w.MultiValuesOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryBackedValue.MultiValuesOptions", err)
+	}
+	out.MultiValuesOptions = conv17
+	return out, nil
+}
+
+// QueryBackedValueFromSDK converts the sdk-go type to the mirror.
+func QueryBackedValueFromSDK(v *sdk.QueryBackedValue) (*QueryBackedValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryBackedValue{}
+	out.Values = v.Values
+	out.QueryId = v.QueryId
+	conv18, err := MultiValuesOptionsFromSDK(v.MultiValuesOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryBackedValue.MultiValuesOptions", err)
+	}
+	out.MultiValuesOptions = conv18
+	return out, nil
+}
+
+// QueryParameterToSDK converts the mirror to the sdk-go type.
+func QueryParameterToSDK(w *QueryParameter) (*sdk.QueryParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryParameter{}
+	out.Title = w.Title
+	out.Name = w.Name
+	{
+		members := 0
+		if w.TextValue != nil {
+			members++
+		}
+		if w.NumericValue != nil {
+			members++
+		}
+		if w.EnumValue != nil {
+			members++
+		}
+		if w.DateValue != nil {
+			members++
+		}
+		if w.DateRangeValue != nil {
+			members++
+		}
+		if w.QueryBackedValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "QueryParameter.ParameterValue")
+		}
+	}
+	switch {
+	case w.TextValue != nil:
+		conv19, err := TextValueToSDK(w.TextValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_TextValue{TextValue: *conv19}
+	case w.NumericValue != nil:
+		conv20, err := NumericValueToSDK(w.NumericValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_NumericValue{NumericValue: *conv20}
+	case w.EnumValue != nil:
+		conv21, err := EnumValueToSDK(w.EnumValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_EnumValue{EnumValue: *conv21}
+	case w.DateValue != nil:
+		conv22, err := DateValueToSDK(w.DateValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_DateValue{DateValue: *conv22}
+	case w.DateRangeValue != nil:
+		conv23, err := DateRangeValueToSDK(w.DateRangeValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_DateRangeValue{DateRangeValue: *conv23}
+	case w.QueryBackedValue != nil:
+		conv24, err := QueryBackedValueToSDK(w.QueryBackedValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+		}
+		out.ParameterValue = &sdk.QueryParameter_ParameterValue_QueryBackedValue{QueryBackedValue: *conv24}
+	}
+	return out, nil
+}
+
+// QueryParameterFromSDK converts the sdk-go type to the mirror.
+func QueryParameterFromSDK(v *sdk.QueryParameter) (*QueryParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryParameter{}
+	out.Title = v.Title
+	out.Name = v.Name
+	switch value := v.ParameterValue.(type) {
+	case *sdk.QueryParameter_ParameterValue_TextValue:
+		if value != nil {
+			conv25, err := TextValueFromSDK(&value.TextValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.TextValue = conv25
+		}
+	case *sdk.QueryParameter_ParameterValue_NumericValue:
+		if value != nil {
+			conv26, err := NumericValueFromSDK(&value.NumericValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.NumericValue = conv26
+		}
+	case *sdk.QueryParameter_ParameterValue_EnumValue:
+		if value != nil {
+			conv27, err := EnumValueFromSDK(&value.EnumValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.EnumValue = conv27
+		}
+	case *sdk.QueryParameter_ParameterValue_DateValue:
+		if value != nil {
+			conv28, err := DateValueFromSDK(&value.DateValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.DateValue = conv28
+		}
+	case *sdk.QueryParameter_ParameterValue_DateRangeValue:
+		if value != nil {
+			conv29, err := DateRangeValueFromSDK(&value.DateRangeValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.DateRangeValue = conv29
+		}
+	case *sdk.QueryParameter_ParameterValue_QueryBackedValue:
+		if value != nil {
+			conv30, err := QueryBackedValueFromSDK(&value.QueryBackedValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "QueryParameter.ParameterValue", err)
+			}
+			out.QueryBackedValue = conv30
+		}
+	}
+	return out, nil
+}
+
+// TextValueToSDK converts the mirror to the sdk-go type.
+func TextValueToSDK(w *TextValue) (*sdk.TextValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TextValue{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// TextValueFromSDK converts the sdk-go type to the mirror.
+func TextValueFromSDK(v *sdk.TextValue) (*TextValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TextValue{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// UpdateQueryRequestToSDK converts the mirror to the sdk-go type.
+func UpdateQueryRequestToSDK(w *UpdateQueryRequest) (*sdk.UpdateQueryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateQueryRequest{}
+	conv31, err := UpdateQueryRequestQueryToSDK(w.Query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequest.Query", err)
+	}
+	out.Query = conv31
+	mask32, err := fieldMaskFromString[sdk.UpdateQueryRequestQuery](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask32
+	out.Id = w.Id
+	out.AutoResolveDisplayName = w.AutoResolveDisplayName
+	return out, nil
+}
+
+// UpdateQueryRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateQueryRequestFromSDK(v *sdk.UpdateQueryRequest) (*UpdateQueryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateQueryRequest{}
+	conv33, err := UpdateQueryRequestQueryFromSDK(v.Query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequest.Query", err)
+	}
+	out.Query = conv33
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Id = v.Id
+	out.AutoResolveDisplayName = v.AutoResolveDisplayName
+	return out, nil
+}
+
+// UpdateQueryRequestQueryToSDK converts the mirror to the sdk-go type.
+func UpdateQueryRequestQueryToSDK(w *UpdateQueryRequestQuery) (*sdk.UpdateQueryRequestQuery, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateQueryRequestQuery{}
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.OwnerUserName = w.OwnerUserName
+	out.WarehouseId = w.WarehouseId
+	out.QueryText = w.QueryText
+	out.RunAsMode = w.RunAsMode
+	out.Tags = w.Tags
+	conv34, err := convertSlice(w.Parameters, QueryParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequestQuery.Parameters", err)
+	}
+	out.Parameters = conv34
+	out.ApplyAutoLimit = w.ApplyAutoLimit
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	return out, nil
+}
+
+// UpdateQueryRequestQueryFromSDK converts the sdk-go type to the mirror.
+func UpdateQueryRequestQueryFromSDK(v *sdk.UpdateQueryRequestQuery) (*UpdateQueryRequestQuery, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateQueryRequestQuery{}
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.OwnerUserName = v.OwnerUserName
+	out.WarehouseId = v.WarehouseId
+	out.QueryText = v.QueryText
+	out.RunAsMode = v.RunAsMode
+	out.Tags = v.Tags
+	conv35, err := convertSlice(v.Parameters, QueryParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateQueryRequestQuery.Parameters", err)
+	}
+	out.Parameters = conv35
+	out.ApplyAutoLimit = v.ApplyAutoLimit
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	return out, nil
+}
+
+// VisualizationToSDK converts the mirror to the sdk-go type.
 func VisualizationToSDK(w *Visualization) (*sdk.Visualization, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.Visualization{
-		Id:                  w.Id,
-		DisplayName:         w.DisplayName,
-		Type:                w.Type,
-		CreateTime:          w.CreateTime,
-		UpdateTime:          w.UpdateTime,
-		SerializedQueryPlan: w.SerializedQueryPlan,
-		SerializedOptions:   w.SerializedOptions,
-		QueryId:             w.QueryId,
-	}, nil
+	out := &sdk.Visualization{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.Type = w.Type
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.SerializedQueryPlan = w.SerializedQueryPlan
+	out.SerializedOptions = w.SerializedOptions
+	out.QueryId = w.QueryId
+	return out, nil
+}
+
+// VisualizationFromSDK converts the sdk-go type to the mirror.
+func VisualizationFromSDK(v *sdk.Visualization) (*Visualization, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Visualization{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.Type = v.Type
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.SerializedQueryPlan = v.SerializedQueryPlan
+	out.SerializedOptions = v.SerializedOptions
+	out.QueryId = v.QueryId
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -929,4 +1135,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/aisearch/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -57,30 +58,6 @@ const (
 	RerankerConfig_ModelType_ModelTypeFinetuned       = sdk.RerankerConfig_ModelType_ModelTypeFinetuned
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Column information (name and data type) for an index column. Surfaced on
 // `Index.column_info`..
 type ColumnInfo struct {
@@ -88,16 +65,6 @@ type ColumnInfo struct {
 	Name *string `json:"name,omitempty"`
 	// Data type of the column (e.g., "string", "int", "array<float>").
 	TypeText *string `json:"type_text,omitempty"`
-}
-
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnInfo{
-		Name:     w.Name,
-		TypeText: w.TypeText,
-	}, nil
 }
 
 // AIP-133 conformant Create. The endpoint is nested under `endpoint`; `parent`
@@ -120,21 +87,6 @@ type CreateEndpointRequest struct {
 	EndpointId *string `json:"endpoint_id,omitempty"`
 }
 
-func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointWireValue, err := EndpointFromSDK(v.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
-	}
-	return &CreateEndpointRequest{
-		Parent:     v.Parent,
-		Endpoint:   endpointWireValue,
-		EndpointId: v.EndpointId,
-	}, nil
-}
-
 // AIP-133 conformant Create. The index is nested under `index`; `parent`
 // carries the endpoint path; `index_id` is the user-supplied Unity Catalog
 // table name. The server composes `Index.name` from `parent` and `index_id`;
@@ -155,21 +107,6 @@ type CreateIndexRequest struct {
 	IndexId *string `json:"index_id,omitempty"`
 }
 
-func CreateIndexRequestFromSDK(v *sdk.CreateIndexRequest) (*CreateIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	indexWireValue, err := IndexFromSDK(v.Index)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateIndexRequest.Index", err)
-	}
-	return &CreateIndexRequest{
-		Parent:  v.Parent,
-		Index:   indexWireValue,
-		IndexId: v.IndexId,
-	}, nil
-}
-
 // User-defined key/value tag attached to an AI Search endpoint for cost
 // attribution and access control..
 type CustomTag struct {
@@ -179,46 +116,12 @@ type CustomTag struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CustomTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CustomTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 // Per-row outcome of a data-plane upsert or delete operation..
 type DataModificationResult struct {
 	// Count of rows processed successfully.
 	SuccessRowCount *int64 `json:"success_row_count,omitempty"`
 	// Primary keys of rows that failed to process.
 	FailedPrimaryKeys []string `json:"failed_primary_keys,omitempty"`
-}
-
-func DataModificationResultToSDK(w *DataModificationResult) (*sdk.DataModificationResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	successRowCountPublicValue, err := int64FromWire(w.SuccessRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataModificationResult.SuccessRowCount", err)
-	}
-	return &sdk.DataModificationResult{
-		SuccessRowCount:   successRowCountPublicValue,
-		FailedPrimaryKeys: w.FailedPrimaryKeys,
-	}, nil
 }
 
 // Specification for a Delta Sync index — the index is kept in sync with a
@@ -248,52 +151,6 @@ type DeltaSyncIndexSpec struct {
 	PipelineType PipelineType `json:"pipeline_type,omitempty"`
 }
 
-func DeltaSyncIndexSpecFromSDK(v *sdk.DeltaSyncIndexSpec) (*DeltaSyncIndexSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	embeddingSourceColumnsWireValue, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingSourceColumns", err)
-	}
-	embeddingVectorColumnsWireValue, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingVectorColumns", err)
-	}
-	return &DeltaSyncIndexSpec{
-		SourceTable:             v.SourceTable,
-		EmbeddingSourceColumns:  embeddingSourceColumnsWireValue,
-		EmbeddingVectorColumns:  embeddingVectorColumnsWireValue,
-		EmbeddingWritebackTable: v.EmbeddingWritebackTable,
-		ColumnsToSync:           v.ColumnsToSync,
-		PipelineId:              v.PipelineId,
-		PipelineType:            v.PipelineType,
-	}, nil
-}
-
-func DeltaSyncIndexSpecToSDK(w *DeltaSyncIndexSpec) (*sdk.DeltaSyncIndexSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddingSourceColumnsPublicValue, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingSourceColumns", err)
-	}
-	embeddingVectorColumnsPublicValue, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingVectorColumns", err)
-	}
-	return &sdk.DeltaSyncIndexSpec{
-		SourceTable:             w.SourceTable,
-		EmbeddingSourceColumns:  embeddingSourceColumnsPublicValue,
-		EmbeddingVectorColumns:  embeddingVectorColumnsPublicValue,
-		EmbeddingWritebackTable: w.EmbeddingWritebackTable,
-		ColumnsToSync:           w.ColumnsToSync,
-		PipelineId:              w.PipelineId,
-		PipelineType:            w.PipelineType,
-	}, nil
-}
-
 // Specification for a Direct Access index — the customer manages vectors and
 // metadata directly..
 type DirectAccessIndexSpec struct {
@@ -305,44 +162,6 @@ type DirectAccessIndexSpec struct {
 	SchemaJson *string `json:"schema_json,omitempty"`
 	// The columns that contain the embedding source.
 	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
-}
-
-func DirectAccessIndexSpecFromSDK(v *sdk.DirectAccessIndexSpec) (*DirectAccessIndexSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	embeddingVectorColumnsWireValue, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingVectorColumns", err)
-	}
-	embeddingSourceColumnsWireValue, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingSourceColumns", err)
-	}
-	return &DirectAccessIndexSpec{
-		EmbeddingVectorColumns: embeddingVectorColumnsWireValue,
-		SchemaJson:             v.SchemaJson,
-		EmbeddingSourceColumns: embeddingSourceColumnsWireValue,
-	}, nil
-}
-
-func DirectAccessIndexSpecToSDK(w *DirectAccessIndexSpec) (*sdk.DirectAccessIndexSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddingVectorColumnsPublicValue, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingVectorColumns", err)
-	}
-	embeddingSourceColumnsPublicValue, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingSourceColumns", err)
-	}
-	return &sdk.DirectAccessIndexSpec{
-		EmbeddingVectorColumns: embeddingVectorColumnsPublicValue,
-		SchemaJson:             w.SchemaJson,
-		EmbeddingSourceColumns: embeddingSourceColumnsPublicValue,
-	}, nil
 }
 
 // Name of an embedding source column and its associated embedding model
@@ -358,54 +177,12 @@ type EmbeddingSourceColumn struct {
 	ModelEndpointNameForQuery *string `json:"model_endpoint_name_for_query,omitempty"`
 }
 
-func EmbeddingSourceColumnFromSDK(v *sdk.EmbeddingSourceColumn) (*EmbeddingSourceColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EmbeddingSourceColumn{
-		Name:                      v.Name,
-		EmbeddingModelEndpoint:    v.EmbeddingModelEndpoint,
-		ModelEndpointNameForQuery: v.ModelEndpointNameForQuery,
-	}, nil
-}
-
-func EmbeddingSourceColumnToSDK(w *EmbeddingSourceColumn) (*sdk.EmbeddingSourceColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmbeddingSourceColumn{
-		Name:                      w.Name,
-		EmbeddingModelEndpoint:    w.EmbeddingModelEndpoint,
-		ModelEndpointNameForQuery: w.ModelEndpointNameForQuery,
-	}, nil
-}
-
 // Name and dimension of an embedding vector column..
 type EmbeddingVectorColumn struct {
 	// Name of the column.
 	Name *string `json:"name,omitempty"`
 	// Dimension of the embedding vector.
 	EmbeddingDimension *int `json:"embedding_dimension,omitempty"`
-}
-
-func EmbeddingVectorColumnFromSDK(v *sdk.EmbeddingVectorColumn) (*EmbeddingVectorColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EmbeddingVectorColumn{
-		Name:               v.Name,
-		EmbeddingDimension: v.EmbeddingDimension,
-	}, nil
-}
-
-func EmbeddingVectorColumnToSDK(w *EmbeddingVectorColumn) (*sdk.EmbeddingVectorColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmbeddingVectorColumn{
-		Name:               w.Name,
-		EmbeddingDimension: w.EmbeddingDimension,
-	}, nil
 }
 
 // An AI Search endpoint — compute infrastructure that hosts AI Search indexes
@@ -453,88 +230,6 @@ type Endpoint struct {
 	TargetQps *int `json:"target_qps,omitempty"`
 }
 
-func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointStatusWireValue, err := EndpointStatusFromSDK(v.EndpointStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, CustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
-	}
-	throughputInfoWireValue, err := EndpointThroughputInfoFromSDK(v.ThroughputInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.ThroughputInfo", err)
-	}
-	scalingInfoWireValue, err := EndpointScalingInfoFromSDK(v.ScalingInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
-	}
-	return &Endpoint{
-		Name:                    v.Name,
-		Creator:                 v.Creator,
-		CreateTime:              v.CreateTime,
-		UpdateTime:              v.UpdateTime,
-		EndpointType:            v.EndpointType,
-		LastUpdatedUser:         v.LastUpdatedUser,
-		Id:                      v.Id,
-		EndpointStatus:          endpointStatusWireValue,
-		IndexCount:              v.IndexCount,
-		BudgetPolicyId:          v.BudgetPolicyId,
-		EffectiveBudgetPolicyId: v.EffectiveBudgetPolicyId,
-		CustomTags:              customTagsWireValue,
-		ThroughputInfo:          throughputInfoWireValue,
-		ScalingInfo:             scalingInfoWireValue,
-		UsagePolicyId:           v.UsagePolicyId,
-		ReplicaCount:            v.ReplicaCount,
-		TargetQps:               v.TargetQps,
-	}, nil
-}
-
-func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointStatusPublicValue, err := EndpointStatusToSDK(w.EndpointStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, CustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
-	}
-	throughputInfoPublicValue, err := EndpointThroughputInfoToSDK(w.ThroughputInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.ThroughputInfo", err)
-	}
-	scalingInfoPublicValue, err := EndpointScalingInfoToSDK(w.ScalingInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
-	}
-	return &sdk.Endpoint{
-		Name:                    w.Name,
-		Creator:                 w.Creator,
-		CreateTime:              w.CreateTime,
-		UpdateTime:              w.UpdateTime,
-		EndpointType:            w.EndpointType,
-		LastUpdatedUser:         w.LastUpdatedUser,
-		Id:                      w.Id,
-		EndpointStatus:          endpointStatusPublicValue,
-		IndexCount:              w.IndexCount,
-		BudgetPolicyId:          w.BudgetPolicyId,
-		EffectiveBudgetPolicyId: w.EffectiveBudgetPolicyId,
-		CustomTags:              customTagsPublicValue,
-		ThroughputInfo:          throughputInfoPublicValue,
-		ScalingInfo:             scalingInfoPublicValue,
-		UsagePolicyId:           w.UsagePolicyId,
-		ReplicaCount:            w.ReplicaCount,
-		TargetQps:               w.TargetQps,
-	}, nil
-}
-
 // Scaling information for a Standard endpoint: the current scaling state, the
 // requested QPS target, and the progress of an in-progress scaling change..
 type EndpointScalingInfo struct {
@@ -543,34 +238,6 @@ type EndpointScalingInfo struct {
 	// The requested QPS target for the endpoint. Best-effort; the system does not
 	// guarantee this QPS will be achieved.
 	RequestedTargetQps *int64 `json:"requested_target_qps,omitempty"`
-}
-
-func EndpointScalingInfoFromSDK(v *sdk.EndpointScalingInfo) (*EndpointScalingInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	requestedTargetQpsWireValue, err := int64ToWire(v.RequestedTargetQps)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointScalingInfo.RequestedTargetQps", err)
-	}
-	return &EndpointScalingInfo{
-		State:              v.State,
-		RequestedTargetQps: requestedTargetQpsWireValue,
-	}, nil
-}
-
-func EndpointScalingInfoToSDK(w *EndpointScalingInfo) (*sdk.EndpointScalingInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestedTargetQpsPublicValue, err := int64FromWire(w.RequestedTargetQps)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointScalingInfo.RequestedTargetQps", err)
-	}
-	return &sdk.EndpointScalingInfo{
-		State:              w.State,
-		RequestedTargetQps: requestedTargetQpsPublicValue,
-	}, nil
 }
 
 // Lifecycle and health state of an AI Search endpoint, along with any
@@ -582,26 +249,6 @@ type EndpointStatus struct {
 	// Human-readable detail about the endpoint's current state or the reason for a
 	// state transition.
 	Message *string `json:"message,omitempty"`
-}
-
-func EndpointStatusFromSDK(v *sdk.EndpointStatus) (*EndpointStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointStatus{
-		State:   v.State,
-		Message: v.Message,
-	}, nil
-}
-
-func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
 }
 
 // Throughput information for an AI Search endpoint, including requested and
@@ -627,56 +274,12 @@ type EndpointThroughputInfo struct {
 	CurrentNumReplicas *int `json:"current_num_replicas,omitempty"`
 }
 
-func EndpointThroughputInfoFromSDK(v *sdk.EndpointThroughputInfo) (*EndpointThroughputInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointThroughputInfo{
-		RequestedConcurrency:                    v.RequestedConcurrency,
-		CurrentConcurrency:                      v.CurrentConcurrency,
-		CurrentConcurrencyUtilizationPercentage: v.CurrentConcurrencyUtilizationPercentage,
-		MinimalConcurrencyAllowed:               v.MinimalConcurrencyAllowed,
-		MaximumConcurrencyAllowed:               v.MaximumConcurrencyAllowed,
-		ChangeRequestState:                      v.ChangeRequestState,
-		ChangeRequestMessage:                    v.ChangeRequestMessage,
-		RequestedNumReplicas:                    v.RequestedNumReplicas,
-		CurrentNumReplicas:                      v.CurrentNumReplicas,
-	}, nil
-}
-
-func EndpointThroughputInfoToSDK(w *EndpointThroughputInfo) (*sdk.EndpointThroughputInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointThroughputInfo{
-		RequestedConcurrency:                    w.RequestedConcurrency,
-		CurrentConcurrency:                      w.CurrentConcurrency,
-		CurrentConcurrencyUtilizationPercentage: w.CurrentConcurrencyUtilizationPercentage,
-		MinimalConcurrencyAllowed:               w.MinimalConcurrencyAllowed,
-		MaximumConcurrencyAllowed:               w.MaximumConcurrencyAllowed,
-		ChangeRequestState:                      w.ChangeRequestState,
-		ChangeRequestMessage:                    w.ChangeRequestMessage,
-		RequestedNumReplicas:                    w.RequestedNumReplicas,
-		CurrentNumReplicas:                      w.CurrentNumReplicas,
-	}, nil
-}
-
 // Facet aggregation rows returned by a query..
 type FacetResultData struct {
 	// Number of facet rows returned.
 	FacetRowCount *int `json:"facet_row_count,omitempty"`
 	// Facet rows; each row is `[facet_column_name, value_or_range, count]`.
 	FacetArray [][]json.RawMessage `json:"facet_array,omitempty"`
-}
-
-func FacetResultDataToSDK(w *FacetResultData) (*sdk.FacetResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FacetResultData{
-		FacetRowCount: w.FacetRowCount,
-		FacetArray:    w.FacetArray,
-	}, nil
 }
 
 // An AI Search index — a searchable collection of vectors and metadata hosted
@@ -707,95 +310,6 @@ type Index struct {
 	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
 }
 
-func IndexFromSDK(v *sdk.Index) (*Index, error) {
-	if v == nil {
-		return nil, nil
-	}
-	statusWireValue, err := IndexStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Index.Status", err)
-	}
-	var indexSpecDirectAccessIndexSpecWire *DirectAccessIndexSpec
-	var indexSpecDeltaSyncIndexSpecWire *DeltaSyncIndexSpec
-	switch value := v.IndexSpec.(type) {
-	case nil:
-	case *sdk.Index_IndexSpec_DirectAccessIndexSpec:
-		if value != nil {
-			indexSpecDirectAccessIndexSpecConverted, err := DirectAccessIndexSpecFromSDK(&value.DirectAccessIndexSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Index.IndexSpec.DirectAccessIndexSpec", err)
-			}
-			indexSpecDirectAccessIndexSpecWire = indexSpecDirectAccessIndexSpecConverted
-		}
-	case *sdk.Index_IndexSpec_DeltaSyncIndexSpec:
-		if value != nil {
-			indexSpecDeltaSyncIndexSpecConverted, err := DeltaSyncIndexSpecFromSDK(&value.DeltaSyncIndexSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Index.IndexSpec.DeltaSyncIndexSpec", err)
-			}
-			indexSpecDeltaSyncIndexSpecWire = indexSpecDeltaSyncIndexSpecConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Index.IndexSpec", value)
-	}
-	return &Index{
-		Name:                  v.Name,
-		Endpoint:              v.Endpoint,
-		PrimaryKey:            v.PrimaryKey,
-		IndexType:             v.IndexType,
-		DirectAccessIndexSpec: indexSpecDirectAccessIndexSpecWire,
-		DeltaSyncIndexSpec:    indexSpecDeltaSyncIndexSpecWire,
-		Status:                statusWireValue,
-		Creator:               v.Creator,
-		IndexSubtype:          v.IndexSubtype,
-	}, nil
-}
-
-func IndexToSDK(w *Index) (*sdk.Index, error) {
-	if w == nil {
-		return nil, nil
-	}
-	indexSpecMembers := 0
-	if w.DirectAccessIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if w.DeltaSyncIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if indexSpecMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Index.IndexSpec")
-	}
-	statusPublicValue, err := IndexStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Index.Status", err)
-	}
-	indexSpecSelection := (&sdk.Index{}).IndexSpec
-	switch {
-	case w.DirectAccessIndexSpec != nil:
-		indexSpecDirectAccessIndexSpecConverted, err := DirectAccessIndexSpecToSDK(w.DirectAccessIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Index.IndexSpec.DirectAccessIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.Index_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *indexSpecDirectAccessIndexSpecConverted}
-	case w.DeltaSyncIndexSpec != nil:
-		indexSpecDeltaSyncIndexSpecConverted, err := DeltaSyncIndexSpecToSDK(w.DeltaSyncIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Index.IndexSpec.DeltaSyncIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.Index_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *indexSpecDeltaSyncIndexSpecConverted}
-	}
-	return &sdk.Index{
-		Name:         w.Name,
-		Endpoint:     w.Endpoint,
-		PrimaryKey:   w.PrimaryKey,
-		IndexType:    w.IndexType,
-		Status:       statusPublicValue,
-		Creator:      w.Creator,
-		IndexSubtype: w.IndexSubtype,
-		IndexSpec:    indexSpecSelection,
-	}, nil
-}
-
 // Lifecycle and health state of an AI Search index, along with human-readable
 // detail about that state and basic indexing progress..
 type IndexStatus struct {
@@ -807,38 +321,6 @@ type IndexStatus struct {
 	Ready *bool `json:"ready,omitempty"`
 	// Index API URL used to perform operations on the index.
 	IndexUrl *string `json:"index_url,omitempty"`
-}
-
-func IndexStatusFromSDK(v *sdk.IndexStatus) (*IndexStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	indexedRowCountWireValue, err := int64ToWire(v.IndexedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IndexStatus.IndexedRowCount", err)
-	}
-	return &IndexStatus{
-		Message:         v.Message,
-		IndexedRowCount: indexedRowCountWireValue,
-		Ready:           v.Ready,
-		IndexUrl:        v.IndexUrl,
-	}, nil
-}
-
-func IndexStatusToSDK(w *IndexStatus) (*sdk.IndexStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	indexedRowCountPublicValue, err := int64FromWire(w.IndexedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IndexStatus.IndexedRowCount", err)
-	}
-	return &sdk.IndexStatus{
-		Message:         w.Message,
-		IndexedRowCount: indexedRowCountPublicValue,
-		Ready:           w.Ready,
-		IndexUrl:        w.IndexUrl,
-	}, nil
 }
 
 // Request to list AI Search endpoints in a workspace, with optional pagination..
@@ -855,17 +337,6 @@ type ListEndpointsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListEndpointsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for ListEndpoints carrying the page of endpoints and an optional
 // continuation token..
 type ListEndpointsResponse struct {
@@ -874,20 +345,6 @@ type ListEndpointsResponse struct {
 	// A token that can be used to get the next page of results. Empty when there
 	// are no more results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointsPublicValue, err := convertSlice(w.Endpoints, EndpointToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
-	}
-	return &sdk.ListEndpointsResponse{
-		Endpoints:     endpointsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list AI Search indexes on an endpoint, with optional pagination..
@@ -904,17 +361,6 @@ type ListIndexesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListIndexesRequestFromSDK(v *sdk.ListIndexesRequest) (*ListIndexesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListIndexesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for ListIndexes carrying the page of indexes and an optional
 // continuation token..
 type ListIndexesResponse struct {
@@ -927,20 +373,6 @@ type ListIndexesResponse struct {
 	// A token that can be used to get the next page of results. Empty when there
 	// are no more results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListIndexesResponseToSDK(w *ListIndexesResponse) (*sdk.ListIndexesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	indexesPublicValue, err := convertSlice(w.Indexes, IndexToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListIndexesResponse.Indexes", err)
-	}
-	return &sdk.ListIndexesResponse{
-		Indexes:       indexesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to query (search) an AI Search index. The legacy `num_results` count
@@ -981,31 +413,6 @@ type QueryIndexRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 }
 
-func QueryIndexRequestFromSDK(v *sdk.QueryIndexRequest) (*QueryIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rerankerWireValue, err := RerankerConfigFromSDK(v.Reranker)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryIndexRequest.Reranker", err)
-	}
-	return &QueryIndexRequest{
-		Name:            v.Name,
-		Columns:         v.Columns,
-		QueryVector:     v.QueryVector,
-		QueryText:       v.QueryText,
-		FiltersJson:     v.FiltersJson,
-		ScoreThreshold:  v.ScoreThreshold,
-		QueryType:       v.QueryType,
-		ColumnsToRerank: v.ColumnsToRerank,
-		Reranker:        rerankerWireValue,
-		QueryColumns:    v.QueryColumns,
-		SortColumns:     v.SortColumns,
-		Facets:          v.Facets,
-		MaxResults:      v.MaxResults,
-	}, nil
-}
-
 // Response for QueryIndex carrying the matched rows and their column metadata..
 type QueryIndexResponse struct {
 	// Metadata describing the result columns.
@@ -1014,29 +421,6 @@ type QueryIndexResponse struct {
 	Result *ResultData `json:"result,omitempty"`
 	// Facet aggregation rows, when facets were requested.
 	FacetResult *FacetResultData `json:"facet_result,omitempty"`
-}
-
-func QueryIndexResponseToSDK(w *QueryIndexResponse) (*sdk.QueryIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	manifestPublicValue, err := ResultManifestToSDK(w.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Manifest", err)
-	}
-	resultPublicValue, err := ResultDataToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Result", err)
-	}
-	facetResultPublicValue, err := FacetResultDataToSDK(w.FacetResult)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.FacetResult", err)
-	}
-	return &sdk.QueryIndexResponse{
-		Manifest:    manifestPublicValue,
-		Result:      resultPublicValue,
-		FacetResult: facetResultPublicValue,
-	}, nil
 }
 
 // Request to remove rows by primary key from a Direct Access AI Search index.
@@ -1051,36 +435,12 @@ type RemoveDataRequest struct {
 	PrimaryKeys []string `json:"primary_keys,omitempty"`
 }
 
-func RemoveDataRequestFromSDK(v *sdk.RemoveDataRequest) (*RemoveDataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RemoveDataRequest{
-		Name:        v.Name,
-		PrimaryKeys: v.PrimaryKeys,
-	}, nil
-}
-
 // Response for RemoveData..
 type RemoveDataResponse struct {
 	// Overall status of the delete.
 	Status DataModificationStatus `json:"status,omitempty"`
 	// Per-row outcome of the delete.
 	Result *DataModificationResult `json:"result,omitempty"`
-}
-
-func RemoveDataResponseToSDK(w *RemoveDataResponse) (*sdk.RemoveDataResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultPublicValue, err := DataModificationResultToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RemoveDataResponse.Result", err)
-	}
-	return &sdk.RemoveDataResponse{
-		Status: w.Status,
-		Result: resultPublicValue,
-	}, nil
 }
 
 // Configuration for reranking query results with a reranker model..
@@ -1094,34 +454,10 @@ type RerankerConfig struct {
 	ModelType RerankerConfig_ModelType `json:"model_type,omitempty"`
 }
 
-func RerankerConfigFromSDK(v *sdk.RerankerConfig) (*RerankerConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := RerankerConfig_RerankerParametersFromSDK(v.Parameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
-	}
-	return &RerankerConfig{
-		Model:      v.Model,
-		Parameters: parametersWireValue,
-		ModelType:  v.ModelType,
-	}, nil
-}
-
 // Parameters controlling how the reranker processes results..
 type RerankerConfig_RerankerParameters struct {
 	// Columns whose values are concatenated and sent to the reranker.
 	ColumnsToRerank []string `json:"columns_to_rerank,omitempty"`
-}
-
-func RerankerConfig_RerankerParametersFromSDK(v *sdk.RerankerConfig_RerankerParameters) (*RerankerConfig_RerankerParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RerankerConfig_RerankerParameters{
-		ColumnsToRerank: v.ColumnsToRerank,
-	}, nil
 }
 
 // The rows of a query result set..
@@ -1131,16 +467,6 @@ type ResultData struct {
 	// Result rows; each row is a list of column values aligned with the manifest
 	// columns.
 	DataArray [][]json.RawMessage `json:"data_array,omitempty"`
-}
-
-func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResultData{
-		RowCount:  w.RowCount,
-		DataArray: w.DataArray,
-	}, nil
 }
 
 // Metadata describing the columns of a query result set..
@@ -1153,26 +479,6 @@ type ResultManifest struct {
 	FacetColumnCount *int `json:"facet_column_count,omitempty"`
 	// Information about each facet column.
 	FacetColumns []ColumnInfo `json:"facet_columns,omitempty"`
-}
-
-func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
-	}
-	facetColumnsPublicValue, err := convertSlice(w.FacetColumns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
-	}
-	return &sdk.ResultManifest{
-		ColumnCount:      w.ColumnCount,
-		Columns:          columnsPublicValue,
-		FacetColumnCount: w.FacetColumnCount,
-		FacetColumns:     facetColumnsPublicValue,
-	}, nil
 }
 
 // Request to scan (paginate over) the rows of an AI Search index. Models the
@@ -1189,17 +495,6 @@ type ScanIndexRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ScanIndexRequestFromSDK(v *sdk.ScanIndexRequest) (*ScanIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ScanIndexRequest{
-		Name:      v.Name,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for ScanIndex carrying a page of rows and an optional continuation
 // token..
 type ScanIndexResponse struct {
@@ -1209,16 +504,6 @@ type ScanIndexResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ScanIndexResponseToSDK(w *ScanIndexResponse) (*sdk.ScanIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ScanIndexResponse{
-		Data:          w.Data,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // Request to synchronize a Delta Sync AI Search index with its source Delta
 // table..
 type SyncIndexRequest struct {
@@ -1226,15 +511,6 @@ type SyncIndexRequest struct {
 	// Format:
 	// `workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 	Name *string `json:"name,omitempty"`
-}
-
-func SyncIndexRequestFromSDK(v *sdk.SyncIndexRequest) (*SyncIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncIndexRequest{
-		Name: v.Name,
-	}, nil
 }
 
 // AIP-134 conformant Update. The endpoint is nested under `endpoint`; the
@@ -1254,20 +530,6 @@ type UpdateEndpointRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateEndpointRequestFromSDK(v *sdk.UpdateEndpointRequest) (*UpdateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointWireValue, err := EndpointFromSDK(v.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
-	}
-	return &UpdateEndpointRequest{
-		Endpoint:   endpointWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Request to upsert rows into a Direct Access AI Search index..
 type UpsertDataRequest struct {
 	// Full resource name of the index. Must be a Direct Access index. Format:
@@ -1275,16 +537,6 @@ type UpsertDataRequest struct {
 	Name *string `json:"name,omitempty"`
 	// JSON document describing the rows to upsert.
 	InputsJson *string `json:"inputs_json,omitempty"`
-}
-
-func UpsertDataRequestFromSDK(v *sdk.UpsertDataRequest) (*UpsertDataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpsertDataRequest{
-		Name:       v.Name,
-		InputsJson: v.InputsJson,
-	}, nil
 }
 
 // Response for UpsertData..
@@ -1295,18 +547,1092 @@ type UpsertDataResponse struct {
 	Result *DataModificationResult `json:"result,omitempty"`
 }
 
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	return out, nil
+}
+
+// CreateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateEndpointRequestToSDK(w *CreateEndpointRequest) (*sdk.CreateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateEndpointRequest{}
+	out.Parent = w.Parent
+	conv1, err := EndpointToSDK(w.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv1
+	out.EndpointId = w.EndpointId
+	return out, nil
+}
+
+// CreateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateEndpointRequest{}
+	out.Parent = v.Parent
+	conv2, err := EndpointFromSDK(v.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv2
+	out.EndpointId = v.EndpointId
+	return out, nil
+}
+
+// CreateIndexRequestToSDK converts the mirror to the sdk-go type.
+func CreateIndexRequestToSDK(w *CreateIndexRequest) (*sdk.CreateIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateIndexRequest{}
+	out.Parent = w.Parent
+	conv3, err := IndexToSDK(w.Index)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateIndexRequest.Index", err)
+	}
+	out.Index = conv3
+	out.IndexId = w.IndexId
+	return out, nil
+}
+
+// CreateIndexRequestFromSDK converts the sdk-go type to the mirror.
+func CreateIndexRequestFromSDK(v *sdk.CreateIndexRequest) (*CreateIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateIndexRequest{}
+	out.Parent = v.Parent
+	conv4, err := IndexFromSDK(v.Index)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateIndexRequest.Index", err)
+	}
+	out.Index = conv4
+	out.IndexId = v.IndexId
+	return out, nil
+}
+
+// CustomTagToSDK converts the mirror to the sdk-go type.
+func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// CustomTagFromSDK converts the sdk-go type to the mirror.
+func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// DataModificationResultToSDK converts the mirror to the sdk-go type.
+func DataModificationResultToSDK(w *DataModificationResult) (*sdk.DataModificationResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataModificationResult{}
+	out.SuccessRowCount = w.SuccessRowCount
+	out.FailedPrimaryKeys = w.FailedPrimaryKeys
+	return out, nil
+}
+
+// DataModificationResultFromSDK converts the sdk-go type to the mirror.
+func DataModificationResultFromSDK(v *sdk.DataModificationResult) (*DataModificationResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataModificationResult{}
+	out.SuccessRowCount = v.SuccessRowCount
+	out.FailedPrimaryKeys = v.FailedPrimaryKeys
+	return out, nil
+}
+
+// DeltaSyncIndexSpecToSDK converts the mirror to the sdk-go type.
+func DeltaSyncIndexSpecToSDK(w *DeltaSyncIndexSpec) (*sdk.DeltaSyncIndexSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaSyncIndexSpec{}
+	out.SourceTable = w.SourceTable
+	conv5, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv5
+	conv6, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv6
+	out.EmbeddingWritebackTable = w.EmbeddingWritebackTable
+	out.ColumnsToSync = w.ColumnsToSync
+	out.PipelineId = w.PipelineId
+	out.PipelineType = w.PipelineType
+	return out, nil
+}
+
+// DeltaSyncIndexSpecFromSDK converts the sdk-go type to the mirror.
+func DeltaSyncIndexSpecFromSDK(v *sdk.DeltaSyncIndexSpec) (*DeltaSyncIndexSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaSyncIndexSpec{}
+	out.SourceTable = v.SourceTable
+	conv7, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv7
+	conv8, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv8
+	out.EmbeddingWritebackTable = v.EmbeddingWritebackTable
+	out.ColumnsToSync = v.ColumnsToSync
+	out.PipelineId = v.PipelineId
+	out.PipelineType = v.PipelineType
+	return out, nil
+}
+
+// DirectAccessIndexSpecToSDK converts the mirror to the sdk-go type.
+func DirectAccessIndexSpecToSDK(w *DirectAccessIndexSpec) (*sdk.DirectAccessIndexSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DirectAccessIndexSpec{}
+	conv9, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv9
+	out.SchemaJson = w.SchemaJson
+	conv10, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv10
+	return out, nil
+}
+
+// DirectAccessIndexSpecFromSDK converts the sdk-go type to the mirror.
+func DirectAccessIndexSpecFromSDK(v *sdk.DirectAccessIndexSpec) (*DirectAccessIndexSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DirectAccessIndexSpec{}
+	conv11, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv11
+	out.SchemaJson = v.SchemaJson
+	conv12, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv12
+	return out, nil
+}
+
+// EmbeddingSourceColumnToSDK converts the mirror to the sdk-go type.
+func EmbeddingSourceColumnToSDK(w *EmbeddingSourceColumn) (*sdk.EmbeddingSourceColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmbeddingSourceColumn{}
+	out.Name = w.Name
+	out.EmbeddingModelEndpoint = w.EmbeddingModelEndpoint
+	out.ModelEndpointNameForQuery = w.ModelEndpointNameForQuery
+	return out, nil
+}
+
+// EmbeddingSourceColumnFromSDK converts the sdk-go type to the mirror.
+func EmbeddingSourceColumnFromSDK(v *sdk.EmbeddingSourceColumn) (*EmbeddingSourceColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmbeddingSourceColumn{}
+	out.Name = v.Name
+	out.EmbeddingModelEndpoint = v.EmbeddingModelEndpoint
+	out.ModelEndpointNameForQuery = v.ModelEndpointNameForQuery
+	return out, nil
+}
+
+// EmbeddingVectorColumnToSDK converts the mirror to the sdk-go type.
+func EmbeddingVectorColumnToSDK(w *EmbeddingVectorColumn) (*sdk.EmbeddingVectorColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmbeddingVectorColumn{}
+	out.Name = w.Name
+	out.EmbeddingDimension = w.EmbeddingDimension
+	return out, nil
+}
+
+// EmbeddingVectorColumnFromSDK converts the sdk-go type to the mirror.
+func EmbeddingVectorColumnFromSDK(v *sdk.EmbeddingVectorColumn) (*EmbeddingVectorColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmbeddingVectorColumn{}
+	out.Name = v.Name
+	out.EmbeddingDimension = v.EmbeddingDimension
+	return out, nil
+}
+
+// EndpointToSDK converts the mirror to the sdk-go type.
+func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Endpoint{}
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.EndpointType = w.EndpointType
+	out.LastUpdatedUser = w.LastUpdatedUser
+	out.Id = w.Id
+	conv13, err := EndpointStatusToSDK(w.EndpointStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
+	}
+	out.EndpointStatus = conv13
+	out.IndexCount = w.IndexCount
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	conv14, err := convertSlice(w.CustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
+	}
+	out.CustomTags = conv14
+	conv15, err := EndpointThroughputInfoToSDK(w.ThroughputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ThroughputInfo", err)
+	}
+	out.ThroughputInfo = conv15
+	conv16, err := EndpointScalingInfoToSDK(w.ScalingInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
+	}
+	out.ScalingInfo = conv16
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ReplicaCount = w.ReplicaCount
+	out.TargetQps = w.TargetQps
+	return out, nil
+}
+
+// EndpointFromSDK converts the sdk-go type to the mirror.
+func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Endpoint{}
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.EndpointType = v.EndpointType
+	out.LastUpdatedUser = v.LastUpdatedUser
+	out.Id = v.Id
+	conv17, err := EndpointStatusFromSDK(v.EndpointStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
+	}
+	out.EndpointStatus = conv17
+	out.IndexCount = v.IndexCount
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	conv18, err := convertSlice(v.CustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
+	}
+	out.CustomTags = conv18
+	conv19, err := EndpointThroughputInfoFromSDK(v.ThroughputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ThroughputInfo", err)
+	}
+	out.ThroughputInfo = conv19
+	conv20, err := EndpointScalingInfoFromSDK(v.ScalingInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
+	}
+	out.ScalingInfo = conv20
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ReplicaCount = v.ReplicaCount
+	out.TargetQps = v.TargetQps
+	return out, nil
+}
+
+// EndpointScalingInfoToSDK converts the mirror to the sdk-go type.
+func EndpointScalingInfoToSDK(w *EndpointScalingInfo) (*sdk.EndpointScalingInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointScalingInfo{}
+	out.State = w.State
+	out.RequestedTargetQps = w.RequestedTargetQps
+	return out, nil
+}
+
+// EndpointScalingInfoFromSDK converts the sdk-go type to the mirror.
+func EndpointScalingInfoFromSDK(v *sdk.EndpointScalingInfo) (*EndpointScalingInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointScalingInfo{}
+	out.State = v.State
+	out.RequestedTargetQps = v.RequestedTargetQps
+	return out, nil
+}
+
+// EndpointStatusToSDK converts the mirror to the sdk-go type.
+func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// EndpointStatusFromSDK converts the sdk-go type to the mirror.
+func EndpointStatusFromSDK(v *sdk.EndpointStatus) (*EndpointStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// EndpointThroughputInfoToSDK converts the mirror to the sdk-go type.
+func EndpointThroughputInfoToSDK(w *EndpointThroughputInfo) (*sdk.EndpointThroughputInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointThroughputInfo{}
+	out.RequestedConcurrency = w.RequestedConcurrency
+	out.CurrentConcurrency = w.CurrentConcurrency
+	out.CurrentConcurrencyUtilizationPercentage = w.CurrentConcurrencyUtilizationPercentage
+	out.MinimalConcurrencyAllowed = w.MinimalConcurrencyAllowed
+	out.MaximumConcurrencyAllowed = w.MaximumConcurrencyAllowed
+	out.ChangeRequestState = w.ChangeRequestState
+	out.ChangeRequestMessage = w.ChangeRequestMessage
+	out.RequestedNumReplicas = w.RequestedNumReplicas
+	out.CurrentNumReplicas = w.CurrentNumReplicas
+	return out, nil
+}
+
+// EndpointThroughputInfoFromSDK converts the sdk-go type to the mirror.
+func EndpointThroughputInfoFromSDK(v *sdk.EndpointThroughputInfo) (*EndpointThroughputInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointThroughputInfo{}
+	out.RequestedConcurrency = v.RequestedConcurrency
+	out.CurrentConcurrency = v.CurrentConcurrency
+	out.CurrentConcurrencyUtilizationPercentage = v.CurrentConcurrencyUtilizationPercentage
+	out.MinimalConcurrencyAllowed = v.MinimalConcurrencyAllowed
+	out.MaximumConcurrencyAllowed = v.MaximumConcurrencyAllowed
+	out.ChangeRequestState = v.ChangeRequestState
+	out.ChangeRequestMessage = v.ChangeRequestMessage
+	out.RequestedNumReplicas = v.RequestedNumReplicas
+	out.CurrentNumReplicas = v.CurrentNumReplicas
+	return out, nil
+}
+
+// FacetResultDataToSDK converts the mirror to the sdk-go type.
+func FacetResultDataToSDK(w *FacetResultData) (*sdk.FacetResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FacetResultData{}
+	out.FacetRowCount = w.FacetRowCount
+	out.FacetArray = w.FacetArray
+	return out, nil
+}
+
+// FacetResultDataFromSDK converts the sdk-go type to the mirror.
+func FacetResultDataFromSDK(v *sdk.FacetResultData) (*FacetResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FacetResultData{}
+	out.FacetRowCount = v.FacetRowCount
+	out.FacetArray = v.FacetArray
+	return out, nil
+}
+
+// IndexToSDK converts the mirror to the sdk-go type.
+func IndexToSDK(w *Index) (*sdk.Index, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Index{}
+	out.Name = w.Name
+	out.Endpoint = w.Endpoint
+	out.PrimaryKey = w.PrimaryKey
+	out.IndexType = w.IndexType
+	{
+		members := 0
+		if w.DirectAccessIndexSpec != nil {
+			members++
+		}
+		if w.DeltaSyncIndexSpec != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Index.IndexSpec")
+		}
+	}
+	switch {
+	case w.DirectAccessIndexSpec != nil:
+		conv21, err := DirectAccessIndexSpecToSDK(w.DirectAccessIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Index.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.Index_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *conv21}
+	case w.DeltaSyncIndexSpec != nil:
+		conv22, err := DeltaSyncIndexSpecToSDK(w.DeltaSyncIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Index.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.Index_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *conv22}
+	}
+	conv23, err := IndexStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Index.Status", err)
+	}
+	out.Status = conv23
+	out.Creator = w.Creator
+	out.IndexSubtype = w.IndexSubtype
+	return out, nil
+}
+
+// IndexFromSDK converts the sdk-go type to the mirror.
+func IndexFromSDK(v *sdk.Index) (*Index, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Index{}
+	out.Name = v.Name
+	out.Endpoint = v.Endpoint
+	out.PrimaryKey = v.PrimaryKey
+	out.IndexType = v.IndexType
+	switch value := v.IndexSpec.(type) {
+	case *sdk.Index_IndexSpec_DirectAccessIndexSpec:
+		if value != nil {
+			conv24, err := DirectAccessIndexSpecFromSDK(&value.DirectAccessIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Index.IndexSpec", err)
+			}
+			out.DirectAccessIndexSpec = conv24
+		}
+	case *sdk.Index_IndexSpec_DeltaSyncIndexSpec:
+		if value != nil {
+			conv25, err := DeltaSyncIndexSpecFromSDK(&value.DeltaSyncIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Index.IndexSpec", err)
+			}
+			out.DeltaSyncIndexSpec = conv25
+		}
+	}
+	conv26, err := IndexStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Index.Status", err)
+	}
+	out.Status = conv26
+	out.Creator = v.Creator
+	out.IndexSubtype = v.IndexSubtype
+	return out, nil
+}
+
+// IndexStatusToSDK converts the mirror to the sdk-go type.
+func IndexStatusToSDK(w *IndexStatus) (*sdk.IndexStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IndexStatus{}
+	out.Message = w.Message
+	out.IndexedRowCount = w.IndexedRowCount
+	out.Ready = w.Ready
+	out.IndexUrl = w.IndexUrl
+	return out, nil
+}
+
+// IndexStatusFromSDK converts the sdk-go type to the mirror.
+func IndexStatusFromSDK(v *sdk.IndexStatus) (*IndexStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IndexStatus{}
+	out.Message = v.Message
+	out.IndexedRowCount = v.IndexedRowCount
+	out.Ready = v.Ready
+	out.IndexUrl = v.IndexUrl
+	return out, nil
+}
+
+// ListEndpointsRequestToSDK converts the mirror to the sdk-go type.
+func ListEndpointsRequestToSDK(w *ListEndpointsRequest) (*sdk.ListEndpointsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListEndpointsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListEndpointsResponseToSDK converts the mirror to the sdk-go type.
+func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsResponse{}
+	conv27, err := convertSlice(w.Endpoints, EndpointToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv27
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListEndpointsResponseFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsResponseFromSDK(v *sdk.ListEndpointsResponse) (*ListEndpointsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsResponse{}
+	conv28, err := convertSlice(v.Endpoints, EndpointFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv28
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListIndexesRequestToSDK converts the mirror to the sdk-go type.
+func ListIndexesRequestToSDK(w *ListIndexesRequest) (*sdk.ListIndexesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListIndexesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListIndexesRequestFromSDK converts the sdk-go type to the mirror.
+func ListIndexesRequestFromSDK(v *sdk.ListIndexesRequest) (*ListIndexesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListIndexesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListIndexesResponseToSDK converts the mirror to the sdk-go type.
+func ListIndexesResponseToSDK(w *ListIndexesResponse) (*sdk.ListIndexesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListIndexesResponse{}
+	conv29, err := convertSlice(w.Indexes, IndexToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListIndexesResponse.Indexes", err)
+	}
+	out.Indexes = conv29
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListIndexesResponseFromSDK converts the sdk-go type to the mirror.
+func ListIndexesResponseFromSDK(v *sdk.ListIndexesResponse) (*ListIndexesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListIndexesResponse{}
+	conv30, err := convertSlice(v.Indexes, IndexFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListIndexesResponse.Indexes", err)
+	}
+	out.Indexes = conv30
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// QueryIndexRequestToSDK converts the mirror to the sdk-go type.
+func QueryIndexRequestToSDK(w *QueryIndexRequest) (*sdk.QueryIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryIndexRequest{}
+	out.Name = w.Name
+	out.Columns = w.Columns
+	out.QueryVector = w.QueryVector
+	out.QueryText = w.QueryText
+	out.FiltersJson = w.FiltersJson
+	out.ScoreThreshold = w.ScoreThreshold
+	out.QueryType = w.QueryType
+	out.ColumnsToRerank = w.ColumnsToRerank
+	conv31, err := RerankerConfigToSDK(w.Reranker)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexRequest.Reranker", err)
+	}
+	out.Reranker = conv31
+	out.QueryColumns = w.QueryColumns
+	out.SortColumns = w.SortColumns
+	out.Facets = w.Facets
+	out.MaxResults = w.MaxResults
+	return out, nil
+}
+
+// QueryIndexRequestFromSDK converts the sdk-go type to the mirror.
+func QueryIndexRequestFromSDK(v *sdk.QueryIndexRequest) (*QueryIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryIndexRequest{}
+	out.Name = v.Name
+	out.Columns = v.Columns
+	out.QueryVector = v.QueryVector
+	out.QueryText = v.QueryText
+	out.FiltersJson = v.FiltersJson
+	out.ScoreThreshold = v.ScoreThreshold
+	out.QueryType = v.QueryType
+	out.ColumnsToRerank = v.ColumnsToRerank
+	conv32, err := RerankerConfigFromSDK(v.Reranker)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexRequest.Reranker", err)
+	}
+	out.Reranker = conv32
+	out.QueryColumns = v.QueryColumns
+	out.SortColumns = v.SortColumns
+	out.Facets = v.Facets
+	out.MaxResults = v.MaxResults
+	return out, nil
+}
+
+// QueryIndexResponseToSDK converts the mirror to the sdk-go type.
+func QueryIndexResponseToSDK(w *QueryIndexResponse) (*sdk.QueryIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryIndexResponse{}
+	conv33, err := ResultManifestToSDK(w.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Manifest", err)
+	}
+	out.Manifest = conv33
+	conv34, err := ResultDataToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Result", err)
+	}
+	out.Result = conv34
+	conv35, err := FacetResultDataToSDK(w.FacetResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.FacetResult", err)
+	}
+	out.FacetResult = conv35
+	return out, nil
+}
+
+// QueryIndexResponseFromSDK converts the sdk-go type to the mirror.
+func QueryIndexResponseFromSDK(v *sdk.QueryIndexResponse) (*QueryIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryIndexResponse{}
+	conv36, err := ResultManifestFromSDK(v.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Manifest", err)
+	}
+	out.Manifest = conv36
+	conv37, err := ResultDataFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.Result", err)
+	}
+	out.Result = conv37
+	conv38, err := FacetResultDataFromSDK(v.FacetResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryIndexResponse.FacetResult", err)
+	}
+	out.FacetResult = conv38
+	return out, nil
+}
+
+// RemoveDataRequestToSDK converts the mirror to the sdk-go type.
+func RemoveDataRequestToSDK(w *RemoveDataRequest) (*sdk.RemoveDataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RemoveDataRequest{}
+	out.Name = w.Name
+	out.PrimaryKeys = w.PrimaryKeys
+	return out, nil
+}
+
+// RemoveDataRequestFromSDK converts the sdk-go type to the mirror.
+func RemoveDataRequestFromSDK(v *sdk.RemoveDataRequest) (*RemoveDataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RemoveDataRequest{}
+	out.Name = v.Name
+	out.PrimaryKeys = v.PrimaryKeys
+	return out, nil
+}
+
+// RemoveDataResponseToSDK converts the mirror to the sdk-go type.
+func RemoveDataResponseToSDK(w *RemoveDataResponse) (*sdk.RemoveDataResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RemoveDataResponse{}
+	out.Status = w.Status
+	conv39, err := DataModificationResultToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RemoveDataResponse.Result", err)
+	}
+	out.Result = conv39
+	return out, nil
+}
+
+// RemoveDataResponseFromSDK converts the sdk-go type to the mirror.
+func RemoveDataResponseFromSDK(v *sdk.RemoveDataResponse) (*RemoveDataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RemoveDataResponse{}
+	out.Status = v.Status
+	conv40, err := DataModificationResultFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RemoveDataResponse.Result", err)
+	}
+	out.Result = conv40
+	return out, nil
+}
+
+// RerankerConfigToSDK converts the mirror to the sdk-go type.
+func RerankerConfigToSDK(w *RerankerConfig) (*sdk.RerankerConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RerankerConfig{}
+	out.Model = w.Model
+	conv41, err := RerankerConfig_RerankerParametersToSDK(w.Parameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
+	}
+	out.Parameters = conv41
+	out.ModelType = w.ModelType
+	return out, nil
+}
+
+// RerankerConfigFromSDK converts the sdk-go type to the mirror.
+func RerankerConfigFromSDK(v *sdk.RerankerConfig) (*RerankerConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RerankerConfig{}
+	out.Model = v.Model
+	conv42, err := RerankerConfig_RerankerParametersFromSDK(v.Parameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
+	}
+	out.Parameters = conv42
+	out.ModelType = v.ModelType
+	return out, nil
+}
+
+// RerankerConfig_RerankerParametersToSDK converts the mirror to the sdk-go type.
+func RerankerConfig_RerankerParametersToSDK(w *RerankerConfig_RerankerParameters) (*sdk.RerankerConfig_RerankerParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RerankerConfig_RerankerParameters{}
+	out.ColumnsToRerank = w.ColumnsToRerank
+	return out, nil
+}
+
+// RerankerConfig_RerankerParametersFromSDK converts the sdk-go type to the mirror.
+func RerankerConfig_RerankerParametersFromSDK(v *sdk.RerankerConfig_RerankerParameters) (*RerankerConfig_RerankerParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RerankerConfig_RerankerParameters{}
+	out.ColumnsToRerank = v.ColumnsToRerank
+	return out, nil
+}
+
+// ResultDataToSDK converts the mirror to the sdk-go type.
+func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultData{}
+	out.RowCount = w.RowCount
+	out.DataArray = w.DataArray
+	return out, nil
+}
+
+// ResultDataFromSDK converts the sdk-go type to the mirror.
+func ResultDataFromSDK(v *sdk.ResultData) (*ResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultData{}
+	out.RowCount = v.RowCount
+	out.DataArray = v.DataArray
+	return out, nil
+}
+
+// ResultManifestToSDK converts the mirror to the sdk-go type.
+func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultManifest{}
+	out.ColumnCount = w.ColumnCount
+	conv43, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
+	}
+	out.Columns = conv43
+	out.FacetColumnCount = w.FacetColumnCount
+	conv44, err := convertSlice(w.FacetColumns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
+	}
+	out.FacetColumns = conv44
+	return out, nil
+}
+
+// ResultManifestFromSDK converts the sdk-go type to the mirror.
+func ResultManifestFromSDK(v *sdk.ResultManifest) (*ResultManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultManifest{}
+	out.ColumnCount = v.ColumnCount
+	conv45, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
+	}
+	out.Columns = conv45
+	out.FacetColumnCount = v.FacetColumnCount
+	conv46, err := convertSlice(v.FacetColumns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
+	}
+	out.FacetColumns = conv46
+	return out, nil
+}
+
+// ScanIndexRequestToSDK converts the mirror to the sdk-go type.
+func ScanIndexRequestToSDK(w *ScanIndexRequest) (*sdk.ScanIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScanIndexRequest{}
+	out.Name = w.Name
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ScanIndexRequestFromSDK converts the sdk-go type to the mirror.
+func ScanIndexRequestFromSDK(v *sdk.ScanIndexRequest) (*ScanIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScanIndexRequest{}
+	out.Name = v.Name
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ScanIndexResponseToSDK converts the mirror to the sdk-go type.
+func ScanIndexResponseToSDK(w *ScanIndexResponse) (*sdk.ScanIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScanIndexResponse{}
+	out.Data = w.Data
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ScanIndexResponseFromSDK converts the sdk-go type to the mirror.
+func ScanIndexResponseFromSDK(v *sdk.ScanIndexResponse) (*ScanIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScanIndexResponse{}
+	out.Data = v.Data
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SyncIndexRequestToSDK converts the mirror to the sdk-go type.
+func SyncIndexRequestToSDK(w *SyncIndexRequest) (*sdk.SyncIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncIndexRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// SyncIndexRequestFromSDK converts the sdk-go type to the mirror.
+func SyncIndexRequestFromSDK(v *sdk.SyncIndexRequest) (*SyncIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncIndexRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func UpdateEndpointRequestToSDK(w *UpdateEndpointRequest) (*sdk.UpdateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateEndpointRequest{}
+	conv47, err := EndpointToSDK(w.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv47
+	mask48, err := fieldMaskFromString[sdk.Endpoint](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask48
+	return out, nil
+}
+
+// UpdateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateEndpointRequestFromSDK(v *sdk.UpdateEndpointRequest) (*UpdateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateEndpointRequest{}
+	conv49, err := EndpointFromSDK(v.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv49
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpsertDataRequestToSDK converts the mirror to the sdk-go type.
+func UpsertDataRequestToSDK(w *UpsertDataRequest) (*sdk.UpsertDataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpsertDataRequest{}
+	out.Name = w.Name
+	out.InputsJson = w.InputsJson
+	return out, nil
+}
+
+// UpsertDataRequestFromSDK converts the sdk-go type to the mirror.
+func UpsertDataRequestFromSDK(v *sdk.UpsertDataRequest) (*UpsertDataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpsertDataRequest{}
+	out.Name = v.Name
+	out.InputsJson = v.InputsJson
+	return out, nil
+}
+
+// UpsertDataResponseToSDK converts the mirror to the sdk-go type.
 func UpsertDataResponseToSDK(w *UpsertDataResponse) (*sdk.UpsertDataResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	resultPublicValue, err := DataModificationResultToSDK(w.Result)
+	out := &sdk.UpsertDataResponse{}
+	out.Status = w.Status
+	conv50, err := DataModificationResultToSDK(w.Result)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpsertDataResponse.Result", err)
 	}
-	return &sdk.UpsertDataResponse{
-		Status: w.Status,
-		Result: resultPublicValue,
-	}, nil
+	out.Result = conv50
+	return out, nil
+}
+
+// UpsertDataResponseFromSDK converts the sdk-go type to the mirror.
+func UpsertDataResponseFromSDK(v *sdk.UpsertDataResponse) (*UpsertDataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpsertDataResponse{}
+	out.Status = v.Status
+	conv51, err := DataModificationResultFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpsertDataResponse.Result", err)
+	}
+	out.Result = conv51
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -1322,4 +1648,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

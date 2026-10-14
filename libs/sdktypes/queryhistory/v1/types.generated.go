@@ -61,38 +61,12 @@ const (
 	QueryStatus_Finished             = sdk.QueryStatus_Finished
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // Details about a Channel..
 type ChannelInfo struct {
 	// Name of the channel
 	Name ChannelName `json:"name,omitempty"`
 	// DB SQL Version the Channel is mapped to.
 	DbsqlVersion *string `json:"dbsql_version,omitempty"`
-}
-
-func ChannelInfoToSDK(w *ChannelInfo) (*sdk.ChannelInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ChannelInfo{
-		Name:         w.Name,
-		DbsqlVersion: w.DbsqlVersion,
-	}, nil
 }
 
 type ExternalQuerySource struct {
@@ -111,25 +85,6 @@ type ExternalQuerySource struct {
 	GenieSpaceId *string `json:"genie_space_id,omitempty"`
 }
 
-func ExternalQuerySourceToSDK(w *ExternalQuerySource) (*sdk.ExternalQuerySource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobInfoPublicValue, err := ExternalQuerySource_JobInfoToSDK(w.JobInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalQuerySource.JobInfo", err)
-	}
-	return &sdk.ExternalQuerySource{
-		DashboardId:       w.DashboardId,
-		LegacyDashboardId: w.LegacyDashboardId,
-		AlertId:           w.AlertId,
-		NotebookId:        w.NotebookId,
-		SqlQueryId:        w.SqlQueryId,
-		JobInfo:           jobInfoPublicValue,
-		GenieSpaceId:      w.GenieSpaceId,
-	}, nil
-}
-
 type ExternalQuerySource_JobInfo struct {
 	// The canonical identifier for this job.
 	JobId *string `json:"job_id,omitempty"`
@@ -138,17 +93,6 @@ type ExternalQuerySource_JobInfo struct {
 	JobRunId *string `json:"job_run_id,omitempty"`
 	// The canonical identifier of the task run.
 	JobTaskRunId *string `json:"job_task_run_id,omitempty"`
-}
-
-func ExternalQuerySource_JobInfoToSDK(w *ExternalQuerySource_JobInfo) (*sdk.ExternalQuerySource_JobInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalQuerySource_JobInfo{
-		JobId:        w.JobId,
-		JobRunId:     w.JobRunId,
-		JobTaskRunId: w.JobTaskRunId,
-	}, nil
 }
 
 // Fetches a list of queries conforming to the provided set of query filters.
@@ -175,43 +119,12 @@ type ListQueriesRequest struct {
 	IncludeMetrics *bool `json:"include_metrics,omitempty"`
 }
 
-func ListQueriesRequestFromSDK(v *sdk.ListQueriesRequest) (*ListQueriesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	filterByWireValue, err := QueryFilterFromSDK(v.FilterBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListQueriesRequest.FilterBy", err)
-	}
-	return &ListQueriesRequest{
-		FilterBy:       filterByWireValue,
-		MaxResults:     v.MaxResults,
-		PageToken:      v.PageToken,
-		IncludeMetrics: v.IncludeMetrics,
-	}, nil
-}
-
 type ListQueriesResponse struct {
 	// A token that can be used to get the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// Whether there is another page of results.
 	HasNextPage *bool       `json:"has_next_page,omitempty"`
 	Res         []QueryInfo `json:"res,omitempty"`
-}
-
-func ListQueriesResponseToSDK(w *ListQueriesResponse) (*sdk.ListQueriesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resPublicValue, err := convertSlice(w.Res, QueryInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Res", err)
-	}
-	return &sdk.ListQueriesResponse{
-		NextPageToken: w.NextPageToken,
-		HasNextPage:   w.HasNextPage,
-		Res:           resPublicValue,
-	}, nil
 }
 
 type QueryFilter struct {
@@ -229,27 +142,6 @@ type QueryFilter struct {
 	WarehouseIds []string `json:"warehouse_ids,omitempty"`
 	// A list of statement IDs.
 	StatementIds []string `json:"statement_ids,omitempty"`
-}
-
-func QueryFilterFromSDK(v *sdk.QueryFilter) (*QueryFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	queryStartTimeRangeWireValue, err := TimeRangeFromSDK(v.QueryStartTimeRange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryFilter.QueryStartTimeRange", err)
-	}
-	userIdsWireValue, err := convertSlice(v.UserIds, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryFilter.UserIds", err)
-	}
-	return &QueryFilter{
-		QueryStartTimeRange: queryStartTimeRangeWireValue,
-		UserIds:             userIdsWireValue,
-		Statuses:            v.Statuses,
-		WarehouseIds:        v.WarehouseIds,
-		StatementIds:        v.StatementIds,
-	}, nil
 }
 
 type QueryInfo struct {
@@ -319,85 +211,6 @@ type QueryInfo struct {
 	CacheQueryId *string `json:"cache_query_id,omitempty"`
 	// A query execution can be optionally annotated with query tags
 	QueryTags []QueryTag `json:"query_tags,omitempty"`
-}
-
-func QueryInfoToSDK(w *QueryInfo) (*sdk.QueryInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	queryStartTimeMsPublicValue, err := int64FromWire(w.QueryStartTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.QueryStartTimeMs", err)
-	}
-	executionEndTimeMsPublicValue, err := int64FromWire(w.ExecutionEndTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.ExecutionEndTimeMs", err)
-	}
-	queryEndTimeMsPublicValue, err := int64FromWire(w.QueryEndTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.QueryEndTimeMs", err)
-	}
-	userIdPublicValue, err := int64FromWire(w.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.UserId", err)
-	}
-	rowsProducedPublicValue, err := int64FromWire(w.RowsProduced)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.RowsProduced", err)
-	}
-	metricsPublicValue, err := QueryMetricsToSDK(w.Metrics)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.Metrics", err)
-	}
-	executedAsUserIdPublicValue, err := int64FromWire(w.ExecutedAsUserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.ExecutedAsUserId", err)
-	}
-	channelUsedPublicValue, err := ChannelInfoToSDK(w.ChannelUsed)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.ChannelUsed", err)
-	}
-	durationPublicValue, err := int64FromWire(w.Duration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.Duration", err)
-	}
-	querySourcePublicValue, err := ExternalQuerySourceToSDK(w.QuerySource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.QuerySource", err)
-	}
-	queryTagsPublicValue, err := convertSlice(w.QueryTags, QueryTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryInfo.QueryTags", err)
-	}
-	return &sdk.QueryInfo{
-		QueryId:            w.QueryId,
-		Status:             w.Status,
-		QueryText:          w.QueryText,
-		QueryStartTimeMs:   queryStartTimeMsPublicValue,
-		ExecutionEndTimeMs: executionEndTimeMsPublicValue,
-		QueryEndTimeMs:     queryEndTimeMsPublicValue,
-		UserId:             userIdPublicValue,
-		UserName:           w.UserName,
-		SparkUiUrl:         w.SparkUiUrl,
-		EndpointId:         w.EndpointId,
-		RowsProduced:       rowsProducedPublicValue,
-		ErrorMessage:       w.ErrorMessage,
-		LookupKey:          w.LookupKey,
-		Metrics:            metricsPublicValue,
-		ExecutedAsUserId:   executedAsUserIdPublicValue,
-		ExecutedAsUserName: w.ExecutedAsUserName,
-		SessionId:          w.SessionId,
-		IsFinal:            w.IsFinal,
-		ChannelUsed:        channelUsedPublicValue,
-		PlansState:         w.PlansState,
-		StatementType:      w.StatementType,
-		WarehouseId:        w.WarehouseId,
-		Duration:           durationPublicValue,
-		ClientApplication:  w.ClientApplication,
-		QuerySource:        querySourcePublicValue,
-		CacheQueryId:       w.CacheQueryId,
-		QueryTags:          queryTagsPublicValue,
-	}, nil
 }
 
 // A query metric that encapsulates a set of measurements for a single query.
@@ -481,171 +294,12 @@ type QueryMetrics struct {
 	ReadFilesBytes *int64 `json:"read_files_bytes,omitempty"`
 }
 
-func QueryMetricsToSDK(w *QueryMetrics) (*sdk.QueryMetrics, error) {
-	if w == nil {
-		return nil, nil
-	}
-	totalTimeMsPublicValue, err := int64FromWire(w.TotalTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.TotalTimeMs", err)
-	}
-	readBytesPublicValue, err := int64FromWire(w.ReadBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadBytes", err)
-	}
-	rowsProducedCountPublicValue, err := int64FromWire(w.RowsProducedCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.RowsProducedCount", err)
-	}
-	compilationTimeMsPublicValue, err := int64FromWire(w.CompilationTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.CompilationTimeMs", err)
-	}
-	executionTimeMsPublicValue, err := int64FromWire(w.ExecutionTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ExecutionTimeMs", err)
-	}
-	readRemoteBytesPublicValue, err := int64FromWire(w.ReadRemoteBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadRemoteBytes", err)
-	}
-	writeRemoteBytesPublicValue, err := int64FromWire(w.WriteRemoteBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.WriteRemoteBytes", err)
-	}
-	readCacheBytesPublicValue, err := int64FromWire(w.ReadCacheBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadCacheBytes", err)
-	}
-	spillToDiskBytesPublicValue, err := int64FromWire(w.SpillToDiskBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.SpillToDiskBytes", err)
-	}
-	taskTotalTimeMsPublicValue, err := int64FromWire(w.TaskTotalTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.TaskTotalTimeMs", err)
-	}
-	readFilesCountPublicValue, err := int64FromWire(w.ReadFilesCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadFilesCount", err)
-	}
-	readPartitionsCountPublicValue, err := int64FromWire(w.ReadPartitionsCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadPartitionsCount", err)
-	}
-	photonTotalTimeMsPublicValue, err := int64FromWire(w.PhotonTotalTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.PhotonTotalTimeMs", err)
-	}
-	rowsReadCountPublicValue, err := int64FromWire(w.RowsReadCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.RowsReadCount", err)
-	}
-	resultFetchTimeMsPublicValue, err := int64FromWire(w.ResultFetchTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ResultFetchTimeMs", err)
-	}
-	networkSentBytesPublicValue, err := int64FromWire(w.NetworkSentBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.NetworkSentBytes", err)
-	}
-	prunedBytesPublicValue, err := int64FromWire(w.PrunedBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.PrunedBytes", err)
-	}
-	prunedFilesCountPublicValue, err := int64FromWire(w.PrunedFilesCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.PrunedFilesCount", err)
-	}
-	provisioningQueueStartTimestampPublicValue, err := int64FromWire(w.ProvisioningQueueStartTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ProvisioningQueueStartTimestamp", err)
-	}
-	overloadingQueueStartTimestampPublicValue, err := int64FromWire(w.OverloadingQueueStartTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.OverloadingQueueStartTimestamp", err)
-	}
-	queryCompilationStartTimestampPublicValue, err := int64FromWire(w.QueryCompilationStartTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.QueryCompilationStartTimestamp", err)
-	}
-	taskTimeOverTimeRangePublicValue, err := TaskTimeOverRangeToSDK(w.TaskTimeOverTimeRange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.TaskTimeOverTimeRange", err)
-	}
-	workToBeDonePublicValue, err := int64FromWire(w.WorkToBeDone)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.WorkToBeDone", err)
-	}
-	runnableTasksPublicValue, err := int64FromWire(w.RunnableTasks)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.RunnableTasks", err)
-	}
-	projectedRemainingTaskTotalTimeMsPublicValue, err := int64FromWire(w.ProjectedRemainingTaskTotalTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ProjectedRemainingTaskTotalTimeMs", err)
-	}
-	remainingTaskCountPublicValue, err := int64FromWire(w.RemainingTaskCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.RemainingTaskCount", err)
-	}
-	projectedRemainingWallclockTimeMsPublicValue, err := int64FromWire(w.ProjectedRemainingWallclockTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ProjectedRemainingWallclockTimeMs", err)
-	}
-	readFilesBytesPublicValue, err := int64FromWire(w.ReadFilesBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryMetrics.ReadFilesBytes", err)
-	}
-	return &sdk.QueryMetrics{
-		TotalTimeMs:                       totalTimeMsPublicValue,
-		ReadBytes:                         readBytesPublicValue,
-		RowsProducedCount:                 rowsProducedCountPublicValue,
-		CompilationTimeMs:                 compilationTimeMsPublicValue,
-		ExecutionTimeMs:                   executionTimeMsPublicValue,
-		ReadRemoteBytes:                   readRemoteBytesPublicValue,
-		WriteRemoteBytes:                  writeRemoteBytesPublicValue,
-		ReadCacheBytes:                    readCacheBytesPublicValue,
-		SpillToDiskBytes:                  spillToDiskBytesPublicValue,
-		TaskTotalTimeMs:                   taskTotalTimeMsPublicValue,
-		ReadFilesCount:                    readFilesCountPublicValue,
-		ReadPartitionsCount:               readPartitionsCountPublicValue,
-		PhotonTotalTimeMs:                 photonTotalTimeMsPublicValue,
-		RowsReadCount:                     rowsReadCountPublicValue,
-		ResultFetchTimeMs:                 resultFetchTimeMsPublicValue,
-		NetworkSentBytes:                  networkSentBytesPublicValue,
-		ResultFromCache:                   w.ResultFromCache,
-		PrunedBytes:                       prunedBytesPublicValue,
-		PrunedFilesCount:                  prunedFilesCountPublicValue,
-		ProvisioningQueueStartTimestamp:   provisioningQueueStartTimestampPublicValue,
-		OverloadingQueueStartTimestamp:    overloadingQueueStartTimestampPublicValue,
-		QueryCompilationStartTimestamp:    queryCompilationStartTimestampPublicValue,
-		TaskTimeOverTimeRange:             taskTimeOverTimeRangePublicValue,
-		WorkToBeDone:                      workToBeDonePublicValue,
-		RunnableTasks:                     runnableTasksPublicValue,
-		ProjectedRemainingTaskTotalTimeMs: projectedRemainingTaskTotalTimeMsPublicValue,
-		RemainingTaskCount:                remainingTaskCountPublicValue,
-		ProjectedRemainingWallclockTimeMs: projectedRemainingWallclockTimeMsPublicValue,
-		ReadFilesBytes:                    readFilesBytesPublicValue,
-	}, nil
-}
-
 // * A query execution can be annotated with an optional key-value pair to allow
 // users to attribute the executions by key and optional value to filter by.
 // QueryTag is the user-facing representation..
 type QueryTag struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
-}
-
-func QueryTagToSDK(w *QueryTag) (*sdk.QueryTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.QueryTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type TaskTimeOverRange struct {
@@ -656,41 +310,10 @@ type TaskTimeOverRange struct {
 	Interval *int64 `json:"interval,omitempty"`
 }
 
-func TaskTimeOverRangeToSDK(w *TaskTimeOverRange) (*sdk.TaskTimeOverRange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	entriesPublicValue, err := convertSlice(w.Entries, TaskTimeOverRangeEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskTimeOverRange.Entries", err)
-	}
-	intervalPublicValue, err := int64FromWire(w.Interval)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskTimeOverRange.Interval", err)
-	}
-	return &sdk.TaskTimeOverRange{
-		Entries:  entriesPublicValue,
-		Interval: intervalPublicValue,
-	}, nil
-}
-
 type TaskTimeOverRangeEntry struct {
 	// total task completion time in this time range, aggregated over all stages and
 	// jobs in the query
 	TaskCompletedTimeMs *int64 `json:"task_completed_time_ms,omitempty"`
-}
-
-func TaskTimeOverRangeEntryToSDK(w *TaskTimeOverRangeEntry) (*sdk.TaskTimeOverRangeEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	taskCompletedTimeMsPublicValue, err := int64FromWire(w.TaskCompletedTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskTimeOverRangeEntry.TaskCompletedTimeMs", err)
-	}
-	return &sdk.TaskTimeOverRangeEntry{
-		TaskCompletedTimeMs: taskCompletedTimeMsPublicValue,
-	}, nil
 }
 
 type TimeRange struct {
@@ -700,22 +323,474 @@ type TimeRange struct {
 	EndTimeMs *int64 `json:"end_time_ms,omitempty"`
 }
 
+// ChannelInfoToSDK converts the mirror to the sdk-go type.
+func ChannelInfoToSDK(w *ChannelInfo) (*sdk.ChannelInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ChannelInfo{}
+	out.Name = w.Name
+	out.DbsqlVersion = w.DbsqlVersion
+	return out, nil
+}
+
+// ChannelInfoFromSDK converts the sdk-go type to the mirror.
+func ChannelInfoFromSDK(v *sdk.ChannelInfo) (*ChannelInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ChannelInfo{}
+	out.Name = v.Name
+	out.DbsqlVersion = v.DbsqlVersion
+	return out, nil
+}
+
+// ExternalQuerySourceToSDK converts the mirror to the sdk-go type.
+func ExternalQuerySourceToSDK(w *ExternalQuerySource) (*sdk.ExternalQuerySource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalQuerySource{}
+	out.DashboardId = w.DashboardId
+	out.LegacyDashboardId = w.LegacyDashboardId
+	out.AlertId = w.AlertId
+	out.NotebookId = w.NotebookId
+	out.SqlQueryId = w.SqlQueryId
+	conv1, err := ExternalQuerySource_JobInfoToSDK(w.JobInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalQuerySource.JobInfo", err)
+	}
+	out.JobInfo = conv1
+	out.GenieSpaceId = w.GenieSpaceId
+	return out, nil
+}
+
+// ExternalQuerySourceFromSDK converts the sdk-go type to the mirror.
+func ExternalQuerySourceFromSDK(v *sdk.ExternalQuerySource) (*ExternalQuerySource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalQuerySource{}
+	out.DashboardId = v.DashboardId
+	out.LegacyDashboardId = v.LegacyDashboardId
+	out.AlertId = v.AlertId
+	out.NotebookId = v.NotebookId
+	out.SqlQueryId = v.SqlQueryId
+	conv2, err := ExternalQuerySource_JobInfoFromSDK(v.JobInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalQuerySource.JobInfo", err)
+	}
+	out.JobInfo = conv2
+	out.GenieSpaceId = v.GenieSpaceId
+	return out, nil
+}
+
+// ExternalQuerySource_JobInfoToSDK converts the mirror to the sdk-go type.
+func ExternalQuerySource_JobInfoToSDK(w *ExternalQuerySource_JobInfo) (*sdk.ExternalQuerySource_JobInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalQuerySource_JobInfo{}
+	out.JobId = w.JobId
+	out.JobRunId = w.JobRunId
+	out.JobTaskRunId = w.JobTaskRunId
+	return out, nil
+}
+
+// ExternalQuerySource_JobInfoFromSDK converts the sdk-go type to the mirror.
+func ExternalQuerySource_JobInfoFromSDK(v *sdk.ExternalQuerySource_JobInfo) (*ExternalQuerySource_JobInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalQuerySource_JobInfo{}
+	out.JobId = v.JobId
+	out.JobRunId = v.JobRunId
+	out.JobTaskRunId = v.JobTaskRunId
+	return out, nil
+}
+
+// ListQueriesRequestToSDK converts the mirror to the sdk-go type.
+func ListQueriesRequestToSDK(w *ListQueriesRequest) (*sdk.ListQueriesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQueriesRequest{}
+	conv3, err := QueryFilterToSDK(w.FilterBy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesRequest.FilterBy", err)
+	}
+	out.FilterBy = conv3
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeMetrics = w.IncludeMetrics
+	return out, nil
+}
+
+// ListQueriesRequestFromSDK converts the sdk-go type to the mirror.
+func ListQueriesRequestFromSDK(v *sdk.ListQueriesRequest) (*ListQueriesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQueriesRequest{}
+	conv4, err := QueryFilterFromSDK(v.FilterBy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesRequest.FilterBy", err)
+	}
+	out.FilterBy = conv4
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeMetrics = v.IncludeMetrics
+	return out, nil
+}
+
+// ListQueriesResponseToSDK converts the mirror to the sdk-go type.
+func ListQueriesResponseToSDK(w *ListQueriesResponse) (*sdk.ListQueriesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQueriesResponse{}
+	out.NextPageToken = w.NextPageToken
+	out.HasNextPage = w.HasNextPage
+	conv5, err := convertSlice(w.Res, QueryInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Res", err)
+	}
+	out.Res = conv5
+	return out, nil
+}
+
+// ListQueriesResponseFromSDK converts the sdk-go type to the mirror.
+func ListQueriesResponseFromSDK(v *sdk.ListQueriesResponse) (*ListQueriesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQueriesResponse{}
+	out.NextPageToken = v.NextPageToken
+	out.HasNextPage = v.HasNextPage
+	conv6, err := convertSlice(v.Res, QueryInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQueriesResponse.Res", err)
+	}
+	out.Res = conv6
+	return out, nil
+}
+
+// QueryFilterToSDK converts the mirror to the sdk-go type.
+func QueryFilterToSDK(w *QueryFilter) (*sdk.QueryFilter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryFilter{}
+	conv7, err := TimeRangeToSDK(w.QueryStartTimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryFilter.QueryStartTimeRange", err)
+	}
+	out.QueryStartTimeRange = conv7
+	out.UserIds = w.UserIds
+	out.Statuses = w.Statuses
+	out.WarehouseIds = w.WarehouseIds
+	out.StatementIds = w.StatementIds
+	return out, nil
+}
+
+// QueryFilterFromSDK converts the sdk-go type to the mirror.
+func QueryFilterFromSDK(v *sdk.QueryFilter) (*QueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryFilter{}
+	conv8, err := TimeRangeFromSDK(v.QueryStartTimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryFilter.QueryStartTimeRange", err)
+	}
+	out.QueryStartTimeRange = conv8
+	out.UserIds = v.UserIds
+	out.Statuses = v.Statuses
+	out.WarehouseIds = v.WarehouseIds
+	out.StatementIds = v.StatementIds
+	return out, nil
+}
+
+// QueryInfoToSDK converts the mirror to the sdk-go type.
+func QueryInfoToSDK(w *QueryInfo) (*sdk.QueryInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryInfo{}
+	out.QueryId = w.QueryId
+	out.Status = w.Status
+	out.QueryText = w.QueryText
+	out.QueryStartTimeMs = w.QueryStartTimeMs
+	out.ExecutionEndTimeMs = w.ExecutionEndTimeMs
+	out.QueryEndTimeMs = w.QueryEndTimeMs
+	out.UserId = w.UserId
+	out.UserName = w.UserName
+	out.SparkUiUrl = w.SparkUiUrl
+	out.EndpointId = w.EndpointId
+	out.RowsProduced = w.RowsProduced
+	out.ErrorMessage = w.ErrorMessage
+	out.LookupKey = w.LookupKey
+	conv9, err := QueryMetricsToSDK(w.Metrics)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.Metrics", err)
+	}
+	out.Metrics = conv9
+	out.ExecutedAsUserId = w.ExecutedAsUserId
+	out.ExecutedAsUserName = w.ExecutedAsUserName
+	out.SessionId = w.SessionId
+	out.IsFinal = w.IsFinal
+	conv10, err := ChannelInfoToSDK(w.ChannelUsed)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.ChannelUsed", err)
+	}
+	out.ChannelUsed = conv10
+	out.PlansState = w.PlansState
+	out.StatementType = w.StatementType
+	out.WarehouseId = w.WarehouseId
+	out.Duration = w.Duration
+	out.ClientApplication = w.ClientApplication
+	conv11, err := ExternalQuerySourceToSDK(w.QuerySource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.QuerySource", err)
+	}
+	out.QuerySource = conv11
+	out.CacheQueryId = w.CacheQueryId
+	conv12, err := convertSlice(w.QueryTags, QueryTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.QueryTags", err)
+	}
+	out.QueryTags = conv12
+	return out, nil
+}
+
+// QueryInfoFromSDK converts the sdk-go type to the mirror.
+func QueryInfoFromSDK(v *sdk.QueryInfo) (*QueryInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryInfo{}
+	out.QueryId = v.QueryId
+	out.Status = v.Status
+	out.QueryText = v.QueryText
+	out.QueryStartTimeMs = v.QueryStartTimeMs
+	out.ExecutionEndTimeMs = v.ExecutionEndTimeMs
+	out.QueryEndTimeMs = v.QueryEndTimeMs
+	out.UserId = v.UserId
+	out.UserName = v.UserName
+	out.SparkUiUrl = v.SparkUiUrl
+	out.EndpointId = v.EndpointId
+	out.RowsProduced = v.RowsProduced
+	out.ErrorMessage = v.ErrorMessage
+	out.LookupKey = v.LookupKey
+	conv13, err := QueryMetricsFromSDK(v.Metrics)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.Metrics", err)
+	}
+	out.Metrics = conv13
+	out.ExecutedAsUserId = v.ExecutedAsUserId
+	out.ExecutedAsUserName = v.ExecutedAsUserName
+	out.SessionId = v.SessionId
+	out.IsFinal = v.IsFinal
+	conv14, err := ChannelInfoFromSDK(v.ChannelUsed)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.ChannelUsed", err)
+	}
+	out.ChannelUsed = conv14
+	out.PlansState = v.PlansState
+	out.StatementType = v.StatementType
+	out.WarehouseId = v.WarehouseId
+	out.Duration = v.Duration
+	out.ClientApplication = v.ClientApplication
+	conv15, err := ExternalQuerySourceFromSDK(v.QuerySource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.QuerySource", err)
+	}
+	out.QuerySource = conv15
+	out.CacheQueryId = v.CacheQueryId
+	conv16, err := convertSlice(v.QueryTags, QueryTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryInfo.QueryTags", err)
+	}
+	out.QueryTags = conv16
+	return out, nil
+}
+
+// QueryMetricsToSDK converts the mirror to the sdk-go type.
+func QueryMetricsToSDK(w *QueryMetrics) (*sdk.QueryMetrics, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryMetrics{}
+	out.TotalTimeMs = w.TotalTimeMs
+	out.ReadBytes = w.ReadBytes
+	out.RowsProducedCount = w.RowsProducedCount
+	out.CompilationTimeMs = w.CompilationTimeMs
+	out.ExecutionTimeMs = w.ExecutionTimeMs
+	out.ReadRemoteBytes = w.ReadRemoteBytes
+	out.WriteRemoteBytes = w.WriteRemoteBytes
+	out.ReadCacheBytes = w.ReadCacheBytes
+	out.SpillToDiskBytes = w.SpillToDiskBytes
+	out.TaskTotalTimeMs = w.TaskTotalTimeMs
+	out.ReadFilesCount = w.ReadFilesCount
+	out.ReadPartitionsCount = w.ReadPartitionsCount
+	out.PhotonTotalTimeMs = w.PhotonTotalTimeMs
+	out.RowsReadCount = w.RowsReadCount
+	out.ResultFetchTimeMs = w.ResultFetchTimeMs
+	out.NetworkSentBytes = w.NetworkSentBytes
+	out.ResultFromCache = w.ResultFromCache
+	out.PrunedBytes = w.PrunedBytes
+	out.PrunedFilesCount = w.PrunedFilesCount
+	out.ProvisioningQueueStartTimestamp = w.ProvisioningQueueStartTimestamp
+	out.OverloadingQueueStartTimestamp = w.OverloadingQueueStartTimestamp
+	out.QueryCompilationStartTimestamp = w.QueryCompilationStartTimestamp
+	conv17, err := TaskTimeOverRangeToSDK(w.TaskTimeOverTimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryMetrics.TaskTimeOverTimeRange", err)
+	}
+	out.TaskTimeOverTimeRange = conv17
+	out.WorkToBeDone = w.WorkToBeDone
+	out.RunnableTasks = w.RunnableTasks
+	out.ProjectedRemainingTaskTotalTimeMs = w.ProjectedRemainingTaskTotalTimeMs
+	out.RemainingTaskCount = w.RemainingTaskCount
+	out.ProjectedRemainingWallclockTimeMs = w.ProjectedRemainingWallclockTimeMs
+	out.ReadFilesBytes = w.ReadFilesBytes
+	return out, nil
+}
+
+// QueryMetricsFromSDK converts the sdk-go type to the mirror.
+func QueryMetricsFromSDK(v *sdk.QueryMetrics) (*QueryMetrics, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryMetrics{}
+	out.TotalTimeMs = v.TotalTimeMs
+	out.ReadBytes = v.ReadBytes
+	out.RowsProducedCount = v.RowsProducedCount
+	out.CompilationTimeMs = v.CompilationTimeMs
+	out.ExecutionTimeMs = v.ExecutionTimeMs
+	out.ReadRemoteBytes = v.ReadRemoteBytes
+	out.WriteRemoteBytes = v.WriteRemoteBytes
+	out.ReadCacheBytes = v.ReadCacheBytes
+	out.SpillToDiskBytes = v.SpillToDiskBytes
+	out.TaskTotalTimeMs = v.TaskTotalTimeMs
+	out.ReadFilesCount = v.ReadFilesCount
+	out.ReadPartitionsCount = v.ReadPartitionsCount
+	out.PhotonTotalTimeMs = v.PhotonTotalTimeMs
+	out.RowsReadCount = v.RowsReadCount
+	out.ResultFetchTimeMs = v.ResultFetchTimeMs
+	out.NetworkSentBytes = v.NetworkSentBytes
+	out.ResultFromCache = v.ResultFromCache
+	out.PrunedBytes = v.PrunedBytes
+	out.PrunedFilesCount = v.PrunedFilesCount
+	out.ProvisioningQueueStartTimestamp = v.ProvisioningQueueStartTimestamp
+	out.OverloadingQueueStartTimestamp = v.OverloadingQueueStartTimestamp
+	out.QueryCompilationStartTimestamp = v.QueryCompilationStartTimestamp
+	conv18, err := TaskTimeOverRangeFromSDK(v.TaskTimeOverTimeRange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryMetrics.TaskTimeOverTimeRange", err)
+	}
+	out.TaskTimeOverTimeRange = conv18
+	out.WorkToBeDone = v.WorkToBeDone
+	out.RunnableTasks = v.RunnableTasks
+	out.ProjectedRemainingTaskTotalTimeMs = v.ProjectedRemainingTaskTotalTimeMs
+	out.RemainingTaskCount = v.RemainingTaskCount
+	out.ProjectedRemainingWallclockTimeMs = v.ProjectedRemainingWallclockTimeMs
+	out.ReadFilesBytes = v.ReadFilesBytes
+	return out, nil
+}
+
+// QueryTagToSDK converts the mirror to the sdk-go type.
+func QueryTagToSDK(w *QueryTag) (*sdk.QueryTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// QueryTagFromSDK converts the sdk-go type to the mirror.
+func QueryTagFromSDK(v *sdk.QueryTag) (*QueryTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// TaskTimeOverRangeToSDK converts the mirror to the sdk-go type.
+func TaskTimeOverRangeToSDK(w *TaskTimeOverRange) (*sdk.TaskTimeOverRange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TaskTimeOverRange{}
+	conv19, err := convertSlice(w.Entries, TaskTimeOverRangeEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskTimeOverRange.Entries", err)
+	}
+	out.Entries = conv19
+	out.Interval = w.Interval
+	return out, nil
+}
+
+// TaskTimeOverRangeFromSDK converts the sdk-go type to the mirror.
+func TaskTimeOverRangeFromSDK(v *sdk.TaskTimeOverRange) (*TaskTimeOverRange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TaskTimeOverRange{}
+	conv20, err := convertSlice(v.Entries, TaskTimeOverRangeEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskTimeOverRange.Entries", err)
+	}
+	out.Entries = conv20
+	out.Interval = v.Interval
+	return out, nil
+}
+
+// TaskTimeOverRangeEntryToSDK converts the mirror to the sdk-go type.
+func TaskTimeOverRangeEntryToSDK(w *TaskTimeOverRangeEntry) (*sdk.TaskTimeOverRangeEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TaskTimeOverRangeEntry{}
+	out.TaskCompletedTimeMs = w.TaskCompletedTimeMs
+	return out, nil
+}
+
+// TaskTimeOverRangeEntryFromSDK converts the sdk-go type to the mirror.
+func TaskTimeOverRangeEntryFromSDK(v *sdk.TaskTimeOverRangeEntry) (*TaskTimeOverRangeEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TaskTimeOverRangeEntry{}
+	out.TaskCompletedTimeMs = v.TaskCompletedTimeMs
+	return out, nil
+}
+
+// TimeRangeToSDK converts the mirror to the sdk-go type.
+func TimeRangeToSDK(w *TimeRange) (*sdk.TimeRange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TimeRange{}
+	out.StartTimeMs = w.StartTimeMs
+	out.EndTimeMs = w.EndTimeMs
+	return out, nil
+}
+
+// TimeRangeFromSDK converts the sdk-go type to the mirror.
 func TimeRangeFromSDK(v *sdk.TimeRange) (*TimeRange, error) {
 	if v == nil {
 		return nil, nil
 	}
-	startTimeMsWireValue, err := int64ToWire(v.StartTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TimeRange.StartTimeMs", err)
-	}
-	endTimeMsWireValue, err := int64ToWire(v.EndTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TimeRange.EndTimeMs", err)
-	}
-	return &TimeRange{
-		StartTimeMs: startTimeMsWireValue,
-		EndTimeMs:   endTimeMsWireValue,
-	}, nil
+	out := &TimeRange{}
+	out.StartTimeMs = v.StartTimeMs
+	out.EndTimeMs = v.EndTimeMs
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

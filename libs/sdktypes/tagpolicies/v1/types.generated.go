@@ -6,31 +6,11 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/tagpolicies/v1"
+	strings "strings"
 )
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 type CreateTagPolicyRequest struct {
 	TagPolicy *TagPolicy `json:"tag_policy,omitempty"`
-}
-
-func CreateTagPolicyRequestFromSDK(v *sdk.CreateTagPolicyRequest) (*CreateTagPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagPolicyWireValue, err := TagPolicyFromSDK(v.TagPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTagPolicyRequest.TagPolicy", err)
-	}
-	return &CreateTagPolicyRequest{
-		TagPolicy: tagPolicyWireValue,
-	}, nil
 }
 
 type ListTagPoliciesRequest struct {
@@ -42,33 +22,9 @@ type ListTagPoliciesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListTagPoliciesRequestFromSDK(v *sdk.ListTagPoliciesRequest) (*ListTagPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListTagPoliciesRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListTagPoliciesResponse struct {
 	TagPolicies   []TagPolicy `json:"tag_policies,omitempty"`
 	NextPageToken *string     `json:"next_page_token,omitempty"`
-}
-
-func ListTagPoliciesResponseToSDK(w *ListTagPoliciesResponse) (*sdk.ListTagPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagPoliciesPublicValue, err := convertSlice(w.TagPolicies, TagPolicyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTagPoliciesResponse.TagPolicies", err)
-	}
-	return &sdk.ListTagPoliciesResponse{
-		TagPolicies:   tagPoliciesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type TagPolicy struct {
@@ -82,81 +38,185 @@ type TagPolicy struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func TagPolicyFromSDK(v *sdk.TagPolicy) (*TagPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valuesWireValue, err := convertSlice(v.Values, ValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TagPolicy.Values", err)
-	}
-	return &TagPolicy{
-		TagKey:      v.TagKey,
-		Id:          v.Id,
-		Description: v.Description,
-		Values:      valuesWireValue,
-		CreateTime:  v.CreateTime,
-		UpdateTime:  v.UpdateTime,
-	}, nil
-}
-
-func TagPolicyToSDK(w *TagPolicy) (*sdk.TagPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, ValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TagPolicy.Values", err)
-	}
-	return &sdk.TagPolicy{
-		TagKey:      w.TagKey,
-		Id:          w.Id,
-		Description: w.Description,
-		Values:      valuesPublicValue,
-		CreateTime:  w.CreateTime,
-		UpdateTime:  w.UpdateTime,
-	}, nil
-}
-
 type UpdateTagPolicyRequest struct {
 	TagPolicy  *TagPolicy `json:"tag_policy,omitempty"`
 	UpdateMask *string    `json:"update_mask,omitempty"`
-}
-
-func UpdateTagPolicyRequestFromSDK(v *sdk.UpdateTagPolicyRequest) (*UpdateTagPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagPolicyWireValue, err := TagPolicyFromSDK(v.TagPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateTagPolicyRequest.TagPolicy", err)
-	}
-	return &UpdateTagPolicyRequest{
-		TagPolicy:  tagPolicyWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type Value struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func ValueFromSDK(v *sdk.Value) (*Value, error) {
+// CreateTagPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreateTagPolicyRequestToSDK(w *CreateTagPolicyRequest) (*sdk.CreateTagPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTagPolicyRequest{}
+	conv1, err := TagPolicyToSDK(w.TagPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTagPolicyRequest.TagPolicy", err)
+	}
+	out.TagPolicy = conv1
+	return out, nil
+}
+
+// CreateTagPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTagPolicyRequestFromSDK(v *sdk.CreateTagPolicyRequest) (*CreateTagPolicyRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &Value{
-		Name: v.Name,
-	}, nil
+	out := &CreateTagPolicyRequest{}
+	conv2, err := TagPolicyFromSDK(v.TagPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTagPolicyRequest.TagPolicy", err)
+	}
+	out.TagPolicy = conv2
+	return out, nil
 }
 
+// ListTagPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListTagPoliciesRequestToSDK(w *ListTagPoliciesRequest) (*sdk.ListTagPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTagPoliciesRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListTagPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListTagPoliciesRequestFromSDK(v *sdk.ListTagPoliciesRequest) (*ListTagPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTagPoliciesRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListTagPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListTagPoliciesResponseToSDK(w *ListTagPoliciesResponse) (*sdk.ListTagPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTagPoliciesResponse{}
+	conv3, err := convertSlice(w.TagPolicies, TagPolicyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTagPoliciesResponse.TagPolicies", err)
+	}
+	out.TagPolicies = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListTagPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListTagPoliciesResponseFromSDK(v *sdk.ListTagPoliciesResponse) (*ListTagPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTagPoliciesResponse{}
+	conv4, err := convertSlice(v.TagPolicies, TagPolicyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTagPoliciesResponse.TagPolicies", err)
+	}
+	out.TagPolicies = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// TagPolicyToSDK converts the mirror to the sdk-go type.
+func TagPolicyToSDK(w *TagPolicy) (*sdk.TagPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TagPolicy{}
+	out.TagKey = w.TagKey
+	out.Id = w.Id
+	out.Description = w.Description
+	conv5, err := convertSlice(w.Values, ValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TagPolicy.Values", err)
+	}
+	out.Values = conv5
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// TagPolicyFromSDK converts the sdk-go type to the mirror.
+func TagPolicyFromSDK(v *sdk.TagPolicy) (*TagPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TagPolicy{}
+	out.TagKey = v.TagKey
+	out.Id = v.Id
+	out.Description = v.Description
+	conv6, err := convertSlice(v.Values, ValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TagPolicy.Values", err)
+	}
+	out.Values = conv6
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// UpdateTagPolicyRequestToSDK converts the mirror to the sdk-go type.
+func UpdateTagPolicyRequestToSDK(w *UpdateTagPolicyRequest) (*sdk.UpdateTagPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateTagPolicyRequest{}
+	conv7, err := TagPolicyToSDK(w.TagPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTagPolicyRequest.TagPolicy", err)
+	}
+	out.TagPolicy = conv7
+	mask8, err := fieldMaskFromString[sdk.TagPolicy](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTagPolicyRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask8
+	return out, nil
+}
+
+// UpdateTagPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateTagPolicyRequestFromSDK(v *sdk.UpdateTagPolicyRequest) (*UpdateTagPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateTagPolicyRequest{}
+	conv9, err := TagPolicyFromSDK(v.TagPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTagPolicyRequest.TagPolicy", err)
+	}
+	out.TagPolicy = conv9
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// ValueToSDK converts the mirror to the sdk-go type.
 func ValueToSDK(w *Value) (*sdk.Value, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.Value{
-		Name: w.Name,
-	}, nil
+	out := &sdk.Value{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ValueFromSDK converts the sdk-go type to the mirror.
+func ValueFromSDK(v *sdk.Value) (*Value, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Value{}
+	out.Name = v.Name
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -172,4 +232,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

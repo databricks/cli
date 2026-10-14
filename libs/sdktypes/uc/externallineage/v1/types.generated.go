@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/uc/externallineage/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -45,70 +46,13 @@ const (
 	Direction_LineageDirection_Downstream  = sdk.Direction_LineageDirection_Downstream
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type ColumnRelationship struct {
 	Source *string `json:"source,omitempty"`
 	Target *string `json:"target,omitempty"`
 }
 
-func ColumnRelationshipFromSDK(v *sdk.ColumnRelationship) (*ColumnRelationship, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ColumnRelationship{
-		Source: v.Source,
-		Target: v.Target,
-	}, nil
-}
-
-func ColumnRelationshipToSDK(w *ColumnRelationship) (*sdk.ColumnRelationship, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnRelationship{
-		Source: w.Source,
-		Target: w.Target,
-	}, nil
-}
-
 type CreateExternalLineageRelationshipRequest struct {
 	ExternalLineageRelationship *CreateRequestExternalLineage `json:"external_lineage_relationship,omitempty"`
-}
-
-func CreateExternalLineageRelationshipRequestFromSDK(v *sdk.CreateExternalLineageRelationshipRequest) (*CreateExternalLineageRelationshipRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	externalLineageRelationshipWireValue, err := CreateRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
-	}
-	return &CreateExternalLineageRelationshipRequest{
-		ExternalLineageRelationship: externalLineageRelationshipWireValue,
-	}, nil
 }
 
 type CreateRequestExternalLineage struct {
@@ -124,46 +68,8 @@ type CreateRequestExternalLineage struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
-func CreateRequestExternalLineageFromSDK(v *sdk.CreateRequestExternalLineage) (*CreateRequestExternalLineage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sourceWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Source", err)
-	}
-	targetWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Target", err)
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Columns", err)
-	}
-	return &CreateRequestExternalLineage{
-		Id:         v.Id,
-		Source:     sourceWireValue,
-		Target:     targetWireValue,
-		Columns:    columnsWireValue,
-		Properties: v.Properties,
-	}, nil
-}
-
 type DeleteExternalLineageRelationshipRequest struct {
 	ExternalLineageRelationship *DeleteRequestExternalLineage `json:"external_lineage_relationship,omitempty"`
-}
-
-func DeleteExternalLineageRelationshipRequestFromSDK(v *sdk.DeleteExternalLineageRelationshipRequest) (*DeleteExternalLineageRelationshipRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	externalLineageRelationshipWireValue, err := DeleteRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
-	}
-	return &DeleteExternalLineageRelationshipRequest{
-		ExternalLineageRelationship: externalLineageRelationshipWireValue,
-	}, nil
 }
 
 type DeleteRequestExternalLineage struct {
@@ -177,31 +83,6 @@ type DeleteRequestExternalLineage struct {
 	Columns []ColumnRelationship `json:"columns,omitempty"`
 	// Key-value properties associated with the external lineage relationship.
 	Properties map[string]string `json:"properties,omitempty"`
-}
-
-func DeleteRequestExternalLineageFromSDK(v *sdk.DeleteRequestExternalLineage) (*DeleteRequestExternalLineage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sourceWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Source", err)
-	}
-	targetWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Target", err)
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Columns", err)
-	}
-	return &DeleteRequestExternalLineage{
-		Id:         v.Id,
-		Source:     sourceWireValue,
-		Target:     targetWireValue,
-		Columns:    columnsWireValue,
-		Properties: v.Properties,
-	}, nil
 }
 
 // Lineage response containing lineage information of a data asset..
@@ -218,39 +99,6 @@ type ExternalLineageInfo struct {
 	ExternalLineageInfo *ExternalLineageRelationship `json:"external_lineage_info,omitempty"`
 }
 
-func ExternalLineageInfoToSDK(w *ExternalLineageInfo) (*sdk.ExternalLineageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tableInfoPublicValue, err := LineageTableInfoToSDK(w.TableInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.TableInfo", err)
-	}
-	fileInfoPublicValue, err := LineageFileInfoToSDK(w.FileInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.FileInfo", err)
-	}
-	modelInfoPublicValue, err := LineageModelVersionInfoToSDK(w.ModelInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ModelInfo", err)
-	}
-	externalMetadataInfoPublicValue, err := LineageExternalMetadataInfoToSDK(w.ExternalMetadataInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalMetadataInfo", err)
-	}
-	externalLineageInfoPublicValue, err := ExternalLineageRelationshipToSDK(w.ExternalLineageInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalLineageInfo", err)
-	}
-	return &sdk.ExternalLineageInfo{
-		TableInfo:            tableInfoPublicValue,
-		FileInfo:             fileInfoPublicValue,
-		ModelInfo:            modelInfoPublicValue,
-		ExternalMetadataInfo: externalMetadataInfoPublicValue,
-		ExternalLineageInfo:  externalLineageInfoPublicValue,
-	}, nil
-}
-
 type ExternalLineageRelationship struct {
 	// Unique identifier of the external lineage relationship.
 	Id *string `json:"id,omitempty"`
@@ -264,76 +112,13 @@ type ExternalLineageRelationship struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
-func ExternalLineageRelationshipToSDK(w *ExternalLineageRelationship) (*sdk.ExternalLineageRelationship, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourcePublicValue, err := ExternalLineageRelationshipObjectToSDK(w.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Source", err)
-	}
-	targetPublicValue, err := ExternalLineageRelationshipObjectToSDK(w.Target)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Target", err)
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnRelationshipToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Columns", err)
-	}
-	return &sdk.ExternalLineageRelationship{
-		Id:         w.Id,
-		Source:     sourcePublicValue,
-		Target:     targetPublicValue,
-		Columns:    columnsPublicValue,
-		Properties: w.Properties,
-	}, nil
-}
-
 type ExternalLineageRelationshipExternalMetadata struct {
 	Name *string `json:"name,omitempty"`
-}
-
-func ExternalLineageRelationshipExternalMetadataFromSDK(v *sdk.ExternalLineageRelationshipExternalMetadata) (*ExternalLineageRelationshipExternalMetadata, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalLineageRelationshipExternalMetadata{
-		Name: v.Name,
-	}, nil
-}
-
-func ExternalLineageRelationshipExternalMetadataToSDK(w *ExternalLineageRelationshipExternalMetadata) (*sdk.ExternalLineageRelationshipExternalMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalLineageRelationshipExternalMetadata{
-		Name: w.Name,
-	}, nil
 }
 
 type ExternalLineageRelationshipModelVersion struct {
 	Name    *string `json:"name,omitempty"`
 	Version *string `json:"version,omitempty"`
-}
-
-func ExternalLineageRelationshipModelVersionFromSDK(v *sdk.ExternalLineageRelationshipModelVersion) (*ExternalLineageRelationshipModelVersion, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalLineageRelationshipModelVersion{
-		Name:    v.Name,
-		Version: v.Version,
-	}, nil
-}
-
-func ExternalLineageRelationshipModelVersionToSDK(w *ExternalLineageRelationshipModelVersion) (*sdk.ExternalLineageRelationshipModelVersion, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalLineageRelationshipModelVersion{
-		Name:    w.Name,
-		Version: w.Version,
-	}, nil
 }
 
 type ExternalLineageRelationshipObject struct {
@@ -343,153 +128,12 @@ type ExternalLineageRelationshipObject struct {
 	ExternalMetadata *ExternalLineageRelationshipExternalMetadata `json:"external_metadata,omitempty"`
 }
 
-func ExternalLineageRelationshipObjectFromSDK(v *sdk.ExternalLineageRelationshipObject) (*ExternalLineageRelationshipObject, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var tpeTableWire *ExternalLineageRelationshipTable
-	var tpePathWire *ExternalLineageRelationshipPath
-	var tpeModelVersionWire *ExternalLineageRelationshipModelVersion
-	var tpeExternalMetadataWire *ExternalLineageRelationshipExternalMetadata
-	switch value := v.Tpe.(type) {
-	case nil:
-	case *sdk.ExternalLineageRelationshipObject_Tpe_Table:
-		if value != nil {
-			tpeTableConverted, err := ExternalLineageRelationshipTableFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.Table", err)
-			}
-			tpeTableWire = tpeTableConverted
-		}
-	case *sdk.ExternalLineageRelationshipObject_Tpe_Path:
-		if value != nil {
-			tpePathConverted, err := ExternalLineageRelationshipPathFromSDK(&value.Path)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.Path", err)
-			}
-			tpePathWire = tpePathConverted
-		}
-	case *sdk.ExternalLineageRelationshipObject_Tpe_ModelVersion:
-		if value != nil {
-			tpeModelVersionConverted, err := ExternalLineageRelationshipModelVersionFromSDK(&value.ModelVersion)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.ModelVersion", err)
-			}
-			tpeModelVersionWire = tpeModelVersionConverted
-		}
-	case *sdk.ExternalLineageRelationshipObject_Tpe_ExternalMetadata:
-		if value != nil {
-			tpeExternalMetadataConverted, err := ExternalLineageRelationshipExternalMetadataFromSDK(&value.ExternalMetadata)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.ExternalMetadata", err)
-			}
-			tpeExternalMetadataWire = tpeExternalMetadataConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ExternalLineageRelationshipObject.Tpe", value)
-	}
-	return &ExternalLineageRelationshipObject{
-		Table:            tpeTableWire,
-		Path:             tpePathWire,
-		ModelVersion:     tpeModelVersionWire,
-		ExternalMetadata: tpeExternalMetadataWire,
-	}, nil
-}
-
-func ExternalLineageRelationshipObjectToSDK(w *ExternalLineageRelationshipObject) (*sdk.ExternalLineageRelationshipObject, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tpeMembers := 0
-	if w.Table != nil {
-		tpeMembers++
-	}
-	if w.Path != nil {
-		tpeMembers++
-	}
-	if w.ModelVersion != nil {
-		tpeMembers++
-	}
-	if w.ExternalMetadata != nil {
-		tpeMembers++
-	}
-	if tpeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalLineageRelationshipObject.Tpe")
-	}
-	tpeSelection := (&sdk.ExternalLineageRelationshipObject{}).Tpe
-	switch {
-	case w.Table != nil:
-		tpeTableConverted, err := ExternalLineageRelationshipTableToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.Table", err)
-		}
-		tpeSelection = &sdk.ExternalLineageRelationshipObject_Tpe_Table{Table: *tpeTableConverted}
-	case w.Path != nil:
-		tpePathConverted, err := ExternalLineageRelationshipPathToSDK(w.Path)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.Path", err)
-		}
-		tpeSelection = &sdk.ExternalLineageRelationshipObject_Tpe_Path{Path: *tpePathConverted}
-	case w.ModelVersion != nil:
-		tpeModelVersionConverted, err := ExternalLineageRelationshipModelVersionToSDK(w.ModelVersion)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.ModelVersion", err)
-		}
-		tpeSelection = &sdk.ExternalLineageRelationshipObject_Tpe_ModelVersion{ModelVersion: *tpeModelVersionConverted}
-	case w.ExternalMetadata != nil:
-		tpeExternalMetadataConverted, err := ExternalLineageRelationshipExternalMetadataToSDK(w.ExternalMetadata)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe.ExternalMetadata", err)
-		}
-		tpeSelection = &sdk.ExternalLineageRelationshipObject_Tpe_ExternalMetadata{ExternalMetadata: *tpeExternalMetadataConverted}
-	}
-	return &sdk.ExternalLineageRelationshipObject{
-		Tpe: tpeSelection,
-	}, nil
-}
-
 type ExternalLineageRelationshipPath struct {
 	Url *string `json:"url,omitempty"`
 }
 
-func ExternalLineageRelationshipPathFromSDK(v *sdk.ExternalLineageRelationshipPath) (*ExternalLineageRelationshipPath, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalLineageRelationshipPath{
-		Url: v.Url,
-	}, nil
-}
-
-func ExternalLineageRelationshipPathToSDK(w *ExternalLineageRelationshipPath) (*sdk.ExternalLineageRelationshipPath, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalLineageRelationshipPath{
-		Url: w.Url,
-	}, nil
-}
-
 type ExternalLineageRelationshipTable struct {
 	Name *string `json:"name,omitempty"`
-}
-
-func ExternalLineageRelationshipTableFromSDK(v *sdk.ExternalLineageRelationshipTable) (*ExternalLineageRelationshipTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalLineageRelationshipTable{
-		Name: v.Name,
-	}, nil
-}
-
-func ExternalLineageRelationshipTableToSDK(w *ExternalLineageRelationshipTable) (*sdk.ExternalLineageRelationshipTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalLineageRelationshipTable{
-		Name: w.Name,
-	}, nil
 }
 
 // Represents the external metadata object in the lineage event..
@@ -502,18 +146,6 @@ type LineageExternalMetadataInfo struct {
 	EntityType *string `json:"entity_type,omitempty"`
 	// Timestamp of the lineage event.
 	EventTime *types.Time `json:"event_time,omitempty"`
-}
-
-func LineageExternalMetadataInfoToSDK(w *LineageExternalMetadataInfo) (*sdk.LineageExternalMetadataInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LineageExternalMetadataInfo{
-		Name:       w.Name,
-		SystemType: w.SystemType,
-		EntityType: w.EntityType,
-		EventTime:  w.EventTime,
-	}, nil
 }
 
 // Represents the path information in the lineage event..
@@ -530,19 +162,6 @@ type LineageFileInfo struct {
 	EventTime *types.Time `json:"event_time,omitempty"`
 }
 
-func LineageFileInfoToSDK(w *LineageFileInfo) (*sdk.LineageFileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LineageFileInfo{
-		Path:            w.Path,
-		SecurableName:   w.SecurableName,
-		StorageLocation: w.StorageLocation,
-		SecurableType:   w.SecurableType,
-		EventTime:       w.EventTime,
-	}, nil
-}
-
 // Represents the model version information in the lineage event..
 type LineageModelVersionInfo struct {
 	// Name of the model.
@@ -551,21 +170,6 @@ type LineageModelVersionInfo struct {
 	Version *int64 `json:"version,omitempty"`
 	// Timestamp of the lineage event.
 	EventTime *types.Time `json:"event_time,omitempty"`
-}
-
-func LineageModelVersionInfoToSDK(w *LineageModelVersionInfo) (*sdk.LineageModelVersionInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionPublicValue, err := int64FromWire(w.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LineageModelVersionInfo.Version", err)
-	}
-	return &sdk.LineageModelVersionInfo{
-		ModelName: w.ModelName,
-		Version:   versionPublicValue,
-		EventTime: w.EventTime,
-	}, nil
 }
 
 // Represents the table information in the lineage event..
@@ -578,18 +182,6 @@ type LineageTableInfo struct {
 	SchemaName *string `json:"schema_name,omitempty"`
 	// Timestamp of the lineage event.
 	EventTime *types.Time `json:"event_time,omitempty"`
-}
-
-func LineageTableInfoToSDK(w *LineageTableInfo) (*sdk.LineageTableInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LineageTableInfo{
-		Name:        w.Name,
-		CatalogName: w.CatalogName,
-		SchemaName:  w.SchemaName,
-		EventTime:   w.EventTime,
-	}, nil
 }
 
 type ListExternalLineageRelationshipsRequest struct {
@@ -607,58 +199,14 @@ type ListExternalLineageRelationshipsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListExternalLineageRelationshipsRequestFromSDK(v *sdk.ListExternalLineageRelationshipsRequest) (*ListExternalLineageRelationshipsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	objectInfoWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.ObjectInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsRequest.ObjectInfo", err)
-	}
-	return &ListExternalLineageRelationshipsRequest{
-		ObjectInfo:       objectInfoWireValue,
-		LineageDirection: v.LineageDirection,
-		PageSize:         v.PageSize,
-		PageToken:        v.PageToken,
-	}, nil
-}
-
 type ListExternalLineageRelationshipsResponse struct {
 	ExternalLineageRelationships []ExternalLineageInfo `json:"external_lineage_relationships,omitempty"`
 	NextPageToken                *string               `json:"next_page_token,omitempty"`
 }
 
-func ListExternalLineageRelationshipsResponseToSDK(w *ListExternalLineageRelationshipsResponse) (*sdk.ListExternalLineageRelationshipsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalLineageRelationshipsPublicValue, err := convertSlice(w.ExternalLineageRelationships, ExternalLineageInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsResponse.ExternalLineageRelationships", err)
-	}
-	return &sdk.ListExternalLineageRelationshipsResponse{
-		ExternalLineageRelationships: externalLineageRelationshipsPublicValue,
-		NextPageToken:                w.NextPageToken,
-	}, nil
-}
-
 type UpdateExternalLineageRelationshipRequest struct {
 	ExternalLineageRelationship *UpdateRequestExternalLineage `json:"external_lineage_relationship,omitempty"`
 	UpdateMask                  *string                       `json:"update_mask,omitempty"`
-}
-
-func UpdateExternalLineageRelationshipRequestFromSDK(v *sdk.UpdateExternalLineageRelationshipRequest) (*UpdateExternalLineageRelationshipRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	externalLineageRelationshipWireValue, err := UpdateRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
-	}
-	return &UpdateExternalLineageRelationshipRequest{
-		ExternalLineageRelationship: externalLineageRelationshipWireValue,
-		UpdateMask:                  fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateRequestExternalLineage struct {
@@ -674,29 +222,738 @@ type UpdateRequestExternalLineage struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
+// ColumnRelationshipToSDK converts the mirror to the sdk-go type.
+func ColumnRelationshipToSDK(w *ColumnRelationship) (*sdk.ColumnRelationship, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnRelationship{}
+	out.Source = w.Source
+	out.Target = w.Target
+	return out, nil
+}
+
+// ColumnRelationshipFromSDK converts the sdk-go type to the mirror.
+func ColumnRelationshipFromSDK(v *sdk.ColumnRelationship) (*ColumnRelationship, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnRelationship{}
+	out.Source = v.Source
+	out.Target = v.Target
+	return out, nil
+}
+
+// CreateExternalLineageRelationshipRequestToSDK converts the mirror to the sdk-go type.
+func CreateExternalLineageRelationshipRequestToSDK(w *CreateExternalLineageRelationshipRequest) (*sdk.CreateExternalLineageRelationshipRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExternalLineageRelationshipRequest{}
+	conv1, err := CreateRequestExternalLineageToSDK(w.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv1
+	return out, nil
+}
+
+// CreateExternalLineageRelationshipRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExternalLineageRelationshipRequestFromSDK(v *sdk.CreateExternalLineageRelationshipRequest) (*CreateExternalLineageRelationshipRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExternalLineageRelationshipRequest{}
+	conv2, err := CreateRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv2
+	return out, nil
+}
+
+// CreateRequestExternalLineageToSDK converts the mirror to the sdk-go type.
+func CreateRequestExternalLineageToSDK(w *CreateRequestExternalLineage) (*sdk.CreateRequestExternalLineage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRequestExternalLineage{}
+	out.Id = w.Id
+	conv3, err := ExternalLineageRelationshipObjectToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Source", err)
+	}
+	out.Source = conv3
+	conv4, err := ExternalLineageRelationshipObjectToSDK(w.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Target", err)
+	}
+	out.Target = conv4
+	conv5, err := convertSlice(w.Columns, ColumnRelationshipToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Columns", err)
+	}
+	out.Columns = conv5
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// CreateRequestExternalLineageFromSDK converts the sdk-go type to the mirror.
+func CreateRequestExternalLineageFromSDK(v *sdk.CreateRequestExternalLineage) (*CreateRequestExternalLineage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRequestExternalLineage{}
+	out.Id = v.Id
+	conv6, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Source", err)
+	}
+	out.Source = conv6
+	conv7, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Target", err)
+	}
+	out.Target = conv7
+	conv8, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRequestExternalLineage.Columns", err)
+	}
+	out.Columns = conv8
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// DeleteExternalLineageRelationshipRequestToSDK converts the mirror to the sdk-go type.
+func DeleteExternalLineageRelationshipRequestToSDK(w *DeleteExternalLineageRelationshipRequest) (*sdk.DeleteExternalLineageRelationshipRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteExternalLineageRelationshipRequest{}
+	conv9, err := DeleteRequestExternalLineageToSDK(w.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv9
+	return out, nil
+}
+
+// DeleteExternalLineageRelationshipRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteExternalLineageRelationshipRequestFromSDK(v *sdk.DeleteExternalLineageRelationshipRequest) (*DeleteExternalLineageRelationshipRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteExternalLineageRelationshipRequest{}
+	conv10, err := DeleteRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv10
+	return out, nil
+}
+
+// DeleteRequestExternalLineageToSDK converts the mirror to the sdk-go type.
+func DeleteRequestExternalLineageToSDK(w *DeleteRequestExternalLineage) (*sdk.DeleteRequestExternalLineage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRequestExternalLineage{}
+	out.Id = w.Id
+	conv11, err := ExternalLineageRelationshipObjectToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Source", err)
+	}
+	out.Source = conv11
+	conv12, err := ExternalLineageRelationshipObjectToSDK(w.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Target", err)
+	}
+	out.Target = conv12
+	conv13, err := convertSlice(w.Columns, ColumnRelationshipToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Columns", err)
+	}
+	out.Columns = conv13
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// DeleteRequestExternalLineageFromSDK converts the sdk-go type to the mirror.
+func DeleteRequestExternalLineageFromSDK(v *sdk.DeleteRequestExternalLineage) (*DeleteRequestExternalLineage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRequestExternalLineage{}
+	out.Id = v.Id
+	conv14, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Source", err)
+	}
+	out.Source = conv14
+	conv15, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Target", err)
+	}
+	out.Target = conv15
+	conv16, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteRequestExternalLineage.Columns", err)
+	}
+	out.Columns = conv16
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// ExternalLineageInfoToSDK converts the mirror to the sdk-go type.
+func ExternalLineageInfoToSDK(w *ExternalLineageInfo) (*sdk.ExternalLineageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageInfo{}
+	conv17, err := LineageTableInfoToSDK(w.TableInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.TableInfo", err)
+	}
+	out.TableInfo = conv17
+	conv18, err := LineageFileInfoToSDK(w.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.FileInfo", err)
+	}
+	out.FileInfo = conv18
+	conv19, err := LineageModelVersionInfoToSDK(w.ModelInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ModelInfo", err)
+	}
+	out.ModelInfo = conv19
+	conv20, err := LineageExternalMetadataInfoToSDK(w.ExternalMetadataInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalMetadataInfo", err)
+	}
+	out.ExternalMetadataInfo = conv20
+	conv21, err := ExternalLineageRelationshipToSDK(w.ExternalLineageInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalLineageInfo", err)
+	}
+	out.ExternalLineageInfo = conv21
+	return out, nil
+}
+
+// ExternalLineageInfoFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageInfoFromSDK(v *sdk.ExternalLineageInfo) (*ExternalLineageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageInfo{}
+	conv22, err := LineageTableInfoFromSDK(v.TableInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.TableInfo", err)
+	}
+	out.TableInfo = conv22
+	conv23, err := LineageFileInfoFromSDK(v.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.FileInfo", err)
+	}
+	out.FileInfo = conv23
+	conv24, err := LineageModelVersionInfoFromSDK(v.ModelInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ModelInfo", err)
+	}
+	out.ModelInfo = conv24
+	conv25, err := LineageExternalMetadataInfoFromSDK(v.ExternalMetadataInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalMetadataInfo", err)
+	}
+	out.ExternalMetadataInfo = conv25
+	conv26, err := ExternalLineageRelationshipFromSDK(v.ExternalLineageInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageInfo.ExternalLineageInfo", err)
+	}
+	out.ExternalLineageInfo = conv26
+	return out, nil
+}
+
+// ExternalLineageRelationshipToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipToSDK(w *ExternalLineageRelationship) (*sdk.ExternalLineageRelationship, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationship{}
+	out.Id = w.Id
+	conv27, err := ExternalLineageRelationshipObjectToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Source", err)
+	}
+	out.Source = conv27
+	conv28, err := ExternalLineageRelationshipObjectToSDK(w.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Target", err)
+	}
+	out.Target = conv28
+	conv29, err := convertSlice(w.Columns, ColumnRelationshipToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Columns", err)
+	}
+	out.Columns = conv29
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// ExternalLineageRelationshipFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipFromSDK(v *sdk.ExternalLineageRelationship) (*ExternalLineageRelationship, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationship{}
+	out.Id = v.Id
+	conv30, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Source", err)
+	}
+	out.Source = conv30
+	conv31, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Target", err)
+	}
+	out.Target = conv31
+	conv32, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationship.Columns", err)
+	}
+	out.Columns = conv32
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// ExternalLineageRelationshipExternalMetadataToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipExternalMetadataToSDK(w *ExternalLineageRelationshipExternalMetadata) (*sdk.ExternalLineageRelationshipExternalMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationshipExternalMetadata{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ExternalLineageRelationshipExternalMetadataFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipExternalMetadataFromSDK(v *sdk.ExternalLineageRelationshipExternalMetadata) (*ExternalLineageRelationshipExternalMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationshipExternalMetadata{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// ExternalLineageRelationshipModelVersionToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipModelVersionToSDK(w *ExternalLineageRelationshipModelVersion) (*sdk.ExternalLineageRelationshipModelVersion, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationshipModelVersion{}
+	out.Name = w.Name
+	out.Version = w.Version
+	return out, nil
+}
+
+// ExternalLineageRelationshipModelVersionFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipModelVersionFromSDK(v *sdk.ExternalLineageRelationshipModelVersion) (*ExternalLineageRelationshipModelVersion, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationshipModelVersion{}
+	out.Name = v.Name
+	out.Version = v.Version
+	return out, nil
+}
+
+// ExternalLineageRelationshipObjectToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipObjectToSDK(w *ExternalLineageRelationshipObject) (*sdk.ExternalLineageRelationshipObject, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationshipObject{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Path != nil {
+			members++
+		}
+		if w.ModelVersion != nil {
+			members++
+		}
+		if w.ExternalMetadata != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalLineageRelationshipObject.Tpe")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv33, err := ExternalLineageRelationshipTableToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+		}
+		out.Tpe = &sdk.ExternalLineageRelationshipObject_Tpe_Table{Table: *conv33}
+	case w.Path != nil:
+		conv34, err := ExternalLineageRelationshipPathToSDK(w.Path)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+		}
+		out.Tpe = &sdk.ExternalLineageRelationshipObject_Tpe_Path{Path: *conv34}
+	case w.ModelVersion != nil:
+		conv35, err := ExternalLineageRelationshipModelVersionToSDK(w.ModelVersion)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+		}
+		out.Tpe = &sdk.ExternalLineageRelationshipObject_Tpe_ModelVersion{ModelVersion: *conv35}
+	case w.ExternalMetadata != nil:
+		conv36, err := ExternalLineageRelationshipExternalMetadataToSDK(w.ExternalMetadata)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+		}
+		out.Tpe = &sdk.ExternalLineageRelationshipObject_Tpe_ExternalMetadata{ExternalMetadata: *conv36}
+	}
+	return out, nil
+}
+
+// ExternalLineageRelationshipObjectFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipObjectFromSDK(v *sdk.ExternalLineageRelationshipObject) (*ExternalLineageRelationshipObject, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationshipObject{}
+	switch value := v.Tpe.(type) {
+	case *sdk.ExternalLineageRelationshipObject_Tpe_Table:
+		if value != nil {
+			conv37, err := ExternalLineageRelationshipTableFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+			}
+			out.Table = conv37
+		}
+	case *sdk.ExternalLineageRelationshipObject_Tpe_Path:
+		if value != nil {
+			conv38, err := ExternalLineageRelationshipPathFromSDK(&value.Path)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+			}
+			out.Path = conv38
+		}
+	case *sdk.ExternalLineageRelationshipObject_Tpe_ModelVersion:
+		if value != nil {
+			conv39, err := ExternalLineageRelationshipModelVersionFromSDK(&value.ModelVersion)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+			}
+			out.ModelVersion = conv39
+		}
+	case *sdk.ExternalLineageRelationshipObject_Tpe_ExternalMetadata:
+		if value != nil {
+			conv40, err := ExternalLineageRelationshipExternalMetadataFromSDK(&value.ExternalMetadata)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalLineageRelationshipObject.Tpe", err)
+			}
+			out.ExternalMetadata = conv40
+		}
+	}
+	return out, nil
+}
+
+// ExternalLineageRelationshipPathToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipPathToSDK(w *ExternalLineageRelationshipPath) (*sdk.ExternalLineageRelationshipPath, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationshipPath{}
+	out.Url = w.Url
+	return out, nil
+}
+
+// ExternalLineageRelationshipPathFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipPathFromSDK(v *sdk.ExternalLineageRelationshipPath) (*ExternalLineageRelationshipPath, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationshipPath{}
+	out.Url = v.Url
+	return out, nil
+}
+
+// ExternalLineageRelationshipTableToSDK converts the mirror to the sdk-go type.
+func ExternalLineageRelationshipTableToSDK(w *ExternalLineageRelationshipTable) (*sdk.ExternalLineageRelationshipTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLineageRelationshipTable{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ExternalLineageRelationshipTableFromSDK converts the sdk-go type to the mirror.
+func ExternalLineageRelationshipTableFromSDK(v *sdk.ExternalLineageRelationshipTable) (*ExternalLineageRelationshipTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLineageRelationshipTable{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// LineageExternalMetadataInfoToSDK converts the mirror to the sdk-go type.
+func LineageExternalMetadataInfoToSDK(w *LineageExternalMetadataInfo) (*sdk.LineageExternalMetadataInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LineageExternalMetadataInfo{}
+	out.Name = w.Name
+	out.SystemType = w.SystemType
+	out.EntityType = w.EntityType
+	out.EventTime = w.EventTime
+	return out, nil
+}
+
+// LineageExternalMetadataInfoFromSDK converts the sdk-go type to the mirror.
+func LineageExternalMetadataInfoFromSDK(v *sdk.LineageExternalMetadataInfo) (*LineageExternalMetadataInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LineageExternalMetadataInfo{}
+	out.Name = v.Name
+	out.SystemType = v.SystemType
+	out.EntityType = v.EntityType
+	out.EventTime = v.EventTime
+	return out, nil
+}
+
+// LineageFileInfoToSDK converts the mirror to the sdk-go type.
+func LineageFileInfoToSDK(w *LineageFileInfo) (*sdk.LineageFileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LineageFileInfo{}
+	out.Path = w.Path
+	out.SecurableName = w.SecurableName
+	out.StorageLocation = w.StorageLocation
+	out.SecurableType = w.SecurableType
+	out.EventTime = w.EventTime
+	return out, nil
+}
+
+// LineageFileInfoFromSDK converts the sdk-go type to the mirror.
+func LineageFileInfoFromSDK(v *sdk.LineageFileInfo) (*LineageFileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LineageFileInfo{}
+	out.Path = v.Path
+	out.SecurableName = v.SecurableName
+	out.StorageLocation = v.StorageLocation
+	out.SecurableType = v.SecurableType
+	out.EventTime = v.EventTime
+	return out, nil
+}
+
+// LineageModelVersionInfoToSDK converts the mirror to the sdk-go type.
+func LineageModelVersionInfoToSDK(w *LineageModelVersionInfo) (*sdk.LineageModelVersionInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LineageModelVersionInfo{}
+	out.ModelName = w.ModelName
+	out.Version = w.Version
+	out.EventTime = w.EventTime
+	return out, nil
+}
+
+// LineageModelVersionInfoFromSDK converts the sdk-go type to the mirror.
+func LineageModelVersionInfoFromSDK(v *sdk.LineageModelVersionInfo) (*LineageModelVersionInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LineageModelVersionInfo{}
+	out.ModelName = v.ModelName
+	out.Version = v.Version
+	out.EventTime = v.EventTime
+	return out, nil
+}
+
+// LineageTableInfoToSDK converts the mirror to the sdk-go type.
+func LineageTableInfoToSDK(w *LineageTableInfo) (*sdk.LineageTableInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LineageTableInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.EventTime = w.EventTime
+	return out, nil
+}
+
+// LineageTableInfoFromSDK converts the sdk-go type to the mirror.
+func LineageTableInfoFromSDK(v *sdk.LineageTableInfo) (*LineageTableInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LineageTableInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.EventTime = v.EventTime
+	return out, nil
+}
+
+// ListExternalLineageRelationshipsRequestToSDK converts the mirror to the sdk-go type.
+func ListExternalLineageRelationshipsRequestToSDK(w *ListExternalLineageRelationshipsRequest) (*sdk.ListExternalLineageRelationshipsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalLineageRelationshipsRequest{}
+	conv41, err := ExternalLineageRelationshipObjectToSDK(w.ObjectInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsRequest.ObjectInfo", err)
+	}
+	out.ObjectInfo = conv41
+	out.LineageDirection = w.LineageDirection
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListExternalLineageRelationshipsRequestFromSDK converts the sdk-go type to the mirror.
+func ListExternalLineageRelationshipsRequestFromSDK(v *sdk.ListExternalLineageRelationshipsRequest) (*ListExternalLineageRelationshipsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalLineageRelationshipsRequest{}
+	conv42, err := ExternalLineageRelationshipObjectFromSDK(v.ObjectInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsRequest.ObjectInfo", err)
+	}
+	out.ObjectInfo = conv42
+	out.LineageDirection = v.LineageDirection
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListExternalLineageRelationshipsResponseToSDK converts the mirror to the sdk-go type.
+func ListExternalLineageRelationshipsResponseToSDK(w *ListExternalLineageRelationshipsResponse) (*sdk.ListExternalLineageRelationshipsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalLineageRelationshipsResponse{}
+	conv43, err := convertSlice(w.ExternalLineageRelationships, ExternalLineageInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsResponse.ExternalLineageRelationships", err)
+	}
+	out.ExternalLineageRelationships = conv43
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExternalLineageRelationshipsResponseFromSDK converts the sdk-go type to the mirror.
+func ListExternalLineageRelationshipsResponseFromSDK(v *sdk.ListExternalLineageRelationshipsResponse) (*ListExternalLineageRelationshipsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalLineageRelationshipsResponse{}
+	conv44, err := convertSlice(v.ExternalLineageRelationships, ExternalLineageInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLineageRelationshipsResponse.ExternalLineageRelationships", err)
+	}
+	out.ExternalLineageRelationships = conv44
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// UpdateExternalLineageRelationshipRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExternalLineageRelationshipRequestToSDK(w *UpdateExternalLineageRelationshipRequest) (*sdk.UpdateExternalLineageRelationshipRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExternalLineageRelationshipRequest{}
+	conv45, err := UpdateRequestExternalLineageToSDK(w.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv45
+	mask46, err := fieldMaskFromString[sdk.UpdateRequestExternalLineage](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLineageRelationshipRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask46
+	return out, nil
+}
+
+// UpdateExternalLineageRelationshipRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExternalLineageRelationshipRequestFromSDK(v *sdk.UpdateExternalLineageRelationshipRequest) (*UpdateExternalLineageRelationshipRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExternalLineageRelationshipRequest{}
+	conv47, err := UpdateRequestExternalLineageFromSDK(v.ExternalLineageRelationship)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLineageRelationshipRequest.ExternalLineageRelationship", err)
+	}
+	out.ExternalLineageRelationship = conv47
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateRequestExternalLineageToSDK converts the mirror to the sdk-go type.
+func UpdateRequestExternalLineageToSDK(w *UpdateRequestExternalLineage) (*sdk.UpdateRequestExternalLineage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRequestExternalLineage{}
+	out.Id = w.Id
+	conv48, err := ExternalLineageRelationshipObjectToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Source", err)
+	}
+	out.Source = conv48
+	conv49, err := ExternalLineageRelationshipObjectToSDK(w.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Target", err)
+	}
+	out.Target = conv49
+	conv50, err := convertSlice(w.Columns, ColumnRelationshipToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Columns", err)
+	}
+	out.Columns = conv50
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// UpdateRequestExternalLineageFromSDK converts the sdk-go type to the mirror.
 func UpdateRequestExternalLineageFromSDK(v *sdk.UpdateRequestExternalLineage) (*UpdateRequestExternalLineage, error) {
 	if v == nil {
 		return nil, nil
 	}
-	sourceWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
+	out := &UpdateRequestExternalLineage{}
+	out.Id = v.Id
+	conv51, err := ExternalLineageRelationshipObjectFromSDK(v.Source)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Source", err)
 	}
-	targetWireValue, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
+	out.Source = conv51
+	conv52, err := ExternalLineageRelationshipObjectFromSDK(v.Target)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Target", err)
 	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
+	out.Target = conv52
+	conv53, err := convertSlice(v.Columns, ColumnRelationshipFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRequestExternalLineage.Columns", err)
 	}
-	return &UpdateRequestExternalLineage{
-		Id:         v.Id,
-		Source:     sourceWireValue,
-		Target:     targetWireValue,
-		Columns:    columnsWireValue,
-		Properties: v.Properties,
-	}, nil
+	out.Columns = conv53
+	out.Properties = v.Properties
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -712,4 +969,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

@@ -55,22 +55,6 @@ const (
 	InferenceEndpointState_ReadyState_NotReady              = sdk.InferenceEndpointState_ReadyState_NotReady
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type Ai21LabsConfig struct {
 	// The <Databricks> secret key reference for an AI21 Labs API key. If you prefer
 	// to paste your API key directly, see `ai21labs_api_key_plaintext`. You must
@@ -82,26 +66,6 @@ type Ai21LabsConfig struct {
 	// provide an API key using one of the following fields: `ai21labs_api_key` or
 	// `ai21labs_api_key_plaintext`.
 	Ai21labsApiKeyPlaintext *string `json:"ai21labs_api_key_plaintext,omitempty"`
-}
-
-func Ai21LabsConfigFromSDK(v *sdk.Ai21LabsConfig) (*Ai21LabsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Ai21LabsConfig{
-		Ai21labsApiKey:          v.Ai21labsApiKey,
-		Ai21labsApiKeyPlaintext: v.Ai21labsApiKeyPlaintext,
-	}, nil
-}
-
-func Ai21LabsConfigToSDK(w *Ai21LabsConfig) (*sdk.Ai21LabsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Ai21LabsConfig{
-		Ai21labsApiKey:          w.Ai21labsApiKey,
-		Ai21labsApiKeyPlaintext: w.Ai21labsApiKeyPlaintext,
-	}, nil
 }
 
 type AiGatewayConfig struct {
@@ -124,72 +88,6 @@ type AiGatewayConfig struct {
 	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
 }
 
-func AiGatewayConfigFromSDK(v *sdk.AiGatewayConfig) (*AiGatewayConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usageTrackingConfigWireValue, err := UsageTrackingConfigFromSDK(v.UsageTrackingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.UsageTrackingConfig", err)
-	}
-	inferenceTableConfigWireValue, err := InferenceTableConfigFromSDK(v.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.InferenceTableConfig", err)
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, AiGatewayRateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.RateLimits", err)
-	}
-	guardrailsWireValue, err := AiGuardrailsFromSDK(v.Guardrails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.Guardrails", err)
-	}
-	fallbackConfigWireValue, err := FallbackConfigFromSDK(v.FallbackConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.FallbackConfig", err)
-	}
-	return &AiGatewayConfig{
-		UsageTrackingConfig:  usageTrackingConfigWireValue,
-		InferenceTableConfig: inferenceTableConfigWireValue,
-		RateLimits:           rateLimitsWireValue,
-		Guardrails:           guardrailsWireValue,
-		FallbackConfig:       fallbackConfigWireValue,
-	}, nil
-}
-
-func AiGatewayConfigToSDK(w *AiGatewayConfig) (*sdk.AiGatewayConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usageTrackingConfigPublicValue, err := UsageTrackingConfigToSDK(w.UsageTrackingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.UsageTrackingConfig", err)
-	}
-	inferenceTableConfigPublicValue, err := InferenceTableConfigToSDK(w.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.InferenceTableConfig", err)
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, AiGatewayRateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.RateLimits", err)
-	}
-	guardrailsPublicValue, err := AiGuardrailsToSDK(w.Guardrails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.Guardrails", err)
-	}
-	fallbackConfigPublicValue, err := FallbackConfigToSDK(w.FallbackConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.FallbackConfig", err)
-	}
-	return &sdk.AiGatewayConfig{
-		UsageTrackingConfig:  usageTrackingConfigPublicValue,
-		InferenceTableConfig: inferenceTableConfigPublicValue,
-		RateLimits:           rateLimitsPublicValue,
-		Guardrails:           guardrailsPublicValue,
-		FallbackConfig:       fallbackConfigPublicValue,
-	}, nil
-}
-
 type AiGatewayRateLimit struct {
 	// Used to specify how many calls are allowed for a key within the
 	// renewal_period.
@@ -209,48 +107,6 @@ type AiGatewayRateLimit struct {
 	Tokens *int64 `json:"tokens,omitempty"`
 }
 
-func AiGatewayRateLimitFromSDK(v *sdk.AiGatewayRateLimit) (*AiGatewayRateLimit, error) {
-	if v == nil {
-		return nil, nil
-	}
-	callsWireValue, err := int64ToWire(v.Calls)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayRateLimit.Calls", err)
-	}
-	tokensWireValue, err := int64ToWire(v.Tokens)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayRateLimit.Tokens", err)
-	}
-	return &AiGatewayRateLimit{
-		Calls:         callsWireValue,
-		Key:           v.Key,
-		RenewalPeriod: v.RenewalPeriod,
-		Principal:     v.Principal,
-		Tokens:        tokensWireValue,
-	}, nil
-}
-
-func AiGatewayRateLimitToSDK(w *AiGatewayRateLimit) (*sdk.AiGatewayRateLimit, error) {
-	if w == nil {
-		return nil, nil
-	}
-	callsPublicValue, err := int64FromWire(w.Calls)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayRateLimit.Calls", err)
-	}
-	tokensPublicValue, err := int64FromWire(w.Tokens)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGatewayRateLimit.Tokens", err)
-	}
-	return &sdk.AiGatewayRateLimit{
-		Calls:         callsPublicValue,
-		Key:           w.Key,
-		RenewalPeriod: w.RenewalPeriod,
-		Principal:     w.Principal,
-		Tokens:        tokensPublicValue,
-	}, nil
-}
-
 type AiGuardrailParameters struct {
 	// Indicates whether the safety filter is enabled.
 	Safety *bool `json:"safety,omitempty"`
@@ -264,79 +120,11 @@ type AiGuardrailParameters struct {
 	InvalidKeywords []string `json:"invalid_keywords,omitempty"`
 }
 
-func AiGuardrailParametersFromSDK(v *sdk.AiGuardrailParameters) (*AiGuardrailParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	piiWireValue, err := PiiSettingsFromSDK(v.Pii)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrailParameters.Pii", err)
-	}
-	return &AiGuardrailParameters{
-		Safety:          v.Safety,
-		Pii:             piiWireValue,
-		ValidTopics:     v.ValidTopics,
-		InvalidKeywords: v.InvalidKeywords,
-	}, nil
-}
-
-func AiGuardrailParametersToSDK(w *AiGuardrailParameters) (*sdk.AiGuardrailParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	piiPublicValue, err := PiiSettingsToSDK(w.Pii)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrailParameters.Pii", err)
-	}
-	return &sdk.AiGuardrailParameters{
-		Safety:          w.Safety,
-		Pii:             piiPublicValue,
-		ValidTopics:     w.ValidTopics,
-		InvalidKeywords: w.InvalidKeywords,
-	}, nil
-}
-
 type AiGuardrails struct {
 	// Configuration for input guardrail filters.
 	Input *AiGuardrailParameters `json:"input,omitempty"`
 	// Configuration for output guardrail filters.
 	Output *AiGuardrailParameters `json:"output,omitempty"`
-}
-
-func AiGuardrailsFromSDK(v *sdk.AiGuardrails) (*AiGuardrails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inputWireValue, err := AiGuardrailParametersFromSDK(v.Input)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Input", err)
-	}
-	outputWireValue, err := AiGuardrailParametersFromSDK(v.Output)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Output", err)
-	}
-	return &AiGuardrails{
-		Input:  inputWireValue,
-		Output: outputWireValue,
-	}, nil
-}
-
-func AiGuardrailsToSDK(w *AiGuardrails) (*sdk.AiGuardrails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	inputPublicValue, err := AiGuardrailParametersToSDK(w.Input)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Input", err)
-	}
-	outputPublicValue, err := AiGuardrailParametersToSDK(w.Output)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Output", err)
-	}
-	return &sdk.AiGuardrails{
-		Input:  inputPublicValue,
-		Output: outputPublicValue,
-	}, nil
 }
 
 type AmazonBedrockConfig struct {
@@ -381,38 +169,6 @@ type AmazonBedrockConfig struct {
 	UcServiceCredentialName *string `json:"uc_service_credential_name,omitempty"`
 }
 
-func AmazonBedrockConfigFromSDK(v *sdk.AmazonBedrockConfig) (*AmazonBedrockConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AmazonBedrockConfig{
-		AwsRegion:                   v.AwsRegion,
-		AwsAccessKeyId:              v.AwsAccessKeyId,
-		AwsSecretAccessKey:          v.AwsSecretAccessKey,
-		BedrockProvider:             v.BedrockProvider,
-		AwsAccessKeyIdPlaintext:     v.AwsAccessKeyIdPlaintext,
-		AwsSecretAccessKeyPlaintext: v.AwsSecretAccessKeyPlaintext,
-		InstanceProfileArn:          v.InstanceProfileArn,
-		UcServiceCredentialName:     v.UcServiceCredentialName,
-	}, nil
-}
-
-func AmazonBedrockConfigToSDK(w *AmazonBedrockConfig) (*sdk.AmazonBedrockConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AmazonBedrockConfig{
-		AwsRegion:                   w.AwsRegion,
-		AwsAccessKeyId:              w.AwsAccessKeyId,
-		AwsSecretAccessKey:          w.AwsSecretAccessKey,
-		BedrockProvider:             w.BedrockProvider,
-		AwsAccessKeyIdPlaintext:     w.AwsAccessKeyIdPlaintext,
-		AwsSecretAccessKeyPlaintext: w.AwsSecretAccessKeyPlaintext,
-		InstanceProfileArn:          w.InstanceProfileArn,
-		UcServiceCredentialName:     w.UcServiceCredentialName,
-	}, nil
-}
-
 type AnthropicConfig struct {
 	// The <Databricks> secret key reference for an Anthropic API key. If you prefer
 	// to paste your API key directly, see `anthropic_api_key_plaintext`. You must
@@ -426,26 +182,6 @@ type AnthropicConfig struct {
 	AnthropicApiKeyPlaintext *string `json:"anthropic_api_key_plaintext,omitempty"`
 }
 
-func AnthropicConfigFromSDK(v *sdk.AnthropicConfig) (*AnthropicConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AnthropicConfig{
-		AnthropicApiKey:          v.AnthropicApiKey,
-		AnthropicApiKeyPlaintext: v.AnthropicApiKeyPlaintext,
-	}, nil
-}
-
-func AnthropicConfigToSDK(w *AnthropicConfig) (*sdk.AnthropicConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AnthropicConfig{
-		AnthropicApiKey:          w.AnthropicApiKey,
-		AnthropicApiKeyPlaintext: w.AnthropicApiKeyPlaintext,
-	}, nil
-}
-
 type ApiKeyAuth struct {
 	// The name of the API key parameter used for authentication.
 	Key *string `json:"key,omitempty"`
@@ -455,28 +191,6 @@ type ApiKeyAuth struct {
 	// The API Key provided as a plaintext string. If you prefer to reference your
 	// token using Databricks Secrets, see `value`.
 	ValuePlaintext *string `json:"value_plaintext,omitempty"`
-}
-
-func ApiKeyAuthFromSDK(v *sdk.ApiKeyAuth) (*ApiKeyAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApiKeyAuth{
-		Key:            v.Key,
-		Value:          v.Value,
-		ValuePlaintext: v.ValuePlaintext,
-	}, nil
-}
-
-func ApiKeyAuthToSDK(w *ApiKeyAuth) (*sdk.ApiKeyAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiKeyAuth{
-		Key:            w.Key,
-		Value:          w.Value,
-		ValuePlaintext: w.ValuePlaintext,
-	}, nil
 }
 
 // Deprecated: legacy inference table configuration. Please use AI Gateway
@@ -497,68 +211,8 @@ type AutoCaptureConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func AutoCaptureConfigFromSDK(v *sdk.AutoCaptureConfig) (*AutoCaptureConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	stateWireValue, err := AutoCaptureStateFromSDK(v.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AutoCaptureConfig.State", err)
-	}
-	return &AutoCaptureConfig{
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		TableNamePrefix: v.TableNamePrefix,
-		State:           stateWireValue,
-		Enabled:         v.Enabled,
-	}, nil
-}
-
-func AutoCaptureConfigToSDK(w *AutoCaptureConfig) (*sdk.AutoCaptureConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statePublicValue, err := AutoCaptureStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AutoCaptureConfig.State", err)
-	}
-	return &sdk.AutoCaptureConfig{
-		CatalogName:     w.CatalogName,
-		SchemaName:      w.SchemaName,
-		TableNamePrefix: w.TableNamePrefix,
-		State:           statePublicValue,
-		Enabled:         w.Enabled,
-	}, nil
-}
-
 type AutoCaptureState struct {
 	PayloadTable *PayloadTable `json:"payload_table,omitempty"`
-}
-
-func AutoCaptureStateFromSDK(v *sdk.AutoCaptureState) (*AutoCaptureState, error) {
-	if v == nil {
-		return nil, nil
-	}
-	payloadTableWireValue, err := PayloadTableFromSDK(v.PayloadTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AutoCaptureState.PayloadTable", err)
-	}
-	return &AutoCaptureState{
-		PayloadTable: payloadTableWireValue,
-	}, nil
-}
-
-func AutoCaptureStateToSDK(w *AutoCaptureState) (*sdk.AutoCaptureState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	payloadTablePublicValue, err := PayloadTableToSDK(w.PayloadTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AutoCaptureState.PayloadTable", err)
-	}
-	return &sdk.AutoCaptureState{
-		PayloadTable: payloadTablePublicValue,
-	}, nil
 }
 
 type BearerTokenAuth struct {
@@ -568,26 +222,6 @@ type BearerTokenAuth struct {
 	// The token provided as a plaintext string. If you prefer to reference your
 	// token using Databricks Secrets, see `token`.
 	TokenPlaintext *string `json:"token_plaintext,omitempty"`
-}
-
-func BearerTokenAuthFromSDK(v *sdk.BearerTokenAuth) (*BearerTokenAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BearerTokenAuth{
-		Token:          v.Token,
-		TokenPlaintext: v.TokenPlaintext,
-	}, nil
-}
-
-func BearerTokenAuthToSDK(w *BearerTokenAuth) (*sdk.BearerTokenAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BearerTokenAuth{
-		Token:          w.Token,
-		TokenPlaintext: w.TokenPlaintext,
-	}, nil
 }
 
 type CohereConfig struct {
@@ -604,28 +238,6 @@ type CohereConfig struct {
 	// This is an optional field to provide a customized base URL for the Cohere
 	// API. If left unspecified, the standard Cohere base URL is used.
 	CohereApiBase *string `json:"cohere_api_base,omitempty"`
-}
-
-func CohereConfigFromSDK(v *sdk.CohereConfig) (*CohereConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CohereConfig{
-		CohereApiKey:          v.CohereApiKey,
-		CohereApiKeyPlaintext: v.CohereApiKeyPlaintext,
-		CohereApiBase:         v.CohereApiBase,
-	}, nil
-}
-
-func CohereConfigToSDK(w *CohereConfig) (*sdk.CohereConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CohereConfig{
-		CohereApiKey:          w.CohereApiKey,
-		CohereApiKeyPlaintext: w.CohereApiKeyPlaintext,
-		CohereApiBase:         w.CohereApiBase,
-	}, nil
 }
 
 type CreateInferenceEndpointRequest struct {
@@ -657,48 +269,6 @@ type CreateInferenceEndpointRequest struct {
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
 }
 
-func CreateInferenceEndpointRequestFromSDK(v *sdk.CreateInferenceEndpointRequest) (*CreateInferenceEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := EndpointCoreConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Config", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, EndpointTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Tags", err)
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, RateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.RateLimits", err)
-	}
-	aiGatewayWireValue, err := AiGatewayConfigFromSDK(v.AiGateway)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.AiGateway", err)
-	}
-	emailNotificationsWireValue, err := EmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.EmailNotifications", err)
-	}
-	telemetryConfigWireValue, err := TelemetryConfigFromSDK(v.TelemetryConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.TelemetryConfig", err)
-	}
-	return &CreateInferenceEndpointRequest{
-		Name:               v.Name,
-		Config:             configWireValue,
-		Tags:               tagsWireValue,
-		RouteOptimized:     v.RouteOptimized,
-		RateLimits:         rateLimitsWireValue,
-		AiGateway:          aiGatewayWireValue,
-		BudgetPolicyId:     v.BudgetPolicyId,
-		EmailNotifications: emailNotificationsWireValue,
-		Description:        v.Description,
-		TelemetryConfig:    telemetryConfigWireValue,
-	}, nil
-}
-
 type CreatePtEndpointRequest struct {
 	// The name of the serving endpoint. This field is required and must be unique
 	// across a <Workspace>. An endpoint name can consist of alphanumeric
@@ -717,36 +287,6 @@ type CreatePtEndpointRequest struct {
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
 }
 
-func CreatePtEndpointRequestFromSDK(v *sdk.CreatePtEndpointRequest) (*CreatePtEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := PtEndpointCoreConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Config", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, EndpointTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Tags", err)
-	}
-	aiGatewayWireValue, err := AiGatewayConfigFromSDK(v.AiGateway)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.AiGateway", err)
-	}
-	emailNotificationsWireValue, err := EmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.EmailNotifications", err)
-	}
-	return &CreatePtEndpointRequest{
-		Name:               v.Name,
-		Config:             configWireValue,
-		Tags:               tagsWireValue,
-		AiGateway:          aiGatewayWireValue,
-		BudgetPolicyId:     v.BudgetPolicyId,
-		EmailNotifications: emailNotificationsWireValue,
-	}, nil
-}
-
 // Configs needed to create a custom provider model route..
 type CustomProviderConfig struct {
 	// This is a field to provide the URL of the custom provider API.
@@ -759,60 +299,12 @@ type CustomProviderConfig struct {
 	ApiKeyAuth *ApiKeyAuth `json:"api_key_auth,omitempty"`
 }
 
-func CustomProviderConfigFromSDK(v *sdk.CustomProviderConfig) (*CustomProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	bearerTokenAuthWireValue, err := BearerTokenAuthFromSDK(v.BearerTokenAuth)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.BearerTokenAuth", err)
-	}
-	apiKeyAuthWireValue, err := ApiKeyAuthFromSDK(v.ApiKeyAuth)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.ApiKeyAuth", err)
-	}
-	return &CustomProviderConfig{
-		CustomProviderUrl: v.CustomProviderUrl,
-		BearerTokenAuth:   bearerTokenAuthWireValue,
-		ApiKeyAuth:        apiKeyAuthWireValue,
-	}, nil
-}
-
-func CustomProviderConfigToSDK(w *CustomProviderConfig) (*sdk.CustomProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	bearerTokenAuthPublicValue, err := BearerTokenAuthToSDK(w.BearerTokenAuth)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.BearerTokenAuth", err)
-	}
-	apiKeyAuthPublicValue, err := ApiKeyAuthToSDK(w.ApiKeyAuth)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.ApiKeyAuth", err)
-	}
-	return &sdk.CustomProviderConfig{
-		CustomProviderUrl: w.CustomProviderUrl,
-		BearerTokenAuth:   bearerTokenAuthPublicValue,
-		ApiKeyAuth:        apiKeyAuthPublicValue,
-	}, nil
-}
-
 // Details necessary to query this object's API through the DataPlane APIs..
 type DataPlaneInfo struct {
 	// The URL of the endpoint for this operation in the dataplane.
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 	// Authorization details as a string.
 	AuthorizationDetails *string `json:"authorization_details,omitempty"`
-}
-
-func DataPlaneInfoToSDK(w *DataPlaneInfo) (*sdk.DataPlaneInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataPlaneInfo{
-		EndpointUrl:          w.EndpointUrl,
-		AuthorizationDetails: w.AuthorizationDetails,
-	}, nil
 }
 
 type DatabricksModelServingConfig struct {
@@ -835,28 +327,6 @@ type DatabricksModelServingConfig struct {
 	DatabricksApiTokenPlaintext *string `json:"databricks_api_token_plaintext,omitempty"`
 }
 
-func DatabricksModelServingConfigFromSDK(v *sdk.DatabricksModelServingConfig) (*DatabricksModelServingConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabricksModelServingConfig{
-		DatabricksApiToken:          v.DatabricksApiToken,
-		DatabricksWorkspaceUrl:      v.DatabricksWorkspaceUrl,
-		DatabricksApiTokenPlaintext: v.DatabricksApiTokenPlaintext,
-	}, nil
-}
-
-func DatabricksModelServingConfigToSDK(w *DatabricksModelServingConfig) (*sdk.DatabricksModelServingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabricksModelServingConfig{
-		DatabricksApiToken:          w.DatabricksApiToken,
-		DatabricksWorkspaceUrl:      w.DatabricksWorkspaceUrl,
-		DatabricksApiTokenPlaintext: w.DatabricksApiTokenPlaintext,
-	}, nil
-}
-
 type EmailNotifications struct {
 	// A list of email addresses to be notified when an endpoint successfully
 	// updates its configuration or state.
@@ -864,26 +334,6 @@ type EmailNotifications struct {
 	// A list of email addresses to be notified when an endpoint fails to update its
 	// configuration or state.
 	OnUpdateFailure []string `json:"on_update_failure,omitempty"`
-}
-
-func EmailNotificationsFromSDK(v *sdk.EmailNotifications) (*EmailNotifications, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EmailNotifications{
-		OnUpdateSuccess: v.OnUpdateSuccess,
-		OnUpdateFailure: v.OnUpdateFailure,
-	}, nil
-}
-
-func EmailNotificationsToSDK(w *EmailNotifications) (*sdk.EmailNotifications, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmailNotifications{
-		OnUpdateSuccess: w.OnUpdateSuccess,
-		OnUpdateFailure: w.OnUpdateFailure,
-	}, nil
 }
 
 type EndpointCoreConfig struct {
@@ -899,34 +349,6 @@ type EndpointCoreConfig struct {
 	// tables instead. See
 	// https://docs.databricks.com/aws/en/ai-gateway/inference-tables.
 	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
-}
-
-func EndpointCoreConfigFromSDK(v *sdk.EndpointCoreConfig) (*EndpointCoreConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servedEntitiesWireValue, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedEntities", err)
-	}
-	servedModelsWireValue, err := convertSlice(v.ServedModels, ServedModelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedModels", err)
-	}
-	trafficConfigWireValue, err := TrafficConfigFromSDK(v.TrafficConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.TrafficConfig", err)
-	}
-	autoCaptureConfigWireValue, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.AutoCaptureConfig", err)
-	}
-	return &EndpointCoreConfig{
-		ServedEntities:    servedEntitiesWireValue,
-		ServedModels:      servedModelsWireValue,
-		TrafficConfig:     trafficConfigWireValue,
-		AutoCaptureConfig: autoCaptureConfigWireValue,
-	}, nil
 }
 
 type EndpointCoreConfigOutput struct {
@@ -946,39 +368,6 @@ type EndpointCoreConfigOutput struct {
 	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
-func EndpointCoreConfigOutputToSDK(w *EndpointCoreConfigOutput) (*sdk.EndpointCoreConfigOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configVersionPublicValue, err := int64FromWire(w.ConfigVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ConfigVersion", err)
-	}
-	servedEntitiesPublicValue, err := convertSlice(w.ServedEntities, ServedModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedEntities", err)
-	}
-	servedModelsPublicValue, err := convertSlice(w.ServedModels, ServedModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedModels", err)
-	}
-	trafficConfigPublicValue, err := TrafficConfigToSDK(w.TrafficConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.TrafficConfig", err)
-	}
-	autoCaptureConfigPublicValue, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.AutoCaptureConfig", err)
-	}
-	return &sdk.EndpointCoreConfigOutput{
-		ConfigVersion:     configVersionPublicValue,
-		ServedEntities:    servedEntitiesPublicValue,
-		ServedModels:      servedModelsPublicValue,
-		TrafficConfig:     trafficConfigPublicValue,
-		AutoCaptureConfig: autoCaptureConfigPublicValue,
-	}, nil
-}
-
 type EndpointCoreConfigSummary struct {
 	// The list of served entities under the serving endpoint config.
 	ServedEntities []ServedModelLite `json:"served_entities,omitempty"`
@@ -987,49 +376,11 @@ type EndpointCoreConfigSummary struct {
 	ServedModels []ServedModelLite `json:"served_models,omitempty"`
 }
 
-func EndpointCoreConfigSummaryToSDK(w *EndpointCoreConfigSummary) (*sdk.EndpointCoreConfigSummary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	servedEntitiesPublicValue, err := convertSlice(w.ServedEntities, ServedModelLiteToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedEntities", err)
-	}
-	servedModelsPublicValue, err := convertSlice(w.ServedModels, ServedModelLiteToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedModels", err)
-	}
-	return &sdk.EndpointCoreConfigSummary{
-		ServedEntities: servedEntitiesPublicValue,
-		ServedModels:   servedModelsPublicValue,
-	}, nil
-}
-
 type EndpointTag struct {
 	// Key field for a serving endpoint tag.
 	Key *string `json:"key,omitempty"`
 	// Optional value field for a serving endpoint tag.
 	Value *string `json:"value,omitempty"`
-}
-
-func EndpointTagFromSDK(v *sdk.EndpointTag) (*EndpointTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func EndpointTagToSDK(w *EndpointTag) (*sdk.EndpointTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 // Simple Proto message for testing.
@@ -1055,21 +406,6 @@ type ExternalFunctionRequest struct {
 	SubDomain *string `json:"sub_domain,omitempty"`
 }
 
-func ExternalFunctionRequestFromSDK(v *sdk.ExternalFunctionRequest) (*ExternalFunctionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalFunctionRequest{
-		ConnectionName: v.ConnectionName,
-		Method:         v.Method,
-		Path:           v.Path,
-		Json:           v.Json,
-		Headers:        v.Headers,
-		Params:         v.Params,
-		SubDomain:      v.SubDomain,
-	}, nil
-}
-
 type ExternalModel struct {
 	// The name of the provider for the external model. Currently, the supported
 	// providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere',
@@ -1091,212 +427,6 @@ type ExternalModel struct {
 	CustomProviderConfig         *CustomProviderConfig         `json:"custom_provider_config,omitempty"`
 }
 
-func ExternalModelFromSDK(v *sdk.ExternalModel) (*ExternalModel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var configAi21labsConfigWire *Ai21LabsConfig
-	var configAnthropicConfigWire *AnthropicConfig
-	var configAmazonBedrockConfigWire *AmazonBedrockConfig
-	var configCohereConfigWire *CohereConfig
-	var configGoogleCloudVertexAiConfigWire *GoogleCloudVertexAiConfig
-	var configDatabricksModelServingConfigWire *DatabricksModelServingConfig
-	var configOpenaiConfigWire *OpenAiConfig
-	var configPalmConfigWire *PaLmConfig
-	var configCustomProviderConfigWire *CustomProviderConfig
-	switch value := v.Config.(type) {
-	case nil:
-	case *sdk.ExternalModel_Config_Ai21labsConfig:
-		if value != nil {
-			configAi21labsConfigConverted, err := Ai21LabsConfigFromSDK(&value.Ai21labsConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.Ai21labsConfig", err)
-			}
-			configAi21labsConfigWire = configAi21labsConfigConverted
-		}
-	case *sdk.ExternalModel_Config_AnthropicConfig:
-		if value != nil {
-			configAnthropicConfigConverted, err := AnthropicConfigFromSDK(&value.AnthropicConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.AnthropicConfig", err)
-			}
-			configAnthropicConfigWire = configAnthropicConfigConverted
-		}
-	case *sdk.ExternalModel_Config_AmazonBedrockConfig:
-		if value != nil {
-			configAmazonBedrockConfigConverted, err := AmazonBedrockConfigFromSDK(&value.AmazonBedrockConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.AmazonBedrockConfig", err)
-			}
-			configAmazonBedrockConfigWire = configAmazonBedrockConfigConverted
-		}
-	case *sdk.ExternalModel_Config_CohereConfig:
-		if value != nil {
-			configCohereConfigConverted, err := CohereConfigFromSDK(&value.CohereConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.CohereConfig", err)
-			}
-			configCohereConfigWire = configCohereConfigConverted
-		}
-	case *sdk.ExternalModel_Config_GoogleCloudVertexAiConfig:
-		if value != nil {
-			configGoogleCloudVertexAiConfigConverted, err := GoogleCloudVertexAiConfigFromSDK(&value.GoogleCloudVertexAiConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.GoogleCloudVertexAiConfig", err)
-			}
-			configGoogleCloudVertexAiConfigWire = configGoogleCloudVertexAiConfigConverted
-		}
-	case *sdk.ExternalModel_Config_DatabricksModelServingConfig:
-		if value != nil {
-			configDatabricksModelServingConfigConverted, err := DatabricksModelServingConfigFromSDK(&value.DatabricksModelServingConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.DatabricksModelServingConfig", err)
-			}
-			configDatabricksModelServingConfigWire = configDatabricksModelServingConfigConverted
-		}
-	case *sdk.ExternalModel_Config_OpenaiConfig:
-		if value != nil {
-			configOpenaiConfigConverted, err := OpenAiConfigFromSDK(&value.OpenaiConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.OpenaiConfig", err)
-			}
-			configOpenaiConfigWire = configOpenaiConfigConverted
-		}
-	case *sdk.ExternalModel_Config_PalmConfig:
-		if value != nil {
-			configPalmConfigConverted, err := PaLmConfigFromSDK(&value.PalmConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.PalmConfig", err)
-			}
-			configPalmConfigWire = configPalmConfigConverted
-		}
-	case *sdk.ExternalModel_Config_CustomProviderConfig:
-		if value != nil {
-			configCustomProviderConfigConverted, err := CustomProviderConfigFromSDK(&value.CustomProviderConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.CustomProviderConfig", err)
-			}
-			configCustomProviderConfigWire = configCustomProviderConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ExternalModel.Config", value)
-	}
-	return &ExternalModel{
-		Provider:                     v.Provider,
-		Name:                         v.Name,
-		Task:                         v.Task,
-		Ai21labsConfig:               configAi21labsConfigWire,
-		AnthropicConfig:              configAnthropicConfigWire,
-		AmazonBedrockConfig:          configAmazonBedrockConfigWire,
-		CohereConfig:                 configCohereConfigWire,
-		GoogleCloudVertexAiConfig:    configGoogleCloudVertexAiConfigWire,
-		DatabricksModelServingConfig: configDatabricksModelServingConfigWire,
-		OpenaiConfig:                 configOpenaiConfigWire,
-		PalmConfig:                   configPalmConfigWire,
-		CustomProviderConfig:         configCustomProviderConfigWire,
-	}, nil
-}
-
-func ExternalModelToSDK(w *ExternalModel) (*sdk.ExternalModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configMembers := 0
-	if w.Ai21labsConfig != nil {
-		configMembers++
-	}
-	if w.AnthropicConfig != nil {
-		configMembers++
-	}
-	if w.AmazonBedrockConfig != nil {
-		configMembers++
-	}
-	if w.CohereConfig != nil {
-		configMembers++
-	}
-	if w.GoogleCloudVertexAiConfig != nil {
-		configMembers++
-	}
-	if w.DatabricksModelServingConfig != nil {
-		configMembers++
-	}
-	if w.OpenaiConfig != nil {
-		configMembers++
-	}
-	if w.PalmConfig != nil {
-		configMembers++
-	}
-	if w.CustomProviderConfig != nil {
-		configMembers++
-	}
-	if configMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalModel.Config")
-	}
-	configSelection := (&sdk.ExternalModel{}).Config
-	switch {
-	case w.Ai21labsConfig != nil:
-		configAi21labsConfigConverted, err := Ai21LabsConfigToSDK(w.Ai21labsConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.Ai21labsConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_Ai21labsConfig{Ai21labsConfig: *configAi21labsConfigConverted}
-	case w.AnthropicConfig != nil:
-		configAnthropicConfigConverted, err := AnthropicConfigToSDK(w.AnthropicConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.AnthropicConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_AnthropicConfig{AnthropicConfig: *configAnthropicConfigConverted}
-	case w.AmazonBedrockConfig != nil:
-		configAmazonBedrockConfigConverted, err := AmazonBedrockConfigToSDK(w.AmazonBedrockConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.AmazonBedrockConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_AmazonBedrockConfig{AmazonBedrockConfig: *configAmazonBedrockConfigConverted}
-	case w.CohereConfig != nil:
-		configCohereConfigConverted, err := CohereConfigToSDK(w.CohereConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.CohereConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_CohereConfig{CohereConfig: *configCohereConfigConverted}
-	case w.GoogleCloudVertexAiConfig != nil:
-		configGoogleCloudVertexAiConfigConverted, err := GoogleCloudVertexAiConfigToSDK(w.GoogleCloudVertexAiConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.GoogleCloudVertexAiConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_GoogleCloudVertexAiConfig{GoogleCloudVertexAiConfig: *configGoogleCloudVertexAiConfigConverted}
-	case w.DatabricksModelServingConfig != nil:
-		configDatabricksModelServingConfigConverted, err := DatabricksModelServingConfigToSDK(w.DatabricksModelServingConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.DatabricksModelServingConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_DatabricksModelServingConfig{DatabricksModelServingConfig: *configDatabricksModelServingConfigConverted}
-	case w.OpenaiConfig != nil:
-		configOpenaiConfigConverted, err := OpenAiConfigToSDK(w.OpenaiConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.OpenaiConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_OpenaiConfig{OpenaiConfig: *configOpenaiConfigConverted}
-	case w.PalmConfig != nil:
-		configPalmConfigConverted, err := PaLmConfigToSDK(w.PalmConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.PalmConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_PalmConfig{PalmConfig: *configPalmConfigConverted}
-	case w.CustomProviderConfig != nil:
-		configCustomProviderConfigConverted, err := CustomProviderConfigToSDK(w.CustomProviderConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config.CustomProviderConfig", err)
-		}
-		configSelection = &sdk.ExternalModel_Config_CustomProviderConfig{CustomProviderConfig: *configCustomProviderConfigConverted}
-	}
-	return &sdk.ExternalModel{
-		Provider: w.Provider,
-		Name:     w.Name,
-		Task:     w.Task,
-		Config:   configSelection,
-	}, nil
-}
-
 type FallbackConfig struct {
 	// Whether to enable traffic fallback. When a served entity in the serving
 	// endpoint returns specific error codes (e.g. 500), the request will
@@ -1305,24 +435,6 @@ type FallbackConfig struct {
 	// response is returned. If all attempts fail, return the last response with the
 	// error code.
 	Enabled *bool `json:"enabled,omitempty"`
-}
-
-func FallbackConfigFromSDK(v *sdk.FallbackConfig) (*FallbackConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FallbackConfig{
-		Enabled: v.Enabled,
-	}, nil
-}
-
-func FallbackConfigToSDK(w *FallbackConfig) (*sdk.FallbackConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FallbackConfig{
-		Enabled: w.Enabled,
-	}, nil
 }
 
 // All fields are not sensitive as they are hard-coded in the system and made
@@ -1334,56 +446,14 @@ type FoundationModel struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func FoundationModelFromSDK(v *sdk.FoundationModel) (*FoundationModel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FoundationModel{
-		Name:        v.Name,
-		DisplayName: v.DisplayName,
-		Docs:        v.Docs,
-		Description: v.Description,
-	}, nil
-}
-
-func FoundationModelToSDK(w *FoundationModel) (*sdk.FoundationModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FoundationModel{
-		Name:        w.Name,
-		DisplayName: w.DisplayName,
-		Docs:        w.Docs,
-		Description: w.Description,
-	}, nil
-}
-
 type GetServedModelBuildLogsResponse struct {
 	// The logs associated with building the served entity's environment.
 	Logs *string `json:"logs,omitempty"`
 }
 
-func GetServedModelBuildLogsResponseToSDK(w *GetServedModelBuildLogsResponse) (*sdk.GetServedModelBuildLogsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetServedModelBuildLogsResponse{
-		Logs: w.Logs,
-	}, nil
-}
-
 type GetServedModelLogsResponse struct {
 	// The most recent log lines of the model server processing invocation requests.
 	Logs *string `json:"logs,omitempty"`
-}
-
-func GetServedModelLogsResponseToSDK(w *GetServedModelLogsResponse) (*sdk.GetServedModelLogsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetServedModelLogsResponse{
-		Logs: w.Logs,
-	}, nil
 }
 
 type GoogleCloudVertexAiConfig struct {
@@ -1415,30 +485,6 @@ type GoogleCloudVertexAiConfig struct {
 	// [Best practices for managing service account keys]:
 	// https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys
 	PrivateKeyPlaintext *string `json:"private_key_plaintext,omitempty"`
-}
-
-func GoogleCloudVertexAiConfigFromSDK(v *sdk.GoogleCloudVertexAiConfig) (*GoogleCloudVertexAiConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GoogleCloudVertexAiConfig{
-		PrivateKey:          v.PrivateKey,
-		ProjectId:           v.ProjectId,
-		Region:              v.Region,
-		PrivateKeyPlaintext: v.PrivateKeyPlaintext,
-	}, nil
-}
-
-func GoogleCloudVertexAiConfigToSDK(w *GoogleCloudVertexAiConfig) (*sdk.GoogleCloudVertexAiConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GoogleCloudVertexAiConfig{
-		PrivateKey:          w.PrivateKey,
-		ProjectId:           w.ProjectId,
-		Region:              w.Region,
-		PrivateKeyPlaintext: w.PrivateKeyPlaintext,
-	}, nil
 }
 
 type InferenceEndpoint struct {
@@ -1474,56 +520,6 @@ type InferenceEndpoint struct {
 	// Telemetry configuration for the endpoint, including inference-table payload
 	// logging.
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
-}
-
-func InferenceEndpointToSDK(w *InferenceEndpoint) (*sdk.InferenceEndpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.LastUpdatedTimestamp", err)
-	}
-	statePublicValue, err := InferenceEndpointStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.State", err)
-	}
-	configPublicValue, err := EndpointCoreConfigSummaryToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Config", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, EndpointTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Tags", err)
-	}
-	aiGatewayPublicValue, err := AiGatewayConfigToSDK(w.AiGateway)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.AiGateway", err)
-	}
-	telemetryConfigPublicValue, err := TelemetryConfigToSDK(w.TelemetryConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.TelemetryConfig", err)
-	}
-	return &sdk.InferenceEndpoint{
-		Name:                 w.Name,
-		Creator:              w.Creator,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		State:                statePublicValue,
-		Config:               configPublicValue,
-		Tags:                 tagsPublicValue,
-		Id:                   w.Id,
-		Task:                 w.Task,
-		AiGateway:            aiGatewayPublicValue,
-		BudgetPolicyId:       w.BudgetPolicyId,
-		Description:          w.Description,
-		UsagePolicyId:        w.UsagePolicyId,
-		TelemetryConfig:      telemetryConfigPublicValue,
-	}, nil
 }
 
 type InferenceEndpointDetailed struct {
@@ -1571,73 +567,6 @@ type InferenceEndpointDetailed struct {
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
 }
 
-func InferenceEndpointDetailedToSDK(w *InferenceEndpointDetailed) (*sdk.InferenceEndpointDetailed, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.LastUpdatedTimestamp", err)
-	}
-	statePublicValue, err := InferenceEndpointStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.State", err)
-	}
-	configPublicValue, err := EndpointCoreConfigOutputToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Config", err)
-	}
-	pendingConfigPublicValue, err := PendingConfigToSDK(w.PendingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.PendingConfig", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, EndpointTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Tags", err)
-	}
-	dataPlaneInfoPublicValue, err := ModelDataPlaneInfoToSDK(w.DataPlaneInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.DataPlaneInfo", err)
-	}
-	aiGatewayPublicValue, err := AiGatewayConfigToSDK(w.AiGateway)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.AiGateway", err)
-	}
-	emailNotificationsPublicValue, err := EmailNotificationsToSDK(w.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.EmailNotifications", err)
-	}
-	telemetryConfigPublicValue, err := TelemetryConfigToSDK(w.TelemetryConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.TelemetryConfig", err)
-	}
-	return &sdk.InferenceEndpointDetailed{
-		Name:                 w.Name,
-		Creator:              w.Creator,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		State:                statePublicValue,
-		Config:               configPublicValue,
-		PendingConfig:        pendingConfigPublicValue,
-		Id:                   w.Id,
-		PermissionLevel:      w.PermissionLevel,
-		Tags:                 tagsPublicValue,
-		Task:                 w.Task,
-		RouteOptimized:       w.RouteOptimized,
-		EndpointUrl:          w.EndpointUrl,
-		DataPlaneInfo:        dataPlaneInfoPublicValue,
-		AiGateway:            aiGatewayPublicValue,
-		BudgetPolicyId:       w.BudgetPolicyId,
-		EmailNotifications:   emailNotificationsPublicValue,
-		Description:          w.Description,
-		TelemetryConfig:      telemetryConfigPublicValue,
-	}, nil
-}
-
 type InferenceEndpointState struct {
 	// The state of an endpoint, indicating whether or not the endpoint is
 	// queryable. An endpoint is READY if all of the served entities in its active
@@ -1650,16 +579,6 @@ type InferenceEndpointState struct {
 	// IN_PROGRESS, another update can not be made until the update completes or
 	// fails.
 	ConfigUpdate InferenceEndpointState_ConfigUpdateState `json:"config_update,omitempty"`
-}
-
-func InferenceEndpointStateToSDK(w *InferenceEndpointState) (*sdk.InferenceEndpointState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InferenceEndpointState{
-		Ready:        w.Ready,
-		ConfigUpdate: w.ConfigUpdate,
-	}, nil
 }
 
 type InferenceTableConfig struct {
@@ -1678,46 +597,9 @@ type InferenceTableConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func InferenceTableConfigFromSDK(v *sdk.InferenceTableConfig) (*InferenceTableConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InferenceTableConfig{
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		TableNamePrefix: v.TableNamePrefix,
-		Enabled:         v.Enabled,
-	}, nil
-}
-
-func InferenceTableConfigToSDK(w *InferenceTableConfig) (*sdk.InferenceTableConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InferenceTableConfig{
-		CatalogName:     w.CatalogName,
-		SchemaName:      w.SchemaName,
-		TableNamePrefix: w.TableNamePrefix,
-		Enabled:         w.Enabled,
-	}, nil
-}
-
 type ListInferenceEndpointsResponse struct {
 	// The list of endpoints.
 	Endpoints []InferenceEndpoint `json:"endpoints,omitempty"`
-}
-
-func ListInferenceEndpointsResponseToSDK(w *ListInferenceEndpointsResponse) (*sdk.ListInferenceEndpointsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointsPublicValue, err := convertSlice(w.Endpoints, InferenceEndpointToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListInferenceEndpointsResponse.Endpoints", err)
-	}
-	return &sdk.ListInferenceEndpointsResponse{
-		Endpoints: endpointsPublicValue,
-	}, nil
 }
 
 // A representation of all DataPlaneInfo for operations that can be done on a
@@ -1725,19 +607,6 @@ func ListInferenceEndpointsResponseToSDK(w *ListInferenceEndpointsResponse) (*sd
 type ModelDataPlaneInfo struct {
 	// Information required to query DataPlane API 'query' endpoint.
 	QueryInfo *DataPlaneInfo `json:"query_info,omitempty"`
-}
-
-func ModelDataPlaneInfoToSDK(w *ModelDataPlaneInfo) (*sdk.ModelDataPlaneInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	queryInfoPublicValue, err := DataPlaneInfoToSDK(w.QueryInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelDataPlaneInfo.QueryInfo", err)
-	}
-	return &sdk.ModelDataPlaneInfo{
-		QueryInfo: queryInfoPublicValue,
-	}, nil
 }
 
 // Configs needed to create an OpenAI model route..
@@ -1793,44 +662,6 @@ type OpenAiConfig struct {
 	MicrosoftEntraClientSecretPlaintext *string `json:"microsoft_entra_client_secret_plaintext,omitempty"`
 }
 
-func OpenAiConfigFromSDK(v *sdk.OpenAiConfig) (*OpenAiConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OpenAiConfig{
-		OpenaiApiKey:                        v.OpenaiApiKey,
-		OpenaiApiType:                       v.OpenaiApiType,
-		OpenaiApiBase:                       v.OpenaiApiBase,
-		OpenaiApiVersion:                    v.OpenaiApiVersion,
-		OpenaiDeploymentName:                v.OpenaiDeploymentName,
-		OpenaiOrganization:                  v.OpenaiOrganization,
-		MicrosoftEntraTenantId:              v.MicrosoftEntraTenantId,
-		MicrosoftEntraClientId:              v.MicrosoftEntraClientId,
-		MicrosoftEntraClientSecret:          v.MicrosoftEntraClientSecret,
-		OpenaiApiKeyPlaintext:               v.OpenaiApiKeyPlaintext,
-		MicrosoftEntraClientSecretPlaintext: v.MicrosoftEntraClientSecretPlaintext,
-	}, nil
-}
-
-func OpenAiConfigToSDK(w *OpenAiConfig) (*sdk.OpenAiConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OpenAiConfig{
-		OpenaiApiKey:                        w.OpenaiApiKey,
-		OpenaiApiType:                       w.OpenaiApiType,
-		OpenaiApiBase:                       w.OpenaiApiBase,
-		OpenaiApiVersion:                    w.OpenaiApiVersion,
-		OpenaiDeploymentName:                w.OpenaiDeploymentName,
-		OpenaiOrganization:                  w.OpenaiOrganization,
-		MicrosoftEntraTenantId:              w.MicrosoftEntraTenantId,
-		MicrosoftEntraClientId:              w.MicrosoftEntraClientId,
-		MicrosoftEntraClientSecret:          w.MicrosoftEntraClientSecret,
-		OpenaiApiKeyPlaintext:               w.OpenaiApiKeyPlaintext,
-		MicrosoftEntraClientSecretPlaintext: w.MicrosoftEntraClientSecretPlaintext,
-	}, nil
-}
-
 type PaLmConfig struct {
 	// The <Databricks> secret key reference for a PaLM API key. If you prefer to
 	// paste your API key directly, see `palm_api_key_plaintext`. You must provide
@@ -1844,26 +675,6 @@ type PaLmConfig struct {
 	PalmApiKeyPlaintext *string `json:"palm_api_key_plaintext,omitempty"`
 }
 
-func PaLmConfigFromSDK(v *sdk.PaLmConfig) (*PaLmConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PaLmConfig{
-		PalmApiKey:          v.PalmApiKey,
-		PalmApiKeyPlaintext: v.PalmApiKeyPlaintext,
-	}, nil
-}
-
-func PaLmConfigToSDK(w *PaLmConfig) (*sdk.PaLmConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PaLmConfig{
-		PalmApiKey:          w.PalmApiKey,
-		PalmApiKeyPlaintext: w.PalmApiKeyPlaintext,
-	}, nil
-}
-
 type PatchInferenceEndpointTagsRequest struct {
 	// The name of the serving endpoint who's tags to patch. This field is required.
 	Name *string `json:"name,omitempty"`
@@ -1873,36 +684,8 @@ type PatchInferenceEndpointTagsRequest struct {
 	DeleteTags []string `json:"delete_tags,omitempty"`
 }
 
-func PatchInferenceEndpointTagsRequestFromSDK(v *sdk.PatchInferenceEndpointTagsRequest) (*PatchInferenceEndpointTagsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	addTagsWireValue, err := convertSlice(v.AddTags, EndpointTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsRequest.AddTags", err)
-	}
-	return &PatchInferenceEndpointTagsRequest{
-		Name:       v.Name,
-		AddTags:    addTagsWireValue,
-		DeleteTags: v.DeleteTags,
-	}, nil
-}
-
 type PatchInferenceEndpointTagsResponse struct {
 	Tags []EndpointTag `json:"tags,omitempty"`
-}
-
-func PatchInferenceEndpointTagsResponseToSDK(w *PatchInferenceEndpointTagsResponse) (*sdk.PatchInferenceEndpointTagsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, EndpointTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsResponse.Tags", err)
-	}
-	return &sdk.PatchInferenceEndpointTagsResponse{
-		Tags: tagsPublicValue,
-	}, nil
 }
 
 // Updates the telemetry configuration of a serving endpoint..
@@ -1918,46 +701,10 @@ type PatchInferenceEndpointTelemetryConfigRequest struct {
 	TelemetryConfig *TelemetryConfig `json:"telemetry_config,omitempty"`
 }
 
-func PatchInferenceEndpointTelemetryConfigRequestFromSDK(v *sdk.PatchInferenceEndpointTelemetryConfigRequest) (*PatchInferenceEndpointTelemetryConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	telemetryConfigWireValue, err := TelemetryConfigFromSDK(v.TelemetryConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTelemetryConfigRequest.TelemetryConfig", err)
-	}
-	return &PatchInferenceEndpointTelemetryConfigRequest{
-		Name:            v.Name,
-		TelemetryConfig: telemetryConfigWireValue,
-	}, nil
-}
-
 type PayloadTable struct {
 	Name          *string `json:"name,omitempty"`
 	Status        *string `json:"status,omitempty"`
 	StatusMessage *string `json:"status_message,omitempty"`
-}
-
-func PayloadTableFromSDK(v *sdk.PayloadTable) (*PayloadTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PayloadTable{
-		Name:          v.Name,
-		Status:        v.Status,
-		StatusMessage: v.StatusMessage,
-	}, nil
-}
-
-func PayloadTableToSDK(w *PayloadTable) (*sdk.PayloadTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PayloadTable{
-		Name:          w.Name,
-		Status:        w.Status,
-		StatusMessage: w.StatusMessage,
-	}, nil
 }
 
 type PendingConfig struct {
@@ -1981,85 +728,15 @@ type PendingConfig struct {
 	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
-func PendingConfigToSDK(w *PendingConfig) (*sdk.PendingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	servedEntitiesPublicValue, err := convertSlice(w.ServedEntities, ServedModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedEntities", err)
-	}
-	servedModelsPublicValue, err := convertSlice(w.ServedModels, ServedModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedModels", err)
-	}
-	trafficConfigPublicValue, err := TrafficConfigToSDK(w.TrafficConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingConfig.TrafficConfig", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingConfig.StartTime", err)
-	}
-	autoCaptureConfigPublicValue, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingConfig.AutoCaptureConfig", err)
-	}
-	return &sdk.PendingConfig{
-		ServedEntities:    servedEntitiesPublicValue,
-		ServedModels:      servedModelsPublicValue,
-		TrafficConfig:     trafficConfigPublicValue,
-		ConfigVersion:     w.ConfigVersion,
-		StartTime:         startTimePublicValue,
-		AutoCaptureConfig: autoCaptureConfigPublicValue,
-	}, nil
-}
-
 type PiiSettings struct {
 	// Configuration for input guardrail filters.
 	Behavior Behavior `json:"behavior,omitempty"`
-}
-
-func PiiSettingsFromSDK(v *sdk.PiiSettings) (*PiiSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PiiSettings{
-		Behavior: v.Behavior,
-	}, nil
-}
-
-func PiiSettingsToSDK(w *PiiSettings) (*sdk.PiiSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PiiSettings{
-		Behavior: w.Behavior,
-	}, nil
 }
 
 type PtEndpointCoreConfig struct {
 	// The list of served entities under the serving endpoint config.
 	ServedEntities []PtServedModel `json:"served_entities,omitempty"`
 	TrafficConfig  *TrafficConfig  `json:"traffic_config,omitempty"`
-}
-
-func PtEndpointCoreConfigFromSDK(v *sdk.PtEndpointCoreConfig) (*PtEndpointCoreConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servedEntitiesWireValue, err := convertSlice(v.ServedEntities, PtServedModelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.ServedEntities", err)
-	}
-	trafficConfigWireValue, err := TrafficConfigFromSDK(v.TrafficConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.TrafficConfig", err)
-	}
-	return &PtEndpointCoreConfig{
-		ServedEntities: servedEntitiesWireValue,
-		TrafficConfig:  trafficConfigWireValue,
-	}, nil
 }
 
 type PtServedModel struct {
@@ -2085,23 +762,6 @@ type PtServedModel struct {
 	BurstScalingEnabled *bool `json:"burst_scaling_enabled,omitempty"`
 }
 
-func PtServedModelFromSDK(v *sdk.PtServedModel) (*PtServedModel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	provisionedModelUnitsWireValue, err := int64ToWire(v.ProvisionedModelUnits)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PtServedModel.ProvisionedModelUnits", err)
-	}
-	return &PtServedModel{
-		Name:                  v.Name,
-		EntityName:            v.EntityName,
-		EntityVersion:         v.EntityVersion,
-		ProvisionedModelUnits: provisionedModelUnitsWireValue,
-		BurstScalingEnabled:   v.BurstScalingEnabled,
-	}, nil
-}
-
 type PutInferenceEndpointAiGatewayRequest struct {
 	// The name of the serving endpoint whose AI Gateway is being updated. This
 	// field is required.
@@ -2125,40 +785,6 @@ type PutInferenceEndpointAiGatewayRequest struct {
 	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
 }
 
-func PutInferenceEndpointAiGatewayRequestFromSDK(v *sdk.PutInferenceEndpointAiGatewayRequest) (*PutInferenceEndpointAiGatewayRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usageTrackingConfigWireValue, err := UsageTrackingConfigFromSDK(v.UsageTrackingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.UsageTrackingConfig", err)
-	}
-	inferenceTableConfigWireValue, err := InferenceTableConfigFromSDK(v.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.InferenceTableConfig", err)
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, AiGatewayRateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.RateLimits", err)
-	}
-	guardrailsWireValue, err := AiGuardrailsFromSDK(v.Guardrails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.Guardrails", err)
-	}
-	fallbackConfigWireValue, err := FallbackConfigFromSDK(v.FallbackConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.FallbackConfig", err)
-	}
-	return &PutInferenceEndpointAiGatewayRequest{
-		Name:                 v.Name,
-		UsageTrackingConfig:  usageTrackingConfigWireValue,
-		InferenceTableConfig: inferenceTableConfigWireValue,
-		RateLimits:           rateLimitsWireValue,
-		Guardrails:           guardrailsWireValue,
-		FallbackConfig:       fallbackConfigWireValue,
-	}, nil
-}
-
 type PutInferenceEndpointAiGatewayResponse struct {
 	// Configuration to enable usage tracking using system tables. These tables
 	// allow you to monitor operational usage on endpoints and their associated
@@ -2179,39 +805,6 @@ type PutInferenceEndpointAiGatewayResponse struct {
 	FallbackConfig *FallbackConfig `json:"fallback_config,omitempty"`
 }
 
-func PutInferenceEndpointAiGatewayResponseToSDK(w *PutInferenceEndpointAiGatewayResponse) (*sdk.PutInferenceEndpointAiGatewayResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usageTrackingConfigPublicValue, err := UsageTrackingConfigToSDK(w.UsageTrackingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.UsageTrackingConfig", err)
-	}
-	inferenceTableConfigPublicValue, err := InferenceTableConfigToSDK(w.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.InferenceTableConfig", err)
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, AiGatewayRateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.RateLimits", err)
-	}
-	guardrailsPublicValue, err := AiGuardrailsToSDK(w.Guardrails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.Guardrails", err)
-	}
-	fallbackConfigPublicValue, err := FallbackConfigToSDK(w.FallbackConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.FallbackConfig", err)
-	}
-	return &sdk.PutInferenceEndpointAiGatewayResponse{
-		UsageTrackingConfig:  usageTrackingConfigPublicValue,
-		InferenceTableConfig: inferenceTableConfigPublicValue,
-		RateLimits:           rateLimitsPublicValue,
-		Guardrails:           guardrailsPublicValue,
-		FallbackConfig:       fallbackConfigPublicValue,
-	}, nil
-}
-
 type PutInferenceEndpointConfigRequest struct {
 	// The name of the serving endpoint to update. This field is required.
 	Name *string `json:"name,omitempty"`
@@ -2229,35 +822,6 @@ type PutInferenceEndpointConfigRequest struct {
 	AutoCaptureConfig *AutoCaptureConfig `json:"auto_capture_config,omitempty"`
 }
 
-func PutInferenceEndpointConfigRequestFromSDK(v *sdk.PutInferenceEndpointConfigRequest) (*PutInferenceEndpointConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servedEntitiesWireValue, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedEntities", err)
-	}
-	servedModelsWireValue, err := convertSlice(v.ServedModels, ServedModelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedModels", err)
-	}
-	trafficConfigWireValue, err := TrafficConfigFromSDK(v.TrafficConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.TrafficConfig", err)
-	}
-	autoCaptureConfigWireValue, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.AutoCaptureConfig", err)
-	}
-	return &PutInferenceEndpointConfigRequest{
-		Name:              v.Name,
-		ServedEntities:    servedEntitiesWireValue,
-		ServedModels:      servedModelsWireValue,
-		TrafficConfig:     trafficConfigWireValue,
-		AutoCaptureConfig: autoCaptureConfigWireValue,
-	}, nil
-}
-
 type PutInferenceEndpointRateLimitsRequest struct {
 	// The name of the serving endpoint whose rate limits are being updated. This
 	// field is required.
@@ -2266,56 +830,15 @@ type PutInferenceEndpointRateLimitsRequest struct {
 	RateLimits []RateLimit `json:"rate_limits,omitempty"`
 }
 
-func PutInferenceEndpointRateLimitsRequestFromSDK(v *sdk.PutInferenceEndpointRateLimitsRequest) (*PutInferenceEndpointRateLimitsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, RateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsRequest.RateLimits", err)
-	}
-	return &PutInferenceEndpointRateLimitsRequest{
-		Name:       v.Name,
-		RateLimits: rateLimitsWireValue,
-	}, nil
-}
-
 type PutInferenceEndpointRateLimitsResponse struct {
 	// The list of endpoint rate limits.
 	RateLimits []RateLimit `json:"rate_limits,omitempty"`
-}
-
-func PutInferenceEndpointRateLimitsResponseToSDK(w *PutInferenceEndpointRateLimitsResponse) (*sdk.PutInferenceEndpointRateLimitsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, RateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsResponse.RateLimits", err)
-	}
-	return &sdk.PutInferenceEndpointRateLimitsResponse{
-		RateLimits: rateLimitsPublicValue,
-	}, nil
 }
 
 type PutPtEndpointConfigRequest struct {
 	// The name of the pt endpoint to update. This field is required.
 	Name   *string               `json:"name,omitempty"`
 	Config *PtEndpointCoreConfig `json:"config,omitempty"`
-}
-
-func PutPtEndpointConfigRequestFromSDK(v *sdk.PutPtEndpointConfigRequest) (*PutPtEndpointConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := PtEndpointCoreConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PutPtEndpointConfigRequest.Config", err)
-	}
-	return &PutPtEndpointConfigRequest{
-		Name:   v.Name,
-		Config: configWireValue,
-	}, nil
 }
 
 type RateLimit struct {
@@ -2330,36 +853,6 @@ type RateLimit struct {
 	RenewalPeriod *string `json:"renewal_period,omitempty"`
 }
 
-func RateLimitFromSDK(v *sdk.RateLimit) (*RateLimit, error) {
-	if v == nil {
-		return nil, nil
-	}
-	callsWireValue, err := int64ToWire(v.Calls)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Calls", err)
-	}
-	return &RateLimit{
-		Calls:         callsWireValue,
-		Key:           v.Key,
-		RenewalPeriod: v.RenewalPeriod,
-	}, nil
-}
-
-func RateLimitToSDK(w *RateLimit) (*sdk.RateLimit, error) {
-	if w == nil {
-		return nil, nil
-	}
-	callsPublicValue, err := int64FromWire(w.Calls)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Calls", err)
-	}
-	return &sdk.RateLimit{
-		Calls:         callsPublicValue,
-		Key:           w.Key,
-		RenewalPeriod: w.RenewalPeriod,
-	}, nil
-}
-
 type Route struct {
 	// The name of the served model this route configures traffic for.
 	ServedModelName *string `json:"served_model_name,omitempty"`
@@ -2367,28 +860,6 @@ type Route struct {
 	// integer between 0 and 100 inclusive.
 	TrafficPercentage *int    `json:"traffic_percentage,omitempty"`
 	ServedEntityName  *string `json:"served_entity_name,omitempty"`
-}
-
-func RouteFromSDK(v *sdk.Route) (*Route, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Route{
-		ServedModelName:   v.ServedModelName,
-		TrafficPercentage: v.TrafficPercentage,
-		ServedEntityName:  v.ServedEntityName,
-	}, nil
-}
-
-func RouteToSDK(w *Route) (*sdk.Route, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Route{
-		ServedModelName:   w.ServedModelName,
-		TrafficPercentage: w.TrafficPercentage,
-		ServedEntityName:  w.ServedEntityName,
-	}, nil
 }
 
 type ServedModel struct {
@@ -2462,102 +933,6 @@ type ServedModel struct {
 	CreationTimestamp  *int64            `json:"creation_timestamp,omitempty"`
 }
 
-func ServedModelFromSDK(v *sdk.ServedModel) (*ServedModel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	externalModelWireValue, err := ExternalModelFromSDK(v.ExternalModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.ExternalModel", err)
-	}
-	provisionedModelUnitsWireValue, err := int64ToWire(v.ProvisionedModelUnits)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.ProvisionedModelUnits", err)
-	}
-	foundationModelWireValue, err := FoundationModelFromSDK(v.FoundationModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.FoundationModel", err)
-	}
-	stateWireValue, err := ServedModelStateFromSDK(v.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.State", err)
-	}
-	creationTimestampWireValue, err := int64ToWire(v.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.CreationTimestamp", err)
-	}
-	return &ServedModel{
-		Name:                      v.Name,
-		ExternalModel:             externalModelWireValue,
-		EntityName:                v.EntityName,
-		EntityVersion:             v.EntityVersion,
-		MinProvisionedThroughput:  v.MinProvisionedThroughput,
-		MaxProvisionedThroughput:  v.MaxProvisionedThroughput,
-		MinProvisionedConcurrency: v.MinProvisionedConcurrency,
-		MaxProvisionedConcurrency: v.MaxProvisionedConcurrency,
-		WorkloadSize:              v.WorkloadSize,
-		ProvisionedModelUnits:     provisionedModelUnitsWireValue,
-		BurstScalingEnabled:       v.BurstScalingEnabled,
-		ScaleToZeroEnabled:        v.ScaleToZeroEnabled,
-		ModelName:                 v.ModelName,
-		ModelVersion:              v.ModelVersion,
-		EnvironmentVars:           v.EnvironmentVars,
-		InstanceProfileArn:        v.InstanceProfileArn,
-		FoundationModel:           foundationModelWireValue,
-		State:                     stateWireValue,
-		Creator:                   v.Creator,
-		CreationTimestamp:         creationTimestampWireValue,
-	}, nil
-}
-
-func ServedModelToSDK(w *ServedModel) (*sdk.ServedModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalModelPublicValue, err := ExternalModelToSDK(w.ExternalModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.ExternalModel", err)
-	}
-	provisionedModelUnitsPublicValue, err := int64FromWire(w.ProvisionedModelUnits)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.ProvisionedModelUnits", err)
-	}
-	foundationModelPublicValue, err := FoundationModelToSDK(w.FoundationModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.FoundationModel", err)
-	}
-	statePublicValue, err := ServedModelStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.State", err)
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModel.CreationTimestamp", err)
-	}
-	return &sdk.ServedModel{
-		Name:                      w.Name,
-		ExternalModel:             externalModelPublicValue,
-		EntityName:                w.EntityName,
-		EntityVersion:             w.EntityVersion,
-		MinProvisionedThroughput:  w.MinProvisionedThroughput,
-		MaxProvisionedThroughput:  w.MaxProvisionedThroughput,
-		MinProvisionedConcurrency: w.MinProvisionedConcurrency,
-		MaxProvisionedConcurrency: w.MaxProvisionedConcurrency,
-		WorkloadSize:              w.WorkloadSize,
-		ProvisionedModelUnits:     provisionedModelUnitsPublicValue,
-		BurstScalingEnabled:       w.BurstScalingEnabled,
-		ScaleToZeroEnabled:        w.ScaleToZeroEnabled,
-		ModelName:                 w.ModelName,
-		ModelVersion:              w.ModelVersion,
-		EnvironmentVars:           w.EnvironmentVars,
-		InstanceProfileArn:        w.InstanceProfileArn,
-		FoundationModel:           foundationModelPublicValue,
-		State:                     statePublicValue,
-		Creator:                   w.Creator,
-		CreationTimestamp:         creationTimestampPublicValue,
-	}, nil
-}
-
 type ServedModelLite struct {
 	Name *string `json:"name,omitempty"`
 	// Only one of model_name and entity_name should be populated
@@ -2570,52 +945,9 @@ type ServedModelLite struct {
 	FoundationModel *FoundationModel `json:"foundation_model,omitempty"`
 }
 
-func ServedModelLiteToSDK(w *ServedModelLite) (*sdk.ServedModelLite, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalModelPublicValue, err := ExternalModelToSDK(w.ExternalModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModelLite.ExternalModel", err)
-	}
-	foundationModelPublicValue, err := FoundationModelToSDK(w.FoundationModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServedModelLite.FoundationModel", err)
-	}
-	return &sdk.ServedModelLite{
-		Name:            w.Name,
-		ModelName:       w.ModelName,
-		EntityName:      w.EntityName,
-		ModelVersion:    w.ModelVersion,
-		EntityVersion:   w.EntityVersion,
-		ExternalModel:   externalModelPublicValue,
-		FoundationModel: foundationModelPublicValue,
-	}, nil
-}
-
 type ServedModelState struct {
 	Deployment             ServedModelDeploymentState `json:"deployment,omitempty"`
 	DeploymentStateMessage *string                    `json:"deployment_state_message,omitempty"`
-}
-
-func ServedModelStateFromSDK(v *sdk.ServedModelState) (*ServedModelState, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ServedModelState{
-		Deployment:             v.Deployment,
-		DeploymentStateMessage: v.DeploymentStateMessage,
-	}, nil
-}
-
-func ServedModelStateToSDK(w *ServedModelState) (*sdk.ServedModelState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ServedModelState{
-		Deployment:             w.Deployment,
-		DeploymentStateMessage: w.DeploymentStateMessage,
-	}, nil
 }
 
 type TelemetryConfig struct {
@@ -2628,77 +960,6 @@ type TelemetryConfig struct {
 	EnabledTelemetryFeatures []TelemetryFeature `json:"enabled_telemetry_features,omitempty"`
 }
 
-func TelemetryConfigFromSDK(v *sdk.TelemetryConfig) (*TelemetryConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inferenceTableConfigWireValue, err := TelemetryInferenceTableConfigFromSDK(v.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TelemetryConfig.InferenceTableConfig", err)
-	}
-	var telemetryProfileTelemetryProfileIdWire *string
-	var telemetryProfileTableNamesWire *UnityCatalogTableNames
-	switch value := v.TelemetryProfile.(type) {
-	case nil:
-	case *sdk.TelemetryConfig_TelemetryProfile_TelemetryProfileId:
-		if value != nil {
-			telemetryProfileTelemetryProfileIdWire = new(value.TelemetryProfileId)
-		}
-	case *sdk.TelemetryConfig_TelemetryProfile_TableNames:
-		if value != nil {
-			telemetryProfileTableNamesConverted, err := UnityCatalogTableNamesFromSDK(&value.TableNames)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TelemetryConfig.TelemetryProfile.TableNames", err)
-			}
-			telemetryProfileTableNamesWire = telemetryProfileTableNamesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TelemetryConfig.TelemetryProfile", value)
-	}
-	return &TelemetryConfig{
-		TelemetryProfileId:       telemetryProfileTelemetryProfileIdWire,
-		TableNames:               telemetryProfileTableNamesWire,
-		InferenceTableConfig:     inferenceTableConfigWireValue,
-		EnabledTelemetryFeatures: v.EnabledTelemetryFeatures,
-	}, nil
-}
-
-func TelemetryConfigToSDK(w *TelemetryConfig) (*sdk.TelemetryConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	telemetryProfileMembers := 0
-	if w.TelemetryProfileId != nil {
-		telemetryProfileMembers++
-	}
-	if w.TableNames != nil {
-		telemetryProfileMembers++
-	}
-	if telemetryProfileMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryConfig.TelemetryProfile")
-	}
-	inferenceTableConfigPublicValue, err := TelemetryInferenceTableConfigToSDK(w.InferenceTableConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TelemetryConfig.InferenceTableConfig", err)
-	}
-	telemetryProfileSelection := (&sdk.TelemetryConfig{}).TelemetryProfile
-	switch {
-	case w.TelemetryProfileId != nil:
-		telemetryProfileSelection = &sdk.TelemetryConfig_TelemetryProfile_TelemetryProfileId{TelemetryProfileId: *w.TelemetryProfileId}
-	case w.TableNames != nil:
-		telemetryProfileTableNamesConverted, err := UnityCatalogTableNamesToSDK(w.TableNames)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TelemetryConfig.TelemetryProfile.TableNames", err)
-		}
-		telemetryProfileSelection = &sdk.TelemetryConfig_TelemetryProfile_TableNames{TableNames: *telemetryProfileTableNamesConverted}
-	}
-	return &sdk.TelemetryConfig{
-		InferenceTableConfig:     inferenceTableConfigPublicValue,
-		EnabledTelemetryFeatures: w.EnabledTelemetryFeatures,
-		TelemetryProfile:         telemetryProfileSelection,
-	}, nil
-}
-
 // Inference table payload logging configuration.
 type TelemetryInferenceTableConfig struct {
 	// Fraction of requests sampled for payload logging, in the range [0.0, 1.0],
@@ -2708,55 +969,9 @@ type TelemetryInferenceTableConfig struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func TelemetryInferenceTableConfigFromSDK(v *sdk.TelemetryInferenceTableConfig) (*TelemetryInferenceTableConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TelemetryInferenceTableConfig{
-		SamplingFraction: v.SamplingFraction,
-		Name:             v.Name,
-	}, nil
-}
-
-func TelemetryInferenceTableConfigToSDK(w *TelemetryInferenceTableConfig) (*sdk.TelemetryInferenceTableConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TelemetryInferenceTableConfig{
-		SamplingFraction: w.SamplingFraction,
-		Name:             w.Name,
-	}, nil
-}
-
 type TrafficConfig struct {
 	// The list of routes that define traffic to each served entity.
 	Routes []Route `json:"routes,omitempty"`
-}
-
-func TrafficConfigFromSDK(v *sdk.TrafficConfig) (*TrafficConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	routesWireValue, err := convertSlice(v.Routes, RouteFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TrafficConfig.Routes", err)
-	}
-	return &TrafficConfig{
-		Routes: routesWireValue,
-	}, nil
-}
-
-func TrafficConfigToSDK(w *TrafficConfig) (*sdk.TrafficConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	routesPublicValue, err := convertSlice(w.Routes, RouteToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TrafficConfig.Routes", err)
-	}
-	return &sdk.TrafficConfig{
-		Routes: routesPublicValue,
-	}, nil
 }
 
 type UnityCatalogTableNames struct {
@@ -2774,30 +989,6 @@ type UnityCatalogTableNames struct {
 	AnnotationsTable *string `json:"annotations_table,omitempty"`
 }
 
-func UnityCatalogTableNamesFromSDK(v *sdk.UnityCatalogTableNames) (*UnityCatalogTableNames, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UnityCatalogTableNames{
-		LogsTable:        v.LogsTable,
-		MetricsTable:     v.MetricsTable,
-		TracesTable:      v.TracesTable,
-		AnnotationsTable: v.AnnotationsTable,
-	}, nil
-}
-
-func UnityCatalogTableNamesToSDK(w *UnityCatalogTableNames) (*sdk.UnityCatalogTableNames, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UnityCatalogTableNames{
-		LogsTable:        w.LogsTable,
-		MetricsTable:     w.MetricsTable,
-		TracesTable:      w.TracesTable,
-		AnnotationsTable: w.AnnotationsTable,
-	}, nil
-}
-
 type UpdateInferenceEndpointNotificationsRequest struct {
 	// The name of the serving endpoint whose notifications are being updated. This
 	// field is required.
@@ -2807,37 +998,9 @@ type UpdateInferenceEndpointNotificationsRequest struct {
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
 }
 
-func UpdateInferenceEndpointNotificationsRequestFromSDK(v *sdk.UpdateInferenceEndpointNotificationsRequest) (*UpdateInferenceEndpointNotificationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailNotificationsWireValue, err := EmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsRequest.EmailNotifications", err)
-	}
-	return &UpdateInferenceEndpointNotificationsRequest{
-		Name:               v.Name,
-		EmailNotifications: emailNotificationsWireValue,
-	}, nil
-}
-
 type UpdateInferenceEndpointNotificationsResponse struct {
 	Name               *string             `json:"name,omitempty"`
 	EmailNotifications *EmailNotifications `json:"email_notifications,omitempty"`
-}
-
-func UpdateInferenceEndpointNotificationsResponseToSDK(w *UpdateInferenceEndpointNotificationsResponse) (*sdk.UpdateInferenceEndpointNotificationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	emailNotificationsPublicValue, err := EmailNotificationsToSDK(w.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsResponse.EmailNotifications", err)
-	}
-	return &sdk.UpdateInferenceEndpointNotificationsResponse{
-		Name:               w.Name,
-		EmailNotifications: emailNotificationsPublicValue,
-	}, nil
 }
 
 type UsageTrackingConfig struct {
@@ -2845,22 +1008,2491 @@ type UsageTrackingConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func UsageTrackingConfigFromSDK(v *sdk.UsageTrackingConfig) (*UsageTrackingConfig, error) {
+// Ai21LabsConfigToSDK converts the mirror to the sdk-go type.
+func Ai21LabsConfigToSDK(w *Ai21LabsConfig) (*sdk.Ai21LabsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Ai21LabsConfig{}
+	out.Ai21labsApiKey = w.Ai21labsApiKey
+	out.Ai21labsApiKeyPlaintext = w.Ai21labsApiKeyPlaintext
+	return out, nil
+}
+
+// Ai21LabsConfigFromSDK converts the sdk-go type to the mirror.
+func Ai21LabsConfigFromSDK(v *sdk.Ai21LabsConfig) (*Ai21LabsConfig, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &UsageTrackingConfig{
-		Enabled: v.Enabled,
-	}, nil
+	out := &Ai21LabsConfig{}
+	out.Ai21labsApiKey = v.Ai21labsApiKey
+	out.Ai21labsApiKeyPlaintext = v.Ai21labsApiKeyPlaintext
+	return out, nil
 }
 
+// AiGatewayConfigToSDK converts the mirror to the sdk-go type.
+func AiGatewayConfigToSDK(w *AiGatewayConfig) (*sdk.AiGatewayConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiGatewayConfig{}
+	conv1, err := UsageTrackingConfigToSDK(w.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv1
+	conv2, err := InferenceTableConfigToSDK(w.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv2
+	conv3, err := convertSlice(w.RateLimits, AiGatewayRateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.RateLimits", err)
+	}
+	out.RateLimits = conv3
+	conv4, err := AiGuardrailsToSDK(w.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.Guardrails", err)
+	}
+	out.Guardrails = conv4
+	conv5, err := FallbackConfigToSDK(w.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv5
+	return out, nil
+}
+
+// AiGatewayConfigFromSDK converts the sdk-go type to the mirror.
+func AiGatewayConfigFromSDK(v *sdk.AiGatewayConfig) (*AiGatewayConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiGatewayConfig{}
+	conv6, err := UsageTrackingConfigFromSDK(v.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv6
+	conv7, err := InferenceTableConfigFromSDK(v.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv7
+	conv8, err := convertSlice(v.RateLimits, AiGatewayRateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.RateLimits", err)
+	}
+	out.RateLimits = conv8
+	conv9, err := AiGuardrailsFromSDK(v.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.Guardrails", err)
+	}
+	out.Guardrails = conv9
+	conv10, err := FallbackConfigFromSDK(v.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGatewayConfig.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv10
+	return out, nil
+}
+
+// AiGatewayRateLimitToSDK converts the mirror to the sdk-go type.
+func AiGatewayRateLimitToSDK(w *AiGatewayRateLimit) (*sdk.AiGatewayRateLimit, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiGatewayRateLimit{}
+	out.Calls = w.Calls
+	out.Key = w.Key
+	out.RenewalPeriod = w.RenewalPeriod
+	out.Principal = w.Principal
+	out.Tokens = w.Tokens
+	return out, nil
+}
+
+// AiGatewayRateLimitFromSDK converts the sdk-go type to the mirror.
+func AiGatewayRateLimitFromSDK(v *sdk.AiGatewayRateLimit) (*AiGatewayRateLimit, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiGatewayRateLimit{}
+	out.Calls = v.Calls
+	out.Key = v.Key
+	out.RenewalPeriod = v.RenewalPeriod
+	out.Principal = v.Principal
+	out.Tokens = v.Tokens
+	return out, nil
+}
+
+// AiGuardrailParametersToSDK converts the mirror to the sdk-go type.
+func AiGuardrailParametersToSDK(w *AiGuardrailParameters) (*sdk.AiGuardrailParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiGuardrailParameters{}
+	out.Safety = w.Safety
+	conv11, err := PiiSettingsToSDK(w.Pii)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrailParameters.Pii", err)
+	}
+	out.Pii = conv11
+	out.ValidTopics = w.ValidTopics
+	out.InvalidKeywords = w.InvalidKeywords
+	return out, nil
+}
+
+// AiGuardrailParametersFromSDK converts the sdk-go type to the mirror.
+func AiGuardrailParametersFromSDK(v *sdk.AiGuardrailParameters) (*AiGuardrailParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiGuardrailParameters{}
+	out.Safety = v.Safety
+	conv12, err := PiiSettingsFromSDK(v.Pii)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrailParameters.Pii", err)
+	}
+	out.Pii = conv12
+	out.ValidTopics = v.ValidTopics
+	out.InvalidKeywords = v.InvalidKeywords
+	return out, nil
+}
+
+// AiGuardrailsToSDK converts the mirror to the sdk-go type.
+func AiGuardrailsToSDK(w *AiGuardrails) (*sdk.AiGuardrails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiGuardrails{}
+	conv13, err := AiGuardrailParametersToSDK(w.Input)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Input", err)
+	}
+	out.Input = conv13
+	conv14, err := AiGuardrailParametersToSDK(w.Output)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Output", err)
+	}
+	out.Output = conv14
+	return out, nil
+}
+
+// AiGuardrailsFromSDK converts the sdk-go type to the mirror.
+func AiGuardrailsFromSDK(v *sdk.AiGuardrails) (*AiGuardrails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiGuardrails{}
+	conv15, err := AiGuardrailParametersFromSDK(v.Input)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Input", err)
+	}
+	out.Input = conv15
+	conv16, err := AiGuardrailParametersFromSDK(v.Output)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiGuardrails.Output", err)
+	}
+	out.Output = conv16
+	return out, nil
+}
+
+// AmazonBedrockConfigToSDK converts the mirror to the sdk-go type.
+func AmazonBedrockConfigToSDK(w *AmazonBedrockConfig) (*sdk.AmazonBedrockConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AmazonBedrockConfig{}
+	out.AwsRegion = w.AwsRegion
+	out.AwsAccessKeyId = w.AwsAccessKeyId
+	out.AwsSecretAccessKey = w.AwsSecretAccessKey
+	out.BedrockProvider = w.BedrockProvider
+	out.AwsAccessKeyIdPlaintext = w.AwsAccessKeyIdPlaintext
+	out.AwsSecretAccessKeyPlaintext = w.AwsSecretAccessKeyPlaintext
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.UcServiceCredentialName = w.UcServiceCredentialName
+	return out, nil
+}
+
+// AmazonBedrockConfigFromSDK converts the sdk-go type to the mirror.
+func AmazonBedrockConfigFromSDK(v *sdk.AmazonBedrockConfig) (*AmazonBedrockConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AmazonBedrockConfig{}
+	out.AwsRegion = v.AwsRegion
+	out.AwsAccessKeyId = v.AwsAccessKeyId
+	out.AwsSecretAccessKey = v.AwsSecretAccessKey
+	out.BedrockProvider = v.BedrockProvider
+	out.AwsAccessKeyIdPlaintext = v.AwsAccessKeyIdPlaintext
+	out.AwsSecretAccessKeyPlaintext = v.AwsSecretAccessKeyPlaintext
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.UcServiceCredentialName = v.UcServiceCredentialName
+	return out, nil
+}
+
+// AnthropicConfigToSDK converts the mirror to the sdk-go type.
+func AnthropicConfigToSDK(w *AnthropicConfig) (*sdk.AnthropicConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AnthropicConfig{}
+	out.AnthropicApiKey = w.AnthropicApiKey
+	out.AnthropicApiKeyPlaintext = w.AnthropicApiKeyPlaintext
+	return out, nil
+}
+
+// AnthropicConfigFromSDK converts the sdk-go type to the mirror.
+func AnthropicConfigFromSDK(v *sdk.AnthropicConfig) (*AnthropicConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AnthropicConfig{}
+	out.AnthropicApiKey = v.AnthropicApiKey
+	out.AnthropicApiKeyPlaintext = v.AnthropicApiKeyPlaintext
+	return out, nil
+}
+
+// ApiKeyAuthToSDK converts the mirror to the sdk-go type.
+func ApiKeyAuthToSDK(w *ApiKeyAuth) (*sdk.ApiKeyAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiKeyAuth{}
+	out.Key = w.Key
+	out.Value = w.Value
+	out.ValuePlaintext = w.ValuePlaintext
+	return out, nil
+}
+
+// ApiKeyAuthFromSDK converts the sdk-go type to the mirror.
+func ApiKeyAuthFromSDK(v *sdk.ApiKeyAuth) (*ApiKeyAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApiKeyAuth{}
+	out.Key = v.Key
+	out.Value = v.Value
+	out.ValuePlaintext = v.ValuePlaintext
+	return out, nil
+}
+
+// AutoCaptureConfigToSDK converts the mirror to the sdk-go type.
+func AutoCaptureConfigToSDK(w *AutoCaptureConfig) (*sdk.AutoCaptureConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoCaptureConfig{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableNamePrefix = w.TableNamePrefix
+	conv17, err := AutoCaptureStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AutoCaptureConfig.State", err)
+	}
+	out.State = conv17
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// AutoCaptureConfigFromSDK converts the sdk-go type to the mirror.
+func AutoCaptureConfigFromSDK(v *sdk.AutoCaptureConfig) (*AutoCaptureConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoCaptureConfig{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableNamePrefix = v.TableNamePrefix
+	conv18, err := AutoCaptureStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AutoCaptureConfig.State", err)
+	}
+	out.State = conv18
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// AutoCaptureStateToSDK converts the mirror to the sdk-go type.
+func AutoCaptureStateToSDK(w *AutoCaptureState) (*sdk.AutoCaptureState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoCaptureState{}
+	conv19, err := PayloadTableToSDK(w.PayloadTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AutoCaptureState.PayloadTable", err)
+	}
+	out.PayloadTable = conv19
+	return out, nil
+}
+
+// AutoCaptureStateFromSDK converts the sdk-go type to the mirror.
+func AutoCaptureStateFromSDK(v *sdk.AutoCaptureState) (*AutoCaptureState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoCaptureState{}
+	conv20, err := PayloadTableFromSDK(v.PayloadTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AutoCaptureState.PayloadTable", err)
+	}
+	out.PayloadTable = conv20
+	return out, nil
+}
+
+// BearerTokenAuthToSDK converts the mirror to the sdk-go type.
+func BearerTokenAuthToSDK(w *BearerTokenAuth) (*sdk.BearerTokenAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BearerTokenAuth{}
+	out.Token = w.Token
+	out.TokenPlaintext = w.TokenPlaintext
+	return out, nil
+}
+
+// BearerTokenAuthFromSDK converts the sdk-go type to the mirror.
+func BearerTokenAuthFromSDK(v *sdk.BearerTokenAuth) (*BearerTokenAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BearerTokenAuth{}
+	out.Token = v.Token
+	out.TokenPlaintext = v.TokenPlaintext
+	return out, nil
+}
+
+// CohereConfigToSDK converts the mirror to the sdk-go type.
+func CohereConfigToSDK(w *CohereConfig) (*sdk.CohereConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CohereConfig{}
+	out.CohereApiKey = w.CohereApiKey
+	out.CohereApiKeyPlaintext = w.CohereApiKeyPlaintext
+	out.CohereApiBase = w.CohereApiBase
+	return out, nil
+}
+
+// CohereConfigFromSDK converts the sdk-go type to the mirror.
+func CohereConfigFromSDK(v *sdk.CohereConfig) (*CohereConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CohereConfig{}
+	out.CohereApiKey = v.CohereApiKey
+	out.CohereApiKeyPlaintext = v.CohereApiKeyPlaintext
+	out.CohereApiBase = v.CohereApiBase
+	return out, nil
+}
+
+// CreateInferenceEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateInferenceEndpointRequestToSDK(w *CreateInferenceEndpointRequest) (*sdk.CreateInferenceEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateInferenceEndpointRequest{}
+	out.Name = w.Name
+	conv21, err := EndpointCoreConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Config", err)
+	}
+	out.Config = conv21
+	conv22, err := convertSlice(w.Tags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Tags", err)
+	}
+	out.Tags = conv22
+	out.RouteOptimized = w.RouteOptimized
+	conv23, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.RateLimits", err)
+	}
+	out.RateLimits = conv23
+	conv24, err := AiGatewayConfigToSDK(w.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.AiGateway", err)
+	}
+	out.AiGateway = conv24
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv25, err := EmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv25
+	out.Description = w.Description
+	conv26, err := TelemetryConfigToSDK(w.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv26
+	return out, nil
+}
+
+// CreateInferenceEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateInferenceEndpointRequestFromSDK(v *sdk.CreateInferenceEndpointRequest) (*CreateInferenceEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateInferenceEndpointRequest{}
+	out.Name = v.Name
+	conv27, err := EndpointCoreConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Config", err)
+	}
+	out.Config = conv27
+	conv28, err := convertSlice(v.Tags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.Tags", err)
+	}
+	out.Tags = conv28
+	out.RouteOptimized = v.RouteOptimized
+	conv29, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.RateLimits", err)
+	}
+	out.RateLimits = conv29
+	conv30, err := AiGatewayConfigFromSDK(v.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.AiGateway", err)
+	}
+	out.AiGateway = conv30
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv31, err := EmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv31
+	out.Description = v.Description
+	conv32, err := TelemetryConfigFromSDK(v.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInferenceEndpointRequest.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv32
+	return out, nil
+}
+
+// CreatePtEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreatePtEndpointRequestToSDK(w *CreatePtEndpointRequest) (*sdk.CreatePtEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePtEndpointRequest{}
+	out.Name = w.Name
+	conv33, err := PtEndpointCoreConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Config", err)
+	}
+	out.Config = conv33
+	conv34, err := convertSlice(w.Tags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Tags", err)
+	}
+	out.Tags = conv34
+	conv35, err := AiGatewayConfigToSDK(w.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.AiGateway", err)
+	}
+	out.AiGateway = conv35
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv36, err := EmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv36
+	return out, nil
+}
+
+// CreatePtEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePtEndpointRequestFromSDK(v *sdk.CreatePtEndpointRequest) (*CreatePtEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePtEndpointRequest{}
+	out.Name = v.Name
+	conv37, err := PtEndpointCoreConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Config", err)
+	}
+	out.Config = conv37
+	conv38, err := convertSlice(v.Tags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.Tags", err)
+	}
+	out.Tags = conv38
+	conv39, err := AiGatewayConfigFromSDK(v.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.AiGateway", err)
+	}
+	out.AiGateway = conv39
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv40, err := EmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePtEndpointRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv40
+	return out, nil
+}
+
+// CustomProviderConfigToSDK converts the mirror to the sdk-go type.
+func CustomProviderConfigToSDK(w *CustomProviderConfig) (*sdk.CustomProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomProviderConfig{}
+	out.CustomProviderUrl = w.CustomProviderUrl
+	conv41, err := BearerTokenAuthToSDK(w.BearerTokenAuth)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.BearerTokenAuth", err)
+	}
+	out.BearerTokenAuth = conv41
+	conv42, err := ApiKeyAuthToSDK(w.ApiKeyAuth)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.ApiKeyAuth", err)
+	}
+	out.ApiKeyAuth = conv42
+	return out, nil
+}
+
+// CustomProviderConfigFromSDK converts the sdk-go type to the mirror.
+func CustomProviderConfigFromSDK(v *sdk.CustomProviderConfig) (*CustomProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomProviderConfig{}
+	out.CustomProviderUrl = v.CustomProviderUrl
+	conv43, err := BearerTokenAuthFromSDK(v.BearerTokenAuth)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.BearerTokenAuth", err)
+	}
+	out.BearerTokenAuth = conv43
+	conv44, err := ApiKeyAuthFromSDK(v.ApiKeyAuth)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomProviderConfig.ApiKeyAuth", err)
+	}
+	out.ApiKeyAuth = conv44
+	return out, nil
+}
+
+// DataPlaneInfoToSDK converts the mirror to the sdk-go type.
+func DataPlaneInfoToSDK(w *DataPlaneInfo) (*sdk.DataPlaneInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataPlaneInfo{}
+	out.EndpointUrl = w.EndpointUrl
+	out.AuthorizationDetails = w.AuthorizationDetails
+	return out, nil
+}
+
+// DataPlaneInfoFromSDK converts the sdk-go type to the mirror.
+func DataPlaneInfoFromSDK(v *sdk.DataPlaneInfo) (*DataPlaneInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataPlaneInfo{}
+	out.EndpointUrl = v.EndpointUrl
+	out.AuthorizationDetails = v.AuthorizationDetails
+	return out, nil
+}
+
+// DatabricksModelServingConfigToSDK converts the mirror to the sdk-go type.
+func DatabricksModelServingConfigToSDK(w *DatabricksModelServingConfig) (*sdk.DatabricksModelServingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabricksModelServingConfig{}
+	out.DatabricksApiToken = w.DatabricksApiToken
+	out.DatabricksWorkspaceUrl = w.DatabricksWorkspaceUrl
+	out.DatabricksApiTokenPlaintext = w.DatabricksApiTokenPlaintext
+	return out, nil
+}
+
+// DatabricksModelServingConfigFromSDK converts the sdk-go type to the mirror.
+func DatabricksModelServingConfigFromSDK(v *sdk.DatabricksModelServingConfig) (*DatabricksModelServingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabricksModelServingConfig{}
+	out.DatabricksApiToken = v.DatabricksApiToken
+	out.DatabricksWorkspaceUrl = v.DatabricksWorkspaceUrl
+	out.DatabricksApiTokenPlaintext = v.DatabricksApiTokenPlaintext
+	return out, nil
+}
+
+// EmailNotificationsToSDK converts the mirror to the sdk-go type.
+func EmailNotificationsToSDK(w *EmailNotifications) (*sdk.EmailNotifications, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmailNotifications{}
+	out.OnUpdateSuccess = w.OnUpdateSuccess
+	out.OnUpdateFailure = w.OnUpdateFailure
+	return out, nil
+}
+
+// EmailNotificationsFromSDK converts the sdk-go type to the mirror.
+func EmailNotificationsFromSDK(v *sdk.EmailNotifications) (*EmailNotifications, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmailNotifications{}
+	out.OnUpdateSuccess = v.OnUpdateSuccess
+	out.OnUpdateFailure = v.OnUpdateFailure
+	return out, nil
+}
+
+// EndpointCoreConfigToSDK converts the mirror to the sdk-go type.
+func EndpointCoreConfigToSDK(w *EndpointCoreConfig) (*sdk.EndpointCoreConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointCoreConfig{}
+	conv45, err := convertSlice(w.ServedEntities, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv45
+	conv46, err := convertSlice(w.ServedModels, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedModels", err)
+	}
+	out.ServedModels = conv46
+	conv47, err := TrafficConfigToSDK(w.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv47
+	conv48, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv48
+	return out, nil
+}
+
+// EndpointCoreConfigFromSDK converts the sdk-go type to the mirror.
+func EndpointCoreConfigFromSDK(v *sdk.EndpointCoreConfig) (*EndpointCoreConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointCoreConfig{}
+	conv49, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv49
+	conv50, err := convertSlice(v.ServedModels, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.ServedModels", err)
+	}
+	out.ServedModels = conv50
+	conv51, err := TrafficConfigFromSDK(v.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv51
+	conv52, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfig.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv52
+	return out, nil
+}
+
+// EndpointCoreConfigOutputToSDK converts the mirror to the sdk-go type.
+func EndpointCoreConfigOutputToSDK(w *EndpointCoreConfigOutput) (*sdk.EndpointCoreConfigOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointCoreConfigOutput{}
+	out.ConfigVersion = w.ConfigVersion
+	conv53, err := convertSlice(w.ServedEntities, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedEntities", err)
+	}
+	out.ServedEntities = conv53
+	conv54, err := convertSlice(w.ServedModels, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedModels", err)
+	}
+	out.ServedModels = conv54
+	conv55, err := TrafficConfigToSDK(w.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv55
+	conv56, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv56
+	return out, nil
+}
+
+// EndpointCoreConfigOutputFromSDK converts the sdk-go type to the mirror.
+func EndpointCoreConfigOutputFromSDK(v *sdk.EndpointCoreConfigOutput) (*EndpointCoreConfigOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointCoreConfigOutput{}
+	out.ConfigVersion = v.ConfigVersion
+	conv57, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedEntities", err)
+	}
+	out.ServedEntities = conv57
+	conv58, err := convertSlice(v.ServedModels, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.ServedModels", err)
+	}
+	out.ServedModels = conv58
+	conv59, err := TrafficConfigFromSDK(v.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv59
+	conv60, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigOutput.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv60
+	return out, nil
+}
+
+// EndpointCoreConfigSummaryToSDK converts the mirror to the sdk-go type.
+func EndpointCoreConfigSummaryToSDK(w *EndpointCoreConfigSummary) (*sdk.EndpointCoreConfigSummary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointCoreConfigSummary{}
+	conv61, err := convertSlice(w.ServedEntities, ServedModelLiteToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedEntities", err)
+	}
+	out.ServedEntities = conv61
+	conv62, err := convertSlice(w.ServedModels, ServedModelLiteToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedModels", err)
+	}
+	out.ServedModels = conv62
+	return out, nil
+}
+
+// EndpointCoreConfigSummaryFromSDK converts the sdk-go type to the mirror.
+func EndpointCoreConfigSummaryFromSDK(v *sdk.EndpointCoreConfigSummary) (*EndpointCoreConfigSummary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointCoreConfigSummary{}
+	conv63, err := convertSlice(v.ServedEntities, ServedModelLiteFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedEntities", err)
+	}
+	out.ServedEntities = conv63
+	conv64, err := convertSlice(v.ServedModels, ServedModelLiteFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointCoreConfigSummary.ServedModels", err)
+	}
+	out.ServedModels = conv64
+	return out, nil
+}
+
+// EndpointTagToSDK converts the mirror to the sdk-go type.
+func EndpointTagToSDK(w *EndpointTag) (*sdk.EndpointTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// EndpointTagFromSDK converts the sdk-go type to the mirror.
+func EndpointTagFromSDK(v *sdk.EndpointTag) (*EndpointTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ExternalFunctionRequestToSDK converts the mirror to the sdk-go type.
+func ExternalFunctionRequestToSDK(w *ExternalFunctionRequest) (*sdk.ExternalFunctionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalFunctionRequest{}
+	out.ConnectionName = w.ConnectionName
+	out.Method = w.Method
+	out.Path = w.Path
+	out.Json = w.Json
+	out.Headers = w.Headers
+	out.Params = w.Params
+	out.SubDomain = w.SubDomain
+	return out, nil
+}
+
+// ExternalFunctionRequestFromSDK converts the sdk-go type to the mirror.
+func ExternalFunctionRequestFromSDK(v *sdk.ExternalFunctionRequest) (*ExternalFunctionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalFunctionRequest{}
+	out.ConnectionName = v.ConnectionName
+	out.Method = v.Method
+	out.Path = v.Path
+	out.Json = v.Json
+	out.Headers = v.Headers
+	out.Params = v.Params
+	out.SubDomain = v.SubDomain
+	return out, nil
+}
+
+// ExternalModelToSDK converts the mirror to the sdk-go type.
+func ExternalModelToSDK(w *ExternalModel) (*sdk.ExternalModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalModel{}
+	out.Provider = w.Provider
+	out.Name = w.Name
+	out.Task = w.Task
+	{
+		members := 0
+		if w.Ai21labsConfig != nil {
+			members++
+		}
+		if w.AnthropicConfig != nil {
+			members++
+		}
+		if w.AmazonBedrockConfig != nil {
+			members++
+		}
+		if w.CohereConfig != nil {
+			members++
+		}
+		if w.GoogleCloudVertexAiConfig != nil {
+			members++
+		}
+		if w.DatabricksModelServingConfig != nil {
+			members++
+		}
+		if w.OpenaiConfig != nil {
+			members++
+		}
+		if w.PalmConfig != nil {
+			members++
+		}
+		if w.CustomProviderConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ExternalModel.Config")
+		}
+	}
+	switch {
+	case w.Ai21labsConfig != nil:
+		conv65, err := Ai21LabsConfigToSDK(w.Ai21labsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_Ai21labsConfig{Ai21labsConfig: *conv65}
+	case w.AnthropicConfig != nil:
+		conv66, err := AnthropicConfigToSDK(w.AnthropicConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_AnthropicConfig{AnthropicConfig: *conv66}
+	case w.AmazonBedrockConfig != nil:
+		conv67, err := AmazonBedrockConfigToSDK(w.AmazonBedrockConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_AmazonBedrockConfig{AmazonBedrockConfig: *conv67}
+	case w.CohereConfig != nil:
+		conv68, err := CohereConfigToSDK(w.CohereConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_CohereConfig{CohereConfig: *conv68}
+	case w.GoogleCloudVertexAiConfig != nil:
+		conv69, err := GoogleCloudVertexAiConfigToSDK(w.GoogleCloudVertexAiConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_GoogleCloudVertexAiConfig{GoogleCloudVertexAiConfig: *conv69}
+	case w.DatabricksModelServingConfig != nil:
+		conv70, err := DatabricksModelServingConfigToSDK(w.DatabricksModelServingConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_DatabricksModelServingConfig{DatabricksModelServingConfig: *conv70}
+	case w.OpenaiConfig != nil:
+		conv71, err := OpenAiConfigToSDK(w.OpenaiConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_OpenaiConfig{OpenaiConfig: *conv71}
+	case w.PalmConfig != nil:
+		conv72, err := PaLmConfigToSDK(w.PalmConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_PalmConfig{PalmConfig: *conv72}
+	case w.CustomProviderConfig != nil:
+		conv73, err := CustomProviderConfigToSDK(w.CustomProviderConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+		}
+		out.Config = &sdk.ExternalModel_Config_CustomProviderConfig{CustomProviderConfig: *conv73}
+	}
+	return out, nil
+}
+
+// ExternalModelFromSDK converts the sdk-go type to the mirror.
+func ExternalModelFromSDK(v *sdk.ExternalModel) (*ExternalModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalModel{}
+	out.Provider = v.Provider
+	out.Name = v.Name
+	out.Task = v.Task
+	switch value := v.Config.(type) {
+	case *sdk.ExternalModel_Config_Ai21labsConfig:
+		if value != nil {
+			conv74, err := Ai21LabsConfigFromSDK(&value.Ai21labsConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.Ai21labsConfig = conv74
+		}
+	case *sdk.ExternalModel_Config_AnthropicConfig:
+		if value != nil {
+			conv75, err := AnthropicConfigFromSDK(&value.AnthropicConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.AnthropicConfig = conv75
+		}
+	case *sdk.ExternalModel_Config_AmazonBedrockConfig:
+		if value != nil {
+			conv76, err := AmazonBedrockConfigFromSDK(&value.AmazonBedrockConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.AmazonBedrockConfig = conv76
+		}
+	case *sdk.ExternalModel_Config_CohereConfig:
+		if value != nil {
+			conv77, err := CohereConfigFromSDK(&value.CohereConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.CohereConfig = conv77
+		}
+	case *sdk.ExternalModel_Config_GoogleCloudVertexAiConfig:
+		if value != nil {
+			conv78, err := GoogleCloudVertexAiConfigFromSDK(&value.GoogleCloudVertexAiConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.GoogleCloudVertexAiConfig = conv78
+		}
+	case *sdk.ExternalModel_Config_DatabricksModelServingConfig:
+		if value != nil {
+			conv79, err := DatabricksModelServingConfigFromSDK(&value.DatabricksModelServingConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.DatabricksModelServingConfig = conv79
+		}
+	case *sdk.ExternalModel_Config_OpenaiConfig:
+		if value != nil {
+			conv80, err := OpenAiConfigFromSDK(&value.OpenaiConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.OpenaiConfig = conv80
+		}
+	case *sdk.ExternalModel_Config_PalmConfig:
+		if value != nil {
+			conv81, err := PaLmConfigFromSDK(&value.PalmConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.PalmConfig = conv81
+		}
+	case *sdk.ExternalModel_Config_CustomProviderConfig:
+		if value != nil {
+			conv82, err := CustomProviderConfigFromSDK(&value.CustomProviderConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExternalModel.Config", err)
+			}
+			out.CustomProviderConfig = conv82
+		}
+	}
+	return out, nil
+}
+
+// FallbackConfigToSDK converts the mirror to the sdk-go type.
+func FallbackConfigToSDK(w *FallbackConfig) (*sdk.FallbackConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FallbackConfig{}
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// FallbackConfigFromSDK converts the sdk-go type to the mirror.
+func FallbackConfigFromSDK(v *sdk.FallbackConfig) (*FallbackConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FallbackConfig{}
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// FoundationModelToSDK converts the mirror to the sdk-go type.
+func FoundationModelToSDK(w *FoundationModel) (*sdk.FoundationModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FoundationModel{}
+	out.Name = w.Name
+	out.DisplayName = w.DisplayName
+	out.Docs = w.Docs
+	out.Description = w.Description
+	return out, nil
+}
+
+// FoundationModelFromSDK converts the sdk-go type to the mirror.
+func FoundationModelFromSDK(v *sdk.FoundationModel) (*FoundationModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FoundationModel{}
+	out.Name = v.Name
+	out.DisplayName = v.DisplayName
+	out.Docs = v.Docs
+	out.Description = v.Description
+	return out, nil
+}
+
+// GetServedModelBuildLogsResponseToSDK converts the mirror to the sdk-go type.
+func GetServedModelBuildLogsResponseToSDK(w *GetServedModelBuildLogsResponse) (*sdk.GetServedModelBuildLogsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetServedModelBuildLogsResponse{}
+	out.Logs = w.Logs
+	return out, nil
+}
+
+// GetServedModelBuildLogsResponseFromSDK converts the sdk-go type to the mirror.
+func GetServedModelBuildLogsResponseFromSDK(v *sdk.GetServedModelBuildLogsResponse) (*GetServedModelBuildLogsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetServedModelBuildLogsResponse{}
+	out.Logs = v.Logs
+	return out, nil
+}
+
+// GetServedModelLogsResponseToSDK converts the mirror to the sdk-go type.
+func GetServedModelLogsResponseToSDK(w *GetServedModelLogsResponse) (*sdk.GetServedModelLogsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetServedModelLogsResponse{}
+	out.Logs = w.Logs
+	return out, nil
+}
+
+// GetServedModelLogsResponseFromSDK converts the sdk-go type to the mirror.
+func GetServedModelLogsResponseFromSDK(v *sdk.GetServedModelLogsResponse) (*GetServedModelLogsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetServedModelLogsResponse{}
+	out.Logs = v.Logs
+	return out, nil
+}
+
+// GoogleCloudVertexAiConfigToSDK converts the mirror to the sdk-go type.
+func GoogleCloudVertexAiConfigToSDK(w *GoogleCloudVertexAiConfig) (*sdk.GoogleCloudVertexAiConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleCloudVertexAiConfig{}
+	out.PrivateKey = w.PrivateKey
+	out.ProjectId = w.ProjectId
+	out.Region = w.Region
+	out.PrivateKeyPlaintext = w.PrivateKeyPlaintext
+	return out, nil
+}
+
+// GoogleCloudVertexAiConfigFromSDK converts the sdk-go type to the mirror.
+func GoogleCloudVertexAiConfigFromSDK(v *sdk.GoogleCloudVertexAiConfig) (*GoogleCloudVertexAiConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleCloudVertexAiConfig{}
+	out.PrivateKey = v.PrivateKey
+	out.ProjectId = v.ProjectId
+	out.Region = v.Region
+	out.PrivateKeyPlaintext = v.PrivateKeyPlaintext
+	return out, nil
+}
+
+// InferenceEndpointToSDK converts the mirror to the sdk-go type.
+func InferenceEndpointToSDK(w *InferenceEndpoint) (*sdk.InferenceEndpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceEndpoint{}
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	conv83, err := InferenceEndpointStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.State", err)
+	}
+	out.State = conv83
+	conv84, err := EndpointCoreConfigSummaryToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Config", err)
+	}
+	out.Config = conv84
+	conv85, err := convertSlice(w.Tags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Tags", err)
+	}
+	out.Tags = conv85
+	out.Id = w.Id
+	out.Task = w.Task
+	conv86, err := AiGatewayConfigToSDK(w.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.AiGateway", err)
+	}
+	out.AiGateway = conv86
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.Description = w.Description
+	out.UsagePolicyId = w.UsagePolicyId
+	conv87, err := TelemetryConfigToSDK(w.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv87
+	return out, nil
+}
+
+// InferenceEndpointFromSDK converts the sdk-go type to the mirror.
+func InferenceEndpointFromSDK(v *sdk.InferenceEndpoint) (*InferenceEndpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceEndpoint{}
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	conv88, err := InferenceEndpointStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.State", err)
+	}
+	out.State = conv88
+	conv89, err := EndpointCoreConfigSummaryFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Config", err)
+	}
+	out.Config = conv89
+	conv90, err := convertSlice(v.Tags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.Tags", err)
+	}
+	out.Tags = conv90
+	out.Id = v.Id
+	out.Task = v.Task
+	conv91, err := AiGatewayConfigFromSDK(v.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.AiGateway", err)
+	}
+	out.AiGateway = conv91
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.Description = v.Description
+	out.UsagePolicyId = v.UsagePolicyId
+	conv92, err := TelemetryConfigFromSDK(v.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpoint.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv92
+	return out, nil
+}
+
+// InferenceEndpointDetailedToSDK converts the mirror to the sdk-go type.
+func InferenceEndpointDetailedToSDK(w *InferenceEndpointDetailed) (*sdk.InferenceEndpointDetailed, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceEndpointDetailed{}
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	conv93, err := InferenceEndpointStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.State", err)
+	}
+	out.State = conv93
+	conv94, err := EndpointCoreConfigOutputToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Config", err)
+	}
+	out.Config = conv94
+	conv95, err := PendingConfigToSDK(w.PendingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.PendingConfig", err)
+	}
+	out.PendingConfig = conv95
+	out.Id = w.Id
+	out.PermissionLevel = w.PermissionLevel
+	conv96, err := convertSlice(w.Tags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Tags", err)
+	}
+	out.Tags = conv96
+	out.Task = w.Task
+	out.RouteOptimized = w.RouteOptimized
+	out.EndpointUrl = w.EndpointUrl
+	conv97, err := ModelDataPlaneInfoToSDK(w.DataPlaneInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.DataPlaneInfo", err)
+	}
+	out.DataPlaneInfo = conv97
+	conv98, err := AiGatewayConfigToSDK(w.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.AiGateway", err)
+	}
+	out.AiGateway = conv98
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv99, err := EmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv99
+	out.Description = w.Description
+	conv100, err := TelemetryConfigToSDK(w.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv100
+	return out, nil
+}
+
+// InferenceEndpointDetailedFromSDK converts the sdk-go type to the mirror.
+func InferenceEndpointDetailedFromSDK(v *sdk.InferenceEndpointDetailed) (*InferenceEndpointDetailed, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceEndpointDetailed{}
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	conv101, err := InferenceEndpointStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.State", err)
+	}
+	out.State = conv101
+	conv102, err := EndpointCoreConfigOutputFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Config", err)
+	}
+	out.Config = conv102
+	conv103, err := PendingConfigFromSDK(v.PendingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.PendingConfig", err)
+	}
+	out.PendingConfig = conv103
+	out.Id = v.Id
+	out.PermissionLevel = v.PermissionLevel
+	conv104, err := convertSlice(v.Tags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.Tags", err)
+	}
+	out.Tags = conv104
+	out.Task = v.Task
+	out.RouteOptimized = v.RouteOptimized
+	out.EndpointUrl = v.EndpointUrl
+	conv105, err := ModelDataPlaneInfoFromSDK(v.DataPlaneInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.DataPlaneInfo", err)
+	}
+	out.DataPlaneInfo = conv105
+	conv106, err := AiGatewayConfigFromSDK(v.AiGateway)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.AiGateway", err)
+	}
+	out.AiGateway = conv106
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv107, err := EmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv107
+	out.Description = v.Description
+	conv108, err := TelemetryConfigFromSDK(v.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InferenceEndpointDetailed.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv108
+	return out, nil
+}
+
+// InferenceEndpointStateToSDK converts the mirror to the sdk-go type.
+func InferenceEndpointStateToSDK(w *InferenceEndpointState) (*sdk.InferenceEndpointState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceEndpointState{}
+	out.Ready = w.Ready
+	out.ConfigUpdate = w.ConfigUpdate
+	return out, nil
+}
+
+// InferenceEndpointStateFromSDK converts the sdk-go type to the mirror.
+func InferenceEndpointStateFromSDK(v *sdk.InferenceEndpointState) (*InferenceEndpointState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceEndpointState{}
+	out.Ready = v.Ready
+	out.ConfigUpdate = v.ConfigUpdate
+	return out, nil
+}
+
+// InferenceTableConfigToSDK converts the mirror to the sdk-go type.
+func InferenceTableConfigToSDK(w *InferenceTableConfig) (*sdk.InferenceTableConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceTableConfig{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableNamePrefix = w.TableNamePrefix
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// InferenceTableConfigFromSDK converts the sdk-go type to the mirror.
+func InferenceTableConfigFromSDK(v *sdk.InferenceTableConfig) (*InferenceTableConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceTableConfig{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableNamePrefix = v.TableNamePrefix
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// ListInferenceEndpointsResponseToSDK converts the mirror to the sdk-go type.
+func ListInferenceEndpointsResponseToSDK(w *ListInferenceEndpointsResponse) (*sdk.ListInferenceEndpointsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListInferenceEndpointsResponse{}
+	conv109, err := convertSlice(w.Endpoints, InferenceEndpointToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInferenceEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv109
+	return out, nil
+}
+
+// ListInferenceEndpointsResponseFromSDK converts the sdk-go type to the mirror.
+func ListInferenceEndpointsResponseFromSDK(v *sdk.ListInferenceEndpointsResponse) (*ListInferenceEndpointsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListInferenceEndpointsResponse{}
+	conv110, err := convertSlice(v.Endpoints, InferenceEndpointFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInferenceEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv110
+	return out, nil
+}
+
+// ModelDataPlaneInfoToSDK converts the mirror to the sdk-go type.
+func ModelDataPlaneInfoToSDK(w *ModelDataPlaneInfo) (*sdk.ModelDataPlaneInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelDataPlaneInfo{}
+	conv111, err := DataPlaneInfoToSDK(w.QueryInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelDataPlaneInfo.QueryInfo", err)
+	}
+	out.QueryInfo = conv111
+	return out, nil
+}
+
+// ModelDataPlaneInfoFromSDK converts the sdk-go type to the mirror.
+func ModelDataPlaneInfoFromSDK(v *sdk.ModelDataPlaneInfo) (*ModelDataPlaneInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelDataPlaneInfo{}
+	conv112, err := DataPlaneInfoFromSDK(v.QueryInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelDataPlaneInfo.QueryInfo", err)
+	}
+	out.QueryInfo = conv112
+	return out, nil
+}
+
+// OpenAiConfigToSDK converts the mirror to the sdk-go type.
+func OpenAiConfigToSDK(w *OpenAiConfig) (*sdk.OpenAiConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OpenAiConfig{}
+	out.OpenaiApiKey = w.OpenaiApiKey
+	out.OpenaiApiType = w.OpenaiApiType
+	out.OpenaiApiBase = w.OpenaiApiBase
+	out.OpenaiApiVersion = w.OpenaiApiVersion
+	out.OpenaiDeploymentName = w.OpenaiDeploymentName
+	out.OpenaiOrganization = w.OpenaiOrganization
+	out.MicrosoftEntraTenantId = w.MicrosoftEntraTenantId
+	out.MicrosoftEntraClientId = w.MicrosoftEntraClientId
+	out.MicrosoftEntraClientSecret = w.MicrosoftEntraClientSecret
+	out.OpenaiApiKeyPlaintext = w.OpenaiApiKeyPlaintext
+	out.MicrosoftEntraClientSecretPlaintext = w.MicrosoftEntraClientSecretPlaintext
+	return out, nil
+}
+
+// OpenAiConfigFromSDK converts the sdk-go type to the mirror.
+func OpenAiConfigFromSDK(v *sdk.OpenAiConfig) (*OpenAiConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OpenAiConfig{}
+	out.OpenaiApiKey = v.OpenaiApiKey
+	out.OpenaiApiType = v.OpenaiApiType
+	out.OpenaiApiBase = v.OpenaiApiBase
+	out.OpenaiApiVersion = v.OpenaiApiVersion
+	out.OpenaiDeploymentName = v.OpenaiDeploymentName
+	out.OpenaiOrganization = v.OpenaiOrganization
+	out.MicrosoftEntraTenantId = v.MicrosoftEntraTenantId
+	out.MicrosoftEntraClientId = v.MicrosoftEntraClientId
+	out.MicrosoftEntraClientSecret = v.MicrosoftEntraClientSecret
+	out.OpenaiApiKeyPlaintext = v.OpenaiApiKeyPlaintext
+	out.MicrosoftEntraClientSecretPlaintext = v.MicrosoftEntraClientSecretPlaintext
+	return out, nil
+}
+
+// PaLmConfigToSDK converts the mirror to the sdk-go type.
+func PaLmConfigToSDK(w *PaLmConfig) (*sdk.PaLmConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PaLmConfig{}
+	out.PalmApiKey = w.PalmApiKey
+	out.PalmApiKeyPlaintext = w.PalmApiKeyPlaintext
+	return out, nil
+}
+
+// PaLmConfigFromSDK converts the sdk-go type to the mirror.
+func PaLmConfigFromSDK(v *sdk.PaLmConfig) (*PaLmConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PaLmConfig{}
+	out.PalmApiKey = v.PalmApiKey
+	out.PalmApiKeyPlaintext = v.PalmApiKeyPlaintext
+	return out, nil
+}
+
+// PatchInferenceEndpointTagsRequestToSDK converts the mirror to the sdk-go type.
+func PatchInferenceEndpointTagsRequestToSDK(w *PatchInferenceEndpointTagsRequest) (*sdk.PatchInferenceEndpointTagsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchInferenceEndpointTagsRequest{}
+	out.Name = w.Name
+	conv113, err := convertSlice(w.AddTags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsRequest.AddTags", err)
+	}
+	out.AddTags = conv113
+	out.DeleteTags = w.DeleteTags
+	return out, nil
+}
+
+// PatchInferenceEndpointTagsRequestFromSDK converts the sdk-go type to the mirror.
+func PatchInferenceEndpointTagsRequestFromSDK(v *sdk.PatchInferenceEndpointTagsRequest) (*PatchInferenceEndpointTagsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchInferenceEndpointTagsRequest{}
+	out.Name = v.Name
+	conv114, err := convertSlice(v.AddTags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsRequest.AddTags", err)
+	}
+	out.AddTags = conv114
+	out.DeleteTags = v.DeleteTags
+	return out, nil
+}
+
+// PatchInferenceEndpointTagsResponseToSDK converts the mirror to the sdk-go type.
+func PatchInferenceEndpointTagsResponseToSDK(w *PatchInferenceEndpointTagsResponse) (*sdk.PatchInferenceEndpointTagsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchInferenceEndpointTagsResponse{}
+	conv115, err := convertSlice(w.Tags, EndpointTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsResponse.Tags", err)
+	}
+	out.Tags = conv115
+	return out, nil
+}
+
+// PatchInferenceEndpointTagsResponseFromSDK converts the sdk-go type to the mirror.
+func PatchInferenceEndpointTagsResponseFromSDK(v *sdk.PatchInferenceEndpointTagsResponse) (*PatchInferenceEndpointTagsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchInferenceEndpointTagsResponse{}
+	conv116, err := convertSlice(v.Tags, EndpointTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTagsResponse.Tags", err)
+	}
+	out.Tags = conv116
+	return out, nil
+}
+
+// PatchInferenceEndpointTelemetryConfigRequestToSDK converts the mirror to the sdk-go type.
+func PatchInferenceEndpointTelemetryConfigRequestToSDK(w *PatchInferenceEndpointTelemetryConfigRequest) (*sdk.PatchInferenceEndpointTelemetryConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchInferenceEndpointTelemetryConfigRequest{}
+	out.Name = w.Name
+	conv117, err := TelemetryConfigToSDK(w.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTelemetryConfigRequest.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv117
+	return out, nil
+}
+
+// PatchInferenceEndpointTelemetryConfigRequestFromSDK converts the sdk-go type to the mirror.
+func PatchInferenceEndpointTelemetryConfigRequestFromSDK(v *sdk.PatchInferenceEndpointTelemetryConfigRequest) (*PatchInferenceEndpointTelemetryConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchInferenceEndpointTelemetryConfigRequest{}
+	out.Name = v.Name
+	conv118, err := TelemetryConfigFromSDK(v.TelemetryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchInferenceEndpointTelemetryConfigRequest.TelemetryConfig", err)
+	}
+	out.TelemetryConfig = conv118
+	return out, nil
+}
+
+// PayloadTableToSDK converts the mirror to the sdk-go type.
+func PayloadTableToSDK(w *PayloadTable) (*sdk.PayloadTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PayloadTable{}
+	out.Name = w.Name
+	out.Status = w.Status
+	out.StatusMessage = w.StatusMessage
+	return out, nil
+}
+
+// PayloadTableFromSDK converts the sdk-go type to the mirror.
+func PayloadTableFromSDK(v *sdk.PayloadTable) (*PayloadTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PayloadTable{}
+	out.Name = v.Name
+	out.Status = v.Status
+	out.StatusMessage = v.StatusMessage
+	return out, nil
+}
+
+// PendingConfigToSDK converts the mirror to the sdk-go type.
+func PendingConfigToSDK(w *PendingConfig) (*sdk.PendingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PendingConfig{}
+	conv119, err := convertSlice(w.ServedEntities, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv119
+	conv120, err := convertSlice(w.ServedModels, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedModels", err)
+	}
+	out.ServedModels = conv120
+	conv121, err := TrafficConfigToSDK(w.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv121
+	out.ConfigVersion = w.ConfigVersion
+	out.StartTime = w.StartTime
+	conv122, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv122
+	return out, nil
+}
+
+// PendingConfigFromSDK converts the sdk-go type to the mirror.
+func PendingConfigFromSDK(v *sdk.PendingConfig) (*PendingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PendingConfig{}
+	conv123, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv123
+	conv124, err := convertSlice(v.ServedModels, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.ServedModels", err)
+	}
+	out.ServedModels = conv124
+	conv125, err := TrafficConfigFromSDK(v.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv125
+	out.ConfigVersion = v.ConfigVersion
+	out.StartTime = v.StartTime
+	conv126, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingConfig.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv126
+	return out, nil
+}
+
+// PiiSettingsToSDK converts the mirror to the sdk-go type.
+func PiiSettingsToSDK(w *PiiSettings) (*sdk.PiiSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PiiSettings{}
+	out.Behavior = w.Behavior
+	return out, nil
+}
+
+// PiiSettingsFromSDK converts the sdk-go type to the mirror.
+func PiiSettingsFromSDK(v *sdk.PiiSettings) (*PiiSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PiiSettings{}
+	out.Behavior = v.Behavior
+	return out, nil
+}
+
+// PtEndpointCoreConfigToSDK converts the mirror to the sdk-go type.
+func PtEndpointCoreConfigToSDK(w *PtEndpointCoreConfig) (*sdk.PtEndpointCoreConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PtEndpointCoreConfig{}
+	conv127, err := convertSlice(w.ServedEntities, PtServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv127
+	conv128, err := TrafficConfigToSDK(w.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv128
+	return out, nil
+}
+
+// PtEndpointCoreConfigFromSDK converts the sdk-go type to the mirror.
+func PtEndpointCoreConfigFromSDK(v *sdk.PtEndpointCoreConfig) (*PtEndpointCoreConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PtEndpointCoreConfig{}
+	conv129, err := convertSlice(v.ServedEntities, PtServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.ServedEntities", err)
+	}
+	out.ServedEntities = conv129
+	conv130, err := TrafficConfigFromSDK(v.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PtEndpointCoreConfig.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv130
+	return out, nil
+}
+
+// PtServedModelToSDK converts the mirror to the sdk-go type.
+func PtServedModelToSDK(w *PtServedModel) (*sdk.PtServedModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PtServedModel{}
+	out.Name = w.Name
+	out.EntityName = w.EntityName
+	out.EntityVersion = w.EntityVersion
+	out.ProvisionedModelUnits = w.ProvisionedModelUnits
+	out.BurstScalingEnabled = w.BurstScalingEnabled
+	return out, nil
+}
+
+// PtServedModelFromSDK converts the sdk-go type to the mirror.
+func PtServedModelFromSDK(v *sdk.PtServedModel) (*PtServedModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PtServedModel{}
+	out.Name = v.Name
+	out.EntityName = v.EntityName
+	out.EntityVersion = v.EntityVersion
+	out.ProvisionedModelUnits = v.ProvisionedModelUnits
+	out.BurstScalingEnabled = v.BurstScalingEnabled
+	return out, nil
+}
+
+// PutInferenceEndpointAiGatewayRequestToSDK converts the mirror to the sdk-go type.
+func PutInferenceEndpointAiGatewayRequestToSDK(w *PutInferenceEndpointAiGatewayRequest) (*sdk.PutInferenceEndpointAiGatewayRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutInferenceEndpointAiGatewayRequest{}
+	out.Name = w.Name
+	conv131, err := UsageTrackingConfigToSDK(w.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv131
+	conv132, err := InferenceTableConfigToSDK(w.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv132
+	conv133, err := convertSlice(w.RateLimits, AiGatewayRateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.RateLimits", err)
+	}
+	out.RateLimits = conv133
+	conv134, err := AiGuardrailsToSDK(w.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.Guardrails", err)
+	}
+	out.Guardrails = conv134
+	conv135, err := FallbackConfigToSDK(w.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv135
+	return out, nil
+}
+
+// PutInferenceEndpointAiGatewayRequestFromSDK converts the sdk-go type to the mirror.
+func PutInferenceEndpointAiGatewayRequestFromSDK(v *sdk.PutInferenceEndpointAiGatewayRequest) (*PutInferenceEndpointAiGatewayRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutInferenceEndpointAiGatewayRequest{}
+	out.Name = v.Name
+	conv136, err := UsageTrackingConfigFromSDK(v.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv136
+	conv137, err := InferenceTableConfigFromSDK(v.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv137
+	conv138, err := convertSlice(v.RateLimits, AiGatewayRateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.RateLimits", err)
+	}
+	out.RateLimits = conv138
+	conv139, err := AiGuardrailsFromSDK(v.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.Guardrails", err)
+	}
+	out.Guardrails = conv139
+	conv140, err := FallbackConfigFromSDK(v.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayRequest.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv140
+	return out, nil
+}
+
+// PutInferenceEndpointAiGatewayResponseToSDK converts the mirror to the sdk-go type.
+func PutInferenceEndpointAiGatewayResponseToSDK(w *PutInferenceEndpointAiGatewayResponse) (*sdk.PutInferenceEndpointAiGatewayResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutInferenceEndpointAiGatewayResponse{}
+	conv141, err := UsageTrackingConfigToSDK(w.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv141
+	conv142, err := InferenceTableConfigToSDK(w.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv142
+	conv143, err := convertSlice(w.RateLimits, AiGatewayRateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.RateLimits", err)
+	}
+	out.RateLimits = conv143
+	conv144, err := AiGuardrailsToSDK(w.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.Guardrails", err)
+	}
+	out.Guardrails = conv144
+	conv145, err := FallbackConfigToSDK(w.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv145
+	return out, nil
+}
+
+// PutInferenceEndpointAiGatewayResponseFromSDK converts the sdk-go type to the mirror.
+func PutInferenceEndpointAiGatewayResponseFromSDK(v *sdk.PutInferenceEndpointAiGatewayResponse) (*PutInferenceEndpointAiGatewayResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutInferenceEndpointAiGatewayResponse{}
+	conv146, err := UsageTrackingConfigFromSDK(v.UsageTrackingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.UsageTrackingConfig", err)
+	}
+	out.UsageTrackingConfig = conv146
+	conv147, err := InferenceTableConfigFromSDK(v.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv147
+	conv148, err := convertSlice(v.RateLimits, AiGatewayRateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.RateLimits", err)
+	}
+	out.RateLimits = conv148
+	conv149, err := AiGuardrailsFromSDK(v.Guardrails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.Guardrails", err)
+	}
+	out.Guardrails = conv149
+	conv150, err := FallbackConfigFromSDK(v.FallbackConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointAiGatewayResponse.FallbackConfig", err)
+	}
+	out.FallbackConfig = conv150
+	return out, nil
+}
+
+// PutInferenceEndpointConfigRequestToSDK converts the mirror to the sdk-go type.
+func PutInferenceEndpointConfigRequestToSDK(w *PutInferenceEndpointConfigRequest) (*sdk.PutInferenceEndpointConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutInferenceEndpointConfigRequest{}
+	out.Name = w.Name
+	conv151, err := convertSlice(w.ServedEntities, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedEntities", err)
+	}
+	out.ServedEntities = conv151
+	conv152, err := convertSlice(w.ServedModels, ServedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedModels", err)
+	}
+	out.ServedModels = conv152
+	conv153, err := TrafficConfigToSDK(w.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv153
+	conv154, err := AutoCaptureConfigToSDK(w.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv154
+	return out, nil
+}
+
+// PutInferenceEndpointConfigRequestFromSDK converts the sdk-go type to the mirror.
+func PutInferenceEndpointConfigRequestFromSDK(v *sdk.PutInferenceEndpointConfigRequest) (*PutInferenceEndpointConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutInferenceEndpointConfigRequest{}
+	out.Name = v.Name
+	conv155, err := convertSlice(v.ServedEntities, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedEntities", err)
+	}
+	out.ServedEntities = conv155
+	conv156, err := convertSlice(v.ServedModels, ServedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.ServedModels", err)
+	}
+	out.ServedModels = conv156
+	conv157, err := TrafficConfigFromSDK(v.TrafficConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.TrafficConfig", err)
+	}
+	out.TrafficConfig = conv157
+	conv158, err := AutoCaptureConfigFromSDK(v.AutoCaptureConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointConfigRequest.AutoCaptureConfig", err)
+	}
+	out.AutoCaptureConfig = conv158
+	return out, nil
+}
+
+// PutInferenceEndpointRateLimitsRequestToSDK converts the mirror to the sdk-go type.
+func PutInferenceEndpointRateLimitsRequestToSDK(w *PutInferenceEndpointRateLimitsRequest) (*sdk.PutInferenceEndpointRateLimitsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutInferenceEndpointRateLimitsRequest{}
+	out.Name = w.Name
+	conv159, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsRequest.RateLimits", err)
+	}
+	out.RateLimits = conv159
+	return out, nil
+}
+
+// PutInferenceEndpointRateLimitsRequestFromSDK converts the sdk-go type to the mirror.
+func PutInferenceEndpointRateLimitsRequestFromSDK(v *sdk.PutInferenceEndpointRateLimitsRequest) (*PutInferenceEndpointRateLimitsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutInferenceEndpointRateLimitsRequest{}
+	out.Name = v.Name
+	conv160, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsRequest.RateLimits", err)
+	}
+	out.RateLimits = conv160
+	return out, nil
+}
+
+// PutInferenceEndpointRateLimitsResponseToSDK converts the mirror to the sdk-go type.
+func PutInferenceEndpointRateLimitsResponseToSDK(w *PutInferenceEndpointRateLimitsResponse) (*sdk.PutInferenceEndpointRateLimitsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutInferenceEndpointRateLimitsResponse{}
+	conv161, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsResponse.RateLimits", err)
+	}
+	out.RateLimits = conv161
+	return out, nil
+}
+
+// PutInferenceEndpointRateLimitsResponseFromSDK converts the sdk-go type to the mirror.
+func PutInferenceEndpointRateLimitsResponseFromSDK(v *sdk.PutInferenceEndpointRateLimitsResponse) (*PutInferenceEndpointRateLimitsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutInferenceEndpointRateLimitsResponse{}
+	conv162, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutInferenceEndpointRateLimitsResponse.RateLimits", err)
+	}
+	out.RateLimits = conv162
+	return out, nil
+}
+
+// PutPtEndpointConfigRequestToSDK converts the mirror to the sdk-go type.
+func PutPtEndpointConfigRequestToSDK(w *PutPtEndpointConfigRequest) (*sdk.PutPtEndpointConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutPtEndpointConfigRequest{}
+	out.Name = w.Name
+	conv163, err := PtEndpointCoreConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutPtEndpointConfigRequest.Config", err)
+	}
+	out.Config = conv163
+	return out, nil
+}
+
+// PutPtEndpointConfigRequestFromSDK converts the sdk-go type to the mirror.
+func PutPtEndpointConfigRequestFromSDK(v *sdk.PutPtEndpointConfigRequest) (*PutPtEndpointConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutPtEndpointConfigRequest{}
+	out.Name = v.Name
+	conv164, err := PtEndpointCoreConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PutPtEndpointConfigRequest.Config", err)
+	}
+	out.Config = conv164
+	return out, nil
+}
+
+// RateLimitToSDK converts the mirror to the sdk-go type.
+func RateLimitToSDK(w *RateLimit) (*sdk.RateLimit, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RateLimit{}
+	out.Calls = w.Calls
+	out.Key = w.Key
+	out.RenewalPeriod = w.RenewalPeriod
+	return out, nil
+}
+
+// RateLimitFromSDK converts the sdk-go type to the mirror.
+func RateLimitFromSDK(v *sdk.RateLimit) (*RateLimit, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RateLimit{}
+	out.Calls = v.Calls
+	out.Key = v.Key
+	out.RenewalPeriod = v.RenewalPeriod
+	return out, nil
+}
+
+// RouteToSDK converts the mirror to the sdk-go type.
+func RouteToSDK(w *Route) (*sdk.Route, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Route{}
+	out.ServedModelName = w.ServedModelName
+	out.TrafficPercentage = w.TrafficPercentage
+	out.ServedEntityName = w.ServedEntityName
+	return out, nil
+}
+
+// RouteFromSDK converts the sdk-go type to the mirror.
+func RouteFromSDK(v *sdk.Route) (*Route, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Route{}
+	out.ServedModelName = v.ServedModelName
+	out.TrafficPercentage = v.TrafficPercentage
+	out.ServedEntityName = v.ServedEntityName
+	return out, nil
+}
+
+// ServedModelToSDK converts the mirror to the sdk-go type.
+func ServedModelToSDK(w *ServedModel) (*sdk.ServedModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServedModel{}
+	out.Name = w.Name
+	conv165, err := ExternalModelToSDK(w.ExternalModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.ExternalModel", err)
+	}
+	out.ExternalModel = conv165
+	out.EntityName = w.EntityName
+	out.EntityVersion = w.EntityVersion
+	out.MinProvisionedThroughput = w.MinProvisionedThroughput
+	out.MaxProvisionedThroughput = w.MaxProvisionedThroughput
+	out.MinProvisionedConcurrency = w.MinProvisionedConcurrency
+	out.MaxProvisionedConcurrency = w.MaxProvisionedConcurrency
+	out.WorkloadSize = w.WorkloadSize
+	out.ProvisionedModelUnits = w.ProvisionedModelUnits
+	out.BurstScalingEnabled = w.BurstScalingEnabled
+	out.ScaleToZeroEnabled = w.ScaleToZeroEnabled
+	out.ModelName = w.ModelName
+	out.ModelVersion = w.ModelVersion
+	out.EnvironmentVars = w.EnvironmentVars
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv166, err := FoundationModelToSDK(w.FoundationModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.FoundationModel", err)
+	}
+	out.FoundationModel = conv166
+	conv167, err := ServedModelStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.State", err)
+	}
+	out.State = conv167
+	out.Creator = w.Creator
+	out.CreationTimestamp = w.CreationTimestamp
+	return out, nil
+}
+
+// ServedModelFromSDK converts the sdk-go type to the mirror.
+func ServedModelFromSDK(v *sdk.ServedModel) (*ServedModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServedModel{}
+	out.Name = v.Name
+	conv168, err := ExternalModelFromSDK(v.ExternalModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.ExternalModel", err)
+	}
+	out.ExternalModel = conv168
+	out.EntityName = v.EntityName
+	out.EntityVersion = v.EntityVersion
+	out.MinProvisionedThroughput = v.MinProvisionedThroughput
+	out.MaxProvisionedThroughput = v.MaxProvisionedThroughput
+	out.MinProvisionedConcurrency = v.MinProvisionedConcurrency
+	out.MaxProvisionedConcurrency = v.MaxProvisionedConcurrency
+	out.WorkloadSize = v.WorkloadSize
+	out.ProvisionedModelUnits = v.ProvisionedModelUnits
+	out.BurstScalingEnabled = v.BurstScalingEnabled
+	out.ScaleToZeroEnabled = v.ScaleToZeroEnabled
+	out.ModelName = v.ModelName
+	out.ModelVersion = v.ModelVersion
+	out.EnvironmentVars = v.EnvironmentVars
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv169, err := FoundationModelFromSDK(v.FoundationModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.FoundationModel", err)
+	}
+	out.FoundationModel = conv169
+	conv170, err := ServedModelStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModel.State", err)
+	}
+	out.State = conv170
+	out.Creator = v.Creator
+	out.CreationTimestamp = v.CreationTimestamp
+	return out, nil
+}
+
+// ServedModelLiteToSDK converts the mirror to the sdk-go type.
+func ServedModelLiteToSDK(w *ServedModelLite) (*sdk.ServedModelLite, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServedModelLite{}
+	out.Name = w.Name
+	out.ModelName = w.ModelName
+	out.EntityName = w.EntityName
+	out.ModelVersion = w.ModelVersion
+	out.EntityVersion = w.EntityVersion
+	conv171, err := ExternalModelToSDK(w.ExternalModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModelLite.ExternalModel", err)
+	}
+	out.ExternalModel = conv171
+	conv172, err := FoundationModelToSDK(w.FoundationModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModelLite.FoundationModel", err)
+	}
+	out.FoundationModel = conv172
+	return out, nil
+}
+
+// ServedModelLiteFromSDK converts the sdk-go type to the mirror.
+func ServedModelLiteFromSDK(v *sdk.ServedModelLite) (*ServedModelLite, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServedModelLite{}
+	out.Name = v.Name
+	out.ModelName = v.ModelName
+	out.EntityName = v.EntityName
+	out.ModelVersion = v.ModelVersion
+	out.EntityVersion = v.EntityVersion
+	conv173, err := ExternalModelFromSDK(v.ExternalModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModelLite.ExternalModel", err)
+	}
+	out.ExternalModel = conv173
+	conv174, err := FoundationModelFromSDK(v.FoundationModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServedModelLite.FoundationModel", err)
+	}
+	out.FoundationModel = conv174
+	return out, nil
+}
+
+// ServedModelStateToSDK converts the mirror to the sdk-go type.
+func ServedModelStateToSDK(w *ServedModelState) (*sdk.ServedModelState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServedModelState{}
+	out.Deployment = w.Deployment
+	out.DeploymentStateMessage = w.DeploymentStateMessage
+	return out, nil
+}
+
+// ServedModelStateFromSDK converts the sdk-go type to the mirror.
+func ServedModelStateFromSDK(v *sdk.ServedModelState) (*ServedModelState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServedModelState{}
+	out.Deployment = v.Deployment
+	out.DeploymentStateMessage = v.DeploymentStateMessage
+	return out, nil
+}
+
+// TelemetryConfigToSDK converts the mirror to the sdk-go type.
+func TelemetryConfigToSDK(w *TelemetryConfig) (*sdk.TelemetryConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TelemetryConfig{}
+	{
+		members := 0
+		if w.TelemetryProfileId != nil {
+			members++
+		}
+		if w.TableNames != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryConfig.TelemetryProfile")
+		}
+	}
+	switch {
+	case w.TelemetryProfileId != nil:
+		out.TelemetryProfile = &sdk.TelemetryConfig_TelemetryProfile_TelemetryProfileId{TelemetryProfileId: *w.TelemetryProfileId}
+	case w.TableNames != nil:
+		conv175, err := UnityCatalogTableNamesToSDK(w.TableNames)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TelemetryConfig.TelemetryProfile", err)
+		}
+		out.TelemetryProfile = &sdk.TelemetryConfig_TelemetryProfile_TableNames{TableNames: *conv175}
+	}
+	conv176, err := TelemetryInferenceTableConfigToSDK(w.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TelemetryConfig.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv176
+	out.EnabledTelemetryFeatures = w.EnabledTelemetryFeatures
+	return out, nil
+}
+
+// TelemetryConfigFromSDK converts the sdk-go type to the mirror.
+func TelemetryConfigFromSDK(v *sdk.TelemetryConfig) (*TelemetryConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TelemetryConfig{}
+	switch value := v.TelemetryProfile.(type) {
+	case *sdk.TelemetryConfig_TelemetryProfile_TelemetryProfileId:
+		if value != nil {
+			out.TelemetryProfileId = new(value.TelemetryProfileId)
+		}
+	case *sdk.TelemetryConfig_TelemetryProfile_TableNames:
+		if value != nil {
+			conv177, err := UnityCatalogTableNamesFromSDK(&value.TableNames)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TelemetryConfig.TelemetryProfile", err)
+			}
+			out.TableNames = conv177
+		}
+	}
+	conv178, err := TelemetryInferenceTableConfigFromSDK(v.InferenceTableConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TelemetryConfig.InferenceTableConfig", err)
+	}
+	out.InferenceTableConfig = conv178
+	out.EnabledTelemetryFeatures = v.EnabledTelemetryFeatures
+	return out, nil
+}
+
+// TelemetryInferenceTableConfigToSDK converts the mirror to the sdk-go type.
+func TelemetryInferenceTableConfigToSDK(w *TelemetryInferenceTableConfig) (*sdk.TelemetryInferenceTableConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TelemetryInferenceTableConfig{}
+	out.SamplingFraction = w.SamplingFraction
+	out.Name = w.Name
+	return out, nil
+}
+
+// TelemetryInferenceTableConfigFromSDK converts the sdk-go type to the mirror.
+func TelemetryInferenceTableConfigFromSDK(v *sdk.TelemetryInferenceTableConfig) (*TelemetryInferenceTableConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TelemetryInferenceTableConfig{}
+	out.SamplingFraction = v.SamplingFraction
+	out.Name = v.Name
+	return out, nil
+}
+
+// TrafficConfigToSDK converts the mirror to the sdk-go type.
+func TrafficConfigToSDK(w *TrafficConfig) (*sdk.TrafficConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TrafficConfig{}
+	conv179, err := convertSlice(w.Routes, RouteToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TrafficConfig.Routes", err)
+	}
+	out.Routes = conv179
+	return out, nil
+}
+
+// TrafficConfigFromSDK converts the sdk-go type to the mirror.
+func TrafficConfigFromSDK(v *sdk.TrafficConfig) (*TrafficConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TrafficConfig{}
+	conv180, err := convertSlice(v.Routes, RouteFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TrafficConfig.Routes", err)
+	}
+	out.Routes = conv180
+	return out, nil
+}
+
+// UnityCatalogTableNamesToSDK converts the mirror to the sdk-go type.
+func UnityCatalogTableNamesToSDK(w *UnityCatalogTableNames) (*sdk.UnityCatalogTableNames, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UnityCatalogTableNames{}
+	out.LogsTable = w.LogsTable
+	out.MetricsTable = w.MetricsTable
+	out.TracesTable = w.TracesTable
+	out.AnnotationsTable = w.AnnotationsTable
+	return out, nil
+}
+
+// UnityCatalogTableNamesFromSDK converts the sdk-go type to the mirror.
+func UnityCatalogTableNamesFromSDK(v *sdk.UnityCatalogTableNames) (*UnityCatalogTableNames, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UnityCatalogTableNames{}
+	out.LogsTable = v.LogsTable
+	out.MetricsTable = v.MetricsTable
+	out.TracesTable = v.TracesTable
+	out.AnnotationsTable = v.AnnotationsTable
+	return out, nil
+}
+
+// UpdateInferenceEndpointNotificationsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateInferenceEndpointNotificationsRequestToSDK(w *UpdateInferenceEndpointNotificationsRequest) (*sdk.UpdateInferenceEndpointNotificationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateInferenceEndpointNotificationsRequest{}
+	out.Name = w.Name
+	conv181, err := EmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv181
+	return out, nil
+}
+
+// UpdateInferenceEndpointNotificationsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateInferenceEndpointNotificationsRequestFromSDK(v *sdk.UpdateInferenceEndpointNotificationsRequest) (*UpdateInferenceEndpointNotificationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateInferenceEndpointNotificationsRequest{}
+	out.Name = v.Name
+	conv182, err := EmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv182
+	return out, nil
+}
+
+// UpdateInferenceEndpointNotificationsResponseToSDK converts the mirror to the sdk-go type.
+func UpdateInferenceEndpointNotificationsResponseToSDK(w *UpdateInferenceEndpointNotificationsResponse) (*sdk.UpdateInferenceEndpointNotificationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateInferenceEndpointNotificationsResponse{}
+	out.Name = w.Name
+	conv183, err := EmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsResponse.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv183
+	return out, nil
+}
+
+// UpdateInferenceEndpointNotificationsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateInferenceEndpointNotificationsResponseFromSDK(v *sdk.UpdateInferenceEndpointNotificationsResponse) (*UpdateInferenceEndpointNotificationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateInferenceEndpointNotificationsResponse{}
+	out.Name = v.Name
+	conv184, err := EmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInferenceEndpointNotificationsResponse.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv184
+	return out, nil
+}
+
+// UsageTrackingConfigToSDK converts the mirror to the sdk-go type.
 func UsageTrackingConfigToSDK(w *UsageTrackingConfig) (*sdk.UsageTrackingConfig, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.UsageTrackingConfig{
-		Enabled: w.Enabled,
-	}, nil
+	out := &sdk.UsageTrackingConfig{}
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// UsageTrackingConfigFromSDK converts the sdk-go type to the mirror.
+func UsageTrackingConfigFromSDK(v *sdk.UsageTrackingConfig) (*UsageTrackingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UsageTrackingConfig{}
+	out.Enabled = v.Enabled
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

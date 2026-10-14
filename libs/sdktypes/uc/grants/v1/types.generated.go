@@ -20,37 +20,12 @@ type EffectivePrivilege struct {
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
 }
 
-func EffectivePrivilegeToSDK(w *EffectivePrivilege) (*sdk.EffectivePrivilege, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EffectivePrivilege{
-		Privilege:         w.Privilege,
-		InheritedFromType: w.InheritedFromType,
-		InheritedFromName: w.InheritedFromName,
-	}, nil
-}
-
 type EffectivePrivilegeAssignment struct {
 	// The principal (user email address or group name).
 	Principal *string `json:"principal,omitempty"`
 	// The privileges conveyed to the principal (either directly or via
 	// inheritance).
 	Privileges []EffectivePrivilege `json:"privileges,omitempty"`
-}
-
-func EffectivePrivilegeAssignmentToSDK(w *EffectivePrivilegeAssignment) (*sdk.EffectivePrivilegeAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegesPublicValue, err := convertSlice(w.Privileges, EffectivePrivilegeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EffectivePrivilegeAssignment.Privileges", err)
-	}
-	return &sdk.EffectivePrivilegeAssignment{
-		Principal:  w.Principal,
-		Privileges: privilegesPublicValue,
-	}, nil
 }
 
 type GetEffectivePermissionsRequest struct {
@@ -78,19 +53,6 @@ type GetEffectivePermissionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GetEffectivePermissionsRequestFromSDK(v *sdk.GetEffectivePermissionsRequest) (*GetEffectivePermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetEffectivePermissionsRequest{
-		SecurableType:     v.SecurableType,
-		SecurableFullName: v.SecurableFullName,
-		Principal:         v.Principal,
-		MaxResults:        v.MaxResults,
-		PageToken:         v.PageToken,
-	}, nil
-}
-
 type GetEffectivePermissionsResponse struct {
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
@@ -99,20 +61,6 @@ type GetEffectivePermissionsResponse struct {
 	// The privileges conveyed to each principal (either directly or via
 	// inheritance)
 	PrivilegeAssignments []EffectivePrivilegeAssignment `json:"privilege_assignments,omitempty"`
-}
-
-func GetEffectivePermissionsResponseToSDK(w *GetEffectivePermissionsResponse) (*sdk.GetEffectivePermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, EffectivePrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetEffectivePermissionsResponse.PrivilegeAssignments", err)
-	}
-	return &sdk.GetEffectivePermissionsResponse{
-		NextPageToken:        w.NextPageToken,
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
 }
 
 type GetPermissionsRequest struct {
@@ -139,19 +87,6 @@ type GetPermissionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GetPermissionsRequestFromSDK(v *sdk.GetPermissionsRequest) (*GetPermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetPermissionsRequest{
-		SecurableType:     v.SecurableType,
-		SecurableFullName: v.SecurableFullName,
-		Principal:         v.Principal,
-		MaxResults:        v.MaxResults,
-		PageToken:         v.PageToken,
-	}, nil
-}
-
 type GetPermissionsResponse struct {
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
@@ -159,20 +94,6 @@ type GetPermissionsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// The privileges assigned to each principal
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
-}
-
-func GetPermissionsResponseToSDK(w *GetPermissionsResponse) (*sdk.GetPermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPermissionsResponse.PrivilegeAssignments", err)
-	}
-	return &sdk.GetPermissionsResponse{
-		NextPageToken:        w.NextPageToken,
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
 }
 
 type ListEffectivePrivilegeAssignmentsRequest struct {
@@ -200,19 +121,6 @@ type ListEffectivePrivilegeAssignmentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListEffectivePrivilegeAssignmentsRequestFromSDK(v *sdk.ListEffectivePrivilegeAssignmentsRequest) (*ListEffectivePrivilegeAssignmentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListEffectivePrivilegeAssignmentsRequest{
-		SecurableType: v.SecurableType,
-		FullName:      v.FullName,
-		Principal:     v.Principal,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListEffectivePrivilegeAssignmentsResponse struct {
 	// The effective privilege assignments for the securable (and optional
 	// principal).
@@ -221,20 +129,6 @@ type ListEffectivePrivilegeAssignmentsResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListEffectivePrivilegeAssignmentsResponseToSDK(w *ListEffectivePrivilegeAssignmentsResponse) (*sdk.ListEffectivePrivilegeAssignmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	effectivePrivilegeAssignmentsPublicValue, err := convertSlice(w.EffectivePrivilegeAssignments, EffectivePrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEffectivePrivilegeAssignmentsResponse.EffectivePrivilegeAssignments", err)
-	}
-	return &sdk.ListEffectivePrivilegeAssignmentsResponse{
-		EffectivePrivilegeAssignments: effectivePrivilegeAssignmentsPublicValue,
-		NextPageToken:                 w.NextPageToken,
-	}, nil
 }
 
 type ListPrivilegeAssignmentsRequest struct {
@@ -261,39 +155,12 @@ type ListPrivilegeAssignmentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListPrivilegeAssignmentsRequestFromSDK(v *sdk.ListPrivilegeAssignmentsRequest) (*ListPrivilegeAssignmentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPrivilegeAssignmentsRequest{
-		SecurableType: v.SecurableType,
-		FullName:      v.FullName,
-		Principal:     v.Principal,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListPrivilegeAssignmentsResponse struct {
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListPrivilegeAssignmentsResponseToSDK(w *ListPrivilegeAssignmentsResponse) (*sdk.ListPrivilegeAssignmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPrivilegeAssignmentsResponse.PrivilegeAssignments", err)
-	}
-	return &sdk.ListPrivilegeAssignmentsResponse{
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-		NextPageToken:        w.NextPageToken,
-	}, nil
 }
 
 type PermissionsChange struct {
@@ -306,33 +173,12 @@ type PermissionsChange struct {
 	Remove []string `json:"remove,omitempty"`
 }
 
-func PermissionsChangeFromSDK(v *sdk.PermissionsChange) (*PermissionsChange, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PermissionsChange{
-		Principal: v.Principal,
-		Add:       v.Add,
-		Remove:    v.Remove,
-	}, nil
-}
-
 type PrivilegeAssignment struct {
 	// The principal (user email address or group name). For deleted principals,
 	// `principal` is empty while `principal_id` is populated.
 	Principal *string `json:"principal,omitempty"`
 	// The privileges assigned to the principal.
 	Privileges []string `json:"privileges,omitempty"`
-}
-
-func PrivilegeAssignmentToSDK(w *PrivilegeAssignment) (*sdk.PrivilegeAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PrivilegeAssignment{
-		Principal:  w.Principal,
-		Privileges: w.Privileges,
-	}, nil
 }
 
 type UpdatePermissionsRequest struct {
@@ -347,38 +193,403 @@ type UpdatePermissionsRequest struct {
 	Changes []PermissionsChange `json:"changes,omitempty"`
 }
 
-func UpdatePermissionsRequestFromSDK(v *sdk.UpdatePermissionsRequest) (*UpdatePermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	changesWireValue, err := convertSlice(v.Changes, PermissionsChangeFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePermissionsRequest.Changes", err)
-	}
-	return &UpdatePermissionsRequest{
-		SecurableType:             v.SecurableType,
-		SecurableFullName:         v.SecurableFullName,
-		OmitPermissionsInResponse: v.OmitPermissionsInResponse,
-		Changes:                   changesWireValue,
-	}, nil
-}
-
 type UpdatePermissionsResponse struct {
 	// The privileges assigned to each principal
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
 }
 
+// EffectivePrivilegeToSDK converts the mirror to the sdk-go type.
+func EffectivePrivilegeToSDK(w *EffectivePrivilege) (*sdk.EffectivePrivilege, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EffectivePrivilege{}
+	out.Privilege = w.Privilege
+	out.InheritedFromType = w.InheritedFromType
+	out.InheritedFromName = w.InheritedFromName
+	return out, nil
+}
+
+// EffectivePrivilegeFromSDK converts the sdk-go type to the mirror.
+func EffectivePrivilegeFromSDK(v *sdk.EffectivePrivilege) (*EffectivePrivilege, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EffectivePrivilege{}
+	out.Privilege = v.Privilege
+	out.InheritedFromType = v.InheritedFromType
+	out.InheritedFromName = v.InheritedFromName
+	return out, nil
+}
+
+// EffectivePrivilegeAssignmentToSDK converts the mirror to the sdk-go type.
+func EffectivePrivilegeAssignmentToSDK(w *EffectivePrivilegeAssignment) (*sdk.EffectivePrivilegeAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EffectivePrivilegeAssignment{}
+	out.Principal = w.Principal
+	conv1, err := convertSlice(w.Privileges, EffectivePrivilegeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EffectivePrivilegeAssignment.Privileges", err)
+	}
+	out.Privileges = conv1
+	return out, nil
+}
+
+// EffectivePrivilegeAssignmentFromSDK converts the sdk-go type to the mirror.
+func EffectivePrivilegeAssignmentFromSDK(v *sdk.EffectivePrivilegeAssignment) (*EffectivePrivilegeAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EffectivePrivilegeAssignment{}
+	out.Principal = v.Principal
+	conv2, err := convertSlice(v.Privileges, EffectivePrivilegeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EffectivePrivilegeAssignment.Privileges", err)
+	}
+	out.Privileges = conv2
+	return out, nil
+}
+
+// GetEffectivePermissionsRequestToSDK converts the mirror to the sdk-go type.
+func GetEffectivePermissionsRequestToSDK(w *GetEffectivePermissionsRequest) (*sdk.GetEffectivePermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetEffectivePermissionsRequest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableFullName = w.SecurableFullName
+	out.Principal = w.Principal
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GetEffectivePermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func GetEffectivePermissionsRequestFromSDK(v *sdk.GetEffectivePermissionsRequest) (*GetEffectivePermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetEffectivePermissionsRequest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableFullName = v.SecurableFullName
+	out.Principal = v.Principal
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GetEffectivePermissionsResponseToSDK converts the mirror to the sdk-go type.
+func GetEffectivePermissionsResponseToSDK(w *GetEffectivePermissionsResponse) (*sdk.GetEffectivePermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetEffectivePermissionsResponse{}
+	out.NextPageToken = w.NextPageToken
+	conv3, err := convertSlice(w.PrivilegeAssignments, EffectivePrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEffectivePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv3
+	return out, nil
+}
+
+// GetEffectivePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetEffectivePermissionsResponseFromSDK(v *sdk.GetEffectivePermissionsResponse) (*GetEffectivePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetEffectivePermissionsResponse{}
+	out.NextPageToken = v.NextPageToken
+	conv4, err := convertSlice(v.PrivilegeAssignments, EffectivePrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEffectivePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv4
+	return out, nil
+}
+
+// GetPermissionsRequestToSDK converts the mirror to the sdk-go type.
+func GetPermissionsRequestToSDK(w *GetPermissionsRequest) (*sdk.GetPermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPermissionsRequest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableFullName = w.SecurableFullName
+	out.Principal = w.Principal
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GetPermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func GetPermissionsRequestFromSDK(v *sdk.GetPermissionsRequest) (*GetPermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPermissionsRequest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableFullName = v.SecurableFullName
+	out.Principal = v.Principal
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GetPermissionsResponseToSDK converts the mirror to the sdk-go type.
+func GetPermissionsResponseToSDK(w *GetPermissionsResponse) (*sdk.GetPermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPermissionsResponse{}
+	out.NextPageToken = w.NextPageToken
+	conv5, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv5
+	return out, nil
+}
+
+// GetPermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetPermissionsResponseFromSDK(v *sdk.GetPermissionsResponse) (*GetPermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPermissionsResponse{}
+	out.NextPageToken = v.NextPageToken
+	conv6, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv6
+	return out, nil
+}
+
+// ListEffectivePrivilegeAssignmentsRequestToSDK converts the mirror to the sdk-go type.
+func ListEffectivePrivilegeAssignmentsRequestToSDK(w *ListEffectivePrivilegeAssignmentsRequest) (*sdk.ListEffectivePrivilegeAssignmentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEffectivePrivilegeAssignmentsRequest{}
+	out.SecurableType = w.SecurableType
+	out.FullName = w.FullName
+	out.Principal = w.Principal
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListEffectivePrivilegeAssignmentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEffectivePrivilegeAssignmentsRequestFromSDK(v *sdk.ListEffectivePrivilegeAssignmentsRequest) (*ListEffectivePrivilegeAssignmentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEffectivePrivilegeAssignmentsRequest{}
+	out.SecurableType = v.SecurableType
+	out.FullName = v.FullName
+	out.Principal = v.Principal
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListEffectivePrivilegeAssignmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListEffectivePrivilegeAssignmentsResponseToSDK(w *ListEffectivePrivilegeAssignmentsResponse) (*sdk.ListEffectivePrivilegeAssignmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEffectivePrivilegeAssignmentsResponse{}
+	conv7, err := convertSlice(w.EffectivePrivilegeAssignments, EffectivePrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEffectivePrivilegeAssignmentsResponse.EffectivePrivilegeAssignments", err)
+	}
+	out.EffectivePrivilegeAssignments = conv7
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListEffectivePrivilegeAssignmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListEffectivePrivilegeAssignmentsResponseFromSDK(v *sdk.ListEffectivePrivilegeAssignmentsResponse) (*ListEffectivePrivilegeAssignmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEffectivePrivilegeAssignmentsResponse{}
+	conv8, err := convertSlice(v.EffectivePrivilegeAssignments, EffectivePrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEffectivePrivilegeAssignmentsResponse.EffectivePrivilegeAssignments", err)
+	}
+	out.EffectivePrivilegeAssignments = conv8
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListPrivilegeAssignmentsRequestToSDK converts the mirror to the sdk-go type.
+func ListPrivilegeAssignmentsRequestToSDK(w *ListPrivilegeAssignmentsRequest) (*sdk.ListPrivilegeAssignmentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPrivilegeAssignmentsRequest{}
+	out.SecurableType = w.SecurableType
+	out.FullName = w.FullName
+	out.Principal = w.Principal
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListPrivilegeAssignmentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListPrivilegeAssignmentsRequestFromSDK(v *sdk.ListPrivilegeAssignmentsRequest) (*ListPrivilegeAssignmentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPrivilegeAssignmentsRequest{}
+	out.SecurableType = v.SecurableType
+	out.FullName = v.FullName
+	out.Principal = v.Principal
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListPrivilegeAssignmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListPrivilegeAssignmentsResponseToSDK(w *ListPrivilegeAssignmentsResponse) (*sdk.ListPrivilegeAssignmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPrivilegeAssignmentsResponse{}
+	conv9, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPrivilegeAssignmentsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPrivilegeAssignmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListPrivilegeAssignmentsResponseFromSDK(v *sdk.ListPrivilegeAssignmentsResponse) (*ListPrivilegeAssignmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPrivilegeAssignmentsResponse{}
+	conv10, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPrivilegeAssignmentsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// PermissionsChangeToSDK converts the mirror to the sdk-go type.
+func PermissionsChangeToSDK(w *PermissionsChange) (*sdk.PermissionsChange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermissionsChange{}
+	out.Principal = w.Principal
+	out.Add = w.Add
+	out.Remove = w.Remove
+	return out, nil
+}
+
+// PermissionsChangeFromSDK converts the sdk-go type to the mirror.
+func PermissionsChangeFromSDK(v *sdk.PermissionsChange) (*PermissionsChange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermissionsChange{}
+	out.Principal = v.Principal
+	out.Add = v.Add
+	out.Remove = v.Remove
+	return out, nil
+}
+
+// PrivilegeAssignmentToSDK converts the mirror to the sdk-go type.
+func PrivilegeAssignmentToSDK(w *PrivilegeAssignment) (*sdk.PrivilegeAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrivilegeAssignment{}
+	out.Principal = w.Principal
+	out.Privileges = w.Privileges
+	return out, nil
+}
+
+// PrivilegeAssignmentFromSDK converts the sdk-go type to the mirror.
+func PrivilegeAssignmentFromSDK(v *sdk.PrivilegeAssignment) (*PrivilegeAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrivilegeAssignment{}
+	out.Principal = v.Principal
+	out.Privileges = v.Privileges
+	return out, nil
+}
+
+// UpdatePermissionsRequestToSDK converts the mirror to the sdk-go type.
+func UpdatePermissionsRequestToSDK(w *UpdatePermissionsRequest) (*sdk.UpdatePermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePermissionsRequest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableFullName = w.SecurableFullName
+	out.OmitPermissionsInResponse = w.OmitPermissionsInResponse
+	conv11, err := convertSlice(w.Changes, PermissionsChangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePermissionsRequest.Changes", err)
+	}
+	out.Changes = conv11
+	return out, nil
+}
+
+// UpdatePermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdatePermissionsRequestFromSDK(v *sdk.UpdatePermissionsRequest) (*UpdatePermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePermissionsRequest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableFullName = v.SecurableFullName
+	out.OmitPermissionsInResponse = v.OmitPermissionsInResponse
+	conv12, err := convertSlice(v.Changes, PermissionsChangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePermissionsRequest.Changes", err)
+	}
+	out.Changes = conv12
+	return out, nil
+}
+
+// UpdatePermissionsResponseToSDK converts the mirror to the sdk-go type.
 func UpdatePermissionsResponseToSDK(w *UpdatePermissionsResponse) (*sdk.UpdatePermissionsResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	out := &sdk.UpdatePermissionsResponse{}
+	conv13, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdatePermissionsResponse.PrivilegeAssignments", err)
 	}
-	return &sdk.UpdatePermissionsResponse{
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
+	out.PrivilegeAssignments = conv13
+	return out, nil
+}
+
+// UpdatePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdatePermissionsResponseFromSDK(v *sdk.UpdatePermissionsResponse) (*UpdatePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePermissionsResponse{}
+	conv14, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv14
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

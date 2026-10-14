@@ -31,22 +31,6 @@ const (
 	ViewType_All                              = sdk.ViewType_All
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateExperimentRequest struct {
 	// Experiment name.
 	Name *string `json:"name,omitempty"`
@@ -66,38 +50,9 @@ type CreateExperimentRequest struct {
 	TraceLocation *ExperimentTraceLocation `json:"trace_location,omitempty"`
 }
 
-func CreateExperimentRequestFromSDK(v *sdk.CreateExperimentRequest) (*CreateExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := convertSlice(v.Tags, ExperimentTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.Tags", err)
-	}
-	traceLocationWireValue, err := ExperimentTraceLocationFromSDK(v.TraceLocation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.TraceLocation", err)
-	}
-	return &CreateExperimentRequest{
-		Name:             v.Name,
-		ArtifactLocation: v.ArtifactLocation,
-		Tags:             tagsWireValue,
-		TraceLocation:    traceLocationWireValue,
-	}, nil
-}
-
 type CreateExperimentResponse struct {
 	// Unique identifier for the experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-}
-
-func CreateExperimentResponseToSDK(w *CreateExperimentResponse) (*sdk.CreateExperimentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateExperimentResponse{
-		ExperimentId: w.ExperimentId,
-	}, nil
 }
 
 type CreateLoggedModelRequest struct {
@@ -115,44 +70,9 @@ type CreateLoggedModelRequest struct {
 	Tags []LoggedModelTag `json:"tags,omitempty"`
 }
 
-func CreateLoggedModelRequestFromSDK(v *sdk.CreateLoggedModelRequest) (*CreateLoggedModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	paramsWireValue, err := convertSlice(v.Params, LoggedModelParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Params", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, LoggedModelTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Tags", err)
-	}
-	return &CreateLoggedModelRequest{
-		ExperimentId: v.ExperimentId,
-		Name:         v.Name,
-		ModelType:    v.ModelType,
-		SourceRunId:  v.SourceRunId,
-		Params:       paramsWireValue,
-		Tags:         tagsWireValue,
-	}, nil
-}
-
 type CreateLoggedModelResponse struct {
 	// The newly created logged model.
 	Model *LoggedModel `json:"model,omitempty"`
-}
-
-func CreateLoggedModelResponseToSDK(w *CreateLoggedModelResponse) (*sdk.CreateLoggedModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelPublicValue, err := LoggedModelToSDK(w.Model)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelResponse.Model", err)
-	}
-	return &sdk.CreateLoggedModelResponse{
-		Model: modelPublicValue,
-	}, nil
 }
 
 type CreateRunRequest struct {
@@ -170,43 +90,9 @@ type CreateRunRequest struct {
 	Tags []RunTag `json:"tags,omitempty"`
 }
 
-func CreateRunRequestFromSDK(v *sdk.CreateRunRequest) (*CreateRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	startTimeWireValue, err := int64ToWire(v.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRunRequest.StartTime", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, RunTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRunRequest.Tags", err)
-	}
-	return &CreateRunRequest{
-		ExperimentId: v.ExperimentId,
-		UserId:       v.UserId,
-		RunName:      v.RunName,
-		StartTime:    startTimeWireValue,
-		Tags:         tagsWireValue,
-	}, nil
-}
-
 type CreateRunResponse struct {
 	// The newly created run.
 	Run *Run `json:"run,omitempty"`
-}
-
-func CreateRunResponseToSDK(w *CreateRunResponse) (*sdk.CreateRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runPublicValue, err := RunToSDK(w.Run)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRunResponse.Run", err)
-	}
-	return &sdk.CreateRunResponse{
-		Run: runPublicValue,
-	}, nil
 }
 
 // Dataset. Represents a reference to data used for training, testing, or
@@ -234,34 +120,6 @@ type Dataset struct {
 	Profile *string `json:"profile,omitempty"`
 }
 
-func DatasetFromSDK(v *sdk.Dataset) (*Dataset, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Dataset{
-		Name:       v.Name,
-		Digest:     v.Digest,
-		SourceType: v.SourceType,
-		Source:     v.Source,
-		Schema:     v.Schema,
-		Profile:    v.Profile,
-	}, nil
-}
-
-func DatasetToSDK(w *Dataset) (*sdk.Dataset, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Dataset{
-		Name:       w.Name,
-		Digest:     w.Digest,
-		SourceType: w.SourceType,
-		Source:     w.Source,
-		Schema:     w.Schema,
-		Profile:    w.Profile,
-	}, nil
-}
-
 // DatasetInput. Represents a dataset and input tags..
 type DatasetInput struct {
 	// A list of tags for the dataset input, e.g. a “context” tag with value
@@ -271,68 +129,14 @@ type DatasetInput struct {
 	Dataset *Dataset `json:"dataset,omitempty"`
 }
 
-func DatasetInputFromSDK(v *sdk.DatasetInput) (*DatasetInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := convertSlice(v.Tags, InputTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatasetInput.Tags", err)
-	}
-	datasetWireValue, err := DatasetFromSDK(v.Dataset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatasetInput.Dataset", err)
-	}
-	return &DatasetInput{
-		Tags:    tagsWireValue,
-		Dataset: datasetWireValue,
-	}, nil
-}
-
-func DatasetInputToSDK(w *DatasetInput) (*sdk.DatasetInput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, InputTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatasetInput.Tags", err)
-	}
-	datasetPublicValue, err := DatasetToSDK(w.Dataset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatasetInput.Dataset", err)
-	}
-	return &sdk.DatasetInput{
-		Tags:    tagsPublicValue,
-		Dataset: datasetPublicValue,
-	}, nil
-}
-
 type DeleteExperimentRequest struct {
 	// ID of the associated experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
 }
 
-func DeleteExperimentRequestFromSDK(v *sdk.DeleteExperimentRequest) (*DeleteExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteExperimentRequest{
-		ExperimentId: v.ExperimentId,
-	}, nil
-}
-
 type DeleteRunRequest struct {
 	// ID of the run to delete.
 	RunId *string `json:"run_id,omitempty"`
-}
-
-func DeleteRunRequestFromSDK(v *sdk.DeleteRunRequest) (*DeleteRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRunRequest{
-		RunId: v.RunId,
-	}, nil
 }
 
 type DeleteRunsRequest struct {
@@ -346,33 +150,9 @@ type DeleteRunsRequest struct {
 	MaxRuns *int `json:"max_runs,omitempty"`
 }
 
-func DeleteRunsRequestFromSDK(v *sdk.DeleteRunsRequest) (*DeleteRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxTimestampMillisWireValue, err := int64ToWire(v.MaxTimestampMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteRunsRequest.MaxTimestampMillis", err)
-	}
-	return &DeleteRunsRequest{
-		ExperimentId:       v.ExperimentId,
-		MaxTimestampMillis: maxTimestampMillisWireValue,
-		MaxRuns:            v.MaxRuns,
-	}, nil
-}
-
 type DeleteRunsResponse struct {
 	// The number of runs deleted.
 	RunsDeleted *int `json:"runs_deleted,omitempty"`
-}
-
-func DeleteRunsResponseToSDK(w *DeleteRunsResponse) (*sdk.DeleteRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DeleteRunsResponse{
-		RunsDeleted: w.RunsDeleted,
-	}, nil
 }
 
 type DeleteTagRequest struct {
@@ -380,16 +160,6 @@ type DeleteTagRequest struct {
 	RunId *string `json:"run_id,omitempty"`
 	// Name of the tag. Maximum size is 255 bytes. Must be provided.
 	Key *string `json:"key,omitempty"`
-}
-
-func DeleteTagRequestFromSDK(v *sdk.DeleteTagRequest) (*DeleteTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteTagRequest{
-		RunId: v.RunId,
-		Key:   v.Key,
-	}, nil
 }
 
 // An experiment and its metadata..
@@ -415,38 +185,6 @@ type Experiment struct {
 	TraceLocation *ExperimentTraceLocation `json:"trace_location,omitempty"`
 }
 
-func ExperimentToSDK(w *Experiment) (*sdk.Experiment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastUpdateTimePublicValue, err := int64FromWire(w.LastUpdateTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Experiment.LastUpdateTime", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Experiment.CreationTime", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, ExperimentTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Experiment.Tags", err)
-	}
-	traceLocationPublicValue, err := ExperimentTraceLocationToSDK(w.TraceLocation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Experiment.TraceLocation", err)
-	}
-	return &sdk.Experiment{
-		ExperimentId:     w.ExperimentId,
-		Name:             w.Name,
-		ArtifactLocation: w.ArtifactLocation,
-		LifecycleStage:   w.LifecycleStage,
-		LastUpdateTime:   lastUpdateTimePublicValue,
-		CreationTime:     creationTimePublicValue,
-		Tags:             tagsPublicValue,
-		TraceLocation:    traceLocationPublicValue,
-	}, nil
-}
-
 // A tag for an experiment..
 type ExperimentTag struct {
 	// The tag key.
@@ -455,77 +193,9 @@ type ExperimentTag struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func ExperimentTagFromSDK(v *sdk.ExperimentTag) (*ExperimentTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExperimentTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func ExperimentTagToSDK(w *ExperimentTag) (*sdk.ExperimentTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExperimentTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 // The storage location for an experiment's traces..
 type ExperimentTraceLocation struct {
 	UcTraceLocation *UcTraceLocation `json:"uc_trace_location,omitempty"`
-}
-
-func ExperimentTraceLocationFromSDK(v *sdk.ExperimentTraceLocation) (*ExperimentTraceLocation, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var locationUcTraceLocationWire *UcTraceLocation
-	switch value := v.Location.(type) {
-	case nil:
-	case *sdk.ExperimentTraceLocation_Location_UcTraceLocation:
-		if value != nil {
-			locationUcTraceLocationConverted, err := UcTraceLocationFromSDK(&value.UcTraceLocation)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ExperimentTraceLocation.Location.UcTraceLocation", err)
-			}
-			locationUcTraceLocationWire = locationUcTraceLocationConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ExperimentTraceLocation.Location", value)
-	}
-	return &ExperimentTraceLocation{
-		UcTraceLocation: locationUcTraceLocationWire,
-	}, nil
-}
-
-func ExperimentTraceLocationToSDK(w *ExperimentTraceLocation) (*sdk.ExperimentTraceLocation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	locationMembers := 0
-	if w.UcTraceLocation != nil {
-		locationMembers++
-	}
-	if locationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ExperimentTraceLocation.Location")
-	}
-	locationSelection := (&sdk.ExperimentTraceLocation{}).Location
-	switch {
-	case w.UcTraceLocation != nil:
-		locationUcTraceLocationConverted, err := UcTraceLocationToSDK(w.UcTraceLocation)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ExperimentTraceLocation.Location.UcTraceLocation", err)
-		}
-		locationSelection = &sdk.ExperimentTraceLocation_Location_UcTraceLocation{UcTraceLocation: *locationUcTraceLocationConverted}
-	}
-	return &sdk.ExperimentTraceLocation{
-		Location: locationSelection,
-	}, nil
 }
 
 // Metadata of a single artifact file or directory..
@@ -538,21 +208,6 @@ type FileInfo struct {
 	FileSize *int64 `json:"file_size,omitempty"`
 }
 
-func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileSizePublicValue, err := int64FromWire(w.FileSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.FileSize", err)
-	}
-	return &sdk.FileInfo{
-		Path:     w.Path,
-		IsDir:    w.IsDir,
-		FileSize: fileSizePublicValue,
-	}, nil
-}
-
 type FinalizeLoggedModelRequest struct {
 	// The ID of the logged model to finalize.
 	ModelId *string `json:"model_id,omitempty"`
@@ -562,32 +217,9 @@ type FinalizeLoggedModelRequest struct {
 	Status LoggedModelStatus `json:"status,omitempty"`
 }
 
-func FinalizeLoggedModelRequestFromSDK(v *sdk.FinalizeLoggedModelRequest) (*FinalizeLoggedModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FinalizeLoggedModelRequest{
-		ModelId: v.ModelId,
-		Status:  v.Status,
-	}, nil
-}
-
 type FinalizeLoggedModelResponse struct {
 	// The updated logged model.
 	Model *LoggedModel `json:"model,omitempty"`
-}
-
-func FinalizeLoggedModelResponseToSDK(w *FinalizeLoggedModelResponse) (*sdk.FinalizeLoggedModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelPublicValue, err := LoggedModelToSDK(w.Model)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FinalizeLoggedModelResponse.Model", err)
-	}
-	return &sdk.FinalizeLoggedModelResponse{
-		Model: modelPublicValue,
-	}, nil
 }
 
 type GetExperimentByNameRequest struct {
@@ -595,45 +227,14 @@ type GetExperimentByNameRequest struct {
 	ExperimentName *string `json:"experiment_name,omitempty"`
 }
 
-func GetExperimentByNameRequestFromSDK(v *sdk.GetExperimentByNameRequest) (*GetExperimentByNameRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetExperimentByNameRequest{
-		ExperimentName: v.ExperimentName,
-	}, nil
-}
-
 type GetExperimentByNameResponse struct {
 	// Experiment details.
 	Experiment *Experiment `json:"experiment,omitempty"`
 }
 
-func GetExperimentByNameResponseToSDK(w *GetExperimentByNameResponse) (*sdk.GetExperimentByNameResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	experimentPublicValue, err := ExperimentToSDK(w.Experiment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetExperimentByNameResponse.Experiment", err)
-	}
-	return &sdk.GetExperimentByNameResponse{
-		Experiment: experimentPublicValue,
-	}, nil
-}
-
 type GetExperimentRequest struct {
 	// ID of the associated experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-}
-
-func GetExperimentRequestFromSDK(v *sdk.GetExperimentRequest) (*GetExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetExperimentRequest{
-		ExperimentId: v.ExperimentId,
-	}, nil
 }
 
 type GetExperimentResponse struct {
@@ -647,40 +248,9 @@ type GetExperimentResponse struct {
 	Runs []RunInfo `json:"runs,omitempty"`
 }
 
-func GetExperimentResponseToSDK(w *GetExperimentResponse) (*sdk.GetExperimentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	experimentPublicValue, err := ExperimentToSDK(w.Experiment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Experiment", err)
-	}
-	runsPublicValue, err := convertSlice(w.Runs, RunInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Runs", err)
-	}
-	return &sdk.GetExperimentResponse{
-		Experiment: experimentPublicValue,
-		Runs:       runsPublicValue,
-	}, nil
-}
-
 type GetLoggedModelResponse struct {
 	// The retrieved logged model.
 	Model *LoggedModel `json:"model,omitempty"`
-}
-
-func GetLoggedModelResponseToSDK(w *GetLoggedModelResponse) (*sdk.GetLoggedModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelPublicValue, err := LoggedModelToSDK(w.Model)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetLoggedModelResponse.Model", err)
-	}
-	return &sdk.GetLoggedModelResponse{
-		Model: modelPublicValue,
-	}, nil
 }
 
 type GetMetricHistoryResponse struct {
@@ -694,20 +264,6 @@ type GetMetricHistoryResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func GetMetricHistoryResponseToSDK(w *GetMetricHistoryResponse) (*sdk.GetMetricHistoryResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metricsPublicValue, err := convertSlice(w.Metrics, MetricToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetMetricHistoryResponse.Metrics", err)
-	}
-	return &sdk.GetMetricHistoryResponse{
-		Metrics:       metricsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type GetRunRequest struct {
 	// ID of the run to fetch. Must be provided.
 	RunId *string `json:"run_id,omitempty"`
@@ -716,32 +272,9 @@ type GetRunRequest struct {
 	RunUuid *string `json:"run_uuid,omitempty"`
 }
 
-func GetRunRequestFromSDK(v *sdk.GetRunRequest) (*GetRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetRunRequest{
-		RunId:   v.RunId,
-		RunUuid: v.RunUuid,
-	}, nil
-}
-
 type GetRunResponse struct {
 	// Run metadata (name, start time, etc) and data (metrics, params, and tags).
 	Run *Run `json:"run,omitempty"`
-}
-
-func GetRunResponseToSDK(w *GetRunResponse) (*sdk.GetRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runPublicValue, err := RunToSDK(w.Run)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Run", err)
-	}
-	return &sdk.GetRunResponse{
-		Run: runPublicValue,
-	}, nil
 }
 
 // Tag for a dataset input..
@@ -750,26 +283,6 @@ type InputTag struct {
 	Key *string `json:"key,omitempty"`
 	// The tag value.
 	Value *string `json:"value,omitempty"`
-}
-
-func InputTagFromSDK(v *sdk.InputTag) (*InputTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InputTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func InputTagToSDK(w *InputTag) (*sdk.InputTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InputTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type ListArtifactsRequest struct {
@@ -790,18 +303,6 @@ type ListArtifactsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListArtifactsRequestFromSDK(v *sdk.ListArtifactsRequest) (*ListArtifactsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListArtifactsRequest{
-		RunId:     v.RunId,
-		RunUuid:   v.RunUuid,
-		Path:      v.Path,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListArtifactsResponse struct {
 	// The root artifact directory for the run.
 	RootUri *string `json:"root_uri,omitempty"`
@@ -809,21 +310,6 @@ type ListArtifactsResponse struct {
 	Files []FileInfo `json:"files,omitempty"`
 	// The token that can be used to retrieve the next page of artifact results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListArtifactsResponseToSDK(w *ListArtifactsResponse) (*sdk.ListArtifactsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filesPublicValue, err := convertSlice(w.Files, FileInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListArtifactsResponse.Files", err)
-	}
-	return &sdk.ListArtifactsResponse{
-		RootUri:       w.RootUri,
-		Files:         filesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListExperimentsRequest struct {
@@ -839,41 +325,12 @@ type ListExperimentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListExperimentsRequestFromSDK(v *sdk.ListExperimentsRequest) (*ListExperimentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExperimentsRequest.MaxResults", err)
-	}
-	return &ListExperimentsRequest{
-		ViewType:   v.ViewType,
-		MaxResults: maxResultsWireValue,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListExperimentsResponse struct {
 	// Paginated Experiments beginning with the first item on the requested page.
 	Experiments []Experiment `json:"experiments,omitempty"`
 	// Token that can be used to retrieve the next page of experiments. Empty token
 	// means no more experiment is available for retrieval.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListExperimentsResponseToSDK(w *ListExperimentsResponse) (*sdk.ListExperimentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	experimentsPublicValue, err := convertSlice(w.Experiments, ExperimentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExperimentsResponse.Experiments", err)
-	}
-	return &sdk.ListExperimentsResponse{
-		Experiments:   experimentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListMetricHistoryRequest struct {
@@ -891,19 +348,6 @@ type ListMetricHistoryRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 }
 
-func ListMetricHistoryRequestFromSDK(v *sdk.ListMetricHistoryRequest) (*ListMetricHistoryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListMetricHistoryRequest{
-		RunId:      v.RunId,
-		RunUuid:    v.RunUuid,
-		MetricKey:  v.MetricKey,
-		PageToken:  v.PageToken,
-		MaxResults: v.MaxResults,
-	}, nil
-}
-
 type LogBatchRequest struct {
 	// ID of the run to log under
 	RunId *string `json:"run_id,omitempty"`
@@ -918,30 +362,6 @@ type LogBatchRequest struct {
 	Tags []RunTag `json:"tags,omitempty"`
 }
 
-func LogBatchRequestFromSDK(v *sdk.LogBatchRequest) (*LogBatchRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	metricsWireValue, err := convertSlice(v.Metrics, MetricFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Metrics", err)
-	}
-	paramsWireValue, err := convertSlice(v.Params, ParamFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Params", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, RunTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Tags", err)
-	}
-	return &LogBatchRequest{
-		RunId:   v.RunId,
-		Metrics: metricsWireValue,
-		Params:  paramsWireValue,
-		Tags:    tagsWireValue,
-	}, nil
-}
-
 type LogInputsRequest struct {
 	// ID of the run to log under
 	RunId *string `json:"run_id,omitempty"`
@@ -951,44 +371,11 @@ type LogInputsRequest struct {
 	Models []ModelInput `json:"models,omitempty"`
 }
 
-func LogInputsRequestFromSDK(v *sdk.LogInputsRequest) (*LogInputsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	datasetsWireValue, err := convertSlice(v.Datasets, DatasetInputFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Datasets", err)
-	}
-	modelsWireValue, err := convertSlice(v.Models, ModelInputFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Models", err)
-	}
-	return &LogInputsRequest{
-		RunId:    v.RunId,
-		Datasets: datasetsWireValue,
-		Models:   modelsWireValue,
-	}, nil
-}
-
 type LogLoggedModelParamsRequest struct {
 	// The ID of the logged model to log params for.
 	ModelId *string `json:"model_id,omitempty"`
 	// Parameters to attach to the model.
 	Params []LoggedModelParameter `json:"params,omitempty"`
-}
-
-func LogLoggedModelParamsRequestFromSDK(v *sdk.LogLoggedModelParamsRequest) (*LogLoggedModelParamsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	paramsWireValue, err := convertSlice(v.Params, LoggedModelParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogLoggedModelParamsRequest.Params", err)
-	}
-	return &LogLoggedModelParamsRequest{
-		ModelId: v.ModelId,
-		Params:  paramsWireValue,
-	}, nil
 }
 
 type LogMetricRequest struct {
@@ -1015,31 +402,6 @@ type LogMetricRequest struct {
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
 }
 
-func LogMetricRequestFromSDK(v *sdk.LogMetricRequest) (*LogMetricRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	timestampWireValue, err := int64ToWire(v.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogMetricRequest.Timestamp", err)
-	}
-	stepWireValue, err := int64ToWire(v.Step)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogMetricRequest.Step", err)
-	}
-	return &LogMetricRequest{
-		RunId:         v.RunId,
-		RunUuid:       v.RunUuid,
-		Key:           v.Key,
-		Value:         v.Value,
-		Timestamp:     timestampWireValue,
-		Step:          stepWireValue,
-		ModelId:       v.ModelId,
-		DatasetName:   v.DatasetName,
-		DatasetDigest: v.DatasetDigest,
-	}, nil
-}
-
 type LogModelRequest struct {
 	// ID of the run to log under
 	RunId *string `json:"run_id,omitempty"`
@@ -1047,35 +409,11 @@ type LogModelRequest struct {
 	ModelJson *string `json:"model_json,omitempty"`
 }
 
-func LogModelRequestFromSDK(v *sdk.LogModelRequest) (*LogModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LogModelRequest{
-		RunId:     v.RunId,
-		ModelJson: v.ModelJson,
-	}, nil
-}
-
 type LogOutputsRequest struct {
 	// The ID of the Run from which to log outputs.
 	RunId *string `json:"run_id,omitempty"`
 	// The model outputs from the Run.
 	Models []ModelOutput `json:"models,omitempty"`
-}
-
-func LogOutputsRequestFromSDK(v *sdk.LogOutputsRequest) (*LogOutputsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	modelsWireValue, err := convertSlice(v.Models, ModelOutputFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogOutputsRequest.Models", err)
-	}
-	return &LogOutputsRequest{
-		RunId:  v.RunId,
-		Models: modelsWireValue,
-	}, nil
 }
 
 type LogParamRequest struct {
@@ -1090,18 +428,6 @@ type LogParamRequest struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func LogParamRequestFromSDK(v *sdk.LogParamRequest) (*LogParamRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LogParamRequest{
-		RunId:   v.RunId,
-		RunUuid: v.RunUuid,
-		Key:     v.Key,
-		Value:   v.Value,
-	}, nil
-}
-
 // A logged model message includes logged model attributes, tags, registration
 // info, params, and linked run metrics..
 type LoggedModel struct {
@@ -1111,48 +437,12 @@ type LoggedModel struct {
 	Data *LoggedModelData `json:"data,omitempty"`
 }
 
-func LoggedModelToSDK(w *LoggedModel) (*sdk.LoggedModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	infoPublicValue, err := LoggedModelInfoToSDK(w.Info)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModel.Info", err)
-	}
-	dataPublicValue, err := LoggedModelDataToSDK(w.Data)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModel.Data", err)
-	}
-	return &sdk.LoggedModel{
-		Info: infoPublicValue,
-		Data: dataPublicValue,
-	}, nil
-}
-
 // A LoggedModelData message includes logged model params and linked metrics..
 type LoggedModelData struct {
 	// Immutable string key-value pairs of the model.
 	Params []LoggedModelParameter `json:"params,omitempty"`
 	// Performance metrics linked to the model.
 	Metrics []Metric `json:"metrics,omitempty"`
-}
-
-func LoggedModelDataToSDK(w *LoggedModelData) (*sdk.LoggedModelData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	paramsPublicValue, err := convertSlice(w.Params, LoggedModelParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Params", err)
-	}
-	metricsPublicValue, err := convertSlice(w.Metrics, MetricToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Metrics", err)
-	}
-	return &sdk.LoggedModelData{
-		Params:  paramsPublicValue,
-		Metrics: metricsPublicValue,
-	}, nil
 }
 
 // A LoggedModelInfo includes logged model attributes, tags, and registration
@@ -1186,42 +476,6 @@ type LoggedModelInfo struct {
 	Tags []LoggedModelTag `json:"tags,omitempty"`
 }
 
-func LoggedModelInfoToSDK(w *LoggedModelInfo) (*sdk.LoggedModelInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampMsPublicValue, err := int64FromWire(w.CreationTimestampMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.CreationTimestampMs", err)
-	}
-	lastUpdatedTimestampMsPublicValue, err := int64FromWire(w.LastUpdatedTimestampMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.LastUpdatedTimestampMs", err)
-	}
-	creatorIdPublicValue, err := int64FromWire(w.CreatorId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.CreatorId", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, LoggedModelTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.Tags", err)
-	}
-	return &sdk.LoggedModelInfo{
-		ModelId:                w.ModelId,
-		ExperimentId:           w.ExperimentId,
-		Name:                   w.Name,
-		CreationTimestampMs:    creationTimestampMsPublicValue,
-		LastUpdatedTimestampMs: lastUpdatedTimestampMsPublicValue,
-		ArtifactUri:            w.ArtifactUri,
-		Status:                 w.Status,
-		CreatorId:              creatorIdPublicValue,
-		ModelType:              w.ModelType,
-		SourceRunId:            w.SourceRunId,
-		StatusMessage:          w.StatusMessage,
-		Tags:                   tagsPublicValue,
-	}, nil
-}
-
 // Parameter associated with a LoggedModel..
 type LoggedModelParameter struct {
 	// The key identifying this param.
@@ -1230,52 +484,12 @@ type LoggedModelParameter struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func LoggedModelParameterFromSDK(v *sdk.LoggedModelParameter) (*LoggedModelParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LoggedModelParameter{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func LoggedModelParameterToSDK(w *LoggedModelParameter) (*sdk.LoggedModelParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LoggedModelParameter{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 // Tag for a LoggedModel..
 type LoggedModelTag struct {
 	// The tag key.
 	Key *string `json:"key,omitempty"`
 	// The tag value.
 	Value *string `json:"value,omitempty"`
-}
-
-func LoggedModelTagFromSDK(v *sdk.LoggedModelTag) (*LoggedModelTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LoggedModelTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func LoggedModelTagToSDK(w *LoggedModelTag) (*sdk.LoggedModelTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LoggedModelTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 // Metric associated with a run, represented as a key-value pair..
@@ -1302,76 +516,10 @@ type Metric struct {
 	RunId *string `json:"run_id,omitempty"`
 }
 
-func MetricFromSDK(v *sdk.Metric) (*Metric, error) {
-	if v == nil {
-		return nil, nil
-	}
-	timestampWireValue, err := int64ToWire(v.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Timestamp", err)
-	}
-	stepWireValue, err := int64ToWire(v.Step)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Step", err)
-	}
-	return &Metric{
-		Key:           v.Key,
-		Value:         v.Value,
-		Timestamp:     timestampWireValue,
-		Step:          stepWireValue,
-		DatasetName:   v.DatasetName,
-		DatasetDigest: v.DatasetDigest,
-		ModelId:       v.ModelId,
-		RunId:         v.RunId,
-	}, nil
-}
-
-func MetricToSDK(w *Metric) (*sdk.Metric, error) {
-	if w == nil {
-		return nil, nil
-	}
-	timestampPublicValue, err := int64FromWire(w.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Timestamp", err)
-	}
-	stepPublicValue, err := int64FromWire(w.Step)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Step", err)
-	}
-	return &sdk.Metric{
-		Key:           w.Key,
-		Value:         w.Value,
-		Timestamp:     timestampPublicValue,
-		Step:          stepPublicValue,
-		DatasetName:   w.DatasetName,
-		DatasetDigest: w.DatasetDigest,
-		ModelId:       w.ModelId,
-		RunId:         w.RunId,
-	}, nil
-}
-
 // Represents a LoggedModel or Registered Model Version input to a Run..
 type ModelInput struct {
 	// The unique identifier of the model.
 	ModelId *string `json:"model_id,omitempty"`
-}
-
-func ModelInputFromSDK(v *sdk.ModelInput) (*ModelInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelInput{
-		ModelId: v.ModelId,
-	}, nil
-}
-
-func ModelInputToSDK(w *ModelInput) (*sdk.ModelInput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelInput{
-		ModelId: w.ModelId,
-	}, nil
 }
 
 // Represents a LoggedModel output of a Run..
@@ -1382,20 +530,6 @@ type ModelOutput struct {
 	Step *int64 `json:"step,omitempty"`
 }
 
-func ModelOutputFromSDK(v *sdk.ModelOutput) (*ModelOutput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	stepWireValue, err := int64ToWire(v.Step)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelOutput.Step", err)
-	}
-	return &ModelOutput{
-		ModelId: v.ModelId,
-		Step:    stepWireValue,
-	}, nil
-}
-
 // Param associated with a run..
 type Param struct {
 	// Key identifying this param.
@@ -1404,52 +538,14 @@ type Param struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func ParamFromSDK(v *sdk.Param) (*Param, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Param{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func ParamToSDK(w *Param) (*sdk.Param, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Param{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 type RestoreExperimentRequest struct {
 	// ID of the associated experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
 }
 
-func RestoreExperimentRequestFromSDK(v *sdk.RestoreExperimentRequest) (*RestoreExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RestoreExperimentRequest{
-		ExperimentId: v.ExperimentId,
-	}, nil
-}
-
 type RestoreRunRequest struct {
 	// ID of the run to restore.
 	RunId *string `json:"run_id,omitempty"`
-}
-
-func RestoreRunRequestFromSDK(v *sdk.RestoreRunRequest) (*RestoreRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RestoreRunRequest{
-		RunId: v.RunId,
-	}, nil
 }
 
 type RestoreRunsRequest struct {
@@ -1464,33 +560,9 @@ type RestoreRunsRequest struct {
 	MaxRuns *int `json:"max_runs,omitempty"`
 }
 
-func RestoreRunsRequestFromSDK(v *sdk.RestoreRunsRequest) (*RestoreRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	minTimestampMillisWireValue, err := int64ToWire(v.MinTimestampMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RestoreRunsRequest.MinTimestampMillis", err)
-	}
-	return &RestoreRunsRequest{
-		ExperimentId:       v.ExperimentId,
-		MinTimestampMillis: minTimestampMillisWireValue,
-		MaxRuns:            v.MaxRuns,
-	}, nil
-}
-
 type RestoreRunsResponse struct {
 	// The number of runs restored.
 	RunsRestored *int `json:"runs_restored,omitempty"`
-}
-
-func RestoreRunsResponseToSDK(w *RestoreRunsResponse) (*sdk.RestoreRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RestoreRunsResponse{
-		RunsRestored: w.RunsRestored,
-	}, nil
 }
 
 // A single run..
@@ -1503,29 +575,6 @@ type Run struct {
 	Inputs *RunInputs `json:"inputs,omitempty"`
 }
 
-func RunToSDK(w *Run) (*sdk.Run, error) {
-	if w == nil {
-		return nil, nil
-	}
-	infoPublicValue, err := RunInfoToSDK(w.Info)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Info", err)
-	}
-	dataPublicValue, err := RunDataToSDK(w.Data)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Data", err)
-	}
-	inputsPublicValue, err := RunInputsToSDK(w.Inputs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Inputs", err)
-	}
-	return &sdk.Run{
-		Info:   infoPublicValue,
-		Data:   dataPublicValue,
-		Inputs: inputsPublicValue,
-	}, nil
-}
-
 // Run data (metrics, params, and tags)..
 type RunData struct {
 	// Run metrics.
@@ -1534,29 +583,6 @@ type RunData struct {
 	Params []Param `json:"params,omitempty"`
 	// Additional metadata key-value pairs.
 	Tags []RunTag `json:"tags,omitempty"`
-}
-
-func RunDataToSDK(w *RunData) (*sdk.RunData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metricsPublicValue, err := convertSlice(w.Metrics, MetricToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunData.Metrics", err)
-	}
-	paramsPublicValue, err := convertSlice(w.Params, ParamToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunData.Params", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, RunTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunData.Tags", err)
-	}
-	return &sdk.RunData{
-		Metrics: metricsPublicValue,
-		Params:  paramsPublicValue,
-		Tags:    tagsPublicValue,
-	}, nil
 }
 
 // Metadata of a single run..
@@ -1588,32 +614,6 @@ type RunInfo struct {
 	LifecycleStage *string `json:"lifecycle_stage,omitempty"`
 }
 
-func RunInfoToSDK(w *RunInfo) (*sdk.RunInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunInfo.StartTime", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunInfo.EndTime", err)
-	}
-	return &sdk.RunInfo{
-		RunId:          w.RunId,
-		RunUuid:        w.RunUuid,
-		ExperimentId:   w.ExperimentId,
-		RunName:        w.RunName,
-		UserId:         w.UserId,
-		Status:         w.Status,
-		StartTime:      startTimePublicValue,
-		EndTime:        endTimePublicValue,
-		ArtifactUri:    w.ArtifactUri,
-		LifecycleStage: w.LifecycleStage,
-	}, nil
-}
-
 // Run inputs..
 type RunInputs struct {
 	// Run metrics.
@@ -1622,50 +622,12 @@ type RunInputs struct {
 	ModelInputs []ModelInput `json:"model_inputs,omitempty"`
 }
 
-func RunInputsToSDK(w *RunInputs) (*sdk.RunInputs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	datasetInputsPublicValue, err := convertSlice(w.DatasetInputs, DatasetInputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunInputs.DatasetInputs", err)
-	}
-	modelInputsPublicValue, err := convertSlice(w.ModelInputs, ModelInputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunInputs.ModelInputs", err)
-	}
-	return &sdk.RunInputs{
-		DatasetInputs: datasetInputsPublicValue,
-		ModelInputs:   modelInputsPublicValue,
-	}, nil
-}
-
 // Tag for a run..
 type RunTag struct {
 	// The tag key.
 	Key *string `json:"key,omitempty"`
 	// The tag value.
 	Value *string `json:"value,omitempty"`
-}
-
-func RunTagFromSDK(v *sdk.RunTag) (*RunTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RunTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func RunTagToSDK(w *RunTag) (*sdk.RunTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RunTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type SearchExperimentsRequest struct {
@@ -1685,43 +647,12 @@ type SearchExperimentsRequest struct {
 	ViewType ViewType `json:"view_type,omitempty"`
 }
 
-func SearchExperimentsRequestFromSDK(v *sdk.SearchExperimentsRequest) (*SearchExperimentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchExperimentsRequest.MaxResults", err)
-	}
-	return &SearchExperimentsRequest{
-		MaxResults: maxResultsWireValue,
-		PageToken:  v.PageToken,
-		Filter:     v.Filter,
-		OrderBy:    v.OrderBy,
-		ViewType:   v.ViewType,
-	}, nil
-}
-
 type SearchExperimentsResponse struct {
 	// Experiments that match the search criteria
 	Experiments []Experiment `json:"experiments,omitempty"`
 	// Token that can be used to retrieve the next page of experiments. An empty
 	// token means that no more experiments are available for retrieval.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func SearchExperimentsResponseToSDK(w *SearchExperimentsResponse) (*sdk.SearchExperimentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	experimentsPublicValue, err := convertSlice(w.Experiments, ExperimentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchExperimentsResponse.Experiments", err)
-	}
-	return &sdk.SearchExperimentsResponse{
-		Experiments:   experimentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SearchLoggedModelsRequest struct {
@@ -1749,43 +680,11 @@ type SearchLoggedModelsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func SearchLoggedModelsRequestFromSDK(v *sdk.SearchLoggedModelsRequest) (*SearchLoggedModelsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	datasetsWireValue, err := convertSlice(v.Datasets, SearchLoggedModelsRequest_DatasetFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.Datasets", err)
-	}
-	orderByWireValue, err := convertSlice(v.OrderBy, SearchLoggedModelsRequest_OrderByFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.OrderBy", err)
-	}
-	return &SearchLoggedModelsRequest{
-		ExperimentIds: v.ExperimentIds,
-		Filter:        v.Filter,
-		Datasets:      datasetsWireValue,
-		MaxResults:    v.MaxResults,
-		OrderBy:       orderByWireValue,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type SearchLoggedModelsRequest_Dataset struct {
 	// The name of the dataset.
 	DatasetName *string `json:"dataset_name,omitempty"`
 	// The digest of the dataset.
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
-}
-
-func SearchLoggedModelsRequest_DatasetFromSDK(v *sdk.SearchLoggedModelsRequest_Dataset) (*SearchLoggedModelsRequest_Dataset, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SearchLoggedModelsRequest_Dataset{
-		DatasetName:   v.DatasetName,
-		DatasetDigest: v.DatasetDigest,
-	}, nil
 }
 
 type SearchLoggedModelsRequest_OrderBy struct {
@@ -1805,37 +704,11 @@ type SearchLoggedModelsRequest_OrderBy struct {
 	DatasetDigest *string `json:"dataset_digest,omitempty"`
 }
 
-func SearchLoggedModelsRequest_OrderByFromSDK(v *sdk.SearchLoggedModelsRequest_OrderBy) (*SearchLoggedModelsRequest_OrderBy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SearchLoggedModelsRequest_OrderBy{
-		FieldName:     v.FieldName,
-		Ascending:     v.Ascending,
-		DatasetName:   v.DatasetName,
-		DatasetDigest: v.DatasetDigest,
-	}, nil
-}
-
 type SearchLoggedModelsResponse struct {
 	// Logged models that match the search criteria.
 	Models []LoggedModel `json:"models,omitempty"`
 	// The token that can be used to retrieve the next page of logged models.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func SearchLoggedModelsResponseToSDK(w *SearchLoggedModelsResponse) (*sdk.SearchLoggedModelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelsPublicValue, err := convertSlice(w.Models, LoggedModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsResponse.Models", err)
-	}
-	return &sdk.SearchLoggedModelsResponse{
-		Models:        modelsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SearchRunsRequest struct {
@@ -1869,39 +742,11 @@ type SearchRunsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func SearchRunsRequestFromSDK(v *sdk.SearchRunsRequest) (*SearchRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SearchRunsRequest{
-		ExperimentIds: v.ExperimentIds,
-		Filter:        v.Filter,
-		RunViewType:   v.RunViewType,
-		MaxResults:    v.MaxResults,
-		OrderBy:       v.OrderBy,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type SearchRunsResponse struct {
 	// Runs that match the search criteria.
 	Runs []Run `json:"runs,omitempty"`
 	// Token for the next page of runs.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func SearchRunsResponseToSDK(w *SearchRunsResponse) (*sdk.SearchRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runsPublicValue, err := convertSlice(w.Runs, RunToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchRunsResponse.Runs", err)
-	}
-	return &sdk.SearchRunsResponse{
-		Runs:          runsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SetExperimentTagRequest struct {
@@ -1914,36 +759,11 @@ type SetExperimentTagRequest struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func SetExperimentTagRequestFromSDK(v *sdk.SetExperimentTagRequest) (*SetExperimentTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SetExperimentTagRequest{
-		ExperimentId: v.ExperimentId,
-		Key:          v.Key,
-		Value:        v.Value,
-	}, nil
-}
-
 type SetLoggedModelTagsRequest struct {
 	// The ID of the logged model to set the tags on.
 	ModelId *string `json:"model_id,omitempty"`
 	// The tags to set on the logged model.
 	Tags []LoggedModelTag `json:"tags,omitempty"`
-}
-
-func SetLoggedModelTagsRequestFromSDK(v *sdk.SetLoggedModelTagsRequest) (*SetLoggedModelTagsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := convertSlice(v.Tags, LoggedModelTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetLoggedModelTagsRequest.Tags", err)
-	}
-	return &SetLoggedModelTagsRequest{
-		ModelId: v.ModelId,
-		Tags:    tagsWireValue,
-	}, nil
 }
 
 type SetTagRequest struct {
@@ -1957,18 +777,6 @@ type SetTagRequest struct {
 	// String value of the tag being logged. Values up to 64KB in size are
 	// supported.
 	Value *string `json:"value,omitempty"`
-}
-
-func SetTagRequestFromSDK(v *sdk.SetTagRequest) (*SetTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SetTagRequest{
-		RunId:   v.RunId,
-		RunUuid: v.RunUuid,
-		Key:     v.Key,
-		Value:   v.Value,
-	}, nil
 }
 
 // A Unity Catalog trace storage location. Traces are stored as Delta tables in
@@ -1990,46 +798,12 @@ type UcTraceLocation struct {
 	EffectiveTablePrefix *string `json:"effective_table_prefix,omitempty"`
 }
 
-func UcTraceLocationFromSDK(v *sdk.UcTraceLocation) (*UcTraceLocation, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UcTraceLocation{
-		Catalog:              v.Catalog,
-		Schema:               v.Schema,
-		TablePrefix:          v.TablePrefix,
-		EffectiveTablePrefix: v.EffectiveTablePrefix,
-	}, nil
-}
-
-func UcTraceLocationToSDK(w *UcTraceLocation) (*sdk.UcTraceLocation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UcTraceLocation{
-		Catalog:              w.Catalog,
-		Schema:               w.Schema,
-		TablePrefix:          w.TablePrefix,
-		EffectiveTablePrefix: w.EffectiveTablePrefix,
-	}, nil
-}
-
 type UpdateExperimentRequest struct {
 	// ID of the associated experiment.
 	ExperimentId *string `json:"experiment_id,omitempty"`
 	// If provided, the experiment's name is changed to the new name. The new name
 	// must be unique.
 	NewName *string `json:"new_name,omitempty"`
-}
-
-func UpdateExperimentRequestFromSDK(v *sdk.UpdateExperimentRequest) (*UpdateExperimentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateExperimentRequest{
-		ExperimentId: v.ExperimentId,
-		NewName:      v.NewName,
-	}, nil
 }
 
 type UpdateRunRequest struct {
@@ -2046,39 +820,2156 @@ type UpdateRunRequest struct {
 	RunName *string `json:"run_name,omitempty"`
 }
 
-func UpdateRunRequestFromSDK(v *sdk.UpdateRunRequest) (*UpdateRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endTimeWireValue, err := int64ToWire(v.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRunRequest.EndTime", err)
-	}
-	return &UpdateRunRequest{
-		RunId:   v.RunId,
-		RunUuid: v.RunUuid,
-		Status:  v.Status,
-		EndTime: endTimeWireValue,
-		RunName: v.RunName,
-	}, nil
-}
-
 type UpdateRunResponse struct {
 	// Updated metadata of the run.
 	RunInfo *RunInfo `json:"run_info,omitempty"`
 }
 
+// CreateExperimentRequestToSDK converts the mirror to the sdk-go type.
+func CreateExperimentRequestToSDK(w *CreateExperimentRequest) (*sdk.CreateExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExperimentRequest{}
+	out.Name = w.Name
+	out.ArtifactLocation = w.ArtifactLocation
+	conv1, err := convertSlice(w.Tags, ExperimentTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.Tags", err)
+	}
+	out.Tags = conv1
+	conv2, err := ExperimentTraceLocationToSDK(w.TraceLocation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.TraceLocation", err)
+	}
+	out.TraceLocation = conv2
+	return out, nil
+}
+
+// CreateExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExperimentRequestFromSDK(v *sdk.CreateExperimentRequest) (*CreateExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExperimentRequest{}
+	out.Name = v.Name
+	out.ArtifactLocation = v.ArtifactLocation
+	conv3, err := convertSlice(v.Tags, ExperimentTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.Tags", err)
+	}
+	out.Tags = conv3
+	conv4, err := ExperimentTraceLocationFromSDK(v.TraceLocation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExperimentRequest.TraceLocation", err)
+	}
+	out.TraceLocation = conv4
+	return out, nil
+}
+
+// CreateExperimentResponseToSDK converts the mirror to the sdk-go type.
+func CreateExperimentResponseToSDK(w *CreateExperimentResponse) (*sdk.CreateExperimentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExperimentResponse{}
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// CreateExperimentResponseFromSDK converts the sdk-go type to the mirror.
+func CreateExperimentResponseFromSDK(v *sdk.CreateExperimentResponse) (*CreateExperimentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExperimentResponse{}
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// CreateLoggedModelRequestToSDK converts the mirror to the sdk-go type.
+func CreateLoggedModelRequestToSDK(w *CreateLoggedModelRequest) (*sdk.CreateLoggedModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateLoggedModelRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.Name = w.Name
+	out.ModelType = w.ModelType
+	out.SourceRunId = w.SourceRunId
+	conv5, err := convertSlice(w.Params, LoggedModelParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Params", err)
+	}
+	out.Params = conv5
+	conv6, err := convertSlice(w.Tags, LoggedModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Tags", err)
+	}
+	out.Tags = conv6
+	return out, nil
+}
+
+// CreateLoggedModelRequestFromSDK converts the sdk-go type to the mirror.
+func CreateLoggedModelRequestFromSDK(v *sdk.CreateLoggedModelRequest) (*CreateLoggedModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateLoggedModelRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.Name = v.Name
+	out.ModelType = v.ModelType
+	out.SourceRunId = v.SourceRunId
+	conv7, err := convertSlice(v.Params, LoggedModelParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Params", err)
+	}
+	out.Params = conv7
+	conv8, err := convertSlice(v.Tags, LoggedModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelRequest.Tags", err)
+	}
+	out.Tags = conv8
+	return out, nil
+}
+
+// CreateLoggedModelResponseToSDK converts the mirror to the sdk-go type.
+func CreateLoggedModelResponseToSDK(w *CreateLoggedModelResponse) (*sdk.CreateLoggedModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateLoggedModelResponse{}
+	conv9, err := LoggedModelToSDK(w.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelResponse.Model", err)
+	}
+	out.Model = conv9
+	return out, nil
+}
+
+// CreateLoggedModelResponseFromSDK converts the sdk-go type to the mirror.
+func CreateLoggedModelResponseFromSDK(v *sdk.CreateLoggedModelResponse) (*CreateLoggedModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateLoggedModelResponse{}
+	conv10, err := LoggedModelFromSDK(v.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateLoggedModelResponse.Model", err)
+	}
+	out.Model = conv10
+	return out, nil
+}
+
+// CreateRunRequestToSDK converts the mirror to the sdk-go type.
+func CreateRunRequestToSDK(w *CreateRunRequest) (*sdk.CreateRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRunRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.UserId = w.UserId
+	out.RunName = w.RunName
+	out.StartTime = w.StartTime
+	conv11, err := convertSlice(w.Tags, RunTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRunRequest.Tags", err)
+	}
+	out.Tags = conv11
+	return out, nil
+}
+
+// CreateRunRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRunRequestFromSDK(v *sdk.CreateRunRequest) (*CreateRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRunRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.UserId = v.UserId
+	out.RunName = v.RunName
+	out.StartTime = v.StartTime
+	conv12, err := convertSlice(v.Tags, RunTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRunRequest.Tags", err)
+	}
+	out.Tags = conv12
+	return out, nil
+}
+
+// CreateRunResponseToSDK converts the mirror to the sdk-go type.
+func CreateRunResponseToSDK(w *CreateRunResponse) (*sdk.CreateRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRunResponse{}
+	conv13, err := RunToSDK(w.Run)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRunResponse.Run", err)
+	}
+	out.Run = conv13
+	return out, nil
+}
+
+// CreateRunResponseFromSDK converts the sdk-go type to the mirror.
+func CreateRunResponseFromSDK(v *sdk.CreateRunResponse) (*CreateRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRunResponse{}
+	conv14, err := RunFromSDK(v.Run)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRunResponse.Run", err)
+	}
+	out.Run = conv14
+	return out, nil
+}
+
+// DatasetToSDK converts the mirror to the sdk-go type.
+func DatasetToSDK(w *Dataset) (*sdk.Dataset, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dataset{}
+	out.Name = w.Name
+	out.Digest = w.Digest
+	out.SourceType = w.SourceType
+	out.Source = w.Source
+	out.Schema = w.Schema
+	out.Profile = w.Profile
+	return out, nil
+}
+
+// DatasetFromSDK converts the sdk-go type to the mirror.
+func DatasetFromSDK(v *sdk.Dataset) (*Dataset, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dataset{}
+	out.Name = v.Name
+	out.Digest = v.Digest
+	out.SourceType = v.SourceType
+	out.Source = v.Source
+	out.Schema = v.Schema
+	out.Profile = v.Profile
+	return out, nil
+}
+
+// DatasetInputToSDK converts the mirror to the sdk-go type.
+func DatasetInputToSDK(w *DatasetInput) (*sdk.DatasetInput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatasetInput{}
+	conv15, err := convertSlice(w.Tags, InputTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatasetInput.Tags", err)
+	}
+	out.Tags = conv15
+	conv16, err := DatasetToSDK(w.Dataset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatasetInput.Dataset", err)
+	}
+	out.Dataset = conv16
+	return out, nil
+}
+
+// DatasetInputFromSDK converts the sdk-go type to the mirror.
+func DatasetInputFromSDK(v *sdk.DatasetInput) (*DatasetInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatasetInput{}
+	conv17, err := convertSlice(v.Tags, InputTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatasetInput.Tags", err)
+	}
+	out.Tags = conv17
+	conv18, err := DatasetFromSDK(v.Dataset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatasetInput.Dataset", err)
+	}
+	out.Dataset = conv18
+	return out, nil
+}
+
+// DeleteExperimentRequestToSDK converts the mirror to the sdk-go type.
+func DeleteExperimentRequestToSDK(w *DeleteExperimentRequest) (*sdk.DeleteExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteExperimentRequest{}
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// DeleteExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteExperimentRequestFromSDK(v *sdk.DeleteExperimentRequest) (*DeleteExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteExperimentRequest{}
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// DeleteRunRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRunRequestToSDK(w *DeleteRunRequest) (*sdk.DeleteRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRunRequest{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// DeleteRunRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRunRequestFromSDK(v *sdk.DeleteRunRequest) (*DeleteRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRunRequest{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// DeleteRunsRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRunsRequestToSDK(w *DeleteRunsRequest) (*sdk.DeleteRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRunsRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.MaxTimestampMillis = w.MaxTimestampMillis
+	out.MaxRuns = w.MaxRuns
+	return out, nil
+}
+
+// DeleteRunsRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRunsRequestFromSDK(v *sdk.DeleteRunsRequest) (*DeleteRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRunsRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.MaxTimestampMillis = v.MaxTimestampMillis
+	out.MaxRuns = v.MaxRuns
+	return out, nil
+}
+
+// DeleteRunsResponseToSDK converts the mirror to the sdk-go type.
+func DeleteRunsResponseToSDK(w *DeleteRunsResponse) (*sdk.DeleteRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRunsResponse{}
+	out.RunsDeleted = w.RunsDeleted
+	return out, nil
+}
+
+// DeleteRunsResponseFromSDK converts the sdk-go type to the mirror.
+func DeleteRunsResponseFromSDK(v *sdk.DeleteRunsResponse) (*DeleteRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRunsResponse{}
+	out.RunsDeleted = v.RunsDeleted
+	return out, nil
+}
+
+// DeleteTagRequestToSDK converts the mirror to the sdk-go type.
+func DeleteTagRequestToSDK(w *DeleteTagRequest) (*sdk.DeleteTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteTagRequest{}
+	out.RunId = w.RunId
+	out.Key = w.Key
+	return out, nil
+}
+
+// DeleteTagRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteTagRequestFromSDK(v *sdk.DeleteTagRequest) (*DeleteTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteTagRequest{}
+	out.RunId = v.RunId
+	out.Key = v.Key
+	return out, nil
+}
+
+// ExperimentToSDK converts the mirror to the sdk-go type.
+func ExperimentToSDK(w *Experiment) (*sdk.Experiment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Experiment{}
+	out.ExperimentId = w.ExperimentId
+	out.Name = w.Name
+	out.ArtifactLocation = w.ArtifactLocation
+	out.LifecycleStage = w.LifecycleStage
+	out.LastUpdateTime = w.LastUpdateTime
+	out.CreationTime = w.CreationTime
+	conv19, err := convertSlice(w.Tags, ExperimentTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Experiment.Tags", err)
+	}
+	out.Tags = conv19
+	conv20, err := ExperimentTraceLocationToSDK(w.TraceLocation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Experiment.TraceLocation", err)
+	}
+	out.TraceLocation = conv20
+	return out, nil
+}
+
+// ExperimentFromSDK converts the sdk-go type to the mirror.
+func ExperimentFromSDK(v *sdk.Experiment) (*Experiment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Experiment{}
+	out.ExperimentId = v.ExperimentId
+	out.Name = v.Name
+	out.ArtifactLocation = v.ArtifactLocation
+	out.LifecycleStage = v.LifecycleStage
+	out.LastUpdateTime = v.LastUpdateTime
+	out.CreationTime = v.CreationTime
+	conv21, err := convertSlice(v.Tags, ExperimentTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Experiment.Tags", err)
+	}
+	out.Tags = conv21
+	conv22, err := ExperimentTraceLocationFromSDK(v.TraceLocation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Experiment.TraceLocation", err)
+	}
+	out.TraceLocation = conv22
+	return out, nil
+}
+
+// ExperimentTagToSDK converts the mirror to the sdk-go type.
+func ExperimentTagToSDK(w *ExperimentTag) (*sdk.ExperimentTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExperimentTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// ExperimentTagFromSDK converts the sdk-go type to the mirror.
+func ExperimentTagFromSDK(v *sdk.ExperimentTag) (*ExperimentTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExperimentTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ExperimentTraceLocationToSDK converts the mirror to the sdk-go type.
+func ExperimentTraceLocationToSDK(w *ExperimentTraceLocation) (*sdk.ExperimentTraceLocation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExperimentTraceLocation{}
+	{
+		members := 0
+		if w.UcTraceLocation != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ExperimentTraceLocation.Location")
+		}
+	}
+	switch {
+	case w.UcTraceLocation != nil:
+		conv23, err := UcTraceLocationToSDK(w.UcTraceLocation)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ExperimentTraceLocation.Location", err)
+		}
+		out.Location = &sdk.ExperimentTraceLocation_Location_UcTraceLocation{UcTraceLocation: *conv23}
+	}
+	return out, nil
+}
+
+// ExperimentTraceLocationFromSDK converts the sdk-go type to the mirror.
+func ExperimentTraceLocationFromSDK(v *sdk.ExperimentTraceLocation) (*ExperimentTraceLocation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExperimentTraceLocation{}
+	switch value := v.Location.(type) {
+	case *sdk.ExperimentTraceLocation_Location_UcTraceLocation:
+		if value != nil {
+			conv24, err := UcTraceLocationFromSDK(&value.UcTraceLocation)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ExperimentTraceLocation.Location", err)
+			}
+			out.UcTraceLocation = conv24
+		}
+	}
+	return out, nil
+}
+
+// FileInfoToSDK converts the mirror to the sdk-go type.
+func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileInfo{}
+	out.Path = w.Path
+	out.IsDir = w.IsDir
+	out.FileSize = w.FileSize
+	return out, nil
+}
+
+// FileInfoFromSDK converts the sdk-go type to the mirror.
+func FileInfoFromSDK(v *sdk.FileInfo) (*FileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileInfo{}
+	out.Path = v.Path
+	out.IsDir = v.IsDir
+	out.FileSize = v.FileSize
+	return out, nil
+}
+
+// FinalizeLoggedModelRequestToSDK converts the mirror to the sdk-go type.
+func FinalizeLoggedModelRequestToSDK(w *FinalizeLoggedModelRequest) (*sdk.FinalizeLoggedModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FinalizeLoggedModelRequest{}
+	out.ModelId = w.ModelId
+	out.Status = w.Status
+	return out, nil
+}
+
+// FinalizeLoggedModelRequestFromSDK converts the sdk-go type to the mirror.
+func FinalizeLoggedModelRequestFromSDK(v *sdk.FinalizeLoggedModelRequest) (*FinalizeLoggedModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FinalizeLoggedModelRequest{}
+	out.ModelId = v.ModelId
+	out.Status = v.Status
+	return out, nil
+}
+
+// FinalizeLoggedModelResponseToSDK converts the mirror to the sdk-go type.
+func FinalizeLoggedModelResponseToSDK(w *FinalizeLoggedModelResponse) (*sdk.FinalizeLoggedModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FinalizeLoggedModelResponse{}
+	conv25, err := LoggedModelToSDK(w.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FinalizeLoggedModelResponse.Model", err)
+	}
+	out.Model = conv25
+	return out, nil
+}
+
+// FinalizeLoggedModelResponseFromSDK converts the sdk-go type to the mirror.
+func FinalizeLoggedModelResponseFromSDK(v *sdk.FinalizeLoggedModelResponse) (*FinalizeLoggedModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FinalizeLoggedModelResponse{}
+	conv26, err := LoggedModelFromSDK(v.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FinalizeLoggedModelResponse.Model", err)
+	}
+	out.Model = conv26
+	return out, nil
+}
+
+// GetExperimentByNameRequestToSDK converts the mirror to the sdk-go type.
+func GetExperimentByNameRequestToSDK(w *GetExperimentByNameRequest) (*sdk.GetExperimentByNameRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExperimentByNameRequest{}
+	out.ExperimentName = w.ExperimentName
+	return out, nil
+}
+
+// GetExperimentByNameRequestFromSDK converts the sdk-go type to the mirror.
+func GetExperimentByNameRequestFromSDK(v *sdk.GetExperimentByNameRequest) (*GetExperimentByNameRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExperimentByNameRequest{}
+	out.ExperimentName = v.ExperimentName
+	return out, nil
+}
+
+// GetExperimentByNameResponseToSDK converts the mirror to the sdk-go type.
+func GetExperimentByNameResponseToSDK(w *GetExperimentByNameResponse) (*sdk.GetExperimentByNameResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExperimentByNameResponse{}
+	conv27, err := ExperimentToSDK(w.Experiment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentByNameResponse.Experiment", err)
+	}
+	out.Experiment = conv27
+	return out, nil
+}
+
+// GetExperimentByNameResponseFromSDK converts the sdk-go type to the mirror.
+func GetExperimentByNameResponseFromSDK(v *sdk.GetExperimentByNameResponse) (*GetExperimentByNameResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExperimentByNameResponse{}
+	conv28, err := ExperimentFromSDK(v.Experiment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentByNameResponse.Experiment", err)
+	}
+	out.Experiment = conv28
+	return out, nil
+}
+
+// GetExperimentRequestToSDK converts the mirror to the sdk-go type.
+func GetExperimentRequestToSDK(w *GetExperimentRequest) (*sdk.GetExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExperimentRequest{}
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// GetExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func GetExperimentRequestFromSDK(v *sdk.GetExperimentRequest) (*GetExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExperimentRequest{}
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// GetExperimentResponseToSDK converts the mirror to the sdk-go type.
+func GetExperimentResponseToSDK(w *GetExperimentResponse) (*sdk.GetExperimentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExperimentResponse{}
+	conv29, err := ExperimentToSDK(w.Experiment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Experiment", err)
+	}
+	out.Experiment = conv29
+	conv30, err := convertSlice(w.Runs, RunInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Runs", err)
+	}
+	out.Runs = conv30
+	return out, nil
+}
+
+// GetExperimentResponseFromSDK converts the sdk-go type to the mirror.
+func GetExperimentResponseFromSDK(v *sdk.GetExperimentResponse) (*GetExperimentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExperimentResponse{}
+	conv31, err := ExperimentFromSDK(v.Experiment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Experiment", err)
+	}
+	out.Experiment = conv31
+	conv32, err := convertSlice(v.Runs, RunInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExperimentResponse.Runs", err)
+	}
+	out.Runs = conv32
+	return out, nil
+}
+
+// GetLoggedModelResponseToSDK converts the mirror to the sdk-go type.
+func GetLoggedModelResponseToSDK(w *GetLoggedModelResponse) (*sdk.GetLoggedModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetLoggedModelResponse{}
+	conv33, err := LoggedModelToSDK(w.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLoggedModelResponse.Model", err)
+	}
+	out.Model = conv33
+	return out, nil
+}
+
+// GetLoggedModelResponseFromSDK converts the sdk-go type to the mirror.
+func GetLoggedModelResponseFromSDK(v *sdk.GetLoggedModelResponse) (*GetLoggedModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetLoggedModelResponse{}
+	conv34, err := LoggedModelFromSDK(v.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLoggedModelResponse.Model", err)
+	}
+	out.Model = conv34
+	return out, nil
+}
+
+// GetMetricHistoryResponseToSDK converts the mirror to the sdk-go type.
+func GetMetricHistoryResponseToSDK(w *GetMetricHistoryResponse) (*sdk.GetMetricHistoryResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetMetricHistoryResponse{}
+	conv35, err := convertSlice(w.Metrics, MetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetMetricHistoryResponse.Metrics", err)
+	}
+	out.Metrics = conv35
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetMetricHistoryResponseFromSDK converts the sdk-go type to the mirror.
+func GetMetricHistoryResponseFromSDK(v *sdk.GetMetricHistoryResponse) (*GetMetricHistoryResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetMetricHistoryResponse{}
+	conv36, err := convertSlice(v.Metrics, MetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetMetricHistoryResponse.Metrics", err)
+	}
+	out.Metrics = conv36
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetRunRequestToSDK converts the mirror to the sdk-go type.
+func GetRunRequestToSDK(w *GetRunRequest) (*sdk.GetRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	return out, nil
+}
+
+// GetRunRequestFromSDK converts the sdk-go type to the mirror.
+func GetRunRequestFromSDK(v *sdk.GetRunRequest) (*GetRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	return out, nil
+}
+
+// GetRunResponseToSDK converts the mirror to the sdk-go type.
+func GetRunResponseToSDK(w *GetRunResponse) (*sdk.GetRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunResponse{}
+	conv37, err := RunToSDK(w.Run)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Run", err)
+	}
+	out.Run = conv37
+	return out, nil
+}
+
+// GetRunResponseFromSDK converts the sdk-go type to the mirror.
+func GetRunResponseFromSDK(v *sdk.GetRunResponse) (*GetRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunResponse{}
+	conv38, err := RunFromSDK(v.Run)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Run", err)
+	}
+	out.Run = conv38
+	return out, nil
+}
+
+// InputTagToSDK converts the mirror to the sdk-go type.
+func InputTagToSDK(w *InputTag) (*sdk.InputTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InputTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// InputTagFromSDK converts the sdk-go type to the mirror.
+func InputTagFromSDK(v *sdk.InputTag) (*InputTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InputTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ListArtifactsRequestToSDK converts the mirror to the sdk-go type.
+func ListArtifactsRequestToSDK(w *ListArtifactsRequest) (*sdk.ListArtifactsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListArtifactsRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.Path = w.Path
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListArtifactsRequestFromSDK converts the sdk-go type to the mirror.
+func ListArtifactsRequestFromSDK(v *sdk.ListArtifactsRequest) (*ListArtifactsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListArtifactsRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.Path = v.Path
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListArtifactsResponseToSDK converts the mirror to the sdk-go type.
+func ListArtifactsResponseToSDK(w *ListArtifactsResponse) (*sdk.ListArtifactsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListArtifactsResponse{}
+	out.RootUri = w.RootUri
+	conv39, err := convertSlice(w.Files, FileInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListArtifactsResponse.Files", err)
+	}
+	out.Files = conv39
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListArtifactsResponseFromSDK converts the sdk-go type to the mirror.
+func ListArtifactsResponseFromSDK(v *sdk.ListArtifactsResponse) (*ListArtifactsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListArtifactsResponse{}
+	out.RootUri = v.RootUri
+	conv40, err := convertSlice(v.Files, FileInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListArtifactsResponse.Files", err)
+	}
+	out.Files = conv40
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListExperimentsRequestToSDK converts the mirror to the sdk-go type.
+func ListExperimentsRequestToSDK(w *ListExperimentsRequest) (*sdk.ListExperimentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExperimentsRequest{}
+	out.ViewType = w.ViewType
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListExperimentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListExperimentsRequestFromSDK(v *sdk.ListExperimentsRequest) (*ListExperimentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExperimentsRequest{}
+	out.ViewType = v.ViewType
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListExperimentsResponseToSDK converts the mirror to the sdk-go type.
+func ListExperimentsResponseToSDK(w *ListExperimentsResponse) (*sdk.ListExperimentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExperimentsResponse{}
+	conv41, err := convertSlice(w.Experiments, ExperimentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExperimentsResponse.Experiments", err)
+	}
+	out.Experiments = conv41
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExperimentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListExperimentsResponseFromSDK(v *sdk.ListExperimentsResponse) (*ListExperimentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExperimentsResponse{}
+	conv42, err := convertSlice(v.Experiments, ExperimentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExperimentsResponse.Experiments", err)
+	}
+	out.Experiments = conv42
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListMetricHistoryRequestToSDK converts the mirror to the sdk-go type.
+func ListMetricHistoryRequestToSDK(w *ListMetricHistoryRequest) (*sdk.ListMetricHistoryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMetricHistoryRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.MetricKey = w.MetricKey
+	out.PageToken = w.PageToken
+	out.MaxResults = w.MaxResults
+	return out, nil
+}
+
+// ListMetricHistoryRequestFromSDK converts the sdk-go type to the mirror.
+func ListMetricHistoryRequestFromSDK(v *sdk.ListMetricHistoryRequest) (*ListMetricHistoryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMetricHistoryRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.MetricKey = v.MetricKey
+	out.PageToken = v.PageToken
+	out.MaxResults = v.MaxResults
+	return out, nil
+}
+
+// LogBatchRequestToSDK converts the mirror to the sdk-go type.
+func LogBatchRequestToSDK(w *LogBatchRequest) (*sdk.LogBatchRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogBatchRequest{}
+	out.RunId = w.RunId
+	conv43, err := convertSlice(w.Metrics, MetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Metrics", err)
+	}
+	out.Metrics = conv43
+	conv44, err := convertSlice(w.Params, ParamToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Params", err)
+	}
+	out.Params = conv44
+	conv45, err := convertSlice(w.Tags, RunTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Tags", err)
+	}
+	out.Tags = conv45
+	return out, nil
+}
+
+// LogBatchRequestFromSDK converts the sdk-go type to the mirror.
+func LogBatchRequestFromSDK(v *sdk.LogBatchRequest) (*LogBatchRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogBatchRequest{}
+	out.RunId = v.RunId
+	conv46, err := convertSlice(v.Metrics, MetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Metrics", err)
+	}
+	out.Metrics = conv46
+	conv47, err := convertSlice(v.Params, ParamFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Params", err)
+	}
+	out.Params = conv47
+	conv48, err := convertSlice(v.Tags, RunTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogBatchRequest.Tags", err)
+	}
+	out.Tags = conv48
+	return out, nil
+}
+
+// LogInputsRequestToSDK converts the mirror to the sdk-go type.
+func LogInputsRequestToSDK(w *LogInputsRequest) (*sdk.LogInputsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogInputsRequest{}
+	out.RunId = w.RunId
+	conv49, err := convertSlice(w.Datasets, DatasetInputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Datasets", err)
+	}
+	out.Datasets = conv49
+	conv50, err := convertSlice(w.Models, ModelInputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Models", err)
+	}
+	out.Models = conv50
+	return out, nil
+}
+
+// LogInputsRequestFromSDK converts the sdk-go type to the mirror.
+func LogInputsRequestFromSDK(v *sdk.LogInputsRequest) (*LogInputsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogInputsRequest{}
+	out.RunId = v.RunId
+	conv51, err := convertSlice(v.Datasets, DatasetInputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Datasets", err)
+	}
+	out.Datasets = conv51
+	conv52, err := convertSlice(v.Models, ModelInputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogInputsRequest.Models", err)
+	}
+	out.Models = conv52
+	return out, nil
+}
+
+// LogLoggedModelParamsRequestToSDK converts the mirror to the sdk-go type.
+func LogLoggedModelParamsRequestToSDK(w *LogLoggedModelParamsRequest) (*sdk.LogLoggedModelParamsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogLoggedModelParamsRequest{}
+	out.ModelId = w.ModelId
+	conv53, err := convertSlice(w.Params, LoggedModelParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogLoggedModelParamsRequest.Params", err)
+	}
+	out.Params = conv53
+	return out, nil
+}
+
+// LogLoggedModelParamsRequestFromSDK converts the sdk-go type to the mirror.
+func LogLoggedModelParamsRequestFromSDK(v *sdk.LogLoggedModelParamsRequest) (*LogLoggedModelParamsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogLoggedModelParamsRequest{}
+	out.ModelId = v.ModelId
+	conv54, err := convertSlice(v.Params, LoggedModelParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogLoggedModelParamsRequest.Params", err)
+	}
+	out.Params = conv54
+	return out, nil
+}
+
+// LogMetricRequestToSDK converts the mirror to the sdk-go type.
+func LogMetricRequestToSDK(w *LogMetricRequest) (*sdk.LogMetricRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogMetricRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.Key = w.Key
+	out.Value = w.Value
+	out.Timestamp = w.Timestamp
+	out.Step = w.Step
+	out.ModelId = w.ModelId
+	out.DatasetName = w.DatasetName
+	out.DatasetDigest = w.DatasetDigest
+	return out, nil
+}
+
+// LogMetricRequestFromSDK converts the sdk-go type to the mirror.
+func LogMetricRequestFromSDK(v *sdk.LogMetricRequest) (*LogMetricRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogMetricRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.Key = v.Key
+	out.Value = v.Value
+	out.Timestamp = v.Timestamp
+	out.Step = v.Step
+	out.ModelId = v.ModelId
+	out.DatasetName = v.DatasetName
+	out.DatasetDigest = v.DatasetDigest
+	return out, nil
+}
+
+// LogModelRequestToSDK converts the mirror to the sdk-go type.
+func LogModelRequestToSDK(w *LogModelRequest) (*sdk.LogModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogModelRequest{}
+	out.RunId = w.RunId
+	out.ModelJson = w.ModelJson
+	return out, nil
+}
+
+// LogModelRequestFromSDK converts the sdk-go type to the mirror.
+func LogModelRequestFromSDK(v *sdk.LogModelRequest) (*LogModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogModelRequest{}
+	out.RunId = v.RunId
+	out.ModelJson = v.ModelJson
+	return out, nil
+}
+
+// LogOutputsRequestToSDK converts the mirror to the sdk-go type.
+func LogOutputsRequestToSDK(w *LogOutputsRequest) (*sdk.LogOutputsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogOutputsRequest{}
+	out.RunId = w.RunId
+	conv55, err := convertSlice(w.Models, ModelOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogOutputsRequest.Models", err)
+	}
+	out.Models = conv55
+	return out, nil
+}
+
+// LogOutputsRequestFromSDK converts the sdk-go type to the mirror.
+func LogOutputsRequestFromSDK(v *sdk.LogOutputsRequest) (*LogOutputsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogOutputsRequest{}
+	out.RunId = v.RunId
+	conv56, err := convertSlice(v.Models, ModelOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LogOutputsRequest.Models", err)
+	}
+	out.Models = conv56
+	return out, nil
+}
+
+// LogParamRequestToSDK converts the mirror to the sdk-go type.
+func LogParamRequestToSDK(w *LogParamRequest) (*sdk.LogParamRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogParamRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// LogParamRequestFromSDK converts the sdk-go type to the mirror.
+func LogParamRequestFromSDK(v *sdk.LogParamRequest) (*LogParamRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogParamRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// LoggedModelToSDK converts the mirror to the sdk-go type.
+func LoggedModelToSDK(w *LoggedModel) (*sdk.LoggedModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LoggedModel{}
+	conv57, err := LoggedModelInfoToSDK(w.Info)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModel.Info", err)
+	}
+	out.Info = conv57
+	conv58, err := LoggedModelDataToSDK(w.Data)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModel.Data", err)
+	}
+	out.Data = conv58
+	return out, nil
+}
+
+// LoggedModelFromSDK converts the sdk-go type to the mirror.
+func LoggedModelFromSDK(v *sdk.LoggedModel) (*LoggedModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LoggedModel{}
+	conv59, err := LoggedModelInfoFromSDK(v.Info)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModel.Info", err)
+	}
+	out.Info = conv59
+	conv60, err := LoggedModelDataFromSDK(v.Data)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModel.Data", err)
+	}
+	out.Data = conv60
+	return out, nil
+}
+
+// LoggedModelDataToSDK converts the mirror to the sdk-go type.
+func LoggedModelDataToSDK(w *LoggedModelData) (*sdk.LoggedModelData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LoggedModelData{}
+	conv61, err := convertSlice(w.Params, LoggedModelParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Params", err)
+	}
+	out.Params = conv61
+	conv62, err := convertSlice(w.Metrics, MetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Metrics", err)
+	}
+	out.Metrics = conv62
+	return out, nil
+}
+
+// LoggedModelDataFromSDK converts the sdk-go type to the mirror.
+func LoggedModelDataFromSDK(v *sdk.LoggedModelData) (*LoggedModelData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LoggedModelData{}
+	conv63, err := convertSlice(v.Params, LoggedModelParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Params", err)
+	}
+	out.Params = conv63
+	conv64, err := convertSlice(v.Metrics, MetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelData.Metrics", err)
+	}
+	out.Metrics = conv64
+	return out, nil
+}
+
+// LoggedModelInfoToSDK converts the mirror to the sdk-go type.
+func LoggedModelInfoToSDK(w *LoggedModelInfo) (*sdk.LoggedModelInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LoggedModelInfo{}
+	out.ModelId = w.ModelId
+	out.ExperimentId = w.ExperimentId
+	out.Name = w.Name
+	out.CreationTimestampMs = w.CreationTimestampMs
+	out.LastUpdatedTimestampMs = w.LastUpdatedTimestampMs
+	out.ArtifactUri = w.ArtifactUri
+	out.Status = w.Status
+	out.CreatorId = w.CreatorId
+	out.ModelType = w.ModelType
+	out.SourceRunId = w.SourceRunId
+	out.StatusMessage = w.StatusMessage
+	conv65, err := convertSlice(w.Tags, LoggedModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.Tags", err)
+	}
+	out.Tags = conv65
+	return out, nil
+}
+
+// LoggedModelInfoFromSDK converts the sdk-go type to the mirror.
+func LoggedModelInfoFromSDK(v *sdk.LoggedModelInfo) (*LoggedModelInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LoggedModelInfo{}
+	out.ModelId = v.ModelId
+	out.ExperimentId = v.ExperimentId
+	out.Name = v.Name
+	out.CreationTimestampMs = v.CreationTimestampMs
+	out.LastUpdatedTimestampMs = v.LastUpdatedTimestampMs
+	out.ArtifactUri = v.ArtifactUri
+	out.Status = v.Status
+	out.CreatorId = v.CreatorId
+	out.ModelType = v.ModelType
+	out.SourceRunId = v.SourceRunId
+	out.StatusMessage = v.StatusMessage
+	conv66, err := convertSlice(v.Tags, LoggedModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LoggedModelInfo.Tags", err)
+	}
+	out.Tags = conv66
+	return out, nil
+}
+
+// LoggedModelParameterToSDK converts the mirror to the sdk-go type.
+func LoggedModelParameterToSDK(w *LoggedModelParameter) (*sdk.LoggedModelParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LoggedModelParameter{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// LoggedModelParameterFromSDK converts the sdk-go type to the mirror.
+func LoggedModelParameterFromSDK(v *sdk.LoggedModelParameter) (*LoggedModelParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LoggedModelParameter{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// LoggedModelTagToSDK converts the mirror to the sdk-go type.
+func LoggedModelTagToSDK(w *LoggedModelTag) (*sdk.LoggedModelTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LoggedModelTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// LoggedModelTagFromSDK converts the sdk-go type to the mirror.
+func LoggedModelTagFromSDK(v *sdk.LoggedModelTag) (*LoggedModelTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LoggedModelTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// MetricToSDK converts the mirror to the sdk-go type.
+func MetricToSDK(w *Metric) (*sdk.Metric, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Metric{}
+	out.Key = w.Key
+	out.Value = w.Value
+	out.Timestamp = w.Timestamp
+	out.Step = w.Step
+	out.DatasetName = w.DatasetName
+	out.DatasetDigest = w.DatasetDigest
+	out.ModelId = w.ModelId
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// MetricFromSDK converts the sdk-go type to the mirror.
+func MetricFromSDK(v *sdk.Metric) (*Metric, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Metric{}
+	out.Key = v.Key
+	out.Value = v.Value
+	out.Timestamp = v.Timestamp
+	out.Step = v.Step
+	out.DatasetName = v.DatasetName
+	out.DatasetDigest = v.DatasetDigest
+	out.ModelId = v.ModelId
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// ModelInputToSDK converts the mirror to the sdk-go type.
+func ModelInputToSDK(w *ModelInput) (*sdk.ModelInput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelInput{}
+	out.ModelId = w.ModelId
+	return out, nil
+}
+
+// ModelInputFromSDK converts the sdk-go type to the mirror.
+func ModelInputFromSDK(v *sdk.ModelInput) (*ModelInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelInput{}
+	out.ModelId = v.ModelId
+	return out, nil
+}
+
+// ModelOutputToSDK converts the mirror to the sdk-go type.
+func ModelOutputToSDK(w *ModelOutput) (*sdk.ModelOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelOutput{}
+	out.ModelId = w.ModelId
+	out.Step = w.Step
+	return out, nil
+}
+
+// ModelOutputFromSDK converts the sdk-go type to the mirror.
+func ModelOutputFromSDK(v *sdk.ModelOutput) (*ModelOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelOutput{}
+	out.ModelId = v.ModelId
+	out.Step = v.Step
+	return out, nil
+}
+
+// ParamToSDK converts the mirror to the sdk-go type.
+func ParamToSDK(w *Param) (*sdk.Param, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Param{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// ParamFromSDK converts the sdk-go type to the mirror.
+func ParamFromSDK(v *sdk.Param) (*Param, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Param{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// RestoreExperimentRequestToSDK converts the mirror to the sdk-go type.
+func RestoreExperimentRequestToSDK(w *RestoreExperimentRequest) (*sdk.RestoreExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestoreExperimentRequest{}
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// RestoreExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func RestoreExperimentRequestFromSDK(v *sdk.RestoreExperimentRequest) (*RestoreExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestoreExperimentRequest{}
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// RestoreRunRequestToSDK converts the mirror to the sdk-go type.
+func RestoreRunRequestToSDK(w *RestoreRunRequest) (*sdk.RestoreRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestoreRunRequest{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// RestoreRunRequestFromSDK converts the sdk-go type to the mirror.
+func RestoreRunRequestFromSDK(v *sdk.RestoreRunRequest) (*RestoreRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestoreRunRequest{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// RestoreRunsRequestToSDK converts the mirror to the sdk-go type.
+func RestoreRunsRequestToSDK(w *RestoreRunsRequest) (*sdk.RestoreRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestoreRunsRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.MinTimestampMillis = w.MinTimestampMillis
+	out.MaxRuns = w.MaxRuns
+	return out, nil
+}
+
+// RestoreRunsRequestFromSDK converts the sdk-go type to the mirror.
+func RestoreRunsRequestFromSDK(v *sdk.RestoreRunsRequest) (*RestoreRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestoreRunsRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.MinTimestampMillis = v.MinTimestampMillis
+	out.MaxRuns = v.MaxRuns
+	return out, nil
+}
+
+// RestoreRunsResponseToSDK converts the mirror to the sdk-go type.
+func RestoreRunsResponseToSDK(w *RestoreRunsResponse) (*sdk.RestoreRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestoreRunsResponse{}
+	out.RunsRestored = w.RunsRestored
+	return out, nil
+}
+
+// RestoreRunsResponseFromSDK converts the sdk-go type to the mirror.
+func RestoreRunsResponseFromSDK(v *sdk.RestoreRunsResponse) (*RestoreRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestoreRunsResponse{}
+	out.RunsRestored = v.RunsRestored
+	return out, nil
+}
+
+// RunToSDK converts the mirror to the sdk-go type.
+func RunToSDK(w *Run) (*sdk.Run, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Run{}
+	conv67, err := RunInfoToSDK(w.Info)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Info", err)
+	}
+	out.Info = conv67
+	conv68, err := RunDataToSDK(w.Data)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Data", err)
+	}
+	out.Data = conv68
+	conv69, err := RunInputsToSDK(w.Inputs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Inputs", err)
+	}
+	out.Inputs = conv69
+	return out, nil
+}
+
+// RunFromSDK converts the sdk-go type to the mirror.
+func RunFromSDK(v *sdk.Run) (*Run, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Run{}
+	conv70, err := RunInfoFromSDK(v.Info)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Info", err)
+	}
+	out.Info = conv70
+	conv71, err := RunDataFromSDK(v.Data)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Data", err)
+	}
+	out.Data = conv71
+	conv72, err := RunInputsFromSDK(v.Inputs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Inputs", err)
+	}
+	out.Inputs = conv72
+	return out, nil
+}
+
+// RunDataToSDK converts the mirror to the sdk-go type.
+func RunDataToSDK(w *RunData) (*sdk.RunData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunData{}
+	conv73, err := convertSlice(w.Metrics, MetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Metrics", err)
+	}
+	out.Metrics = conv73
+	conv74, err := convertSlice(w.Params, ParamToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Params", err)
+	}
+	out.Params = conv74
+	conv75, err := convertSlice(w.Tags, RunTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Tags", err)
+	}
+	out.Tags = conv75
+	return out, nil
+}
+
+// RunDataFromSDK converts the sdk-go type to the mirror.
+func RunDataFromSDK(v *sdk.RunData) (*RunData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunData{}
+	conv76, err := convertSlice(v.Metrics, MetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Metrics", err)
+	}
+	out.Metrics = conv76
+	conv77, err := convertSlice(v.Params, ParamFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Params", err)
+	}
+	out.Params = conv77
+	conv78, err := convertSlice(v.Tags, RunTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunData.Tags", err)
+	}
+	out.Tags = conv78
+	return out, nil
+}
+
+// RunInfoToSDK converts the mirror to the sdk-go type.
+func RunInfoToSDK(w *RunInfo) (*sdk.RunInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunInfo{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.ExperimentId = w.ExperimentId
+	out.RunName = w.RunName
+	out.UserId = w.UserId
+	out.Status = w.Status
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	out.ArtifactUri = w.ArtifactUri
+	out.LifecycleStage = w.LifecycleStage
+	return out, nil
+}
+
+// RunInfoFromSDK converts the sdk-go type to the mirror.
+func RunInfoFromSDK(v *sdk.RunInfo) (*RunInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunInfo{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.ExperimentId = v.ExperimentId
+	out.RunName = v.RunName
+	out.UserId = v.UserId
+	out.Status = v.Status
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	out.ArtifactUri = v.ArtifactUri
+	out.LifecycleStage = v.LifecycleStage
+	return out, nil
+}
+
+// RunInputsToSDK converts the mirror to the sdk-go type.
+func RunInputsToSDK(w *RunInputs) (*sdk.RunInputs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunInputs{}
+	conv79, err := convertSlice(w.DatasetInputs, DatasetInputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunInputs.DatasetInputs", err)
+	}
+	out.DatasetInputs = conv79
+	conv80, err := convertSlice(w.ModelInputs, ModelInputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunInputs.ModelInputs", err)
+	}
+	out.ModelInputs = conv80
+	return out, nil
+}
+
+// RunInputsFromSDK converts the sdk-go type to the mirror.
+func RunInputsFromSDK(v *sdk.RunInputs) (*RunInputs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunInputs{}
+	conv81, err := convertSlice(v.DatasetInputs, DatasetInputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunInputs.DatasetInputs", err)
+	}
+	out.DatasetInputs = conv81
+	conv82, err := convertSlice(v.ModelInputs, ModelInputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunInputs.ModelInputs", err)
+	}
+	out.ModelInputs = conv82
+	return out, nil
+}
+
+// RunTagToSDK converts the mirror to the sdk-go type.
+func RunTagToSDK(w *RunTag) (*sdk.RunTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// RunTagFromSDK converts the sdk-go type to the mirror.
+func RunTagFromSDK(v *sdk.RunTag) (*RunTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// SearchExperimentsRequestToSDK converts the mirror to the sdk-go type.
+func SearchExperimentsRequestToSDK(w *SearchExperimentsRequest) (*sdk.SearchExperimentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchExperimentsRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.Filter = w.Filter
+	out.OrderBy = w.OrderBy
+	out.ViewType = w.ViewType
+	return out, nil
+}
+
+// SearchExperimentsRequestFromSDK converts the sdk-go type to the mirror.
+func SearchExperimentsRequestFromSDK(v *sdk.SearchExperimentsRequest) (*SearchExperimentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchExperimentsRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.Filter = v.Filter
+	out.OrderBy = v.OrderBy
+	out.ViewType = v.ViewType
+	return out, nil
+}
+
+// SearchExperimentsResponseToSDK converts the mirror to the sdk-go type.
+func SearchExperimentsResponseToSDK(w *SearchExperimentsResponse) (*sdk.SearchExperimentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchExperimentsResponse{}
+	conv83, err := convertSlice(w.Experiments, ExperimentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchExperimentsResponse.Experiments", err)
+	}
+	out.Experiments = conv83
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchExperimentsResponseFromSDK converts the sdk-go type to the mirror.
+func SearchExperimentsResponseFromSDK(v *sdk.SearchExperimentsResponse) (*SearchExperimentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchExperimentsResponse{}
+	conv84, err := convertSlice(v.Experiments, ExperimentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchExperimentsResponse.Experiments", err)
+	}
+	out.Experiments = conv84
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SearchLoggedModelsRequestToSDK converts the mirror to the sdk-go type.
+func SearchLoggedModelsRequestToSDK(w *SearchLoggedModelsRequest) (*sdk.SearchLoggedModelsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchLoggedModelsRequest{}
+	out.ExperimentIds = w.ExperimentIds
+	out.Filter = w.Filter
+	conv85, err := convertSlice(w.Datasets, SearchLoggedModelsRequest_DatasetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.Datasets", err)
+	}
+	out.Datasets = conv85
+	out.MaxResults = w.MaxResults
+	conv86, err := convertSlice(w.OrderBy, SearchLoggedModelsRequest_OrderByToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.OrderBy", err)
+	}
+	out.OrderBy = conv86
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// SearchLoggedModelsRequestFromSDK converts the sdk-go type to the mirror.
+func SearchLoggedModelsRequestFromSDK(v *sdk.SearchLoggedModelsRequest) (*SearchLoggedModelsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchLoggedModelsRequest{}
+	out.ExperimentIds = v.ExperimentIds
+	out.Filter = v.Filter
+	conv87, err := convertSlice(v.Datasets, SearchLoggedModelsRequest_DatasetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.Datasets", err)
+	}
+	out.Datasets = conv87
+	out.MaxResults = v.MaxResults
+	conv88, err := convertSlice(v.OrderBy, SearchLoggedModelsRequest_OrderByFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsRequest.OrderBy", err)
+	}
+	out.OrderBy = conv88
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// SearchLoggedModelsRequest_DatasetToSDK converts the mirror to the sdk-go type.
+func SearchLoggedModelsRequest_DatasetToSDK(w *SearchLoggedModelsRequest_Dataset) (*sdk.SearchLoggedModelsRequest_Dataset, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchLoggedModelsRequest_Dataset{}
+	out.DatasetName = w.DatasetName
+	out.DatasetDigest = w.DatasetDigest
+	return out, nil
+}
+
+// SearchLoggedModelsRequest_DatasetFromSDK converts the sdk-go type to the mirror.
+func SearchLoggedModelsRequest_DatasetFromSDK(v *sdk.SearchLoggedModelsRequest_Dataset) (*SearchLoggedModelsRequest_Dataset, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchLoggedModelsRequest_Dataset{}
+	out.DatasetName = v.DatasetName
+	out.DatasetDigest = v.DatasetDigest
+	return out, nil
+}
+
+// SearchLoggedModelsRequest_OrderByToSDK converts the mirror to the sdk-go type.
+func SearchLoggedModelsRequest_OrderByToSDK(w *SearchLoggedModelsRequest_OrderBy) (*sdk.SearchLoggedModelsRequest_OrderBy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchLoggedModelsRequest_OrderBy{}
+	out.FieldName = w.FieldName
+	out.Ascending = w.Ascending
+	out.DatasetName = w.DatasetName
+	out.DatasetDigest = w.DatasetDigest
+	return out, nil
+}
+
+// SearchLoggedModelsRequest_OrderByFromSDK converts the sdk-go type to the mirror.
+func SearchLoggedModelsRequest_OrderByFromSDK(v *sdk.SearchLoggedModelsRequest_OrderBy) (*SearchLoggedModelsRequest_OrderBy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchLoggedModelsRequest_OrderBy{}
+	out.FieldName = v.FieldName
+	out.Ascending = v.Ascending
+	out.DatasetName = v.DatasetName
+	out.DatasetDigest = v.DatasetDigest
+	return out, nil
+}
+
+// SearchLoggedModelsResponseToSDK converts the mirror to the sdk-go type.
+func SearchLoggedModelsResponseToSDK(w *SearchLoggedModelsResponse) (*sdk.SearchLoggedModelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchLoggedModelsResponse{}
+	conv89, err := convertSlice(w.Models, LoggedModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsResponse.Models", err)
+	}
+	out.Models = conv89
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchLoggedModelsResponseFromSDK converts the sdk-go type to the mirror.
+func SearchLoggedModelsResponseFromSDK(v *sdk.SearchLoggedModelsResponse) (*SearchLoggedModelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchLoggedModelsResponse{}
+	conv90, err := convertSlice(v.Models, LoggedModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchLoggedModelsResponse.Models", err)
+	}
+	out.Models = conv90
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SearchRunsRequestToSDK converts the mirror to the sdk-go type.
+func SearchRunsRequestToSDK(w *SearchRunsRequest) (*sdk.SearchRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchRunsRequest{}
+	out.ExperimentIds = w.ExperimentIds
+	out.Filter = w.Filter
+	out.RunViewType = w.RunViewType
+	out.MaxResults = w.MaxResults
+	out.OrderBy = w.OrderBy
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// SearchRunsRequestFromSDK converts the sdk-go type to the mirror.
+func SearchRunsRequestFromSDK(v *sdk.SearchRunsRequest) (*SearchRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchRunsRequest{}
+	out.ExperimentIds = v.ExperimentIds
+	out.Filter = v.Filter
+	out.RunViewType = v.RunViewType
+	out.MaxResults = v.MaxResults
+	out.OrderBy = v.OrderBy
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// SearchRunsResponseToSDK converts the mirror to the sdk-go type.
+func SearchRunsResponseToSDK(w *SearchRunsResponse) (*sdk.SearchRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchRunsResponse{}
+	conv91, err := convertSlice(w.Runs, RunToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchRunsResponse.Runs", err)
+	}
+	out.Runs = conv91
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchRunsResponseFromSDK converts the sdk-go type to the mirror.
+func SearchRunsResponseFromSDK(v *sdk.SearchRunsResponse) (*SearchRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchRunsResponse{}
+	conv92, err := convertSlice(v.Runs, RunFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchRunsResponse.Runs", err)
+	}
+	out.Runs = conv92
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SetExperimentTagRequestToSDK converts the mirror to the sdk-go type.
+func SetExperimentTagRequestToSDK(w *SetExperimentTagRequest) (*sdk.SetExperimentTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetExperimentTagRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// SetExperimentTagRequestFromSDK converts the sdk-go type to the mirror.
+func SetExperimentTagRequestFromSDK(v *sdk.SetExperimentTagRequest) (*SetExperimentTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetExperimentTagRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// SetLoggedModelTagsRequestToSDK converts the mirror to the sdk-go type.
+func SetLoggedModelTagsRequestToSDK(w *SetLoggedModelTagsRequest) (*sdk.SetLoggedModelTagsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetLoggedModelTagsRequest{}
+	out.ModelId = w.ModelId
+	conv93, err := convertSlice(w.Tags, LoggedModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetLoggedModelTagsRequest.Tags", err)
+	}
+	out.Tags = conv93
+	return out, nil
+}
+
+// SetLoggedModelTagsRequestFromSDK converts the sdk-go type to the mirror.
+func SetLoggedModelTagsRequestFromSDK(v *sdk.SetLoggedModelTagsRequest) (*SetLoggedModelTagsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetLoggedModelTagsRequest{}
+	out.ModelId = v.ModelId
+	conv94, err := convertSlice(v.Tags, LoggedModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetLoggedModelTagsRequest.Tags", err)
+	}
+	out.Tags = conv94
+	return out, nil
+}
+
+// SetTagRequestToSDK converts the mirror to the sdk-go type.
+func SetTagRequestToSDK(w *SetTagRequest) (*sdk.SetTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetTagRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// SetTagRequestFromSDK converts the sdk-go type to the mirror.
+func SetTagRequestFromSDK(v *sdk.SetTagRequest) (*SetTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetTagRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// UcTraceLocationToSDK converts the mirror to the sdk-go type.
+func UcTraceLocationToSDK(w *UcTraceLocation) (*sdk.UcTraceLocation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UcTraceLocation{}
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	out.TablePrefix = w.TablePrefix
+	out.EffectiveTablePrefix = w.EffectiveTablePrefix
+	return out, nil
+}
+
+// UcTraceLocationFromSDK converts the sdk-go type to the mirror.
+func UcTraceLocationFromSDK(v *sdk.UcTraceLocation) (*UcTraceLocation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UcTraceLocation{}
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	out.TablePrefix = v.TablePrefix
+	out.EffectiveTablePrefix = v.EffectiveTablePrefix
+	return out, nil
+}
+
+// UpdateExperimentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExperimentRequestToSDK(w *UpdateExperimentRequest) (*sdk.UpdateExperimentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExperimentRequest{}
+	out.ExperimentId = w.ExperimentId
+	out.NewName = w.NewName
+	return out, nil
+}
+
+// UpdateExperimentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExperimentRequestFromSDK(v *sdk.UpdateExperimentRequest) (*UpdateExperimentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExperimentRequest{}
+	out.ExperimentId = v.ExperimentId
+	out.NewName = v.NewName
+	return out, nil
+}
+
+// UpdateRunRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRunRequestToSDK(w *UpdateRunRequest) (*sdk.UpdateRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRunRequest{}
+	out.RunId = w.RunId
+	out.RunUuid = w.RunUuid
+	out.Status = w.Status
+	out.EndTime = w.EndTime
+	out.RunName = w.RunName
+	return out, nil
+}
+
+// UpdateRunRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRunRequestFromSDK(v *sdk.UpdateRunRequest) (*UpdateRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRunRequest{}
+	out.RunId = v.RunId
+	out.RunUuid = v.RunUuid
+	out.Status = v.Status
+	out.EndTime = v.EndTime
+	out.RunName = v.RunName
+	return out, nil
+}
+
+// UpdateRunResponseToSDK converts the mirror to the sdk-go type.
 func UpdateRunResponseToSDK(w *UpdateRunResponse) (*sdk.UpdateRunResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	runInfoPublicValue, err := RunInfoToSDK(w.RunInfo)
+	out := &sdk.UpdateRunResponse{}
+	conv95, err := RunInfoToSDK(w.RunInfo)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRunResponse.RunInfo", err)
 	}
-	return &sdk.UpdateRunResponse{
-		RunInfo: runInfoPublicValue,
-	}, nil
+	out.RunInfo = conv95
+	return out, nil
+}
+
+// UpdateRunResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateRunResponseFromSDK(v *sdk.UpdateRunResponse) (*UpdateRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRunResponse{}
+	conv96, err := RunInfoFromSDK(v.RunInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRunResponse.RunInfo", err)
+	}
+	out.RunInfo = conv96
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -108,80 +108,14 @@ type CreateInstancePoolRequest struct {
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 }
 
-func CreateInstancePoolRequestFromSDK(v *sdk.CreateInstancePoolRequest) (*CreateInstancePoolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AwsAttributes", err)
-	}
-	diskSpecWireValue, err := DiskSpecFromSDK(v.DiskSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.DiskSpec", err)
-	}
-	preloadedDockerImagesWireValue, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.PreloadedDockerImages", err)
-	}
-	azureAttributesWireValue, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.GcpAttributes", err)
-	}
-	nodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.NodeTypeFlexibility", err)
-	}
-	return &CreateInstancePoolRequest{
-		InstancePoolName:                   v.InstancePoolName,
-		MinIdleInstances:                   v.MinIdleInstances,
-		MaxCapacity:                        v.MaxCapacity,
-		AwsAttributes:                      awsAttributesWireValue,
-		NodeTypeId:                         v.NodeTypeId,
-		CustomTags:                         v.CustomTags,
-		IdleInstanceAutoterminationMinutes: v.IdleInstanceAutoterminationMinutes,
-		EnableElasticDisk:                  v.EnableElasticDisk,
-		DiskSpec:                           diskSpecWireValue,
-		PreloadedDockerImages:              preloadedDockerImagesWireValue,
-		PreloadedSparkVersions:             v.PreloadedSparkVersions,
-		AzureAttributes:                    azureAttributesWireValue,
-		GcpAttributes:                      gcpAttributesWireValue,
-		NodeTypeFlexibility:                nodeTypeFlexibilityWireValue,
-		RemoteDiskThroughput:               v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         v.TotalInitialRemoteDiskSize,
-	}, nil
-}
-
 type CreateInstancePoolResponse struct {
 	// The ID of the created instance pool.
 	InstancePoolId *string `json:"instance_pool_id,omitempty"`
 }
 
-func CreateInstancePoolResponseToSDK(w *CreateInstancePoolResponse) (*sdk.CreateInstancePoolResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateInstancePoolResponse{
-		InstancePoolId: w.InstancePoolId,
-	}, nil
-}
-
 type DeleteInstancePoolRequest struct {
 	// The instance pool to be terminated.
 	InstancePoolId *string `json:"instance_pool_id,omitempty"`
-}
-
-func DeleteInstancePoolRequestFromSDK(v *sdk.DeleteInstancePoolRequest) (*DeleteInstancePoolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteInstancePoolRequest{
-		InstancePoolId: v.InstancePoolId,
-	}, nil
 }
 
 // Describes the disks that are launched for each instance in the spark cluster.
@@ -220,95 +154,10 @@ type DiskSpec struct {
 	DiskThroughput *int `json:"disk_throughput,omitempty"`
 }
 
-func DiskSpecFromSDK(v *sdk.DiskSpec) (*DiskSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	diskTypeWireValue, err := DiskTypeFromSDK(v.DiskType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DiskSpec.DiskType", err)
-	}
-	return &DiskSpec{
-		DiskType:       diskTypeWireValue,
-		DiskCount:      v.DiskCount,
-		DiskSize:       v.DiskSize,
-		DiskIops:       v.DiskIops,
-		DiskThroughput: v.DiskThroughput,
-	}, nil
-}
-
-func DiskSpecToSDK(w *DiskSpec) (*sdk.DiskSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	diskTypePublicValue, err := DiskTypeToSDK(w.DiskType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DiskSpec.DiskType", err)
-	}
-	return &sdk.DiskSpec{
-		DiskType:       diskTypePublicValue,
-		DiskCount:      w.DiskCount,
-		DiskSize:       w.DiskSize,
-		DiskIops:       w.DiskIops,
-		DiskThroughput: w.DiskThroughput,
-	}, nil
-}
-
 // Describes the disk type..
 type DiskType struct {
 	EbsVolumeType       EbsVolumeType       `json:"ebs_volume_type,omitempty"`
 	AzureDiskVolumeType AzureDiskVolumeType `json:"azure_disk_volume_type,omitempty"`
-}
-
-func DiskTypeFromSDK(v *sdk.DiskType) (*DiskType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var remoteVolumeTypeEbsVolumeTypeWire sdk.EbsVolumeType
-	var remoteVolumeTypeAzureDiskVolumeTypeWire sdk.AzureDiskVolumeType
-	switch value := v.RemoteVolumeType.(type) {
-	case nil:
-	case *sdk.DiskType_RemoteVolumeType_EbsVolumeType:
-		if value != nil {
-			remoteVolumeTypeEbsVolumeTypeWire = value.EbsVolumeType
-		}
-	case *sdk.DiskType_RemoteVolumeType_AzureDiskVolumeType:
-		if value != nil {
-			remoteVolumeTypeAzureDiskVolumeTypeWire = value.AzureDiskVolumeType
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DiskType.RemoteVolumeType", value)
-	}
-	return &DiskType{
-		EbsVolumeType:       remoteVolumeTypeEbsVolumeTypeWire,
-		AzureDiskVolumeType: remoteVolumeTypeAzureDiskVolumeTypeWire,
-	}, nil
-}
-
-func DiskTypeToSDK(w *DiskType) (*sdk.DiskType, error) {
-	if w == nil {
-		return nil, nil
-	}
-	remoteVolumeTypeMembers := 0
-	if w.EbsVolumeType != "" {
-		remoteVolumeTypeMembers++
-	}
-	if w.AzureDiskVolumeType != "" {
-		remoteVolumeTypeMembers++
-	}
-	if remoteVolumeTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DiskType.RemoteVolumeType")
-	}
-	remoteVolumeTypeSelection := (&sdk.DiskType{}).RemoteVolumeType
-	switch {
-	case w.EbsVolumeType != "":
-		remoteVolumeTypeSelection = &sdk.DiskType_RemoteVolumeType_EbsVolumeType{EbsVolumeType: w.EbsVolumeType}
-	case w.AzureDiskVolumeType != "":
-		remoteVolumeTypeSelection = &sdk.DiskType_RemoteVolumeType_AzureDiskVolumeType{AzureDiskVolumeType: w.AzureDiskVolumeType}
-	}
-	return &sdk.DiskType{
-		RemoteVolumeType: remoteVolumeTypeSelection,
-	}, nil
 }
 
 type DockerBasicAuth struct {
@@ -318,80 +167,10 @@ type DockerBasicAuth struct {
 	Password *string `json:"password,omitempty"`
 }
 
-func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DockerBasicAuth{
-		Username: v.Username,
-		Password: v.Password,
-	}, nil
-}
-
-func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DockerBasicAuth{
-		Username: w.Username,
-		Password: w.Password,
-	}, nil
-}
-
 type DockerImage struct {
 	// URL of the docker image.
 	Url       *string          `json:"url,omitempty"`
 	BasicAuth *DockerBasicAuth `json:"basic_auth,omitempty"`
-}
-
-func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credsOneofBasicAuthWire *DockerBasicAuth
-	switch value := v.CredsOneof.(type) {
-	case nil:
-	case *sdk.DockerImage_CredsOneof_BasicAuth:
-		if value != nil {
-			credsOneofBasicAuthConverted, err := DockerBasicAuthFromSDK(&value.BasicAuth)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-			}
-			credsOneofBasicAuthWire = credsOneofBasicAuthConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DockerImage.CredsOneof", value)
-	}
-	return &DockerImage{
-		Url:       v.Url,
-		BasicAuth: credsOneofBasicAuthWire,
-	}, nil
-}
-
-func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credsOneofMembers := 0
-	if w.BasicAuth != nil {
-		credsOneofMembers++
-	}
-	if credsOneofMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
-	}
-	credsOneofSelection := (&sdk.DockerImage{}).CredsOneof
-	switch {
-	case w.BasicAuth != nil:
-		credsOneofBasicAuthConverted, err := DockerBasicAuthToSDK(w.BasicAuth)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-		}
-		credsOneofSelection = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *credsOneofBasicAuthConverted}
-	}
-	return &sdk.DockerImage{
-		Url:        w.Url,
-		CredsOneof: credsOneofSelection,
-	}, nil
 }
 
 type EditInstancePoolRequest struct {
@@ -463,67 +242,9 @@ type EditInstancePoolRequest struct {
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 }
 
-func EditInstancePoolRequestFromSDK(v *sdk.EditInstancePoolRequest) (*EditInstancePoolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AwsAttributes", err)
-	}
-	diskSpecWireValue, err := DiskSpecFromSDK(v.DiskSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.DiskSpec", err)
-	}
-	preloadedDockerImagesWireValue, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.PreloadedDockerImages", err)
-	}
-	azureAttributesWireValue, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.GcpAttributes", err)
-	}
-	nodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.NodeTypeFlexibility", err)
-	}
-	return &EditInstancePoolRequest{
-		InstancePoolId:                     v.InstancePoolId,
-		InstancePoolName:                   v.InstancePoolName,
-		MinIdleInstances:                   v.MinIdleInstances,
-		MaxCapacity:                        v.MaxCapacity,
-		AwsAttributes:                      awsAttributesWireValue,
-		NodeTypeId:                         v.NodeTypeId,
-		CustomTags:                         v.CustomTags,
-		IdleInstanceAutoterminationMinutes: v.IdleInstanceAutoterminationMinutes,
-		EnableElasticDisk:                  v.EnableElasticDisk,
-		DiskSpec:                           diskSpecWireValue,
-		PreloadedDockerImages:              preloadedDockerImagesWireValue,
-		PreloadedSparkVersions:             v.PreloadedSparkVersions,
-		AzureAttributes:                    azureAttributesWireValue,
-		GcpAttributes:                      gcpAttributesWireValue,
-		NodeTypeFlexibility:                nodeTypeFlexibilityWireValue,
-		RemoteDiskThroughput:               v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         v.TotalInitialRemoteDiskSize,
-	}, nil
-}
-
 type GetInstancePoolRequest struct {
 	// The canonical unique identifier for the instance pool.
 	InstancePoolId *string `json:"instance_pool_id,omitempty"`
-}
-
-func GetInstancePoolRequestFromSDK(v *sdk.GetInstancePoolRequest) (*GetInstancePoolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetInstancePoolRequest{
-		InstancePoolId: v.InstancePoolId,
-	}, nil
 }
 
 type GetInstancePoolResponse struct {
@@ -612,67 +333,6 @@ type GetInstancePoolResponse struct {
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 }
 
-func GetInstancePoolResponseToSDK(w *GetInstancePoolResponse) (*sdk.GetInstancePoolResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statsPublicValue, err := InstancePoolStatsToSDK(w.Stats)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Stats", err)
-	}
-	statusPublicValue, err := InstancePoolStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Status", err)
-	}
-	awsAttributesPublicValue, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AwsAttributes", err)
-	}
-	diskSpecPublicValue, err := DiskSpecToSDK(w.DiskSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.DiskSpec", err)
-	}
-	preloadedDockerImagesPublicValue, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.PreloadedDockerImages", err)
-	}
-	azureAttributesPublicValue, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.GcpAttributes", err)
-	}
-	nodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.NodeTypeFlexibility", err)
-	}
-	return &sdk.GetInstancePoolResponse{
-		Stats:                              statsPublicValue,
-		Status:                             statusPublicValue,
-		InstancePoolId:                     w.InstancePoolId,
-		DefaultTags:                        w.DefaultTags,
-		State:                              w.State,
-		InstancePoolName:                   w.InstancePoolName,
-		MinIdleInstances:                   w.MinIdleInstances,
-		MaxCapacity:                        w.MaxCapacity,
-		AwsAttributes:                      awsAttributesPublicValue,
-		NodeTypeId:                         w.NodeTypeId,
-		CustomTags:                         w.CustomTags,
-		IdleInstanceAutoterminationMinutes: w.IdleInstanceAutoterminationMinutes,
-		EnableElasticDisk:                  w.EnableElasticDisk,
-		DiskSpec:                           diskSpecPublicValue,
-		PreloadedDockerImages:              preloadedDockerImagesPublicValue,
-		PreloadedSparkVersions:             w.PreloadedSparkVersions,
-		AzureAttributes:                    azureAttributesPublicValue,
-		GcpAttributes:                      gcpAttributesPublicValue,
-		NodeTypeFlexibility:                nodeTypeFlexibilityPublicValue,
-		RemoteDiskThroughput:               w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         w.TotalInitialRemoteDiskSize,
-	}, nil
-}
-
 type InstancePoolAndStats struct {
 	// Usage statistics about the instance pool.
 	Stats *InstancePoolStats `json:"stats,omitempty"`
@@ -759,67 +419,6 @@ type InstancePoolAndStats struct {
 	TotalInitialRemoteDiskSize *int `json:"total_initial_remote_disk_size,omitempty"`
 }
 
-func InstancePoolAndStatsToSDK(w *InstancePoolAndStats) (*sdk.InstancePoolAndStats, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statsPublicValue, err := InstancePoolStatsToSDK(w.Stats)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Stats", err)
-	}
-	statusPublicValue, err := InstancePoolStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Status", err)
-	}
-	awsAttributesPublicValue, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AwsAttributes", err)
-	}
-	diskSpecPublicValue, err := DiskSpecToSDK(w.DiskSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.DiskSpec", err)
-	}
-	preloadedDockerImagesPublicValue, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.PreloadedDockerImages", err)
-	}
-	azureAttributesPublicValue, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.GcpAttributes", err)
-	}
-	nodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.NodeTypeFlexibility", err)
-	}
-	return &sdk.InstancePoolAndStats{
-		Stats:                              statsPublicValue,
-		Status:                             statusPublicValue,
-		InstancePoolId:                     w.InstancePoolId,
-		DefaultTags:                        w.DefaultTags,
-		State:                              w.State,
-		InstancePoolName:                   w.InstancePoolName,
-		MinIdleInstances:                   w.MinIdleInstances,
-		MaxCapacity:                        w.MaxCapacity,
-		AwsAttributes:                      awsAttributesPublicValue,
-		NodeTypeId:                         w.NodeTypeId,
-		CustomTags:                         w.CustomTags,
-		IdleInstanceAutoterminationMinutes: w.IdleInstanceAutoterminationMinutes,
-		EnableElasticDisk:                  w.EnableElasticDisk,
-		DiskSpec:                           diskSpecPublicValue,
-		PreloadedDockerImages:              preloadedDockerImagesPublicValue,
-		PreloadedSparkVersions:             w.PreloadedSparkVersions,
-		AzureAttributes:                    azureAttributesPublicValue,
-		GcpAttributes:                      gcpAttributesPublicValue,
-		NodeTypeFlexibility:                nodeTypeFlexibilityPublicValue,
-		RemoteDiskThroughput:               w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         w.TotalInitialRemoteDiskSize,
-	}, nil
-}
-
 // Attributes set during instance pool creation which are related to Amazon Web
 // Services..
 type InstancePoolAwsAttributes struct {
@@ -873,30 +472,6 @@ type InstancePoolAwsAttributes struct {
 	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
 }
 
-func InstancePoolAwsAttributesFromSDK(v *sdk.InstancePoolAwsAttributes) (*InstancePoolAwsAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InstancePoolAwsAttributes{
-		Availability:        v.Availability,
-		ZoneId:              v.ZoneId,
-		SpotBidPricePercent: v.SpotBidPricePercent,
-		InstanceProfileArn:  v.InstanceProfileArn,
-	}, nil
-}
-
-func InstancePoolAwsAttributesToSDK(w *InstancePoolAwsAttributes) (*sdk.InstancePoolAwsAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InstancePoolAwsAttributes{
-		Availability:        w.Availability,
-		ZoneId:              w.ZoneId,
-		SpotBidPricePercent: w.SpotBidPricePercent,
-		InstanceProfileArn:  w.InstanceProfileArn,
-	}, nil
-}
-
 // Attributes set during instance pool creation which are related to Azure..
 type InstancePoolAzureAttributes struct {
 	// Availability type used for the instances in the pool. Supports on-demand,
@@ -934,28 +509,6 @@ type InstancePoolAzureAttributes struct {
 	// Format:
 	// `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
 	CapacityReservationGroup *string `json:"capacity_reservation_group,omitempty"`
-}
-
-func InstancePoolAzureAttributesFromSDK(v *sdk.InstancePoolAzureAttributes) (*InstancePoolAzureAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InstancePoolAzureAttributes{
-		Availability:             v.Availability,
-		SpotBidMaxPrice:          v.SpotBidMaxPrice,
-		CapacityReservationGroup: v.CapacityReservationGroup,
-	}, nil
-}
-
-func InstancePoolAzureAttributesToSDK(w *InstancePoolAzureAttributes) (*sdk.InstancePoolAzureAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InstancePoolAzureAttributes{
-		Availability:             w.Availability,
-		SpotBidMaxPrice:          w.SpotBidMaxPrice,
-		CapacityReservationGroup: w.CapacityReservationGroup,
-	}, nil
 }
 
 // Attributes set during instance pool creation which are related to GCP..
@@ -998,28 +551,6 @@ type InstancePoolGcpAttributes struct {
 	ZoneId *string `json:"zone_id,omitempty"`
 }
 
-func InstancePoolGcpAttributesFromSDK(v *sdk.InstancePoolGcpAttributes) (*InstancePoolGcpAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InstancePoolGcpAttributes{
-		GcpAvailability: v.GcpAvailability,
-		LocalSsdCount:   v.LocalSsdCount,
-		ZoneId:          v.ZoneId,
-	}, nil
-}
-
-func InstancePoolGcpAttributesToSDK(w *InstancePoolGcpAttributes) (*sdk.InstancePoolGcpAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InstancePoolGcpAttributes{
-		GcpAvailability: w.GcpAvailability,
-		LocalSsdCount:   w.LocalSsdCount,
-		ZoneId:          w.ZoneId,
-	}, nil
-}
-
 type InstancePoolStats struct {
 	// Number of active instances in the pool that are part of a cluster.
 	UsedCount *int `json:"used_count,omitempty"`
@@ -1031,18 +562,6 @@ type InstancePoolStats struct {
 	PendingIdleCount *int `json:"pending_idle_count,omitempty"`
 }
 
-func InstancePoolStatsToSDK(w *InstancePoolStats) (*sdk.InstancePoolStats, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InstancePoolStats{
-		UsedCount:        w.UsedCount,
-		IdleCount:        w.IdleCount,
-		PendingUsedCount: w.PendingUsedCount,
-		PendingIdleCount: w.PendingIdleCount,
-	}, nil
-}
-
 type InstancePoolStatus struct {
 	// List of error messages for the failed pending instances. The
 	// pending_instance_errors follows FIFO with maximum length of the min_idle of
@@ -1051,34 +570,8 @@ type InstancePoolStatus struct {
 	PendingInstanceErrors []PendingInstanceError `json:"pending_instance_errors,omitempty"`
 }
 
-func InstancePoolStatusToSDK(w *InstancePoolStatus) (*sdk.InstancePoolStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pendingInstanceErrorsPublicValue, err := convertSlice(w.PendingInstanceErrors, PendingInstanceErrorToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstancePoolStatus.PendingInstanceErrors", err)
-	}
-	return &sdk.InstancePoolStatus{
-		PendingInstanceErrors: pendingInstanceErrorsPublicValue,
-	}, nil
-}
-
 type ListInstancePoolsResponse struct {
 	InstancePools []InstancePoolAndStats `json:"instance_pools,omitempty"`
-}
-
-func ListInstancePoolsResponseToSDK(w *ListInstancePoolsResponse) (*sdk.ListInstancePoolsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	instancePoolsPublicValue, err := convertSlice(w.InstancePools, InstancePoolAndStatsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListInstancePoolsResponse.InstancePools", err)
-	}
-	return &sdk.ListInstancePoolsResponse{
-		InstancePools: instancePoolsPublicValue,
-	}, nil
 }
 
 // Configuration for flexible node types, allowing fallback to alternate node
@@ -1092,40 +585,867 @@ type NodeTypeFlexibility struct {
 	AwsContextId *string `json:"aws_context_id,omitempty"`
 }
 
-func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NodeTypeFlexibility{
-		AlternateNodeTypeIds: v.AlternateNodeTypeIds,
-		AwsContextId:         v.AwsContextId,
-	}, nil
-}
-
-func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NodeTypeFlexibility{
-		AlternateNodeTypeIds: w.AlternateNodeTypeIds,
-		AwsContextId:         w.AwsContextId,
-	}, nil
-}
-
 // Error message of a failed pending instances.
 type PendingInstanceError struct {
 	InstanceId *string `json:"instance_id,omitempty"`
 	Message    *string `json:"message,omitempty"`
 }
 
+// CreateInstancePoolRequestToSDK converts the mirror to the sdk-go type.
+func CreateInstancePoolRequestToSDK(w *CreateInstancePoolRequest) (*sdk.CreateInstancePoolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateInstancePoolRequest{}
+	out.InstancePoolName = w.InstancePoolName
+	out.MinIdleInstances = w.MinIdleInstances
+	out.MaxCapacity = w.MaxCapacity
+	conv1, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv1
+	out.NodeTypeId = w.NodeTypeId
+	out.CustomTags = w.CustomTags
+	out.IdleInstanceAutoterminationMinutes = w.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv2, err := DiskSpecToSDK(w.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.DiskSpec", err)
+	}
+	out.DiskSpec = conv2
+	conv3, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv3
+	out.PreloadedSparkVersions = w.PreloadedSparkVersions
+	conv4, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv4
+	conv5, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv5
+	conv6, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv6
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// CreateInstancePoolRequestFromSDK converts the sdk-go type to the mirror.
+func CreateInstancePoolRequestFromSDK(v *sdk.CreateInstancePoolRequest) (*CreateInstancePoolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateInstancePoolRequest{}
+	out.InstancePoolName = v.InstancePoolName
+	out.MinIdleInstances = v.MinIdleInstances
+	out.MaxCapacity = v.MaxCapacity
+	conv7, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv7
+	out.NodeTypeId = v.NodeTypeId
+	out.CustomTags = v.CustomTags
+	out.IdleInstanceAutoterminationMinutes = v.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv8, err := DiskSpecFromSDK(v.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.DiskSpec", err)
+	}
+	out.DiskSpec = conv8
+	conv9, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv9
+	out.PreloadedSparkVersions = v.PreloadedSparkVersions
+	conv10, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv10
+	conv11, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv11
+	conv12, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstancePoolRequest.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv12
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// CreateInstancePoolResponseToSDK converts the mirror to the sdk-go type.
+func CreateInstancePoolResponseToSDK(w *CreateInstancePoolResponse) (*sdk.CreateInstancePoolResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateInstancePoolResponse{}
+	out.InstancePoolId = w.InstancePoolId
+	return out, nil
+}
+
+// CreateInstancePoolResponseFromSDK converts the sdk-go type to the mirror.
+func CreateInstancePoolResponseFromSDK(v *sdk.CreateInstancePoolResponse) (*CreateInstancePoolResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateInstancePoolResponse{}
+	out.InstancePoolId = v.InstancePoolId
+	return out, nil
+}
+
+// DeleteInstancePoolRequestToSDK converts the mirror to the sdk-go type.
+func DeleteInstancePoolRequestToSDK(w *DeleteInstancePoolRequest) (*sdk.DeleteInstancePoolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteInstancePoolRequest{}
+	out.InstancePoolId = w.InstancePoolId
+	return out, nil
+}
+
+// DeleteInstancePoolRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteInstancePoolRequestFromSDK(v *sdk.DeleteInstancePoolRequest) (*DeleteInstancePoolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteInstancePoolRequest{}
+	out.InstancePoolId = v.InstancePoolId
+	return out, nil
+}
+
+// DiskSpecToSDK converts the mirror to the sdk-go type.
+func DiskSpecToSDK(w *DiskSpec) (*sdk.DiskSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DiskSpec{}
+	conv13, err := DiskTypeToSDK(w.DiskType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DiskSpec.DiskType", err)
+	}
+	out.DiskType = conv13
+	out.DiskCount = w.DiskCount
+	out.DiskSize = w.DiskSize
+	out.DiskIops = w.DiskIops
+	out.DiskThroughput = w.DiskThroughput
+	return out, nil
+}
+
+// DiskSpecFromSDK converts the sdk-go type to the mirror.
+func DiskSpecFromSDK(v *sdk.DiskSpec) (*DiskSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DiskSpec{}
+	conv14, err := DiskTypeFromSDK(v.DiskType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DiskSpec.DiskType", err)
+	}
+	out.DiskType = conv14
+	out.DiskCount = v.DiskCount
+	out.DiskSize = v.DiskSize
+	out.DiskIops = v.DiskIops
+	out.DiskThroughput = v.DiskThroughput
+	return out, nil
+}
+
+// DiskTypeToSDK converts the mirror to the sdk-go type.
+func DiskTypeToSDK(w *DiskType) (*sdk.DiskType, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DiskType{}
+	{
+		members := 0
+		if w.EbsVolumeType != "" {
+			members++
+		}
+		if w.AzureDiskVolumeType != "" {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DiskType.RemoteVolumeType")
+		}
+	}
+	switch {
+	case w.EbsVolumeType != "":
+		out.RemoteVolumeType = &sdk.DiskType_RemoteVolumeType_EbsVolumeType{EbsVolumeType: w.EbsVolumeType}
+	case w.AzureDiskVolumeType != "":
+		out.RemoteVolumeType = &sdk.DiskType_RemoteVolumeType_AzureDiskVolumeType{AzureDiskVolumeType: w.AzureDiskVolumeType}
+	}
+	return out, nil
+}
+
+// DiskTypeFromSDK converts the sdk-go type to the mirror.
+func DiskTypeFromSDK(v *sdk.DiskType) (*DiskType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DiskType{}
+	switch value := v.RemoteVolumeType.(type) {
+	case *sdk.DiskType_RemoteVolumeType_EbsVolumeType:
+		if value != nil {
+			out.EbsVolumeType = value.EbsVolumeType
+		}
+	case *sdk.DiskType_RemoteVolumeType_AzureDiskVolumeType:
+		if value != nil {
+			out.AzureDiskVolumeType = value.AzureDiskVolumeType
+		}
+	}
+	return out, nil
+}
+
+// DockerBasicAuthToSDK converts the mirror to the sdk-go type.
+func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerBasicAuth{}
+	out.Username = w.Username
+	out.Password = w.Password
+	return out, nil
+}
+
+// DockerBasicAuthFromSDK converts the sdk-go type to the mirror.
+func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerBasicAuth{}
+	out.Username = v.Username
+	out.Password = v.Password
+	return out, nil
+}
+
+// DockerImageToSDK converts the mirror to the sdk-go type.
+func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerImage{}
+	out.Url = w.Url
+	{
+		members := 0
+		if w.BasicAuth != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		}
+	}
+	switch {
+	case w.BasicAuth != nil:
+		conv15, err := DockerBasicAuthToSDK(w.BasicAuth)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+		}
+		out.CredsOneof = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *conv15}
+	}
+	return out, nil
+}
+
+// DockerImageFromSDK converts the sdk-go type to the mirror.
+func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerImage{}
+	out.Url = v.Url
+	switch value := v.CredsOneof.(type) {
+	case *sdk.DockerImage_CredsOneof_BasicAuth:
+		if value != nil {
+			conv16, err := DockerBasicAuthFromSDK(&value.BasicAuth)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+			}
+			out.BasicAuth = conv16
+		}
+	}
+	return out, nil
+}
+
+// EditInstancePoolRequestToSDK converts the mirror to the sdk-go type.
+func EditInstancePoolRequestToSDK(w *EditInstancePoolRequest) (*sdk.EditInstancePoolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditInstancePoolRequest{}
+	out.InstancePoolId = w.InstancePoolId
+	out.InstancePoolName = w.InstancePoolName
+	out.MinIdleInstances = w.MinIdleInstances
+	out.MaxCapacity = w.MaxCapacity
+	conv17, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv17
+	out.NodeTypeId = w.NodeTypeId
+	out.CustomTags = w.CustomTags
+	out.IdleInstanceAutoterminationMinutes = w.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv18, err := DiskSpecToSDK(w.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.DiskSpec", err)
+	}
+	out.DiskSpec = conv18
+	conv19, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv19
+	out.PreloadedSparkVersions = w.PreloadedSparkVersions
+	conv20, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv20
+	conv21, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv21
+	conv22, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv22
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// EditInstancePoolRequestFromSDK converts the sdk-go type to the mirror.
+func EditInstancePoolRequestFromSDK(v *sdk.EditInstancePoolRequest) (*EditInstancePoolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditInstancePoolRequest{}
+	out.InstancePoolId = v.InstancePoolId
+	out.InstancePoolName = v.InstancePoolName
+	out.MinIdleInstances = v.MinIdleInstances
+	out.MaxCapacity = v.MaxCapacity
+	conv23, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv23
+	out.NodeTypeId = v.NodeTypeId
+	out.CustomTags = v.CustomTags
+	out.IdleInstanceAutoterminationMinutes = v.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv24, err := DiskSpecFromSDK(v.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.DiskSpec", err)
+	}
+	out.DiskSpec = conv24
+	conv25, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv25
+	out.PreloadedSparkVersions = v.PreloadedSparkVersions
+	conv26, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv26
+	conv27, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv27
+	conv28, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditInstancePoolRequest.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv28
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// GetInstancePoolRequestToSDK converts the mirror to the sdk-go type.
+func GetInstancePoolRequestToSDK(w *GetInstancePoolRequest) (*sdk.GetInstancePoolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetInstancePoolRequest{}
+	out.InstancePoolId = w.InstancePoolId
+	return out, nil
+}
+
+// GetInstancePoolRequestFromSDK converts the sdk-go type to the mirror.
+func GetInstancePoolRequestFromSDK(v *sdk.GetInstancePoolRequest) (*GetInstancePoolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetInstancePoolRequest{}
+	out.InstancePoolId = v.InstancePoolId
+	return out, nil
+}
+
+// GetInstancePoolResponseToSDK converts the mirror to the sdk-go type.
+func GetInstancePoolResponseToSDK(w *GetInstancePoolResponse) (*sdk.GetInstancePoolResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetInstancePoolResponse{}
+	conv29, err := InstancePoolStatsToSDK(w.Stats)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Stats", err)
+	}
+	out.Stats = conv29
+	conv30, err := InstancePoolStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Status", err)
+	}
+	out.Status = conv30
+	out.InstancePoolId = w.InstancePoolId
+	out.DefaultTags = w.DefaultTags
+	out.State = w.State
+	out.InstancePoolName = w.InstancePoolName
+	out.MinIdleInstances = w.MinIdleInstances
+	out.MaxCapacity = w.MaxCapacity
+	conv31, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv31
+	out.NodeTypeId = w.NodeTypeId
+	out.CustomTags = w.CustomTags
+	out.IdleInstanceAutoterminationMinutes = w.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv32, err := DiskSpecToSDK(w.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.DiskSpec", err)
+	}
+	out.DiskSpec = conv32
+	conv33, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv33
+	out.PreloadedSparkVersions = w.PreloadedSparkVersions
+	conv34, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv34
+	conv35, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv35
+	conv36, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv36
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// GetInstancePoolResponseFromSDK converts the sdk-go type to the mirror.
+func GetInstancePoolResponseFromSDK(v *sdk.GetInstancePoolResponse) (*GetInstancePoolResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetInstancePoolResponse{}
+	conv37, err := InstancePoolStatsFromSDK(v.Stats)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Stats", err)
+	}
+	out.Stats = conv37
+	conv38, err := InstancePoolStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.Status", err)
+	}
+	out.Status = conv38
+	out.InstancePoolId = v.InstancePoolId
+	out.DefaultTags = v.DefaultTags
+	out.State = v.State
+	out.InstancePoolName = v.InstancePoolName
+	out.MinIdleInstances = v.MinIdleInstances
+	out.MaxCapacity = v.MaxCapacity
+	conv39, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv39
+	out.NodeTypeId = v.NodeTypeId
+	out.CustomTags = v.CustomTags
+	out.IdleInstanceAutoterminationMinutes = v.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv40, err := DiskSpecFromSDK(v.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.DiskSpec", err)
+	}
+	out.DiskSpec = conv40
+	conv41, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv41
+	out.PreloadedSparkVersions = v.PreloadedSparkVersions
+	conv42, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv42
+	conv43, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv43
+	conv44, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetInstancePoolResponse.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv44
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// InstancePoolAndStatsToSDK converts the mirror to the sdk-go type.
+func InstancePoolAndStatsToSDK(w *InstancePoolAndStats) (*sdk.InstancePoolAndStats, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolAndStats{}
+	conv45, err := InstancePoolStatsToSDK(w.Stats)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Stats", err)
+	}
+	out.Stats = conv45
+	conv46, err := InstancePoolStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Status", err)
+	}
+	out.Status = conv46
+	out.InstancePoolId = w.InstancePoolId
+	out.DefaultTags = w.DefaultTags
+	out.State = w.State
+	out.InstancePoolName = w.InstancePoolName
+	out.MinIdleInstances = w.MinIdleInstances
+	out.MaxCapacity = w.MaxCapacity
+	conv47, err := InstancePoolAwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv47
+	out.NodeTypeId = w.NodeTypeId
+	out.CustomTags = w.CustomTags
+	out.IdleInstanceAutoterminationMinutes = w.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv48, err := DiskSpecToSDK(w.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.DiskSpec", err)
+	}
+	out.DiskSpec = conv48
+	conv49, err := convertSlice(w.PreloadedDockerImages, DockerImageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv49
+	out.PreloadedSparkVersions = w.PreloadedSparkVersions
+	conv50, err := InstancePoolAzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv50
+	conv51, err := InstancePoolGcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv51
+	conv52, err := NodeTypeFlexibilityToSDK(w.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv52
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// InstancePoolAndStatsFromSDK converts the sdk-go type to the mirror.
+func InstancePoolAndStatsFromSDK(v *sdk.InstancePoolAndStats) (*InstancePoolAndStats, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolAndStats{}
+	conv53, err := InstancePoolStatsFromSDK(v.Stats)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Stats", err)
+	}
+	out.Stats = conv53
+	conv54, err := InstancePoolStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.Status", err)
+	}
+	out.Status = conv54
+	out.InstancePoolId = v.InstancePoolId
+	out.DefaultTags = v.DefaultTags
+	out.State = v.State
+	out.InstancePoolName = v.InstancePoolName
+	out.MinIdleInstances = v.MinIdleInstances
+	out.MaxCapacity = v.MaxCapacity
+	conv55, err := InstancePoolAwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv55
+	out.NodeTypeId = v.NodeTypeId
+	out.CustomTags = v.CustomTags
+	out.IdleInstanceAutoterminationMinutes = v.IdleInstanceAutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv56, err := DiskSpecFromSDK(v.DiskSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.DiskSpec", err)
+	}
+	out.DiskSpec = conv56
+	conv57, err := convertSlice(v.PreloadedDockerImages, DockerImageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.PreloadedDockerImages", err)
+	}
+	out.PreloadedDockerImages = conv57
+	out.PreloadedSparkVersions = v.PreloadedSparkVersions
+	conv58, err := InstancePoolAzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv58
+	conv59, err := InstancePoolGcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv59
+	conv60, err := NodeTypeFlexibilityFromSDK(v.NodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolAndStats.NodeTypeFlexibility", err)
+	}
+	out.NodeTypeFlexibility = conv60
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	return out, nil
+}
+
+// InstancePoolAwsAttributesToSDK converts the mirror to the sdk-go type.
+func InstancePoolAwsAttributesToSDK(w *InstancePoolAwsAttributes) (*sdk.InstancePoolAwsAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolAwsAttributes{}
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.SpotBidPricePercent = w.SpotBidPricePercent
+	out.InstanceProfileArn = w.InstanceProfileArn
+	return out, nil
+}
+
+// InstancePoolAwsAttributesFromSDK converts the sdk-go type to the mirror.
+func InstancePoolAwsAttributesFromSDK(v *sdk.InstancePoolAwsAttributes) (*InstancePoolAwsAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolAwsAttributes{}
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.SpotBidPricePercent = v.SpotBidPricePercent
+	out.InstanceProfileArn = v.InstanceProfileArn
+	return out, nil
+}
+
+// InstancePoolAzureAttributesToSDK converts the mirror to the sdk-go type.
+func InstancePoolAzureAttributesToSDK(w *InstancePoolAzureAttributes) (*sdk.InstancePoolAzureAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolAzureAttributes{}
+	out.Availability = w.Availability
+	out.SpotBidMaxPrice = w.SpotBidMaxPrice
+	out.CapacityReservationGroup = w.CapacityReservationGroup
+	return out, nil
+}
+
+// InstancePoolAzureAttributesFromSDK converts the sdk-go type to the mirror.
+func InstancePoolAzureAttributesFromSDK(v *sdk.InstancePoolAzureAttributes) (*InstancePoolAzureAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolAzureAttributes{}
+	out.Availability = v.Availability
+	out.SpotBidMaxPrice = v.SpotBidMaxPrice
+	out.CapacityReservationGroup = v.CapacityReservationGroup
+	return out, nil
+}
+
+// InstancePoolGcpAttributesToSDK converts the mirror to the sdk-go type.
+func InstancePoolGcpAttributesToSDK(w *InstancePoolGcpAttributes) (*sdk.InstancePoolGcpAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolGcpAttributes{}
+	out.GcpAvailability = w.GcpAvailability
+	out.LocalSsdCount = w.LocalSsdCount
+	out.ZoneId = w.ZoneId
+	return out, nil
+}
+
+// InstancePoolGcpAttributesFromSDK converts the sdk-go type to the mirror.
+func InstancePoolGcpAttributesFromSDK(v *sdk.InstancePoolGcpAttributes) (*InstancePoolGcpAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolGcpAttributes{}
+	out.GcpAvailability = v.GcpAvailability
+	out.LocalSsdCount = v.LocalSsdCount
+	out.ZoneId = v.ZoneId
+	return out, nil
+}
+
+// InstancePoolStatsToSDK converts the mirror to the sdk-go type.
+func InstancePoolStatsToSDK(w *InstancePoolStats) (*sdk.InstancePoolStats, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolStats{}
+	out.UsedCount = w.UsedCount
+	out.IdleCount = w.IdleCount
+	out.PendingUsedCount = w.PendingUsedCount
+	out.PendingIdleCount = w.PendingIdleCount
+	return out, nil
+}
+
+// InstancePoolStatsFromSDK converts the sdk-go type to the mirror.
+func InstancePoolStatsFromSDK(v *sdk.InstancePoolStats) (*InstancePoolStats, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolStats{}
+	out.UsedCount = v.UsedCount
+	out.IdleCount = v.IdleCount
+	out.PendingUsedCount = v.PendingUsedCount
+	out.PendingIdleCount = v.PendingIdleCount
+	return out, nil
+}
+
+// InstancePoolStatusToSDK converts the mirror to the sdk-go type.
+func InstancePoolStatusToSDK(w *InstancePoolStatus) (*sdk.InstancePoolStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstancePoolStatus{}
+	conv61, err := convertSlice(w.PendingInstanceErrors, PendingInstanceErrorToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolStatus.PendingInstanceErrors", err)
+	}
+	out.PendingInstanceErrors = conv61
+	return out, nil
+}
+
+// InstancePoolStatusFromSDK converts the sdk-go type to the mirror.
+func InstancePoolStatusFromSDK(v *sdk.InstancePoolStatus) (*InstancePoolStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstancePoolStatus{}
+	conv62, err := convertSlice(v.PendingInstanceErrors, PendingInstanceErrorFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstancePoolStatus.PendingInstanceErrors", err)
+	}
+	out.PendingInstanceErrors = conv62
+	return out, nil
+}
+
+// ListInstancePoolsResponseToSDK converts the mirror to the sdk-go type.
+func ListInstancePoolsResponseToSDK(w *ListInstancePoolsResponse) (*sdk.ListInstancePoolsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListInstancePoolsResponse{}
+	conv63, err := convertSlice(w.InstancePools, InstancePoolAndStatsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstancePoolsResponse.InstancePools", err)
+	}
+	out.InstancePools = conv63
+	return out, nil
+}
+
+// ListInstancePoolsResponseFromSDK converts the sdk-go type to the mirror.
+func ListInstancePoolsResponseFromSDK(v *sdk.ListInstancePoolsResponse) (*ListInstancePoolsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListInstancePoolsResponse{}
+	conv64, err := convertSlice(v.InstancePools, InstancePoolAndStatsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstancePoolsResponse.InstancePools", err)
+	}
+	out.InstancePools = conv64
+	return out, nil
+}
+
+// NodeTypeFlexibilityToSDK converts the mirror to the sdk-go type.
+func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = w.AlternateNodeTypeIds
+	out.AwsContextId = w.AwsContextId
+	return out, nil
+}
+
+// NodeTypeFlexibilityFromSDK converts the sdk-go type to the mirror.
+func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = v.AlternateNodeTypeIds
+	out.AwsContextId = v.AwsContextId
+	return out, nil
+}
+
+// PendingInstanceErrorToSDK converts the mirror to the sdk-go type.
 func PendingInstanceErrorToSDK(w *PendingInstanceError) (*sdk.PendingInstanceError, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.PendingInstanceError{
-		InstanceId: w.InstanceId,
-		Message:    w.Message,
-	}, nil
+	out := &sdk.PendingInstanceError{}
+	out.InstanceId = w.InstanceId
+	out.Message = w.Message
+	return out, nil
+}
+
+// PendingInstanceErrorFromSDK converts the sdk-go type to the mirror.
+func PendingInstanceErrorFromSDK(v *sdk.PendingInstanceError) (*PendingInstanceError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PendingInstanceError{}
+	out.InstanceId = v.InstanceId
+	out.Message = v.Message
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

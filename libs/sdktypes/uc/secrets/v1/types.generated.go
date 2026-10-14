@@ -6,34 +6,14 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/uc/secrets/v1"
+	strings "strings"
 )
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 // Request message for CreateSecret..
 type CreateSecretRequest struct {
 	// The secret object to create. The **name**, **catalog_name**, **schema_name**,
 	// and **value** fields are required.
 	Secret *Secret `json:"secret,omitempty"`
-}
-
-func CreateSecretRequestFromSDK(v *sdk.CreateSecretRequest) (*CreateSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	secretWireValue, err := SecretFromSDK(v.Secret)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSecretRequest.Secret", err)
-	}
-	return &CreateSecretRequest{
-		Secret: secretWireValue,
-	}, nil
 }
 
 // Request message for GetSecret..
@@ -44,16 +24,6 @@ type GetSecretRequest struct {
 	// Whether to include the secret value in the response. Defaults to false.
 	// Requires the **READ_SECRET** privilege.
 	IncludeValue *bool `json:"include_value,omitempty"`
-}
-
-func GetSecretRequestFromSDK(v *sdk.GetSecretRequest) (*GetSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetSecretRequest{
-		FullName:     v.FullName,
-		IncludeValue: v.IncludeValue,
-	}, nil
 }
 
 // Request message for ListSecrets..
@@ -76,18 +46,6 @@ type ListSecretsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListSecretsRequestFromSDK(v *sdk.ListSecretsRequest) (*ListSecretsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSecretsRequest{
-		CatalogName: v.CatalogName,
-		SchemaName:  v.SchemaName,
-		PageToken:   v.PageToken,
-		PageSize:    v.PageSize,
-	}, nil
-}
-
 // Response message for ListSecrets..
 type ListSecretsResponse struct {
 	// An array of secret objects.
@@ -95,20 +53,6 @@ type ListSecretsResponse struct {
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. **page_token** should be set to this value for the next request.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSecretsResponseToSDK(w *ListSecretsResponse) (*sdk.ListSecretsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	secretsPublicValue, err := convertSlice(w.Secrets, SecretToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
-	}
-	return &sdk.ListSecretsResponse{
-		Secrets:       secretsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A secret stored in Unity Catalog. Secrets are three-level namespace objects
@@ -159,52 +103,6 @@ type Secret struct {
 	ExpireTime *types.Time `json:"expire_time,omitempty"`
 }
 
-func SecretFromSDK(v *sdk.Secret) (*Secret, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Secret{
-		Name:           v.Name,
-		Owner:          v.Owner,
-		EffectiveOwner: v.EffectiveOwner,
-		MetastoreId:    v.MetastoreId,
-		CreateTime:     v.CreateTime,
-		CreatedBy:      v.CreatedBy,
-		UpdateTime:     v.UpdateTime,
-		UpdatedBy:      v.UpdatedBy,
-		Comment:        v.Comment,
-		FullName:       v.FullName,
-		CatalogName:    v.CatalogName,
-		SchemaName:     v.SchemaName,
-		Value:          v.Value,
-		EffectiveValue: v.EffectiveValue,
-		ExpireTime:     v.ExpireTime,
-	}, nil
-}
-
-func SecretToSDK(w *Secret) (*sdk.Secret, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Secret{
-		Name:           w.Name,
-		Owner:          w.Owner,
-		EffectiveOwner: w.EffectiveOwner,
-		MetastoreId:    w.MetastoreId,
-		CreateTime:     w.CreateTime,
-		CreatedBy:      w.CreatedBy,
-		UpdateTime:     w.UpdateTime,
-		UpdatedBy:      w.UpdatedBy,
-		Comment:        w.Comment,
-		FullName:       w.FullName,
-		CatalogName:    w.CatalogName,
-		SchemaName:     w.SchemaName,
-		Value:          w.Value,
-		EffectiveValue: w.EffectiveValue,
-		ExpireTime:     w.ExpireTime,
-	}, nil
-}
-
 // Request message for UpdateSecret..
 type UpdateSecretRequest struct {
 	// The three-level (fully qualified) name of the secret (for example,
@@ -222,19 +120,194 @@ type UpdateSecretRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateSecretRequestToSDK converts the mirror to the sdk-go type.
+func CreateSecretRequestToSDK(w *CreateSecretRequest) (*sdk.CreateSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSecretRequest{}
+	conv1, err := SecretToSDK(w.Secret)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSecretRequest.Secret", err)
+	}
+	out.Secret = conv1
+	return out, nil
+}
+
+// CreateSecretRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSecretRequestFromSDK(v *sdk.CreateSecretRequest) (*CreateSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSecretRequest{}
+	conv2, err := SecretFromSDK(v.Secret)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSecretRequest.Secret", err)
+	}
+	out.Secret = conv2
+	return out, nil
+}
+
+// GetSecretRequestToSDK converts the mirror to the sdk-go type.
+func GetSecretRequestToSDK(w *GetSecretRequest) (*sdk.GetSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSecretRequest{}
+	out.FullName = w.FullName
+	out.IncludeValue = w.IncludeValue
+	return out, nil
+}
+
+// GetSecretRequestFromSDK converts the sdk-go type to the mirror.
+func GetSecretRequestFromSDK(v *sdk.GetSecretRequest) (*GetSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSecretRequest{}
+	out.FullName = v.FullName
+	out.IncludeValue = v.IncludeValue
+	return out, nil
+}
+
+// ListSecretsRequestToSDK converts the mirror to the sdk-go type.
+func ListSecretsRequestToSDK(w *ListSecretsRequest) (*sdk.ListSecretsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSecretsRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListSecretsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSecretsRequestFromSDK(v *sdk.ListSecretsRequest) (*ListSecretsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSecretsRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListSecretsResponseToSDK converts the mirror to the sdk-go type.
+func ListSecretsResponseToSDK(w *ListSecretsResponse) (*sdk.ListSecretsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSecretsResponse{}
+	conv3, err := convertSlice(w.Secrets, SecretToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSecretsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSecretsResponseFromSDK(v *sdk.ListSecretsResponse) (*ListSecretsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSecretsResponse{}
+	conv4, err := convertSlice(v.Secrets, SecretFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SecretToSDK converts the mirror to the sdk-go type.
+func SecretToSDK(w *Secret) (*sdk.Secret, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Secret{}
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.EffectiveOwner = w.EffectiveOwner
+	out.MetastoreId = w.MetastoreId
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.Comment = w.Comment
+	out.FullName = w.FullName
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.Value = w.Value
+	out.EffectiveValue = w.EffectiveValue
+	out.ExpireTime = w.ExpireTime
+	return out, nil
+}
+
+// SecretFromSDK converts the sdk-go type to the mirror.
+func SecretFromSDK(v *sdk.Secret) (*Secret, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Secret{}
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.EffectiveOwner = v.EffectiveOwner
+	out.MetastoreId = v.MetastoreId
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.Comment = v.Comment
+	out.FullName = v.FullName
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.Value = v.Value
+	out.EffectiveValue = v.EffectiveValue
+	out.ExpireTime = v.ExpireTime
+	return out, nil
+}
+
+// UpdateSecretRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSecretRequestToSDK(w *UpdateSecretRequest) (*sdk.UpdateSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSecretRequest{}
+	out.FullName = w.FullName
+	conv5, err := SecretToSDK(w.Secret)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSecretRequest.Secret", err)
+	}
+	out.Secret = conv5
+	mask6, err := fieldMaskFromString[sdk.Secret](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSecretRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask6
+	return out, nil
+}
+
+// UpdateSecretRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSecretRequestFromSDK(v *sdk.UpdateSecretRequest) (*UpdateSecretRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	secretWireValue, err := SecretFromSDK(v.Secret)
+	out := &UpdateSecretRequest{}
+	out.FullName = v.FullName
+	conv7, err := SecretFromSDK(v.Secret)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSecretRequest.Secret", err)
 	}
-	return &UpdateSecretRequest{
-		FullName:   v.FullName,
-		Secret:     secretWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Secret = conv7
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -250,4 +323,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

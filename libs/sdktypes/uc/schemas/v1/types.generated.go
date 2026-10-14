@@ -22,22 +22,6 @@ const (
 	CatalogType_ManagedOnlineCatalog = sdk.CatalogType_ManagedOnlineCatalog
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateSchemaRequest struct {
 	// Name of schema, relative to parent catalog.
 	Name *string `json:"name,omitempty"`
@@ -83,65 +67,11 @@ type CreateSchemaRequest struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-func CreateSchemaRequestFromSDK(v *sdk.CreateSchemaRequest) (*CreateSchemaRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.EffectivePredictiveOptimizationFlag", err)
-	}
-	customMaxRetentionHoursWireValue, err := int64ToWire(v.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.CustomMaxRetentionHours", err)
-	}
-	return &CreateSchemaRequest{
-		Name:                                v.Name,
-		CatalogName:                         v.CatalogName,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageRoot:                         v.StorageRoot,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		MetastoreId:                         v.MetastoreId,
-		FullName:                            v.FullName,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		CatalogType:                         v.CatalogType,
-		StorageLocation:                     v.StorageLocation,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		SchemaId:                            v.SchemaId,
-		BrowseOnly:                          v.BrowseOnly,
-		CustomMaxRetentionHours:             customMaxRetentionHoursWireValue,
-		Properties:                          v.Properties,
-		Options:                             v.Options,
-	}, nil
-}
-
 type DeleteSchemaRequest struct {
 	// Full name of the schema.
 	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// Force deletion even if the schema is not empty.
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteSchemaRequestFromSDK(v *sdk.DeleteSchemaRequest) (*DeleteSchemaRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteSchemaRequest{
-		FullNameArg: v.FullNameArg,
-		Force:       v.Force,
-	}, nil
 }
 
 type EffectivePredictiveOptimizationFlag struct {
@@ -156,44 +86,12 @@ type EffectivePredictiveOptimizationFlag struct {
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
 }
 
-func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EffectivePredictiveOptimizationFlag{
-		Value:             v.Value,
-		InheritedFromType: v.InheritedFromType,
-		InheritedFromName: v.InheritedFromName,
-	}, nil
-}
-
-func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EffectivePredictiveOptimizationFlag{
-		Value:             w.Value,
-		InheritedFromType: w.InheritedFromType,
-		InheritedFromName: w.InheritedFromName,
-	}, nil
-}
-
 type GetSchemaRequest struct {
 	// Full name of the schema.
 	FullNameArg *string `json:"full_name_arg,omitempty"`
 	// Whether to include schemas in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetSchemaRequestFromSDK(v *sdk.GetSchemaRequest) (*GetSchemaRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetSchemaRequest{
-		FullNameArg:   v.FullNameArg,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
 }
 
 type ListSchemasRequest struct {
@@ -212,18 +110,6 @@ type ListSchemasRequest struct {
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
 }
 
-func ListSchemasRequestFromSDK(v *sdk.ListSchemasRequest) (*ListSchemasRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSchemasRequest{
-		CatalogName:   v.CatalogName,
-		MaxResults:    v.MaxResults,
-		PageToken:     v.PageToken,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
-}
-
 type ListSchemasResponse struct {
 	// An array of schema information objects.
 	Schemas []SchemaInfo `json:"schemas,omitempty"`
@@ -231,20 +117,6 @@ type ListSchemasResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSchemasResponseToSDK(w *ListSchemasResponse) (*sdk.ListSchemasResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemasPublicValue, err := convertSlice(w.Schemas, SchemaInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSchemasResponse.Schemas", err)
-	}
-	return &sdk.ListSchemasResponse{
-		Schemas:       schemasPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SchemaInfo struct {
@@ -290,50 +162,6 @@ type SchemaInfo struct {
 	Properties map[string]string `json:"properties,omitempty"`
 	// A map of key-value properties attached to the securable.
 	Options map[string]string `json:"options,omitempty"`
-}
-
-func SchemaInfoToSDK(w *SchemaInfo) (*sdk.SchemaInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaInfo.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagPublicValue, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaInfo.EffectivePredictiveOptimizationFlag", err)
-	}
-	customMaxRetentionHoursPublicValue, err := int64FromWire(w.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaInfo.CustomMaxRetentionHours", err)
-	}
-	return &sdk.SchemaInfo{
-		Name:                                w.Name,
-		CatalogName:                         w.CatalogName,
-		Owner:                               w.Owner,
-		Comment:                             w.Comment,
-		StorageRoot:                         w.StorageRoot,
-		EnablePredictiveOptimization:        w.EnablePredictiveOptimization,
-		MetastoreId:                         w.MetastoreId,
-		FullName:                            w.FullName,
-		CreatedAt:                           createdAtPublicValue,
-		CreatedBy:                           w.CreatedBy,
-		UpdatedAt:                           updatedAtPublicValue,
-		UpdatedBy:                           w.UpdatedBy,
-		CatalogType:                         w.CatalogType,
-		StorageLocation:                     w.StorageLocation,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagPublicValue,
-		SchemaId:                            w.SchemaId,
-		BrowseOnly:                          w.BrowseOnly,
-		CustomMaxRetentionHours:             customMaxRetentionHoursPublicValue,
-		Properties:                          w.Properties,
-		Options:                             w.Options,
-	}, nil
 }
 
 type UpdateSchemaRequest struct {
@@ -385,50 +213,330 @@ type UpdateSchemaRequest struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
+// CreateSchemaRequestToSDK converts the mirror to the sdk-go type.
+func CreateSchemaRequestToSDK(w *CreateSchemaRequest) (*sdk.CreateSchemaRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSchemaRequest{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.CatalogType = w.CatalogType
+	out.StorageLocation = w.StorageLocation
+	conv1, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv1
+	out.SchemaId = w.SchemaId
+	out.BrowseOnly = w.BrowseOnly
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// CreateSchemaRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSchemaRequestFromSDK(v *sdk.CreateSchemaRequest) (*CreateSchemaRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSchemaRequest{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.CatalogType = v.CatalogType
+	out.StorageLocation = v.StorageLocation
+	conv2, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSchemaRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv2
+	out.SchemaId = v.SchemaId
+	out.BrowseOnly = v.BrowseOnly
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
+}
+
+// DeleteSchemaRequestToSDK converts the mirror to the sdk-go type.
+func DeleteSchemaRequestToSDK(w *DeleteSchemaRequest) (*sdk.DeleteSchemaRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteSchemaRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteSchemaRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteSchemaRequestFromSDK(v *sdk.DeleteSchemaRequest) (*DeleteSchemaRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteSchemaRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagToSDK converts the mirror to the sdk-go type.
+func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EffectivePredictiveOptimizationFlag{}
+	out.Value = w.Value
+	out.InheritedFromType = w.InheritedFromType
+	out.InheritedFromName = w.InheritedFromName
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagFromSDK converts the sdk-go type to the mirror.
+func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EffectivePredictiveOptimizationFlag{}
+	out.Value = v.Value
+	out.InheritedFromType = v.InheritedFromType
+	out.InheritedFromName = v.InheritedFromName
+	return out, nil
+}
+
+// GetSchemaRequestToSDK converts the mirror to the sdk-go type.
+func GetSchemaRequestToSDK(w *GetSchemaRequest) (*sdk.GetSchemaRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSchemaRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetSchemaRequestFromSDK converts the sdk-go type to the mirror.
+func GetSchemaRequestFromSDK(v *sdk.GetSchemaRequest) (*GetSchemaRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSchemaRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListSchemasRequestToSDK converts the mirror to the sdk-go type.
+func ListSchemasRequestToSDK(w *ListSchemasRequest) (*sdk.ListSchemasRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSchemasRequest{}
+	out.CatalogName = w.CatalogName
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// ListSchemasRequestFromSDK converts the sdk-go type to the mirror.
+func ListSchemasRequestFromSDK(v *sdk.ListSchemasRequest) (*ListSchemasRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSchemasRequest{}
+	out.CatalogName = v.CatalogName
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListSchemasResponseToSDK converts the mirror to the sdk-go type.
+func ListSchemasResponseToSDK(w *ListSchemasResponse) (*sdk.ListSchemasResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSchemasResponse{}
+	conv3, err := convertSlice(w.Schemas, SchemaInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSchemasResponse.Schemas", err)
+	}
+	out.Schemas = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSchemasResponseFromSDK converts the sdk-go type to the mirror.
+func ListSchemasResponseFromSDK(v *sdk.ListSchemasResponse) (*ListSchemasResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSchemasResponse{}
+	conv4, err := convertSlice(v.Schemas, SchemaInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSchemasResponse.Schemas", err)
+	}
+	out.Schemas = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SchemaInfoToSDK converts the mirror to the sdk-go type.
+func SchemaInfoToSDK(w *SchemaInfo) (*sdk.SchemaInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.CatalogType = w.CatalogType
+	out.StorageLocation = w.StorageLocation
+	conv5, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv5
+	out.SchemaId = w.SchemaId
+	out.BrowseOnly = w.BrowseOnly
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// SchemaInfoFromSDK converts the sdk-go type to the mirror.
+func SchemaInfoFromSDK(v *sdk.SchemaInfo) (*SchemaInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.CatalogType = v.CatalogType
+	out.StorageLocation = v.StorageLocation
+	conv6, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv6
+	out.SchemaId = v.SchemaId
+	out.BrowseOnly = v.BrowseOnly
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
+}
+
+// UpdateSchemaRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSchemaRequestToSDK(w *UpdateSchemaRequest) (*sdk.UpdateSchemaRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSchemaRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.CatalogType = w.CatalogType
+	out.StorageLocation = w.StorageLocation
+	conv7, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSchemaRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv7
+	out.SchemaId = w.SchemaId
+	out.BrowseOnly = w.BrowseOnly
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// UpdateSchemaRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSchemaRequestFromSDK(v *sdk.UpdateSchemaRequest) (*UpdateSchemaRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSchemaRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSchemaRequest.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	out := &UpdateSchemaRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.CatalogType = v.CatalogType
+	out.StorageLocation = v.StorageLocation
+	conv8, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSchemaRequest.EffectivePredictiveOptimizationFlag", err)
 	}
-	customMaxRetentionHoursWireValue, err := int64ToWire(v.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSchemaRequest.CustomMaxRetentionHours", err)
-	}
-	return &UpdateSchemaRequest{
-		FullNameArg:                         v.FullNameArg,
-		NewName:                             v.NewName,
-		Name:                                v.Name,
-		CatalogName:                         v.CatalogName,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageRoot:                         v.StorageRoot,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		MetastoreId:                         v.MetastoreId,
-		FullName:                            v.FullName,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		CatalogType:                         v.CatalogType,
-		StorageLocation:                     v.StorageLocation,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		SchemaId:                            v.SchemaId,
-		BrowseOnly:                          v.BrowseOnly,
-		CustomMaxRetentionHours:             customMaxRetentionHoursWireValue,
-		Properties:                          v.Properties,
-		Options:                             v.Options,
-	}, nil
+	out.EffectivePredictiveOptimizationFlag = conv8
+	out.SchemaId = v.SchemaId
+	out.BrowseOnly = v.BrowseOnly
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -98,22 +98,6 @@ const (
 	ProvisioningInfo_State_Degraded           = sdk.ProvisioningInfo_State_Degraded
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ConnectionInfo struct {
 	// Name of the connection.
 	Name *string `json:"name,omitempty"`
@@ -152,49 +136,6 @@ type ConnectionInfo struct {
 	Options map[string]string `json:"options,omitempty"`
 	// A map of key-value properties attached to the securable.
 	Properties map[string]string `json:"properties,omitempty"`
-}
-
-func ConnectionInfoToSDK(w *ConnectionInfo) (*sdk.ConnectionInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	environmentSettingsPublicValue, err := EnvironmentSettingsToSDK(w.EnvironmentSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.EnvironmentSettings", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.UpdatedAt", err)
-	}
-	provisioningInfoPublicValue, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.ProvisioningInfo", err)
-	}
-	return &sdk.ConnectionInfo{
-		Name:                w.Name,
-		ConnectionType:      w.ConnectionType,
-		Owner:               w.Owner,
-		ReadOnly:            w.ReadOnly,
-		Comment:             w.Comment,
-		EnvironmentSettings: environmentSettingsPublicValue,
-		FullName:            w.FullName,
-		Url:                 w.Url,
-		CredentialType:      w.CredentialType,
-		ConnectionId:        w.ConnectionId,
-		MetastoreId:         w.MetastoreId,
-		CreatedAt:           createdAtPublicValue,
-		CreatedBy:           w.CreatedBy,
-		UpdatedAt:           updatedAtPublicValue,
-		UpdatedBy:           w.UpdatedBy,
-		SecurableType:       w.SecurableType,
-		ProvisioningInfo:    provisioningInfoPublicValue,
-		Options:             w.Options,
-		Properties:          w.Properties,
-	}, nil
 }
 
 type CreateConnectionRequest struct {
@@ -240,73 +181,9 @@ type CreateConnectionRequest struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
-func CreateConnectionRequestFromSDK(v *sdk.CreateConnectionRequest) (*CreateConnectionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	environmentSettingsWireValue, err := EnvironmentSettingsFromSDK(v.EnvironmentSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.EnvironmentSettings", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.UpdatedAt", err)
-	}
-	provisioningInfoWireValue, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.ProvisioningInfo", err)
-	}
-	return &CreateConnectionRequest{
-		Parent:              v.Parent,
-		Name:                v.Name,
-		ConnectionType:      v.ConnectionType,
-		Owner:               v.Owner,
-		ReadOnly:            v.ReadOnly,
-		Comment:             v.Comment,
-		EnvironmentSettings: environmentSettingsWireValue,
-		FullName:            v.FullName,
-		Url:                 v.Url,
-		CredentialType:      v.CredentialType,
-		ConnectionId:        v.ConnectionId,
-		MetastoreId:         v.MetastoreId,
-		CreatedAt:           createdAtWireValue,
-		CreatedBy:           v.CreatedBy,
-		UpdatedAt:           updatedAtWireValue,
-		UpdatedBy:           v.UpdatedBy,
-		SecurableType:       v.SecurableType,
-		ProvisioningInfo:    provisioningInfoWireValue,
-		Options:             v.Options,
-		Properties:          v.Properties,
-	}, nil
-}
-
 type EnvironmentSettings struct {
 	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 	EnvironmentVersion *string  `json:"environment_version,omitempty"`
-}
-
-func EnvironmentSettingsFromSDK(v *sdk.EnvironmentSettings) (*EnvironmentSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EnvironmentSettings{
-		JavaDependencies:   v.JavaDependencies,
-		EnvironmentVersion: v.EnvironmentVersion,
-	}, nil
-}
-
-func EnvironmentSettingsToSDK(w *EnvironmentSettings) (*sdk.EnvironmentSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EnvironmentSettings{
-		JavaDependencies:   w.JavaDependencies,
-		EnvironmentVersion: w.EnvironmentVersion,
-	}, nil
 }
 
 type ListConnectionsRequest struct {
@@ -323,17 +200,6 @@ type ListConnectionsRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func ListConnectionsRequestFromSDK(v *sdk.ListConnectionsRequest) (*ListConnectionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListConnectionsRequest{
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-		Parent:     v.Parent,
-	}, nil
-}
-
 type ListConnectionsResponse struct {
 	// An array of connection information objects.
 	Connections []ConnectionInfo `json:"connections,omitempty"`
@@ -343,42 +209,10 @@ type ListConnectionsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListConnectionsResponseToSDK(w *ListConnectionsResponse) (*sdk.ListConnectionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	connectionsPublicValue, err := convertSlice(w.Connections, ConnectionInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListConnectionsResponse.Connections", err)
-	}
-	return &sdk.ListConnectionsResponse{
-		Connections:   connectionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // Status of an asynchronously provisioned resource..
 type ProvisioningInfo struct {
 	// The provisioning state of the resource.
 	State ProvisioningInfo_State `json:"state,omitempty"`
-}
-
-func ProvisioningInfoFromSDK(v *sdk.ProvisioningInfo) (*ProvisioningInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ProvisioningInfo{
-		State: v.State,
-	}, nil
-}
-
-func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProvisioningInfo{
-		State: w.State,
-	}, nil
 }
 
 type UpdateConnectionRequest struct {
@@ -425,49 +259,322 @@ type UpdateConnectionRequest struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
+// ConnectionInfoToSDK converts the mirror to the sdk-go type.
+func ConnectionInfoToSDK(w *ConnectionInfo) (*sdk.ConnectionInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectionInfo{}
+	out.Name = w.Name
+	out.ConnectionType = w.ConnectionType
+	out.Owner = w.Owner
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	conv1, err := EnvironmentSettingsToSDK(w.EnvironmentSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.EnvironmentSettings", err)
+	}
+	out.EnvironmentSettings = conv1
+	out.FullName = w.FullName
+	out.Url = w.Url
+	out.CredentialType = w.CredentialType
+	out.ConnectionId = w.ConnectionId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.SecurableType = w.SecurableType
+	conv2, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv2
+	out.Options = w.Options
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// ConnectionInfoFromSDK converts the sdk-go type to the mirror.
+func ConnectionInfoFromSDK(v *sdk.ConnectionInfo) (*ConnectionInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectionInfo{}
+	out.Name = v.Name
+	out.ConnectionType = v.ConnectionType
+	out.Owner = v.Owner
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	conv3, err := EnvironmentSettingsFromSDK(v.EnvironmentSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.EnvironmentSettings", err)
+	}
+	out.EnvironmentSettings = conv3
+	out.FullName = v.FullName
+	out.Url = v.Url
+	out.CredentialType = v.CredentialType
+	out.ConnectionId = v.ConnectionId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.SecurableType = v.SecurableType
+	conv4, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ConnectionInfo.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv4
+	out.Options = v.Options
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// CreateConnectionRequestToSDK converts the mirror to the sdk-go type.
+func CreateConnectionRequestToSDK(w *CreateConnectionRequest) (*sdk.CreateConnectionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateConnectionRequest{}
+	out.Parent = w.Parent
+	out.Name = w.Name
+	out.ConnectionType = w.ConnectionType
+	out.Owner = w.Owner
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	conv5, err := EnvironmentSettingsToSDK(w.EnvironmentSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.EnvironmentSettings", err)
+	}
+	out.EnvironmentSettings = conv5
+	out.FullName = w.FullName
+	out.Url = w.Url
+	out.CredentialType = w.CredentialType
+	out.ConnectionId = w.ConnectionId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.SecurableType = w.SecurableType
+	conv6, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv6
+	out.Options = w.Options
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// CreateConnectionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateConnectionRequestFromSDK(v *sdk.CreateConnectionRequest) (*CreateConnectionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateConnectionRequest{}
+	out.Parent = v.Parent
+	out.Name = v.Name
+	out.ConnectionType = v.ConnectionType
+	out.Owner = v.Owner
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	conv7, err := EnvironmentSettingsFromSDK(v.EnvironmentSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.EnvironmentSettings", err)
+	}
+	out.EnvironmentSettings = conv7
+	out.FullName = v.FullName
+	out.Url = v.Url
+	out.CredentialType = v.CredentialType
+	out.ConnectionId = v.ConnectionId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.SecurableType = v.SecurableType
+	conv8, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateConnectionRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv8
+	out.Options = v.Options
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// EnvironmentSettingsToSDK converts the mirror to the sdk-go type.
+func EnvironmentSettingsToSDK(w *EnvironmentSettings) (*sdk.EnvironmentSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnvironmentSettings{}
+	out.JavaDependencies = w.JavaDependencies
+	out.EnvironmentVersion = w.EnvironmentVersion
+	return out, nil
+}
+
+// EnvironmentSettingsFromSDK converts the sdk-go type to the mirror.
+func EnvironmentSettingsFromSDK(v *sdk.EnvironmentSettings) (*EnvironmentSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnvironmentSettings{}
+	out.JavaDependencies = v.JavaDependencies
+	out.EnvironmentVersion = v.EnvironmentVersion
+	return out, nil
+}
+
+// ListConnectionsRequestToSDK converts the mirror to the sdk-go type.
+func ListConnectionsRequestToSDK(w *ListConnectionsRequest) (*sdk.ListConnectionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListConnectionsRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ListConnectionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListConnectionsRequestFromSDK(v *sdk.ListConnectionsRequest) (*ListConnectionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListConnectionsRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// ListConnectionsResponseToSDK converts the mirror to the sdk-go type.
+func ListConnectionsResponseToSDK(w *ListConnectionsResponse) (*sdk.ListConnectionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListConnectionsResponse{}
+	conv9, err := convertSlice(w.Connections, ConnectionInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListConnectionsResponse.Connections", err)
+	}
+	out.Connections = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListConnectionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListConnectionsResponseFromSDK(v *sdk.ListConnectionsResponse) (*ListConnectionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListConnectionsResponse{}
+	conv10, err := convertSlice(v.Connections, ConnectionInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListConnectionsResponse.Connections", err)
+	}
+	out.Connections = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ProvisioningInfoToSDK converts the mirror to the sdk-go type.
+func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProvisioningInfo{}
+	out.State = w.State
+	return out, nil
+}
+
+// ProvisioningInfoFromSDK converts the sdk-go type to the mirror.
+func ProvisioningInfoFromSDK(v *sdk.ProvisioningInfo) (*ProvisioningInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProvisioningInfo{}
+	out.State = v.State
+	return out, nil
+}
+
+// UpdateConnectionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateConnectionRequestToSDK(w *UpdateConnectionRequest) (*sdk.UpdateConnectionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateConnectionRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.ConnectionType = w.ConnectionType
+	out.Owner = w.Owner
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	conv11, err := EnvironmentSettingsToSDK(w.EnvironmentSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.EnvironmentSettings", err)
+	}
+	out.EnvironmentSettings = conv11
+	out.FullName = w.FullName
+	out.Url = w.Url
+	out.CredentialType = w.CredentialType
+	out.ConnectionId = w.ConnectionId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.SecurableType = w.SecurableType
+	conv12, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv12
+	out.Options = w.Options
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// UpdateConnectionRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateConnectionRequestFromSDK(v *sdk.UpdateConnectionRequest) (*UpdateConnectionRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	environmentSettingsWireValue, err := EnvironmentSettingsFromSDK(v.EnvironmentSettings)
+	out := &UpdateConnectionRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.ConnectionType = v.ConnectionType
+	out.Owner = v.Owner
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	conv13, err := EnvironmentSettingsFromSDK(v.EnvironmentSettings)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.EnvironmentSettings", err)
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.UpdatedAt", err)
-	}
-	provisioningInfoWireValue, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	out.EnvironmentSettings = conv13
+	out.FullName = v.FullName
+	out.Url = v.Url
+	out.CredentialType = v.CredentialType
+	out.ConnectionId = v.ConnectionId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.SecurableType = v.SecurableType
+	conv14, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateConnectionRequest.ProvisioningInfo", err)
 	}
-	return &UpdateConnectionRequest{
-		NameArg:             v.NameArg,
-		NewName:             v.NewName,
-		Name:                v.Name,
-		ConnectionType:      v.ConnectionType,
-		Owner:               v.Owner,
-		ReadOnly:            v.ReadOnly,
-		Comment:             v.Comment,
-		EnvironmentSettings: environmentSettingsWireValue,
-		FullName:            v.FullName,
-		Url:                 v.Url,
-		CredentialType:      v.CredentialType,
-		ConnectionId:        v.ConnectionId,
-		MetastoreId:         v.MetastoreId,
-		CreatedAt:           createdAtWireValue,
-		CreatedBy:           v.CreatedBy,
-		UpdatedAt:           updatedAtWireValue,
-		UpdatedBy:           v.UpdatedBy,
-		SecurableType:       v.SecurableType,
-		ProvisioningInfo:    provisioningInfoWireValue,
-		Options:             v.Options,
-		Properties:          v.Properties,
-	}, nil
+	out.ProvisioningInfo = conv14
+	out.Options = v.Options
+	out.Properties = v.Properties
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

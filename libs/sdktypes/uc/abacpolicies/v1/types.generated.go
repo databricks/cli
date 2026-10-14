@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/uc/abacpolicies/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -47,30 +48,6 @@ const (
 	SecurableType_Skill                = sdk.SecurableType_Skill
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type ColumnMaskOptions struct {
 	// The fully qualified name of the column mask function. The function is called
 	// on each row of the target table. The function's first argument and its return
@@ -87,36 +64,6 @@ type ColumnMaskOptions struct {
 	Using []FunctionArgument `json:"using,omitempty"`
 }
 
-func ColumnMaskOptionsFromSDK(v *sdk.ColumnMaskOptions) (*ColumnMaskOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usingWireValue, err := convertSlice(v.Using, FunctionArgumentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMaskOptions.Using", err)
-	}
-	return &ColumnMaskOptions{
-		FunctionName: v.FunctionName,
-		OnColumn:     v.OnColumn,
-		Using:        usingWireValue,
-	}, nil
-}
-
-func ColumnMaskOptionsToSDK(w *ColumnMaskOptions) (*sdk.ColumnMaskOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usingPublicValue, err := convertSlice(w.Using, FunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMaskOptions.Using", err)
-	}
-	return &sdk.ColumnMaskOptions{
-		FunctionName: w.FunctionName,
-		OnColumn:     w.OnColumn,
-		Using:        usingPublicValue,
-	}, nil
-}
-
 // Extracts the value of a column-level tag: get_column_tag_value(col,
 // "tagKey")..
 type ColumnTagValueExtraction struct {
@@ -126,42 +73,9 @@ type ColumnTagValueExtraction struct {
 	TagKey *string `json:"tag_key,omitempty"`
 }
 
-func ColumnTagValueExtractionFromSDK(v *sdk.ColumnTagValueExtraction) (*ColumnTagValueExtraction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ColumnTagValueExtraction{
-		ColumnAlias: v.ColumnAlias,
-		TagKey:      v.TagKey,
-	}, nil
-}
-
-func ColumnTagValueExtractionToSDK(w *ColumnTagValueExtraction) (*sdk.ColumnTagValueExtraction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnTagValueExtraction{
-		ColumnAlias: w.ColumnAlias,
-		TagKey:      w.TagKey,
-	}, nil
-}
-
 type CreatePolicyRequest struct {
 	// Required. The policy to create.
 	PolicyInfo *PolicyInfo `json:"policy_info,omitempty"`
-}
-
-func CreatePolicyRequestFromSDK(v *sdk.CreatePolicyRequest) (*CreatePolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	policyInfoWireValue, err := PolicyInfoFromSDK(v.PolicyInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.PolicyInfo", err)
-	}
-	return &CreatePolicyRequest{
-		PolicyInfo: policyInfoWireValue,
-	}, nil
 }
 
 type DenyOptions struct {
@@ -171,76 +85,10 @@ type DenyOptions struct {
 	Privileges []string `json:"privileges,omitempty"`
 }
 
-func DenyOptionsFromSDK(v *sdk.DenyOptions) (*DenyOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DenyOptions{
-		Privileges: v.Privileges,
-	}, nil
-}
-
-func DenyOptionsToSDK(w *DenyOptions) (*sdk.DenyOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DenyOptions{
-		Privileges: w.Privileges,
-	}, nil
-}
-
 // An expression that is evaluated at query time against per-request context.
 // New variants (e.g., identity attributes) are added as additional oneof cases..
 type FunctionArgExpression struct {
 	TagIntrospection *TagIntrospectionExpression `json:"tag_introspection,omitempty"`
-}
-
-func FunctionArgExpressionFromSDK(v *sdk.FunctionArgExpression) (*FunctionArgExpression, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var exprTagIntrospectionWire *TagIntrospectionExpression
-	switch value := v.Expr.(type) {
-	case nil:
-	case *sdk.FunctionArgExpression_Expr_TagIntrospection:
-		if value != nil {
-			exprTagIntrospectionConverted, err := TagIntrospectionExpressionFromSDK(&value.TagIntrospection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FunctionArgExpression.Expr.TagIntrospection", err)
-			}
-			exprTagIntrospectionWire = exprTagIntrospectionConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FunctionArgExpression.Expr", value)
-	}
-	return &FunctionArgExpression{
-		TagIntrospection: exprTagIntrospectionWire,
-	}, nil
-}
-
-func FunctionArgExpressionToSDK(w *FunctionArgExpression) (*sdk.FunctionArgExpression, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exprMembers := 0
-	if w.TagIntrospection != nil {
-		exprMembers++
-	}
-	if exprMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgExpression.Expr")
-	}
-	exprSelection := (&sdk.FunctionArgExpression{}).Expr
-	switch {
-	case w.TagIntrospection != nil:
-		exprTagIntrospectionConverted, err := TagIntrospectionExpressionToSDK(w.TagIntrospection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FunctionArgExpression.Expr.TagIntrospection", err)
-		}
-		exprSelection = &sdk.FunctionArgExpression_Expr_TagIntrospection{TagIntrospection: *exprTagIntrospectionConverted}
-	}
-	return &sdk.FunctionArgExpression{
-		Expr: exprSelection,
-	}, nil
 }
 
 type FunctionArgument struct {
@@ -249,99 +97,11 @@ type FunctionArgument struct {
 	FunctionArgExpression *FunctionArgExpression `json:"function_arg_expression,omitempty"`
 }
 
-func FunctionArgumentFromSDK(v *sdk.FunctionArgument) (*FunctionArgument, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var argAliasWire *string
-	var argConstantWire *string
-	var argFunctionArgExpressionWire *FunctionArgExpression
-	switch value := v.Arg.(type) {
-	case nil:
-	case *sdk.FunctionArgument_Arg_Alias:
-		if value != nil {
-			argAliasWire = new(value.Alias)
-		}
-	case *sdk.FunctionArgument_Arg_Constant:
-		if value != nil {
-			argConstantWire = new(value.Constant)
-		}
-	case *sdk.FunctionArgument_Arg_FunctionArgExpression:
-		if value != nil {
-			argFunctionArgExpressionConverted, err := FunctionArgExpressionFromSDK(&value.FunctionArgExpression)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FunctionArgument.Arg.FunctionArgExpression", err)
-			}
-			argFunctionArgExpressionWire = argFunctionArgExpressionConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FunctionArgument.Arg", value)
-	}
-	return &FunctionArgument{
-		Alias:                 argAliasWire,
-		Constant:              argConstantWire,
-		FunctionArgExpression: argFunctionArgExpressionWire,
-	}, nil
-}
-
-func FunctionArgumentToSDK(w *FunctionArgument) (*sdk.FunctionArgument, error) {
-	if w == nil {
-		return nil, nil
-	}
-	argMembers := 0
-	if w.Alias != nil {
-		argMembers++
-	}
-	if w.Constant != nil {
-		argMembers++
-	}
-	if w.FunctionArgExpression != nil {
-		argMembers++
-	}
-	if argMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgument.Arg")
-	}
-	argSelection := (&sdk.FunctionArgument{}).Arg
-	switch {
-	case w.Alias != nil:
-		argSelection = &sdk.FunctionArgument_Arg_Alias{Alias: *w.Alias}
-	case w.Constant != nil:
-		argSelection = &sdk.FunctionArgument_Arg_Constant{Constant: *w.Constant}
-	case w.FunctionArgExpression != nil:
-		argFunctionArgExpressionConverted, err := FunctionArgExpressionToSDK(w.FunctionArgExpression)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FunctionArgument.Arg.FunctionArgExpression", err)
-		}
-		argSelection = &sdk.FunctionArgument_Arg_FunctionArgExpression{FunctionArgExpression: *argFunctionArgExpressionConverted}
-	}
-	return &sdk.FunctionArgument{
-		Arg: argSelection,
-	}, nil
-}
-
 type GrantOptions struct {
 	// List of privileges to grant. When any of these privileges are requested, the
 	// policy will grant access if the principal and condition match. Required on
 	// create and update.
 	Privileges []string `json:"privileges,omitempty"`
-}
-
-func GrantOptionsFromSDK(v *sdk.GrantOptions) (*GrantOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GrantOptions{
-		Privileges: v.Privileges,
-	}, nil
-}
-
-func GrantOptionsToSDK(w *GrantOptions) (*sdk.GrantOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GrantOptions{
-		Privileges: w.Privileges,
-	}, nil
 }
 
 type ListPoliciesRequest struct {
@@ -361,19 +121,6 @@ type ListPoliciesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListPoliciesRequestFromSDK(v *sdk.ListPoliciesRequest) (*ListPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPoliciesRequest{
-		OnSecurableType:     v.OnSecurableType,
-		OnSecurableFullname: v.OnSecurableFullname,
-		IncludeInherited:    v.IncludeInherited,
-		MaxResults:          v.MaxResults,
-		PageToken:           v.PageToken,
-	}, nil
-}
-
 type ListPoliciesResponse struct {
 	// The list of retrieved policies.
 	Policies []PolicyInfo `json:"policies,omitempty"`
@@ -382,45 +129,11 @@ type ListPoliciesResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListPoliciesResponseToSDK(w *ListPoliciesResponse) (*sdk.ListPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policiesPublicValue, err := convertSlice(w.Policies, PolicyInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
-	}
-	return &sdk.ListPoliciesResponse{
-		Policies:      policiesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type MatchColumn struct {
 	// The condition expression used to match a table column.
 	Condition *string `json:"condition,omitempty"`
 	// Optional alias of the matched column.
 	Alias *string `json:"alias,omitempty"`
-}
-
-func MatchColumnFromSDK(v *sdk.MatchColumn) (*MatchColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MatchColumn{
-		Condition: v.Condition,
-		Alias:     v.Alias,
-	}, nil
-}
-
-func MatchColumnToSDK(w *MatchColumn) (*sdk.MatchColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MatchColumn{
-		Condition: w.Condition,
-		Alias:     w.Alias,
-	}, nil
 }
 
 type PolicyInfo struct {
@@ -469,165 +182,6 @@ type PolicyInfo struct {
 	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
-func PolicyInfoFromSDK(v *sdk.PolicyInfo) (*PolicyInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	matchColumnsWireValue, err := convertSlice(v.MatchColumns, MatchColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.MatchColumns", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.UpdatedAt", err)
-	}
-	var optionsRowFilterWire *RowFilterOptions
-	var optionsColumnMaskWire *ColumnMaskOptions
-	var optionsDenyWire *DenyOptions
-	var optionsGrantWire *GrantOptions
-	switch value := v.Options.(type) {
-	case nil:
-	case *sdk.PolicyInfo_Options_RowFilter:
-		if value != nil {
-			optionsRowFilterConverted, err := RowFilterOptionsFromSDK(&value.RowFilter)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.RowFilter", err)
-			}
-			optionsRowFilterWire = optionsRowFilterConverted
-		}
-	case *sdk.PolicyInfo_Options_ColumnMask:
-		if value != nil {
-			optionsColumnMaskConverted, err := ColumnMaskOptionsFromSDK(&value.ColumnMask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.ColumnMask", err)
-			}
-			optionsColumnMaskWire = optionsColumnMaskConverted
-		}
-	case *sdk.PolicyInfo_Options_Deny:
-		if value != nil {
-			optionsDenyConverted, err := DenyOptionsFromSDK(&value.Deny)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.Deny", err)
-			}
-			optionsDenyWire = optionsDenyConverted
-		}
-	case *sdk.PolicyInfo_Options_Grant:
-		if value != nil {
-			optionsGrantConverted, err := GrantOptionsFromSDK(&value.Grant)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.Grant", err)
-			}
-			optionsGrantWire = optionsGrantConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PolicyInfo.Options", value)
-	}
-	return &PolicyInfo{
-		Id:                  v.Id,
-		OnSecurableType:     v.OnSecurableType,
-		OnSecurableFullname: v.OnSecurableFullname,
-		Name:                v.Name,
-		Comment:             v.Comment,
-		ToPrincipals:        v.ToPrincipals,
-		ExceptPrincipals:    v.ExceptPrincipals,
-		ForSecurableType:    v.ForSecurableType,
-		WhenCondition:       v.WhenCondition,
-		PolicyType:          v.PolicyType,
-		RowFilter:           optionsRowFilterWire,
-		ColumnMask:          optionsColumnMaskWire,
-		Deny:                optionsDenyWire,
-		Grant:               optionsGrantWire,
-		MatchColumns:        matchColumnsWireValue,
-		CreatedAt:           createdAtWireValue,
-		CreatedBy:           v.CreatedBy,
-		UpdatedAt:           updatedAtWireValue,
-		UpdatedBy:           v.UpdatedBy,
-	}, nil
-}
-
-func PolicyInfoToSDK(w *PolicyInfo) (*sdk.PolicyInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	optionsMembers := 0
-	if w.RowFilter != nil {
-		optionsMembers++
-	}
-	if w.ColumnMask != nil {
-		optionsMembers++
-	}
-	if w.Deny != nil {
-		optionsMembers++
-	}
-	if w.Grant != nil {
-		optionsMembers++
-	}
-	if optionsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyInfo.Options")
-	}
-	matchColumnsPublicValue, err := convertSlice(w.MatchColumns, MatchColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.MatchColumns", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PolicyInfo.UpdatedAt", err)
-	}
-	optionsSelection := (&sdk.PolicyInfo{}).Options
-	switch {
-	case w.RowFilter != nil:
-		optionsRowFilterConverted, err := RowFilterOptionsToSDK(w.RowFilter)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.RowFilter", err)
-		}
-		optionsSelection = &sdk.PolicyInfo_Options_RowFilter{RowFilter: *optionsRowFilterConverted}
-	case w.ColumnMask != nil:
-		optionsColumnMaskConverted, err := ColumnMaskOptionsToSDK(w.ColumnMask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.ColumnMask", err)
-		}
-		optionsSelection = &sdk.PolicyInfo_Options_ColumnMask{ColumnMask: *optionsColumnMaskConverted}
-	case w.Deny != nil:
-		optionsDenyConverted, err := DenyOptionsToSDK(w.Deny)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.Deny", err)
-		}
-		optionsSelection = &sdk.PolicyInfo_Options_Deny{Deny: *optionsDenyConverted}
-	case w.Grant != nil:
-		optionsGrantConverted, err := GrantOptionsToSDK(w.Grant)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options.Grant", err)
-		}
-		optionsSelection = &sdk.PolicyInfo_Options_Grant{Grant: *optionsGrantConverted}
-	}
-	return &sdk.PolicyInfo{
-		Id:                  w.Id,
-		OnSecurableType:     w.OnSecurableType,
-		OnSecurableFullname: w.OnSecurableFullname,
-		Name:                w.Name,
-		Comment:             w.Comment,
-		ToPrincipals:        w.ToPrincipals,
-		ExceptPrincipals:    w.ExceptPrincipals,
-		ForSecurableType:    w.ForSecurableType,
-		WhenCondition:       w.WhenCondition,
-		PolicyType:          w.PolicyType,
-		MatchColumns:        matchColumnsPublicValue,
-		CreatedAt:           createdAtPublicValue,
-		CreatedBy:           w.CreatedBy,
-		UpdatedAt:           updatedAtPublicValue,
-		UpdatedBy:           w.UpdatedBy,
-		Options:             optionsSelection,
-	}, nil
-}
-
 type RowFilterOptions struct {
 	// The fully qualified name of the row filter function. The function is called
 	// on each row of the target table. It should return a boolean value indicating
@@ -639,129 +193,16 @@ type RowFilterOptions struct {
 	Using []FunctionArgument `json:"using,omitempty"`
 }
 
-func RowFilterOptionsFromSDK(v *sdk.RowFilterOptions) (*RowFilterOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usingWireValue, err := convertSlice(v.Using, FunctionArgumentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RowFilterOptions.Using", err)
-	}
-	return &RowFilterOptions{
-		FunctionName: v.FunctionName,
-		Using:        usingWireValue,
-	}, nil
-}
-
-func RowFilterOptionsToSDK(w *RowFilterOptions) (*sdk.RowFilterOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usingPublicValue, err := convertSlice(w.Using, FunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RowFilterOptions.Using", err)
-	}
-	return &sdk.RowFilterOptions{
-		FunctionName: w.FunctionName,
-		Using:        usingPublicValue,
-	}, nil
-}
-
 // An expression that introspects tags at query time..
 type TagIntrospectionExpression struct {
 	TagValue       *TagValueExtraction       `json:"tag_value,omitempty"`
 	ColumnTagValue *ColumnTagValueExtraction `json:"column_tag_value,omitempty"`
 }
 
-func TagIntrospectionExpressionFromSDK(v *sdk.TagIntrospectionExpression) (*TagIntrospectionExpression, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var exprTagValueWire *TagValueExtraction
-	var exprColumnTagValueWire *ColumnTagValueExtraction
-	switch value := v.Expr.(type) {
-	case nil:
-	case *sdk.TagIntrospectionExpression_Expr_TagValue:
-		if value != nil {
-			exprTagValueConverted, err := TagValueExtractionFromSDK(&value.TagValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr.TagValue", err)
-			}
-			exprTagValueWire = exprTagValueConverted
-		}
-	case *sdk.TagIntrospectionExpression_Expr_ColumnTagValue:
-		if value != nil {
-			exprColumnTagValueConverted, err := ColumnTagValueExtractionFromSDK(&value.ColumnTagValue)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr.ColumnTagValue", err)
-			}
-			exprColumnTagValueWire = exprColumnTagValueConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TagIntrospectionExpression.Expr", value)
-	}
-	return &TagIntrospectionExpression{
-		TagValue:       exprTagValueWire,
-		ColumnTagValue: exprColumnTagValueWire,
-	}, nil
-}
-
-func TagIntrospectionExpressionToSDK(w *TagIntrospectionExpression) (*sdk.TagIntrospectionExpression, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exprMembers := 0
-	if w.TagValue != nil {
-		exprMembers++
-	}
-	if w.ColumnTagValue != nil {
-		exprMembers++
-	}
-	if exprMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TagIntrospectionExpression.Expr")
-	}
-	exprSelection := (&sdk.TagIntrospectionExpression{}).Expr
-	switch {
-	case w.TagValue != nil:
-		exprTagValueConverted, err := TagValueExtractionToSDK(w.TagValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr.TagValue", err)
-		}
-		exprSelection = &sdk.TagIntrospectionExpression_Expr_TagValue{TagValue: *exprTagValueConverted}
-	case w.ColumnTagValue != nil:
-		exprColumnTagValueConverted, err := ColumnTagValueExtractionToSDK(w.ColumnTagValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr.ColumnTagValue", err)
-		}
-		exprSelection = &sdk.TagIntrospectionExpression_Expr_ColumnTagValue{ColumnTagValue: *exprColumnTagValueConverted}
-	}
-	return &sdk.TagIntrospectionExpression{
-		Expr: exprSelection,
-	}, nil
-}
-
 // Extracts the value of a securable-level tag: get_tag_value("tagKey")..
 type TagValueExtraction struct {
 	// 1024 matches the max_length on FunctionArgument.constant above.
 	TagKey *string `json:"tag_key,omitempty"`
-}
-
-func TagValueExtractionFromSDK(v *sdk.TagValueExtraction) (*TagValueExtraction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TagValueExtraction{
-		TagKey: v.TagKey,
-	}, nil
-}
-
-func TagValueExtractionToSDK(w *TagValueExtraction) (*sdk.TagValueExtraction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TagValueExtraction{
-		TagKey: w.TagKey,
-	}, nil
 }
 
 type UpdatePolicyRequest struct {
@@ -785,21 +226,600 @@ type UpdatePolicyRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// ColumnMaskOptionsToSDK converts the mirror to the sdk-go type.
+func ColumnMaskOptionsToSDK(w *ColumnMaskOptions) (*sdk.ColumnMaskOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnMaskOptions{}
+	out.FunctionName = w.FunctionName
+	out.OnColumn = w.OnColumn
+	conv1, err := convertSlice(w.Using, FunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMaskOptions.Using", err)
+	}
+	out.Using = conv1
+	return out, nil
+}
+
+// ColumnMaskOptionsFromSDK converts the sdk-go type to the mirror.
+func ColumnMaskOptionsFromSDK(v *sdk.ColumnMaskOptions) (*ColumnMaskOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnMaskOptions{}
+	out.FunctionName = v.FunctionName
+	out.OnColumn = v.OnColumn
+	conv2, err := convertSlice(v.Using, FunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMaskOptions.Using", err)
+	}
+	out.Using = conv2
+	return out, nil
+}
+
+// ColumnTagValueExtractionToSDK converts the mirror to the sdk-go type.
+func ColumnTagValueExtractionToSDK(w *ColumnTagValueExtraction) (*sdk.ColumnTagValueExtraction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnTagValueExtraction{}
+	out.ColumnAlias = w.ColumnAlias
+	out.TagKey = w.TagKey
+	return out, nil
+}
+
+// ColumnTagValueExtractionFromSDK converts the sdk-go type to the mirror.
+func ColumnTagValueExtractionFromSDK(v *sdk.ColumnTagValueExtraction) (*ColumnTagValueExtraction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnTagValueExtraction{}
+	out.ColumnAlias = v.ColumnAlias
+	out.TagKey = v.TagKey
+	return out, nil
+}
+
+// CreatePolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreatePolicyRequestToSDK(w *CreatePolicyRequest) (*sdk.CreatePolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePolicyRequest{}
+	conv3, err := PolicyInfoToSDK(w.PolicyInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.PolicyInfo", err)
+	}
+	out.PolicyInfo = conv3
+	return out, nil
+}
+
+// CreatePolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePolicyRequestFromSDK(v *sdk.CreatePolicyRequest) (*CreatePolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePolicyRequest{}
+	conv4, err := PolicyInfoFromSDK(v.PolicyInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.PolicyInfo", err)
+	}
+	out.PolicyInfo = conv4
+	return out, nil
+}
+
+// DenyOptionsToSDK converts the mirror to the sdk-go type.
+func DenyOptionsToSDK(w *DenyOptions) (*sdk.DenyOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DenyOptions{}
+	out.Privileges = w.Privileges
+	return out, nil
+}
+
+// DenyOptionsFromSDK converts the sdk-go type to the mirror.
+func DenyOptionsFromSDK(v *sdk.DenyOptions) (*DenyOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DenyOptions{}
+	out.Privileges = v.Privileges
+	return out, nil
+}
+
+// FunctionArgExpressionToSDK converts the mirror to the sdk-go type.
+func FunctionArgExpressionToSDK(w *FunctionArgExpression) (*sdk.FunctionArgExpression, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionArgExpression{}
+	{
+		members := 0
+		if w.TagIntrospection != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgExpression.Expr")
+		}
+	}
+	switch {
+	case w.TagIntrospection != nil:
+		conv5, err := TagIntrospectionExpressionToSDK(w.TagIntrospection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FunctionArgExpression.Expr", err)
+		}
+		out.Expr = &sdk.FunctionArgExpression_Expr_TagIntrospection{TagIntrospection: *conv5}
+	}
+	return out, nil
+}
+
+// FunctionArgExpressionFromSDK converts the sdk-go type to the mirror.
+func FunctionArgExpressionFromSDK(v *sdk.FunctionArgExpression) (*FunctionArgExpression, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionArgExpression{}
+	switch value := v.Expr.(type) {
+	case *sdk.FunctionArgExpression_Expr_TagIntrospection:
+		if value != nil {
+			conv6, err := TagIntrospectionExpressionFromSDK(&value.TagIntrospection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FunctionArgExpression.Expr", err)
+			}
+			out.TagIntrospection = conv6
+		}
+	}
+	return out, nil
+}
+
+// FunctionArgumentToSDK converts the mirror to the sdk-go type.
+func FunctionArgumentToSDK(w *FunctionArgument) (*sdk.FunctionArgument, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionArgument{}
+	{
+		members := 0
+		if w.Alias != nil {
+			members++
+		}
+		if w.Constant != nil {
+			members++
+		}
+		if w.FunctionArgExpression != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FunctionArgument.Arg")
+		}
+	}
+	switch {
+	case w.Alias != nil:
+		out.Arg = &sdk.FunctionArgument_Arg_Alias{Alias: *w.Alias}
+	case w.Constant != nil:
+		out.Arg = &sdk.FunctionArgument_Arg_Constant{Constant: *w.Constant}
+	case w.FunctionArgExpression != nil:
+		conv7, err := FunctionArgExpressionToSDK(w.FunctionArgExpression)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FunctionArgument.Arg", err)
+		}
+		out.Arg = &sdk.FunctionArgument_Arg_FunctionArgExpression{FunctionArgExpression: *conv7}
+	}
+	return out, nil
+}
+
+// FunctionArgumentFromSDK converts the sdk-go type to the mirror.
+func FunctionArgumentFromSDK(v *sdk.FunctionArgument) (*FunctionArgument, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionArgument{}
+	switch value := v.Arg.(type) {
+	case *sdk.FunctionArgument_Arg_Alias:
+		if value != nil {
+			out.Alias = new(value.Alias)
+		}
+	case *sdk.FunctionArgument_Arg_Constant:
+		if value != nil {
+			out.Constant = new(value.Constant)
+		}
+	case *sdk.FunctionArgument_Arg_FunctionArgExpression:
+		if value != nil {
+			conv8, err := FunctionArgExpressionFromSDK(&value.FunctionArgExpression)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FunctionArgument.Arg", err)
+			}
+			out.FunctionArgExpression = conv8
+		}
+	}
+	return out, nil
+}
+
+// GrantOptionsToSDK converts the mirror to the sdk-go type.
+func GrantOptionsToSDK(w *GrantOptions) (*sdk.GrantOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GrantOptions{}
+	out.Privileges = w.Privileges
+	return out, nil
+}
+
+// GrantOptionsFromSDK converts the sdk-go type to the mirror.
+func GrantOptionsFromSDK(v *sdk.GrantOptions) (*GrantOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GrantOptions{}
+	out.Privileges = v.Privileges
+	return out, nil
+}
+
+// ListPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListPoliciesRequestToSDK(w *ListPoliciesRequest) (*sdk.ListPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPoliciesRequest{}
+	out.OnSecurableType = w.OnSecurableType
+	out.OnSecurableFullname = w.OnSecurableFullname
+	out.IncludeInherited = w.IncludeInherited
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListPoliciesRequestFromSDK(v *sdk.ListPoliciesRequest) (*ListPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPoliciesRequest{}
+	out.OnSecurableType = v.OnSecurableType
+	out.OnSecurableFullname = v.OnSecurableFullname
+	out.IncludeInherited = v.IncludeInherited
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListPoliciesResponseToSDK(w *ListPoliciesResponse) (*sdk.ListPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPoliciesResponse{}
+	conv9, err := convertSlice(w.Policies, PolicyInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListPoliciesResponseFromSDK(v *sdk.ListPoliciesResponse) (*ListPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPoliciesResponse{}
+	conv10, err := convertSlice(v.Policies, PolicyInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MatchColumnToSDK converts the mirror to the sdk-go type.
+func MatchColumnToSDK(w *MatchColumn) (*sdk.MatchColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MatchColumn{}
+	out.Condition = w.Condition
+	out.Alias = w.Alias
+	return out, nil
+}
+
+// MatchColumnFromSDK converts the sdk-go type to the mirror.
+func MatchColumnFromSDK(v *sdk.MatchColumn) (*MatchColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MatchColumn{}
+	out.Condition = v.Condition
+	out.Alias = v.Alias
+	return out, nil
+}
+
+// PolicyInfoToSDK converts the mirror to the sdk-go type.
+func PolicyInfoToSDK(w *PolicyInfo) (*sdk.PolicyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PolicyInfo{}
+	out.Id = w.Id
+	out.OnSecurableType = w.OnSecurableType
+	out.OnSecurableFullname = w.OnSecurableFullname
+	out.Name = w.Name
+	out.Comment = w.Comment
+	out.ToPrincipals = w.ToPrincipals
+	out.ExceptPrincipals = w.ExceptPrincipals
+	out.ForSecurableType = w.ForSecurableType
+	out.WhenCondition = w.WhenCondition
+	out.PolicyType = w.PolicyType
+	{
+		members := 0
+		if w.RowFilter != nil {
+			members++
+		}
+		if w.ColumnMask != nil {
+			members++
+		}
+		if w.Deny != nil {
+			members++
+		}
+		if w.Grant != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyInfo.Options")
+		}
+	}
+	switch {
+	case w.RowFilter != nil:
+		conv11, err := RowFilterOptionsToSDK(w.RowFilter)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+		}
+		out.Options = &sdk.PolicyInfo_Options_RowFilter{RowFilter: *conv11}
+	case w.ColumnMask != nil:
+		conv12, err := ColumnMaskOptionsToSDK(w.ColumnMask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+		}
+		out.Options = &sdk.PolicyInfo_Options_ColumnMask{ColumnMask: *conv12}
+	case w.Deny != nil:
+		conv13, err := DenyOptionsToSDK(w.Deny)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+		}
+		out.Options = &sdk.PolicyInfo_Options_Deny{Deny: *conv13}
+	case w.Grant != nil:
+		conv14, err := GrantOptionsToSDK(w.Grant)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+		}
+		out.Options = &sdk.PolicyInfo_Options_Grant{Grant: *conv14}
+	}
+	conv15, err := convertSlice(w.MatchColumns, MatchColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PolicyInfo.MatchColumns", err)
+	}
+	out.MatchColumns = conv15
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	return out, nil
+}
+
+// PolicyInfoFromSDK converts the sdk-go type to the mirror.
+func PolicyInfoFromSDK(v *sdk.PolicyInfo) (*PolicyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PolicyInfo{}
+	out.Id = v.Id
+	out.OnSecurableType = v.OnSecurableType
+	out.OnSecurableFullname = v.OnSecurableFullname
+	out.Name = v.Name
+	out.Comment = v.Comment
+	out.ToPrincipals = v.ToPrincipals
+	out.ExceptPrincipals = v.ExceptPrincipals
+	out.ForSecurableType = v.ForSecurableType
+	out.WhenCondition = v.WhenCondition
+	out.PolicyType = v.PolicyType
+	switch value := v.Options.(type) {
+	case *sdk.PolicyInfo_Options_RowFilter:
+		if value != nil {
+			conv16, err := RowFilterOptionsFromSDK(&value.RowFilter)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+			}
+			out.RowFilter = conv16
+		}
+	case *sdk.PolicyInfo_Options_ColumnMask:
+		if value != nil {
+			conv17, err := ColumnMaskOptionsFromSDK(&value.ColumnMask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+			}
+			out.ColumnMask = conv17
+		}
+	case *sdk.PolicyInfo_Options_Deny:
+		if value != nil {
+			conv18, err := DenyOptionsFromSDK(&value.Deny)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+			}
+			out.Deny = conv18
+		}
+	case *sdk.PolicyInfo_Options_Grant:
+		if value != nil {
+			conv19, err := GrantOptionsFromSDK(&value.Grant)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PolicyInfo.Options", err)
+			}
+			out.Grant = conv19
+		}
+	}
+	conv20, err := convertSlice(v.MatchColumns, MatchColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PolicyInfo.MatchColumns", err)
+	}
+	out.MatchColumns = conv20
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	return out, nil
+}
+
+// RowFilterOptionsToSDK converts the mirror to the sdk-go type.
+func RowFilterOptionsToSDK(w *RowFilterOptions) (*sdk.RowFilterOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RowFilterOptions{}
+	out.FunctionName = w.FunctionName
+	conv21, err := convertSlice(w.Using, FunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RowFilterOptions.Using", err)
+	}
+	out.Using = conv21
+	return out, nil
+}
+
+// RowFilterOptionsFromSDK converts the sdk-go type to the mirror.
+func RowFilterOptionsFromSDK(v *sdk.RowFilterOptions) (*RowFilterOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RowFilterOptions{}
+	out.FunctionName = v.FunctionName
+	conv22, err := convertSlice(v.Using, FunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RowFilterOptions.Using", err)
+	}
+	out.Using = conv22
+	return out, nil
+}
+
+// TagIntrospectionExpressionToSDK converts the mirror to the sdk-go type.
+func TagIntrospectionExpressionToSDK(w *TagIntrospectionExpression) (*sdk.TagIntrospectionExpression, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TagIntrospectionExpression{}
+	{
+		members := 0
+		if w.TagValue != nil {
+			members++
+		}
+		if w.ColumnTagValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TagIntrospectionExpression.Expr")
+		}
+	}
+	switch {
+	case w.TagValue != nil:
+		conv23, err := TagValueExtractionToSDK(w.TagValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr", err)
+		}
+		out.Expr = &sdk.TagIntrospectionExpression_Expr_TagValue{TagValue: *conv23}
+	case w.ColumnTagValue != nil:
+		conv24, err := ColumnTagValueExtractionToSDK(w.ColumnTagValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr", err)
+		}
+		out.Expr = &sdk.TagIntrospectionExpression_Expr_ColumnTagValue{ColumnTagValue: *conv24}
+	}
+	return out, nil
+}
+
+// TagIntrospectionExpressionFromSDK converts the sdk-go type to the mirror.
+func TagIntrospectionExpressionFromSDK(v *sdk.TagIntrospectionExpression) (*TagIntrospectionExpression, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TagIntrospectionExpression{}
+	switch value := v.Expr.(type) {
+	case *sdk.TagIntrospectionExpression_Expr_TagValue:
+		if value != nil {
+			conv25, err := TagValueExtractionFromSDK(&value.TagValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr", err)
+			}
+			out.TagValue = conv25
+		}
+	case *sdk.TagIntrospectionExpression_Expr_ColumnTagValue:
+		if value != nil {
+			conv26, err := ColumnTagValueExtractionFromSDK(&value.ColumnTagValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TagIntrospectionExpression.Expr", err)
+			}
+			out.ColumnTagValue = conv26
+		}
+	}
+	return out, nil
+}
+
+// TagValueExtractionToSDK converts the mirror to the sdk-go type.
+func TagValueExtractionToSDK(w *TagValueExtraction) (*sdk.TagValueExtraction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TagValueExtraction{}
+	out.TagKey = w.TagKey
+	return out, nil
+}
+
+// TagValueExtractionFromSDK converts the sdk-go type to the mirror.
+func TagValueExtractionFromSDK(v *sdk.TagValueExtraction) (*TagValueExtraction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TagValueExtraction{}
+	out.TagKey = v.TagKey
+	return out, nil
+}
+
+// UpdatePolicyRequestToSDK converts the mirror to the sdk-go type.
+func UpdatePolicyRequestToSDK(w *UpdatePolicyRequest) (*sdk.UpdatePolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePolicyRequest{}
+	out.OnSecurableType = w.OnSecurableType
+	out.OnSecurableFullname = w.OnSecurableFullname
+	out.Name = w.Name
+	conv27, err := PolicyInfoToSDK(w.PolicyInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePolicyRequest.PolicyInfo", err)
+	}
+	out.PolicyInfo = conv27
+	mask28, err := fieldMaskFromString[sdk.PolicyInfo](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePolicyRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask28
+	return out, nil
+}
+
+// UpdatePolicyRequestFromSDK converts the sdk-go type to the mirror.
 func UpdatePolicyRequestFromSDK(v *sdk.UpdatePolicyRequest) (*UpdatePolicyRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	policyInfoWireValue, err := PolicyInfoFromSDK(v.PolicyInfo)
+	out := &UpdatePolicyRequest{}
+	out.OnSecurableType = v.OnSecurableType
+	out.OnSecurableFullname = v.OnSecurableFullname
+	out.Name = v.Name
+	conv29, err := PolicyInfoFromSDK(v.PolicyInfo)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdatePolicyRequest.PolicyInfo", err)
 	}
-	return &UpdatePolicyRequest{
-		OnSecurableType:     v.OnSecurableType,
-		OnSecurableFullname: v.OnSecurableFullname,
-		Name:                v.Name,
-		PolicyInfo:          policyInfoWireValue,
-		UpdateMask:          fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.PolicyInfo = conv29
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -815,4 +835,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

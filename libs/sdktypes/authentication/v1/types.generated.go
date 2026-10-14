@@ -8,31 +8,8 @@ import (
 	sdk "github.com/databricks/sdk-go/authentication/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
-
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 type CreateAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
@@ -44,26 +21,6 @@ type CreateAccountFederationPolicyRequest struct {
 	// unspecified, the id will be assigned by <Databricks>.
 	PolicyId *string           `json:"policy_id,omitempty"`
 	Policy   *FederationPolicy `json:"policy,omitempty"`
-}
-
-func CreateAccountFederationPolicyRequestFromSDK(v *sdk.CreateAccountFederationPolicyRequest) (*CreateAccountFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	policyWireValue, err := FederationPolicyFromSDK(v.Policy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountFederationPolicyRequest.Policy", err)
-	}
-	return &CreateAccountFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-		Policy:             policyWireValue,
-	}, nil
 }
 
 type CreateServicePrincipalFederationPolicyRequest struct {
@@ -78,26 +35,6 @@ type CreateServicePrincipalFederationPolicyRequest struct {
 	Policy   *FederationPolicy `json:"policy,omitempty"`
 }
 
-func CreateServicePrincipalFederationPolicyRequestFromSDK(v *sdk.CreateServicePrincipalFederationPolicyRequest) (*CreateServicePrincipalFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	policyWireValue, err := FederationPolicyFromSDK(v.Policy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalFederationPolicyRequest.Policy", err)
-	}
-	return &CreateServicePrincipalFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-		Policy:             policyWireValue,
-	}, nil
-}
-
 type CreateServicePrincipalSecretRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
@@ -109,18 +46,6 @@ type CreateServicePrincipalSecretRequest struct {
 	// OAuth API scopes to bind to the secret; a minted token cannot exceed them.
 	// Empty = unrestricted (all-apis). E.g. all-apis, sql, iam.groups:read.
 	Scopes []string `json:"scopes,omitempty"`
-}
-
-func CreateServicePrincipalSecretRequestFromSDK(v *sdk.CreateServicePrincipalSecretRequest) (*CreateServicePrincipalSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateServicePrincipalSecretRequest{
-		AccountId:        v.AccountId,
-		ServicePrincipal: v.ServicePrincipal,
-		Lifetime:         v.Lifetime,
-		Scopes:           v.Scopes,
-	}, nil
 }
 
 type CreateServicePrincipalSecretResponse struct {
@@ -143,22 +68,6 @@ type CreateServicePrincipalSecretResponse struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-func CreateServicePrincipalSecretResponseToSDK(w *CreateServicePrincipalSecretResponse) (*sdk.CreateServicePrincipalSecretResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateServicePrincipalSecretResponse{
-		Id:         w.Id,
-		Secret:     w.Secret,
-		SecretHash: w.SecretHash,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Status:     w.Status,
-		ExpireTime: w.ExpireTime,
-		Scopes:     w.Scopes,
-	}, nil
-}
-
 type DeleteAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
@@ -168,21 +77,6 @@ type DeleteAccountFederationPolicyRequest struct {
 	PolicyId *string `json:"policy_id,omitempty"`
 }
 
-func DeleteAccountFederationPolicyRequestFromSDK(v *sdk.DeleteAccountFederationPolicyRequest) (*DeleteAccountFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteAccountFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	return &DeleteAccountFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-	}, nil
-}
-
 type DeleteServicePrincipalSecretRequest struct {
 	// The account ID.
 	AccountId *string `json:"account_id,omitempty"`
@@ -190,17 +84,6 @@ type DeleteServicePrincipalSecretRequest struct {
 	ServicePrincipal *string `json:"service_principal,omitempty"`
 	// The secret ID.
 	SecretId *string `json:"secret_id,omitempty"`
-}
-
-func DeleteServicePrincipalSecretRequestFromSDK(v *sdk.DeleteServicePrincipalSecretRequest) (*DeleteServicePrincipalSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteServicePrincipalSecretRequest{
-		AccountId:        v.AccountId,
-		ServicePrincipal: v.ServicePrincipal,
-		SecretId:         v.SecretId,
-	}, nil
 }
 
 type FederationPolicy struct {
@@ -228,76 +111,6 @@ type FederationPolicy struct {
 	PolicyId *string `json:"policy_id,omitempty"`
 }
 
-func FederationPolicyFromSDK(v *sdk.FederationPolicy) (*FederationPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FederationPolicy.ServicePrincipalId", err)
-	}
-	var policyOidcPolicyWire *OidcFederationPolicy
-	switch value := v.Policy.(type) {
-	case nil:
-	case *sdk.FederationPolicy_Policy_OidcPolicy:
-		if value != nil {
-			policyOidcPolicyConverted, err := OidcFederationPolicyFromSDK(&value.OidcPolicy)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy.OidcPolicy", err)
-			}
-			policyOidcPolicyWire = policyOidcPolicyConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FederationPolicy.Policy", value)
-	}
-	return &FederationPolicy{
-		Name:               v.Name,
-		Description:        v.Description,
-		OidcPolicy:         policyOidcPolicyWire,
-		CreateTime:         v.CreateTime,
-		UpdateTime:         v.UpdateTime,
-		Uid:                v.Uid,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-	}, nil
-}
-
-func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policyMembers := 0
-	if w.OidcPolicy != nil {
-		policyMembers++
-	}
-	if policyMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
-	}
-	servicePrincipalIdPublicValue, err := int64FromWire(w.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FederationPolicy.ServicePrincipalId", err)
-	}
-	policySelection := (&sdk.FederationPolicy{}).Policy
-	switch {
-	case w.OidcPolicy != nil:
-		policyOidcPolicyConverted, err := OidcFederationPolicyToSDK(w.OidcPolicy)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy.OidcPolicy", err)
-		}
-		policySelection = &sdk.FederationPolicy_Policy_OidcPolicy{OidcPolicy: *policyOidcPolicyConverted}
-	}
-	return &sdk.FederationPolicy{
-		Name:               w.Name,
-		Description:        w.Description,
-		CreateTime:         w.CreateTime,
-		UpdateTime:         w.UpdateTime,
-		Uid:                w.Uid,
-		ServicePrincipalId: servicePrincipalIdPublicValue,
-		PolicyId:           w.PolicyId,
-		Policy:             policySelection,
-	}, nil
-}
-
 type GetAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
@@ -305,21 +118,6 @@ type GetAccountFederationPolicyRequest struct {
 	ServicePrincipalId *int64 `json:"service_principal_id,omitempty"`
 	// The identifier for the federation policy.
 	PolicyId *string `json:"policy_id,omitempty"`
-}
-
-func GetAccountFederationPolicyRequestFromSDK(v *sdk.GetAccountFederationPolicyRequest) (*GetAccountFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetAccountFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	return &GetAccountFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-	}, nil
 }
 
 type ListAccountFederationPoliciesRequest struct {
@@ -331,39 +129,9 @@ type ListAccountFederationPoliciesRequest struct {
 	PageToken          *string `json:"page_token,omitempty"`
 }
 
-func ListAccountFederationPoliciesRequestFromSDK(v *sdk.ListAccountFederationPoliciesRequest) (*ListAccountFederationPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountFederationPoliciesRequest.ServicePrincipalId", err)
-	}
-	return &ListAccountFederationPoliciesRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PageSize:           v.PageSize,
-		PageToken:          v.PageToken,
-	}, nil
-}
-
 type ListFederationPoliciesResponse struct {
 	Policies      []FederationPolicy `json:"policies,omitempty"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
-}
-
-func ListFederationPoliciesResponseToSDK(w *ListFederationPoliciesResponse) (*sdk.ListFederationPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policiesPublicValue, err := convertSlice(w.Policies, FederationPolicyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
-	}
-	return &sdk.ListFederationPoliciesResponse{
-		Policies:      policiesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListServicePrincipalFederationPoliciesRequest struct {
@@ -373,22 +141,6 @@ type ListServicePrincipalFederationPoliciesRequest struct {
 	ServicePrincipalId *int64  `json:"service_principal_id,omitempty"`
 	PageSize           *int    `json:"page_size,omitempty"`
 	PageToken          *string `json:"page_token,omitempty"`
-}
-
-func ListServicePrincipalFederationPoliciesRequestFromSDK(v *sdk.ListServicePrincipalFederationPoliciesRequest) (*ListServicePrincipalFederationPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalFederationPoliciesRequest.ServicePrincipalId", err)
-	}
-	return &ListServicePrincipalFederationPoliciesRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PageSize:           v.PageSize,
-		PageToken:          v.PageToken,
-	}, nil
 }
 
 type ListServicePrincipalSecretsRequest struct {
@@ -408,37 +160,11 @@ type ListServicePrincipalSecretsRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListServicePrincipalSecretsRequestFromSDK(v *sdk.ListServicePrincipalSecretsRequest) (*ListServicePrincipalSecretsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListServicePrincipalSecretsRequest{
-		AccountId:        v.AccountId,
-		ServicePrincipal: v.ServicePrincipal,
-		PageToken:        v.PageToken,
-		PageSize:         v.PageSize,
-	}, nil
-}
-
 type ListServicePrincipalSecretsResponse struct {
 	// List of the secrets
 	Secrets []ServicePrincipalSecret `json:"secrets,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListServicePrincipalSecretsResponseToSDK(w *ListServicePrincipalSecretsResponse) (*sdk.ListServicePrincipalSecretsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	secretsPublicValue, err := convertSlice(w.Secrets, ServicePrincipalSecretToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalSecretsResponse.Secrets", err)
-	}
-	return &sdk.ListServicePrincipalSecretsResponse{
-		Secrets:       secretsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Specifies the policy to use for validating OIDC claims in your federated
@@ -476,34 +202,6 @@ type OidcFederationPolicy struct {
 	JwksJson *string `json:"jwks_json,omitempty"`
 }
 
-func OidcFederationPolicyFromSDK(v *sdk.OidcFederationPolicy) (*OidcFederationPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OidcFederationPolicy{
-		Issuer:       v.Issuer,
-		Subject:      v.Subject,
-		Audiences:    v.Audiences,
-		SubjectClaim: v.SubjectClaim,
-		JwksUri:      v.JwksUri,
-		JwksJson:     v.JwksJson,
-	}, nil
-}
-
-func OidcFederationPolicyToSDK(w *OidcFederationPolicy) (*sdk.OidcFederationPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OidcFederationPolicy{
-		Issuer:       w.Issuer,
-		Subject:      w.Subject,
-		Audiences:    w.Audiences,
-		SubjectClaim: w.SubjectClaim,
-		JwksUri:      w.JwksUri,
-		JwksJson:     w.JwksJson,
-	}, nil
-}
-
 type ServicePrincipalSecret struct {
 	// ID of the secret
 	Id *string `json:"id,omitempty"`
@@ -524,22 +222,6 @@ type ServicePrincipalSecret struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-func ServicePrincipalSecretToSDK(w *ServicePrincipalSecret) (*sdk.ServicePrincipalSecret, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ServicePrincipalSecret{
-		Id:         w.Id,
-		Secret:     w.Secret,
-		SecretHash: w.SecretHash,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Status:     w.Status,
-		ExpireTime: w.ExpireTime,
-		Scopes:     w.Scopes,
-	}, nil
-}
-
 type UpdateAccountFederationPolicyRequest struct {
 	// The account id for the federation policy.
 	AccountId *string `json:"account_id,omitempty"`
@@ -555,27 +237,6 @@ type UpdateAccountFederationPolicyRequest struct {
 	// in the update request will overwrite the corresponding fields in the existing
 	// policy. Example value: 'description,oidc_policy.audiences'.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateAccountFederationPolicyRequestFromSDK(v *sdk.UpdateAccountFederationPolicyRequest) (*UpdateAccountFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	policyWireValue, err := FederationPolicyFromSDK(v.Policy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountFederationPolicyRequest.Policy", err)
-	}
-	return &UpdateAccountFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-		Policy:             policyWireValue,
-		UpdateMask:         fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateServicePrincipalFederationPolicyRequest struct {
@@ -595,25 +256,545 @@ type UpdateServicePrincipalFederationPolicyRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateAccountFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccountFederationPolicyRequestToSDK(w *CreateAccountFederationPolicyRequest) (*sdk.CreateAccountFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	conv1, err := FederationPolicyToSDK(w.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv1
+	return out, nil
+}
+
+// CreateAccountFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccountFederationPolicyRequestFromSDK(v *sdk.CreateAccountFederationPolicyRequest) (*CreateAccountFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	conv2, err := FederationPolicyFromSDK(v.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv2
+	return out, nil
+}
+
+// CreateServicePrincipalFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreateServicePrincipalFederationPolicyRequestToSDK(w *CreateServicePrincipalFederationPolicyRequest) (*sdk.CreateServicePrincipalFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateServicePrincipalFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	conv3, err := FederationPolicyToSDK(w.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv3
+	return out, nil
+}
+
+// CreateServicePrincipalFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateServicePrincipalFederationPolicyRequestFromSDK(v *sdk.CreateServicePrincipalFederationPolicyRequest) (*CreateServicePrincipalFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateServicePrincipalFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	conv4, err := FederationPolicyFromSDK(v.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv4
+	return out, nil
+}
+
+// CreateServicePrincipalSecretRequestToSDK converts the mirror to the sdk-go type.
+func CreateServicePrincipalSecretRequestToSDK(w *CreateServicePrincipalSecretRequest) (*sdk.CreateServicePrincipalSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateServicePrincipalSecretRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipal = w.ServicePrincipal
+	out.Lifetime = w.Lifetime
+	out.Scopes = w.Scopes
+	return out, nil
+}
+
+// CreateServicePrincipalSecretRequestFromSDK converts the sdk-go type to the mirror.
+func CreateServicePrincipalSecretRequestFromSDK(v *sdk.CreateServicePrincipalSecretRequest) (*CreateServicePrincipalSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateServicePrincipalSecretRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipal = v.ServicePrincipal
+	out.Lifetime = v.Lifetime
+	out.Scopes = v.Scopes
+	return out, nil
+}
+
+// CreateServicePrincipalSecretResponseToSDK converts the mirror to the sdk-go type.
+func CreateServicePrincipalSecretResponseToSDK(w *CreateServicePrincipalSecretResponse) (*sdk.CreateServicePrincipalSecretResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateServicePrincipalSecretResponse{}
+	out.Id = w.Id
+	out.Secret = w.Secret
+	out.SecretHash = w.SecretHash
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.Status = w.Status
+	out.ExpireTime = w.ExpireTime
+	out.Scopes = w.Scopes
+	return out, nil
+}
+
+// CreateServicePrincipalSecretResponseFromSDK converts the sdk-go type to the mirror.
+func CreateServicePrincipalSecretResponseFromSDK(v *sdk.CreateServicePrincipalSecretResponse) (*CreateServicePrincipalSecretResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateServicePrincipalSecretResponse{}
+	out.Id = v.Id
+	out.Secret = v.Secret
+	out.SecretHash = v.SecretHash
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.Status = v.Status
+	out.ExpireTime = v.ExpireTime
+	out.Scopes = v.Scopes
+	return out, nil
+}
+
+// DeleteAccountFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func DeleteAccountFederationPolicyRequestToSDK(w *DeleteAccountFederationPolicyRequest) (*sdk.DeleteAccountFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteAccountFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// DeleteAccountFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteAccountFederationPolicyRequestFromSDK(v *sdk.DeleteAccountFederationPolicyRequest) (*DeleteAccountFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteAccountFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// DeleteServicePrincipalSecretRequestToSDK converts the mirror to the sdk-go type.
+func DeleteServicePrincipalSecretRequestToSDK(w *DeleteServicePrincipalSecretRequest) (*sdk.DeleteServicePrincipalSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteServicePrincipalSecretRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipal = w.ServicePrincipal
+	out.SecretId = w.SecretId
+	return out, nil
+}
+
+// DeleteServicePrincipalSecretRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteServicePrincipalSecretRequestFromSDK(v *sdk.DeleteServicePrincipalSecretRequest) (*DeleteServicePrincipalSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteServicePrincipalSecretRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipal = v.ServicePrincipal
+	out.SecretId = v.SecretId
+	return out, nil
+}
+
+// FederationPolicyToSDK converts the mirror to the sdk-go type.
+func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FederationPolicy{}
+	out.Name = w.Name
+	out.Description = w.Description
+	{
+		members := 0
+		if w.OidcPolicy != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
+		}
+	}
+	switch {
+	case w.OidcPolicy != nil:
+		conv5, err := OidcFederationPolicyToSDK(w.OidcPolicy)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy", err)
+		}
+		out.Policy = &sdk.FederationPolicy_Policy_OidcPolicy{OidcPolicy: *conv5}
+	}
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.Uid = w.Uid
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// FederationPolicyFromSDK converts the sdk-go type to the mirror.
+func FederationPolicyFromSDK(v *sdk.FederationPolicy) (*FederationPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FederationPolicy{}
+	out.Name = v.Name
+	out.Description = v.Description
+	switch value := v.Policy.(type) {
+	case *sdk.FederationPolicy_Policy_OidcPolicy:
+		if value != nil {
+			conv6, err := OidcFederationPolicyFromSDK(&value.OidcPolicy)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy", err)
+			}
+			out.OidcPolicy = conv6
+		}
+	}
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.Uid = v.Uid
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// GetAccountFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func GetAccountFederationPolicyRequestToSDK(w *GetAccountFederationPolicyRequest) (*sdk.GetAccountFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetAccountFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// GetAccountFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func GetAccountFederationPolicyRequestFromSDK(v *sdk.GetAccountFederationPolicyRequest) (*GetAccountFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetAccountFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// ListAccountFederationPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountFederationPoliciesRequestToSDK(w *ListAccountFederationPoliciesRequest) (*sdk.ListAccountFederationPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountFederationPoliciesRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListAccountFederationPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountFederationPoliciesRequestFromSDK(v *sdk.ListAccountFederationPoliciesRequest) (*ListAccountFederationPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountFederationPoliciesRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListFederationPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListFederationPoliciesResponseToSDK(w *ListFederationPoliciesResponse) (*sdk.ListFederationPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFederationPoliciesResponse{}
+	conv7, err := convertSlice(w.Policies, FederationPolicyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv7
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFederationPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListFederationPoliciesResponseFromSDK(v *sdk.ListFederationPoliciesResponse) (*ListFederationPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFederationPoliciesResponse{}
+	conv8, err := convertSlice(v.Policies, FederationPolicyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv8
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListServicePrincipalFederationPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListServicePrincipalFederationPoliciesRequestToSDK(w *ListServicePrincipalFederationPoliciesRequest) (*sdk.ListServicePrincipalFederationPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListServicePrincipalFederationPoliciesRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListServicePrincipalFederationPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListServicePrincipalFederationPoliciesRequestFromSDK(v *sdk.ListServicePrincipalFederationPoliciesRequest) (*ListServicePrincipalFederationPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListServicePrincipalFederationPoliciesRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListServicePrincipalSecretsRequestToSDK converts the mirror to the sdk-go type.
+func ListServicePrincipalSecretsRequestToSDK(w *ListServicePrincipalSecretsRequest) (*sdk.ListServicePrincipalSecretsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListServicePrincipalSecretsRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipal = w.ServicePrincipal
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListServicePrincipalSecretsRequestFromSDK converts the sdk-go type to the mirror.
+func ListServicePrincipalSecretsRequestFromSDK(v *sdk.ListServicePrincipalSecretsRequest) (*ListServicePrincipalSecretsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListServicePrincipalSecretsRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipal = v.ServicePrincipal
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListServicePrincipalSecretsResponseToSDK converts the mirror to the sdk-go type.
+func ListServicePrincipalSecretsResponseToSDK(w *ListServicePrincipalSecretsResponse) (*sdk.ListServicePrincipalSecretsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListServicePrincipalSecretsResponse{}
+	conv9, err := convertSlice(w.Secrets, ServicePrincipalSecretToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListServicePrincipalSecretsResponseFromSDK converts the sdk-go type to the mirror.
+func ListServicePrincipalSecretsResponseFromSDK(v *sdk.ListServicePrincipalSecretsResponse) (*ListServicePrincipalSecretsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListServicePrincipalSecretsResponse{}
+	conv10, err := convertSlice(v.Secrets, ServicePrincipalSecretFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OidcFederationPolicyToSDK converts the mirror to the sdk-go type.
+func OidcFederationPolicyToSDK(w *OidcFederationPolicy) (*sdk.OidcFederationPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OidcFederationPolicy{}
+	out.Issuer = w.Issuer
+	out.Subject = w.Subject
+	out.Audiences = w.Audiences
+	out.SubjectClaim = w.SubjectClaim
+	out.JwksUri = w.JwksUri
+	out.JwksJson = w.JwksJson
+	return out, nil
+}
+
+// OidcFederationPolicyFromSDK converts the sdk-go type to the mirror.
+func OidcFederationPolicyFromSDK(v *sdk.OidcFederationPolicy) (*OidcFederationPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OidcFederationPolicy{}
+	out.Issuer = v.Issuer
+	out.Subject = v.Subject
+	out.Audiences = v.Audiences
+	out.SubjectClaim = v.SubjectClaim
+	out.JwksUri = v.JwksUri
+	out.JwksJson = v.JwksJson
+	return out, nil
+}
+
+// ServicePrincipalSecretToSDK converts the mirror to the sdk-go type.
+func ServicePrincipalSecretToSDK(w *ServicePrincipalSecret) (*sdk.ServicePrincipalSecret, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServicePrincipalSecret{}
+	out.Id = w.Id
+	out.Secret = w.Secret
+	out.SecretHash = w.SecretHash
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.Status = w.Status
+	out.ExpireTime = w.ExpireTime
+	out.Scopes = w.Scopes
+	return out, nil
+}
+
+// ServicePrincipalSecretFromSDK converts the sdk-go type to the mirror.
+func ServicePrincipalSecretFromSDK(v *sdk.ServicePrincipalSecret) (*ServicePrincipalSecret, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServicePrincipalSecret{}
+	out.Id = v.Id
+	out.Secret = v.Secret
+	out.SecretHash = v.SecretHash
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.Status = v.Status
+	out.ExpireTime = v.ExpireTime
+	out.Scopes = v.Scopes
+	return out, nil
+}
+
+// UpdateAccountFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccountFederationPolicyRequestToSDK(w *UpdateAccountFederationPolicyRequest) (*sdk.UpdateAccountFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	conv11, err := FederationPolicyToSDK(w.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv11
+	mask12, err := fieldMaskFromString[sdk.FederationPolicy](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountFederationPolicyRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask12
+	return out, nil
+}
+
+// UpdateAccountFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountFederationPolicyRequestFromSDK(v *sdk.UpdateAccountFederationPolicyRequest) (*UpdateAccountFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	conv13, err := FederationPolicyFromSDK(v.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv13
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateServicePrincipalFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func UpdateServicePrincipalFederationPolicyRequestToSDK(w *UpdateServicePrincipalFederationPolicyRequest) (*sdk.UpdateServicePrincipalFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateServicePrincipalFederationPolicyRequest{}
+	out.AccountId = w.AccountId
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.PolicyId = w.PolicyId
+	conv14, err := FederationPolicyToSDK(w.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv14
+	mask15, err := fieldMaskFromString[sdk.FederationPolicy](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalFederationPolicyRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask15
+	return out, nil
+}
+
+// UpdateServicePrincipalFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateServicePrincipalFederationPolicyRequestFromSDK(v *sdk.UpdateServicePrincipalFederationPolicyRequest) (*UpdateServicePrincipalFederationPolicyRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalFederationPolicyRequest.ServicePrincipalId", err)
-	}
-	policyWireValue, err := FederationPolicyFromSDK(v.Policy)
+	out := &UpdateServicePrincipalFederationPolicyRequest{}
+	out.AccountId = v.AccountId
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.PolicyId = v.PolicyId
+	conv16, err := FederationPolicyFromSDK(v.Policy)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalFederationPolicyRequest.Policy", err)
 	}
-	return &UpdateServicePrincipalFederationPolicyRequest{
-		AccountId:          v.AccountId,
-		ServicePrincipalId: servicePrincipalIdWireValue,
-		PolicyId:           v.PolicyId,
-		Policy:             policyWireValue,
-		UpdateMask:         fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Policy = conv16
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -629,4 +810,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

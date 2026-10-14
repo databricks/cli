@@ -6,38 +6,13 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/supervisoragents/v1"
+	strings "strings"
 )
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 // <Databricks> app. Supported app: custom mcp, custom agent..
 type App struct {
 	// App name
 	Name *string `json:"name,omitempty"`
-}
-
-func AppFromSDK(v *sdk.App) (*App, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &App{
-		Name: v.Name,
-	}, nil
-}
-
-func AppToSDK(w *App) (*sdk.App, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.App{
-		Name: w.Name,
-	}, nil
 }
 
 // Create an example..
@@ -49,36 +24,9 @@ type CreateExampleRequest struct {
 	Example *Example `json:"example,omitempty"`
 }
 
-func CreateExampleRequestFromSDK(v *sdk.CreateExampleRequest) (*CreateExampleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exampleWireValue, err := ExampleFromSDK(v.Example)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
-	}
-	return &CreateExampleRequest{
-		Parent:  v.Parent,
-		Example: exampleWireValue,
-	}, nil
-}
-
 type CreateSupervisorAgentRequest struct {
 	// The Supervisor Agent to create.
 	SupervisorAgent *SupervisorAgent `json:"supervisor_agent,omitempty"`
-}
-
-func CreateSupervisorAgentRequestFromSDK(v *sdk.CreateSupervisorAgentRequest) (*CreateSupervisorAgentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	supervisorAgentWireValue, err := SupervisorAgentFromSDK(v.SupervisorAgent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSupervisorAgentRequest.SupervisorAgent", err)
-	}
-	return &CreateSupervisorAgentRequest{
-		SupervisorAgent: supervisorAgentWireValue,
-	}, nil
 }
 
 type CreateToolRequest struct {
@@ -89,21 +37,6 @@ type CreateToolRequest struct {
 	// The ID to use for the tool, which will become the final component of the
 	// tool's resource name.
 	ToolId *string `json:"tool_id,omitempty"`
-}
-
-func CreateToolRequestFromSDK(v *sdk.CreateToolRequest) (*CreateToolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	toolWireValue, err := ToolFromSDK(v.Tool)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateToolRequest.Tool", err)
-	}
-	return &CreateToolRequest{
-		Parent: v.Parent,
-		Tool:   toolWireValue,
-		ToolId: v.ToolId,
-	}, nil
 }
 
 // An example associated with a Supervisor Agent. Contains a question and
@@ -120,52 +53,10 @@ type Example struct {
 	ExampleId *string `json:"example_id,omitempty"`
 }
 
-func ExampleFromSDK(v *sdk.Example) (*Example, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Example{
-		Name:       v.Name,
-		Question:   v.Question,
-		Guidelines: v.Guidelines,
-		ExampleId:  v.ExampleId,
-	}, nil
-}
-
-func ExampleToSDK(w *Example) (*sdk.Example, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Example{
-		Name:       w.Name,
-		Question:   w.Question,
-		Guidelines: w.Guidelines,
-		ExampleId:  w.ExampleId,
-	}, nil
-}
-
 type GenieSpace struct {
 	// Deprecated: use space_id instead. Still REQUIRED for backward compatibility
 	// until a future API version removes it.
 	Id *string `json:"id,omitempty"`
-}
-
-func GenieSpaceFromSDK(v *sdk.GenieSpace) (*GenieSpace, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieSpace{
-		Id: v.Id,
-	}, nil
-}
-
-func GenieSpaceToSDK(w *GenieSpace) (*sdk.GenieSpace, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieSpace{
-		Id: w.Id,
-	}, nil
 }
 
 type KnowledgeAssistant struct {
@@ -173,26 +64,6 @@ type KnowledgeAssistant struct {
 	ServingEndpointName *string `json:"serving_endpoint_name,omitempty"`
 	// The ID of the knowledge assistant.
 	KnowledgeAssistantId *string `json:"knowledge_assistant_id,omitempty"`
-}
-
-func KnowledgeAssistantFromSDK(v *sdk.KnowledgeAssistant) (*KnowledgeAssistant, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &KnowledgeAssistant{
-		ServingEndpointName:  v.ServingEndpointName,
-		KnowledgeAssistantId: v.KnowledgeAssistantId,
-	}, nil
-}
-
-func KnowledgeAssistantToSDK(w *KnowledgeAssistant) (*sdk.KnowledgeAssistant, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.KnowledgeAssistant{
-		ServingEndpointName:  w.ServingEndpointName,
-		KnowledgeAssistantId: w.KnowledgeAssistantId,
-	}, nil
 }
 
 // List examples..
@@ -209,35 +80,10 @@ type ListExamplesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListExamplesRequestFromSDK(v *sdk.ListExamplesRequest) (*ListExamplesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExamplesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // A list of Supervisor Agent examples..
 type ListExamplesResponse struct {
 	Examples      []Example `json:"examples,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-func ListExamplesResponseToSDK(w *ListExamplesResponse) (*sdk.ListExamplesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	examplesPublicValue, err := convertSlice(w.Examples, ExampleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
-	}
-	return &sdk.ListExamplesResponse{
-		Examples:      examplesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSupervisorAgentsRequest struct {
@@ -251,35 +97,11 @@ type ListSupervisorAgentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSupervisorAgentsRequestFromSDK(v *sdk.ListSupervisorAgentsRequest) (*ListSupervisorAgentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSupervisorAgentsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListSupervisorAgentsResponse struct {
 	SupervisorAgents []SupervisorAgent `json:"supervisor_agents,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSupervisorAgentsResponseToSDK(w *ListSupervisorAgentsResponse) (*sdk.ListSupervisorAgentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	supervisorAgentsPublicValue, err := convertSlice(w.SupervisorAgents, SupervisorAgentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSupervisorAgentsResponse.SupervisorAgents", err)
-	}
-	return &sdk.ListSupervisorAgentsResponse{
-		SupervisorAgents: supervisorAgentsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ListToolsRequest struct {
@@ -289,34 +111,9 @@ type ListToolsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListToolsRequestFromSDK(v *sdk.ListToolsRequest) (*ListToolsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListToolsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListToolsResponse struct {
 	Tools         []Tool  `json:"tools,omitempty"`
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListToolsResponseToSDK(w *ListToolsResponse) (*sdk.ListToolsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	toolsPublicValue, err := convertSlice(w.Tools, ToolToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListToolsResponse.Tools", err)
-	}
-	return &sdk.ListToolsResponse{
-		Tools:         toolsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SupervisorAgent struct {
@@ -341,42 +138,6 @@ type SupervisorAgent struct {
 	EndpointName *string `json:"endpoint_name,omitempty"`
 	// The MLflow experiment ID.
 	ExperimentId *string `json:"experiment_id,omitempty"`
-}
-
-func SupervisorAgentFromSDK(v *sdk.SupervisorAgent) (*SupervisorAgent, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SupervisorAgent{
-		Name:              v.Name,
-		DisplayName:       v.DisplayName,
-		Description:       v.Description,
-		Instructions:      v.Instructions,
-		Id:                v.Id,
-		SupervisorAgentId: v.SupervisorAgentId,
-		Creator:           v.Creator,
-		CreateTime:        v.CreateTime,
-		EndpointName:      v.EndpointName,
-		ExperimentId:      v.ExperimentId,
-	}, nil
-}
-
-func SupervisorAgentToSDK(w *SupervisorAgent) (*sdk.SupervisorAgent, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SupervisorAgent{
-		Name:              w.Name,
-		DisplayName:       w.DisplayName,
-		Description:       w.Description,
-		Instructions:      w.Instructions,
-		Id:                w.Id,
-		SupervisorAgentId: w.SupervisorAgentId,
-		Creator:           w.Creator,
-		CreateTime:        w.CreateTime,
-		EndpointName:      w.EndpointName,
-		ExperimentId:      w.ExperimentId,
-	}, nil
 }
 
 type Tool struct {
@@ -405,203 +166,14 @@ type Tool struct {
 	ToolId *string `json:"tool_id,omitempty"`
 }
 
-func ToolFromSDK(v *sdk.Tool) (*Tool, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var specGenieSpaceWire *GenieSpace
-	var specKnowledgeAssistantWire *KnowledgeAssistant
-	var specUcFunctionWire *UcFunction
-	var specAppWire *App
-	var specVolumeWire *Volume
-	var specUcConnectionWire *UcConnection
-	switch value := v.Spec.(type) {
-	case nil:
-	case *sdk.Tool_Spec_GenieSpace:
-		if value != nil {
-			specGenieSpaceConverted, err := GenieSpaceFromSDK(&value.GenieSpace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.GenieSpace", err)
-			}
-			specGenieSpaceWire = specGenieSpaceConverted
-		}
-	case *sdk.Tool_Spec_KnowledgeAssistant:
-		if value != nil {
-			specKnowledgeAssistantConverted, err := KnowledgeAssistantFromSDK(&value.KnowledgeAssistant)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.KnowledgeAssistant", err)
-			}
-			specKnowledgeAssistantWire = specKnowledgeAssistantConverted
-		}
-	case *sdk.Tool_Spec_UcFunction:
-		if value != nil {
-			specUcFunctionConverted, err := UcFunctionFromSDK(&value.UcFunction)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.UcFunction", err)
-			}
-			specUcFunctionWire = specUcFunctionConverted
-		}
-	case *sdk.Tool_Spec_App:
-		if value != nil {
-			specAppConverted, err := AppFromSDK(&value.App)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.App", err)
-			}
-			specAppWire = specAppConverted
-		}
-	case *sdk.Tool_Spec_Volume:
-		if value != nil {
-			specVolumeConverted, err := VolumeFromSDK(&value.Volume)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.Volume", err)
-			}
-			specVolumeWire = specVolumeConverted
-		}
-	case *sdk.Tool_Spec_UcConnection:
-		if value != nil {
-			specUcConnectionConverted, err := UcConnectionFromSDK(&value.UcConnection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Tool.Spec.UcConnection", err)
-			}
-			specUcConnectionWire = specUcConnectionConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Tool.Spec", value)
-	}
-	return &Tool{
-		Name:               v.Name,
-		Id:                 v.Id,
-		ToolType:           v.ToolType,
-		GenieSpace:         specGenieSpaceWire,
-		KnowledgeAssistant: specKnowledgeAssistantWire,
-		UcFunction:         specUcFunctionWire,
-		App:                specAppWire,
-		Volume:             specVolumeWire,
-		UcConnection:       specUcConnectionWire,
-		Description:        v.Description,
-		ToolId:             v.ToolId,
-	}, nil
-}
-
-func ToolToSDK(w *Tool) (*sdk.Tool, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specMembers := 0
-	if w.GenieSpace != nil {
-		specMembers++
-	}
-	if w.KnowledgeAssistant != nil {
-		specMembers++
-	}
-	if w.UcFunction != nil {
-		specMembers++
-	}
-	if w.App != nil {
-		specMembers++
-	}
-	if w.Volume != nil {
-		specMembers++
-	}
-	if w.UcConnection != nil {
-		specMembers++
-	}
-	if specMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Tool.Spec")
-	}
-	specSelection := (&sdk.Tool{}).Spec
-	switch {
-	case w.GenieSpace != nil:
-		specGenieSpaceConverted, err := GenieSpaceToSDK(w.GenieSpace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.GenieSpace", err)
-		}
-		specSelection = &sdk.Tool_Spec_GenieSpace{GenieSpace: *specGenieSpaceConverted}
-	case w.KnowledgeAssistant != nil:
-		specKnowledgeAssistantConverted, err := KnowledgeAssistantToSDK(w.KnowledgeAssistant)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.KnowledgeAssistant", err)
-		}
-		specSelection = &sdk.Tool_Spec_KnowledgeAssistant{KnowledgeAssistant: *specKnowledgeAssistantConverted}
-	case w.UcFunction != nil:
-		specUcFunctionConverted, err := UcFunctionToSDK(w.UcFunction)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.UcFunction", err)
-		}
-		specSelection = &sdk.Tool_Spec_UcFunction{UcFunction: *specUcFunctionConverted}
-	case w.App != nil:
-		specAppConverted, err := AppToSDK(w.App)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.App", err)
-		}
-		specSelection = &sdk.Tool_Spec_App{App: *specAppConverted}
-	case w.Volume != nil:
-		specVolumeConverted, err := VolumeToSDK(w.Volume)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.Volume", err)
-		}
-		specSelection = &sdk.Tool_Spec_Volume{Volume: *specVolumeConverted}
-	case w.UcConnection != nil:
-		specUcConnectionConverted, err := UcConnectionToSDK(w.UcConnection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Tool.Spec.UcConnection", err)
-		}
-		specSelection = &sdk.Tool_Spec_UcConnection{UcConnection: *specUcConnectionConverted}
-	}
-	return &sdk.Tool{
-		Name:        w.Name,
-		Id:          w.Id,
-		ToolType:    w.ToolType,
-		Description: w.Description,
-		ToolId:      w.ToolId,
-		Spec:        specSelection,
-	}, nil
-}
-
 // Databricks UC connection. Supported connection: external mcp server..
 type UcConnection struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func UcConnectionFromSDK(v *sdk.UcConnection) (*UcConnection, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UcConnection{
-		Name: v.Name,
-	}, nil
-}
-
-func UcConnectionToSDK(w *UcConnection) (*sdk.UcConnection, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UcConnection{
-		Name: w.Name,
-	}, nil
-}
-
 type UcFunction struct {
 	// Full uc function name
 	Name *string `json:"name,omitempty"`
-}
-
-func UcFunctionFromSDK(v *sdk.UcFunction) (*UcFunction, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UcFunction{
-		Name: v.Name,
-	}, nil
-}
-
-func UcFunctionToSDK(w *UcFunction) (*sdk.UcFunction, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UcFunction{
-		Name: w.Name,
-	}, nil
 }
 
 // Update an example..
@@ -615,40 +187,11 @@ type UpdateExampleRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateExampleRequestFromSDK(v *sdk.UpdateExampleRequest) (*UpdateExampleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exampleWireValue, err := ExampleFromSDK(v.Example)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
-	}
-	return &UpdateExampleRequest{
-		Name:       v.Name,
-		Example:    exampleWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateSupervisorAgentRequest struct {
 	// The SupervisorAgent to update.
 	SupervisorAgent *SupervisorAgent `json:"supervisor_agent,omitempty"`
 	// Field mask for fields to be updated.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateSupervisorAgentRequestFromSDK(v *sdk.UpdateSupervisorAgentRequest) (*UpdateSupervisorAgentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	supervisorAgentWireValue, err := SupervisorAgentFromSDK(v.SupervisorAgent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSupervisorAgentRequest.SupervisorAgent", err)
-	}
-	return &UpdateSupervisorAgentRequest{
-		SupervisorAgent: supervisorAgentWireValue,
-		UpdateMask:      fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateToolRequest struct {
@@ -658,41 +201,689 @@ type UpdateToolRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateToolRequestFromSDK(v *sdk.UpdateToolRequest) (*UpdateToolRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	toolWireValue, err := ToolFromSDK(v.Tool)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateToolRequest.Tool", err)
-	}
-	return &UpdateToolRequest{
-		Tool:       toolWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type Volume struct {
 	// Full uc volume name
 	Name *string `json:"name,omitempty"`
 }
 
-func VolumeFromSDK(v *sdk.Volume) (*Volume, error) {
+// AppToSDK converts the mirror to the sdk-go type.
+func AppToSDK(w *App) (*sdk.App, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.App{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// AppFromSDK converts the sdk-go type to the mirror.
+func AppFromSDK(v *sdk.App) (*App, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &Volume{
-		Name: v.Name,
-	}, nil
+	out := &App{}
+	out.Name = v.Name
+	return out, nil
 }
 
+// CreateExampleRequestToSDK converts the mirror to the sdk-go type.
+func CreateExampleRequestToSDK(w *CreateExampleRequest) (*sdk.CreateExampleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExampleRequest{}
+	out.Parent = w.Parent
+	conv1, err := ExampleToSDK(w.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
+	}
+	out.Example = conv1
+	return out, nil
+}
+
+// CreateExampleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExampleRequestFromSDK(v *sdk.CreateExampleRequest) (*CreateExampleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExampleRequest{}
+	out.Parent = v.Parent
+	conv2, err := ExampleFromSDK(v.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
+	}
+	out.Example = conv2
+	return out, nil
+}
+
+// CreateSupervisorAgentRequestToSDK converts the mirror to the sdk-go type.
+func CreateSupervisorAgentRequestToSDK(w *CreateSupervisorAgentRequest) (*sdk.CreateSupervisorAgentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSupervisorAgentRequest{}
+	conv3, err := SupervisorAgentToSDK(w.SupervisorAgent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSupervisorAgentRequest.SupervisorAgent", err)
+	}
+	out.SupervisorAgent = conv3
+	return out, nil
+}
+
+// CreateSupervisorAgentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSupervisorAgentRequestFromSDK(v *sdk.CreateSupervisorAgentRequest) (*CreateSupervisorAgentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSupervisorAgentRequest{}
+	conv4, err := SupervisorAgentFromSDK(v.SupervisorAgent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSupervisorAgentRequest.SupervisorAgent", err)
+	}
+	out.SupervisorAgent = conv4
+	return out, nil
+}
+
+// CreateToolRequestToSDK converts the mirror to the sdk-go type.
+func CreateToolRequestToSDK(w *CreateToolRequest) (*sdk.CreateToolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateToolRequest{}
+	out.Parent = w.Parent
+	conv5, err := ToolToSDK(w.Tool)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateToolRequest.Tool", err)
+	}
+	out.Tool = conv5
+	out.ToolId = w.ToolId
+	return out, nil
+}
+
+// CreateToolRequestFromSDK converts the sdk-go type to the mirror.
+func CreateToolRequestFromSDK(v *sdk.CreateToolRequest) (*CreateToolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateToolRequest{}
+	out.Parent = v.Parent
+	conv6, err := ToolFromSDK(v.Tool)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateToolRequest.Tool", err)
+	}
+	out.Tool = conv6
+	out.ToolId = v.ToolId
+	return out, nil
+}
+
+// ExampleToSDK converts the mirror to the sdk-go type.
+func ExampleToSDK(w *Example) (*sdk.Example, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Example{}
+	out.Name = w.Name
+	out.Question = w.Question
+	out.Guidelines = w.Guidelines
+	out.ExampleId = w.ExampleId
+	return out, nil
+}
+
+// ExampleFromSDK converts the sdk-go type to the mirror.
+func ExampleFromSDK(v *sdk.Example) (*Example, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Example{}
+	out.Name = v.Name
+	out.Question = v.Question
+	out.Guidelines = v.Guidelines
+	out.ExampleId = v.ExampleId
+	return out, nil
+}
+
+// GenieSpaceToSDK converts the mirror to the sdk-go type.
+func GenieSpaceToSDK(w *GenieSpace) (*sdk.GenieSpace, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieSpace{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// GenieSpaceFromSDK converts the sdk-go type to the mirror.
+func GenieSpaceFromSDK(v *sdk.GenieSpace) (*GenieSpace, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieSpace{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// KnowledgeAssistantToSDK converts the mirror to the sdk-go type.
+func KnowledgeAssistantToSDK(w *KnowledgeAssistant) (*sdk.KnowledgeAssistant, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KnowledgeAssistant{}
+	out.ServingEndpointName = w.ServingEndpointName
+	out.KnowledgeAssistantId = w.KnowledgeAssistantId
+	return out, nil
+}
+
+// KnowledgeAssistantFromSDK converts the sdk-go type to the mirror.
+func KnowledgeAssistantFromSDK(v *sdk.KnowledgeAssistant) (*KnowledgeAssistant, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KnowledgeAssistant{}
+	out.ServingEndpointName = v.ServingEndpointName
+	out.KnowledgeAssistantId = v.KnowledgeAssistantId
+	return out, nil
+}
+
+// ListExamplesRequestToSDK converts the mirror to the sdk-go type.
+func ListExamplesRequestToSDK(w *ListExamplesRequest) (*sdk.ListExamplesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExamplesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListExamplesRequestFromSDK converts the sdk-go type to the mirror.
+func ListExamplesRequestFromSDK(v *sdk.ListExamplesRequest) (*ListExamplesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExamplesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListExamplesResponseToSDK converts the mirror to the sdk-go type.
+func ListExamplesResponseToSDK(w *ListExamplesResponse) (*sdk.ListExamplesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExamplesResponse{}
+	conv7, err := convertSlice(w.Examples, ExampleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
+	}
+	out.Examples = conv7
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExamplesResponseFromSDK converts the sdk-go type to the mirror.
+func ListExamplesResponseFromSDK(v *sdk.ListExamplesResponse) (*ListExamplesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExamplesResponse{}
+	conv8, err := convertSlice(v.Examples, ExampleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
+	}
+	out.Examples = conv8
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSupervisorAgentsRequestToSDK converts the mirror to the sdk-go type.
+func ListSupervisorAgentsRequestToSDK(w *ListSupervisorAgentsRequest) (*sdk.ListSupervisorAgentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSupervisorAgentsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSupervisorAgentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSupervisorAgentsRequestFromSDK(v *sdk.ListSupervisorAgentsRequest) (*ListSupervisorAgentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSupervisorAgentsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSupervisorAgentsResponseToSDK converts the mirror to the sdk-go type.
+func ListSupervisorAgentsResponseToSDK(w *ListSupervisorAgentsResponse) (*sdk.ListSupervisorAgentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSupervisorAgentsResponse{}
+	conv9, err := convertSlice(w.SupervisorAgents, SupervisorAgentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSupervisorAgentsResponse.SupervisorAgents", err)
+	}
+	out.SupervisorAgents = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSupervisorAgentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSupervisorAgentsResponseFromSDK(v *sdk.ListSupervisorAgentsResponse) (*ListSupervisorAgentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSupervisorAgentsResponse{}
+	conv10, err := convertSlice(v.SupervisorAgents, SupervisorAgentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSupervisorAgentsResponse.SupervisorAgents", err)
+	}
+	out.SupervisorAgents = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListToolsRequestToSDK converts the mirror to the sdk-go type.
+func ListToolsRequestToSDK(w *ListToolsRequest) (*sdk.ListToolsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListToolsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListToolsRequestFromSDK converts the sdk-go type to the mirror.
+func ListToolsRequestFromSDK(v *sdk.ListToolsRequest) (*ListToolsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListToolsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListToolsResponseToSDK converts the mirror to the sdk-go type.
+func ListToolsResponseToSDK(w *ListToolsResponse) (*sdk.ListToolsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListToolsResponse{}
+	conv11, err := convertSlice(w.Tools, ToolToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListToolsResponse.Tools", err)
+	}
+	out.Tools = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListToolsResponseFromSDK converts the sdk-go type to the mirror.
+func ListToolsResponseFromSDK(v *sdk.ListToolsResponse) (*ListToolsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListToolsResponse{}
+	conv12, err := convertSlice(v.Tools, ToolFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListToolsResponse.Tools", err)
+	}
+	out.Tools = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SupervisorAgentToSDK converts the mirror to the sdk-go type.
+func SupervisorAgentToSDK(w *SupervisorAgent) (*sdk.SupervisorAgent, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SupervisorAgent{}
+	out.Name = w.Name
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.Instructions = w.Instructions
+	out.Id = w.Id
+	out.SupervisorAgentId = w.SupervisorAgentId
+	out.Creator = w.Creator
+	out.CreateTime = w.CreateTime
+	out.EndpointName = w.EndpointName
+	out.ExperimentId = w.ExperimentId
+	return out, nil
+}
+
+// SupervisorAgentFromSDK converts the sdk-go type to the mirror.
+func SupervisorAgentFromSDK(v *sdk.SupervisorAgent) (*SupervisorAgent, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SupervisorAgent{}
+	out.Name = v.Name
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.Instructions = v.Instructions
+	out.Id = v.Id
+	out.SupervisorAgentId = v.SupervisorAgentId
+	out.Creator = v.Creator
+	out.CreateTime = v.CreateTime
+	out.EndpointName = v.EndpointName
+	out.ExperimentId = v.ExperimentId
+	return out, nil
+}
+
+// ToolToSDK converts the mirror to the sdk-go type.
+func ToolToSDK(w *Tool) (*sdk.Tool, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Tool{}
+	out.Name = w.Name
+	out.Id = w.Id
+	out.ToolType = w.ToolType
+	{
+		members := 0
+		if w.GenieSpace != nil {
+			members++
+		}
+		if w.KnowledgeAssistant != nil {
+			members++
+		}
+		if w.UcFunction != nil {
+			members++
+		}
+		if w.App != nil {
+			members++
+		}
+		if w.Volume != nil {
+			members++
+		}
+		if w.UcConnection != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Tool.Spec")
+		}
+	}
+	switch {
+	case w.GenieSpace != nil:
+		conv13, err := GenieSpaceToSDK(w.GenieSpace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_GenieSpace{GenieSpace: *conv13}
+	case w.KnowledgeAssistant != nil:
+		conv14, err := KnowledgeAssistantToSDK(w.KnowledgeAssistant)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_KnowledgeAssistant{KnowledgeAssistant: *conv14}
+	case w.UcFunction != nil:
+		conv15, err := UcFunctionToSDK(w.UcFunction)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_UcFunction{UcFunction: *conv15}
+	case w.App != nil:
+		conv16, err := AppToSDK(w.App)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_App{App: *conv16}
+	case w.Volume != nil:
+		conv17, err := VolumeToSDK(w.Volume)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_Volume{Volume: *conv17}
+	case w.UcConnection != nil:
+		conv18, err := UcConnectionToSDK(w.UcConnection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+		}
+		out.Spec = &sdk.Tool_Spec_UcConnection{UcConnection: *conv18}
+	}
+	out.Description = w.Description
+	out.ToolId = w.ToolId
+	return out, nil
+}
+
+// ToolFromSDK converts the sdk-go type to the mirror.
+func ToolFromSDK(v *sdk.Tool) (*Tool, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Tool{}
+	out.Name = v.Name
+	out.Id = v.Id
+	out.ToolType = v.ToolType
+	switch value := v.Spec.(type) {
+	case *sdk.Tool_Spec_GenieSpace:
+		if value != nil {
+			conv19, err := GenieSpaceFromSDK(&value.GenieSpace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.GenieSpace = conv19
+		}
+	case *sdk.Tool_Spec_KnowledgeAssistant:
+		if value != nil {
+			conv20, err := KnowledgeAssistantFromSDK(&value.KnowledgeAssistant)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.KnowledgeAssistant = conv20
+		}
+	case *sdk.Tool_Spec_UcFunction:
+		if value != nil {
+			conv21, err := UcFunctionFromSDK(&value.UcFunction)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.UcFunction = conv21
+		}
+	case *sdk.Tool_Spec_App:
+		if value != nil {
+			conv22, err := AppFromSDK(&value.App)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.App = conv22
+		}
+	case *sdk.Tool_Spec_Volume:
+		if value != nil {
+			conv23, err := VolumeFromSDK(&value.Volume)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.Volume = conv23
+		}
+	case *sdk.Tool_Spec_UcConnection:
+		if value != nil {
+			conv24, err := UcConnectionFromSDK(&value.UcConnection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Tool.Spec", err)
+			}
+			out.UcConnection = conv24
+		}
+	}
+	out.Description = v.Description
+	out.ToolId = v.ToolId
+	return out, nil
+}
+
+// UcConnectionToSDK converts the mirror to the sdk-go type.
+func UcConnectionToSDK(w *UcConnection) (*sdk.UcConnection, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UcConnection{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// UcConnectionFromSDK converts the sdk-go type to the mirror.
+func UcConnectionFromSDK(v *sdk.UcConnection) (*UcConnection, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UcConnection{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UcFunctionToSDK converts the mirror to the sdk-go type.
+func UcFunctionToSDK(w *UcFunction) (*sdk.UcFunction, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UcFunction{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// UcFunctionFromSDK converts the sdk-go type to the mirror.
+func UcFunctionFromSDK(v *sdk.UcFunction) (*UcFunction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UcFunction{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateExampleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExampleRequestToSDK(w *UpdateExampleRequest) (*sdk.UpdateExampleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExampleRequest{}
+	out.Name = w.Name
+	conv25, err := ExampleToSDK(w.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
+	}
+	out.Example = conv25
+	mask26, err := fieldMaskFromString[sdk.Example](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask26
+	return out, nil
+}
+
+// UpdateExampleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExampleRequestFromSDK(v *sdk.UpdateExampleRequest) (*UpdateExampleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExampleRequest{}
+	out.Name = v.Name
+	conv27, err := ExampleFromSDK(v.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
+	}
+	out.Example = conv27
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateSupervisorAgentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSupervisorAgentRequestToSDK(w *UpdateSupervisorAgentRequest) (*sdk.UpdateSupervisorAgentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSupervisorAgentRequest{}
+	conv28, err := SupervisorAgentToSDK(w.SupervisorAgent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSupervisorAgentRequest.SupervisorAgent", err)
+	}
+	out.SupervisorAgent = conv28
+	mask29, err := fieldMaskFromString[sdk.SupervisorAgent](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSupervisorAgentRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask29
+	return out, nil
+}
+
+// UpdateSupervisorAgentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateSupervisorAgentRequestFromSDK(v *sdk.UpdateSupervisorAgentRequest) (*UpdateSupervisorAgentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateSupervisorAgentRequest{}
+	conv30, err := SupervisorAgentFromSDK(v.SupervisorAgent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSupervisorAgentRequest.SupervisorAgent", err)
+	}
+	out.SupervisorAgent = conv30
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateToolRequestToSDK converts the mirror to the sdk-go type.
+func UpdateToolRequestToSDK(w *UpdateToolRequest) (*sdk.UpdateToolRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateToolRequest{}
+	conv31, err := ToolToSDK(w.Tool)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateToolRequest.Tool", err)
+	}
+	out.Tool = conv31
+	mask32, err := fieldMaskFromString[sdk.Tool](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateToolRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask32
+	return out, nil
+}
+
+// UpdateToolRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateToolRequestFromSDK(v *sdk.UpdateToolRequest) (*UpdateToolRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateToolRequest{}
+	conv33, err := ToolFromSDK(v.Tool)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateToolRequest.Tool", err)
+	}
+	out.Tool = conv33
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// VolumeToSDK converts the mirror to the sdk-go type.
 func VolumeToSDK(w *Volume) (*sdk.Volume, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.Volume{
-		Name: w.Name,
-	}, nil
+	out := &sdk.Volume{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// VolumeFromSDK converts the sdk-go type to the mirror.
+func VolumeFromSDK(v *sdk.Volume) (*Volume, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Volume{}
+	out.Name = v.Name
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -708,4 +899,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

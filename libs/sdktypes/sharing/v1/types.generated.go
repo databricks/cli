@@ -75,42 +75,12 @@ const (
 	UpdateShareRequest_SharedDataObjectUpdate_Action_Update                      = sdk.UpdateShareRequest_SharedDataObjectUpdate_Action_Update
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateFederationPolicyRequest struct {
 	// Name of the recipient. This is the name of the recipient for which the policy
 	// is being created.
 	RecipientName *string `json:"recipient_name,omitempty"`
 	// Name of the policy. This is the name of the policy to be created.
 	Policy *FederationPolicy `json:"policy,omitempty"`
-}
-
-func CreateFederationPolicyRequestFromSDK(v *sdk.CreateFederationPolicyRequest) (*CreateFederationPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	policyWireValue, err := FederationPolicyFromSDK(v.Policy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFederationPolicyRequest.Policy", err)
-	}
-	return &CreateFederationPolicyRequest{
-		RecipientName: v.RecipientName,
-		Policy:        policyWireValue,
-	}, nil
 }
 
 type CreateProviderRequest struct {
@@ -148,40 +118,6 @@ type CreateProviderRequest struct {
 	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
 	// format __cloud__:__region__:__metastore-uuid__.
 	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
-}
-
-func CreateProviderRequestFromSDK(v *sdk.CreateProviderRequest) (*CreateProviderRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	recipientProfileWireValue, err := RecipientProfileFromSDK(v.RecipientProfile)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.RecipientProfile", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.UpdatedAt", err)
-	}
-	return &CreateProviderRequest{
-		Name:                          v.Name,
-		AuthenticationType:            v.AuthenticationType,
-		RecipientProfileStr:           v.RecipientProfileStr,
-		Comment:                       v.Comment,
-		Owner:                         v.Owner,
-		RecipientProfile:              recipientProfileWireValue,
-		CreatedAt:                     createdAtWireValue,
-		CreatedBy:                     v.CreatedBy,
-		UpdatedAt:                     updatedAtWireValue,
-		UpdatedBy:                     v.UpdatedBy,
-		Cloud:                         v.Cloud,
-		Region:                        v.Region,
-		MetastoreId:                   v.MetastoreId,
-		DataProviderGlobalMetastoreId: v.DataProviderGlobalMetastoreId,
-	}, nil
 }
 
 type CreateRecipientRequest struct {
@@ -237,58 +173,6 @@ type CreateRecipientRequest struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func CreateRecipientRequestFromSDK(v *sdk.CreateRecipientRequest) (*CreateRecipientRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	ipAccessListWireValue, err := IpAccessListFromSDK(v.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.IpAccessList", err)
-	}
-	propertiesKvpairsWireValue, err := PropertiesKvPairsFromSDK(v.PropertiesKvpairs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.PropertiesKvpairs", err)
-	}
-	expirationTimeWireValue, err := int64ToWire(v.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.ExpirationTime", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.CreatedAt", err)
-	}
-	tokensWireValue, err := convertSlice(v.Tokens, RecipientTokenInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.Tokens", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.UpdatedAt", err)
-	}
-	return &CreateRecipientRequest{
-		Name:                           v.Name,
-		AuthenticationType:             v.AuthenticationType,
-		SharingCode:                    v.SharingCode,
-		DataRecipientGlobalMetastoreId: v.DataRecipientGlobalMetastoreId,
-		Owner:                          v.Owner,
-		Comment:                        v.Comment,
-		IpAccessList:                   ipAccessListWireValue,
-		PropertiesKvpairs:              propertiesKvpairsWireValue,
-		ExpirationTime:                 expirationTimeWireValue,
-		ActivationUrl:                  v.ActivationUrl,
-		Activated:                      v.Activated,
-		CreatedAt:                      createdAtWireValue,
-		CreatedBy:                      v.CreatedBy,
-		Tokens:                         tokensWireValue,
-		UpdatedAt:                      updatedAtWireValue,
-		UpdatedBy:                      v.UpdatedBy,
-		Cloud:                          v.Cloud,
-		Region:                         v.Region,
-		MetastoreId:                    v.MetastoreId,
-		Id:                             v.Id,
-	}, nil
-}
-
 type CreateShareRequest struct {
 	// Name of the share.
 	Name *string `json:"name,omitempty"`
@@ -314,98 +198,16 @@ type CreateShareRequest struct {
 	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
-func CreateShareRequestFromSDK(v *sdk.CreateShareRequest) (*CreateShareRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	replicationConfigWireValue, err := ReplicationConfigFromSDK(v.ReplicationConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.ReplicationConfig", err)
-	}
-	objectsWireValue, err := convertSlice(v.Objects, SharedDataObjectFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.Objects", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.UpdatedAt", err)
-	}
-	return &CreateShareRequest{
-		Name:              v.Name,
-		Owner:             v.Owner,
-		Comment:           v.Comment,
-		StorageRoot:       v.StorageRoot,
-		ReplicationConfig: replicationConfigWireValue,
-		Objects:           objectsWireValue,
-		CreatedAt:         createdAtWireValue,
-		CreatedBy:         v.CreatedBy,
-		UpdatedAt:         updatedAtWireValue,
-		UpdatedBy:         v.UpdatedBy,
-		StorageLocation:   v.StorageLocation,
-	}, nil
-}
-
 // Represents a UC dependency..
 type Dependency struct {
 	Table    *TableDependency    `json:"table,omitempty"`
 	Function *FunctionDependency `json:"function,omitempty"`
 }
 
-func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.Table != nil {
-		valueMembers++
-	}
-	if w.Function != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
-	}
-	valueSelection := (&sdk.Dependency{}).Value
-	switch {
-	case w.Table != nil:
-		valueTableConverted, err := TableDependencyToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Table{Table: *valueTableConverted}
-	case w.Function != nil:
-		valueFunctionConverted, err := FunctionDependencyToSDK(w.Function)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Function{Function: *valueFunctionConverted}
-	}
-	return &sdk.Dependency{
-		Value: valueSelection,
-	}, nil
-}
-
 // Represents a list of dependencies..
 type DependencyList struct {
 	// An array of Dependency.
 	Dependencies []Dependency `json:"dependencies,omitempty"`
-}
-
-func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dependenciesPublicValue, err := convertSlice(w.Dependencies, DependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &sdk.DependencyList{
-		Dependencies: dependenciesPublicValue,
-	}, nil
 }
 
 type FederationPolicy struct {
@@ -422,64 +224,6 @@ type FederationPolicy struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// Unique, immutable system-generated identifier for the federation policy.
 	Id *string `json:"id,omitempty"`
-}
-
-func FederationPolicyFromSDK(v *sdk.FederationPolicy) (*FederationPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var policyOidcPolicyWire *OidcFederationPolicy
-	switch value := v.Policy.(type) {
-	case nil:
-	case *sdk.FederationPolicy_Policy_OidcPolicy:
-		if value != nil {
-			policyOidcPolicyConverted, err := OidcFederationPolicyFromSDK(&value.OidcPolicy)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy.OidcPolicy", err)
-			}
-			policyOidcPolicyWire = policyOidcPolicyConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FederationPolicy.Policy", value)
-	}
-	return &FederationPolicy{
-		Name:       v.Name,
-		OidcPolicy: policyOidcPolicyWire,
-		CreateTime: v.CreateTime,
-		Comment:    v.Comment,
-		UpdateTime: v.UpdateTime,
-		Id:         v.Id,
-	}, nil
-}
-
-func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policyMembers := 0
-	if w.OidcPolicy != nil {
-		policyMembers++
-	}
-	if policyMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
-	}
-	policySelection := (&sdk.FederationPolicy{}).Policy
-	switch {
-	case w.OidcPolicy != nil:
-		policyOidcPolicyConverted, err := OidcFederationPolicyToSDK(w.OidcPolicy)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy.OidcPolicy", err)
-		}
-		policySelection = &sdk.FederationPolicy_Policy_OidcPolicy{OidcPolicy: *policyOidcPolicyConverted}
-	}
-	return &sdk.FederationPolicy{
-		Name:       w.Name,
-		CreateTime: w.CreateTime,
-		Comment:    w.Comment,
-		UpdateTime: w.UpdateTime,
-		Id:         w.Id,
-		Policy:     policySelection,
-	}, nil
 }
 
 type Function struct {
@@ -517,60 +261,10 @@ type Function struct {
 	Properties *string `json:"properties,omitempty"`
 }
 
-func FunctionToSDK(w *Function) (*sdk.Function, error) {
-	if w == nil {
-		return nil, nil
-	}
-	aliasesPublicValue, err := convertSlice(w.Aliases, RegisteredModelAliasToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.Aliases", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, TagKeyValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.Tags", err)
-	}
-	inputParamsPublicValue, err := FunctionParameterInfosToSDK(w.InputParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.InputParams", err)
-	}
-	dependencyListPublicValue, err := DependencyListToSDK(w.DependencyList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Function.DependencyList", err)
-	}
-	return &sdk.Function{
-		Name:              w.Name,
-		Schema:            w.Schema,
-		Share:             w.Share,
-		ShareId:           w.ShareId,
-		Id:                w.Id,
-		StorageLocation:   w.StorageLocation,
-		Comment:           w.Comment,
-		Aliases:           aliasesPublicValue,
-		Tags:              tagsPublicValue,
-		SecurableKind:     w.SecurableKind,
-		FullDataType:      w.FullDataType,
-		DataType:          w.DataType,
-		RoutineDefinition: w.RoutineDefinition,
-		InputParams:       inputParamsPublicValue,
-		DependencyList:    dependencyListPublicValue,
-		Properties:        w.Properties,
-	}, nil
-}
-
 // A Function in UC as a dependency..
 type FunctionDependency struct {
 	SchemaName   *string `json:"schema_name,omitempty"`
 	FunctionName *string `json:"function_name,omitempty"`
-}
-
-func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionDependency{
-		SchemaName:   w.SchemaName,
-		FunctionName: w.FunctionName,
-	}, nil
 }
 
 // Represents a parameter of a function. The same message is used for both input
@@ -602,42 +296,9 @@ type FunctionParameterInfo struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func FunctionParameterInfoToSDK(w *FunctionParameterInfo) (*sdk.FunctionParameterInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionParameterInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeJson:         w.TypeJson,
-		TypeName:         w.TypeName,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-		Position:         w.Position,
-		ParameterMode:    w.ParameterMode,
-		ParameterType:    w.ParameterType,
-		ParameterDefault: w.ParameterDefault,
-		Comment:          w.Comment,
-	}, nil
-}
-
 type FunctionParameterInfos struct {
 	// The list of parameters of the function.
 	Parameters []FunctionParameterInfo `json:"parameters,omitempty"`
-}
-
-func FunctionParameterInfosToSDK(w *FunctionParameterInfos) (*sdk.FunctionParameterInfos, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, FunctionParameterInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
-	}
-	return &sdk.FunctionParameterInfos{
-		Parameters: parametersPublicValue,
-	}, nil
 }
 
 type GetRecipientSharePermissionsResponse struct {
@@ -649,20 +310,6 @@ type GetRecipientSharePermissionsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func GetRecipientSharePermissionsResponseToSDK(w *GetRecipientSharePermissionsResponse) (*sdk.GetRecipientSharePermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	permissionsOutPublicValue, err := convertSlice(w.PermissionsOut, ShareToPrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRecipientSharePermissionsResponse.PermissionsOut", err)
-	}
-	return &sdk.GetRecipientSharePermissionsResponse{
-		PermissionsOut: permissionsOutPublicValue,
-		NextPageToken:  w.NextPageToken,
-	}, nil
-}
-
 type GetSharePermissionsResponse struct {
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
@@ -672,20 +319,6 @@ type GetSharePermissionsResponse struct {
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
 }
 
-func GetSharePermissionsResponseToSDK(w *GetSharePermissionsResponse) (*sdk.GetSharePermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetSharePermissionsResponse.PrivilegeAssignments", err)
-	}
-	return &sdk.GetSharePermissionsResponse{
-		NextPageToken:        w.NextPageToken,
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
-}
-
 type GetShareRequest struct {
 	// The name of the share.
 	Name *string `json:"name,omitempty"`
@@ -693,37 +326,9 @@ type GetShareRequest struct {
 	IncludeSharedData *bool `json:"include_shared_data,omitempty"`
 }
 
-func GetShareRequestFromSDK(v *sdk.GetShareRequest) (*GetShareRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetShareRequest{
-		Name:              v.Name,
-		IncludeSharedData: v.IncludeSharedData,
-	}, nil
-}
-
 type IpAccessList struct {
 	// Allowed IP Addresses in CIDR notation. Limit of 100.
 	AllowedIpAddresses []string `json:"allowed_ip_addresses,omitempty"`
-}
-
-func IpAccessListFromSDK(v *sdk.IpAccessList) (*IpAccessList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IpAccessList{
-		AllowedIpAddresses: v.AllowedIpAddresses,
-	}, nil
-}
-
-func IpAccessListToSDK(w *IpAccessList) (*sdk.IpAccessList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IpAccessList{
-		AllowedIpAddresses: w.AllowedIpAddresses,
-	}, nil
 }
 
 type ListFederationPoliciesRequest struct {
@@ -734,34 +339,9 @@ type ListFederationPoliciesRequest struct {
 	PageToken     *string `json:"page_token,omitempty"`
 }
 
-func ListFederationPoliciesRequestFromSDK(v *sdk.ListFederationPoliciesRequest) (*ListFederationPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListFederationPoliciesRequest{
-		RecipientName: v.RecipientName,
-		MaxResults:    v.MaxResults,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListFederationPoliciesResponse struct {
 	Policies      []FederationPolicy `json:"policies,omitempty"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
-}
-
-func ListFederationPoliciesResponseToSDK(w *ListFederationPoliciesResponse) (*sdk.ListFederationPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policiesPublicValue, err := convertSlice(w.Policies, FederationPolicyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
-	}
-	return &sdk.ListFederationPoliciesResponse{
-		Policies:      policiesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to fetch the list of assets of a share that is shared with the
@@ -781,20 +361,6 @@ type ListProviderShareAssetsRequest struct {
 	NotebookMaxResults *int `json:"notebook_max_results,omitempty"`
 }
 
-func ListProviderShareAssetsRequestFromSDK(v *sdk.ListProviderShareAssetsRequest) (*ListProviderShareAssetsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListProviderShareAssetsRequest{
-		ProviderNameArg:    v.ProviderNameArg,
-		ShareNameArg:       v.ShareNameArg,
-		TableMaxResults:    v.TableMaxResults,
-		FunctionMaxResults: v.FunctionMaxResults,
-		VolumeMaxResults:   v.VolumeMaxResults,
-		NotebookMaxResults: v.NotebookMaxResults,
-	}, nil
-}
-
 // Response to ListProviderShareAssets, which contains the list of assets of a
 // share..
 type ListProviderShareAssetsResponse struct {
@@ -808,39 +374,6 @@ type ListProviderShareAssetsResponse struct {
 	Volumes []Volume `json:"volumes,omitempty"`
 	// The metadata of the share.
 	Share *Share `json:"share,omitempty"`
-}
-
-func ListProviderShareAssetsResponseToSDK(w *ListProviderShareAssetsResponse) (*sdk.ListProviderShareAssetsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tablesPublicValue, err := convertSlice(w.Tables, TableToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Tables", err)
-	}
-	functionsPublicValue, err := convertSlice(w.Functions, FunctionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Functions", err)
-	}
-	notebooksPublicValue, err := convertSlice(w.Notebooks, NotebookFileToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Notebooks", err)
-	}
-	volumesPublicValue, err := convertSlice(w.Volumes, VolumeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Volumes", err)
-	}
-	sharePublicValue, err := ShareToSDK(w.Share)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Share", err)
-	}
-	return &sdk.ListProviderShareAssetsResponse{
-		Tables:    tablesPublicValue,
-		Functions: functionsPublicValue,
-		Notebooks: notebooksPublicValue,
-		Volumes:   volumesPublicValue,
-		Share:     sharePublicValue,
-	}, nil
 }
 
 type ListProviderSharesRequest struct {
@@ -859,17 +392,6 @@ type ListProviderSharesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListProviderSharesRequestFromSDK(v *sdk.ListProviderSharesRequest) (*ListProviderSharesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListProviderSharesRequest{
-		ProviderNameArg: v.ProviderNameArg,
-		MaxResults:      v.MaxResults,
-		PageToken:       v.PageToken,
-	}, nil
-}
-
 type ListProviderSharesResponse struct {
 	// An array of provider shares.
 	Shares []ProviderShare `json:"shares,omitempty"`
@@ -877,20 +399,6 @@ type ListProviderSharesResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListProviderSharesResponseToSDK(w *ListProviderSharesResponse) (*sdk.ListProviderSharesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sharesPublicValue, err := convertSlice(w.Shares, ProviderShareToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderSharesResponse.Shares", err)
-	}
-	return &sdk.ListProviderSharesResponse{
-		Shares:        sharesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListProvidersRequest struct {
@@ -911,17 +419,6 @@ type ListProvidersRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListProvidersRequestFromSDK(v *sdk.ListProvidersRequest) (*ListProvidersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListProvidersRequest{
-		DataProviderGlobalMetastoreId: v.DataProviderGlobalMetastoreId,
-		MaxResults:                    v.MaxResults,
-		PageToken:                     v.PageToken,
-	}, nil
-}
-
 type ListProvidersResponse struct {
 	// An array of provider information objects.
 	Providers []ProviderInfo `json:"providers,omitempty"`
@@ -929,20 +426,6 @@ type ListProvidersResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListProvidersResponseToSDK(w *ListProvidersResponse) (*sdk.ListProvidersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providersPublicValue, err := convertSlice(w.Providers, ProviderInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
-	}
-	return &sdk.ListProvidersResponse{
-		Providers:     providersPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListRecipientSharePermissionsRequest struct {
@@ -960,17 +443,6 @@ type ListRecipientSharePermissionsRequest struct {
 	MaxResults *int `json:"max_results,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-}
-
-func ListRecipientSharePermissionsRequestFromSDK(v *sdk.ListRecipientSharePermissionsRequest) (*ListRecipientSharePermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListRecipientSharePermissionsRequest{
-		Name:       v.Name,
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-	}, nil
 }
 
 type ListRecipientsRequest struct {
@@ -991,17 +463,6 @@ type ListRecipientsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListRecipientsRequestFromSDK(v *sdk.ListRecipientsRequest) (*ListRecipientsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListRecipientsRequest{
-		DataRecipientGlobalMetastoreId: v.DataRecipientGlobalMetastoreId,
-		MaxResults:                     v.MaxResults,
-		PageToken:                      v.PageToken,
-	}, nil
-}
-
 type ListRecipientsResponse struct {
 	// An array of recipient information objects.
 	Recipients []RecipientInfo `json:"recipients,omitempty"`
@@ -1009,20 +470,6 @@ type ListRecipientsResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListRecipientsResponseToSDK(w *ListRecipientsResponse) (*sdk.ListRecipientsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	recipientsPublicValue, err := convertSlice(w.Recipients, RecipientInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRecipientsResponse.Recipients", err)
-	}
-	return &sdk.ListRecipientsResponse{
-		Recipients:    recipientsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSharePermissionsRequest struct {
@@ -1042,17 +489,6 @@ type ListSharePermissionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSharePermissionsRequestFromSDK(v *sdk.ListSharePermissionsRequest) (*ListSharePermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSharePermissionsRequest{
-		Name:       v.Name,
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListSharesRequest struct {
 	// Maximum number of shares to return. - when set to 0, the page length is set
 	// to a server configured value (recommended); - when set to a value greater
@@ -1067,16 +503,6 @@ type ListSharesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSharesRequestFromSDK(v *sdk.ListSharesRequest) (*ListSharesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSharesRequest{
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListSharesResponse struct {
 	// An array of data share information objects.
 	Shares []ShareInfo `json:"shares,omitempty"`
@@ -1084,20 +510,6 @@ type ListSharesResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSharesResponseToSDK(w *ListSharesResponse) (*sdk.ListSharesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sharesPublicValue, err := convertSlice(w.Shares, ShareInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSharesResponse.Shares", err)
-	}
-	return &sdk.ListSharesResponse{
-		Shares:        sharesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type NotebookFile struct {
@@ -1113,24 +525,6 @@ type NotebookFile struct {
 	Comment *string `json:"comment,omitempty"`
 	// The tags of the notebook file.
 	Tags []TagKeyValue `json:"tags,omitempty"`
-}
-
-func NotebookFileToSDK(w *NotebookFile) (*sdk.NotebookFile, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, TagKeyValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NotebookFile.Tags", err)
-	}
-	return &sdk.NotebookFile{
-		Name:    w.Name,
-		Share:   w.Share,
-		ShareId: w.ShareId,
-		Id:      w.Id,
-		Comment: w.Comment,
-		Tags:    tagsPublicValue,
-	}, nil
 }
 
 // Specifies the policy to use for validating OIDC claims in your federated
@@ -1167,59 +561,9 @@ type OidcFederationPolicy struct {
 	Audiences []string `json:"audiences,omitempty"`
 }
 
-func OidcFederationPolicyFromSDK(v *sdk.OidcFederationPolicy) (*OidcFederationPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OidcFederationPolicy{
-		Issuer:       v.Issuer,
-		SubjectClaim: v.SubjectClaim,
-		Subject:      v.Subject,
-		Audiences:    v.Audiences,
-	}, nil
-}
-
-func OidcFederationPolicyToSDK(w *OidcFederationPolicy) (*sdk.OidcFederationPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OidcFederationPolicy{
-		Issuer:       w.Issuer,
-		SubjectClaim: w.SubjectClaim,
-		Subject:      w.Subject,
-		Audiences:    w.Audiences,
-	}, nil
-}
-
 type PartitionSpecification_Partition struct {
 	// An array of partition values.
 	Values []PartitionSpecification_Partition_PartitionValue `json:"values,omitempty"`
-}
-
-func PartitionSpecification_PartitionFromSDK(v *sdk.PartitionSpecification_Partition) (*PartitionSpecification_Partition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valuesWireValue, err := convertSlice(v.Values, PartitionSpecification_Partition_PartitionValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
-	}
-	return &PartitionSpecification_Partition{
-		Values: valuesWireValue,
-	}, nil
-}
-
-func PartitionSpecification_PartitionToSDK(w *PartitionSpecification_Partition) (*sdk.PartitionSpecification_Partition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, PartitionSpecification_Partition_PartitionValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
-	}
-	return &sdk.PartitionSpecification_Partition{
-		Values: valuesPublicValue,
-	}, nil
 }
 
 type PartitionSpecification_Partition_PartitionValue struct {
@@ -1237,30 +581,6 @@ type PartitionSpecification_Partition_PartitionValue struct {
 	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
 }
 
-func PartitionSpecification_Partition_PartitionValueFromSDK(v *sdk.PartitionSpecification_Partition_PartitionValue) (*PartitionSpecification_Partition_PartitionValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PartitionSpecification_Partition_PartitionValue{
-		Name:                 v.Name,
-		Value:                v.Value,
-		RecipientPropertyKey: v.RecipientPropertyKey,
-		Op:                   v.Op,
-	}, nil
-}
-
-func PartitionSpecification_Partition_PartitionValueToSDK(w *PartitionSpecification_Partition_PartitionValue) (*sdk.PartitionSpecification_Partition_PartitionValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PartitionSpecification_Partition_PartitionValue{
-		Name:                 w.Name,
-		Value:                w.Value,
-		RecipientPropertyKey: w.RecipientPropertyKey,
-		Op:                   w.Op,
-	}, nil
-}
-
 type PermissionsChange struct {
 	// The principal whose privileges we are changing. Only one of principal or
 	// principal_id should be specified, never both at the same time.
@@ -1271,17 +591,6 @@ type PermissionsChange struct {
 	Remove []string `json:"remove,omitempty"`
 }
 
-func PermissionsChangeFromSDK(v *sdk.PermissionsChange) (*PermissionsChange, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PermissionsChange{
-		Principal: v.Principal,
-		Add:       v.Add,
-		Remove:    v.Remove,
-	}, nil
-}
-
 type PrivilegeAssignment struct {
 	// The principal (user email address or group name). For deleted principals,
 	// `principal` is empty while `principal_id` is populated.
@@ -1290,39 +599,11 @@ type PrivilegeAssignment struct {
 	Privileges []string `json:"privileges,omitempty"`
 }
 
-func PrivilegeAssignmentToSDK(w *PrivilegeAssignment) (*sdk.PrivilegeAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PrivilegeAssignment{
-		Principal:  w.Principal,
-		Privileges: w.Privileges,
-	}, nil
-}
-
 // An object with __properties__ containing map of key-value properties attached
 // to the securable..
 type PropertiesKvPairs struct {
 	// A map of key-value properties attached to the securable.
 	Properties map[string]string `json:"properties,omitempty"`
-}
-
-func PropertiesKvPairsFromSDK(v *sdk.PropertiesKvPairs) (*PropertiesKvPairs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PropertiesKvPairs{
-		Properties: v.Properties,
-	}, nil
-}
-
-func PropertiesKvPairsToSDK(w *PropertiesKvPairs) (*sdk.PropertiesKvPairs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PropertiesKvPairs{
-		Properties: w.Properties,
-	}, nil
 }
 
 type ProviderInfo struct {
@@ -1362,52 +643,9 @@ type ProviderInfo struct {
 	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
 }
 
-func ProviderInfoToSDK(w *ProviderInfo) (*sdk.ProviderInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	recipientProfilePublicValue, err := RecipientProfileToSDK(w.RecipientProfile)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProviderInfo.RecipientProfile", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProviderInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProviderInfo.UpdatedAt", err)
-	}
-	return &sdk.ProviderInfo{
-		Name:                          w.Name,
-		AuthenticationType:            w.AuthenticationType,
-		RecipientProfileStr:           w.RecipientProfileStr,
-		Comment:                       w.Comment,
-		Owner:                         w.Owner,
-		RecipientProfile:              recipientProfilePublicValue,
-		CreatedAt:                     createdAtPublicValue,
-		CreatedBy:                     w.CreatedBy,
-		UpdatedAt:                     updatedAtPublicValue,
-		UpdatedBy:                     w.UpdatedBy,
-		Cloud:                         w.Cloud,
-		Region:                        w.Region,
-		MetastoreId:                   w.MetastoreId,
-		DataProviderGlobalMetastoreId: w.DataProviderGlobalMetastoreId,
-	}, nil
-}
-
 type ProviderShare struct {
 	// The name of the Provider Share.
 	Name *string `json:"name,omitempty"`
-}
-
-func ProviderShareToSDK(w *ProviderShare) (*sdk.ProviderShare, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProviderShare{
-		Name: w.Name,
-	}, nil
 }
 
 type RecipientInfo struct {
@@ -1463,58 +701,6 @@ type RecipientInfo struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func RecipientInfoToSDK(w *RecipientInfo) (*sdk.RecipientInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := IpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.IpAccessList", err)
-	}
-	propertiesKvpairsPublicValue, err := PropertiesKvPairsToSDK(w.PropertiesKvpairs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.PropertiesKvpairs", err)
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.ExpirationTime", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.CreatedAt", err)
-	}
-	tokensPublicValue, err := convertSlice(w.Tokens, RecipientTokenInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.Tokens", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientInfo.UpdatedAt", err)
-	}
-	return &sdk.RecipientInfo{
-		Name:                           w.Name,
-		AuthenticationType:             w.AuthenticationType,
-		SharingCode:                    w.SharingCode,
-		DataRecipientGlobalMetastoreId: w.DataRecipientGlobalMetastoreId,
-		Owner:                          w.Owner,
-		Comment:                        w.Comment,
-		IpAccessList:                   ipAccessListPublicValue,
-		PropertiesKvpairs:              propertiesKvpairsPublicValue,
-		ExpirationTime:                 expirationTimePublicValue,
-		ActivationUrl:                  w.ActivationUrl,
-		Activated:                      w.Activated,
-		CreatedAt:                      createdAtPublicValue,
-		CreatedBy:                      w.CreatedBy,
-		Tokens:                         tokensPublicValue,
-		UpdatedAt:                      updatedAtPublicValue,
-		UpdatedBy:                      w.UpdatedBy,
-		Cloud:                          w.Cloud,
-		Region:                         w.Region,
-		MetastoreId:                    w.MetastoreId,
-		Id:                             w.Id,
-	}, nil
-}
-
 type RecipientProfile struct {
 	// The version number of the recipient's credentials on a share.
 	ShareCredentialsVersion *int `json:"share_credentials_version,omitempty"`
@@ -1522,28 +708,6 @@ type RecipientProfile struct {
 	Endpoint *string `json:"endpoint,omitempty"`
 	// The token used to authorize the recipient.
 	BearerToken *string `json:"bearer_token,omitempty"`
-}
-
-func RecipientProfileFromSDK(v *sdk.RecipientProfile) (*RecipientProfile, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RecipientProfile{
-		ShareCredentialsVersion: v.ShareCredentialsVersion,
-		Endpoint:                v.Endpoint,
-		BearerToken:             v.BearerToken,
-	}, nil
-}
-
-func RecipientProfileToSDK(w *RecipientProfile) (*sdk.RecipientProfile, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RecipientProfile{
-		ShareCredentialsVersion: w.ShareCredentialsVersion,
-		Endpoint:                w.Endpoint,
-		BearerToken:             w.BearerToken,
-	}, nil
 }
 
 type RecipientTokenInfo struct {
@@ -1564,79 +728,11 @@ type RecipientTokenInfo struct {
 	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
-func RecipientTokenInfoFromSDK(v *sdk.RecipientTokenInfo) (*RecipientTokenInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.CreatedAt", err)
-	}
-	expirationTimeWireValue, err := int64ToWire(v.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.ExpirationTime", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.UpdatedAt", err)
-	}
-	return &RecipientTokenInfo{
-		Id:             v.Id,
-		CreatedAt:      createdAtWireValue,
-		CreatedBy:      v.CreatedBy,
-		ActivationUrl:  v.ActivationUrl,
-		ExpirationTime: expirationTimeWireValue,
-		UpdatedAt:      updatedAtWireValue,
-		UpdatedBy:      v.UpdatedBy,
-	}, nil
-}
-
-func RecipientTokenInfoToSDK(w *RecipientTokenInfo) (*sdk.RecipientTokenInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.CreatedAt", err)
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.ExpirationTime", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RecipientTokenInfo.UpdatedAt", err)
-	}
-	return &sdk.RecipientTokenInfo{
-		Id:             w.Id,
-		CreatedAt:      createdAtPublicValue,
-		CreatedBy:      w.CreatedBy,
-		ActivationUrl:  w.ActivationUrl,
-		ExpirationTime: expirationTimePublicValue,
-		UpdatedAt:      updatedAtPublicValue,
-		UpdatedBy:      w.UpdatedBy,
-	}, nil
-}
-
 type RegisteredModelAlias struct {
 	// Name of the alias.
 	AliasName *string `json:"alias_name,omitempty"`
 	// Numeric model version that alias will reference.
 	VersionNum *int64 `json:"version_num,omitempty"`
-}
-
-func RegisteredModelAliasToSDK(w *RegisteredModelAlias) (*sdk.RegisteredModelAlias, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionNumPublicValue, err := int64FromWire(w.VersionNum)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelAlias.VersionNum", err)
-	}
-	return &sdk.RegisteredModelAlias{
-		AliasName:  w.AliasName,
-		VersionNum: versionNumPublicValue,
-	}, nil
 }
 
 // Configuration for Delta Sharing replication on a share. When enabled, the
@@ -1645,24 +741,6 @@ func RegisteredModelAliasToSDK(w *RegisteredModelAlias) (*sdk.RegisteredModelAli
 type ReplicationConfig struct {
 	// Whether replication is enabled for the share.
 	Enabled *bool `json:"enabled,omitempty"`
-}
-
-func ReplicationConfigFromSDK(v *sdk.ReplicationConfig) (*ReplicationConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ReplicationConfig{
-		Enabled: v.Enabled,
-	}, nil
-}
-
-func ReplicationConfigToSDK(w *ReplicationConfig) (*sdk.ReplicationConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ReplicationConfig{
-		Enabled: w.Enabled,
-	}, nil
 }
 
 type RetrieveTokenResponse struct {
@@ -1676,18 +754,6 @@ type RetrieveTokenResponse struct {
 	ExpirationTime *string `json:"expirationTime,omitempty"`
 }
 
-func RetrieveTokenResponseToSDK(w *RetrieveTokenResponse) (*sdk.RetrieveTokenResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RetrieveTokenResponse{
-		ShareCredentialsVersion: w.ShareCredentialsVersion,
-		BearerToken:             w.BearerToken,
-		Endpoint:                w.Endpoint,
-		ExpirationTime:          w.ExpirationTime,
-	}, nil
-}
-
 type RotateRecipientTokenRequest struct {
 	// The name of the Recipient.
 	Name *string `json:"name,omitempty"`
@@ -1698,33 +764,9 @@ type RotateRecipientTokenRequest struct {
 	ExistingTokenExpireInSeconds *int64 `json:"existing_token_expire_in_seconds,omitempty"`
 }
 
-func RotateRecipientTokenRequestFromSDK(v *sdk.RotateRecipientTokenRequest) (*RotateRecipientTokenRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	existingTokenExpireInSecondsWireValue, err := int64ToWire(v.ExistingTokenExpireInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RotateRecipientTokenRequest.ExistingTokenExpireInSeconds", err)
-	}
-	return &RotateRecipientTokenRequest{
-		Name:                         v.Name,
-		ExistingTokenExpireInSeconds: existingTokenExpireInSecondsWireValue,
-	}, nil
-}
-
 type Share struct {
 	Name *string `json:"name,omitempty"`
 	Id   *string `json:"id,omitempty"`
-}
-
-func ShareToSDK(w *Share) (*sdk.Share, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Share{
-		Name: w.Name,
-		Id:   w.Id,
-	}, nil
 }
 
 type ShareInfo struct {
@@ -1752,60 +794,11 @@ type ShareInfo struct {
 	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
-func ShareInfoToSDK(w *ShareInfo) (*sdk.ShareInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	replicationConfigPublicValue, err := ReplicationConfigToSDK(w.ReplicationConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ShareInfo.ReplicationConfig", err)
-	}
-	objectsPublicValue, err := convertSlice(w.Objects, SharedDataObjectToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ShareInfo.Objects", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ShareInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ShareInfo.UpdatedAt", err)
-	}
-	return &sdk.ShareInfo{
-		Name:              w.Name,
-		Owner:             w.Owner,
-		Comment:           w.Comment,
-		StorageRoot:       w.StorageRoot,
-		ReplicationConfig: replicationConfigPublicValue,
-		Objects:           objectsPublicValue,
-		CreatedAt:         createdAtPublicValue,
-		CreatedBy:         w.CreatedBy,
-		UpdatedAt:         updatedAtPublicValue,
-		UpdatedBy:         w.UpdatedBy,
-		StorageLocation:   w.StorageLocation,
-	}, nil
-}
-
 type ShareToPrivilegeAssignment struct {
 	// The share name.
 	ShareName *string `json:"share_name,omitempty"`
 	// The privileges assigned to the principal.
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
-}
-
-func ShareToPrivilegeAssignmentToSDK(w *ShareToPrivilegeAssignment) (*sdk.ShareToPrivilegeAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ShareToPrivilegeAssignment.PrivilegeAssignments", err)
-	}
-	return &sdk.ShareToPrivilegeAssignment{
-		ShareName:            w.ShareName,
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
 }
 
 type SharedDataObject struct {
@@ -1896,72 +889,6 @@ type SharedDataObject struct {
 	Partitions []PartitionSpecification_Partition `json:"partitions,omitempty"`
 }
 
-func SharedDataObjectFromSDK(v *sdk.SharedDataObject) (*SharedDataObject, error) {
-	if v == nil {
-		return nil, nil
-	}
-	addedAtWireValue, err := int64ToWire(v.AddedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.AddedAt", err)
-	}
-	startVersionWireValue, err := int64ToWire(v.StartVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.StartVersion", err)
-	}
-	partitionsWireValue, err := convertSlice(v.Partitions, PartitionSpecification_PartitionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.Partitions", err)
-	}
-	return &SharedDataObject{
-		Name:                     v.Name,
-		DataObjectType:           v.DataObjectType,
-		AddedAt:                  addedAtWireValue,
-		AddedBy:                  v.AddedBy,
-		Comment:                  v.Comment,
-		SharedAs:                 v.SharedAs,
-		CdfEnabled:               v.CdfEnabled,
-		HistoryDataSharingStatus: v.HistoryDataSharingStatus,
-		StartVersion:             startVersionWireValue,
-		Status:                   v.Status,
-		Content:                  v.Content,
-		StringSharedAs:           v.StringSharedAs,
-		Partitions:               partitionsWireValue,
-	}, nil
-}
-
-func SharedDataObjectToSDK(w *SharedDataObject) (*sdk.SharedDataObject, error) {
-	if w == nil {
-		return nil, nil
-	}
-	addedAtPublicValue, err := int64FromWire(w.AddedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.AddedAt", err)
-	}
-	startVersionPublicValue, err := int64FromWire(w.StartVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.StartVersion", err)
-	}
-	partitionsPublicValue, err := convertSlice(w.Partitions, PartitionSpecification_PartitionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharedDataObject.Partitions", err)
-	}
-	return &sdk.SharedDataObject{
-		Name:                     w.Name,
-		DataObjectType:           w.DataObjectType,
-		AddedAt:                  addedAtPublicValue,
-		AddedBy:                  w.AddedBy,
-		Comment:                  w.Comment,
-		SharedAs:                 w.SharedAs,
-		CdfEnabled:               w.CdfEnabled,
-		HistoryDataSharingStatus: w.HistoryDataSharingStatus,
-		StartVersion:             startVersionPublicValue,
-		Status:                   w.Status,
-		Content:                  w.Content,
-		StringSharedAs:           w.StringSharedAs,
-		Partitions:               partitionsPublicValue,
-	}, nil
-}
-
 type Table struct {
 	// The name of the table.
 	Name *string `json:"name,omitempty"`
@@ -1983,41 +910,10 @@ type Table struct {
 	MaterializationNamespace *string `json:"materialization_namespace,omitempty"`
 }
 
-func TableToSDK(w *Table) (*sdk.Table, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, TagKeyValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Table.Tags", err)
-	}
-	return &sdk.Table{
-		Name:                     w.Name,
-		Schema:                   w.Schema,
-		Share:                    w.Share,
-		ShareId:                  w.ShareId,
-		Id:                       w.Id,
-		Comment:                  w.Comment,
-		Tags:                     tagsPublicValue,
-		MaterializedTableName:    w.MaterializedTableName,
-		MaterializationNamespace: w.MaterializationNamespace,
-	}, nil
-}
-
 // A Table in UC as a dependency..
 type TableDependency struct {
 	SchemaName *string `json:"schema_name,omitempty"`
 	TableName  *string `json:"table_name,omitempty"`
-}
-
-func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableDependency{
-		SchemaName: w.SchemaName,
-		TableName:  w.TableName,
-	}, nil
 }
 
 type TagKeyValue struct {
@@ -2025,16 +921,6 @@ type TagKeyValue struct {
 	Key *string `json:"key,omitempty"`
 	// value of the tag associated with the key, could be optional
 	Value *string `json:"value,omitempty"`
-}
-
-func TagKeyValueToSDK(w *TagKeyValue) (*sdk.TagKeyValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TagKeyValue{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type UpdateProviderRequest struct {
@@ -2076,42 +962,6 @@ type UpdateProviderRequest struct {
 	// when the __authentication_type__ is **DATABRICKS**. The identifier is of
 	// format __cloud__:__region__:__metastore-uuid__.
 	DataProviderGlobalMetastoreId *string `json:"data_provider_global_metastore_id,omitempty"`
-}
-
-func UpdateProviderRequestFromSDK(v *sdk.UpdateProviderRequest) (*UpdateProviderRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	recipientProfileWireValue, err := RecipientProfileFromSDK(v.RecipientProfile)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.RecipientProfile", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.UpdatedAt", err)
-	}
-	return &UpdateProviderRequest{
-		NameArg:                       v.NameArg,
-		NewName:                       v.NewName,
-		Name:                          v.Name,
-		AuthenticationType:            v.AuthenticationType,
-		RecipientProfileStr:           v.RecipientProfileStr,
-		Comment:                       v.Comment,
-		Owner:                         v.Owner,
-		RecipientProfile:              recipientProfileWireValue,
-		CreatedAt:                     createdAtWireValue,
-		CreatedBy:                     v.CreatedBy,
-		UpdatedAt:                     updatedAtWireValue,
-		UpdatedBy:                     v.UpdatedBy,
-		Cloud:                         v.Cloud,
-		Region:                        v.Region,
-		MetastoreId:                   v.MetastoreId,
-		DataProviderGlobalMetastoreId: v.DataProviderGlobalMetastoreId,
-	}, nil
 }
 
 type UpdateRecipientRequest struct {
@@ -2171,60 +1021,6 @@ type UpdateRecipientRequest struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func UpdateRecipientRequestFromSDK(v *sdk.UpdateRecipientRequest) (*UpdateRecipientRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	ipAccessListWireValue, err := IpAccessListFromSDK(v.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.IpAccessList", err)
-	}
-	propertiesKvpairsWireValue, err := PropertiesKvPairsFromSDK(v.PropertiesKvpairs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.PropertiesKvpairs", err)
-	}
-	expirationTimeWireValue, err := int64ToWire(v.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.ExpirationTime", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.CreatedAt", err)
-	}
-	tokensWireValue, err := convertSlice(v.Tokens, RecipientTokenInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.Tokens", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.UpdatedAt", err)
-	}
-	return &UpdateRecipientRequest{
-		NameArg:                        v.NameArg,
-		NewName:                        v.NewName,
-		Name:                           v.Name,
-		AuthenticationType:             v.AuthenticationType,
-		SharingCode:                    v.SharingCode,
-		DataRecipientGlobalMetastoreId: v.DataRecipientGlobalMetastoreId,
-		Owner:                          v.Owner,
-		Comment:                        v.Comment,
-		IpAccessList:                   ipAccessListWireValue,
-		PropertiesKvpairs:              propertiesKvpairsWireValue,
-		ExpirationTime:                 expirationTimeWireValue,
-		ActivationUrl:                  v.ActivationUrl,
-		Activated:                      v.Activated,
-		CreatedAt:                      createdAtWireValue,
-		CreatedBy:                      v.CreatedBy,
-		Tokens:                         tokensWireValue,
-		UpdatedAt:                      updatedAtWireValue,
-		UpdatedBy:                      v.UpdatedBy,
-		Cloud:                          v.Cloud,
-		Region:                         v.Region,
-		MetastoreId:                    v.MetastoreId,
-		Id:                             v.Id,
-	}, nil
-}
-
 type UpdateSharePermissionsRequest struct {
 	// The name of the share.
 	Name *string `json:"name,omitempty"`
@@ -2235,37 +1031,9 @@ type UpdateSharePermissionsRequest struct {
 	Changes []PermissionsChange `json:"changes,omitempty"`
 }
 
-func UpdateSharePermissionsRequestFromSDK(v *sdk.UpdateSharePermissionsRequest) (*UpdateSharePermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	changesWireValue, err := convertSlice(v.Changes, PermissionsChangeFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsRequest.Changes", err)
-	}
-	return &UpdateSharePermissionsRequest{
-		Name:                v.Name,
-		OmitPermissionsList: v.OmitPermissionsList,
-		Changes:             changesWireValue,
-	}, nil
-}
-
 type UpdateSharePermissionsResponse struct {
 	// The privileges assigned to each principal
 	PrivilegeAssignments []PrivilegeAssignment `json:"privilege_assignments,omitempty"`
-}
-
-func UpdateSharePermissionsResponseToSDK(w *UpdateSharePermissionsResponse) (*sdk.UpdateSharePermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	privilegeAssignmentsPublicValue, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsResponse.PrivilegeAssignments", err)
-	}
-	return &sdk.UpdateSharePermissionsResponse{
-		PrivilegeAssignments: privilegeAssignmentsPublicValue,
-	}, nil
 }
 
 type UpdateShareRequest struct {
@@ -2299,68 +1067,12 @@ type UpdateShareRequest struct {
 	StorageLocation *string `json:"storage_location,omitempty"`
 }
 
-func UpdateShareRequestFromSDK(v *sdk.UpdateShareRequest) (*UpdateShareRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	updatesWireValue, err := convertSlice(v.Updates, UpdateShareRequest_SharedDataObjectUpdateFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Updates", err)
-	}
-	replicationConfigWireValue, err := ReplicationConfigFromSDK(v.ReplicationConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.ReplicationConfig", err)
-	}
-	objectsWireValue, err := convertSlice(v.Objects, SharedDataObjectFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Objects", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.UpdatedAt", err)
-	}
-	return &UpdateShareRequest{
-		NameArg:           v.NameArg,
-		NewName:           v.NewName,
-		Updates:           updatesWireValue,
-		Name:              v.Name,
-		Owner:             v.Owner,
-		Comment:           v.Comment,
-		StorageRoot:       v.StorageRoot,
-		ReplicationConfig: replicationConfigWireValue,
-		Objects:           objectsWireValue,
-		CreatedAt:         createdAtWireValue,
-		CreatedBy:         v.CreatedBy,
-		UpdatedAt:         updatedAtWireValue,
-		UpdatedBy:         v.UpdatedBy,
-		StorageLocation:   v.StorageLocation,
-	}, nil
-}
-
 type UpdateShareRequest_SharedDataObjectUpdate struct {
 	// One of: **ADD**, **REMOVE**, **UPDATE**.
 	Action UpdateShareRequest_SharedDataObjectUpdate_Action `json:"action,omitempty"`
 	// The data object that is being added, removed, or updated. The maximum number
 	// update data objects allowed is a 100.
 	DataObject *SharedDataObject `json:"data_object,omitempty"`
-}
-
-func UpdateShareRequest_SharedDataObjectUpdateFromSDK(v *sdk.UpdateShareRequest_SharedDataObjectUpdate) (*UpdateShareRequest_SharedDataObjectUpdate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dataObjectWireValue, err := SharedDataObjectFromSDK(v.DataObject)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest_SharedDataObjectUpdate.DataObject", err)
-	}
-	return &UpdateShareRequest_SharedDataObjectUpdate{
-		Action:     v.Action,
-		DataObject: dataObjectWireValue,
-	}, nil
 }
 
 type Volume struct {
@@ -2382,23 +1094,2139 @@ type Volume struct {
 	Tags []TagKeyValue `json:"tags,omitempty"`
 }
 
+// CreateFederationPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreateFederationPolicyRequestToSDK(w *CreateFederationPolicyRequest) (*sdk.CreateFederationPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFederationPolicyRequest{}
+	out.RecipientName = w.RecipientName
+	conv1, err := FederationPolicyToSDK(w.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv1
+	return out, nil
+}
+
+// CreateFederationPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateFederationPolicyRequestFromSDK(v *sdk.CreateFederationPolicyRequest) (*CreateFederationPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFederationPolicyRequest{}
+	out.RecipientName = v.RecipientName
+	conv2, err := FederationPolicyFromSDK(v.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFederationPolicyRequest.Policy", err)
+	}
+	out.Policy = conv2
+	return out, nil
+}
+
+// CreateProviderRequestToSDK converts the mirror to the sdk-go type.
+func CreateProviderRequestToSDK(w *CreateProviderRequest) (*sdk.CreateProviderRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProviderRequest{}
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.RecipientProfileStr = w.RecipientProfileStr
+	out.Comment = w.Comment
+	out.Owner = w.Owner
+	conv3, err := RecipientProfileToSDK(w.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv3
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.DataProviderGlobalMetastoreId = w.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// CreateProviderRequestFromSDK converts the sdk-go type to the mirror.
+func CreateProviderRequestFromSDK(v *sdk.CreateProviderRequest) (*CreateProviderRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProviderRequest{}
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.RecipientProfileStr = v.RecipientProfileStr
+	out.Comment = v.Comment
+	out.Owner = v.Owner
+	conv4, err := RecipientProfileFromSDK(v.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv4
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.DataProviderGlobalMetastoreId = v.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// CreateRecipientRequestToSDK converts the mirror to the sdk-go type.
+func CreateRecipientRequestToSDK(w *CreateRecipientRequest) (*sdk.CreateRecipientRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRecipientRequest{}
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.SharingCode = w.SharingCode
+	out.DataRecipientGlobalMetastoreId = w.DataRecipientGlobalMetastoreId
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	conv5, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.IpAccessList", err)
+	}
+	out.IpAccessList = conv5
+	conv6, err := PropertiesKvPairsToSDK(w.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv6
+	out.ExpirationTime = w.ExpirationTime
+	out.ActivationUrl = w.ActivationUrl
+	out.Activated = w.Activated
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	conv7, err := convertSlice(w.Tokens, RecipientTokenInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.Tokens", err)
+	}
+	out.Tokens = conv7
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreateRecipientRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRecipientRequestFromSDK(v *sdk.CreateRecipientRequest) (*CreateRecipientRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRecipientRequest{}
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.SharingCode = v.SharingCode
+	out.DataRecipientGlobalMetastoreId = v.DataRecipientGlobalMetastoreId
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	conv8, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.IpAccessList", err)
+	}
+	out.IpAccessList = conv8
+	conv9, err := PropertiesKvPairsFromSDK(v.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv9
+	out.ExpirationTime = v.ExpirationTime
+	out.ActivationUrl = v.ActivationUrl
+	out.Activated = v.Activated
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	conv10, err := convertSlice(v.Tokens, RecipientTokenInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRecipientRequest.Tokens", err)
+	}
+	out.Tokens = conv10
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.Id = v.Id
+	return out, nil
+}
+
+// CreateShareRequestToSDK converts the mirror to the sdk-go type.
+func CreateShareRequestToSDK(w *CreateShareRequest) (*sdk.CreateShareRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateShareRequest{}
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	conv11, err := ReplicationConfigToSDK(w.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv11
+	conv12, err := convertSlice(w.Objects, SharedDataObjectToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.Objects", err)
+	}
+	out.Objects = conv12
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	return out, nil
+}
+
+// CreateShareRequestFromSDK converts the sdk-go type to the mirror.
+func CreateShareRequestFromSDK(v *sdk.CreateShareRequest) (*CreateShareRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateShareRequest{}
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	conv13, err := ReplicationConfigFromSDK(v.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv13
+	conv14, err := convertSlice(v.Objects, SharedDataObjectFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateShareRequest.Objects", err)
+	}
+	out.Objects = conv14
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	return out, nil
+}
+
+// DependencyToSDK converts the mirror to the sdk-go type.
+func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dependency{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Function != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv15, err := TableDependencyToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Table{Table: *conv15}
+	case w.Function != nil:
+		conv16, err := FunctionDependencyToSDK(w.Function)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Function{Function: *conv16}
+	}
+	return out, nil
+}
+
+// DependencyFromSDK converts the sdk-go type to the mirror.
+func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dependency{}
+	switch value := v.Value.(type) {
+	case *sdk.Dependency_Value_Table:
+		if value != nil {
+			conv17, err := TableDependencyFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Table = conv17
+		}
+	case *sdk.Dependency_Value_Function:
+		if value != nil {
+			conv18, err := FunctionDependencyFromSDK(&value.Function)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Function = conv18
+		}
+	}
+	return out, nil
+}
+
+// DependencyListToSDK converts the mirror to the sdk-go type.
+func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DependencyList{}
+	conv19, err := convertSlice(w.Dependencies, DependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv19
+	return out, nil
+}
+
+// DependencyListFromSDK converts the sdk-go type to the mirror.
+func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DependencyList{}
+	conv20, err := convertSlice(v.Dependencies, DependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv20
+	return out, nil
+}
+
+// FederationPolicyToSDK converts the mirror to the sdk-go type.
+func FederationPolicyToSDK(w *FederationPolicy) (*sdk.FederationPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FederationPolicy{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.OidcPolicy != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FederationPolicy.Policy")
+		}
+	}
+	switch {
+	case w.OidcPolicy != nil:
+		conv21, err := OidcFederationPolicyToSDK(w.OidcPolicy)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy", err)
+		}
+		out.Policy = &sdk.FederationPolicy_Policy_OidcPolicy{OidcPolicy: *conv21}
+	}
+	out.CreateTime = w.CreateTime
+	out.Comment = w.Comment
+	out.UpdateTime = w.UpdateTime
+	out.Id = w.Id
+	return out, nil
+}
+
+// FederationPolicyFromSDK converts the sdk-go type to the mirror.
+func FederationPolicyFromSDK(v *sdk.FederationPolicy) (*FederationPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FederationPolicy{}
+	out.Name = v.Name
+	switch value := v.Policy.(type) {
+	case *sdk.FederationPolicy_Policy_OidcPolicy:
+		if value != nil {
+			conv22, err := OidcFederationPolicyFromSDK(&value.OidcPolicy)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FederationPolicy.Policy", err)
+			}
+			out.OidcPolicy = conv22
+		}
+	}
+	out.CreateTime = v.CreateTime
+	out.Comment = v.Comment
+	out.UpdateTime = v.UpdateTime
+	out.Id = v.Id
+	return out, nil
+}
+
+// FunctionToSDK converts the mirror to the sdk-go type.
+func FunctionToSDK(w *Function) (*sdk.Function, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Function{}
+	out.Name = w.Name
+	out.Schema = w.Schema
+	out.Share = w.Share
+	out.ShareId = w.ShareId
+	out.Id = w.Id
+	out.StorageLocation = w.StorageLocation
+	out.Comment = w.Comment
+	conv23, err := convertSlice(w.Aliases, RegisteredModelAliasToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.Aliases", err)
+	}
+	out.Aliases = conv23
+	conv24, err := convertSlice(w.Tags, TagKeyValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.Tags", err)
+	}
+	out.Tags = conv24
+	out.SecurableKind = w.SecurableKind
+	out.FullDataType = w.FullDataType
+	out.DataType = w.DataType
+	out.RoutineDefinition = w.RoutineDefinition
+	conv25, err := FunctionParameterInfosToSDK(w.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.InputParams", err)
+	}
+	out.InputParams = conv25
+	conv26, err := DependencyListToSDK(w.DependencyList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.DependencyList", err)
+	}
+	out.DependencyList = conv26
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// FunctionFromSDK converts the sdk-go type to the mirror.
+func FunctionFromSDK(v *sdk.Function) (*Function, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Function{}
+	out.Name = v.Name
+	out.Schema = v.Schema
+	out.Share = v.Share
+	out.ShareId = v.ShareId
+	out.Id = v.Id
+	out.StorageLocation = v.StorageLocation
+	out.Comment = v.Comment
+	conv27, err := convertSlice(v.Aliases, RegisteredModelAliasFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.Aliases", err)
+	}
+	out.Aliases = conv27
+	conv28, err := convertSlice(v.Tags, TagKeyValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.Tags", err)
+	}
+	out.Tags = conv28
+	out.SecurableKind = v.SecurableKind
+	out.FullDataType = v.FullDataType
+	out.DataType = v.DataType
+	out.RoutineDefinition = v.RoutineDefinition
+	conv29, err := FunctionParameterInfosFromSDK(v.InputParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.InputParams", err)
+	}
+	out.InputParams = conv29
+	conv30, err := DependencyListFromSDK(v.DependencyList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Function.DependencyList", err)
+	}
+	out.DependencyList = conv30
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// FunctionDependencyToSDK converts the mirror to the sdk-go type.
+func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionDependency{}
+	out.SchemaName = w.SchemaName
+	out.FunctionName = w.FunctionName
+	return out, nil
+}
+
+// FunctionDependencyFromSDK converts the sdk-go type to the mirror.
+func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionDependency{}
+	out.SchemaName = v.SchemaName
+	out.FunctionName = v.FunctionName
+	return out, nil
+}
+
+// FunctionParameterInfoToSDK converts the mirror to the sdk-go type.
+func FunctionParameterInfoToSDK(w *FunctionParameterInfo) (*sdk.FunctionParameterInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionParameterInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeJson = w.TypeJson
+	out.TypeName = w.TypeName
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	out.Position = w.Position
+	out.ParameterMode = w.ParameterMode
+	out.ParameterType = w.ParameterType
+	out.ParameterDefault = w.ParameterDefault
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// FunctionParameterInfoFromSDK converts the sdk-go type to the mirror.
+func FunctionParameterInfoFromSDK(v *sdk.FunctionParameterInfo) (*FunctionParameterInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionParameterInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeJson = v.TypeJson
+	out.TypeName = v.TypeName
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	out.Position = v.Position
+	out.ParameterMode = v.ParameterMode
+	out.ParameterType = v.ParameterType
+	out.ParameterDefault = v.ParameterDefault
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// FunctionParameterInfosToSDK converts the mirror to the sdk-go type.
+func FunctionParameterInfosToSDK(w *FunctionParameterInfos) (*sdk.FunctionParameterInfos, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionParameterInfos{}
+	conv31, err := convertSlice(w.Parameters, FunctionParameterInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
+	}
+	out.Parameters = conv31
+	return out, nil
+}
+
+// FunctionParameterInfosFromSDK converts the sdk-go type to the mirror.
+func FunctionParameterInfosFromSDK(v *sdk.FunctionParameterInfos) (*FunctionParameterInfos, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionParameterInfos{}
+	conv32, err := convertSlice(v.Parameters, FunctionParameterInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FunctionParameterInfos.Parameters", err)
+	}
+	out.Parameters = conv32
+	return out, nil
+}
+
+// GetRecipientSharePermissionsResponseToSDK converts the mirror to the sdk-go type.
+func GetRecipientSharePermissionsResponseToSDK(w *GetRecipientSharePermissionsResponse) (*sdk.GetRecipientSharePermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRecipientSharePermissionsResponse{}
+	conv33, err := convertSlice(w.PermissionsOut, ShareToPrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRecipientSharePermissionsResponse.PermissionsOut", err)
+	}
+	out.PermissionsOut = conv33
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetRecipientSharePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetRecipientSharePermissionsResponseFromSDK(v *sdk.GetRecipientSharePermissionsResponse) (*GetRecipientSharePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRecipientSharePermissionsResponse{}
+	conv34, err := convertSlice(v.PermissionsOut, ShareToPrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRecipientSharePermissionsResponse.PermissionsOut", err)
+	}
+	out.PermissionsOut = conv34
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetSharePermissionsResponseToSDK converts the mirror to the sdk-go type.
+func GetSharePermissionsResponseToSDK(w *GetSharePermissionsResponse) (*sdk.GetSharePermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSharePermissionsResponse{}
+	out.NextPageToken = w.NextPageToken
+	conv35, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetSharePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv35
+	return out, nil
+}
+
+// GetSharePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetSharePermissionsResponseFromSDK(v *sdk.GetSharePermissionsResponse) (*GetSharePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSharePermissionsResponse{}
+	out.NextPageToken = v.NextPageToken
+	conv36, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetSharePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv36
+	return out, nil
+}
+
+// GetShareRequestToSDK converts the mirror to the sdk-go type.
+func GetShareRequestToSDK(w *GetShareRequest) (*sdk.GetShareRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetShareRequest{}
+	out.Name = w.Name
+	out.IncludeSharedData = w.IncludeSharedData
+	return out, nil
+}
+
+// GetShareRequestFromSDK converts the sdk-go type to the mirror.
+func GetShareRequestFromSDK(v *sdk.GetShareRequest) (*GetShareRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetShareRequest{}
+	out.Name = v.Name
+	out.IncludeSharedData = v.IncludeSharedData
+	return out, nil
+}
+
+// IpAccessListToSDK converts the mirror to the sdk-go type.
+func IpAccessListToSDK(w *IpAccessList) (*sdk.IpAccessList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IpAccessList{}
+	out.AllowedIpAddresses = w.AllowedIpAddresses
+	return out, nil
+}
+
+// IpAccessListFromSDK converts the sdk-go type to the mirror.
+func IpAccessListFromSDK(v *sdk.IpAccessList) (*IpAccessList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IpAccessList{}
+	out.AllowedIpAddresses = v.AllowedIpAddresses
+	return out, nil
+}
+
+// ListFederationPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListFederationPoliciesRequestToSDK(w *ListFederationPoliciesRequest) (*sdk.ListFederationPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFederationPoliciesRequest{}
+	out.RecipientName = w.RecipientName
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListFederationPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListFederationPoliciesRequestFromSDK(v *sdk.ListFederationPoliciesRequest) (*ListFederationPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFederationPoliciesRequest{}
+	out.RecipientName = v.RecipientName
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListFederationPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListFederationPoliciesResponseToSDK(w *ListFederationPoliciesResponse) (*sdk.ListFederationPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFederationPoliciesResponse{}
+	conv37, err := convertSlice(w.Policies, FederationPolicyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv37
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFederationPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListFederationPoliciesResponseFromSDK(v *sdk.ListFederationPoliciesResponse) (*ListFederationPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFederationPoliciesResponse{}
+	conv38, err := convertSlice(v.Policies, FederationPolicyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFederationPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv38
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListProviderShareAssetsRequestToSDK converts the mirror to the sdk-go type.
+func ListProviderShareAssetsRequestToSDK(w *ListProviderShareAssetsRequest) (*sdk.ListProviderShareAssetsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProviderShareAssetsRequest{}
+	out.ProviderNameArg = w.ProviderNameArg
+	out.ShareNameArg = w.ShareNameArg
+	out.TableMaxResults = w.TableMaxResults
+	out.FunctionMaxResults = w.FunctionMaxResults
+	out.VolumeMaxResults = w.VolumeMaxResults
+	out.NotebookMaxResults = w.NotebookMaxResults
+	return out, nil
+}
+
+// ListProviderShareAssetsRequestFromSDK converts the sdk-go type to the mirror.
+func ListProviderShareAssetsRequestFromSDK(v *sdk.ListProviderShareAssetsRequest) (*ListProviderShareAssetsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProviderShareAssetsRequest{}
+	out.ProviderNameArg = v.ProviderNameArg
+	out.ShareNameArg = v.ShareNameArg
+	out.TableMaxResults = v.TableMaxResults
+	out.FunctionMaxResults = v.FunctionMaxResults
+	out.VolumeMaxResults = v.VolumeMaxResults
+	out.NotebookMaxResults = v.NotebookMaxResults
+	return out, nil
+}
+
+// ListProviderShareAssetsResponseToSDK converts the mirror to the sdk-go type.
+func ListProviderShareAssetsResponseToSDK(w *ListProviderShareAssetsResponse) (*sdk.ListProviderShareAssetsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProviderShareAssetsResponse{}
+	conv39, err := convertSlice(w.Tables, TableToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Tables", err)
+	}
+	out.Tables = conv39
+	conv40, err := convertSlice(w.Functions, FunctionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Functions", err)
+	}
+	out.Functions = conv40
+	conv41, err := convertSlice(w.Notebooks, NotebookFileToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Notebooks", err)
+	}
+	out.Notebooks = conv41
+	conv42, err := convertSlice(w.Volumes, VolumeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Volumes", err)
+	}
+	out.Volumes = conv42
+	conv43, err := ShareToSDK(w.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Share", err)
+	}
+	out.Share = conv43
+	return out, nil
+}
+
+// ListProviderShareAssetsResponseFromSDK converts the sdk-go type to the mirror.
+func ListProviderShareAssetsResponseFromSDK(v *sdk.ListProviderShareAssetsResponse) (*ListProviderShareAssetsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProviderShareAssetsResponse{}
+	conv44, err := convertSlice(v.Tables, TableFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Tables", err)
+	}
+	out.Tables = conv44
+	conv45, err := convertSlice(v.Functions, FunctionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Functions", err)
+	}
+	out.Functions = conv45
+	conv46, err := convertSlice(v.Notebooks, NotebookFileFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Notebooks", err)
+	}
+	out.Notebooks = conv46
+	conv47, err := convertSlice(v.Volumes, VolumeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Volumes", err)
+	}
+	out.Volumes = conv47
+	conv48, err := ShareFromSDK(v.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderShareAssetsResponse.Share", err)
+	}
+	out.Share = conv48
+	return out, nil
+}
+
+// ListProviderSharesRequestToSDK converts the mirror to the sdk-go type.
+func ListProviderSharesRequestToSDK(w *ListProviderSharesRequest) (*sdk.ListProviderSharesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProviderSharesRequest{}
+	out.ProviderNameArg = w.ProviderNameArg
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListProviderSharesRequestFromSDK converts the sdk-go type to the mirror.
+func ListProviderSharesRequestFromSDK(v *sdk.ListProviderSharesRequest) (*ListProviderSharesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProviderSharesRequest{}
+	out.ProviderNameArg = v.ProviderNameArg
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListProviderSharesResponseToSDK converts the mirror to the sdk-go type.
+func ListProviderSharesResponseToSDK(w *ListProviderSharesResponse) (*sdk.ListProviderSharesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProviderSharesResponse{}
+	conv49, err := convertSlice(w.Shares, ProviderShareToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderSharesResponse.Shares", err)
+	}
+	out.Shares = conv49
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListProviderSharesResponseFromSDK converts the sdk-go type to the mirror.
+func ListProviderSharesResponseFromSDK(v *sdk.ListProviderSharesResponse) (*ListProviderSharesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProviderSharesResponse{}
+	conv50, err := convertSlice(v.Shares, ProviderShareFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProviderSharesResponse.Shares", err)
+	}
+	out.Shares = conv50
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListProvidersRequestToSDK converts the mirror to the sdk-go type.
+func ListProvidersRequestToSDK(w *ListProvidersRequest) (*sdk.ListProvidersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProvidersRequest{}
+	out.DataProviderGlobalMetastoreId = w.DataProviderGlobalMetastoreId
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListProvidersRequestFromSDK converts the sdk-go type to the mirror.
+func ListProvidersRequestFromSDK(v *sdk.ListProvidersRequest) (*ListProvidersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProvidersRequest{}
+	out.DataProviderGlobalMetastoreId = v.DataProviderGlobalMetastoreId
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListProvidersResponseToSDK converts the mirror to the sdk-go type.
+func ListProvidersResponseToSDK(w *ListProvidersResponse) (*sdk.ListProvidersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProvidersResponse{}
+	conv51, err := convertSlice(w.Providers, ProviderInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
+	}
+	out.Providers = conv51
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListProvidersResponseFromSDK converts the sdk-go type to the mirror.
+func ListProvidersResponseFromSDK(v *sdk.ListProvidersResponse) (*ListProvidersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProvidersResponse{}
+	conv52, err := convertSlice(v.Providers, ProviderInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
+	}
+	out.Providers = conv52
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListRecipientSharePermissionsRequestToSDK converts the mirror to the sdk-go type.
+func ListRecipientSharePermissionsRequestToSDK(w *ListRecipientSharePermissionsRequest) (*sdk.ListRecipientSharePermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRecipientSharePermissionsRequest{}
+	out.Name = w.Name
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListRecipientSharePermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListRecipientSharePermissionsRequestFromSDK(v *sdk.ListRecipientSharePermissionsRequest) (*ListRecipientSharePermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRecipientSharePermissionsRequest{}
+	out.Name = v.Name
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListRecipientsRequestToSDK converts the mirror to the sdk-go type.
+func ListRecipientsRequestToSDK(w *ListRecipientsRequest) (*sdk.ListRecipientsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRecipientsRequest{}
+	out.DataRecipientGlobalMetastoreId = w.DataRecipientGlobalMetastoreId
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListRecipientsRequestFromSDK converts the sdk-go type to the mirror.
+func ListRecipientsRequestFromSDK(v *sdk.ListRecipientsRequest) (*ListRecipientsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRecipientsRequest{}
+	out.DataRecipientGlobalMetastoreId = v.DataRecipientGlobalMetastoreId
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListRecipientsResponseToSDK converts the mirror to the sdk-go type.
+func ListRecipientsResponseToSDK(w *ListRecipientsResponse) (*sdk.ListRecipientsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRecipientsResponse{}
+	conv53, err := convertSlice(w.Recipients, RecipientInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRecipientsResponse.Recipients", err)
+	}
+	out.Recipients = conv53
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRecipientsResponseFromSDK converts the sdk-go type to the mirror.
+func ListRecipientsResponseFromSDK(v *sdk.ListRecipientsResponse) (*ListRecipientsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRecipientsResponse{}
+	conv54, err := convertSlice(v.Recipients, RecipientInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRecipientsResponse.Recipients", err)
+	}
+	out.Recipients = conv54
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSharePermissionsRequestToSDK converts the mirror to the sdk-go type.
+func ListSharePermissionsRequestToSDK(w *ListSharePermissionsRequest) (*sdk.ListSharePermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSharePermissionsRequest{}
+	out.Name = w.Name
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSharePermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSharePermissionsRequestFromSDK(v *sdk.ListSharePermissionsRequest) (*ListSharePermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSharePermissionsRequest{}
+	out.Name = v.Name
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSharesRequestToSDK converts the mirror to the sdk-go type.
+func ListSharesRequestToSDK(w *ListSharesRequest) (*sdk.ListSharesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSharesRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSharesRequestFromSDK converts the sdk-go type to the mirror.
+func ListSharesRequestFromSDK(v *sdk.ListSharesRequest) (*ListSharesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSharesRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSharesResponseToSDK converts the mirror to the sdk-go type.
+func ListSharesResponseToSDK(w *ListSharesResponse) (*sdk.ListSharesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSharesResponse{}
+	conv55, err := convertSlice(w.Shares, ShareInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSharesResponse.Shares", err)
+	}
+	out.Shares = conv55
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSharesResponseFromSDK converts the sdk-go type to the mirror.
+func ListSharesResponseFromSDK(v *sdk.ListSharesResponse) (*ListSharesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSharesResponse{}
+	conv56, err := convertSlice(v.Shares, ShareInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSharesResponse.Shares", err)
+	}
+	out.Shares = conv56
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// NotebookFileToSDK converts the mirror to the sdk-go type.
+func NotebookFileToSDK(w *NotebookFile) (*sdk.NotebookFile, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotebookFile{}
+	out.Name = w.Name
+	out.Share = w.Share
+	out.ShareId = w.ShareId
+	out.Id = w.Id
+	out.Comment = w.Comment
+	conv57, err := convertSlice(w.Tags, TagKeyValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotebookFile.Tags", err)
+	}
+	out.Tags = conv57
+	return out, nil
+}
+
+// NotebookFileFromSDK converts the sdk-go type to the mirror.
+func NotebookFileFromSDK(v *sdk.NotebookFile) (*NotebookFile, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotebookFile{}
+	out.Name = v.Name
+	out.Share = v.Share
+	out.ShareId = v.ShareId
+	out.Id = v.Id
+	out.Comment = v.Comment
+	conv58, err := convertSlice(v.Tags, TagKeyValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotebookFile.Tags", err)
+	}
+	out.Tags = conv58
+	return out, nil
+}
+
+// OidcFederationPolicyToSDK converts the mirror to the sdk-go type.
+func OidcFederationPolicyToSDK(w *OidcFederationPolicy) (*sdk.OidcFederationPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OidcFederationPolicy{}
+	out.Issuer = w.Issuer
+	out.SubjectClaim = w.SubjectClaim
+	out.Subject = w.Subject
+	out.Audiences = w.Audiences
+	return out, nil
+}
+
+// OidcFederationPolicyFromSDK converts the sdk-go type to the mirror.
+func OidcFederationPolicyFromSDK(v *sdk.OidcFederationPolicy) (*OidcFederationPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OidcFederationPolicy{}
+	out.Issuer = v.Issuer
+	out.SubjectClaim = v.SubjectClaim
+	out.Subject = v.Subject
+	out.Audiences = v.Audiences
+	return out, nil
+}
+
+// PartitionSpecification_PartitionToSDK converts the mirror to the sdk-go type.
+func PartitionSpecification_PartitionToSDK(w *PartitionSpecification_Partition) (*sdk.PartitionSpecification_Partition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PartitionSpecification_Partition{}
+	conv59, err := convertSlice(w.Values, PartitionSpecification_Partition_PartitionValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
+	}
+	out.Values = conv59
+	return out, nil
+}
+
+// PartitionSpecification_PartitionFromSDK converts the sdk-go type to the mirror.
+func PartitionSpecification_PartitionFromSDK(v *sdk.PartitionSpecification_Partition) (*PartitionSpecification_Partition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PartitionSpecification_Partition{}
+	conv60, err := convertSlice(v.Values, PartitionSpecification_Partition_PartitionValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
+	}
+	out.Values = conv60
+	return out, nil
+}
+
+// PartitionSpecification_Partition_PartitionValueToSDK converts the mirror to the sdk-go type.
+func PartitionSpecification_Partition_PartitionValueToSDK(w *PartitionSpecification_Partition_PartitionValue) (*sdk.PartitionSpecification_Partition_PartitionValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PartitionSpecification_Partition_PartitionValue{}
+	out.Name = w.Name
+	out.Value = w.Value
+	out.RecipientPropertyKey = w.RecipientPropertyKey
+	out.Op = w.Op
+	return out, nil
+}
+
+// PartitionSpecification_Partition_PartitionValueFromSDK converts the sdk-go type to the mirror.
+func PartitionSpecification_Partition_PartitionValueFromSDK(v *sdk.PartitionSpecification_Partition_PartitionValue) (*PartitionSpecification_Partition_PartitionValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PartitionSpecification_Partition_PartitionValue{}
+	out.Name = v.Name
+	out.Value = v.Value
+	out.RecipientPropertyKey = v.RecipientPropertyKey
+	out.Op = v.Op
+	return out, nil
+}
+
+// PermissionsChangeToSDK converts the mirror to the sdk-go type.
+func PermissionsChangeToSDK(w *PermissionsChange) (*sdk.PermissionsChange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermissionsChange{}
+	out.Principal = w.Principal
+	out.Add = w.Add
+	out.Remove = w.Remove
+	return out, nil
+}
+
+// PermissionsChangeFromSDK converts the sdk-go type to the mirror.
+func PermissionsChangeFromSDK(v *sdk.PermissionsChange) (*PermissionsChange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermissionsChange{}
+	out.Principal = v.Principal
+	out.Add = v.Add
+	out.Remove = v.Remove
+	return out, nil
+}
+
+// PrivilegeAssignmentToSDK converts the mirror to the sdk-go type.
+func PrivilegeAssignmentToSDK(w *PrivilegeAssignment) (*sdk.PrivilegeAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrivilegeAssignment{}
+	out.Principal = w.Principal
+	out.Privileges = w.Privileges
+	return out, nil
+}
+
+// PrivilegeAssignmentFromSDK converts the sdk-go type to the mirror.
+func PrivilegeAssignmentFromSDK(v *sdk.PrivilegeAssignment) (*PrivilegeAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrivilegeAssignment{}
+	out.Principal = v.Principal
+	out.Privileges = v.Privileges
+	return out, nil
+}
+
+// PropertiesKvPairsToSDK converts the mirror to the sdk-go type.
+func PropertiesKvPairsToSDK(w *PropertiesKvPairs) (*sdk.PropertiesKvPairs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PropertiesKvPairs{}
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// PropertiesKvPairsFromSDK converts the sdk-go type to the mirror.
+func PropertiesKvPairsFromSDK(v *sdk.PropertiesKvPairs) (*PropertiesKvPairs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PropertiesKvPairs{}
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// ProviderInfoToSDK converts the mirror to the sdk-go type.
+func ProviderInfoToSDK(w *ProviderInfo) (*sdk.ProviderInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProviderInfo{}
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.RecipientProfileStr = w.RecipientProfileStr
+	out.Comment = w.Comment
+	out.Owner = w.Owner
+	conv61, err := RecipientProfileToSDK(w.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProviderInfo.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv61
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.DataProviderGlobalMetastoreId = w.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// ProviderInfoFromSDK converts the sdk-go type to the mirror.
+func ProviderInfoFromSDK(v *sdk.ProviderInfo) (*ProviderInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProviderInfo{}
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.RecipientProfileStr = v.RecipientProfileStr
+	out.Comment = v.Comment
+	out.Owner = v.Owner
+	conv62, err := RecipientProfileFromSDK(v.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProviderInfo.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv62
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.DataProviderGlobalMetastoreId = v.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// ProviderShareToSDK converts the mirror to the sdk-go type.
+func ProviderShareToSDK(w *ProviderShare) (*sdk.ProviderShare, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProviderShare{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ProviderShareFromSDK converts the sdk-go type to the mirror.
+func ProviderShareFromSDK(v *sdk.ProviderShare) (*ProviderShare, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProviderShare{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// RecipientInfoToSDK converts the mirror to the sdk-go type.
+func RecipientInfoToSDK(w *RecipientInfo) (*sdk.RecipientInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RecipientInfo{}
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.SharingCode = w.SharingCode
+	out.DataRecipientGlobalMetastoreId = w.DataRecipientGlobalMetastoreId
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	conv63, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.IpAccessList", err)
+	}
+	out.IpAccessList = conv63
+	conv64, err := PropertiesKvPairsToSDK(w.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv64
+	out.ExpirationTime = w.ExpirationTime
+	out.ActivationUrl = w.ActivationUrl
+	out.Activated = w.Activated
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	conv65, err := convertSlice(w.Tokens, RecipientTokenInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.Tokens", err)
+	}
+	out.Tokens = conv65
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.Id = w.Id
+	return out, nil
+}
+
+// RecipientInfoFromSDK converts the sdk-go type to the mirror.
+func RecipientInfoFromSDK(v *sdk.RecipientInfo) (*RecipientInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RecipientInfo{}
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.SharingCode = v.SharingCode
+	out.DataRecipientGlobalMetastoreId = v.DataRecipientGlobalMetastoreId
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	conv66, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.IpAccessList", err)
+	}
+	out.IpAccessList = conv66
+	conv67, err := PropertiesKvPairsFromSDK(v.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv67
+	out.ExpirationTime = v.ExpirationTime
+	out.ActivationUrl = v.ActivationUrl
+	out.Activated = v.Activated
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	conv68, err := convertSlice(v.Tokens, RecipientTokenInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RecipientInfo.Tokens", err)
+	}
+	out.Tokens = conv68
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.Id = v.Id
+	return out, nil
+}
+
+// RecipientProfileToSDK converts the mirror to the sdk-go type.
+func RecipientProfileToSDK(w *RecipientProfile) (*sdk.RecipientProfile, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RecipientProfile{}
+	out.ShareCredentialsVersion = w.ShareCredentialsVersion
+	out.Endpoint = w.Endpoint
+	out.BearerToken = w.BearerToken
+	return out, nil
+}
+
+// RecipientProfileFromSDK converts the sdk-go type to the mirror.
+func RecipientProfileFromSDK(v *sdk.RecipientProfile) (*RecipientProfile, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RecipientProfile{}
+	out.ShareCredentialsVersion = v.ShareCredentialsVersion
+	out.Endpoint = v.Endpoint
+	out.BearerToken = v.BearerToken
+	return out, nil
+}
+
+// RecipientTokenInfoToSDK converts the mirror to the sdk-go type.
+func RecipientTokenInfoToSDK(w *RecipientTokenInfo) (*sdk.RecipientTokenInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RecipientTokenInfo{}
+	out.Id = w.Id
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.ActivationUrl = w.ActivationUrl
+	out.ExpirationTime = w.ExpirationTime
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	return out, nil
+}
+
+// RecipientTokenInfoFromSDK converts the sdk-go type to the mirror.
+func RecipientTokenInfoFromSDK(v *sdk.RecipientTokenInfo) (*RecipientTokenInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RecipientTokenInfo{}
+	out.Id = v.Id
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.ActivationUrl = v.ActivationUrl
+	out.ExpirationTime = v.ExpirationTime
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	return out, nil
+}
+
+// RegisteredModelAliasToSDK converts the mirror to the sdk-go type.
+func RegisteredModelAliasToSDK(w *RegisteredModelAlias) (*sdk.RegisteredModelAlias, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModelAlias{}
+	out.AliasName = w.AliasName
+	out.VersionNum = w.VersionNum
+	return out, nil
+}
+
+// RegisteredModelAliasFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelAliasFromSDK(v *sdk.RegisteredModelAlias) (*RegisteredModelAlias, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModelAlias{}
+	out.AliasName = v.AliasName
+	out.VersionNum = v.VersionNum
+	return out, nil
+}
+
+// ReplicationConfigToSDK converts the mirror to the sdk-go type.
+func ReplicationConfigToSDK(w *ReplicationConfig) (*sdk.ReplicationConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplicationConfig{}
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// ReplicationConfigFromSDK converts the sdk-go type to the mirror.
+func ReplicationConfigFromSDK(v *sdk.ReplicationConfig) (*ReplicationConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplicationConfig{}
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// RetrieveTokenResponseToSDK converts the mirror to the sdk-go type.
+func RetrieveTokenResponseToSDK(w *RetrieveTokenResponse) (*sdk.RetrieveTokenResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RetrieveTokenResponse{}
+	out.ShareCredentialsVersion = w.ShareCredentialsVersion
+	out.BearerToken = w.BearerToken
+	out.Endpoint = w.Endpoint
+	out.ExpirationTime = w.ExpirationTime
+	return out, nil
+}
+
+// RetrieveTokenResponseFromSDK converts the sdk-go type to the mirror.
+func RetrieveTokenResponseFromSDK(v *sdk.RetrieveTokenResponse) (*RetrieveTokenResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RetrieveTokenResponse{}
+	out.ShareCredentialsVersion = v.ShareCredentialsVersion
+	out.BearerToken = v.BearerToken
+	out.Endpoint = v.Endpoint
+	out.ExpirationTime = v.ExpirationTime
+	return out, nil
+}
+
+// RotateRecipientTokenRequestToSDK converts the mirror to the sdk-go type.
+func RotateRecipientTokenRequestToSDK(w *RotateRecipientTokenRequest) (*sdk.RotateRecipientTokenRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RotateRecipientTokenRequest{}
+	out.Name = w.Name
+	out.ExistingTokenExpireInSeconds = w.ExistingTokenExpireInSeconds
+	return out, nil
+}
+
+// RotateRecipientTokenRequestFromSDK converts the sdk-go type to the mirror.
+func RotateRecipientTokenRequestFromSDK(v *sdk.RotateRecipientTokenRequest) (*RotateRecipientTokenRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RotateRecipientTokenRequest{}
+	out.Name = v.Name
+	out.ExistingTokenExpireInSeconds = v.ExistingTokenExpireInSeconds
+	return out, nil
+}
+
+// ShareToSDK converts the mirror to the sdk-go type.
+func ShareToSDK(w *Share) (*sdk.Share, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Share{}
+	out.Name = w.Name
+	out.Id = w.Id
+	return out, nil
+}
+
+// ShareFromSDK converts the sdk-go type to the mirror.
+func ShareFromSDK(v *sdk.Share) (*Share, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Share{}
+	out.Name = v.Name
+	out.Id = v.Id
+	return out, nil
+}
+
+// ShareInfoToSDK converts the mirror to the sdk-go type.
+func ShareInfoToSDK(w *ShareInfo) (*sdk.ShareInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ShareInfo{}
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	conv69, err := ReplicationConfigToSDK(w.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareInfo.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv69
+	conv70, err := convertSlice(w.Objects, SharedDataObjectToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareInfo.Objects", err)
+	}
+	out.Objects = conv70
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	return out, nil
+}
+
+// ShareInfoFromSDK converts the sdk-go type to the mirror.
+func ShareInfoFromSDK(v *sdk.ShareInfo) (*ShareInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ShareInfo{}
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	conv71, err := ReplicationConfigFromSDK(v.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareInfo.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv71
+	conv72, err := convertSlice(v.Objects, SharedDataObjectFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareInfo.Objects", err)
+	}
+	out.Objects = conv72
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	return out, nil
+}
+
+// ShareToPrivilegeAssignmentToSDK converts the mirror to the sdk-go type.
+func ShareToPrivilegeAssignmentToSDK(w *ShareToPrivilegeAssignment) (*sdk.ShareToPrivilegeAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ShareToPrivilegeAssignment{}
+	out.ShareName = w.ShareName
+	conv73, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareToPrivilegeAssignment.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv73
+	return out, nil
+}
+
+// ShareToPrivilegeAssignmentFromSDK converts the sdk-go type to the mirror.
+func ShareToPrivilegeAssignmentFromSDK(v *sdk.ShareToPrivilegeAssignment) (*ShareToPrivilegeAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ShareToPrivilegeAssignment{}
+	out.ShareName = v.ShareName
+	conv74, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ShareToPrivilegeAssignment.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv74
+	return out, nil
+}
+
+// SharedDataObjectToSDK converts the mirror to the sdk-go type.
+func SharedDataObjectToSDK(w *SharedDataObject) (*sdk.SharedDataObject, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SharedDataObject{}
+	out.Name = w.Name
+	out.DataObjectType = w.DataObjectType
+	out.AddedAt = w.AddedAt
+	out.AddedBy = w.AddedBy
+	out.Comment = w.Comment
+	out.SharedAs = w.SharedAs
+	out.CdfEnabled = w.CdfEnabled
+	out.HistoryDataSharingStatus = w.HistoryDataSharingStatus
+	out.StartVersion = w.StartVersion
+	out.Status = w.Status
+	out.Content = w.Content
+	out.StringSharedAs = w.StringSharedAs
+	conv75, err := convertSlice(w.Partitions, PartitionSpecification_PartitionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SharedDataObject.Partitions", err)
+	}
+	out.Partitions = conv75
+	return out, nil
+}
+
+// SharedDataObjectFromSDK converts the sdk-go type to the mirror.
+func SharedDataObjectFromSDK(v *sdk.SharedDataObject) (*SharedDataObject, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SharedDataObject{}
+	out.Name = v.Name
+	out.DataObjectType = v.DataObjectType
+	out.AddedAt = v.AddedAt
+	out.AddedBy = v.AddedBy
+	out.Comment = v.Comment
+	out.SharedAs = v.SharedAs
+	out.CdfEnabled = v.CdfEnabled
+	out.HistoryDataSharingStatus = v.HistoryDataSharingStatus
+	out.StartVersion = v.StartVersion
+	out.Status = v.Status
+	out.Content = v.Content
+	out.StringSharedAs = v.StringSharedAs
+	conv76, err := convertSlice(v.Partitions, PartitionSpecification_PartitionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SharedDataObject.Partitions", err)
+	}
+	out.Partitions = conv76
+	return out, nil
+}
+
+// TableToSDK converts the mirror to the sdk-go type.
+func TableToSDK(w *Table) (*sdk.Table, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Table{}
+	out.Name = w.Name
+	out.Schema = w.Schema
+	out.Share = w.Share
+	out.ShareId = w.ShareId
+	out.Id = w.Id
+	out.Comment = w.Comment
+	conv77, err := convertSlice(w.Tags, TagKeyValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Table.Tags", err)
+	}
+	out.Tags = conv77
+	out.MaterializedTableName = w.MaterializedTableName
+	out.MaterializationNamespace = w.MaterializationNamespace
+	return out, nil
+}
+
+// TableFromSDK converts the sdk-go type to the mirror.
+func TableFromSDK(v *sdk.Table) (*Table, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Table{}
+	out.Name = v.Name
+	out.Schema = v.Schema
+	out.Share = v.Share
+	out.ShareId = v.ShareId
+	out.Id = v.Id
+	out.Comment = v.Comment
+	conv78, err := convertSlice(v.Tags, TagKeyValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Table.Tags", err)
+	}
+	out.Tags = conv78
+	out.MaterializedTableName = v.MaterializedTableName
+	out.MaterializationNamespace = v.MaterializationNamespace
+	return out, nil
+}
+
+// TableDependencyToSDK converts the mirror to the sdk-go type.
+func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableDependency{}
+	out.SchemaName = w.SchemaName
+	out.TableName = w.TableName
+	return out, nil
+}
+
+// TableDependencyFromSDK converts the sdk-go type to the mirror.
+func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableDependency{}
+	out.SchemaName = v.SchemaName
+	out.TableName = v.TableName
+	return out, nil
+}
+
+// TagKeyValueToSDK converts the mirror to the sdk-go type.
+func TagKeyValueToSDK(w *TagKeyValue) (*sdk.TagKeyValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TagKeyValue{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// TagKeyValueFromSDK converts the sdk-go type to the mirror.
+func TagKeyValueFromSDK(v *sdk.TagKeyValue) (*TagKeyValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TagKeyValue{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// UpdateProviderRequestToSDK converts the mirror to the sdk-go type.
+func UpdateProviderRequestToSDK(w *UpdateProviderRequest) (*sdk.UpdateProviderRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateProviderRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.RecipientProfileStr = w.RecipientProfileStr
+	out.Comment = w.Comment
+	out.Owner = w.Owner
+	conv79, err := RecipientProfileToSDK(w.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv79
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.DataProviderGlobalMetastoreId = w.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// UpdateProviderRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateProviderRequestFromSDK(v *sdk.UpdateProviderRequest) (*UpdateProviderRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProviderRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.RecipientProfileStr = v.RecipientProfileStr
+	out.Comment = v.Comment
+	out.Owner = v.Owner
+	conv80, err := RecipientProfileFromSDK(v.RecipientProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.RecipientProfile", err)
+	}
+	out.RecipientProfile = conv80
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.DataProviderGlobalMetastoreId = v.DataProviderGlobalMetastoreId
+	return out, nil
+}
+
+// UpdateRecipientRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRecipientRequestToSDK(w *UpdateRecipientRequest) (*sdk.UpdateRecipientRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRecipientRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.AuthenticationType = w.AuthenticationType
+	out.SharingCode = w.SharingCode
+	out.DataRecipientGlobalMetastoreId = w.DataRecipientGlobalMetastoreId
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	conv81, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.IpAccessList", err)
+	}
+	out.IpAccessList = conv81
+	conv82, err := PropertiesKvPairsToSDK(w.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv82
+	out.ExpirationTime = w.ExpirationTime
+	out.ActivationUrl = w.ActivationUrl
+	out.Activated = w.Activated
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	conv83, err := convertSlice(w.Tokens, RecipientTokenInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.Tokens", err)
+	}
+	out.Tokens = conv83
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.Id = w.Id
+	return out, nil
+}
+
+// UpdateRecipientRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRecipientRequestFromSDK(v *sdk.UpdateRecipientRequest) (*UpdateRecipientRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRecipientRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.AuthenticationType = v.AuthenticationType
+	out.SharingCode = v.SharingCode
+	out.DataRecipientGlobalMetastoreId = v.DataRecipientGlobalMetastoreId
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	conv84, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.IpAccessList", err)
+	}
+	out.IpAccessList = conv84
+	conv85, err := PropertiesKvPairsFromSDK(v.PropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.PropertiesKvpairs", err)
+	}
+	out.PropertiesKvpairs = conv85
+	out.ExpirationTime = v.ExpirationTime
+	out.ActivationUrl = v.ActivationUrl
+	out.Activated = v.Activated
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	conv86, err := convertSlice(v.Tokens, RecipientTokenInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRecipientRequest.Tokens", err)
+	}
+	out.Tokens = conv86
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.Id = v.Id
+	return out, nil
+}
+
+// UpdateSharePermissionsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSharePermissionsRequestToSDK(w *UpdateSharePermissionsRequest) (*sdk.UpdateSharePermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSharePermissionsRequest{}
+	out.Name = w.Name
+	out.OmitPermissionsList = w.OmitPermissionsList
+	conv87, err := convertSlice(w.Changes, PermissionsChangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsRequest.Changes", err)
+	}
+	out.Changes = conv87
+	return out, nil
+}
+
+// UpdateSharePermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateSharePermissionsRequestFromSDK(v *sdk.UpdateSharePermissionsRequest) (*UpdateSharePermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateSharePermissionsRequest{}
+	out.Name = v.Name
+	out.OmitPermissionsList = v.OmitPermissionsList
+	conv88, err := convertSlice(v.Changes, PermissionsChangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsRequest.Changes", err)
+	}
+	out.Changes = conv88
+	return out, nil
+}
+
+// UpdateSharePermissionsResponseToSDK converts the mirror to the sdk-go type.
+func UpdateSharePermissionsResponseToSDK(w *UpdateSharePermissionsResponse) (*sdk.UpdateSharePermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSharePermissionsResponse{}
+	conv89, err := convertSlice(w.PrivilegeAssignments, PrivilegeAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv89
+	return out, nil
+}
+
+// UpdateSharePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateSharePermissionsResponseFromSDK(v *sdk.UpdateSharePermissionsResponse) (*UpdateSharePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateSharePermissionsResponse{}
+	conv90, err := convertSlice(v.PrivilegeAssignments, PrivilegeAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSharePermissionsResponse.PrivilegeAssignments", err)
+	}
+	out.PrivilegeAssignments = conv90
+	return out, nil
+}
+
+// UpdateShareRequestToSDK converts the mirror to the sdk-go type.
+func UpdateShareRequestToSDK(w *UpdateShareRequest) (*sdk.UpdateShareRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateShareRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	conv91, err := convertSlice(w.Updates, UpdateShareRequest_SharedDataObjectUpdateToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Updates", err)
+	}
+	out.Updates = conv91
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	conv92, err := ReplicationConfigToSDK(w.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv92
+	conv93, err := convertSlice(w.Objects, SharedDataObjectToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Objects", err)
+	}
+	out.Objects = conv93
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	return out, nil
+}
+
+// UpdateShareRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateShareRequestFromSDK(v *sdk.UpdateShareRequest) (*UpdateShareRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateShareRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	conv94, err := convertSlice(v.Updates, UpdateShareRequest_SharedDataObjectUpdateFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Updates", err)
+	}
+	out.Updates = conv94
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	conv95, err := ReplicationConfigFromSDK(v.ReplicationConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.ReplicationConfig", err)
+	}
+	out.ReplicationConfig = conv95
+	conv96, err := convertSlice(v.Objects, SharedDataObjectFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest.Objects", err)
+	}
+	out.Objects = conv96
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	return out, nil
+}
+
+// UpdateShareRequest_SharedDataObjectUpdateToSDK converts the mirror to the sdk-go type.
+func UpdateShareRequest_SharedDataObjectUpdateToSDK(w *UpdateShareRequest_SharedDataObjectUpdate) (*sdk.UpdateShareRequest_SharedDataObjectUpdate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateShareRequest_SharedDataObjectUpdate{}
+	out.Action = w.Action
+	conv97, err := SharedDataObjectToSDK(w.DataObject)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest_SharedDataObjectUpdate.DataObject", err)
+	}
+	out.DataObject = conv97
+	return out, nil
+}
+
+// UpdateShareRequest_SharedDataObjectUpdateFromSDK converts the sdk-go type to the mirror.
+func UpdateShareRequest_SharedDataObjectUpdateFromSDK(v *sdk.UpdateShareRequest_SharedDataObjectUpdate) (*UpdateShareRequest_SharedDataObjectUpdate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateShareRequest_SharedDataObjectUpdate{}
+	out.Action = v.Action
+	conv98, err := SharedDataObjectFromSDK(v.DataObject)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateShareRequest_SharedDataObjectUpdate.DataObject", err)
+	}
+	out.DataObject = conv98
+	return out, nil
+}
+
+// VolumeToSDK converts the mirror to the sdk-go type.
 func VolumeToSDK(w *Volume) (*sdk.Volume, error) {
 	if w == nil {
 		return nil, nil
 	}
-	tagsPublicValue, err := convertSlice(w.Tags, TagKeyValueToSDK)
+	out := &sdk.Volume{}
+	out.Name = w.Name
+	out.Id = w.Id
+	out.Schema = w.Schema
+	out.Share = w.Share
+	out.ShareId = w.ShareId
+	out.Comment = w.Comment
+	conv99, err := convertSlice(w.Tags, TagKeyValueToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "Volume.Tags", err)
 	}
-	return &sdk.Volume{
-		Name:    w.Name,
-		Id:      w.Id,
-		Schema:  w.Schema,
-		Share:   w.Share,
-		ShareId: w.ShareId,
-		Comment: w.Comment,
-		Tags:    tagsPublicValue,
-	}, nil
+	out.Tags = conv99
+	return out, nil
+}
+
+// VolumeFromSDK converts the sdk-go type to the mirror.
+func VolumeFromSDK(v *sdk.Volume) (*Volume, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Volume{}
+	out.Name = v.Name
+	out.Id = v.Id
+	out.Schema = v.Schema
+	out.Share = v.Share
+	out.ShareId = v.ShareId
+	out.Comment = v.Comment
+	conv100, err := convertSlice(v.Tags, TagKeyValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Volume.Tags", err)
+	}
+	out.Tags = conv100
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

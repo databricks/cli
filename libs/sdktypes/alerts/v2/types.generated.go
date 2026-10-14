@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	sdk "github.com/databricks/sdk-go/alerts/v2"
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -51,14 +52,6 @@ const (
 	SchedulePauseStatus_Unpaused          = sdk.SchedulePauseStatus_Unpaused
 	SchedulePauseStatus_Paused            = sdk.SchedulePauseStatus_Paused
 )
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 type Alert struct {
 	// The canonical identifier of the alert to retrieve information about.
@@ -136,98 +129,6 @@ type Alert struct {
 	CustomTemplateFormat CustomTemplateFormat `json:"custom_template_format,omitempty"`
 }
 
-func AlertFromSDK(v *sdk.Alert) (*Alert, error) {
-	if v == nil {
-		return nil, nil
-	}
-	evaluationWireValue, err := AlertEvaluationFromSDK(v.Evaluation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Evaluation", err)
-	}
-	scheduleWireValue, err := CronScheduleFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Schedule", err)
-	}
-	runAsWireValue, err := AlertRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.RunAs", err)
-	}
-	effectiveRunAsWireValue, err := AlertRunAsFromSDK(v.EffectiveRunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.EffectiveRunAs", err)
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, AlertStatementParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Parameters", err)
-	}
-	return &Alert{
-		Id:                   v.Id,
-		DisplayName:          v.DisplayName,
-		OwnerUserName:        v.OwnerUserName,
-		CreateTime:           v.CreateTime,
-		UpdateTime:           v.UpdateTime,
-		ParentPath:           v.ParentPath,
-		QueryText:            v.QueryText,
-		WarehouseId:          v.WarehouseId,
-		RunAsUserName:        v.RunAsUserName,
-		Evaluation:           evaluationWireValue,
-		Schedule:             scheduleWireValue,
-		LifecycleState:       v.LifecycleState,
-		CustomSummary:        v.CustomSummary,
-		CustomDescription:    v.CustomDescription,
-		RunAs:                runAsWireValue,
-		EffectiveRunAs:       effectiveRunAsWireValue,
-		Parameters:           parametersWireValue,
-		CustomTemplateFormat: v.CustomTemplateFormat,
-	}, nil
-}
-
-func AlertToSDK(w *Alert) (*sdk.Alert, error) {
-	if w == nil {
-		return nil, nil
-	}
-	evaluationPublicValue, err := AlertEvaluationToSDK(w.Evaluation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Evaluation", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Schedule", err)
-	}
-	runAsPublicValue, err := AlertRunAsToSDK(w.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.RunAs", err)
-	}
-	effectiveRunAsPublicValue, err := AlertRunAsToSDK(w.EffectiveRunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.EffectiveRunAs", err)
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, AlertStatementParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Alert.Parameters", err)
-	}
-	return &sdk.Alert{
-		Id:                   w.Id,
-		DisplayName:          w.DisplayName,
-		OwnerUserName:        w.OwnerUserName,
-		CreateTime:           w.CreateTime,
-		UpdateTime:           w.UpdateTime,
-		ParentPath:           w.ParentPath,
-		QueryText:            w.QueryText,
-		WarehouseId:          w.WarehouseId,
-		RunAsUserName:        w.RunAsUserName,
-		Evaluation:           evaluationPublicValue,
-		Schedule:             schedulePublicValue,
-		LifecycleState:       w.LifecycleState,
-		CustomSummary:        w.CustomSummary,
-		CustomDescription:    w.CustomDescription,
-		RunAs:                runAsPublicValue,
-		EffectiveRunAs:       effectiveRunAsPublicValue,
-		Parameters:           parametersPublicValue,
-		CustomTemplateFormat: w.CustomTemplateFormat,
-	}, nil
-}
-
 type AlertEvaluation struct {
 	// Source column from result to use to evaluate alert
 	Source *AlertOperandColumn `json:"source,omitempty"`
@@ -246,60 +147,6 @@ type AlertEvaluation struct {
 	EmptyResultState AlertEvaluationState `json:"empty_result_state,omitempty"`
 }
 
-func AlertEvaluationFromSDK(v *sdk.AlertEvaluation) (*AlertEvaluation, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sourceWireValue, err := AlertOperandColumnFromSDK(v.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Source", err)
-	}
-	thresholdWireValue, err := AlertOperandFromSDK(v.Threshold)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Threshold", err)
-	}
-	notificationWireValue, err := AlertNotificationFromSDK(v.Notification)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Notification", err)
-	}
-	return &AlertEvaluation{
-		Source:             sourceWireValue,
-		ComparisonOperator: v.ComparisonOperator,
-		Threshold:          thresholdWireValue,
-		Notification:       notificationWireValue,
-		State:              v.State,
-		LastEvaluatedAt:    v.LastEvaluatedAt,
-		EmptyResultState:   v.EmptyResultState,
-	}, nil
-}
-
-func AlertEvaluationToSDK(w *AlertEvaluation) (*sdk.AlertEvaluation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourcePublicValue, err := AlertOperandColumnToSDK(w.Source)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Source", err)
-	}
-	thresholdPublicValue, err := AlertOperandToSDK(w.Threshold)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Threshold", err)
-	}
-	notificationPublicValue, err := AlertNotificationToSDK(w.Notification)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Notification", err)
-	}
-	return &sdk.AlertEvaluation{
-		Source:             sourcePublicValue,
-		ComparisonOperator: w.ComparisonOperator,
-		Threshold:          thresholdPublicValue,
-		Notification:       notificationPublicValue,
-		State:              w.State,
-		LastEvaluatedAt:    w.LastEvaluatedAt,
-		EmptyResultState:   w.EmptyResultState,
-	}, nil
-}
-
 type AlertNotification struct {
 	Subscriptions []AlertSubscription `json:"subscriptions,omitempty"`
 	// Number of seconds an alert waits after being triggered before it is allowed
@@ -313,106 +160,9 @@ type AlertNotification struct {
 	NotifyOnOk *bool `json:"notify_on_ok,omitempty"`
 }
 
-func AlertNotificationFromSDK(v *sdk.AlertNotification) (*AlertNotification, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionsWireValue, err := convertSlice(v.Subscriptions, AlertSubscriptionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertNotification.Subscriptions", err)
-	}
-	return &AlertNotification{
-		Subscriptions:    subscriptionsWireValue,
-		RetriggerSeconds: v.RetriggerSeconds,
-		NotifyOnOk:       v.NotifyOnOk,
-	}, nil
-}
-
-func AlertNotificationToSDK(w *AlertNotification) (*sdk.AlertNotification, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionsPublicValue, err := convertSlice(w.Subscriptions, AlertSubscriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertNotification.Subscriptions", err)
-	}
-	return &sdk.AlertNotification{
-		Subscriptions:    subscriptionsPublicValue,
-		RetriggerSeconds: w.RetriggerSeconds,
-		NotifyOnOk:       w.NotifyOnOk,
-	}, nil
-}
-
 type AlertOperand struct {
 	Column *AlertOperandColumn `json:"column,omitempty"`
 	Value  *AlertOperandValue  `json:"value,omitempty"`
-}
-
-func AlertOperandFromSDK(v *sdk.AlertOperand) (*AlertOperand, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var operandColumnWire *AlertOperandColumn
-	var operandValueWire *AlertOperandValue
-	switch value := v.Operand.(type) {
-	case nil:
-	case *sdk.AlertOperand_Operand_Column:
-		if value != nil {
-			operandColumnConverted, err := AlertOperandColumnFromSDK(&value.Column)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand.Column", err)
-			}
-			operandColumnWire = operandColumnConverted
-		}
-	case *sdk.AlertOperand_Operand_Value:
-		if value != nil {
-			operandValueConverted, err := AlertOperandValueFromSDK(&value.Value)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand.Value", err)
-			}
-			operandValueWire = operandValueConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AlertOperand.Operand", value)
-	}
-	return &AlertOperand{
-		Column: operandColumnWire,
-		Value:  operandValueWire,
-	}, nil
-}
-
-func AlertOperandToSDK(w *AlertOperand) (*sdk.AlertOperand, error) {
-	if w == nil {
-		return nil, nil
-	}
-	operandMembers := 0
-	if w.Column != nil {
-		operandMembers++
-	}
-	if w.Value != nil {
-		operandMembers++
-	}
-	if operandMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperand.Operand")
-	}
-	operandSelection := (&sdk.AlertOperand{}).Operand
-	switch {
-	case w.Column != nil:
-		operandColumnConverted, err := AlertOperandColumnToSDK(w.Column)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand.Column", err)
-		}
-		operandSelection = &sdk.AlertOperand_Operand_Column{Column: *operandColumnConverted}
-	case w.Value != nil:
-		operandValueConverted, err := AlertOperandValueToSDK(w.Value)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand.Value", err)
-		}
-		operandSelection = &sdk.AlertOperand_Operand_Value{Value: *operandValueConverted}
-	}
-	return &sdk.AlertOperand{
-		Operand: operandSelection,
-	}, nil
 }
 
 type AlertOperandColumn struct {
@@ -422,150 +172,15 @@ type AlertOperandColumn struct {
 	Aggregation Aggregation `json:"aggregation,omitempty"`
 }
 
-func AlertOperandColumnFromSDK(v *sdk.AlertOperandColumn) (*AlertOperandColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AlertOperandColumn{
-		Name:        v.Name,
-		Display:     v.Display,
-		Aggregation: v.Aggregation,
-	}, nil
-}
-
-func AlertOperandColumnToSDK(w *AlertOperandColumn) (*sdk.AlertOperandColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AlertOperandColumn{
-		Name:        w.Name,
-		Display:     w.Display,
-		Aggregation: w.Aggregation,
-	}, nil
-}
-
 type AlertOperandValue struct {
 	StringValue *string  `json:"string_value,omitempty"`
 	DoubleValue *float64 `json:"double_value,omitempty"`
 	BoolValue   *bool    `json:"bool_value,omitempty"`
 }
 
-func AlertOperandValueFromSDK(v *sdk.AlertOperandValue) (*AlertOperandValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueStringValueWire *string
-	var valueDoubleValueWire *float64
-	var valueBoolValueWire *bool
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.AlertOperandValue_Value_StringValue:
-		if value != nil {
-			valueStringValueWire = new(value.StringValue)
-		}
-	case *sdk.AlertOperandValue_Value_DoubleValue:
-		if value != nil {
-			valueDoubleValueWire = new(value.DoubleValue)
-		}
-	case *sdk.AlertOperandValue_Value_BoolValue:
-		if value != nil {
-			valueBoolValueWire = new(value.BoolValue)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AlertOperandValue.Value", value)
-	}
-	return &AlertOperandValue{
-		StringValue: valueStringValueWire,
-		DoubleValue: valueDoubleValueWire,
-		BoolValue:   valueBoolValueWire,
-	}, nil
-}
-
-func AlertOperandValueToSDK(w *AlertOperandValue) (*sdk.AlertOperandValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.StringValue != nil {
-		valueMembers++
-	}
-	if w.DoubleValue != nil {
-		valueMembers++
-	}
-	if w.BoolValue != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperandValue.Value")
-	}
-	valueSelection := (&sdk.AlertOperandValue{}).Value
-	switch {
-	case w.StringValue != nil:
-		valueSelection = &sdk.AlertOperandValue_Value_StringValue{StringValue: *w.StringValue}
-	case w.DoubleValue != nil:
-		valueSelection = &sdk.AlertOperandValue_Value_DoubleValue{DoubleValue: *w.DoubleValue}
-	case w.BoolValue != nil:
-		valueSelection = &sdk.AlertOperandValue_Value_BoolValue{BoolValue: *w.BoolValue}
-	}
-	return &sdk.AlertOperandValue{
-		Value: valueSelection,
-	}, nil
-}
-
 type AlertRunAs struct {
 	UserName             *string `json:"user_name,omitempty"`
 	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
-}
-
-func AlertRunAsFromSDK(v *sdk.AlertRunAs) (*AlertRunAs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var identityUserNameWire *string
-	var identityServicePrincipalNameWire *string
-	switch value := v.Identity.(type) {
-	case nil:
-	case *sdk.AlertRunAs_Identity_UserName:
-		if value != nil {
-			identityUserNameWire = new(value.UserName)
-		}
-	case *sdk.AlertRunAs_Identity_ServicePrincipalName:
-		if value != nil {
-			identityServicePrincipalNameWire = new(value.ServicePrincipalName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AlertRunAs.Identity", value)
-	}
-	return &AlertRunAs{
-		UserName:             identityUserNameWire,
-		ServicePrincipalName: identityServicePrincipalNameWire,
-	}, nil
-}
-
-func AlertRunAsToSDK(w *AlertRunAs) (*sdk.AlertRunAs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	identityMembers := 0
-	if w.UserName != nil {
-		identityMembers++
-	}
-	if w.ServicePrincipalName != nil {
-		identityMembers++
-	}
-	if identityMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AlertRunAs.Identity")
-	}
-	identitySelection := (&sdk.AlertRunAs{}).Identity
-	switch {
-	case w.UserName != nil:
-		identitySelection = &sdk.AlertRunAs_Identity_UserName{UserName: *w.UserName}
-	case w.ServicePrincipalName != nil:
-		identitySelection = &sdk.AlertRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
-	}
-	return &sdk.AlertRunAs{
-		Identity: identitySelection,
-	}, nil
 }
 
 // A named parameter bound to the alert query. Only flat, named scalar
@@ -585,99 +200,13 @@ type AlertStatementParameter struct {
 	Type *string `json:"type,omitempty"`
 }
 
-func AlertStatementParameterFromSDK(v *sdk.AlertStatementParameter) (*AlertStatementParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AlertStatementParameter{
-		Name:  v.Name,
-		Value: v.Value,
-		Type:  v.Type,
-	}, nil
-}
-
-func AlertStatementParameterToSDK(w *AlertStatementParameter) (*sdk.AlertStatementParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AlertStatementParameter{
-		Name:  w.Name,
-		Value: w.Value,
-		Type:  w.Type,
-	}, nil
-}
-
 type AlertSubscription struct {
 	UserEmail     *string `json:"user_email,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
 }
 
-func AlertSubscriptionFromSDK(v *sdk.AlertSubscription) (*AlertSubscription, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriptionTypeUserEmailWire *string
-	var subscriptionTypeDestinationIdWire *string
-	switch value := v.SubscriptionType.(type) {
-	case nil:
-	case *sdk.AlertSubscription_SubscriptionType_UserEmail:
-		if value != nil {
-			subscriptionTypeUserEmailWire = new(value.UserEmail)
-		}
-	case *sdk.AlertSubscription_SubscriptionType_DestinationId:
-		if value != nil {
-			subscriptionTypeDestinationIdWire = new(value.DestinationId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AlertSubscription.SubscriptionType", value)
-	}
-	return &AlertSubscription{
-		UserEmail:     subscriptionTypeUserEmailWire,
-		DestinationId: subscriptionTypeDestinationIdWire,
-	}, nil
-}
-
-func AlertSubscriptionToSDK(w *AlertSubscription) (*sdk.AlertSubscription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionTypeMembers := 0
-	if w.UserEmail != nil {
-		subscriptionTypeMembers++
-	}
-	if w.DestinationId != nil {
-		subscriptionTypeMembers++
-	}
-	if subscriptionTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AlertSubscription.SubscriptionType")
-	}
-	subscriptionTypeSelection := (&sdk.AlertSubscription{}).SubscriptionType
-	switch {
-	case w.UserEmail != nil:
-		subscriptionTypeSelection = &sdk.AlertSubscription_SubscriptionType_UserEmail{UserEmail: *w.UserEmail}
-	case w.DestinationId != nil:
-		subscriptionTypeSelection = &sdk.AlertSubscription_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
-	}
-	return &sdk.AlertSubscription{
-		SubscriptionType: subscriptionTypeSelection,
-	}, nil
-}
-
 type CreateAlertRequest struct {
 	Alert *Alert `json:"alert,omitempty"`
-}
-
-func CreateAlertRequestFromSDK(v *sdk.CreateAlertRequest) (*CreateAlertRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	alertWireValue, err := AlertFromSDK(v.Alert)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAlertRequest.Alert", err)
-	}
-	return &CreateAlertRequest{
-		Alert: alertWireValue,
-	}, nil
 }
 
 type CronSchedule struct {
@@ -694,60 +223,14 @@ type CronSchedule struct {
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 }
 
-func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronSchedule{
-		QuartzCronSchedule: v.QuartzCronSchedule,
-		TimezoneId:         v.TimezoneId,
-		PauseStatus:        v.PauseStatus,
-	}, nil
-}
-
-func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronSchedule{
-		QuartzCronSchedule: w.QuartzCronSchedule,
-		TimezoneId:         w.TimezoneId,
-		PauseStatus:        w.PauseStatus,
-	}, nil
-}
-
 type ListAlertsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListAlertsRequestFromSDK(v *sdk.ListAlertsRequest) (*ListAlertsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAlertsRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListAlertsResponse struct {
 	Alerts        []Alert `json:"alerts,omitempty"`
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListAlertsResponseToSDK(w *ListAlertsResponse) (*sdk.ListAlertsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	alertsPublicValue, err := convertSlice(w.Alerts, AlertToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAlertsResponse.Alerts", err)
-	}
-	return &sdk.ListAlertsResponse{
-		Alerts:        alertsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type TrashAlertRequest struct {
@@ -757,33 +240,608 @@ type TrashAlertRequest struct {
 	Purge *bool `json:"purge,omitempty"`
 }
 
-func TrashAlertRequestFromSDK(v *sdk.TrashAlertRequest) (*TrashAlertRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TrashAlertRequest{
-		Id:    v.Id,
-		Purge: v.Purge,
-	}, nil
-}
-
 type UpdateAlertRequest struct {
 	Alert      *Alert  `json:"alert,omitempty"`
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// AlertToSDK converts the mirror to the sdk-go type.
+func AlertToSDK(w *Alert) (*sdk.Alert, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Alert{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.OwnerUserName = w.OwnerUserName
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.ParentPath = w.ParentPath
+	out.QueryText = w.QueryText
+	out.WarehouseId = w.WarehouseId
+	out.RunAsUserName = w.RunAsUserName
+	conv1, err := AlertEvaluationToSDK(w.Evaluation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Evaluation", err)
+	}
+	out.Evaluation = conv1
+	conv2, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Schedule", err)
+	}
+	out.Schedule = conv2
+	out.LifecycleState = w.LifecycleState
+	out.CustomSummary = w.CustomSummary
+	out.CustomDescription = w.CustomDescription
+	conv3, err := AlertRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.RunAs", err)
+	}
+	out.RunAs = conv3
+	conv4, err := AlertRunAsToSDK(w.EffectiveRunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.EffectiveRunAs", err)
+	}
+	out.EffectiveRunAs = conv4
+	conv5, err := convertSlice(w.Parameters, AlertStatementParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Parameters", err)
+	}
+	out.Parameters = conv5
+	out.CustomTemplateFormat = w.CustomTemplateFormat
+	return out, nil
+}
+
+// AlertFromSDK converts the sdk-go type to the mirror.
+func AlertFromSDK(v *sdk.Alert) (*Alert, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Alert{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.OwnerUserName = v.OwnerUserName
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.ParentPath = v.ParentPath
+	out.QueryText = v.QueryText
+	out.WarehouseId = v.WarehouseId
+	out.RunAsUserName = v.RunAsUserName
+	conv6, err := AlertEvaluationFromSDK(v.Evaluation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Evaluation", err)
+	}
+	out.Evaluation = conv6
+	conv7, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Schedule", err)
+	}
+	out.Schedule = conv7
+	out.LifecycleState = v.LifecycleState
+	out.CustomSummary = v.CustomSummary
+	out.CustomDescription = v.CustomDescription
+	conv8, err := AlertRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.RunAs", err)
+	}
+	out.RunAs = conv8
+	conv9, err := AlertRunAsFromSDK(v.EffectiveRunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.EffectiveRunAs", err)
+	}
+	out.EffectiveRunAs = conv9
+	conv10, err := convertSlice(v.Parameters, AlertStatementParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Alert.Parameters", err)
+	}
+	out.Parameters = conv10
+	out.CustomTemplateFormat = v.CustomTemplateFormat
+	return out, nil
+}
+
+// AlertEvaluationToSDK converts the mirror to the sdk-go type.
+func AlertEvaluationToSDK(w *AlertEvaluation) (*sdk.AlertEvaluation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertEvaluation{}
+	conv11, err := AlertOperandColumnToSDK(w.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Source", err)
+	}
+	out.Source = conv11
+	out.ComparisonOperator = w.ComparisonOperator
+	conv12, err := AlertOperandToSDK(w.Threshold)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Threshold", err)
+	}
+	out.Threshold = conv12
+	conv13, err := AlertNotificationToSDK(w.Notification)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Notification", err)
+	}
+	out.Notification = conv13
+	out.State = w.State
+	out.LastEvaluatedAt = w.LastEvaluatedAt
+	out.EmptyResultState = w.EmptyResultState
+	return out, nil
+}
+
+// AlertEvaluationFromSDK converts the sdk-go type to the mirror.
+func AlertEvaluationFromSDK(v *sdk.AlertEvaluation) (*AlertEvaluation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertEvaluation{}
+	conv14, err := AlertOperandColumnFromSDK(v.Source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Source", err)
+	}
+	out.Source = conv14
+	out.ComparisonOperator = v.ComparisonOperator
+	conv15, err := AlertOperandFromSDK(v.Threshold)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Threshold", err)
+	}
+	out.Threshold = conv15
+	conv16, err := AlertNotificationFromSDK(v.Notification)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertEvaluation.Notification", err)
+	}
+	out.Notification = conv16
+	out.State = v.State
+	out.LastEvaluatedAt = v.LastEvaluatedAt
+	out.EmptyResultState = v.EmptyResultState
+	return out, nil
+}
+
+// AlertNotificationToSDK converts the mirror to the sdk-go type.
+func AlertNotificationToSDK(w *AlertNotification) (*sdk.AlertNotification, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertNotification{}
+	conv17, err := convertSlice(w.Subscriptions, AlertSubscriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertNotification.Subscriptions", err)
+	}
+	out.Subscriptions = conv17
+	out.RetriggerSeconds = w.RetriggerSeconds
+	out.NotifyOnOk = w.NotifyOnOk
+	return out, nil
+}
+
+// AlertNotificationFromSDK converts the sdk-go type to the mirror.
+func AlertNotificationFromSDK(v *sdk.AlertNotification) (*AlertNotification, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertNotification{}
+	conv18, err := convertSlice(v.Subscriptions, AlertSubscriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertNotification.Subscriptions", err)
+	}
+	out.Subscriptions = conv18
+	out.RetriggerSeconds = v.RetriggerSeconds
+	out.NotifyOnOk = v.NotifyOnOk
+	return out, nil
+}
+
+// AlertOperandToSDK converts the mirror to the sdk-go type.
+func AlertOperandToSDK(w *AlertOperand) (*sdk.AlertOperand, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertOperand{}
+	{
+		members := 0
+		if w.Column != nil {
+			members++
+		}
+		if w.Value != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperand.Operand")
+		}
+	}
+	switch {
+	case w.Column != nil:
+		conv19, err := AlertOperandColumnToSDK(w.Column)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand", err)
+		}
+		out.Operand = &sdk.AlertOperand_Operand_Column{Column: *conv19}
+	case w.Value != nil:
+		conv20, err := AlertOperandValueToSDK(w.Value)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand", err)
+		}
+		out.Operand = &sdk.AlertOperand_Operand_Value{Value: *conv20}
+	}
+	return out, nil
+}
+
+// AlertOperandFromSDK converts the sdk-go type to the mirror.
+func AlertOperandFromSDK(v *sdk.AlertOperand) (*AlertOperand, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertOperand{}
+	switch value := v.Operand.(type) {
+	case *sdk.AlertOperand_Operand_Column:
+		if value != nil {
+			conv21, err := AlertOperandColumnFromSDK(&value.Column)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand", err)
+			}
+			out.Column = conv21
+		}
+	case *sdk.AlertOperand_Operand_Value:
+		if value != nil {
+			conv22, err := AlertOperandValueFromSDK(&value.Value)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AlertOperand.Operand", err)
+			}
+			out.Value = conv22
+		}
+	}
+	return out, nil
+}
+
+// AlertOperandColumnToSDK converts the mirror to the sdk-go type.
+func AlertOperandColumnToSDK(w *AlertOperandColumn) (*sdk.AlertOperandColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertOperandColumn{}
+	out.Name = w.Name
+	out.Display = w.Display
+	out.Aggregation = w.Aggregation
+	return out, nil
+}
+
+// AlertOperandColumnFromSDK converts the sdk-go type to the mirror.
+func AlertOperandColumnFromSDK(v *sdk.AlertOperandColumn) (*AlertOperandColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertOperandColumn{}
+	out.Name = v.Name
+	out.Display = v.Display
+	out.Aggregation = v.Aggregation
+	return out, nil
+}
+
+// AlertOperandValueToSDK converts the mirror to the sdk-go type.
+func AlertOperandValueToSDK(w *AlertOperandValue) (*sdk.AlertOperandValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertOperandValue{}
+	{
+		members := 0
+		if w.StringValue != nil {
+			members++
+		}
+		if w.DoubleValue != nil {
+			members++
+		}
+		if w.BoolValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertOperandValue.Value")
+		}
+	}
+	switch {
+	case w.StringValue != nil:
+		out.Value = &sdk.AlertOperandValue_Value_StringValue{StringValue: *w.StringValue}
+	case w.DoubleValue != nil:
+		out.Value = &sdk.AlertOperandValue_Value_DoubleValue{DoubleValue: *w.DoubleValue}
+	case w.BoolValue != nil:
+		out.Value = &sdk.AlertOperandValue_Value_BoolValue{BoolValue: *w.BoolValue}
+	}
+	return out, nil
+}
+
+// AlertOperandValueFromSDK converts the sdk-go type to the mirror.
+func AlertOperandValueFromSDK(v *sdk.AlertOperandValue) (*AlertOperandValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertOperandValue{}
+	switch value := v.Value.(type) {
+	case *sdk.AlertOperandValue_Value_StringValue:
+		if value != nil {
+			out.StringValue = new(value.StringValue)
+		}
+	case *sdk.AlertOperandValue_Value_DoubleValue:
+		if value != nil {
+			out.DoubleValue = new(value.DoubleValue)
+		}
+	case *sdk.AlertOperandValue_Value_BoolValue:
+		if value != nil {
+			out.BoolValue = new(value.BoolValue)
+		}
+	}
+	return out, nil
+}
+
+// AlertRunAsToSDK converts the mirror to the sdk-go type.
+func AlertRunAsToSDK(w *AlertRunAs) (*sdk.AlertRunAs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertRunAs{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertRunAs.Identity")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.Identity = &sdk.AlertRunAs_Identity_UserName{UserName: *w.UserName}
+	case w.ServicePrincipalName != nil:
+		out.Identity = &sdk.AlertRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	}
+	return out, nil
+}
+
+// AlertRunAsFromSDK converts the sdk-go type to the mirror.
+func AlertRunAsFromSDK(v *sdk.AlertRunAs) (*AlertRunAs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertRunAs{}
+	switch value := v.Identity.(type) {
+	case *sdk.AlertRunAs_Identity_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.AlertRunAs_Identity_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	}
+	return out, nil
+}
+
+// AlertStatementParameterToSDK converts the mirror to the sdk-go type.
+func AlertStatementParameterToSDK(w *AlertStatementParameter) (*sdk.AlertStatementParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertStatementParameter{}
+	out.Name = w.Name
+	out.Value = w.Value
+	out.Type = w.Type
+	return out, nil
+}
+
+// AlertStatementParameterFromSDK converts the sdk-go type to the mirror.
+func AlertStatementParameterFromSDK(v *sdk.AlertStatementParameter) (*AlertStatementParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertStatementParameter{}
+	out.Name = v.Name
+	out.Value = v.Value
+	out.Type = v.Type
+	return out, nil
+}
+
+// AlertSubscriptionToSDK converts the mirror to the sdk-go type.
+func AlertSubscriptionToSDK(w *AlertSubscription) (*sdk.AlertSubscription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertSubscription{}
+	{
+		members := 0
+		if w.UserEmail != nil {
+			members++
+		}
+		if w.DestinationId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertSubscription.SubscriptionType")
+		}
+	}
+	switch {
+	case w.UserEmail != nil:
+		out.SubscriptionType = &sdk.AlertSubscription_SubscriptionType_UserEmail{UserEmail: *w.UserEmail}
+	case w.DestinationId != nil:
+		out.SubscriptionType = &sdk.AlertSubscription_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
+	}
+	return out, nil
+}
+
+// AlertSubscriptionFromSDK converts the sdk-go type to the mirror.
+func AlertSubscriptionFromSDK(v *sdk.AlertSubscription) (*AlertSubscription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertSubscription{}
+	switch value := v.SubscriptionType.(type) {
+	case *sdk.AlertSubscription_SubscriptionType_UserEmail:
+		if value != nil {
+			out.UserEmail = new(value.UserEmail)
+		}
+	case *sdk.AlertSubscription_SubscriptionType_DestinationId:
+		if value != nil {
+			out.DestinationId = new(value.DestinationId)
+		}
+	}
+	return out, nil
+}
+
+// CreateAlertRequestToSDK converts the mirror to the sdk-go type.
+func CreateAlertRequestToSDK(w *CreateAlertRequest) (*sdk.CreateAlertRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAlertRequest{}
+	conv23, err := AlertToSDK(w.Alert)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAlertRequest.Alert", err)
+	}
+	out.Alert = conv23
+	return out, nil
+}
+
+// CreateAlertRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAlertRequestFromSDK(v *sdk.CreateAlertRequest) (*CreateAlertRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAlertRequest{}
+	conv24, err := AlertFromSDK(v.Alert)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAlertRequest.Alert", err)
+	}
+	out.Alert = conv24
+	return out, nil
+}
+
+// CronScheduleToSDK converts the mirror to the sdk-go type.
+func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronSchedule{}
+	out.QuartzCronSchedule = w.QuartzCronSchedule
+	out.TimezoneId = w.TimezoneId
+	out.PauseStatus = w.PauseStatus
+	return out, nil
+}
+
+// CronScheduleFromSDK converts the sdk-go type to the mirror.
+func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronSchedule{}
+	out.QuartzCronSchedule = v.QuartzCronSchedule
+	out.TimezoneId = v.TimezoneId
+	out.PauseStatus = v.PauseStatus
+	return out, nil
+}
+
+// ListAlertsRequestToSDK converts the mirror to the sdk-go type.
+func ListAlertsRequestToSDK(w *ListAlertsRequest) (*sdk.ListAlertsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAlertsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListAlertsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAlertsRequestFromSDK(v *sdk.ListAlertsRequest) (*ListAlertsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAlertsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListAlertsResponseToSDK converts the mirror to the sdk-go type.
+func ListAlertsResponseToSDK(w *ListAlertsResponse) (*sdk.ListAlertsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAlertsResponse{}
+	conv25, err := convertSlice(w.Alerts, AlertToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAlertsResponse.Alerts", err)
+	}
+	out.Alerts = conv25
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAlertsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAlertsResponseFromSDK(v *sdk.ListAlertsResponse) (*ListAlertsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAlertsResponse{}
+	conv26, err := convertSlice(v.Alerts, AlertFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAlertsResponse.Alerts", err)
+	}
+	out.Alerts = conv26
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// TrashAlertRequestToSDK converts the mirror to the sdk-go type.
+func TrashAlertRequestToSDK(w *TrashAlertRequest) (*sdk.TrashAlertRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TrashAlertRequest{}
+	out.Id = w.Id
+	out.Purge = w.Purge
+	return out, nil
+}
+
+// TrashAlertRequestFromSDK converts the sdk-go type to the mirror.
+func TrashAlertRequestFromSDK(v *sdk.TrashAlertRequest) (*TrashAlertRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TrashAlertRequest{}
+	out.Id = v.Id
+	out.Purge = v.Purge
+	return out, nil
+}
+
+// UpdateAlertRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAlertRequestToSDK(w *UpdateAlertRequest) (*sdk.UpdateAlertRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAlertRequest{}
+	conv27, err := AlertToSDK(w.Alert)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAlertRequest.Alert", err)
+	}
+	out.Alert = conv27
+	mask28, err := fieldMaskFromString[sdk.Alert](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAlertRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask28
+	return out, nil
+}
+
+// UpdateAlertRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateAlertRequestFromSDK(v *sdk.UpdateAlertRequest) (*UpdateAlertRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	alertWireValue, err := AlertFromSDK(v.Alert)
+	out := &UpdateAlertRequest{}
+	conv29, err := AlertFromSDK(v.Alert)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateAlertRequest.Alert", err)
 	}
-	return &UpdateAlertRequest{
-		Alert:      alertWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Alert = conv29
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -799,4 +857,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

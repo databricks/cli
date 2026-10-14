@@ -46,22 +46,6 @@ const (
 	ValidateStorageCredentialRequest_Result_Skip               = sdk.ValidateStorageCredentialRequest_Result_Skip
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AccountsCreateStorageCredentialRequest struct {
 	// <Databricks> account ID of any type. For non-E2 account types, get your
 	// account ID from the [Accounts Console]
@@ -76,37 +60,8 @@ type AccountsCreateStorageCredentialRequest struct {
 	SkipValidation *bool `json:"skip_validation,omitempty"`
 }
 
-func AccountsCreateStorageCredentialRequestFromSDK(v *sdk.AccountsCreateStorageCredentialRequest) (*AccountsCreateStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	credentialInfoWireValue, err := CreateAccountsStorageCredentialFromSDK(v.CredentialInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialRequest.CredentialInfo", err)
-	}
-	return &AccountsCreateStorageCredentialRequest{
-		AccountId:      v.AccountId,
-		MetastoreId:    v.MetastoreId,
-		CredentialInfo: credentialInfoWireValue,
-		SkipValidation: v.SkipValidation,
-	}, nil
-}
-
 type AccountsCreateStorageCredentialResponse struct {
 	CredentialInfo *StorageCredentialInfo `json:"credential_info,omitempty"`
-}
-
-func AccountsCreateStorageCredentialResponseToSDK(w *AccountsCreateStorageCredentialResponse) (*sdk.AccountsCreateStorageCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialInfoPublicValue, err := StorageCredentialInfoToSDK(w.CredentialInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialResponse.CredentialInfo", err)
-	}
-	return &sdk.AccountsCreateStorageCredentialResponse{
-		CredentialInfo: credentialInfoPublicValue,
-	}, nil
 }
 
 // Deletes a storage credential for an account.
@@ -124,53 +79,15 @@ type AccountsDeleteStorageCredentialRequest struct {
 	Force *bool `json:"force,omitempty"`
 }
 
-func AccountsDeleteStorageCredentialRequestFromSDK(v *sdk.AccountsDeleteStorageCredentialRequest) (*AccountsDeleteStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountsDeleteStorageCredentialRequest{
-		AccountId:   v.AccountId,
-		MetastoreId: v.MetastoreId,
-		NameArg:     v.NameArg,
-		Force:       v.Force,
-	}, nil
-}
-
 // The storage credential was successfully retrieved..
 type AccountsGetStorageCredentialResponse struct {
 	CredentialInfo *StorageCredentialInfo `json:"credential_info,omitempty"`
-}
-
-func AccountsGetStorageCredentialResponseToSDK(w *AccountsGetStorageCredentialResponse) (*sdk.AccountsGetStorageCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialInfoPublicValue, err := StorageCredentialInfoToSDK(w.CredentialInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsGetStorageCredentialResponse.CredentialInfo", err)
-	}
-	return &sdk.AccountsGetStorageCredentialResponse{
-		CredentialInfo: credentialInfoPublicValue,
-	}, nil
 }
 
 // The metastore storage credentials were successfully returned..
 type AccountsListStorageCredentialsResponse struct {
 	// An array of metastore storage credentials.
 	StorageCredentials []StorageCredentialInfo `json:"storage_credentials,omitempty"`
-}
-
-func AccountsListStorageCredentialsResponseToSDK(w *AccountsListStorageCredentialsResponse) (*sdk.AccountsListStorageCredentialsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageCredentialsPublicValue, err := convertSlice(w.StorageCredentials, StorageCredentialInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsListStorageCredentialsResponse.StorageCredentials", err)
-	}
-	return &sdk.AccountsListStorageCredentialsResponse{
-		StorageCredentials: storageCredentialsPublicValue,
-	}, nil
 }
 
 // The storage credential to update..
@@ -190,91 +107,18 @@ type AccountsUpdateStorageCredentialRequest struct {
 	SkipValidation *bool `json:"skip_validation,omitempty"`
 }
 
-func AccountsUpdateStorageCredentialRequestFromSDK(v *sdk.AccountsUpdateStorageCredentialRequest) (*AccountsUpdateStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	credentialInfoWireValue, err := UpdateAccountsStorageCredentialFromSDK(v.CredentialInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialRequest.CredentialInfo", err)
-	}
-	return &AccountsUpdateStorageCredentialRequest{
-		AccountId:      v.AccountId,
-		MetastoreId:    v.MetastoreId,
-		NameArg:        v.NameArg,
-		CredentialInfo: credentialInfoWireValue,
-		SkipValidation: v.SkipValidation,
-	}, nil
-}
-
 // The storage credential was successfully updated..
 type AccountsUpdateStorageCredentialResponse struct {
 	CredentialInfo *StorageCredentialInfo `json:"credential_info,omitempty"`
-}
-
-func AccountsUpdateStorageCredentialResponseToSDK(w *AccountsUpdateStorageCredentialResponse) (*sdk.AccountsUpdateStorageCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialInfoPublicValue, err := StorageCredentialInfoToSDK(w.CredentialInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialResponse.CredentialInfo", err)
-	}
-	return &sdk.AccountsUpdateStorageCredentialResponse{
-		CredentialInfo: credentialInfoPublicValue,
-	}, nil
 }
 
 type AwsCredentials struct {
 	StsRole *AwsCredentials_StsRole `json:"sts_role,omitempty"`
 }
 
-func AwsCredentialsToSDK(w *AwsCredentials) (*sdk.AwsCredentials, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credsMembers := 0
-	if w.StsRole != nil {
-		credsMembers++
-	}
-	if credsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AwsCredentials.Creds")
-	}
-	credsSelection := (&sdk.AwsCredentials{}).Creds
-	switch {
-	case w.StsRole != nil:
-		credsStsRoleConverted, err := AwsCredentials_StsRoleToSDK(w.StsRole)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AwsCredentials.Creds.StsRole", err)
-		}
-		credsSelection = &sdk.AwsCredentials_Creds_StsRole{StsRole: *credsStsRoleConverted}
-	}
-	return &sdk.AwsCredentials{
-		Creds: credsSelection,
-	}, nil
-}
-
 type AwsCredentials_StsRole struct {
 	// The Amazon Resource Name (ARN) of the cross account IAM role.
 	RoleArn *string `json:"role_arn,omitempty"`
-}
-
-func AwsCredentials_StsRoleFromSDK(v *sdk.AwsCredentials_StsRole) (*AwsCredentials_StsRole, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsCredentials_StsRole{
-		RoleArn: v.RoleArn,
-	}, nil
-}
-
-func AwsCredentials_StsRoleToSDK(w *AwsCredentials_StsRole) (*sdk.AwsCredentials_StsRole, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsCredentials_StsRole{
-		RoleArn: w.RoleArn,
-	}, nil
 }
 
 // The AWS IAM role configuration.
@@ -290,28 +134,6 @@ type AwsIamRole struct {
 	ExternalId *string `json:"external_id,omitempty"`
 }
 
-func AwsIamRoleFromSDK(v *sdk.AwsIamRole) (*AwsIamRole, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsIamRole{
-		RoleArn:            v.RoleArn,
-		UnityCatalogIamArn: v.UnityCatalogIamArn,
-		ExternalId:         v.ExternalId,
-	}, nil
-}
-
-func AwsIamRoleToSDK(w *AwsIamRole) (*sdk.AwsIamRole, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsIamRole{
-		RoleArn:            w.RoleArn,
-		UnityCatalogIamArn: w.UnityCatalogIamArn,
-		ExternalId:         w.ExternalId,
-	}, nil
-}
-
 // Azure Active Directory token, essentially the Oauth token for Azure Service
 // Principal or Managed Identity. Read more at
 // https://learn.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/aad/service-prin-aad-token.
@@ -319,15 +141,6 @@ type AzureActiveDirectoryToken struct {
 	// Opaque token that contains claims that you can use in Azure Active Directory
 	// to access cloud services.
 	AadToken *string `json:"aad_token,omitempty"`
-}
-
-func AzureActiveDirectoryTokenToSDK(w *AzureActiveDirectoryToken) (*sdk.AzureActiveDirectoryToken, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureActiveDirectoryToken{
-		AadToken: w.AadToken,
-	}, nil
 }
 
 // The Azure managed identity configuration..
@@ -347,28 +160,6 @@ type AzureManagedIdentity struct {
 	CredentialId *string `json:"credential_id,omitempty"`
 }
 
-func AzureManagedIdentityFromSDK(v *sdk.AzureManagedIdentity) (*AzureManagedIdentity, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureManagedIdentity{
-		AccessConnectorId: v.AccessConnectorId,
-		ManagedIdentityId: v.ManagedIdentityId,
-		CredentialId:      v.CredentialId,
-	}, nil
-}
-
-func AzureManagedIdentityToSDK(w *AzureManagedIdentity) (*sdk.AzureManagedIdentity, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureManagedIdentity{
-		AccessConnectorId: w.AccessConnectorId,
-		ManagedIdentityId: w.ManagedIdentityId,
-		CredentialId:      w.CredentialId,
-	}, nil
-}
-
 // The Azure service principal configuration. Only applicable when purpose is
 // **STORAGE**..
 type AzureServicePrincipal struct {
@@ -382,42 +173,11 @@ type AzureServicePrincipal struct {
 	ClientSecret *string `json:"client_secret,omitempty"`
 }
 
-func AzureServicePrincipalFromSDK(v *sdk.AzureServicePrincipal) (*AzureServicePrincipal, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureServicePrincipal{
-		DirectoryId:   v.DirectoryId,
-		ApplicationId: v.ApplicationId,
-		ClientSecret:  v.ClientSecret,
-	}, nil
-}
-
-func AzureServicePrincipalToSDK(w *AzureServicePrincipal) (*sdk.AzureServicePrincipal, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureServicePrincipal{
-		DirectoryId:   w.DirectoryId,
-		ApplicationId: w.ApplicationId,
-		ClientSecret:  w.ClientSecret,
-	}, nil
-}
-
 // Azure temporary credentials for API authentication. Read more at
 // https://docs.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas.
 type AzureUserDelegationSas struct {
 	// The signed URI (SAS Token) used to access blob services for a given path
 	SasToken *string `json:"sas_token,omitempty"`
-}
-
-func AzureUserDelegationSasToSDK(w *AzureUserDelegationSas) (*sdk.AzureUserDelegationSas, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureUserDelegationSas{
-		SasToken: w.SasToken,
-	}, nil
 }
 
 // The Cloudflare API token configuration. Read more at
@@ -429,28 +189,6 @@ type CloudflareApiToken struct {
 	SecretAccessKey *string `json:"secret_access_key,omitempty"`
 	// The ID of the account associated with the API token.
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func CloudflareApiTokenFromSDK(v *sdk.CloudflareApiToken) (*CloudflareApiToken, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CloudflareApiToken{
-		AccessKeyId:     v.AccessKeyId,
-		SecretAccessKey: v.SecretAccessKey,
-		AccountId:       v.AccountId,
-	}, nil
-}
-
-func CloudflareApiTokenToSDK(w *CloudflareApiToken) (*sdk.CloudflareApiToken, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CloudflareApiToken{
-		AccessKeyId:     w.AccessKeyId,
-		SecretAccessKey: w.SecretAccessKey,
-		AccountId:       w.AccountId,
-	}, nil
 }
 
 type CreateAccountsStorageCredential struct {
@@ -492,125 +230,8 @@ type CreateAccountsStorageCredential struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func CreateAccountsStorageCredentialFromSDK(v *sdk.CreateAccountsStorageCredential) (*CreateAccountsStorageCredential, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.CreateAccountsStorageCredential_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.CreateAccountsStorageCredential_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.CreateAccountsStorageCredential_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.CreateAccountsStorageCredential_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.CreateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.CreateAccountsStorageCredential_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateAccountsStorageCredential.Credential", value)
-	}
-	return &CreateAccountsStorageCredential{
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
-}
-
 type CreateCredentialAwsCredentials struct {
 	StsRole *AwsCredentials_StsRole `json:"sts_role,omitempty"`
-}
-
-func CreateCredentialAwsCredentialsFromSDK(v *sdk.CreateCredentialAwsCredentials) (*CreateCredentialAwsCredentials, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credsStsRoleWire *AwsCredentials_StsRole
-	switch value := v.Creds.(type) {
-	case nil:
-	case *sdk.CreateCredentialAwsCredentials_Creds_StsRole:
-		if value != nil {
-			credsStsRoleConverted, err := AwsCredentials_StsRoleFromSDK(&value.StsRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialAwsCredentials.Creds.StsRole", err)
-			}
-			credsStsRoleWire = credsStsRoleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateCredentialAwsCredentials.Creds", value)
-	}
-	return &CreateCredentialAwsCredentials{
-		StsRole: credsStsRoleWire,
-	}, nil
 }
 
 type CreateCredentialRequest struct {
@@ -655,131 +276,11 @@ type CreateCredentialRequest struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func CreateCredentialRequestFromSDK(v *sdk.CreateCredentialRequest) (*CreateCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.CreateCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.CreateCredentialRequest_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.CreateCredentialRequest_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.CreateCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.CreateCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.CreateCredentialRequest_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateCredentialRequest.Credential", value)
-	}
-	return &CreateCredentialRequest{
-		SkipValidation:              v.SkipValidation,
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
-}
-
 type CreateCredentialsRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// The human-readable name of the credential configuration object.
 	CredentialsName *string                         `json:"credentials_name,omitempty"`
 	AwsCredentials  *CreateCredentialAwsCredentials `json:"aws_credentials,omitempty"`
-}
-
-func CreateCredentialsRequestFromSDK(v *sdk.CreateCredentialsRequest) (*CreateCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var cloudCredentialsAwsCredentialsWire *CreateCredentialAwsCredentials
-	switch value := v.CloudCredentials.(type) {
-	case nil:
-	case *sdk.CreateCredentialsRequest_CloudCredentials_AwsCredentials:
-		if value != nil {
-			cloudCredentialsAwsCredentialsConverted, err := CreateCredentialAwsCredentialsFromSDK(&value.AwsCredentials)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCredentialsRequest.CloudCredentials.AwsCredentials", err)
-			}
-			cloudCredentialsAwsCredentialsWire = cloudCredentialsAwsCredentialsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateCredentialsRequest.CloudCredentials", value)
-	}
-	return &CreateCredentialsRequest{
-		AccountId:       v.AccountId,
-		CredentialsName: v.CredentialsName,
-		AwsCredentials:  cloudCredentialsAwsCredentialsWire,
-	}, nil
 }
 
 type CreateStorageCredentialRequest struct {
@@ -823,101 +324,6 @@ type CreateStorageCredentialRequest struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func CreateStorageCredentialRequestFromSDK(v *sdk.CreateStorageCredentialRequest) (*CreateStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.CreateStorageCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.CreateStorageCredentialRequest_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.CreateStorageCredentialRequest_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.CreateStorageCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.CreateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.CreateStorageCredentialRequest_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateStorageCredentialRequest.Credential", value)
-	}
-	return &CreateStorageCredentialRequest{
-		SkipValidation:              v.SkipValidation,
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
-}
-
 type CredentialInfo struct {
 	// The credential name. The name must be unique among storage and service
 	// credentials within the metastore.
@@ -957,97 +363,6 @@ type CredentialInfo struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func CredentialInfoToSDK(w *CredentialInfo) (*sdk.CredentialInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialMembers := 0
-	if w.AwsIamRole != nil {
-		credentialMembers++
-	}
-	if w.AzureServicePrincipal != nil {
-		credentialMembers++
-	}
-	if w.GcpServiceAccountKey != nil {
-		credentialMembers++
-	}
-	if w.AzureManagedIdentity != nil {
-		credentialMembers++
-	}
-	if w.DatabricksGcpServiceAccount != nil {
-		credentialMembers++
-	}
-	if w.CloudflareApiToken != nil {
-		credentialMembers++
-	}
-	if credentialMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CredentialInfo.Credential")
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CredentialInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CredentialInfo.UpdatedAt", err)
-	}
-	credentialSelection := (&sdk.CredentialInfo{}).Credential
-	switch {
-	case w.AwsIamRole != nil:
-		credentialAwsIamRoleConverted, err := AwsIamRoleToSDK(w.AwsIamRole)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.AwsIamRole", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_AwsIamRole{AwsIamRole: *credentialAwsIamRoleConverted}
-	case w.AzureServicePrincipal != nil:
-		credentialAzureServicePrincipalConverted, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.AzureServicePrincipal", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_AzureServicePrincipal{AzureServicePrincipal: *credentialAzureServicePrincipalConverted}
-	case w.GcpServiceAccountKey != nil:
-		credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.GcpServiceAccountKey", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *credentialGcpServiceAccountKeyConverted}
-	case w.AzureManagedIdentity != nil:
-		credentialAzureManagedIdentityConverted, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.AzureManagedIdentity", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_AzureManagedIdentity{AzureManagedIdentity: *credentialAzureManagedIdentityConverted}
-	case w.DatabricksGcpServiceAccount != nil:
-		credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.DatabricksGcpServiceAccount", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *credentialDatabricksGcpServiceAccountConverted}
-	case w.CloudflareApiToken != nil:
-		credentialCloudflareApiTokenConverted, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential.CloudflareApiToken", err)
-		}
-		credentialSelection = &sdk.CredentialInfo_Credential_CloudflareApiToken{CloudflareApiToken: *credentialCloudflareApiTokenConverted}
-	}
-	return &sdk.CredentialInfo{
-		Name:                  w.Name,
-		Comment:               w.Comment,
-		ReadOnly:              w.ReadOnly,
-		Owner:                 w.Owner,
-		Id:                    w.Id,
-		MetastoreId:           w.MetastoreId,
-		CreatedAt:             createdAtPublicValue,
-		CreatedBy:             w.CreatedBy,
-		UpdatedAt:             updatedAtPublicValue,
-		UpdatedBy:             w.UpdatedBy,
-		UsedForManagedStorage: w.UsedForManagedStorage,
-		FullName:              w.FullName,
-		IsolationMode:         w.IsolationMode,
-		Credential:            credentialSelection,
-	}, nil
-}
-
 type Credentials struct {
 	// <Databricks> credential configuration ID.
 	CredentialsId *string `json:"credentials_id,omitempty"`
@@ -1058,39 +373,6 @@ type Credentials struct {
 	CredentialsName *string `json:"credentials_name,omitempty"`
 	// Time in epoch milliseconds when the credential was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
-}
-
-func CredentialsToSDK(w *Credentials) (*sdk.Credentials, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cloudCredentialsMembers := 0
-	if w.AwsCredentials != nil {
-		cloudCredentialsMembers++
-	}
-	if cloudCredentialsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Credentials.CloudCredentials")
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Credentials.CreationTime", err)
-	}
-	cloudCredentialsSelection := (&sdk.Credentials{}).CloudCredentials
-	switch {
-	case w.AwsCredentials != nil:
-		cloudCredentialsAwsCredentialsConverted, err := AwsCredentialsToSDK(w.AwsCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Credentials.CloudCredentials.AwsCredentials", err)
-		}
-		cloudCredentialsSelection = &sdk.Credentials_CloudCredentials_AwsCredentials{AwsCredentials: *cloudCredentialsAwsCredentialsConverted}
-	}
-	return &sdk.Credentials{
-		CredentialsId:    w.CredentialsId,
-		AccountId:        w.AccountId,
-		CredentialsName:  w.CredentialsName,
-		CreationTime:     creationTimePublicValue,
-		CloudCredentials: cloudCredentialsSelection,
-	}, nil
 }
 
 // GCP long-lived credential. <Databricks>-created Google Cloud Storage service
@@ -1104,28 +386,6 @@ type DatabricksGcpServiceAccount struct {
 	CredentialId *string `json:"credential_id,omitempty"`
 }
 
-func DatabricksGcpServiceAccountFromSDK(v *sdk.DatabricksGcpServiceAccount) (*DatabricksGcpServiceAccount, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabricksGcpServiceAccount{
-		Email:        v.Email,
-		PrivateKeyId: v.PrivateKeyId,
-		CredentialId: v.CredentialId,
-	}, nil
-}
-
-func DatabricksGcpServiceAccountToSDK(w *DatabricksGcpServiceAccount) (*sdk.DatabricksGcpServiceAccount, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabricksGcpServiceAccount{
-		Email:        w.Email,
-		PrivateKeyId: w.PrivateKeyId,
-		CredentialId: w.CredentialId,
-	}, nil
-}
-
 type DeleteCredentialRequest struct {
 	// Name of the credential.
 	NameArg *string `json:"name_arg,omitempty"`
@@ -1133,16 +393,6 @@ type DeleteCredentialRequest struct {
 	// **SERVICE**) or dependent external locations and external tables (when
 	// purpose is **STORAGE**).
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteCredentialRequestFromSDK(v *sdk.DeleteCredentialRequest) (*DeleteCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteCredentialRequest{
-		NameArg: v.NameArg,
-		Force:   v.Force,
-	}, nil
 }
 
 type DeleteStorageCredentialRequest struct {
@@ -1154,29 +404,10 @@ type DeleteStorageCredentialRequest struct {
 	Force *bool `json:"force,omitempty"`
 }
 
-func DeleteStorageCredentialRequestFromSDK(v *sdk.DeleteStorageCredentialRequest) (*DeleteStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteStorageCredentialRequest{
-		NameArg: v.NameArg,
-		Force:   v.Force,
-	}, nil
-}
-
 // GCP temporary credentials for API authentication. Read more at
 // https://developers.google.com/identity/protocols/oauth2/service-account.
 type GcpOauthToken struct {
 	OauthToken *string `json:"oauth_token,omitempty"`
-}
-
-func GcpOauthTokenToSDK(w *GcpOauthToken) (*sdk.GcpOauthToken, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpOauthToken{
-		OauthToken: w.OauthToken,
-	}, nil
 }
 
 // GCP long-lived credential. GCP Service Account..
@@ -1189,28 +420,6 @@ type GcpServiceAccountKey struct {
 	PrivateKey *string `json:"private_key,omitempty"`
 }
 
-func GcpServiceAccountKeyFromSDK(v *sdk.GcpServiceAccountKey) (*GcpServiceAccountKey, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpServiceAccountKey{
-		Email:        v.Email,
-		PrivateKeyId: v.PrivateKeyId,
-		PrivateKey:   v.PrivateKey,
-	}, nil
-}
-
-func GcpServiceAccountKeyToSDK(w *GcpServiceAccountKey) (*sdk.GcpServiceAccountKey, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpServiceAccountKey{
-		Email:        w.Email,
-		PrivateKeyId: w.PrivateKeyId,
-		PrivateKey:   w.PrivateKey,
-	}, nil
-}
-
 type GenerateTemporaryPathCredentialRequest struct {
 	// URL for path-based access.
 	Url *string `json:"url,omitempty"`
@@ -1221,17 +430,6 @@ type GenerateTemporaryPathCredentialRequest struct {
 	// created and the response will not contain valid credentials. Defaults to
 	// false.
 	DryRun *bool `json:"dry_run,omitempty"`
-}
-
-func GenerateTemporaryPathCredentialRequestFromSDK(v *sdk.GenerateTemporaryPathCredentialRequest) (*GenerateTemporaryPathCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenerateTemporaryPathCredentialRequest{
-		Url:       v.Url,
-		Operation: v.Operation,
-		DryRun:    v.DryRun,
-	}, nil
 }
 
 type GenerateTemporaryPathCredentialResponse struct {
@@ -1247,112 +445,11 @@ type GenerateTemporaryPathCredentialResponse struct {
 	Url *string `json:"url,omitempty"`
 }
 
-func GenerateTemporaryPathCredentialResponseToSDK(w *GenerateTemporaryPathCredentialResponse) (*sdk.GenerateTemporaryPathCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsMembers := 0
-	if w.AwsTempCredentials != nil {
-		credentialsMembers++
-	}
-	if w.AzureUserDelegationSas != nil {
-		credentialsMembers++
-	}
-	if w.GcpOauthToken != nil {
-		credentialsMembers++
-	}
-	if w.AzureAad != nil {
-		credentialsMembers++
-	}
-	if w.R2TempCredentials != nil {
-		credentialsMembers++
-	}
-	if credentialsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryPathCredentialResponse.Credentials")
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.ExpirationTime", err)
-	}
-	credentialsSelection := (&sdk.GenerateTemporaryPathCredentialResponse{}).Credentials
-	switch {
-	case w.AwsTempCredentials != nil:
-		credentialsAwsTempCredentialsConverted, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials.AwsTempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *credentialsAwsTempCredentialsConverted}
-	case w.AzureUserDelegationSas != nil:
-		credentialsAzureUserDelegationSasConverted, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials.AzureUserDelegationSas", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *credentialsAzureUserDelegationSasConverted}
-	case w.GcpOauthToken != nil:
-		credentialsGcpOauthTokenConverted, err := GcpOauthTokenToSDK(w.GcpOauthToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials.GcpOauthToken", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *credentialsGcpOauthTokenConverted}
-	case w.AzureAad != nil:
-		credentialsAzureAadConverted, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials.AzureAad", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureAad{AzureAad: *credentialsAzureAadConverted}
-	case w.R2TempCredentials != nil:
-		credentialsR2TempCredentialsConverted, err := R2CredentialsToSDK(w.R2TempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials.R2TempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *credentialsR2TempCredentialsConverted}
-	}
-	return &sdk.GenerateTemporaryPathCredentialResponse{
-		ExpirationTime: expirationTimePublicValue,
-		Url:            w.Url,
-		Credentials:    credentialsSelection,
-	}, nil
-}
-
 type GenerateTemporaryServiceCredentialRequest struct {
 	// The name of the service credential used to generate a temporary credential
 	CredentialName *string                                                 `json:"credential_name,omitempty"`
 	AzureOptions   *GenerateTemporaryServiceCredentialRequest_AzureOptions `json:"azure_options,omitempty"`
 	GcpOptions     *GenerateTemporaryServiceCredentialRequest_GcpOptions   `json:"gcp_options,omitempty"`
-}
-
-func GenerateTemporaryServiceCredentialRequestFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest) (*GenerateTemporaryServiceCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var optionsAzureOptionsWire *GenerateTemporaryServiceCredentialRequest_AzureOptions
-	var optionsGcpOptionsWire *GenerateTemporaryServiceCredentialRequest_GcpOptions
-	switch value := v.Options.(type) {
-	case nil:
-	case *sdk.GenerateTemporaryServiceCredentialRequest_Options_AzureOptions:
-		if value != nil {
-			optionsAzureOptionsConverted, err := GenerateTemporaryServiceCredentialRequest_AzureOptionsFromSDK(&value.AzureOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options.AzureOptions", err)
-			}
-			optionsAzureOptionsWire = optionsAzureOptionsConverted
-		}
-	case *sdk.GenerateTemporaryServiceCredentialRequest_Options_GcpOptions:
-		if value != nil {
-			optionsGcpOptionsConverted, err := GenerateTemporaryServiceCredentialRequest_GcpOptionsFromSDK(&value.GcpOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options.GcpOptions", err)
-			}
-			optionsGcpOptionsWire = optionsGcpOptionsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "GenerateTemporaryServiceCredentialRequest.Options", value)
-	}
-	return &GenerateTemporaryServiceCredentialRequest{
-		CredentialName: v.CredentialName,
-		AzureOptions:   optionsAzureOptionsWire,
-		GcpOptions:     optionsGcpOptionsWire,
-	}, nil
 }
 
 // The Azure cloud options to customize the requested temporary credential.
@@ -1363,30 +460,12 @@ type GenerateTemporaryServiceCredentialRequest_AzureOptions struct {
 	Resources []string `json:"resources,omitempty"`
 }
 
-func GenerateTemporaryServiceCredentialRequest_AzureOptionsFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest_AzureOptions) (*GenerateTemporaryServiceCredentialRequest_AzureOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenerateTemporaryServiceCredentialRequest_AzureOptions{
-		Resources: v.Resources,
-	}, nil
-}
-
 // The GCP cloud options to customize the requested temporary credential.
 type GenerateTemporaryServiceCredentialRequest_GcpOptions struct {
 	// The scopes to which the temporary GCP credential should apply. These
 	// resources are the scopes that are passed to the token provider (see
 	// https://google-auth.readthedocs.io/en/latest/reference/google.auth.html#google.auth.credentials.Credentials)
 	Scopes []string `json:"scopes,omitempty"`
-}
-
-func GenerateTemporaryServiceCredentialRequest_GcpOptionsFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest_GcpOptions) (*GenerateTemporaryServiceCredentialRequest_GcpOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenerateTemporaryServiceCredentialRequest_GcpOptions{
-		Scopes: v.Scopes,
-	}, nil
 }
 
 type GenerateTemporaryTableCredentialRequest struct {
@@ -1396,16 +475,6 @@ type GenerateTemporaryTableCredentialRequest struct {
 	// READ_WRITE is specified, the credentials returned will have write
 	// permissions, otherwise, it will be read only.
 	Operation TableOperation `json:"operation,omitempty"`
-}
-
-func GenerateTemporaryTableCredentialRequestFromSDK(v *sdk.GenerateTemporaryTableCredentialRequest) (*GenerateTemporaryTableCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenerateTemporaryTableCredentialRequest{
-		TableId:   v.TableId,
-		Operation: v.Operation,
-	}, nil
 }
 
 type GenerateTemporaryTableCredentialResponse struct {
@@ -1421,73 +490,6 @@ type GenerateTemporaryTableCredentialResponse struct {
 	Url *string `json:"url,omitempty"`
 }
 
-func GenerateTemporaryTableCredentialResponseToSDK(w *GenerateTemporaryTableCredentialResponse) (*sdk.GenerateTemporaryTableCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsMembers := 0
-	if w.AwsTempCredentials != nil {
-		credentialsMembers++
-	}
-	if w.AzureUserDelegationSas != nil {
-		credentialsMembers++
-	}
-	if w.GcpOauthToken != nil {
-		credentialsMembers++
-	}
-	if w.AzureAad != nil {
-		credentialsMembers++
-	}
-	if w.R2TempCredentials != nil {
-		credentialsMembers++
-	}
-	if credentialsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryTableCredentialResponse.Credentials")
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.ExpirationTime", err)
-	}
-	credentialsSelection := (&sdk.GenerateTemporaryTableCredentialResponse{}).Credentials
-	switch {
-	case w.AwsTempCredentials != nil:
-		credentialsAwsTempCredentialsConverted, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials.AwsTempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *credentialsAwsTempCredentialsConverted}
-	case w.AzureUserDelegationSas != nil:
-		credentialsAzureUserDelegationSasConverted, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials.AzureUserDelegationSas", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *credentialsAzureUserDelegationSasConverted}
-	case w.GcpOauthToken != nil:
-		credentialsGcpOauthTokenConverted, err := GcpOauthTokenToSDK(w.GcpOauthToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials.GcpOauthToken", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *credentialsGcpOauthTokenConverted}
-	case w.AzureAad != nil:
-		credentialsAzureAadConverted, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials.AzureAad", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureAad{AzureAad: *credentialsAzureAadConverted}
-	case w.R2TempCredentials != nil:
-		credentialsR2TempCredentialsConverted, err := R2CredentialsToSDK(w.R2TempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials.R2TempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *credentialsR2TempCredentialsConverted}
-	}
-	return &sdk.GenerateTemporaryTableCredentialResponse{
-		ExpirationTime: expirationTimePublicValue,
-		Url:            w.Url,
-		Credentials:    credentialsSelection,
-	}, nil
-}
-
 // Generate volume credentials RPC.
 type GenerateTemporaryVolumeCredentialRequest struct {
 	// Id of the volume to read or write.
@@ -1496,16 +498,6 @@ type GenerateTemporaryVolumeCredentialRequest struct {
 	// WRITE_VOLUME. If WRITE_VOLUME is specified, the credentials returned will
 	// have write permissions, otherwise, it will be read only.
 	Operation VolumeOperation `json:"operation,omitempty"`
-}
-
-func GenerateTemporaryVolumeCredentialRequestFromSDK(v *sdk.GenerateTemporaryVolumeCredentialRequest) (*GenerateTemporaryVolumeCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenerateTemporaryVolumeCredentialRequest{
-		VolumeId:  v.VolumeId,
-		Operation: v.Operation,
-	}, nil
 }
 
 type GenerateTemporaryVolumeCredentialResponse struct {
@@ -1519,73 +511,6 @@ type GenerateTemporaryVolumeCredentialResponse struct {
 	ExpirationTime *int64 `json:"expiration_time,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
-}
-
-func GenerateTemporaryVolumeCredentialResponseToSDK(w *GenerateTemporaryVolumeCredentialResponse) (*sdk.GenerateTemporaryVolumeCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsMembers := 0
-	if w.AwsTempCredentials != nil {
-		credentialsMembers++
-	}
-	if w.AzureUserDelegationSas != nil {
-		credentialsMembers++
-	}
-	if w.GcpOauthToken != nil {
-		credentialsMembers++
-	}
-	if w.AzureAad != nil {
-		credentialsMembers++
-	}
-	if w.R2TempCredentials != nil {
-		credentialsMembers++
-	}
-	if credentialsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryVolumeCredentialResponse.Credentials")
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.ExpirationTime", err)
-	}
-	credentialsSelection := (&sdk.GenerateTemporaryVolumeCredentialResponse{}).Credentials
-	switch {
-	case w.AwsTempCredentials != nil:
-		credentialsAwsTempCredentialsConverted, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials.AwsTempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *credentialsAwsTempCredentialsConverted}
-	case w.AzureUserDelegationSas != nil:
-		credentialsAzureUserDelegationSasConverted, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials.AzureUserDelegationSas", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *credentialsAzureUserDelegationSasConverted}
-	case w.GcpOauthToken != nil:
-		credentialsGcpOauthTokenConverted, err := GcpOauthTokenToSDK(w.GcpOauthToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials.GcpOauthToken", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *credentialsGcpOauthTokenConverted}
-	case w.AzureAad != nil:
-		credentialsAzureAadConverted, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials.AzureAad", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureAad{AzureAad: *credentialsAzureAadConverted}
-	case w.R2TempCredentials != nil:
-		credentialsR2TempCredentialsConverted, err := R2CredentialsToSDK(w.R2TempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials.R2TempCredentials", err)
-		}
-		credentialsSelection = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *credentialsR2TempCredentialsConverted}
-	}
-	return &sdk.GenerateTemporaryVolumeCredentialResponse{
-		ExpirationTime: expirationTimePublicValue,
-		Url:            w.Url,
-		Credentials:    credentialsSelection,
-	}, nil
 }
 
 // ListCredentialsRequest is used to list credentials in the metastore. Returns
@@ -1608,37 +533,12 @@ type ListCredentialsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCredentialsRequestFromSDK(v *sdk.ListCredentialsRequest) (*ListCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCredentialsRequest{
-		IncludeUnbound: v.IncludeUnbound,
-		MaxResults:     v.MaxResults,
-		PageToken:      v.PageToken,
-	}, nil
-}
-
 type ListCredentialsRequest_Response struct {
 	Credentials []CredentialInfo `json:"credentials,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCredentialsRequest_ResponseToSDK(w *ListCredentialsRequest_Response) (*sdk.ListCredentialsRequest_Response, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsPublicValue, err := convertSlice(w.Credentials, CredentialInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCredentialsRequest_Response.Credentials", err)
-	}
-	return &sdk.ListCredentialsRequest_Response{
-		Credentials:   credentialsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListStorageCredentialsRequest struct {
@@ -1656,37 +556,12 @@ type ListStorageCredentialsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListStorageCredentialsRequestFromSDK(v *sdk.ListStorageCredentialsRequest) (*ListStorageCredentialsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListStorageCredentialsRequest{
-		IncludeUnbound: v.IncludeUnbound,
-		MaxResults:     v.MaxResults,
-		PageToken:      v.PageToken,
-	}, nil
-}
-
 type ListStorageCredentialsResponse struct {
 	StorageCredentials []StorageCredentialInfo `json:"storage_credentials,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListStorageCredentialsResponseToSDK(w *ListStorageCredentialsResponse) (*sdk.ListStorageCredentialsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageCredentialsPublicValue, err := convertSlice(w.StorageCredentials, StorageCredentialInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListStorageCredentialsResponse.StorageCredentials", err)
-	}
-	return &sdk.ListStorageCredentialsResponse{
-		StorageCredentials: storageCredentialsPublicValue,
-		NextPageToken:      w.NextPageToken,
-	}, nil
 }
 
 // R2 temporary credentials for API authentication. Read more at
@@ -1698,17 +573,6 @@ type R2Credentials struct {
 	SecretAccessKey *string `json:"secret_access_key,omitempty"`
 	// The generated JWT that users must pass to use the temporary credentials.
 	SessionToken *string `json:"session_token,omitempty"`
-}
-
-func R2CredentialsToSDK(w *R2Credentials) (*sdk.R2Credentials, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.R2Credentials{
-		AccessKeyId:     w.AccessKeyId,
-		SecretAccessKey: w.SecretAccessKey,
-		SessionToken:    w.SessionToken,
-	}, nil
 }
 
 type StorageCredentialInfo struct {
@@ -1750,97 +614,6 @@ type StorageCredentialInfo struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func StorageCredentialInfoToSDK(w *StorageCredentialInfo) (*sdk.StorageCredentialInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialMembers := 0
-	if w.AwsIamRole != nil {
-		credentialMembers++
-	}
-	if w.AzureServicePrincipal != nil {
-		credentialMembers++
-	}
-	if w.GcpServiceAccountKey != nil {
-		credentialMembers++
-	}
-	if w.AzureManagedIdentity != nil {
-		credentialMembers++
-	}
-	if w.DatabricksGcpServiceAccount != nil {
-		credentialMembers++
-	}
-	if w.CloudflareApiToken != nil {
-		credentialMembers++
-	}
-	if credentialMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "StorageCredentialInfo.Credential")
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.UpdatedAt", err)
-	}
-	credentialSelection := (&sdk.StorageCredentialInfo{}).Credential
-	switch {
-	case w.AwsIamRole != nil:
-		credentialAwsIamRoleConverted, err := AwsIamRoleToSDK(w.AwsIamRole)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.AwsIamRole", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_AwsIamRole{AwsIamRole: *credentialAwsIamRoleConverted}
-	case w.AzureServicePrincipal != nil:
-		credentialAzureServicePrincipalConverted, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.AzureServicePrincipal", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_AzureServicePrincipal{AzureServicePrincipal: *credentialAzureServicePrincipalConverted}
-	case w.GcpServiceAccountKey != nil:
-		credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.GcpServiceAccountKey", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *credentialGcpServiceAccountKeyConverted}
-	case w.AzureManagedIdentity != nil:
-		credentialAzureManagedIdentityConverted, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.AzureManagedIdentity", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_AzureManagedIdentity{AzureManagedIdentity: *credentialAzureManagedIdentityConverted}
-	case w.DatabricksGcpServiceAccount != nil:
-		credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.DatabricksGcpServiceAccount", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *credentialDatabricksGcpServiceAccountConverted}
-	case w.CloudflareApiToken != nil:
-		credentialCloudflareApiTokenConverted, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential.CloudflareApiToken", err)
-		}
-		credentialSelection = &sdk.StorageCredentialInfo_Credential_CloudflareApiToken{CloudflareApiToken: *credentialCloudflareApiTokenConverted}
-	}
-	return &sdk.StorageCredentialInfo{
-		Name:                  w.Name,
-		Comment:               w.Comment,
-		ReadOnly:              w.ReadOnly,
-		Owner:                 w.Owner,
-		Id:                    w.Id,
-		MetastoreId:           w.MetastoreId,
-		CreatedAt:             createdAtPublicValue,
-		CreatedBy:             w.CreatedBy,
-		UpdatedAt:             updatedAtPublicValue,
-		UpdatedBy:             w.UpdatedBy,
-		UsedForManagedStorage: w.UsedForManagedStorage,
-		FullName:              w.FullName,
-		IsolationMode:         w.IsolationMode,
-		Credential:            credentialSelection,
-	}, nil
-}
-
 // AWS temporary credentials for API authentication. Read more at
 // https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html..
 type TemporaryAwsCredentials struct {
@@ -1855,18 +628,6 @@ type TemporaryAwsCredentials struct {
 	AccessPoint *string `json:"access_point,omitempty"`
 }
 
-func TemporaryAwsCredentialsToSDK(w *TemporaryAwsCredentials) (*sdk.TemporaryAwsCredentials, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TemporaryAwsCredentials{
-		AccessKeyId:     w.AccessKeyId,
-		SecretAccessKey: w.SecretAccessKey,
-		SessionToken:    w.SessionToken,
-		AccessPoint:     w.AccessPoint,
-	}, nil
-}
-
 type TemporaryCredentials struct {
 	AwsTempCredentials     *TemporaryAwsCredentials   `json:"aws_temp_credentials,omitempty"`
 	AzureUserDelegationSas *AzureUserDelegationSas    `json:"azure_user_delegation_sas,omitempty"`
@@ -1878,73 +639,6 @@ type TemporaryCredentials struct {
 	ExpirationTime *int64 `json:"expiration_time,omitempty"`
 	// The URL of the storage path accessible by the temporary credential.
 	Url *string `json:"url,omitempty"`
-}
-
-func TemporaryCredentialsToSDK(w *TemporaryCredentials) (*sdk.TemporaryCredentials, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialsMembers := 0
-	if w.AwsTempCredentials != nil {
-		credentialsMembers++
-	}
-	if w.AzureUserDelegationSas != nil {
-		credentialsMembers++
-	}
-	if w.GcpOauthToken != nil {
-		credentialsMembers++
-	}
-	if w.AzureAad != nil {
-		credentialsMembers++
-	}
-	if w.R2TempCredentials != nil {
-		credentialsMembers++
-	}
-	if credentialsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TemporaryCredentials.Credentials")
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.ExpirationTime", err)
-	}
-	credentialsSelection := (&sdk.TemporaryCredentials{}).Credentials
-	switch {
-	case w.AwsTempCredentials != nil:
-		credentialsAwsTempCredentialsConverted, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials.AwsTempCredentials", err)
-		}
-		credentialsSelection = &sdk.TemporaryCredentials_Credentials_AwsTempCredentials{AwsTempCredentials: *credentialsAwsTempCredentialsConverted}
-	case w.AzureUserDelegationSas != nil:
-		credentialsAzureUserDelegationSasConverted, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials.AzureUserDelegationSas", err)
-		}
-		credentialsSelection = &sdk.TemporaryCredentials_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *credentialsAzureUserDelegationSasConverted}
-	case w.GcpOauthToken != nil:
-		credentialsGcpOauthTokenConverted, err := GcpOauthTokenToSDK(w.GcpOauthToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials.GcpOauthToken", err)
-		}
-		credentialsSelection = &sdk.TemporaryCredentials_Credentials_GcpOauthToken{GcpOauthToken: *credentialsGcpOauthTokenConverted}
-	case w.AzureAad != nil:
-		credentialsAzureAadConverted, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials.AzureAad", err)
-		}
-		credentialsSelection = &sdk.TemporaryCredentials_Credentials_AzureAad{AzureAad: *credentialsAzureAadConverted}
-	case w.R2TempCredentials != nil:
-		credentialsR2TempCredentialsConverted, err := R2CredentialsToSDK(w.R2TempCredentials)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials.R2TempCredentials", err)
-		}
-		credentialsSelection = &sdk.TemporaryCredentials_Credentials_R2TempCredentials{R2TempCredentials: *credentialsR2TempCredentialsConverted}
-	}
-	return &sdk.TemporaryCredentials{
-		ExpirationTime: expirationTimePublicValue,
-		Url:            w.Url,
-		Credentials:    credentialsSelection,
-	}, nil
 }
 
 type UpdateAccountsStorageCredential struct {
@@ -1984,100 +678,6 @@ type UpdateAccountsStorageCredential struct {
 	// Whether the current securable is accessible from all workspaces or a specific
 	// set of workspaces.
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
-}
-
-func UpdateAccountsStorageCredentialFromSDK(v *sdk.UpdateAccountsStorageCredential) (*UpdateAccountsStorageCredential, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.UpdateAccountsStorageCredential_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.UpdateAccountsStorageCredential_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.UpdateAccountsStorageCredential_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.UpdateAccountsStorageCredential_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.UpdateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.UpdateAccountsStorageCredential_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UpdateAccountsStorageCredential.Credential", value)
-	}
-	return &UpdateAccountsStorageCredential{
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
 }
 
 type UpdateCredentialRequest struct {
@@ -2129,104 +729,6 @@ type UpdateCredentialRequest struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func UpdateCredentialRequestFromSDK(v *sdk.UpdateCredentialRequest) (*UpdateCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.UpdateCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.UpdateCredentialRequest_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.UpdateCredentialRequest_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.UpdateCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.UpdateCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.UpdateCredentialRequest_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UpdateCredentialRequest.Credential", value)
-	}
-	return &UpdateCredentialRequest{
-		NameArg:                     v.NameArg,
-		NewName:                     v.NewName,
-		SkipValidation:              v.SkipValidation,
-		Force:                       v.Force,
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
-}
-
 type UpdateStorageCredentialRequest struct {
 	// Name of the storage credential.
 	NameArg *string `json:"name_arg,omitempty"`
@@ -2275,104 +777,6 @@ type UpdateStorageCredentialRequest struct {
 	IsolationMode IsolationMode `json:"isolation_mode,omitempty"`
 }
 
-func UpdateStorageCredentialRequestFromSDK(v *sdk.UpdateStorageCredentialRequest) (*UpdateStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.UpdatedAt", err)
-	}
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialGcpServiceAccountKeyWire *GcpServiceAccountKey
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.UpdateStorageCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.UpdateStorageCredentialRequest_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.UpdateStorageCredentialRequest_Credential_GcpServiceAccountKey:
-		if value != nil {
-			credentialGcpServiceAccountKeyConverted, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.GcpServiceAccountKey", err)
-			}
-			credentialGcpServiceAccountKeyWire = credentialGcpServiceAccountKeyConverted
-		}
-	case *sdk.UpdateStorageCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.UpdateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.UpdateStorageCredentialRequest_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UpdateStorageCredentialRequest.Credential", value)
-	}
-	return &UpdateStorageCredentialRequest{
-		NameArg:                     v.NameArg,
-		NewName:                     v.NewName,
-		SkipValidation:              v.SkipValidation,
-		Force:                       v.Force,
-		Name:                        v.Name,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		GcpServiceAccountKey:        credentialGcpServiceAccountKeyWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		Comment:                     v.Comment,
-		ReadOnly:                    v.ReadOnly,
-		Owner:                       v.Owner,
-		Id:                          v.Id,
-		MetastoreId:                 v.MetastoreId,
-		CreatedAt:                   createdAtWireValue,
-		CreatedBy:                   v.CreatedBy,
-		UpdatedAt:                   updatedAtWireValue,
-		UpdatedBy:                   v.UpdatedBy,
-		UsedForManagedStorage:       v.UsedForManagedStorage,
-		FullName:                    v.FullName,
-		IsolationMode:               v.IsolationMode,
-	}, nil
-}
-
 type ValidateCredentialRequest struct {
 	CredentialName              *string                      `json:"credential_name,omitempty"`
 	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
@@ -2389,73 +793,11 @@ type ValidateCredentialRequest struct {
 	ReadOnly *bool `json:"read_only,omitempty"`
 }
 
-func ValidateCredentialRequestFromSDK(v *sdk.ValidateCredentialRequest) (*ValidateCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credentialCredentialNameWire *string
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.ValidateCredentialRequest_Credential_CredentialName:
-		if value != nil {
-			credentialCredentialNameWire = new(value.CredentialName)
-		}
-	case *sdk.ValidateCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.ValidateCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.ValidateCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ValidateCredentialRequest.Credential", value)
-	}
-	return &ValidateCredentialRequest{
-		CredentialName:              credentialCredentialNameWire,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		ExternalLocationName:        v.ExternalLocationName,
-		Url:                         v.Url,
-		ReadOnly:                    v.ReadOnly,
-	}, nil
-}
-
 type ValidateCredentialRequest_ValidationResult struct {
 	// The results of the tested operation.
 	Result ValidateCredentialRequest_Result `json:"result,omitempty"`
 	// Error message would exist when the result does not equal to **PASS**.
 	Message *string `json:"message,omitempty"`
-}
-
-func ValidateCredentialRequest_ValidationResultToSDK(w *ValidateCredentialRequest_ValidationResult) (*sdk.ValidateCredentialRequest_ValidationResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ValidateCredentialRequest_ValidationResult{
-		Result:  w.Result,
-		Message: w.Message,
-	}, nil
 }
 
 type ValidateCredentialResponse struct {
@@ -2464,20 +806,6 @@ type ValidateCredentialResponse struct {
 	// Whether the tested location is a directory in cloud storage. Only applicable
 	// for when purpose is **STORAGE**.
 	IsDir *bool `json:"isDir,omitempty"`
-}
-
-func ValidateCredentialResponseToSDK(w *ValidateCredentialResponse) (*sdk.ValidateCredentialResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultsPublicValue, err := convertSlice(w.Results, ValidateCredentialRequest_ValidationResultToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ValidateCredentialResponse.Results", err)
-	}
-	return &sdk.ValidateCredentialResponse{
-		Results: resultsPublicValue,
-		IsDir:   w.IsDir,
-	}, nil
 }
 
 type ValidateStorageCredentialRequest struct {
@@ -2495,78 +823,6 @@ type ValidateStorageCredentialRequest struct {
 	ReadOnly *bool `json:"read_only,omitempty"`
 }
 
-func ValidateStorageCredentialRequestFromSDK(v *sdk.ValidateStorageCredentialRequest) (*ValidateStorageCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credentialStorageCredentialNameWire *string
-	var credentialAwsIamRoleWire *AwsIamRole
-	var credentialAzureServicePrincipalWire *AzureServicePrincipal
-	var credentialAzureManagedIdentityWire *AzureManagedIdentity
-	var credentialDatabricksGcpServiceAccountWire *DatabricksGcpServiceAccount
-	var credentialCloudflareApiTokenWire *CloudflareApiToken
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.ValidateStorageCredentialRequest_Credential_StorageCredentialName:
-		if value != nil {
-			credentialStorageCredentialNameWire = new(value.StorageCredentialName)
-		}
-	case *sdk.ValidateStorageCredentialRequest_Credential_AwsIamRole:
-		if value != nil {
-			credentialAwsIamRoleConverted, err := AwsIamRoleFromSDK(&value.AwsIamRole)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential.AwsIamRole", err)
-			}
-			credentialAwsIamRoleWire = credentialAwsIamRoleConverted
-		}
-	case *sdk.ValidateStorageCredentialRequest_Credential_AzureServicePrincipal:
-		if value != nil {
-			credentialAzureServicePrincipalConverted, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential.AzureServicePrincipal", err)
-			}
-			credentialAzureServicePrincipalWire = credentialAzureServicePrincipalConverted
-		}
-	case *sdk.ValidateStorageCredentialRequest_Credential_AzureManagedIdentity:
-		if value != nil {
-			credentialAzureManagedIdentityConverted, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential.AzureManagedIdentity", err)
-			}
-			credentialAzureManagedIdentityWire = credentialAzureManagedIdentityConverted
-		}
-	case *sdk.ValidateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
-		if value != nil {
-			credentialDatabricksGcpServiceAccountConverted, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential.DatabricksGcpServiceAccount", err)
-			}
-			credentialDatabricksGcpServiceAccountWire = credentialDatabricksGcpServiceAccountConverted
-		}
-	case *sdk.ValidateStorageCredentialRequest_Credential_CloudflareApiToken:
-		if value != nil {
-			credentialCloudflareApiTokenConverted, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential.CloudflareApiToken", err)
-			}
-			credentialCloudflareApiTokenWire = credentialCloudflareApiTokenConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ValidateStorageCredentialRequest.Credential", value)
-	}
-	return &ValidateStorageCredentialRequest{
-		StorageCredentialName:       credentialStorageCredentialNameWire,
-		AwsIamRole:                  credentialAwsIamRoleWire,
-		AzureServicePrincipal:       credentialAzureServicePrincipalWire,
-		AzureManagedIdentity:        credentialAzureManagedIdentityWire,
-		DatabricksGcpServiceAccount: credentialDatabricksGcpServiceAccountWire,
-		CloudflareApiToken:          credentialCloudflareApiTokenWire,
-		ExternalLocationName:        v.ExternalLocationName,
-		Url:                         v.Url,
-		ReadOnly:                    v.ReadOnly,
-	}, nil
-}
-
 type ValidateStorageCredentialRequest_ValidationResult struct {
 	// The operation tested.
 	Operation ValidateStorageCredentialRequest_FileOperation `json:"operation,omitempty"`
@@ -2576,17 +832,6 @@ type ValidateStorageCredentialRequest_ValidationResult struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func ValidateStorageCredentialRequest_ValidationResultToSDK(w *ValidateStorageCredentialRequest_ValidationResult) (*sdk.ValidateStorageCredentialRequest_ValidationResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ValidateStorageCredentialRequest_ValidationResult{
-		Operation: w.Operation,
-		Result:    w.Result,
-		Message:   w.Message,
-	}, nil
-}
-
 type ValidateStorageCredentialResponse struct {
 	// Whether the tested location is a directory in cloud storage.
 	IsDir *bool `json:"isDir,omitempty"`
@@ -2594,18 +839,3066 @@ type ValidateStorageCredentialResponse struct {
 	Results []ValidateStorageCredentialRequest_ValidationResult `json:"results,omitempty"`
 }
 
+// AccountsCreateStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func AccountsCreateStorageCredentialRequestToSDK(w *AccountsCreateStorageCredentialRequest) (*sdk.AccountsCreateStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsCreateStorageCredentialRequest{}
+	out.AccountId = w.AccountId
+	out.MetastoreId = w.MetastoreId
+	conv1, err := CreateAccountsStorageCredentialToSDK(w.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialRequest.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv1
+	out.SkipValidation = w.SkipValidation
+	return out, nil
+}
+
+// AccountsCreateStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsCreateStorageCredentialRequestFromSDK(v *sdk.AccountsCreateStorageCredentialRequest) (*AccountsCreateStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsCreateStorageCredentialRequest{}
+	out.AccountId = v.AccountId
+	out.MetastoreId = v.MetastoreId
+	conv2, err := CreateAccountsStorageCredentialFromSDK(v.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialRequest.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv2
+	out.SkipValidation = v.SkipValidation
+	return out, nil
+}
+
+// AccountsCreateStorageCredentialResponseToSDK converts the mirror to the sdk-go type.
+func AccountsCreateStorageCredentialResponseToSDK(w *AccountsCreateStorageCredentialResponse) (*sdk.AccountsCreateStorageCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsCreateStorageCredentialResponse{}
+	conv3, err := StorageCredentialInfoToSDK(w.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv3
+	return out, nil
+}
+
+// AccountsCreateStorageCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsCreateStorageCredentialResponseFromSDK(v *sdk.AccountsCreateStorageCredentialResponse) (*AccountsCreateStorageCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsCreateStorageCredentialResponse{}
+	conv4, err := StorageCredentialInfoFromSDK(v.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv4
+	return out, nil
+}
+
+// AccountsDeleteStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func AccountsDeleteStorageCredentialRequestToSDK(w *AccountsDeleteStorageCredentialRequest) (*sdk.AccountsDeleteStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsDeleteStorageCredentialRequest{}
+	out.AccountId = w.AccountId
+	out.MetastoreId = w.MetastoreId
+	out.NameArg = w.NameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// AccountsDeleteStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsDeleteStorageCredentialRequestFromSDK(v *sdk.AccountsDeleteStorageCredentialRequest) (*AccountsDeleteStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsDeleteStorageCredentialRequest{}
+	out.AccountId = v.AccountId
+	out.MetastoreId = v.MetastoreId
+	out.NameArg = v.NameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// AccountsGetStorageCredentialResponseToSDK converts the mirror to the sdk-go type.
+func AccountsGetStorageCredentialResponseToSDK(w *AccountsGetStorageCredentialResponse) (*sdk.AccountsGetStorageCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsGetStorageCredentialResponse{}
+	conv5, err := StorageCredentialInfoToSDK(w.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv5
+	return out, nil
+}
+
+// AccountsGetStorageCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsGetStorageCredentialResponseFromSDK(v *sdk.AccountsGetStorageCredentialResponse) (*AccountsGetStorageCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsGetStorageCredentialResponse{}
+	conv6, err := StorageCredentialInfoFromSDK(v.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv6
+	return out, nil
+}
+
+// AccountsListStorageCredentialsResponseToSDK converts the mirror to the sdk-go type.
+func AccountsListStorageCredentialsResponseToSDK(w *AccountsListStorageCredentialsResponse) (*sdk.AccountsListStorageCredentialsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsListStorageCredentialsResponse{}
+	conv7, err := convertSlice(w.StorageCredentials, StorageCredentialInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsListStorageCredentialsResponse.StorageCredentials", err)
+	}
+	out.StorageCredentials = conv7
+	return out, nil
+}
+
+// AccountsListStorageCredentialsResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsListStorageCredentialsResponseFromSDK(v *sdk.AccountsListStorageCredentialsResponse) (*AccountsListStorageCredentialsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsListStorageCredentialsResponse{}
+	conv8, err := convertSlice(v.StorageCredentials, StorageCredentialInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsListStorageCredentialsResponse.StorageCredentials", err)
+	}
+	out.StorageCredentials = conv8
+	return out, nil
+}
+
+// AccountsUpdateStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func AccountsUpdateStorageCredentialRequestToSDK(w *AccountsUpdateStorageCredentialRequest) (*sdk.AccountsUpdateStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsUpdateStorageCredentialRequest{}
+	out.AccountId = w.AccountId
+	out.MetastoreId = w.MetastoreId
+	out.NameArg = w.NameArg
+	conv9, err := UpdateAccountsStorageCredentialToSDK(w.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialRequest.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv9
+	out.SkipValidation = w.SkipValidation
+	return out, nil
+}
+
+// AccountsUpdateStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsUpdateStorageCredentialRequestFromSDK(v *sdk.AccountsUpdateStorageCredentialRequest) (*AccountsUpdateStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsUpdateStorageCredentialRequest{}
+	out.AccountId = v.AccountId
+	out.MetastoreId = v.MetastoreId
+	out.NameArg = v.NameArg
+	conv10, err := UpdateAccountsStorageCredentialFromSDK(v.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialRequest.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv10
+	out.SkipValidation = v.SkipValidation
+	return out, nil
+}
+
+// AccountsUpdateStorageCredentialResponseToSDK converts the mirror to the sdk-go type.
+func AccountsUpdateStorageCredentialResponseToSDK(w *AccountsUpdateStorageCredentialResponse) (*sdk.AccountsUpdateStorageCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsUpdateStorageCredentialResponse{}
+	conv11, err := StorageCredentialInfoToSDK(w.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv11
+	return out, nil
+}
+
+// AccountsUpdateStorageCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsUpdateStorageCredentialResponseFromSDK(v *sdk.AccountsUpdateStorageCredentialResponse) (*AccountsUpdateStorageCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsUpdateStorageCredentialResponse{}
+	conv12, err := StorageCredentialInfoFromSDK(v.CredentialInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateStorageCredentialResponse.CredentialInfo", err)
+	}
+	out.CredentialInfo = conv12
+	return out, nil
+}
+
+// AwsCredentialsToSDK converts the mirror to the sdk-go type.
+func AwsCredentialsToSDK(w *AwsCredentials) (*sdk.AwsCredentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsCredentials{}
+	{
+		members := 0
+		if w.StsRole != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AwsCredentials.Creds")
+		}
+	}
+	switch {
+	case w.StsRole != nil:
+		conv13, err := AwsCredentials_StsRoleToSDK(w.StsRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AwsCredentials.Creds", err)
+		}
+		out.Creds = &sdk.AwsCredentials_Creds_StsRole{StsRole: *conv13}
+	}
+	return out, nil
+}
+
+// AwsCredentialsFromSDK converts the sdk-go type to the mirror.
+func AwsCredentialsFromSDK(v *sdk.AwsCredentials) (*AwsCredentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsCredentials{}
+	switch value := v.Creds.(type) {
+	case *sdk.AwsCredentials_Creds_StsRole:
+		if value != nil {
+			conv14, err := AwsCredentials_StsRoleFromSDK(&value.StsRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AwsCredentials.Creds", err)
+			}
+			out.StsRole = conv14
+		}
+	}
+	return out, nil
+}
+
+// AwsCredentials_StsRoleToSDK converts the mirror to the sdk-go type.
+func AwsCredentials_StsRoleToSDK(w *AwsCredentials_StsRole) (*sdk.AwsCredentials_StsRole, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsCredentials_StsRole{}
+	out.RoleArn = w.RoleArn
+	return out, nil
+}
+
+// AwsCredentials_StsRoleFromSDK converts the sdk-go type to the mirror.
+func AwsCredentials_StsRoleFromSDK(v *sdk.AwsCredentials_StsRole) (*AwsCredentials_StsRole, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsCredentials_StsRole{}
+	out.RoleArn = v.RoleArn
+	return out, nil
+}
+
+// AwsIamRoleToSDK converts the mirror to the sdk-go type.
+func AwsIamRoleToSDK(w *AwsIamRole) (*sdk.AwsIamRole, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsIamRole{}
+	out.RoleArn = w.RoleArn
+	out.UnityCatalogIamArn = w.UnityCatalogIamArn
+	out.ExternalId = w.ExternalId
+	return out, nil
+}
+
+// AwsIamRoleFromSDK converts the sdk-go type to the mirror.
+func AwsIamRoleFromSDK(v *sdk.AwsIamRole) (*AwsIamRole, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsIamRole{}
+	out.RoleArn = v.RoleArn
+	out.UnityCatalogIamArn = v.UnityCatalogIamArn
+	out.ExternalId = v.ExternalId
+	return out, nil
+}
+
+// AzureActiveDirectoryTokenToSDK converts the mirror to the sdk-go type.
+func AzureActiveDirectoryTokenToSDK(w *AzureActiveDirectoryToken) (*sdk.AzureActiveDirectoryToken, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureActiveDirectoryToken{}
+	out.AadToken = w.AadToken
+	return out, nil
+}
+
+// AzureActiveDirectoryTokenFromSDK converts the sdk-go type to the mirror.
+func AzureActiveDirectoryTokenFromSDK(v *sdk.AzureActiveDirectoryToken) (*AzureActiveDirectoryToken, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureActiveDirectoryToken{}
+	out.AadToken = v.AadToken
+	return out, nil
+}
+
+// AzureManagedIdentityToSDK converts the mirror to the sdk-go type.
+func AzureManagedIdentityToSDK(w *AzureManagedIdentity) (*sdk.AzureManagedIdentity, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureManagedIdentity{}
+	out.AccessConnectorId = w.AccessConnectorId
+	out.ManagedIdentityId = w.ManagedIdentityId
+	out.CredentialId = w.CredentialId
+	return out, nil
+}
+
+// AzureManagedIdentityFromSDK converts the sdk-go type to the mirror.
+func AzureManagedIdentityFromSDK(v *sdk.AzureManagedIdentity) (*AzureManagedIdentity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureManagedIdentity{}
+	out.AccessConnectorId = v.AccessConnectorId
+	out.ManagedIdentityId = v.ManagedIdentityId
+	out.CredentialId = v.CredentialId
+	return out, nil
+}
+
+// AzureServicePrincipalToSDK converts the mirror to the sdk-go type.
+func AzureServicePrincipalToSDK(w *AzureServicePrincipal) (*sdk.AzureServicePrincipal, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureServicePrincipal{}
+	out.DirectoryId = w.DirectoryId
+	out.ApplicationId = w.ApplicationId
+	out.ClientSecret = w.ClientSecret
+	return out, nil
+}
+
+// AzureServicePrincipalFromSDK converts the sdk-go type to the mirror.
+func AzureServicePrincipalFromSDK(v *sdk.AzureServicePrincipal) (*AzureServicePrincipal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureServicePrincipal{}
+	out.DirectoryId = v.DirectoryId
+	out.ApplicationId = v.ApplicationId
+	out.ClientSecret = v.ClientSecret
+	return out, nil
+}
+
+// AzureUserDelegationSasToSDK converts the mirror to the sdk-go type.
+func AzureUserDelegationSasToSDK(w *AzureUserDelegationSas) (*sdk.AzureUserDelegationSas, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureUserDelegationSas{}
+	out.SasToken = w.SasToken
+	return out, nil
+}
+
+// AzureUserDelegationSasFromSDK converts the sdk-go type to the mirror.
+func AzureUserDelegationSasFromSDK(v *sdk.AzureUserDelegationSas) (*AzureUserDelegationSas, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureUserDelegationSas{}
+	out.SasToken = v.SasToken
+	return out, nil
+}
+
+// CloudflareApiTokenToSDK converts the mirror to the sdk-go type.
+func CloudflareApiTokenToSDK(w *CloudflareApiToken) (*sdk.CloudflareApiToken, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CloudflareApiToken{}
+	out.AccessKeyId = w.AccessKeyId
+	out.SecretAccessKey = w.SecretAccessKey
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// CloudflareApiTokenFromSDK converts the sdk-go type to the mirror.
+func CloudflareApiTokenFromSDK(v *sdk.CloudflareApiToken) (*CloudflareApiToken, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CloudflareApiToken{}
+	out.AccessKeyId = v.AccessKeyId
+	out.SecretAccessKey = v.SecretAccessKey
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// CreateAccountsStorageCredentialToSDK converts the mirror to the sdk-go type.
+func CreateAccountsStorageCredentialToSDK(w *CreateAccountsStorageCredential) (*sdk.CreateAccountsStorageCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountsStorageCredential{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateAccountsStorageCredential.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv15, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_AwsIamRole{AwsIamRole: *conv15}
+	case w.AzureServicePrincipal != nil:
+		conv16, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv16}
+	case w.GcpServiceAccountKey != nil:
+		conv17, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv17}
+	case w.AzureManagedIdentity != nil:
+		conv18, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv18}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv19, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv19}
+	case w.CloudflareApiToken != nil:
+		conv20, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.CreateAccountsStorageCredential_Credential_CloudflareApiToken{CloudflareApiToken: *conv20}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// CreateAccountsStorageCredentialFromSDK converts the sdk-go type to the mirror.
+func CreateAccountsStorageCredentialFromSDK(v *sdk.CreateAccountsStorageCredential) (*CreateAccountsStorageCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountsStorageCredential{}
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.CreateAccountsStorageCredential_Credential_AwsIamRole:
+		if value != nil {
+			conv21, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.AwsIamRole = conv21
+		}
+	case *sdk.CreateAccountsStorageCredential_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv22, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.AzureServicePrincipal = conv22
+		}
+	case *sdk.CreateAccountsStorageCredential_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv23, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv23
+		}
+	case *sdk.CreateAccountsStorageCredential_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv24, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.AzureManagedIdentity = conv24
+		}
+	case *sdk.CreateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv25, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv25
+		}
+	case *sdk.CreateAccountsStorageCredential_Credential_CloudflareApiToken:
+		if value != nil {
+			conv26, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateAccountsStorageCredential.Credential", err)
+			}
+			out.CloudflareApiToken = conv26
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// CreateCredentialAwsCredentialsToSDK converts the mirror to the sdk-go type.
+func CreateCredentialAwsCredentialsToSDK(w *CreateCredentialAwsCredentials) (*sdk.CreateCredentialAwsCredentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCredentialAwsCredentials{}
+	{
+		members := 0
+		if w.StsRole != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialAwsCredentials.Creds")
+		}
+	}
+	switch {
+	case w.StsRole != nil:
+		conv27, err := AwsCredentials_StsRoleToSDK(w.StsRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialAwsCredentials.Creds", err)
+		}
+		out.Creds = &sdk.CreateCredentialAwsCredentials_Creds_StsRole{StsRole: *conv27}
+	}
+	return out, nil
+}
+
+// CreateCredentialAwsCredentialsFromSDK converts the sdk-go type to the mirror.
+func CreateCredentialAwsCredentialsFromSDK(v *sdk.CreateCredentialAwsCredentials) (*CreateCredentialAwsCredentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCredentialAwsCredentials{}
+	switch value := v.Creds.(type) {
+	case *sdk.CreateCredentialAwsCredentials_Creds_StsRole:
+		if value != nil {
+			conv28, err := AwsCredentials_StsRoleFromSDK(&value.StsRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialAwsCredentials.Creds", err)
+			}
+			out.StsRole = conv28
+		}
+	}
+	return out, nil
+}
+
+// CreateCredentialRequestToSDK converts the mirror to the sdk-go type.
+func CreateCredentialRequestToSDK(w *CreateCredentialRequest) (*sdk.CreateCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCredentialRequest{}
+	out.SkipValidation = w.SkipValidation
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv29, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv29}
+	case w.AzureServicePrincipal != nil:
+		conv30, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv30}
+	case w.GcpServiceAccountKey != nil:
+		conv31, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv31}
+	case w.AzureManagedIdentity != nil:
+		conv32, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv32}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv33, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv33}
+	case w.CloudflareApiToken != nil:
+		conv34, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateCredentialRequest_Credential_CloudflareApiToken{CloudflareApiToken: *conv34}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// CreateCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCredentialRequestFromSDK(v *sdk.CreateCredentialRequest) (*CreateCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCredentialRequest{}
+	out.SkipValidation = v.SkipValidation
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.CreateCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv35, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv35
+		}
+	case *sdk.CreateCredentialRequest_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv36, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.AzureServicePrincipal = conv36
+		}
+	case *sdk.CreateCredentialRequest_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv37, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv37
+		}
+	case *sdk.CreateCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv38, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv38
+		}
+	case *sdk.CreateCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv39, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv39
+		}
+	case *sdk.CreateCredentialRequest_Credential_CloudflareApiToken:
+		if value != nil {
+			conv40, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialRequest.Credential", err)
+			}
+			out.CloudflareApiToken = conv40
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// CreateCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func CreateCredentialsRequestToSDK(w *CreateCredentialsRequest) (*sdk.CreateCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCredentialsRequest{}
+	out.AccountId = w.AccountId
+	out.CredentialsName = w.CredentialsName
+	{
+		members := 0
+		if w.AwsCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCredentialsRequest.CloudCredentials")
+		}
+	}
+	switch {
+	case w.AwsCredentials != nil:
+		conv41, err := CreateCredentialAwsCredentialsToSDK(w.AwsCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCredentialsRequest.CloudCredentials", err)
+		}
+		out.CloudCredentials = &sdk.CreateCredentialsRequest_CloudCredentials_AwsCredentials{AwsCredentials: *conv41}
+	}
+	return out, nil
+}
+
+// CreateCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCredentialsRequestFromSDK(v *sdk.CreateCredentialsRequest) (*CreateCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCredentialsRequest{}
+	out.AccountId = v.AccountId
+	out.CredentialsName = v.CredentialsName
+	switch value := v.CloudCredentials.(type) {
+	case *sdk.CreateCredentialsRequest_CloudCredentials_AwsCredentials:
+		if value != nil {
+			conv42, err := CreateCredentialAwsCredentialsFromSDK(&value.AwsCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCredentialsRequest.CloudCredentials", err)
+			}
+			out.AwsCredentials = conv42
+		}
+	}
+	return out, nil
+}
+
+// CreateStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func CreateStorageCredentialRequestToSDK(w *CreateStorageCredentialRequest) (*sdk.CreateStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateStorageCredentialRequest{}
+	out.SkipValidation = w.SkipValidation
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateStorageCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv43, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv43}
+	case w.AzureServicePrincipal != nil:
+		conv44, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv44}
+	case w.GcpServiceAccountKey != nil:
+		conv45, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv45}
+	case w.AzureManagedIdentity != nil:
+		conv46, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv46}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv47, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv47}
+	case w.CloudflareApiToken != nil:
+		conv48, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.CreateStorageCredentialRequest_Credential_CloudflareApiToken{CloudflareApiToken: *conv48}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// CreateStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func CreateStorageCredentialRequestFromSDK(v *sdk.CreateStorageCredentialRequest) (*CreateStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateStorageCredentialRequest{}
+	out.SkipValidation = v.SkipValidation
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.CreateStorageCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv49, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv49
+		}
+	case *sdk.CreateStorageCredentialRequest_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv50, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureServicePrincipal = conv50
+		}
+	case *sdk.CreateStorageCredentialRequest_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv51, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv51
+		}
+	case *sdk.CreateStorageCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv52, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv52
+		}
+	case *sdk.CreateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv53, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv53
+		}
+	case *sdk.CreateStorageCredentialRequest_Credential_CloudflareApiToken:
+		if value != nil {
+			conv54, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateStorageCredentialRequest.Credential", err)
+			}
+			out.CloudflareApiToken = conv54
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// CredentialInfoToSDK converts the mirror to the sdk-go type.
+func CredentialInfoToSDK(w *CredentialInfo) (*sdk.CredentialInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CredentialInfo{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CredentialInfo.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv55, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_AwsIamRole{AwsIamRole: *conv55}
+	case w.AzureServicePrincipal != nil:
+		conv56, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv56}
+	case w.GcpServiceAccountKey != nil:
+		conv57, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv57}
+	case w.AzureManagedIdentity != nil:
+		conv58, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv58}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv59, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv59}
+	case w.CloudflareApiToken != nil:
+		conv60, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.CredentialInfo_Credential_CloudflareApiToken{CloudflareApiToken: *conv60}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// CredentialInfoFromSDK converts the sdk-go type to the mirror.
+func CredentialInfoFromSDK(v *sdk.CredentialInfo) (*CredentialInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CredentialInfo{}
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.CredentialInfo_Credential_AwsIamRole:
+		if value != nil {
+			conv61, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.AwsIamRole = conv61
+		}
+	case *sdk.CredentialInfo_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv62, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.AzureServicePrincipal = conv62
+		}
+	case *sdk.CredentialInfo_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv63, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv63
+		}
+	case *sdk.CredentialInfo_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv64, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.AzureManagedIdentity = conv64
+		}
+	case *sdk.CredentialInfo_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv65, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv65
+		}
+	case *sdk.CredentialInfo_Credential_CloudflareApiToken:
+		if value != nil {
+			conv66, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CredentialInfo.Credential", err)
+			}
+			out.CloudflareApiToken = conv66
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// CredentialsToSDK converts the mirror to the sdk-go type.
+func CredentialsToSDK(w *Credentials) (*sdk.Credentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Credentials{}
+	out.CredentialsId = w.CredentialsId
+	out.AccountId = w.AccountId
+	{
+		members := 0
+		if w.AwsCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Credentials.CloudCredentials")
+		}
+	}
+	switch {
+	case w.AwsCredentials != nil:
+		conv67, err := AwsCredentialsToSDK(w.AwsCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Credentials.CloudCredentials", err)
+		}
+		out.CloudCredentials = &sdk.Credentials_CloudCredentials_AwsCredentials{AwsCredentials: *conv67}
+	}
+	out.CredentialsName = w.CredentialsName
+	out.CreationTime = w.CreationTime
+	return out, nil
+}
+
+// CredentialsFromSDK converts the sdk-go type to the mirror.
+func CredentialsFromSDK(v *sdk.Credentials) (*Credentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Credentials{}
+	out.CredentialsId = v.CredentialsId
+	out.AccountId = v.AccountId
+	switch value := v.CloudCredentials.(type) {
+	case *sdk.Credentials_CloudCredentials_AwsCredentials:
+		if value != nil {
+			conv68, err := AwsCredentialsFromSDK(&value.AwsCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Credentials.CloudCredentials", err)
+			}
+			out.AwsCredentials = conv68
+		}
+	}
+	out.CredentialsName = v.CredentialsName
+	out.CreationTime = v.CreationTime
+	return out, nil
+}
+
+// DatabricksGcpServiceAccountToSDK converts the mirror to the sdk-go type.
+func DatabricksGcpServiceAccountToSDK(w *DatabricksGcpServiceAccount) (*sdk.DatabricksGcpServiceAccount, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabricksGcpServiceAccount{}
+	out.Email = w.Email
+	out.PrivateKeyId = w.PrivateKeyId
+	out.CredentialId = w.CredentialId
+	return out, nil
+}
+
+// DatabricksGcpServiceAccountFromSDK converts the sdk-go type to the mirror.
+func DatabricksGcpServiceAccountFromSDK(v *sdk.DatabricksGcpServiceAccount) (*DatabricksGcpServiceAccount, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabricksGcpServiceAccount{}
+	out.Email = v.Email
+	out.PrivateKeyId = v.PrivateKeyId
+	out.CredentialId = v.CredentialId
+	return out, nil
+}
+
+// DeleteCredentialRequestToSDK converts the mirror to the sdk-go type.
+func DeleteCredentialRequestToSDK(w *DeleteCredentialRequest) (*sdk.DeleteCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteCredentialRequest{}
+	out.NameArg = w.NameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteCredentialRequestFromSDK(v *sdk.DeleteCredentialRequest) (*DeleteCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteCredentialRequest{}
+	out.NameArg = v.NameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// DeleteStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func DeleteStorageCredentialRequestToSDK(w *DeleteStorageCredentialRequest) (*sdk.DeleteStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteStorageCredentialRequest{}
+	out.NameArg = w.NameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteStorageCredentialRequestFromSDK(v *sdk.DeleteStorageCredentialRequest) (*DeleteStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteStorageCredentialRequest{}
+	out.NameArg = v.NameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// GcpOauthTokenToSDK converts the mirror to the sdk-go type.
+func GcpOauthTokenToSDK(w *GcpOauthToken) (*sdk.GcpOauthToken, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpOauthToken{}
+	out.OauthToken = w.OauthToken
+	return out, nil
+}
+
+// GcpOauthTokenFromSDK converts the sdk-go type to the mirror.
+func GcpOauthTokenFromSDK(v *sdk.GcpOauthToken) (*GcpOauthToken, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpOauthToken{}
+	out.OauthToken = v.OauthToken
+	return out, nil
+}
+
+// GcpServiceAccountKeyToSDK converts the mirror to the sdk-go type.
+func GcpServiceAccountKeyToSDK(w *GcpServiceAccountKey) (*sdk.GcpServiceAccountKey, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpServiceAccountKey{}
+	out.Email = w.Email
+	out.PrivateKeyId = w.PrivateKeyId
+	out.PrivateKey = w.PrivateKey
+	return out, nil
+}
+
+// GcpServiceAccountKeyFromSDK converts the sdk-go type to the mirror.
+func GcpServiceAccountKeyFromSDK(v *sdk.GcpServiceAccountKey) (*GcpServiceAccountKey, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpServiceAccountKey{}
+	out.Email = v.Email
+	out.PrivateKeyId = v.PrivateKeyId
+	out.PrivateKey = v.PrivateKey
+	return out, nil
+}
+
+// GenerateTemporaryPathCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryPathCredentialRequestToSDK(w *GenerateTemporaryPathCredentialRequest) (*sdk.GenerateTemporaryPathCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryPathCredentialRequest{}
+	out.Url = w.Url
+	out.Operation = w.Operation
+	out.DryRun = w.DryRun
+	return out, nil
+}
+
+// GenerateTemporaryPathCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryPathCredentialRequestFromSDK(v *sdk.GenerateTemporaryPathCredentialRequest) (*GenerateTemporaryPathCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryPathCredentialRequest{}
+	out.Url = v.Url
+	out.Operation = v.Operation
+	out.DryRun = v.DryRun
+	return out, nil
+}
+
+// GenerateTemporaryPathCredentialResponseToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryPathCredentialResponseToSDK(w *GenerateTemporaryPathCredentialResponse) (*sdk.GenerateTemporaryPathCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryPathCredentialResponse{}
+	{
+		members := 0
+		if w.AwsTempCredentials != nil {
+			members++
+		}
+		if w.AzureUserDelegationSas != nil {
+			members++
+		}
+		if w.GcpOauthToken != nil {
+			members++
+		}
+		if w.AzureAad != nil {
+			members++
+		}
+		if w.R2TempCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryPathCredentialResponse.Credentials")
+		}
+	}
+	switch {
+	case w.AwsTempCredentials != nil:
+		conv69, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *conv69}
+	case w.AzureUserDelegationSas != nil:
+		conv70, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *conv70}
+	case w.GcpOauthToken != nil:
+		conv71, err := GcpOauthTokenToSDK(w.GcpOauthToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *conv71}
+	case w.AzureAad != nil:
+		conv72, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureAad{AzureAad: *conv72}
+	case w.R2TempCredentials != nil:
+		conv73, err := R2CredentialsToSDK(w.R2TempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryPathCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *conv73}
+	}
+	out.ExpirationTime = w.ExpirationTime
+	out.Url = w.Url
+	return out, nil
+}
+
+// GenerateTemporaryPathCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryPathCredentialResponseFromSDK(v *sdk.GenerateTemporaryPathCredentialResponse) (*GenerateTemporaryPathCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryPathCredentialResponse{}
+	switch value := v.Credentials.(type) {
+	case *sdk.GenerateTemporaryPathCredentialResponse_Credentials_AwsTempCredentials:
+		if value != nil {
+			conv74, err := TemporaryAwsCredentialsFromSDK(&value.AwsTempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+			}
+			out.AwsTempCredentials = conv74
+		}
+	case *sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureUserDelegationSas:
+		if value != nil {
+			conv75, err := AzureUserDelegationSasFromSDK(&value.AzureUserDelegationSas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+			}
+			out.AzureUserDelegationSas = conv75
+		}
+	case *sdk.GenerateTemporaryPathCredentialResponse_Credentials_GcpOauthToken:
+		if value != nil {
+			conv76, err := GcpOauthTokenFromSDK(&value.GcpOauthToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+			}
+			out.GcpOauthToken = conv76
+		}
+	case *sdk.GenerateTemporaryPathCredentialResponse_Credentials_AzureAad:
+		if value != nil {
+			conv77, err := AzureActiveDirectoryTokenFromSDK(&value.AzureAad)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+			}
+			out.AzureAad = conv77
+		}
+	case *sdk.GenerateTemporaryPathCredentialResponse_Credentials_R2TempCredentials:
+		if value != nil {
+			conv78, err := R2CredentialsFromSDK(&value.R2TempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryPathCredentialResponse.Credentials", err)
+			}
+			out.R2TempCredentials = conv78
+		}
+	}
+	out.ExpirationTime = v.ExpirationTime
+	out.Url = v.Url
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryServiceCredentialRequestToSDK(w *GenerateTemporaryServiceCredentialRequest) (*sdk.GenerateTemporaryServiceCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryServiceCredentialRequest{}
+	out.CredentialName = w.CredentialName
+	{
+		members := 0
+		if w.AzureOptions != nil {
+			members++
+		}
+		if w.GcpOptions != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryServiceCredentialRequest.Options")
+		}
+	}
+	switch {
+	case w.AzureOptions != nil:
+		conv79, err := GenerateTemporaryServiceCredentialRequest_AzureOptionsToSDK(w.AzureOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options", err)
+		}
+		out.Options = &sdk.GenerateTemporaryServiceCredentialRequest_Options_AzureOptions{AzureOptions: *conv79}
+	case w.GcpOptions != nil:
+		conv80, err := GenerateTemporaryServiceCredentialRequest_GcpOptionsToSDK(w.GcpOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options", err)
+		}
+		out.Options = &sdk.GenerateTemporaryServiceCredentialRequest_Options_GcpOptions{GcpOptions: *conv80}
+	}
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryServiceCredentialRequestFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest) (*GenerateTemporaryServiceCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryServiceCredentialRequest{}
+	out.CredentialName = v.CredentialName
+	switch value := v.Options.(type) {
+	case *sdk.GenerateTemporaryServiceCredentialRequest_Options_AzureOptions:
+		if value != nil {
+			conv81, err := GenerateTemporaryServiceCredentialRequest_AzureOptionsFromSDK(&value.AzureOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options", err)
+			}
+			out.AzureOptions = conv81
+		}
+	case *sdk.GenerateTemporaryServiceCredentialRequest_Options_GcpOptions:
+		if value != nil {
+			conv82, err := GenerateTemporaryServiceCredentialRequest_GcpOptionsFromSDK(&value.GcpOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryServiceCredentialRequest.Options", err)
+			}
+			out.GcpOptions = conv82
+		}
+	}
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequest_AzureOptionsToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryServiceCredentialRequest_AzureOptionsToSDK(w *GenerateTemporaryServiceCredentialRequest_AzureOptions) (*sdk.GenerateTemporaryServiceCredentialRequest_AzureOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryServiceCredentialRequest_AzureOptions{}
+	out.Resources = w.Resources
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequest_AzureOptionsFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryServiceCredentialRequest_AzureOptionsFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest_AzureOptions) (*GenerateTemporaryServiceCredentialRequest_AzureOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryServiceCredentialRequest_AzureOptions{}
+	out.Resources = v.Resources
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequest_GcpOptionsToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryServiceCredentialRequest_GcpOptionsToSDK(w *GenerateTemporaryServiceCredentialRequest_GcpOptions) (*sdk.GenerateTemporaryServiceCredentialRequest_GcpOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryServiceCredentialRequest_GcpOptions{}
+	out.Scopes = w.Scopes
+	return out, nil
+}
+
+// GenerateTemporaryServiceCredentialRequest_GcpOptionsFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryServiceCredentialRequest_GcpOptionsFromSDK(v *sdk.GenerateTemporaryServiceCredentialRequest_GcpOptions) (*GenerateTemporaryServiceCredentialRequest_GcpOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryServiceCredentialRequest_GcpOptions{}
+	out.Scopes = v.Scopes
+	return out, nil
+}
+
+// GenerateTemporaryTableCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryTableCredentialRequestToSDK(w *GenerateTemporaryTableCredentialRequest) (*sdk.GenerateTemporaryTableCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryTableCredentialRequest{}
+	out.TableId = w.TableId
+	out.Operation = w.Operation
+	return out, nil
+}
+
+// GenerateTemporaryTableCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryTableCredentialRequestFromSDK(v *sdk.GenerateTemporaryTableCredentialRequest) (*GenerateTemporaryTableCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryTableCredentialRequest{}
+	out.TableId = v.TableId
+	out.Operation = v.Operation
+	return out, nil
+}
+
+// GenerateTemporaryTableCredentialResponseToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryTableCredentialResponseToSDK(w *GenerateTemporaryTableCredentialResponse) (*sdk.GenerateTemporaryTableCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryTableCredentialResponse{}
+	{
+		members := 0
+		if w.AwsTempCredentials != nil {
+			members++
+		}
+		if w.AzureUserDelegationSas != nil {
+			members++
+		}
+		if w.GcpOauthToken != nil {
+			members++
+		}
+		if w.AzureAad != nil {
+			members++
+		}
+		if w.R2TempCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryTableCredentialResponse.Credentials")
+		}
+	}
+	switch {
+	case w.AwsTempCredentials != nil:
+		conv83, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *conv83}
+	case w.AzureUserDelegationSas != nil:
+		conv84, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *conv84}
+	case w.GcpOauthToken != nil:
+		conv85, err := GcpOauthTokenToSDK(w.GcpOauthToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *conv85}
+	case w.AzureAad != nil:
+		conv86, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureAad{AzureAad: *conv86}
+	case w.R2TempCredentials != nil:
+		conv87, err := R2CredentialsToSDK(w.R2TempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryTableCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *conv87}
+	}
+	out.ExpirationTime = w.ExpirationTime
+	out.Url = w.Url
+	return out, nil
+}
+
+// GenerateTemporaryTableCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryTableCredentialResponseFromSDK(v *sdk.GenerateTemporaryTableCredentialResponse) (*GenerateTemporaryTableCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryTableCredentialResponse{}
+	switch value := v.Credentials.(type) {
+	case *sdk.GenerateTemporaryTableCredentialResponse_Credentials_AwsTempCredentials:
+		if value != nil {
+			conv88, err := TemporaryAwsCredentialsFromSDK(&value.AwsTempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+			}
+			out.AwsTempCredentials = conv88
+		}
+	case *sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureUserDelegationSas:
+		if value != nil {
+			conv89, err := AzureUserDelegationSasFromSDK(&value.AzureUserDelegationSas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+			}
+			out.AzureUserDelegationSas = conv89
+		}
+	case *sdk.GenerateTemporaryTableCredentialResponse_Credentials_GcpOauthToken:
+		if value != nil {
+			conv90, err := GcpOauthTokenFromSDK(&value.GcpOauthToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+			}
+			out.GcpOauthToken = conv90
+		}
+	case *sdk.GenerateTemporaryTableCredentialResponse_Credentials_AzureAad:
+		if value != nil {
+			conv91, err := AzureActiveDirectoryTokenFromSDK(&value.AzureAad)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+			}
+			out.AzureAad = conv91
+		}
+	case *sdk.GenerateTemporaryTableCredentialResponse_Credentials_R2TempCredentials:
+		if value != nil {
+			conv92, err := R2CredentialsFromSDK(&value.R2TempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryTableCredentialResponse.Credentials", err)
+			}
+			out.R2TempCredentials = conv92
+		}
+	}
+	out.ExpirationTime = v.ExpirationTime
+	out.Url = v.Url
+	return out, nil
+}
+
+// GenerateTemporaryVolumeCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryVolumeCredentialRequestToSDK(w *GenerateTemporaryVolumeCredentialRequest) (*sdk.GenerateTemporaryVolumeCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryVolumeCredentialRequest{}
+	out.VolumeId = w.VolumeId
+	out.Operation = w.Operation
+	return out, nil
+}
+
+// GenerateTemporaryVolumeCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryVolumeCredentialRequestFromSDK(v *sdk.GenerateTemporaryVolumeCredentialRequest) (*GenerateTemporaryVolumeCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryVolumeCredentialRequest{}
+	out.VolumeId = v.VolumeId
+	out.Operation = v.Operation
+	return out, nil
+}
+
+// GenerateTemporaryVolumeCredentialResponseToSDK converts the mirror to the sdk-go type.
+func GenerateTemporaryVolumeCredentialResponseToSDK(w *GenerateTemporaryVolumeCredentialResponse) (*sdk.GenerateTemporaryVolumeCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateTemporaryVolumeCredentialResponse{}
+	{
+		members := 0
+		if w.AwsTempCredentials != nil {
+			members++
+		}
+		if w.AzureUserDelegationSas != nil {
+			members++
+		}
+		if w.GcpOauthToken != nil {
+			members++
+		}
+		if w.AzureAad != nil {
+			members++
+		}
+		if w.R2TempCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateTemporaryVolumeCredentialResponse.Credentials")
+		}
+	}
+	switch {
+	case w.AwsTempCredentials != nil:
+		conv93, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AwsTempCredentials{AwsTempCredentials: *conv93}
+	case w.AzureUserDelegationSas != nil:
+		conv94, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *conv94}
+	case w.GcpOauthToken != nil:
+		conv95, err := GcpOauthTokenToSDK(w.GcpOauthToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_GcpOauthToken{GcpOauthToken: *conv95}
+	case w.AzureAad != nil:
+		conv96, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureAad{AzureAad: *conv96}
+	case w.R2TempCredentials != nil:
+		conv97, err := R2CredentialsToSDK(w.R2TempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+		}
+		out.Credentials = &sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_R2TempCredentials{R2TempCredentials: *conv97}
+	}
+	out.ExpirationTime = w.ExpirationTime
+	out.Url = w.Url
+	return out, nil
+}
+
+// GenerateTemporaryVolumeCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func GenerateTemporaryVolumeCredentialResponseFromSDK(v *sdk.GenerateTemporaryVolumeCredentialResponse) (*GenerateTemporaryVolumeCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateTemporaryVolumeCredentialResponse{}
+	switch value := v.Credentials.(type) {
+	case *sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AwsTempCredentials:
+		if value != nil {
+			conv98, err := TemporaryAwsCredentialsFromSDK(&value.AwsTempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+			}
+			out.AwsTempCredentials = conv98
+		}
+	case *sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureUserDelegationSas:
+		if value != nil {
+			conv99, err := AzureUserDelegationSasFromSDK(&value.AzureUserDelegationSas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+			}
+			out.AzureUserDelegationSas = conv99
+		}
+	case *sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_GcpOauthToken:
+		if value != nil {
+			conv100, err := GcpOauthTokenFromSDK(&value.GcpOauthToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+			}
+			out.GcpOauthToken = conv100
+		}
+	case *sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_AzureAad:
+		if value != nil {
+			conv101, err := AzureActiveDirectoryTokenFromSDK(&value.AzureAad)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+			}
+			out.AzureAad = conv101
+		}
+	case *sdk.GenerateTemporaryVolumeCredentialResponse_Credentials_R2TempCredentials:
+		if value != nil {
+			conv102, err := R2CredentialsFromSDK(&value.R2TempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenerateTemporaryVolumeCredentialResponse.Credentials", err)
+			}
+			out.R2TempCredentials = conv102
+		}
+	}
+	out.ExpirationTime = v.ExpirationTime
+	out.Url = v.Url
+	return out, nil
+}
+
+// ListCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func ListCredentialsRequestToSDK(w *ListCredentialsRequest) (*sdk.ListCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCredentialsRequest{}
+	out.IncludeUnbound = w.IncludeUnbound
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCredentialsRequestFromSDK(v *sdk.ListCredentialsRequest) (*ListCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCredentialsRequest{}
+	out.IncludeUnbound = v.IncludeUnbound
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCredentialsRequest_ResponseToSDK converts the mirror to the sdk-go type.
+func ListCredentialsRequest_ResponseToSDK(w *ListCredentialsRequest_Response) (*sdk.ListCredentialsRequest_Response, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCredentialsRequest_Response{}
+	conv103, err := convertSlice(w.Credentials, CredentialInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCredentialsRequest_Response.Credentials", err)
+	}
+	out.Credentials = conv103
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCredentialsRequest_ResponseFromSDK converts the sdk-go type to the mirror.
+func ListCredentialsRequest_ResponseFromSDK(v *sdk.ListCredentialsRequest_Response) (*ListCredentialsRequest_Response, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCredentialsRequest_Response{}
+	conv104, err := convertSlice(v.Credentials, CredentialInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCredentialsRequest_Response.Credentials", err)
+	}
+	out.Credentials = conv104
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListStorageCredentialsRequestToSDK converts the mirror to the sdk-go type.
+func ListStorageCredentialsRequestToSDK(w *ListStorageCredentialsRequest) (*sdk.ListStorageCredentialsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStorageCredentialsRequest{}
+	out.IncludeUnbound = w.IncludeUnbound
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListStorageCredentialsRequestFromSDK converts the sdk-go type to the mirror.
+func ListStorageCredentialsRequestFromSDK(v *sdk.ListStorageCredentialsRequest) (*ListStorageCredentialsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStorageCredentialsRequest{}
+	out.IncludeUnbound = v.IncludeUnbound
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListStorageCredentialsResponseToSDK converts the mirror to the sdk-go type.
+func ListStorageCredentialsResponseToSDK(w *ListStorageCredentialsResponse) (*sdk.ListStorageCredentialsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStorageCredentialsResponse{}
+	conv105, err := convertSlice(w.StorageCredentials, StorageCredentialInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStorageCredentialsResponse.StorageCredentials", err)
+	}
+	out.StorageCredentials = conv105
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListStorageCredentialsResponseFromSDK converts the sdk-go type to the mirror.
+func ListStorageCredentialsResponseFromSDK(v *sdk.ListStorageCredentialsResponse) (*ListStorageCredentialsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStorageCredentialsResponse{}
+	conv106, err := convertSlice(v.StorageCredentials, StorageCredentialInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStorageCredentialsResponse.StorageCredentials", err)
+	}
+	out.StorageCredentials = conv106
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// R2CredentialsToSDK converts the mirror to the sdk-go type.
+func R2CredentialsToSDK(w *R2Credentials) (*sdk.R2Credentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.R2Credentials{}
+	out.AccessKeyId = w.AccessKeyId
+	out.SecretAccessKey = w.SecretAccessKey
+	out.SessionToken = w.SessionToken
+	return out, nil
+}
+
+// R2CredentialsFromSDK converts the sdk-go type to the mirror.
+func R2CredentialsFromSDK(v *sdk.R2Credentials) (*R2Credentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &R2Credentials{}
+	out.AccessKeyId = v.AccessKeyId
+	out.SecretAccessKey = v.SecretAccessKey
+	out.SessionToken = v.SessionToken
+	return out, nil
+}
+
+// StorageCredentialInfoToSDK converts the mirror to the sdk-go type.
+func StorageCredentialInfoToSDK(w *StorageCredentialInfo) (*sdk.StorageCredentialInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StorageCredentialInfo{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "StorageCredentialInfo.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv107, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_AwsIamRole{AwsIamRole: *conv107}
+	case w.AzureServicePrincipal != nil:
+		conv108, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv108}
+	case w.GcpServiceAccountKey != nil:
+		conv109, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv109}
+	case w.AzureManagedIdentity != nil:
+		conv110, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv110}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv111, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv111}
+	case w.CloudflareApiToken != nil:
+		conv112, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+		}
+		out.Credential = &sdk.StorageCredentialInfo_Credential_CloudflareApiToken{CloudflareApiToken: *conv112}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// StorageCredentialInfoFromSDK converts the sdk-go type to the mirror.
+func StorageCredentialInfoFromSDK(v *sdk.StorageCredentialInfo) (*StorageCredentialInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StorageCredentialInfo{}
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.StorageCredentialInfo_Credential_AwsIamRole:
+		if value != nil {
+			conv113, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.AwsIamRole = conv113
+		}
+	case *sdk.StorageCredentialInfo_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv114, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.AzureServicePrincipal = conv114
+		}
+	case *sdk.StorageCredentialInfo_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv115, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv115
+		}
+	case *sdk.StorageCredentialInfo_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv116, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.AzureManagedIdentity = conv116
+		}
+	case *sdk.StorageCredentialInfo_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv117, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv117
+		}
+	case *sdk.StorageCredentialInfo_Credential_CloudflareApiToken:
+		if value != nil {
+			conv118, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "StorageCredentialInfo.Credential", err)
+			}
+			out.CloudflareApiToken = conv118
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// TemporaryAwsCredentialsToSDK converts the mirror to the sdk-go type.
+func TemporaryAwsCredentialsToSDK(w *TemporaryAwsCredentials) (*sdk.TemporaryAwsCredentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TemporaryAwsCredentials{}
+	out.AccessKeyId = w.AccessKeyId
+	out.SecretAccessKey = w.SecretAccessKey
+	out.SessionToken = w.SessionToken
+	out.AccessPoint = w.AccessPoint
+	return out, nil
+}
+
+// TemporaryAwsCredentialsFromSDK converts the sdk-go type to the mirror.
+func TemporaryAwsCredentialsFromSDK(v *sdk.TemporaryAwsCredentials) (*TemporaryAwsCredentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TemporaryAwsCredentials{}
+	out.AccessKeyId = v.AccessKeyId
+	out.SecretAccessKey = v.SecretAccessKey
+	out.SessionToken = v.SessionToken
+	out.AccessPoint = v.AccessPoint
+	return out, nil
+}
+
+// TemporaryCredentialsToSDK converts the mirror to the sdk-go type.
+func TemporaryCredentialsToSDK(w *TemporaryCredentials) (*sdk.TemporaryCredentials, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TemporaryCredentials{}
+	{
+		members := 0
+		if w.AwsTempCredentials != nil {
+			members++
+		}
+		if w.AzureUserDelegationSas != nil {
+			members++
+		}
+		if w.GcpOauthToken != nil {
+			members++
+		}
+		if w.AzureAad != nil {
+			members++
+		}
+		if w.R2TempCredentials != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TemporaryCredentials.Credentials")
+		}
+	}
+	switch {
+	case w.AwsTempCredentials != nil:
+		conv119, err := TemporaryAwsCredentialsToSDK(w.AwsTempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+		}
+		out.Credentials = &sdk.TemporaryCredentials_Credentials_AwsTempCredentials{AwsTempCredentials: *conv119}
+	case w.AzureUserDelegationSas != nil:
+		conv120, err := AzureUserDelegationSasToSDK(w.AzureUserDelegationSas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+		}
+		out.Credentials = &sdk.TemporaryCredentials_Credentials_AzureUserDelegationSas{AzureUserDelegationSas: *conv120}
+	case w.GcpOauthToken != nil:
+		conv121, err := GcpOauthTokenToSDK(w.GcpOauthToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+		}
+		out.Credentials = &sdk.TemporaryCredentials_Credentials_GcpOauthToken{GcpOauthToken: *conv121}
+	case w.AzureAad != nil:
+		conv122, err := AzureActiveDirectoryTokenToSDK(w.AzureAad)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+		}
+		out.Credentials = &sdk.TemporaryCredentials_Credentials_AzureAad{AzureAad: *conv122}
+	case w.R2TempCredentials != nil:
+		conv123, err := R2CredentialsToSDK(w.R2TempCredentials)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+		}
+		out.Credentials = &sdk.TemporaryCredentials_Credentials_R2TempCredentials{R2TempCredentials: *conv123}
+	}
+	out.ExpirationTime = w.ExpirationTime
+	out.Url = w.Url
+	return out, nil
+}
+
+// TemporaryCredentialsFromSDK converts the sdk-go type to the mirror.
+func TemporaryCredentialsFromSDK(v *sdk.TemporaryCredentials) (*TemporaryCredentials, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TemporaryCredentials{}
+	switch value := v.Credentials.(type) {
+	case *sdk.TemporaryCredentials_Credentials_AwsTempCredentials:
+		if value != nil {
+			conv124, err := TemporaryAwsCredentialsFromSDK(&value.AwsTempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+			}
+			out.AwsTempCredentials = conv124
+		}
+	case *sdk.TemporaryCredentials_Credentials_AzureUserDelegationSas:
+		if value != nil {
+			conv125, err := AzureUserDelegationSasFromSDK(&value.AzureUserDelegationSas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+			}
+			out.AzureUserDelegationSas = conv125
+		}
+	case *sdk.TemporaryCredentials_Credentials_GcpOauthToken:
+		if value != nil {
+			conv126, err := GcpOauthTokenFromSDK(&value.GcpOauthToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+			}
+			out.GcpOauthToken = conv126
+		}
+	case *sdk.TemporaryCredentials_Credentials_AzureAad:
+		if value != nil {
+			conv127, err := AzureActiveDirectoryTokenFromSDK(&value.AzureAad)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+			}
+			out.AzureAad = conv127
+		}
+	case *sdk.TemporaryCredentials_Credentials_R2TempCredentials:
+		if value != nil {
+			conv128, err := R2CredentialsFromSDK(&value.R2TempCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TemporaryCredentials.Credentials", err)
+			}
+			out.R2TempCredentials = conv128
+		}
+	}
+	out.ExpirationTime = v.ExpirationTime
+	out.Url = v.Url
+	return out, nil
+}
+
+// UpdateAccountsStorageCredentialToSDK converts the mirror to the sdk-go type.
+func UpdateAccountsStorageCredentialToSDK(w *UpdateAccountsStorageCredential) (*sdk.UpdateAccountsStorageCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountsStorageCredential{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateAccountsStorageCredential.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv129, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_AwsIamRole{AwsIamRole: *conv129}
+	case w.AzureServicePrincipal != nil:
+		conv130, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv130}
+	case w.GcpServiceAccountKey != nil:
+		conv131, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv131}
+	case w.AzureManagedIdentity != nil:
+		conv132, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv132}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv133, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv133}
+	case w.CloudflareApiToken != nil:
+		conv134, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+		}
+		out.Credential = &sdk.UpdateAccountsStorageCredential_Credential_CloudflareApiToken{CloudflareApiToken: *conv134}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// UpdateAccountsStorageCredentialFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountsStorageCredentialFromSDK(v *sdk.UpdateAccountsStorageCredential) (*UpdateAccountsStorageCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountsStorageCredential{}
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.UpdateAccountsStorageCredential_Credential_AwsIamRole:
+		if value != nil {
+			conv135, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.AwsIamRole = conv135
+		}
+	case *sdk.UpdateAccountsStorageCredential_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv136, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.AzureServicePrincipal = conv136
+		}
+	case *sdk.UpdateAccountsStorageCredential_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv137, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv137
+		}
+	case *sdk.UpdateAccountsStorageCredential_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv138, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.AzureManagedIdentity = conv138
+		}
+	case *sdk.UpdateAccountsStorageCredential_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv139, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv139
+		}
+	case *sdk.UpdateAccountsStorageCredential_Credential_CloudflareApiToken:
+		if value != nil {
+			conv140, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateAccountsStorageCredential.Credential", err)
+			}
+			out.CloudflareApiToken = conv140
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// UpdateCredentialRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCredentialRequestToSDK(w *UpdateCredentialRequest) (*sdk.UpdateCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCredentialRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.SkipValidation = w.SkipValidation
+	out.Force = w.Force
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv141, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv141}
+	case w.AzureServicePrincipal != nil:
+		conv142, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv142}
+	case w.GcpServiceAccountKey != nil:
+		conv143, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv143}
+	case w.AzureManagedIdentity != nil:
+		conv144, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv144}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv145, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv145}
+	case w.CloudflareApiToken != nil:
+		conv146, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateCredentialRequest_Credential_CloudflareApiToken{CloudflareApiToken: *conv146}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// UpdateCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCredentialRequestFromSDK(v *sdk.UpdateCredentialRequest) (*UpdateCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCredentialRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.SkipValidation = v.SkipValidation
+	out.Force = v.Force
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.UpdateCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv147, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv147
+		}
+	case *sdk.UpdateCredentialRequest_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv148, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.AzureServicePrincipal = conv148
+		}
+	case *sdk.UpdateCredentialRequest_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv149, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv149
+		}
+	case *sdk.UpdateCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv150, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv150
+		}
+	case *sdk.UpdateCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv151, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv151
+		}
+	case *sdk.UpdateCredentialRequest_Credential_CloudflareApiToken:
+		if value != nil {
+			conv152, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateCredentialRequest.Credential", err)
+			}
+			out.CloudflareApiToken = conv152
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// UpdateStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func UpdateStorageCredentialRequestToSDK(w *UpdateStorageCredentialRequest) (*sdk.UpdateStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateStorageCredentialRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.SkipValidation = w.SkipValidation
+	out.Force = w.Force
+	out.Name = w.Name
+	{
+		members := 0
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.GcpServiceAccountKey != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateStorageCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.AwsIamRole != nil:
+		conv153, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv153}
+	case w.AzureServicePrincipal != nil:
+		conv154, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv154}
+	case w.GcpServiceAccountKey != nil:
+		conv155, err := GcpServiceAccountKeyToSDK(w.GcpServiceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_GcpServiceAccountKey{GcpServiceAccountKey: *conv155}
+	case w.AzureManagedIdentity != nil:
+		conv156, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv156}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv157, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv157}
+	case w.CloudflareApiToken != nil:
+		conv158, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.UpdateStorageCredentialRequest_Credential_CloudflareApiToken{CloudflareApiToken: *conv158}
+	}
+	out.Comment = w.Comment
+	out.ReadOnly = w.ReadOnly
+	out.Owner = w.Owner
+	out.Id = w.Id
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UsedForManagedStorage = w.UsedForManagedStorage
+	out.FullName = w.FullName
+	out.IsolationMode = w.IsolationMode
+	return out, nil
+}
+
+// UpdateStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateStorageCredentialRequestFromSDK(v *sdk.UpdateStorageCredentialRequest) (*UpdateStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateStorageCredentialRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.SkipValidation = v.SkipValidation
+	out.Force = v.Force
+	out.Name = v.Name
+	switch value := v.Credential.(type) {
+	case *sdk.UpdateStorageCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv159, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv159
+		}
+	case *sdk.UpdateStorageCredentialRequest_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv160, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureServicePrincipal = conv160
+		}
+	case *sdk.UpdateStorageCredentialRequest_Credential_GcpServiceAccountKey:
+		if value != nil {
+			conv161, err := GcpServiceAccountKeyFromSDK(&value.GcpServiceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.GcpServiceAccountKey = conv161
+		}
+	case *sdk.UpdateStorageCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv162, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv162
+		}
+	case *sdk.UpdateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv163, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv163
+		}
+	case *sdk.UpdateStorageCredentialRequest_Credential_CloudflareApiToken:
+		if value != nil {
+			conv164, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateStorageCredentialRequest.Credential", err)
+			}
+			out.CloudflareApiToken = conv164
+		}
+	}
+	out.Comment = v.Comment
+	out.ReadOnly = v.ReadOnly
+	out.Owner = v.Owner
+	out.Id = v.Id
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UsedForManagedStorage = v.UsedForManagedStorage
+	out.FullName = v.FullName
+	out.IsolationMode = v.IsolationMode
+	return out, nil
+}
+
+// ValidateCredentialRequestToSDK converts the mirror to the sdk-go type.
+func ValidateCredentialRequestToSDK(w *ValidateCredentialRequest) (*sdk.ValidateCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ValidateCredentialRequest{}
+	{
+		members := 0
+		if w.CredentialName != nil {
+			members++
+		}
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ValidateCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.CredentialName != nil:
+		out.Credential = &sdk.ValidateCredentialRequest_Credential_CredentialName{CredentialName: *w.CredentialName}
+	case w.AwsIamRole != nil:
+		conv165, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv165}
+	case w.AzureManagedIdentity != nil:
+		conv166, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv166}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv167, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv167}
+	}
+	out.ExternalLocationName = w.ExternalLocationName
+	out.Url = w.Url
+	out.ReadOnly = w.ReadOnly
+	return out, nil
+}
+
+// ValidateCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func ValidateCredentialRequestFromSDK(v *sdk.ValidateCredentialRequest) (*ValidateCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateCredentialRequest{}
+	switch value := v.Credential.(type) {
+	case *sdk.ValidateCredentialRequest_Credential_CredentialName:
+		if value != nil {
+			out.CredentialName = new(value.CredentialName)
+		}
+	case *sdk.ValidateCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv168, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv168
+		}
+	case *sdk.ValidateCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv169, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv169
+		}
+	case *sdk.ValidateCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv170, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv170
+		}
+	}
+	out.ExternalLocationName = v.ExternalLocationName
+	out.Url = v.Url
+	out.ReadOnly = v.ReadOnly
+	return out, nil
+}
+
+// ValidateCredentialRequest_ValidationResultToSDK converts the mirror to the sdk-go type.
+func ValidateCredentialRequest_ValidationResultToSDK(w *ValidateCredentialRequest_ValidationResult) (*sdk.ValidateCredentialRequest_ValidationResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ValidateCredentialRequest_ValidationResult{}
+	out.Result = w.Result
+	out.Message = w.Message
+	return out, nil
+}
+
+// ValidateCredentialRequest_ValidationResultFromSDK converts the sdk-go type to the mirror.
+func ValidateCredentialRequest_ValidationResultFromSDK(v *sdk.ValidateCredentialRequest_ValidationResult) (*ValidateCredentialRequest_ValidationResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateCredentialRequest_ValidationResult{}
+	out.Result = v.Result
+	out.Message = v.Message
+	return out, nil
+}
+
+// ValidateCredentialResponseToSDK converts the mirror to the sdk-go type.
+func ValidateCredentialResponseToSDK(w *ValidateCredentialResponse) (*sdk.ValidateCredentialResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ValidateCredentialResponse{}
+	conv171, err := convertSlice(w.Results, ValidateCredentialRequest_ValidationResultToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ValidateCredentialResponse.Results", err)
+	}
+	out.Results = conv171
+	out.IsDir = w.IsDir
+	return out, nil
+}
+
+// ValidateCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func ValidateCredentialResponseFromSDK(v *sdk.ValidateCredentialResponse) (*ValidateCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateCredentialResponse{}
+	conv172, err := convertSlice(v.Results, ValidateCredentialRequest_ValidationResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ValidateCredentialResponse.Results", err)
+	}
+	out.Results = conv172
+	out.IsDir = v.IsDir
+	return out, nil
+}
+
+// ValidateStorageCredentialRequestToSDK converts the mirror to the sdk-go type.
+func ValidateStorageCredentialRequestToSDK(w *ValidateStorageCredentialRequest) (*sdk.ValidateStorageCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ValidateStorageCredentialRequest{}
+	{
+		members := 0
+		if w.StorageCredentialName != nil {
+			members++
+		}
+		if w.AwsIamRole != nil {
+			members++
+		}
+		if w.AzureServicePrincipal != nil {
+			members++
+		}
+		if w.AzureManagedIdentity != nil {
+			members++
+		}
+		if w.DatabricksGcpServiceAccount != nil {
+			members++
+		}
+		if w.CloudflareApiToken != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ValidateStorageCredentialRequest.Credential")
+		}
+	}
+	switch {
+	case w.StorageCredentialName != nil:
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_StorageCredentialName{StorageCredentialName: *w.StorageCredentialName}
+	case w.AwsIamRole != nil:
+		conv173, err := AwsIamRoleToSDK(w.AwsIamRole)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_AwsIamRole{AwsIamRole: *conv173}
+	case w.AzureServicePrincipal != nil:
+		conv174, err := AzureServicePrincipalToSDK(w.AzureServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_AzureServicePrincipal{AzureServicePrincipal: *conv174}
+	case w.AzureManagedIdentity != nil:
+		conv175, err := AzureManagedIdentityToSDK(w.AzureManagedIdentity)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_AzureManagedIdentity{AzureManagedIdentity: *conv175}
+	case w.DatabricksGcpServiceAccount != nil:
+		conv176, err := DatabricksGcpServiceAccountToSDK(w.DatabricksGcpServiceAccount)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount{DatabricksGcpServiceAccount: *conv176}
+	case w.CloudflareApiToken != nil:
+		conv177, err := CloudflareApiTokenToSDK(w.CloudflareApiToken)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+		}
+		out.Credential = &sdk.ValidateStorageCredentialRequest_Credential_CloudflareApiToken{CloudflareApiToken: *conv177}
+	}
+	out.ExternalLocationName = w.ExternalLocationName
+	out.Url = w.Url
+	out.ReadOnly = w.ReadOnly
+	return out, nil
+}
+
+// ValidateStorageCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func ValidateStorageCredentialRequestFromSDK(v *sdk.ValidateStorageCredentialRequest) (*ValidateStorageCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateStorageCredentialRequest{}
+	switch value := v.Credential.(type) {
+	case *sdk.ValidateStorageCredentialRequest_Credential_StorageCredentialName:
+		if value != nil {
+			out.StorageCredentialName = new(value.StorageCredentialName)
+		}
+	case *sdk.ValidateStorageCredentialRequest_Credential_AwsIamRole:
+		if value != nil {
+			conv178, err := AwsIamRoleFromSDK(&value.AwsIamRole)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+			}
+			out.AwsIamRole = conv178
+		}
+	case *sdk.ValidateStorageCredentialRequest_Credential_AzureServicePrincipal:
+		if value != nil {
+			conv179, err := AzureServicePrincipalFromSDK(&value.AzureServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureServicePrincipal = conv179
+		}
+	case *sdk.ValidateStorageCredentialRequest_Credential_AzureManagedIdentity:
+		if value != nil {
+			conv180, err := AzureManagedIdentityFromSDK(&value.AzureManagedIdentity)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+			}
+			out.AzureManagedIdentity = conv180
+		}
+	case *sdk.ValidateStorageCredentialRequest_Credential_DatabricksGcpServiceAccount:
+		if value != nil {
+			conv181, err := DatabricksGcpServiceAccountFromSDK(&value.DatabricksGcpServiceAccount)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+			}
+			out.DatabricksGcpServiceAccount = conv181
+		}
+	case *sdk.ValidateStorageCredentialRequest_Credential_CloudflareApiToken:
+		if value != nil {
+			conv182, err := CloudflareApiTokenFromSDK(&value.CloudflareApiToken)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialRequest.Credential", err)
+			}
+			out.CloudflareApiToken = conv182
+		}
+	}
+	out.ExternalLocationName = v.ExternalLocationName
+	out.Url = v.Url
+	out.ReadOnly = v.ReadOnly
+	return out, nil
+}
+
+// ValidateStorageCredentialRequest_ValidationResultToSDK converts the mirror to the sdk-go type.
+func ValidateStorageCredentialRequest_ValidationResultToSDK(w *ValidateStorageCredentialRequest_ValidationResult) (*sdk.ValidateStorageCredentialRequest_ValidationResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ValidateStorageCredentialRequest_ValidationResult{}
+	out.Operation = w.Operation
+	out.Result = w.Result
+	out.Message = w.Message
+	return out, nil
+}
+
+// ValidateStorageCredentialRequest_ValidationResultFromSDK converts the sdk-go type to the mirror.
+func ValidateStorageCredentialRequest_ValidationResultFromSDK(v *sdk.ValidateStorageCredentialRequest_ValidationResult) (*ValidateStorageCredentialRequest_ValidationResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateStorageCredentialRequest_ValidationResult{}
+	out.Operation = v.Operation
+	out.Result = v.Result
+	out.Message = v.Message
+	return out, nil
+}
+
+// ValidateStorageCredentialResponseToSDK converts the mirror to the sdk-go type.
 func ValidateStorageCredentialResponseToSDK(w *ValidateStorageCredentialResponse) (*sdk.ValidateStorageCredentialResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	resultsPublicValue, err := convertSlice(w.Results, ValidateStorageCredentialRequest_ValidationResultToSDK)
+	out := &sdk.ValidateStorageCredentialResponse{}
+	out.IsDir = w.IsDir
+	conv183, err := convertSlice(w.Results, ValidateStorageCredentialRequest_ValidationResultToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialResponse.Results", err)
 	}
-	return &sdk.ValidateStorageCredentialResponse{
-		IsDir:   w.IsDir,
-		Results: resultsPublicValue,
-	}, nil
+	out.Results = conv183
+	return out, nil
+}
+
+// ValidateStorageCredentialResponseFromSDK converts the sdk-go type to the mirror.
+func ValidateStorageCredentialResponseFromSDK(v *sdk.ValidateStorageCredentialResponse) (*ValidateStorageCredentialResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ValidateStorageCredentialResponse{}
+	out.IsDir = v.IsDir
+	conv184, err := convertSlice(v.Results, ValidateStorageCredentialRequest_ValidationResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ValidateStorageCredentialResponse.Results", err)
+	}
+	out.Results = conv184
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

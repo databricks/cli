@@ -45,37 +45,11 @@ const (
 	EndpointStatus_State_Deleted               = sdk.EndpointStatus_State_Deleted
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ColumnInfo struct {
 	// Name of the column.
 	Name *string `json:"name,omitempty"`
 	// Data type of the column (e.g., "string", "int", "array<float>")
 	TypeText *string `json:"type_text,omitempty"`
-}
-
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnInfo{
-		Name:     w.Name,
-		TypeText: w.TypeText,
-	}, nil
 }
 
 type CreateEndpointRequest struct {
@@ -93,23 +67,6 @@ type CreateEndpointRequest struct {
 	TargetQps *int64 `json:"target_qps,omitempty"`
 }
 
-func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	targetQpsWireValue, err := int64ToWire(v.TargetQps)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.TargetQps", err)
-	}
-	return &CreateEndpointRequest{
-		Name:           v.Name,
-		EndpointType:   v.EndpointType,
-		BudgetPolicyId: v.BudgetPolicyId,
-		UsagePolicyId:  v.UsagePolicyId,
-		TargetQps:      targetQpsWireValue,
-	}, nil
-}
-
 type CreateVectorIndexRequest struct {
 	// Name of the index
 	Name *string `json:"name,omitempty"`
@@ -125,69 +82,11 @@ type CreateVectorIndexRequest struct {
 	IndexSubtype IndexSubtype `json:"index_subtype,omitempty"`
 }
 
-func CreateVectorIndexRequestFromSDK(v *sdk.CreateVectorIndexRequest) (*CreateVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var indexSpecDirectAccessIndexSpecWire *DirectAccessVectorIndexSpec
-	var indexSpecDeltaSyncIndexSpecWire *DeltaSyncVectorIndexSpecRequest
-	switch value := v.IndexSpec.(type) {
-	case nil:
-	case *sdk.CreateVectorIndexRequest_IndexSpec_DirectAccessIndexSpec:
-		if value != nil {
-			indexSpecDirectAccessIndexSpecConverted, err := DirectAccessVectorIndexSpecFromSDK(&value.DirectAccessIndexSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec.DirectAccessIndexSpec", err)
-			}
-			indexSpecDirectAccessIndexSpecWire = indexSpecDirectAccessIndexSpecConverted
-		}
-	case *sdk.CreateVectorIndexRequest_IndexSpec_DeltaSyncIndexSpec:
-		if value != nil {
-			indexSpecDeltaSyncIndexSpecConverted, err := DeltaSyncVectorIndexSpecRequestFromSDK(&value.DeltaSyncIndexSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec.DeltaSyncIndexSpec", err)
-			}
-			indexSpecDeltaSyncIndexSpecWire = indexSpecDeltaSyncIndexSpecConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateVectorIndexRequest.IndexSpec", value)
-	}
-	return &CreateVectorIndexRequest{
-		Name:                  v.Name,
-		EndpointName:          v.EndpointName,
-		PrimaryKey:            v.PrimaryKey,
-		IndexType:             v.IndexType,
-		DirectAccessIndexSpec: indexSpecDirectAccessIndexSpecWire,
-		DeltaSyncIndexSpec:    indexSpecDeltaSyncIndexSpecWire,
-		IndexSubtype:          v.IndexSubtype,
-	}, nil
-}
-
 type CustomTag struct {
 	// Key field for an AI Search endpoint tag.
 	Key *string `json:"key,omitempty"`
 	// [Optional] Value field for an AI Search endpoint tag.
 	Value *string `json:"value,omitempty"`
-}
-
-func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CustomTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CustomTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 // Request payload for deleting data from a vector index..
@@ -199,35 +98,11 @@ type DeleteDataVectorIndexRequest struct {
 	PrimaryKeys []string `json:"primary_keys,omitempty"`
 }
 
-func DeleteDataVectorIndexRequestFromSDK(v *sdk.DeleteDataVectorIndexRequest) (*DeleteDataVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteDataVectorIndexRequest{
-		Name:        v.Name,
-		PrimaryKeys: v.PrimaryKeys,
-	}, nil
-}
-
 type DeleteDataVectorIndexResponse struct {
 	// Status of the delete operation.
 	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 	// Result of the upsert or delete operation.
 	Result *UpsertDeleteDataResult `json:"result,omitempty"`
-}
-
-func DeleteDataVectorIndexResponseToSDK(w *DeleteDataVectorIndexResponse) (*sdk.DeleteDataVectorIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultPublicValue, err := UpsertDeleteDataResultToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteDataVectorIndexResponse.Result", err)
-	}
-	return &sdk.DeleteDataVectorIndexResponse{
-		Status: w.Status,
-		Result: resultPublicValue,
-	}, nil
 }
 
 type DeltaSyncVectorIndexSpec struct {
@@ -262,30 +137,6 @@ type DeltaSyncVectorIndexSpec struct {
 	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
 }
 
-func DeltaSyncVectorIndexSpecToSDK(w *DeltaSyncVectorIndexSpec) (*sdk.DeltaSyncVectorIndexSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddingSourceColumnsPublicValue, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingSourceColumns", err)
-	}
-	embeddingVectorColumnsPublicValue, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingVectorColumns", err)
-	}
-	return &sdk.DeltaSyncVectorIndexSpec{
-		SourceTable:             w.SourceTable,
-		EmbeddingSourceColumns:  embeddingSourceColumnsPublicValue,
-		EmbeddingVectorColumns:  embeddingVectorColumnsPublicValue,
-		PipelineType:            w.PipelineType,
-		PipelineId:              w.PipelineId,
-		EmbeddingWritebackTable: w.EmbeddingWritebackTable,
-		ColumnsToSync:           w.ColumnsToSync,
-		ColumnsToIndex:          w.ColumnsToIndex,
-	}, nil
-}
-
 type DeltaSyncVectorIndexSpecRequest struct {
 	// The name of the source table.
 	SourceTable *string `json:"source_table,omitempty"`
@@ -318,30 +169,6 @@ type DeltaSyncVectorIndexSpecRequest struct {
 	ColumnsToIndex []string `json:"columns_to_index,omitempty"`
 }
 
-func DeltaSyncVectorIndexSpecRequestFromSDK(v *sdk.DeltaSyncVectorIndexSpecRequest) (*DeltaSyncVectorIndexSpecRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	embeddingSourceColumnsWireValue, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingSourceColumns", err)
-	}
-	embeddingVectorColumnsWireValue, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingVectorColumns", err)
-	}
-	return &DeltaSyncVectorIndexSpecRequest{
-		SourceTable:             v.SourceTable,
-		EmbeddingSourceColumns:  embeddingSourceColumnsWireValue,
-		EmbeddingVectorColumns:  embeddingVectorColumnsWireValue,
-		PipelineType:            v.PipelineType,
-		PipelineId:              v.PipelineId,
-		EmbeddingWritebackTable: v.EmbeddingWritebackTable,
-		ColumnsToSync:           v.ColumnsToSync,
-		ColumnsToIndex:          v.ColumnsToIndex,
-	}, nil
-}
-
 type DirectAccessVectorIndexSpec struct {
 	// The columns that contain the embedding vectors. The format should be
 	// array[double].
@@ -355,44 +182,6 @@ type DirectAccessVectorIndexSpec struct {
 	EmbeddingSourceColumns []EmbeddingSourceColumn `json:"embedding_source_columns,omitempty"`
 }
 
-func DirectAccessVectorIndexSpecFromSDK(v *sdk.DirectAccessVectorIndexSpec) (*DirectAccessVectorIndexSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	embeddingVectorColumnsWireValue, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingVectorColumns", err)
-	}
-	embeddingSourceColumnsWireValue, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingSourceColumns", err)
-	}
-	return &DirectAccessVectorIndexSpec{
-		EmbeddingVectorColumns: embeddingVectorColumnsWireValue,
-		SchemaJson:             v.SchemaJson,
-		EmbeddingSourceColumns: embeddingSourceColumnsWireValue,
-	}, nil
-}
-
-func DirectAccessVectorIndexSpecToSDK(w *DirectAccessVectorIndexSpec) (*sdk.DirectAccessVectorIndexSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddingVectorColumnsPublicValue, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingVectorColumns", err)
-	}
-	embeddingSourceColumnsPublicValue, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingSourceColumns", err)
-	}
-	return &sdk.DirectAccessVectorIndexSpec{
-		EmbeddingVectorColumns: embeddingVectorColumnsPublicValue,
-		SchemaJson:             w.SchemaJson,
-		EmbeddingSourceColumns: embeddingSourceColumnsPublicValue,
-	}, nil
-}
-
 type EmbeddingSourceColumn struct {
 	// Name of the column
 	Name                       *string `json:"name,omitempty"`
@@ -402,75 +191,11 @@ type EmbeddingSourceColumn struct {
 	ModelEndpointNameForQuery *string `json:"model_endpoint_name_for_query,omitempty"`
 }
 
-func EmbeddingSourceColumnFromSDK(v *sdk.EmbeddingSourceColumn) (*EmbeddingSourceColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var embeddingConfigEmbeddingModelEndpointNameWire *string
-	switch value := v.EmbeddingConfig.(type) {
-	case nil:
-	case *sdk.EmbeddingSourceColumn_EmbeddingConfig_EmbeddingModelEndpointName:
-		if value != nil {
-			embeddingConfigEmbeddingModelEndpointNameWire = new(value.EmbeddingModelEndpointName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EmbeddingSourceColumn.EmbeddingConfig", value)
-	}
-	return &EmbeddingSourceColumn{
-		Name:                       v.Name,
-		EmbeddingModelEndpointName: embeddingConfigEmbeddingModelEndpointNameWire,
-		ModelEndpointNameForQuery:  v.ModelEndpointNameForQuery,
-	}, nil
-}
-
-func EmbeddingSourceColumnToSDK(w *EmbeddingSourceColumn) (*sdk.EmbeddingSourceColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddingConfigMembers := 0
-	if w.EmbeddingModelEndpointName != nil {
-		embeddingConfigMembers++
-	}
-	if embeddingConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EmbeddingSourceColumn.EmbeddingConfig")
-	}
-	embeddingConfigSelection := (&sdk.EmbeddingSourceColumn{}).EmbeddingConfig
-	switch {
-	case w.EmbeddingModelEndpointName != nil:
-		embeddingConfigSelection = &sdk.EmbeddingSourceColumn_EmbeddingConfig_EmbeddingModelEndpointName{EmbeddingModelEndpointName: *w.EmbeddingModelEndpointName}
-	}
-	return &sdk.EmbeddingSourceColumn{
-		Name:                      w.Name,
-		ModelEndpointNameForQuery: w.ModelEndpointNameForQuery,
-		EmbeddingConfig:           embeddingConfigSelection,
-	}, nil
-}
-
 type EmbeddingVectorColumn struct {
 	// Name of the column
 	Name *string `json:"name,omitempty"`
 	// Dimension of the embedding vector
 	EmbeddingDimension *int `json:"embedding_dimension,omitempty"`
-}
-
-func EmbeddingVectorColumnFromSDK(v *sdk.EmbeddingVectorColumn) (*EmbeddingVectorColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EmbeddingVectorColumn{
-		Name:               v.Name,
-		EmbeddingDimension: v.EmbeddingDimension,
-	}, nil
-}
-
-func EmbeddingVectorColumnToSDK(w *EmbeddingVectorColumn) (*sdk.EmbeddingVectorColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmbeddingVectorColumn{
-		Name:               w.Name,
-		EmbeddingDimension: w.EmbeddingDimension,
-	}, nil
 }
 
 type Endpoint struct {
@@ -502,47 +227,6 @@ type Endpoint struct {
 	ScalingInfo *EndpointScalingInfo `json:"scaling_info,omitempty"`
 }
 
-func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.LastUpdatedTimestamp", err)
-	}
-	endpointStatusPublicValue, err := EndpointStatusToSDK(w.EndpointStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, CustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
-	}
-	scalingInfoPublicValue, err := EndpointScalingInfoToSDK(w.ScalingInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
-	}
-	return &sdk.Endpoint{
-		Name:                    w.Name,
-		Creator:                 w.Creator,
-		CreationTimestamp:       creationTimestampPublicValue,
-		LastUpdatedTimestamp:    lastUpdatedTimestampPublicValue,
-		EndpointType:            w.EndpointType,
-		LastUpdatedUser:         w.LastUpdatedUser,
-		Id:                      w.Id,
-		EndpointStatus:          endpointStatusPublicValue,
-		NumIndexes:              w.NumIndexes,
-		BudgetPolicyId:          w.BudgetPolicyId,
-		EffectiveBudgetPolicyId: w.EffectiveBudgetPolicyId,
-		CustomTags:              customTagsPublicValue,
-		ScalingInfo:             scalingInfoPublicValue,
-	}, nil
-}
-
 // Scaling information for a Standard endpoint: the current scaling state, the
 // requested QPS target, and the progress of an in-progress scaling change..
 type EndpointScalingInfo struct {
@@ -553,20 +237,6 @@ type EndpointScalingInfo struct {
 	RequestedTargetQps *int64 `json:"requested_target_qps,omitempty"`
 }
 
-func EndpointScalingInfoToSDK(w *EndpointScalingInfo) (*sdk.EndpointScalingInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestedTargetQpsPublicValue, err := int64FromWire(w.RequestedTargetQps)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointScalingInfo.RequestedTargetQps", err)
-	}
-	return &sdk.EndpointScalingInfo{
-		State:              w.State,
-		RequestedTargetQps: requestedTargetQpsPublicValue,
-	}, nil
-}
-
 // Status information of an endpoint.
 type EndpointStatus struct {
 	// Current state of the endpoint
@@ -575,32 +245,12 @@ type EndpointStatus struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
-}
-
 // Facet aggregation rows returned by a query..
 type FacetResultData struct {
 	// Number of facet rows returned.
 	FacetRowCount *int `json:"facet_row_count,omitempty"`
 	// Facet rows. Each row is `[facet_column_name, value_or_range, count]`.
 	FacetArray [][]json.RawMessage `json:"facet_array,omitempty"`
-}
-
-func FacetResultDataToSDK(w *FacetResultData) (*sdk.FacetResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FacetResultData{
-		FacetRowCount: w.FacetRowCount,
-		FacetArray:    w.FacetArray,
-	}, nil
 }
 
 type GetVectorIndexRequest struct {
@@ -613,16 +263,6 @@ type GetVectorIndexRequest struct {
 	EnsureRerankerCompatible *bool `json:"ensure_reranker_compatible,omitempty"`
 }
 
-func GetVectorIndexRequestFromSDK(v *sdk.GetVectorIndexRequest) (*GetVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetVectorIndexRequest{
-		Name:                     v.Name,
-		EnsureRerankerCompatible: v.EnsureRerankerCompatible,
-	}, nil
-}
-
 type ListEndpointResponse struct {
 	// An array of Endpoint objects
 	Endpoints []Endpoint `json:"endpoints,omitempty"`
@@ -631,50 +271,14 @@ type ListEndpointResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListEndpointResponseToSDK(w *ListEndpointResponse) (*sdk.ListEndpointResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointsPublicValue, err := convertSlice(w.Endpoints, EndpointToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEndpointResponse.Endpoints", err)
-	}
-	return &sdk.ListEndpointResponse{
-		Endpoints:     endpointsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ListEndpointsRequest struct {
 	// Token for pagination
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListEndpointsRequest{
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListValue struct {
 	// Repeated field of dynamically typed values.
 	Values []Value `json:"values,omitempty"`
-}
-
-func ListValueToSDK(w *ListValue) (*sdk.ListValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, ValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
-	}
-	return &sdk.ListValue{
-		Values: valuesPublicValue,
-	}, nil
 }
 
 type ListVectorIndexRequest struct {
@@ -684,35 +288,11 @@ type ListVectorIndexRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListVectorIndexRequestFromSDK(v *sdk.ListVectorIndexRequest) (*ListVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListVectorIndexRequest{
-		EndpointName: v.EndpointName,
-		PageToken:    v.PageToken,
-	}, nil
-}
-
 type ListVectorIndexResponse struct {
 	VectorIndexes []MiniVectorIndex `json:"vector_indexes,omitempty"`
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListVectorIndexResponseToSDK(w *ListVectorIndexResponse) (*sdk.ListVectorIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	vectorIndexesPublicValue, err := convertSlice(w.VectorIndexes, MiniVectorIndexToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListVectorIndexResponse.VectorIndexes", err)
-	}
-	return &sdk.ListVectorIndexResponse{
-		VectorIndexes: vectorIndexesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Key-value pair..
@@ -721,20 +301,6 @@ type MapStringValueEntry struct {
 	Key *string `json:"key,omitempty"`
 	// Column value, nullable.
 	Value *Value `json:"value,omitempty"`
-}
-
-func MapStringValueEntryToSDK(w *MapStringValueEntry) (*sdk.MapStringValueEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuePublicValue, err := ValueToSDK(w.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
-	}
-	return &sdk.MapStringValueEntry{
-		Key:   w.Key,
-		Value: valuePublicValue,
-	}, nil
 }
 
 // Metric specification.
@@ -747,62 +313,12 @@ type Metric struct {
 	Percentile *float64 `json:"percentile,omitempty"`
 }
 
-func MetricFromSDK(v *sdk.Metric) (*Metric, error) {
-	if v == nil {
-		return nil, nil
-	}
-	labelsWireValue, err := convertSlice(v.Labels, MetricLabelFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Labels", err)
-	}
-	return &Metric{
-		Name:       v.Name,
-		Labels:     labelsWireValue,
-		Percentile: v.Percentile,
-	}, nil
-}
-
-func MetricToSDK(w *Metric) (*sdk.Metric, error) {
-	if w == nil {
-		return nil, nil
-	}
-	labelsPublicValue, err := convertSlice(w.Labels, MetricLabelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Metric.Labels", err)
-	}
-	return &sdk.Metric{
-		Name:       w.Name,
-		Labels:     labelsPublicValue,
-		Percentile: w.Percentile,
-	}, nil
-}
-
 // Label for a metric.
 type MetricLabel struct {
 	// Label name
 	Name *string `json:"name,omitempty"`
 	// Label value
 	Value *string `json:"value,omitempty"`
-}
-
-func MetricLabelFromSDK(v *sdk.MetricLabel) (*MetricLabel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MetricLabel{
-		Name:  v.Name,
-		Value: v.Value,
-	}, nil
-}
-
-func MetricLabelToSDK(w *MetricLabel) (*sdk.MetricLabel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MetricLabel{
-		Name:  w.Name,
-		Value: w.Value,
-	}, nil
 }
 
 // Single metric value at a specific timestamp.
@@ -813,44 +329,12 @@ type MetricValue struct {
 	Value *float64 `json:"value,omitempty"`
 }
 
-func MetricValueToSDK(w *MetricValue) (*sdk.MetricValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	timestampPublicValue, err := int64FromWire(w.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetricValue.Timestamp", err)
-	}
-	return &sdk.MetricValue{
-		Timestamp: timestampPublicValue,
-		Value:     w.Value,
-	}, nil
-}
-
 // Collection of metric values for a specific metric.
 type MetricValues struct {
 	// Metric specification
 	Metric *Metric `json:"metric,omitempty"`
 	// Time series of metric values
 	Values []MetricValue `json:"values,omitempty"`
-}
-
-func MetricValuesToSDK(w *MetricValues) (*sdk.MetricValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metricPublicValue, err := MetricToSDK(w.Metric)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetricValues.Metric", err)
-	}
-	valuesPublicValue, err := convertSlice(w.Values, MetricValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetricValues.Values", err)
-	}
-	return &sdk.MetricValues{
-		Metric: metricPublicValue,
-		Values: valuesPublicValue,
-	}, nil
 }
 
 type MiniVectorIndex struct {
@@ -872,67 +356,11 @@ type MiniVectorIndex struct {
 	EndpointId *string `json:"endpoint_id,omitempty"`
 }
 
-func MiniVectorIndexToSDK(w *MiniVectorIndex) (*sdk.MiniVectorIndex, error) {
-	if w == nil {
-		return nil, nil
-	}
-	indexSpecMembers := 0
-	if w.DirectAccessIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if w.DeltaSyncIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if indexSpecMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "MiniVectorIndex.IndexSpec")
-	}
-	statusPublicValue, err := VectorIndexStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.Status", err)
-	}
-	indexSpecSelection := (&sdk.MiniVectorIndex{}).IndexSpec
-	switch {
-	case w.DirectAccessIndexSpec != nil:
-		indexSpecDirectAccessIndexSpecConverted, err := DirectAccessVectorIndexSpecToSDK(w.DirectAccessIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec.DirectAccessIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.MiniVectorIndex_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *indexSpecDirectAccessIndexSpecConverted}
-	case w.DeltaSyncIndexSpec != nil:
-		indexSpecDeltaSyncIndexSpecConverted, err := DeltaSyncVectorIndexSpecToSDK(w.DeltaSyncIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec.DeltaSyncIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.MiniVectorIndex_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *indexSpecDeltaSyncIndexSpecConverted}
-	}
-	return &sdk.MiniVectorIndex{
-		Name:         w.Name,
-		EndpointName: w.EndpointName,
-		PrimaryKey:   w.PrimaryKey,
-		IndexType:    w.IndexType,
-		Status:       statusPublicValue,
-		Creator:      w.Creator,
-		IndexSubtype: w.IndexSubtype,
-		EndpointId:   w.EndpointId,
-		IndexSpec:    indexSpecSelection,
-	}, nil
-}
-
 type PatchEndpointBudgetPolicyRequest struct {
 	// Name of the AI Search endpoint
 	Name *string `json:"name,omitempty"`
 	// The budget policy id to be applied
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
-}
-
-func PatchEndpointBudgetPolicyRequestFromSDK(v *sdk.PatchEndpointBudgetPolicyRequest) (*PatchEndpointBudgetPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PatchEndpointBudgetPolicyRequest{
-		Name:           v.Name,
-		BudgetPolicyId: v.BudgetPolicyId,
-	}, nil
 }
 
 type PatchEndpointBudgetPolicyResponse struct {
@@ -941,36 +369,12 @@ type PatchEndpointBudgetPolicyResponse struct {
 	EffectiveBudgetPolicyId *string `json:"effective_budget_policy_id,omitempty"`
 }
 
-func PatchEndpointBudgetPolicyResponseToSDK(w *PatchEndpointBudgetPolicyResponse) (*sdk.PatchEndpointBudgetPolicyResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PatchEndpointBudgetPolicyResponse{
-		BudgetPolicyId:          w.BudgetPolicyId,
-		EffectiveBudgetPolicyId: w.EffectiveBudgetPolicyId,
-	}, nil
-}
-
 type PatchEndpointRequest struct {
 	// Name of the AI Search endpoint
 	Name *string `json:"name,omitempty"`
 	// Target QPS for the endpoint. Best-effort; the system does not guarantee this
 	// QPS will be achieved.
 	TargetQps *int64 `json:"target_qps,omitempty"`
-}
-
-func PatchEndpointRequestFromSDK(v *sdk.PatchEndpointRequest) (*PatchEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	targetQpsWireValue, err := int64ToWire(v.TargetQps)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchEndpointRequest.TargetQps", err)
-	}
-	return &PatchEndpointRequest{
-		Name:      v.Name,
-		TargetQps: targetQpsWireValue,
-	}, nil
 }
 
 // Request payload for getting next page of results..
@@ -982,17 +386,6 @@ type QueryVectorIndexNextPageRequest struct {
 	// Page token returned from previous `QueryVectorIndex` or
 	// `QueryVectorIndexNextPage` API.
 	PageToken *string `json:"page_token,omitempty"`
-}
-
-func QueryVectorIndexNextPageRequestFromSDK(v *sdk.QueryVectorIndexNextPageRequest) (*QueryVectorIndexNextPageRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &QueryVectorIndexNextPageRequest{
-		Name:         v.Name,
-		EndpointName: v.EndpointName,
-		PageToken:    v.PageToken,
-	}, nil
 }
 
 type QueryVectorIndexRequest struct {
@@ -1046,31 +439,6 @@ type QueryVectorIndexRequest struct {
 	Facets []string `json:"facets,omitempty"`
 }
 
-func QueryVectorIndexRequestFromSDK(v *sdk.QueryVectorIndexRequest) (*QueryVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rerankerWireValue, err := RerankerConfigFromSDK(v.Reranker)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexRequest.Reranker", err)
-	}
-	return &QueryVectorIndexRequest{
-		Name:            v.Name,
-		NumResults:      v.NumResults,
-		Columns:         v.Columns,
-		FiltersJson:     v.FiltersJson,
-		QueryVector:     v.QueryVector,
-		QueryText:       v.QueryText,
-		ScoreThreshold:  v.ScoreThreshold,
-		QueryType:       v.QueryType,
-		ColumnsToRerank: v.ColumnsToRerank,
-		Reranker:        rerankerWireValue,
-		QueryColumns:    v.QueryColumns,
-		SortColumns:     v.SortColumns,
-		Facets:          v.Facets,
-	}, nil
-}
-
 type QueryVectorIndexResponse struct {
 	// Metadata about the result set.
 	Manifest *ResultManifest `json:"manifest,omitempty"`
@@ -1085,30 +453,6 @@ type QueryVectorIndexResponse struct {
 	FacetResult *FacetResultData `json:"facet_result,omitempty"`
 }
 
-func QueryVectorIndexResponseToSDK(w *QueryVectorIndexResponse) (*sdk.QueryVectorIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	manifestPublicValue, err := ResultManifestToSDK(w.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Manifest", err)
-	}
-	resultPublicValue, err := ResultDataToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Result", err)
-	}
-	facetResultPublicValue, err := FacetResultDataToSDK(w.FacetResult)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.FacetResult", err)
-	}
-	return &sdk.QueryVectorIndexResponse{
-		Manifest:      manifestPublicValue,
-		Result:        resultPublicValue,
-		NextPageToken: w.NextPageToken,
-		FacetResult:   facetResultPublicValue,
-	}, nil
-}
-
 type RerankerConfig struct {
 	// Reranker identifier: - When model_type=BASE/UNSPECIFIED: must be
 	// "databricks_reranker". - When model_type=FINETUNED: the Model Serving
@@ -1118,31 +462,8 @@ type RerankerConfig struct {
 	Parameters *RerankerConfig_RerankerParameters `json:"parameters,omitempty"`
 }
 
-func RerankerConfigFromSDK(v *sdk.RerankerConfig) (*RerankerConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := RerankerConfig_RerankerParametersFromSDK(v.Parameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
-	}
-	return &RerankerConfig{
-		Model:      v.Model,
-		Parameters: parametersWireValue,
-	}, nil
-}
-
 type RerankerConfig_RerankerParameters struct {
 	ColumnsToRerank []string `json:"columns_to_rerank,omitempty"`
-}
-
-func RerankerConfig_RerankerParametersFromSDK(v *sdk.RerankerConfig_RerankerParameters) (*RerankerConfig_RerankerParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RerankerConfig_RerankerParameters{
-		ColumnsToRerank: v.ColumnsToRerank,
-	}, nil
 }
 
 // Data returned in the query result..
@@ -1151,16 +472,6 @@ type ResultData struct {
 	RowCount *int `json:"row_count,omitempty"`
 	// Data rows returned in the query.
 	DataArray [][]json.RawMessage `json:"data_array,omitempty"`
-}
-
-func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResultData{
-		RowCount:  w.RowCount,
-		DataArray: w.DataArray,
-	}, nil
 }
 
 // Metadata about the result set..
@@ -1173,26 +484,6 @@ type ResultManifest struct {
 	FacetColumnCount *int `json:"facet_column_count,omitempty"`
 	// Information about each column in `facet_result`.
 	FacetColumns []ColumnInfo `json:"facet_columns,omitempty"`
-}
-
-func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
-	}
-	facetColumnsPublicValue, err := convertSlice(w.FacetColumns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
-	}
-	return &sdk.ResultManifest{
-		ColumnCount:      w.ColumnCount,
-		Columns:          columnsPublicValue,
-		FacetColumnCount: w.FacetColumnCount,
-		FacetColumns:     facetColumnsPublicValue,
-	}, nil
 }
 
 // Request to retrieve user-visible metrics.
@@ -1211,24 +502,6 @@ type RetrieveUserVisibleMetricsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func RetrieveUserVisibleMetricsRequestFromSDK(v *sdk.RetrieveUserVisibleMetricsRequest) (*RetrieveUserVisibleMetricsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	metricsWireValue, err := convertSlice(v.Metrics, MetricFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsRequest.Metrics", err)
-	}
-	return &RetrieveUserVisibleMetricsRequest{
-		Name:                 v.Name,
-		StartTime:            v.StartTime,
-		EndTime:              v.EndTime,
-		GranularityInSeconds: v.GranularityInSeconds,
-		Metrics:              metricsWireValue,
-		PageToken:            v.PageToken,
-	}, nil
-}
-
 // Response containing user-visible metrics.
 type RetrieveUserVisibleMetricsResponse struct {
 	// Collection of metric values
@@ -1236,20 +509,6 @@ type RetrieveUserVisibleMetricsResponse struct {
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func RetrieveUserVisibleMetricsResponseToSDK(w *RetrieveUserVisibleMetricsResponse) (*sdk.RetrieveUserVisibleMetricsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metricValuesPublicValue, err := convertSlice(w.MetricValues, MetricValuesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsResponse.MetricValues", err)
-	}
-	return &sdk.RetrieveUserVisibleMetricsResponse{
-		MetricValues:  metricValuesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ScanVectorIndexRequest struct {
@@ -1261,17 +520,6 @@ type ScanVectorIndexRequest struct {
 	LastPrimaryKey *string `json:"last_primary_key,omitempty"`
 }
 
-func ScanVectorIndexRequestFromSDK(v *sdk.ScanVectorIndexRequest) (*ScanVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ScanVectorIndexRequest{
-		Name:           v.Name,
-		NumResults:     v.NumResults,
-		LastPrimaryKey: v.LastPrimaryKey,
-	}, nil
-}
-
 // Response to a scan vector index request..
 type ScanVectorIndexResponse struct {
 	// List of data entries
@@ -1280,50 +528,14 @@ type ScanVectorIndexResponse struct {
 	LastPrimaryKey *string `json:"last_primary_key,omitempty"`
 }
 
-func ScanVectorIndexResponseToSDK(w *ScanVectorIndexResponse) (*sdk.ScanVectorIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dataPublicValue, err := convertSlice(w.Data, StructToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ScanVectorIndexResponse.Data", err)
-	}
-	return &sdk.ScanVectorIndexResponse{
-		Data:           dataPublicValue,
-		LastPrimaryKey: w.LastPrimaryKey,
-	}, nil
-}
-
 type Struct struct {
 	// Data entry, corresponding to a row in a vector index.
 	Fields []MapStringValueEntry `json:"fields,omitempty"`
 }
 
-func StructToSDK(w *Struct) (*sdk.Struct, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fieldsPublicValue, err := convertSlice(w.Fields, MapStringValueEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
-	}
-	return &sdk.Struct{
-		Fields: fieldsPublicValue,
-	}, nil
-}
-
 type SyncVectorIndexRequest struct {
 	// Name of the vector index to synchronize. Must be a Delta Sync Index.
 	Name *string `json:"name,omitempty"`
-}
-
-func SyncVectorIndexRequestFromSDK(v *sdk.SyncVectorIndexRequest) (*SyncVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncVectorIndexRequest{
-		Name: v.Name,
-	}, nil
 }
 
 type UpdateEndpointCustomTagsRequest struct {
@@ -1333,39 +545,11 @@ type UpdateEndpointCustomTagsRequest struct {
 	CustomTags []CustomTag `json:"custom_tags,omitempty"`
 }
 
-func UpdateEndpointCustomTagsRequestFromSDK(v *sdk.UpdateEndpointCustomTagsRequest) (*UpdateEndpointCustomTagsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, CustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsRequest.CustomTags", err)
-	}
-	return &UpdateEndpointCustomTagsRequest{
-		Name:       v.Name,
-		CustomTags: customTagsWireValue,
-	}, nil
-}
-
 type UpdateEndpointCustomTagsResponse struct {
 	// The name of the AI Search endpoint whose custom tags were updated.
 	Name *string `json:"name,omitempty"`
 	// All the custom tags that are applied to the AI Search endpoint.
 	CustomTags []CustomTag `json:"custom_tags,omitempty"`
-}
-
-func UpdateEndpointCustomTagsResponseToSDK(w *UpdateEndpointCustomTagsResponse) (*sdk.UpdateEndpointCustomTagsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, CustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsResponse.CustomTags", err)
-	}
-	return &sdk.UpdateEndpointCustomTagsResponse{
-		Name:       w.Name,
-		CustomTags: customTagsPublicValue,
-	}, nil
 }
 
 type UpsertDataVectorIndexRequest struct {
@@ -1376,35 +560,11 @@ type UpsertDataVectorIndexRequest struct {
 	InputsJson *string `json:"inputs_json,omitempty"`
 }
 
-func UpsertDataVectorIndexRequestFromSDK(v *sdk.UpsertDataVectorIndexRequest) (*UpsertDataVectorIndexRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpsertDataVectorIndexRequest{
-		Name:       v.Name,
-		InputsJson: v.InputsJson,
-	}, nil
-}
-
 type UpsertDataVectorIndexResponse struct {
 	// Status of the upsert operation.
 	Status UpsertDeleteDataStatus `json:"status,omitempty"`
 	// Result of the upsert or delete operation.
 	Result *UpsertDeleteDataResult `json:"result,omitempty"`
-}
-
-func UpsertDataVectorIndexResponseToSDK(w *UpsertDataVectorIndexResponse) (*sdk.UpsertDataVectorIndexResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultPublicValue, err := UpsertDeleteDataResultToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpsertDataVectorIndexResponse.Result", err)
-	}
-	return &sdk.UpsertDataVectorIndexResponse{
-		Status: w.Status,
-		Result: resultPublicValue,
-	}, nil
 }
 
 type UpsertDeleteDataResult struct {
@@ -1414,75 +574,12 @@ type UpsertDeleteDataResult struct {
 	FailedPrimaryKeys []string `json:"failed_primary_keys,omitempty"`
 }
 
-func UpsertDeleteDataResultToSDK(w *UpsertDeleteDataResult) (*sdk.UpsertDeleteDataResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	successRowCountPublicValue, err := int64FromWire(w.SuccessRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpsertDeleteDataResult.SuccessRowCount", err)
-	}
-	return &sdk.UpsertDeleteDataResult{
-		SuccessRowCount:   successRowCountPublicValue,
-		FailedPrimaryKeys: w.FailedPrimaryKeys,
-	}, nil
-}
-
 type Value struct {
 	NumberValue *float64   `json:"number_value,omitempty"`
 	StringValue *string    `json:"string_value,omitempty"`
 	BoolValue   *bool      `json:"bool_value,omitempty"`
 	StructValue *Struct    `json:"struct_value,omitempty"`
 	ListValue   *ListValue `json:"list_value,omitempty"`
-}
-
-func ValueToSDK(w *Value) (*sdk.Value, error) {
-	if w == nil {
-		return nil, nil
-	}
-	kindMembers := 0
-	if w.NumberValue != nil {
-		kindMembers++
-	}
-	if w.StringValue != nil {
-		kindMembers++
-	}
-	if w.BoolValue != nil {
-		kindMembers++
-	}
-	if w.StructValue != nil {
-		kindMembers++
-	}
-	if w.ListValue != nil {
-		kindMembers++
-	}
-	if kindMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
-	}
-	kindSelection := (&sdk.Value{}).Kind
-	switch {
-	case w.NumberValue != nil:
-		kindSelection = &sdk.Value_Kind_NumberValue{NumberValue: *w.NumberValue}
-	case w.StringValue != nil:
-		kindSelection = &sdk.Value_Kind_StringValue{StringValue: *w.StringValue}
-	case w.BoolValue != nil:
-		kindSelection = &sdk.Value_Kind_BoolValue{BoolValue: *w.BoolValue}
-	case w.StructValue != nil:
-		kindStructValueConverted, err := StructToSDK(w.StructValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Value.Kind.StructValue", err)
-		}
-		kindSelection = &sdk.Value_Kind_StructValue{StructValue: *kindStructValueConverted}
-	case w.ListValue != nil:
-		kindListValueConverted, err := ListValueToSDK(w.ListValue)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Value.Kind.ListValue", err)
-		}
-		kindSelection = &sdk.Value_Kind_ListValue{ListValue: *kindListValueConverted}
-	}
-	return &sdk.Value{
-		Kind: kindSelection,
-	}, nil
 }
 
 type VectorIndex struct {
@@ -1504,52 +601,6 @@ type VectorIndex struct {
 	EndpointId *string `json:"endpoint_id,omitempty"`
 }
 
-func VectorIndexToSDK(w *VectorIndex) (*sdk.VectorIndex, error) {
-	if w == nil {
-		return nil, nil
-	}
-	indexSpecMembers := 0
-	if w.DirectAccessIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if w.DeltaSyncIndexSpec != nil {
-		indexSpecMembers++
-	}
-	if indexSpecMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "VectorIndex.IndexSpec")
-	}
-	statusPublicValue, err := VectorIndexStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "VectorIndex.Status", err)
-	}
-	indexSpecSelection := (&sdk.VectorIndex{}).IndexSpec
-	switch {
-	case w.DirectAccessIndexSpec != nil:
-		indexSpecDirectAccessIndexSpecConverted, err := DirectAccessVectorIndexSpecToSDK(w.DirectAccessIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec.DirectAccessIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.VectorIndex_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *indexSpecDirectAccessIndexSpecConverted}
-	case w.DeltaSyncIndexSpec != nil:
-		indexSpecDeltaSyncIndexSpecConverted, err := DeltaSyncVectorIndexSpecToSDK(w.DeltaSyncIndexSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec.DeltaSyncIndexSpec", err)
-		}
-		indexSpecSelection = &sdk.VectorIndex_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *indexSpecDeltaSyncIndexSpecConverted}
-	}
-	return &sdk.VectorIndex{
-		Name:         w.Name,
-		EndpointName: w.EndpointName,
-		PrimaryKey:   w.PrimaryKey,
-		IndexType:    w.IndexType,
-		Status:       statusPublicValue,
-		Creator:      w.Creator,
-		IndexSubtype: w.IndexSubtype,
-		EndpointId:   w.EndpointId,
-		IndexSpec:    indexSpecSelection,
-	}, nil
-}
-
 type VectorIndexStatus struct {
 	// Message associated with the index status
 	Message *string `json:"message,omitempty"`
@@ -1561,20 +612,1730 @@ type VectorIndexStatus struct {
 	IndexUrl *string `json:"index_url,omitempty"`
 }
 
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	return out, nil
+}
+
+// CreateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateEndpointRequestToSDK(w *CreateEndpointRequest) (*sdk.CreateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateEndpointRequest{}
+	out.Name = w.Name
+	out.EndpointType = w.EndpointType
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.UsagePolicyId = w.UsagePolicyId
+	out.TargetQps = w.TargetQps
+	return out, nil
+}
+
+// CreateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateEndpointRequest{}
+	out.Name = v.Name
+	out.EndpointType = v.EndpointType
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.UsagePolicyId = v.UsagePolicyId
+	out.TargetQps = v.TargetQps
+	return out, nil
+}
+
+// CreateVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func CreateVectorIndexRequestToSDK(w *CreateVectorIndexRequest) (*sdk.CreateVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateVectorIndexRequest{}
+	out.Name = w.Name
+	out.EndpointName = w.EndpointName
+	out.PrimaryKey = w.PrimaryKey
+	out.IndexType = w.IndexType
+	{
+		members := 0
+		if w.DirectAccessIndexSpec != nil {
+			members++
+		}
+		if w.DeltaSyncIndexSpec != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateVectorIndexRequest.IndexSpec")
+		}
+	}
+	switch {
+	case w.DirectAccessIndexSpec != nil:
+		conv1, err := DirectAccessVectorIndexSpecToSDK(w.DirectAccessIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.CreateVectorIndexRequest_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *conv1}
+	case w.DeltaSyncIndexSpec != nil:
+		conv2, err := DeltaSyncVectorIndexSpecRequestToSDK(w.DeltaSyncIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.CreateVectorIndexRequest_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *conv2}
+	}
+	out.IndexSubtype = w.IndexSubtype
+	return out, nil
+}
+
+// CreateVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func CreateVectorIndexRequestFromSDK(v *sdk.CreateVectorIndexRequest) (*CreateVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateVectorIndexRequest{}
+	out.Name = v.Name
+	out.EndpointName = v.EndpointName
+	out.PrimaryKey = v.PrimaryKey
+	out.IndexType = v.IndexType
+	switch value := v.IndexSpec.(type) {
+	case *sdk.CreateVectorIndexRequest_IndexSpec_DirectAccessIndexSpec:
+		if value != nil {
+			conv3, err := DirectAccessVectorIndexSpecFromSDK(&value.DirectAccessIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec", err)
+			}
+			out.DirectAccessIndexSpec = conv3
+		}
+	case *sdk.CreateVectorIndexRequest_IndexSpec_DeltaSyncIndexSpec:
+		if value != nil {
+			conv4, err := DeltaSyncVectorIndexSpecRequestFromSDK(&value.DeltaSyncIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateVectorIndexRequest.IndexSpec", err)
+			}
+			out.DeltaSyncIndexSpec = conv4
+		}
+	}
+	out.IndexSubtype = v.IndexSubtype
+	return out, nil
+}
+
+// CustomTagToSDK converts the mirror to the sdk-go type.
+func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// CustomTagFromSDK converts the sdk-go type to the mirror.
+func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// DeleteDataVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func DeleteDataVectorIndexRequestToSDK(w *DeleteDataVectorIndexRequest) (*sdk.DeleteDataVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteDataVectorIndexRequest{}
+	out.Name = w.Name
+	out.PrimaryKeys = w.PrimaryKeys
+	return out, nil
+}
+
+// DeleteDataVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteDataVectorIndexRequestFromSDK(v *sdk.DeleteDataVectorIndexRequest) (*DeleteDataVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteDataVectorIndexRequest{}
+	out.Name = v.Name
+	out.PrimaryKeys = v.PrimaryKeys
+	return out, nil
+}
+
+// DeleteDataVectorIndexResponseToSDK converts the mirror to the sdk-go type.
+func DeleteDataVectorIndexResponseToSDK(w *DeleteDataVectorIndexResponse) (*sdk.DeleteDataVectorIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteDataVectorIndexResponse{}
+	out.Status = w.Status
+	conv5, err := UpsertDeleteDataResultToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteDataVectorIndexResponse.Result", err)
+	}
+	out.Result = conv5
+	return out, nil
+}
+
+// DeleteDataVectorIndexResponseFromSDK converts the sdk-go type to the mirror.
+func DeleteDataVectorIndexResponseFromSDK(v *sdk.DeleteDataVectorIndexResponse) (*DeleteDataVectorIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteDataVectorIndexResponse{}
+	out.Status = v.Status
+	conv6, err := UpsertDeleteDataResultFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteDataVectorIndexResponse.Result", err)
+	}
+	out.Result = conv6
+	return out, nil
+}
+
+// DeltaSyncVectorIndexSpecToSDK converts the mirror to the sdk-go type.
+func DeltaSyncVectorIndexSpecToSDK(w *DeltaSyncVectorIndexSpec) (*sdk.DeltaSyncVectorIndexSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaSyncVectorIndexSpec{}
+	out.SourceTable = w.SourceTable
+	conv7, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv7
+	conv8, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv8
+	out.PipelineType = w.PipelineType
+	out.PipelineId = w.PipelineId
+	out.EmbeddingWritebackTable = w.EmbeddingWritebackTable
+	out.ColumnsToSync = w.ColumnsToSync
+	out.ColumnsToIndex = w.ColumnsToIndex
+	return out, nil
+}
+
+// DeltaSyncVectorIndexSpecFromSDK converts the sdk-go type to the mirror.
+func DeltaSyncVectorIndexSpecFromSDK(v *sdk.DeltaSyncVectorIndexSpec) (*DeltaSyncVectorIndexSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaSyncVectorIndexSpec{}
+	out.SourceTable = v.SourceTable
+	conv9, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv9
+	conv10, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv10
+	out.PipelineType = v.PipelineType
+	out.PipelineId = v.PipelineId
+	out.EmbeddingWritebackTable = v.EmbeddingWritebackTable
+	out.ColumnsToSync = v.ColumnsToSync
+	out.ColumnsToIndex = v.ColumnsToIndex
+	return out, nil
+}
+
+// DeltaSyncVectorIndexSpecRequestToSDK converts the mirror to the sdk-go type.
+func DeltaSyncVectorIndexSpecRequestToSDK(w *DeltaSyncVectorIndexSpecRequest) (*sdk.DeltaSyncVectorIndexSpecRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaSyncVectorIndexSpecRequest{}
+	out.SourceTable = w.SourceTable
+	conv11, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv11
+	conv12, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv12
+	out.PipelineType = w.PipelineType
+	out.PipelineId = w.PipelineId
+	out.EmbeddingWritebackTable = w.EmbeddingWritebackTable
+	out.ColumnsToSync = w.ColumnsToSync
+	out.ColumnsToIndex = w.ColumnsToIndex
+	return out, nil
+}
+
+// DeltaSyncVectorIndexSpecRequestFromSDK converts the sdk-go type to the mirror.
+func DeltaSyncVectorIndexSpecRequestFromSDK(v *sdk.DeltaSyncVectorIndexSpecRequest) (*DeltaSyncVectorIndexSpecRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaSyncVectorIndexSpecRequest{}
+	out.SourceTable = v.SourceTable
+	conv13, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv13
+	conv14, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeltaSyncVectorIndexSpecRequest.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv14
+	out.PipelineType = v.PipelineType
+	out.PipelineId = v.PipelineId
+	out.EmbeddingWritebackTable = v.EmbeddingWritebackTable
+	out.ColumnsToSync = v.ColumnsToSync
+	out.ColumnsToIndex = v.ColumnsToIndex
+	return out, nil
+}
+
+// DirectAccessVectorIndexSpecToSDK converts the mirror to the sdk-go type.
+func DirectAccessVectorIndexSpecToSDK(w *DirectAccessVectorIndexSpec) (*sdk.DirectAccessVectorIndexSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DirectAccessVectorIndexSpec{}
+	conv15, err := convertSlice(w.EmbeddingVectorColumns, EmbeddingVectorColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv15
+	out.SchemaJson = w.SchemaJson
+	conv16, err := convertSlice(w.EmbeddingSourceColumns, EmbeddingSourceColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv16
+	return out, nil
+}
+
+// DirectAccessVectorIndexSpecFromSDK converts the sdk-go type to the mirror.
+func DirectAccessVectorIndexSpecFromSDK(v *sdk.DirectAccessVectorIndexSpec) (*DirectAccessVectorIndexSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DirectAccessVectorIndexSpec{}
+	conv17, err := convertSlice(v.EmbeddingVectorColumns, EmbeddingVectorColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingVectorColumns", err)
+	}
+	out.EmbeddingVectorColumns = conv17
+	out.SchemaJson = v.SchemaJson
+	conv18, err := convertSlice(v.EmbeddingSourceColumns, EmbeddingSourceColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DirectAccessVectorIndexSpec.EmbeddingSourceColumns", err)
+	}
+	out.EmbeddingSourceColumns = conv18
+	return out, nil
+}
+
+// EmbeddingSourceColumnToSDK converts the mirror to the sdk-go type.
+func EmbeddingSourceColumnToSDK(w *EmbeddingSourceColumn) (*sdk.EmbeddingSourceColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmbeddingSourceColumn{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.EmbeddingModelEndpointName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EmbeddingSourceColumn.EmbeddingConfig")
+		}
+	}
+	switch {
+	case w.EmbeddingModelEndpointName != nil:
+		out.EmbeddingConfig = &sdk.EmbeddingSourceColumn_EmbeddingConfig_EmbeddingModelEndpointName{EmbeddingModelEndpointName: *w.EmbeddingModelEndpointName}
+	}
+	out.ModelEndpointNameForQuery = w.ModelEndpointNameForQuery
+	return out, nil
+}
+
+// EmbeddingSourceColumnFromSDK converts the sdk-go type to the mirror.
+func EmbeddingSourceColumnFromSDK(v *sdk.EmbeddingSourceColumn) (*EmbeddingSourceColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmbeddingSourceColumn{}
+	out.Name = v.Name
+	switch value := v.EmbeddingConfig.(type) {
+	case *sdk.EmbeddingSourceColumn_EmbeddingConfig_EmbeddingModelEndpointName:
+		if value != nil {
+			out.EmbeddingModelEndpointName = new(value.EmbeddingModelEndpointName)
+		}
+	}
+	out.ModelEndpointNameForQuery = v.ModelEndpointNameForQuery
+	return out, nil
+}
+
+// EmbeddingVectorColumnToSDK converts the mirror to the sdk-go type.
+func EmbeddingVectorColumnToSDK(w *EmbeddingVectorColumn) (*sdk.EmbeddingVectorColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmbeddingVectorColumn{}
+	out.Name = w.Name
+	out.EmbeddingDimension = w.EmbeddingDimension
+	return out, nil
+}
+
+// EmbeddingVectorColumnFromSDK converts the sdk-go type to the mirror.
+func EmbeddingVectorColumnFromSDK(v *sdk.EmbeddingVectorColumn) (*EmbeddingVectorColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmbeddingVectorColumn{}
+	out.Name = v.Name
+	out.EmbeddingDimension = v.EmbeddingDimension
+	return out, nil
+}
+
+// EndpointToSDK converts the mirror to the sdk-go type.
+func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Endpoint{}
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.EndpointType = w.EndpointType
+	out.LastUpdatedUser = w.LastUpdatedUser
+	out.Id = w.Id
+	conv19, err := EndpointStatusToSDK(w.EndpointStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
+	}
+	out.EndpointStatus = conv19
+	out.NumIndexes = w.NumIndexes
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	conv20, err := convertSlice(w.CustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
+	}
+	out.CustomTags = conv20
+	conv21, err := EndpointScalingInfoToSDK(w.ScalingInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
+	}
+	out.ScalingInfo = conv21
+	return out, nil
+}
+
+// EndpointFromSDK converts the sdk-go type to the mirror.
+func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Endpoint{}
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.EndpointType = v.EndpointType
+	out.LastUpdatedUser = v.LastUpdatedUser
+	out.Id = v.Id
+	conv22, err := EndpointStatusFromSDK(v.EndpointStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointStatus", err)
+	}
+	out.EndpointStatus = conv22
+	out.NumIndexes = v.NumIndexes
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	conv23, err := convertSlice(v.CustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.CustomTags", err)
+	}
+	out.CustomTags = conv23
+	conv24, err := EndpointScalingInfoFromSDK(v.ScalingInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.ScalingInfo", err)
+	}
+	out.ScalingInfo = conv24
+	return out, nil
+}
+
+// EndpointScalingInfoToSDK converts the mirror to the sdk-go type.
+func EndpointScalingInfoToSDK(w *EndpointScalingInfo) (*sdk.EndpointScalingInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointScalingInfo{}
+	out.State = w.State
+	out.RequestedTargetQps = w.RequestedTargetQps
+	return out, nil
+}
+
+// EndpointScalingInfoFromSDK converts the sdk-go type to the mirror.
+func EndpointScalingInfoFromSDK(v *sdk.EndpointScalingInfo) (*EndpointScalingInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointScalingInfo{}
+	out.State = v.State
+	out.RequestedTargetQps = v.RequestedTargetQps
+	return out, nil
+}
+
+// EndpointStatusToSDK converts the mirror to the sdk-go type.
+func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// EndpointStatusFromSDK converts the sdk-go type to the mirror.
+func EndpointStatusFromSDK(v *sdk.EndpointStatus) (*EndpointStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// FacetResultDataToSDK converts the mirror to the sdk-go type.
+func FacetResultDataToSDK(w *FacetResultData) (*sdk.FacetResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FacetResultData{}
+	out.FacetRowCount = w.FacetRowCount
+	out.FacetArray = w.FacetArray
+	return out, nil
+}
+
+// FacetResultDataFromSDK converts the sdk-go type to the mirror.
+func FacetResultDataFromSDK(v *sdk.FacetResultData) (*FacetResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FacetResultData{}
+	out.FacetRowCount = v.FacetRowCount
+	out.FacetArray = v.FacetArray
+	return out, nil
+}
+
+// GetVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func GetVectorIndexRequestToSDK(w *GetVectorIndexRequest) (*sdk.GetVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetVectorIndexRequest{}
+	out.Name = w.Name
+	out.EnsureRerankerCompatible = w.EnsureRerankerCompatible
+	return out, nil
+}
+
+// GetVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func GetVectorIndexRequestFromSDK(v *sdk.GetVectorIndexRequest) (*GetVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetVectorIndexRequest{}
+	out.Name = v.Name
+	out.EnsureRerankerCompatible = v.EnsureRerankerCompatible
+	return out, nil
+}
+
+// ListEndpointResponseToSDK converts the mirror to the sdk-go type.
+func ListEndpointResponseToSDK(w *ListEndpointResponse) (*sdk.ListEndpointResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointResponse{}
+	conv25, err := convertSlice(w.Endpoints, EndpointToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointResponse.Endpoints", err)
+	}
+	out.Endpoints = conv25
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListEndpointResponseFromSDK converts the sdk-go type to the mirror.
+func ListEndpointResponseFromSDK(v *sdk.ListEndpointResponse) (*ListEndpointResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointResponse{}
+	conv26, err := convertSlice(v.Endpoints, EndpointFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointResponse.Endpoints", err)
+	}
+	out.Endpoints = conv26
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListEndpointsRequestToSDK converts the mirror to the sdk-go type.
+func ListEndpointsRequestToSDK(w *ListEndpointsRequest) (*sdk.ListEndpointsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsRequest{}
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListEndpointsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsRequest{}
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListValueToSDK converts the mirror to the sdk-go type.
+func ListValueToSDK(w *ListValue) (*sdk.ListValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListValue{}
+	conv27, err := convertSlice(w.Values, ValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
+	}
+	out.Values = conv27
+	return out, nil
+}
+
+// ListValueFromSDK converts the sdk-go type to the mirror.
+func ListValueFromSDK(v *sdk.ListValue) (*ListValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListValue{}
+	conv28, err := convertSlice(v.Values, ValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
+	}
+	out.Values = conv28
+	return out, nil
+}
+
+// ListVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func ListVectorIndexRequestToSDK(w *ListVectorIndexRequest) (*sdk.ListVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVectorIndexRequest{}
+	out.EndpointName = w.EndpointName
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func ListVectorIndexRequestFromSDK(v *sdk.ListVectorIndexRequest) (*ListVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVectorIndexRequest{}
+	out.EndpointName = v.EndpointName
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListVectorIndexResponseToSDK converts the mirror to the sdk-go type.
+func ListVectorIndexResponseToSDK(w *ListVectorIndexResponse) (*sdk.ListVectorIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVectorIndexResponse{}
+	conv29, err := convertSlice(w.VectorIndexes, MiniVectorIndexToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVectorIndexResponse.VectorIndexes", err)
+	}
+	out.VectorIndexes = conv29
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListVectorIndexResponseFromSDK converts the sdk-go type to the mirror.
+func ListVectorIndexResponseFromSDK(v *sdk.ListVectorIndexResponse) (*ListVectorIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVectorIndexResponse{}
+	conv30, err := convertSlice(v.VectorIndexes, MiniVectorIndexFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVectorIndexResponse.VectorIndexes", err)
+	}
+	out.VectorIndexes = conv30
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MapStringValueEntryToSDK converts the mirror to the sdk-go type.
+func MapStringValueEntryToSDK(w *MapStringValueEntry) (*sdk.MapStringValueEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MapStringValueEntry{}
+	out.Key = w.Key
+	conv31, err := ValueToSDK(w.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
+	}
+	out.Value = conv31
+	return out, nil
+}
+
+// MapStringValueEntryFromSDK converts the sdk-go type to the mirror.
+func MapStringValueEntryFromSDK(v *sdk.MapStringValueEntry) (*MapStringValueEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MapStringValueEntry{}
+	out.Key = v.Key
+	conv32, err := ValueFromSDK(v.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
+	}
+	out.Value = conv32
+	return out, nil
+}
+
+// MetricToSDK converts the mirror to the sdk-go type.
+func MetricToSDK(w *Metric) (*sdk.Metric, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Metric{}
+	out.Name = w.Name
+	conv33, err := convertSlice(w.Labels, MetricLabelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Metric.Labels", err)
+	}
+	out.Labels = conv33
+	out.Percentile = w.Percentile
+	return out, nil
+}
+
+// MetricFromSDK converts the sdk-go type to the mirror.
+func MetricFromSDK(v *sdk.Metric) (*Metric, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Metric{}
+	out.Name = v.Name
+	conv34, err := convertSlice(v.Labels, MetricLabelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Metric.Labels", err)
+	}
+	out.Labels = conv34
+	out.Percentile = v.Percentile
+	return out, nil
+}
+
+// MetricLabelToSDK converts the mirror to the sdk-go type.
+func MetricLabelToSDK(w *MetricLabel) (*sdk.MetricLabel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetricLabel{}
+	out.Name = w.Name
+	out.Value = w.Value
+	return out, nil
+}
+
+// MetricLabelFromSDK converts the sdk-go type to the mirror.
+func MetricLabelFromSDK(v *sdk.MetricLabel) (*MetricLabel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetricLabel{}
+	out.Name = v.Name
+	out.Value = v.Value
+	return out, nil
+}
+
+// MetricValueToSDK converts the mirror to the sdk-go type.
+func MetricValueToSDK(w *MetricValue) (*sdk.MetricValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetricValue{}
+	out.Timestamp = w.Timestamp
+	out.Value = w.Value
+	return out, nil
+}
+
+// MetricValueFromSDK converts the sdk-go type to the mirror.
+func MetricValueFromSDK(v *sdk.MetricValue) (*MetricValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetricValue{}
+	out.Timestamp = v.Timestamp
+	out.Value = v.Value
+	return out, nil
+}
+
+// MetricValuesToSDK converts the mirror to the sdk-go type.
+func MetricValuesToSDK(w *MetricValues) (*sdk.MetricValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetricValues{}
+	conv35, err := MetricToSDK(w.Metric)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetricValues.Metric", err)
+	}
+	out.Metric = conv35
+	conv36, err := convertSlice(w.Values, MetricValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetricValues.Values", err)
+	}
+	out.Values = conv36
+	return out, nil
+}
+
+// MetricValuesFromSDK converts the sdk-go type to the mirror.
+func MetricValuesFromSDK(v *sdk.MetricValues) (*MetricValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetricValues{}
+	conv37, err := MetricFromSDK(v.Metric)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetricValues.Metric", err)
+	}
+	out.Metric = conv37
+	conv38, err := convertSlice(v.Values, MetricValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetricValues.Values", err)
+	}
+	out.Values = conv38
+	return out, nil
+}
+
+// MiniVectorIndexToSDK converts the mirror to the sdk-go type.
+func MiniVectorIndexToSDK(w *MiniVectorIndex) (*sdk.MiniVectorIndex, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MiniVectorIndex{}
+	out.Name = w.Name
+	out.EndpointName = w.EndpointName
+	out.PrimaryKey = w.PrimaryKey
+	out.IndexType = w.IndexType
+	{
+		members := 0
+		if w.DirectAccessIndexSpec != nil {
+			members++
+		}
+		if w.DeltaSyncIndexSpec != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "MiniVectorIndex.IndexSpec")
+		}
+	}
+	switch {
+	case w.DirectAccessIndexSpec != nil:
+		conv39, err := DirectAccessVectorIndexSpecToSDK(w.DirectAccessIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.MiniVectorIndex_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *conv39}
+	case w.DeltaSyncIndexSpec != nil:
+		conv40, err := DeltaSyncVectorIndexSpecToSDK(w.DeltaSyncIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.MiniVectorIndex_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *conv40}
+	}
+	conv41, err := VectorIndexStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.Status", err)
+	}
+	out.Status = conv41
+	out.Creator = w.Creator
+	out.IndexSubtype = w.IndexSubtype
+	out.EndpointId = w.EndpointId
+	return out, nil
+}
+
+// MiniVectorIndexFromSDK converts the sdk-go type to the mirror.
+func MiniVectorIndexFromSDK(v *sdk.MiniVectorIndex) (*MiniVectorIndex, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MiniVectorIndex{}
+	out.Name = v.Name
+	out.EndpointName = v.EndpointName
+	out.PrimaryKey = v.PrimaryKey
+	out.IndexType = v.IndexType
+	switch value := v.IndexSpec.(type) {
+	case *sdk.MiniVectorIndex_IndexSpec_DirectAccessIndexSpec:
+		if value != nil {
+			conv42, err := DirectAccessVectorIndexSpecFromSDK(&value.DirectAccessIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec", err)
+			}
+			out.DirectAccessIndexSpec = conv42
+		}
+	case *sdk.MiniVectorIndex_IndexSpec_DeltaSyncIndexSpec:
+		if value != nil {
+			conv43, err := DeltaSyncVectorIndexSpecFromSDK(&value.DeltaSyncIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.IndexSpec", err)
+			}
+			out.DeltaSyncIndexSpec = conv43
+		}
+	}
+	conv44, err := VectorIndexStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MiniVectorIndex.Status", err)
+	}
+	out.Status = conv44
+	out.Creator = v.Creator
+	out.IndexSubtype = v.IndexSubtype
+	out.EndpointId = v.EndpointId
+	return out, nil
+}
+
+// PatchEndpointBudgetPolicyRequestToSDK converts the mirror to the sdk-go type.
+func PatchEndpointBudgetPolicyRequestToSDK(w *PatchEndpointBudgetPolicyRequest) (*sdk.PatchEndpointBudgetPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchEndpointBudgetPolicyRequest{}
+	out.Name = w.Name
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// PatchEndpointBudgetPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func PatchEndpointBudgetPolicyRequestFromSDK(v *sdk.PatchEndpointBudgetPolicyRequest) (*PatchEndpointBudgetPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchEndpointBudgetPolicyRequest{}
+	out.Name = v.Name
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// PatchEndpointBudgetPolicyResponseToSDK converts the mirror to the sdk-go type.
+func PatchEndpointBudgetPolicyResponseToSDK(w *PatchEndpointBudgetPolicyResponse) (*sdk.PatchEndpointBudgetPolicyResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchEndpointBudgetPolicyResponse{}
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	return out, nil
+}
+
+// PatchEndpointBudgetPolicyResponseFromSDK converts the sdk-go type to the mirror.
+func PatchEndpointBudgetPolicyResponseFromSDK(v *sdk.PatchEndpointBudgetPolicyResponse) (*PatchEndpointBudgetPolicyResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchEndpointBudgetPolicyResponse{}
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	return out, nil
+}
+
+// PatchEndpointRequestToSDK converts the mirror to the sdk-go type.
+func PatchEndpointRequestToSDK(w *PatchEndpointRequest) (*sdk.PatchEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchEndpointRequest{}
+	out.Name = w.Name
+	out.TargetQps = w.TargetQps
+	return out, nil
+}
+
+// PatchEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func PatchEndpointRequestFromSDK(v *sdk.PatchEndpointRequest) (*PatchEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchEndpointRequest{}
+	out.Name = v.Name
+	out.TargetQps = v.TargetQps
+	return out, nil
+}
+
+// QueryVectorIndexNextPageRequestToSDK converts the mirror to the sdk-go type.
+func QueryVectorIndexNextPageRequestToSDK(w *QueryVectorIndexNextPageRequest) (*sdk.QueryVectorIndexNextPageRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryVectorIndexNextPageRequest{}
+	out.Name = w.Name
+	out.EndpointName = w.EndpointName
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// QueryVectorIndexNextPageRequestFromSDK converts the sdk-go type to the mirror.
+func QueryVectorIndexNextPageRequestFromSDK(v *sdk.QueryVectorIndexNextPageRequest) (*QueryVectorIndexNextPageRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryVectorIndexNextPageRequest{}
+	out.Name = v.Name
+	out.EndpointName = v.EndpointName
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// QueryVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func QueryVectorIndexRequestToSDK(w *QueryVectorIndexRequest) (*sdk.QueryVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryVectorIndexRequest{}
+	out.Name = w.Name
+	out.NumResults = w.NumResults
+	out.Columns = w.Columns
+	out.FiltersJson = w.FiltersJson
+	out.QueryVector = w.QueryVector
+	out.QueryText = w.QueryText
+	out.ScoreThreshold = w.ScoreThreshold
+	out.QueryType = w.QueryType
+	out.ColumnsToRerank = w.ColumnsToRerank
+	conv45, err := RerankerConfigToSDK(w.Reranker)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexRequest.Reranker", err)
+	}
+	out.Reranker = conv45
+	out.QueryColumns = w.QueryColumns
+	out.SortColumns = w.SortColumns
+	out.Facets = w.Facets
+	return out, nil
+}
+
+// QueryVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func QueryVectorIndexRequestFromSDK(v *sdk.QueryVectorIndexRequest) (*QueryVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryVectorIndexRequest{}
+	out.Name = v.Name
+	out.NumResults = v.NumResults
+	out.Columns = v.Columns
+	out.FiltersJson = v.FiltersJson
+	out.QueryVector = v.QueryVector
+	out.QueryText = v.QueryText
+	out.ScoreThreshold = v.ScoreThreshold
+	out.QueryType = v.QueryType
+	out.ColumnsToRerank = v.ColumnsToRerank
+	conv46, err := RerankerConfigFromSDK(v.Reranker)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexRequest.Reranker", err)
+	}
+	out.Reranker = conv46
+	out.QueryColumns = v.QueryColumns
+	out.SortColumns = v.SortColumns
+	out.Facets = v.Facets
+	return out, nil
+}
+
+// QueryVectorIndexResponseToSDK converts the mirror to the sdk-go type.
+func QueryVectorIndexResponseToSDK(w *QueryVectorIndexResponse) (*sdk.QueryVectorIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryVectorIndexResponse{}
+	conv47, err := ResultManifestToSDK(w.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Manifest", err)
+	}
+	out.Manifest = conv47
+	conv48, err := ResultDataToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Result", err)
+	}
+	out.Result = conv48
+	out.NextPageToken = w.NextPageToken
+	conv49, err := FacetResultDataToSDK(w.FacetResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.FacetResult", err)
+	}
+	out.FacetResult = conv49
+	return out, nil
+}
+
+// QueryVectorIndexResponseFromSDK converts the sdk-go type to the mirror.
+func QueryVectorIndexResponseFromSDK(v *sdk.QueryVectorIndexResponse) (*QueryVectorIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryVectorIndexResponse{}
+	conv50, err := ResultManifestFromSDK(v.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Manifest", err)
+	}
+	out.Manifest = conv50
+	conv51, err := ResultDataFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.Result", err)
+	}
+	out.Result = conv51
+	out.NextPageToken = v.NextPageToken
+	conv52, err := FacetResultDataFromSDK(v.FacetResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryVectorIndexResponse.FacetResult", err)
+	}
+	out.FacetResult = conv52
+	return out, nil
+}
+
+// RerankerConfigToSDK converts the mirror to the sdk-go type.
+func RerankerConfigToSDK(w *RerankerConfig) (*sdk.RerankerConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RerankerConfig{}
+	out.Model = w.Model
+	conv53, err := RerankerConfig_RerankerParametersToSDK(w.Parameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
+	}
+	out.Parameters = conv53
+	return out, nil
+}
+
+// RerankerConfigFromSDK converts the sdk-go type to the mirror.
+func RerankerConfigFromSDK(v *sdk.RerankerConfig) (*RerankerConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RerankerConfig{}
+	out.Model = v.Model
+	conv54, err := RerankerConfig_RerankerParametersFromSDK(v.Parameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RerankerConfig.Parameters", err)
+	}
+	out.Parameters = conv54
+	return out, nil
+}
+
+// RerankerConfig_RerankerParametersToSDK converts the mirror to the sdk-go type.
+func RerankerConfig_RerankerParametersToSDK(w *RerankerConfig_RerankerParameters) (*sdk.RerankerConfig_RerankerParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RerankerConfig_RerankerParameters{}
+	out.ColumnsToRerank = w.ColumnsToRerank
+	return out, nil
+}
+
+// RerankerConfig_RerankerParametersFromSDK converts the sdk-go type to the mirror.
+func RerankerConfig_RerankerParametersFromSDK(v *sdk.RerankerConfig_RerankerParameters) (*RerankerConfig_RerankerParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RerankerConfig_RerankerParameters{}
+	out.ColumnsToRerank = v.ColumnsToRerank
+	return out, nil
+}
+
+// ResultDataToSDK converts the mirror to the sdk-go type.
+func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultData{}
+	out.RowCount = w.RowCount
+	out.DataArray = w.DataArray
+	return out, nil
+}
+
+// ResultDataFromSDK converts the sdk-go type to the mirror.
+func ResultDataFromSDK(v *sdk.ResultData) (*ResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultData{}
+	out.RowCount = v.RowCount
+	out.DataArray = v.DataArray
+	return out, nil
+}
+
+// ResultManifestToSDK converts the mirror to the sdk-go type.
+func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultManifest{}
+	out.ColumnCount = w.ColumnCount
+	conv55, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
+	}
+	out.Columns = conv55
+	out.FacetColumnCount = w.FacetColumnCount
+	conv56, err := convertSlice(w.FacetColumns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
+	}
+	out.FacetColumns = conv56
+	return out, nil
+}
+
+// ResultManifestFromSDK converts the sdk-go type to the mirror.
+func ResultManifestFromSDK(v *sdk.ResultManifest) (*ResultManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultManifest{}
+	out.ColumnCount = v.ColumnCount
+	conv57, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Columns", err)
+	}
+	out.Columns = conv57
+	out.FacetColumnCount = v.FacetColumnCount
+	conv58, err := convertSlice(v.FacetColumns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.FacetColumns", err)
+	}
+	out.FacetColumns = conv58
+	return out, nil
+}
+
+// RetrieveUserVisibleMetricsRequestToSDK converts the mirror to the sdk-go type.
+func RetrieveUserVisibleMetricsRequestToSDK(w *RetrieveUserVisibleMetricsRequest) (*sdk.RetrieveUserVisibleMetricsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RetrieveUserVisibleMetricsRequest{}
+	out.Name = w.Name
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	out.GranularityInSeconds = w.GranularityInSeconds
+	conv59, err := convertSlice(w.Metrics, MetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsRequest.Metrics", err)
+	}
+	out.Metrics = conv59
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// RetrieveUserVisibleMetricsRequestFromSDK converts the sdk-go type to the mirror.
+func RetrieveUserVisibleMetricsRequestFromSDK(v *sdk.RetrieveUserVisibleMetricsRequest) (*RetrieveUserVisibleMetricsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RetrieveUserVisibleMetricsRequest{}
+	out.Name = v.Name
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	out.GranularityInSeconds = v.GranularityInSeconds
+	conv60, err := convertSlice(v.Metrics, MetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsRequest.Metrics", err)
+	}
+	out.Metrics = conv60
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// RetrieveUserVisibleMetricsResponseToSDK converts the mirror to the sdk-go type.
+func RetrieveUserVisibleMetricsResponseToSDK(w *RetrieveUserVisibleMetricsResponse) (*sdk.RetrieveUserVisibleMetricsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RetrieveUserVisibleMetricsResponse{}
+	conv61, err := convertSlice(w.MetricValues, MetricValuesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsResponse.MetricValues", err)
+	}
+	out.MetricValues = conv61
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// RetrieveUserVisibleMetricsResponseFromSDK converts the sdk-go type to the mirror.
+func RetrieveUserVisibleMetricsResponseFromSDK(v *sdk.RetrieveUserVisibleMetricsResponse) (*RetrieveUserVisibleMetricsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RetrieveUserVisibleMetricsResponse{}
+	conv62, err := convertSlice(v.MetricValues, MetricValuesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RetrieveUserVisibleMetricsResponse.MetricValues", err)
+	}
+	out.MetricValues = conv62
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ScanVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func ScanVectorIndexRequestToSDK(w *ScanVectorIndexRequest) (*sdk.ScanVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScanVectorIndexRequest{}
+	out.Name = w.Name
+	out.NumResults = w.NumResults
+	out.LastPrimaryKey = w.LastPrimaryKey
+	return out, nil
+}
+
+// ScanVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func ScanVectorIndexRequestFromSDK(v *sdk.ScanVectorIndexRequest) (*ScanVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScanVectorIndexRequest{}
+	out.Name = v.Name
+	out.NumResults = v.NumResults
+	out.LastPrimaryKey = v.LastPrimaryKey
+	return out, nil
+}
+
+// ScanVectorIndexResponseToSDK converts the mirror to the sdk-go type.
+func ScanVectorIndexResponseToSDK(w *ScanVectorIndexResponse) (*sdk.ScanVectorIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScanVectorIndexResponse{}
+	conv63, err := convertSlice(w.Data, StructToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ScanVectorIndexResponse.Data", err)
+	}
+	out.Data = conv63
+	out.LastPrimaryKey = w.LastPrimaryKey
+	return out, nil
+}
+
+// ScanVectorIndexResponseFromSDK converts the sdk-go type to the mirror.
+func ScanVectorIndexResponseFromSDK(v *sdk.ScanVectorIndexResponse) (*ScanVectorIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScanVectorIndexResponse{}
+	conv64, err := convertSlice(v.Data, StructFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ScanVectorIndexResponse.Data", err)
+	}
+	out.Data = conv64
+	out.LastPrimaryKey = v.LastPrimaryKey
+	return out, nil
+}
+
+// StructToSDK converts the mirror to the sdk-go type.
+func StructToSDK(w *Struct) (*sdk.Struct, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Struct{}
+	conv65, err := convertSlice(w.Fields, MapStringValueEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
+	}
+	out.Fields = conv65
+	return out, nil
+}
+
+// StructFromSDK converts the sdk-go type to the mirror.
+func StructFromSDK(v *sdk.Struct) (*Struct, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Struct{}
+	conv66, err := convertSlice(v.Fields, MapStringValueEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
+	}
+	out.Fields = conv66
+	return out, nil
+}
+
+// SyncVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func SyncVectorIndexRequestToSDK(w *SyncVectorIndexRequest) (*sdk.SyncVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncVectorIndexRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// SyncVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func SyncVectorIndexRequestFromSDK(v *sdk.SyncVectorIndexRequest) (*SyncVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncVectorIndexRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateEndpointCustomTagsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateEndpointCustomTagsRequestToSDK(w *UpdateEndpointCustomTagsRequest) (*sdk.UpdateEndpointCustomTagsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateEndpointCustomTagsRequest{}
+	out.Name = w.Name
+	conv67, err := convertSlice(w.CustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsRequest.CustomTags", err)
+	}
+	out.CustomTags = conv67
+	return out, nil
+}
+
+// UpdateEndpointCustomTagsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateEndpointCustomTagsRequestFromSDK(v *sdk.UpdateEndpointCustomTagsRequest) (*UpdateEndpointCustomTagsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateEndpointCustomTagsRequest{}
+	out.Name = v.Name
+	conv68, err := convertSlice(v.CustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsRequest.CustomTags", err)
+	}
+	out.CustomTags = conv68
+	return out, nil
+}
+
+// UpdateEndpointCustomTagsResponseToSDK converts the mirror to the sdk-go type.
+func UpdateEndpointCustomTagsResponseToSDK(w *UpdateEndpointCustomTagsResponse) (*sdk.UpdateEndpointCustomTagsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateEndpointCustomTagsResponse{}
+	out.Name = w.Name
+	conv69, err := convertSlice(w.CustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsResponse.CustomTags", err)
+	}
+	out.CustomTags = conv69
+	return out, nil
+}
+
+// UpdateEndpointCustomTagsResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateEndpointCustomTagsResponseFromSDK(v *sdk.UpdateEndpointCustomTagsResponse) (*UpdateEndpointCustomTagsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateEndpointCustomTagsResponse{}
+	out.Name = v.Name
+	conv70, err := convertSlice(v.CustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointCustomTagsResponse.CustomTags", err)
+	}
+	out.CustomTags = conv70
+	return out, nil
+}
+
+// UpsertDataVectorIndexRequestToSDK converts the mirror to the sdk-go type.
+func UpsertDataVectorIndexRequestToSDK(w *UpsertDataVectorIndexRequest) (*sdk.UpsertDataVectorIndexRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpsertDataVectorIndexRequest{}
+	out.Name = w.Name
+	out.InputsJson = w.InputsJson
+	return out, nil
+}
+
+// UpsertDataVectorIndexRequestFromSDK converts the sdk-go type to the mirror.
+func UpsertDataVectorIndexRequestFromSDK(v *sdk.UpsertDataVectorIndexRequest) (*UpsertDataVectorIndexRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpsertDataVectorIndexRequest{}
+	out.Name = v.Name
+	out.InputsJson = v.InputsJson
+	return out, nil
+}
+
+// UpsertDataVectorIndexResponseToSDK converts the mirror to the sdk-go type.
+func UpsertDataVectorIndexResponseToSDK(w *UpsertDataVectorIndexResponse) (*sdk.UpsertDataVectorIndexResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpsertDataVectorIndexResponse{}
+	out.Status = w.Status
+	conv71, err := UpsertDeleteDataResultToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpsertDataVectorIndexResponse.Result", err)
+	}
+	out.Result = conv71
+	return out, nil
+}
+
+// UpsertDataVectorIndexResponseFromSDK converts the sdk-go type to the mirror.
+func UpsertDataVectorIndexResponseFromSDK(v *sdk.UpsertDataVectorIndexResponse) (*UpsertDataVectorIndexResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpsertDataVectorIndexResponse{}
+	out.Status = v.Status
+	conv72, err := UpsertDeleteDataResultFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpsertDataVectorIndexResponse.Result", err)
+	}
+	out.Result = conv72
+	return out, nil
+}
+
+// UpsertDeleteDataResultToSDK converts the mirror to the sdk-go type.
+func UpsertDeleteDataResultToSDK(w *UpsertDeleteDataResult) (*sdk.UpsertDeleteDataResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpsertDeleteDataResult{}
+	out.SuccessRowCount = w.SuccessRowCount
+	out.FailedPrimaryKeys = w.FailedPrimaryKeys
+	return out, nil
+}
+
+// UpsertDeleteDataResultFromSDK converts the sdk-go type to the mirror.
+func UpsertDeleteDataResultFromSDK(v *sdk.UpsertDeleteDataResult) (*UpsertDeleteDataResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpsertDeleteDataResult{}
+	out.SuccessRowCount = v.SuccessRowCount
+	out.FailedPrimaryKeys = v.FailedPrimaryKeys
+	return out, nil
+}
+
+// ValueToSDK converts the mirror to the sdk-go type.
+func ValueToSDK(w *Value) (*sdk.Value, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Value{}
+	{
+		members := 0
+		if w.NumberValue != nil {
+			members++
+		}
+		if w.StringValue != nil {
+			members++
+		}
+		if w.BoolValue != nil {
+			members++
+		}
+		if w.StructValue != nil {
+			members++
+		}
+		if w.ListValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
+		}
+	}
+	switch {
+	case w.NumberValue != nil:
+		out.Kind = &sdk.Value_Kind_NumberValue{NumberValue: *w.NumberValue}
+	case w.StringValue != nil:
+		out.Kind = &sdk.Value_Kind_StringValue{StringValue: *w.StringValue}
+	case w.BoolValue != nil:
+		out.Kind = &sdk.Value_Kind_BoolValue{BoolValue: *w.BoolValue}
+	case w.StructValue != nil:
+		conv73, err := StructToSDK(w.StructValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+		}
+		out.Kind = &sdk.Value_Kind_StructValue{StructValue: *conv73}
+	case w.ListValue != nil:
+		conv74, err := ListValueToSDK(w.ListValue)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+		}
+		out.Kind = &sdk.Value_Kind_ListValue{ListValue: *conv74}
+	}
+	return out, nil
+}
+
+// ValueFromSDK converts the sdk-go type to the mirror.
+func ValueFromSDK(v *sdk.Value) (*Value, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Value{}
+	switch value := v.Kind.(type) {
+	case *sdk.Value_Kind_NumberValue:
+		if value != nil {
+			out.NumberValue = new(value.NumberValue)
+		}
+	case *sdk.Value_Kind_StringValue:
+		if value != nil {
+			out.StringValue = new(value.StringValue)
+		}
+	case *sdk.Value_Kind_BoolValue:
+		if value != nil {
+			out.BoolValue = new(value.BoolValue)
+		}
+	case *sdk.Value_Kind_StructValue:
+		if value != nil {
+			conv75, err := StructFromSDK(&value.StructValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+			}
+			out.StructValue = conv75
+		}
+	case *sdk.Value_Kind_ListValue:
+		if value != nil {
+			conv76, err := ListValueFromSDK(&value.ListValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+			}
+			out.ListValue = conv76
+		}
+	}
+	return out, nil
+}
+
+// VectorIndexToSDK converts the mirror to the sdk-go type.
+func VectorIndexToSDK(w *VectorIndex) (*sdk.VectorIndex, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.VectorIndex{}
+	out.Name = w.Name
+	out.EndpointName = w.EndpointName
+	out.PrimaryKey = w.PrimaryKey
+	out.IndexType = w.IndexType
+	{
+		members := 0
+		if w.DirectAccessIndexSpec != nil {
+			members++
+		}
+		if w.DeltaSyncIndexSpec != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "VectorIndex.IndexSpec")
+		}
+	}
+	switch {
+	case w.DirectAccessIndexSpec != nil:
+		conv77, err := DirectAccessVectorIndexSpecToSDK(w.DirectAccessIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.VectorIndex_IndexSpec_DirectAccessIndexSpec{DirectAccessIndexSpec: *conv77}
+	case w.DeltaSyncIndexSpec != nil:
+		conv78, err := DeltaSyncVectorIndexSpecToSDK(w.DeltaSyncIndexSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec", err)
+		}
+		out.IndexSpec = &sdk.VectorIndex_IndexSpec_DeltaSyncIndexSpec{DeltaSyncIndexSpec: *conv78}
+	}
+	conv79, err := VectorIndexStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "VectorIndex.Status", err)
+	}
+	out.Status = conv79
+	out.Creator = w.Creator
+	out.IndexSubtype = w.IndexSubtype
+	out.EndpointId = w.EndpointId
+	return out, nil
+}
+
+// VectorIndexFromSDK converts the sdk-go type to the mirror.
+func VectorIndexFromSDK(v *sdk.VectorIndex) (*VectorIndex, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VectorIndex{}
+	out.Name = v.Name
+	out.EndpointName = v.EndpointName
+	out.PrimaryKey = v.PrimaryKey
+	out.IndexType = v.IndexType
+	switch value := v.IndexSpec.(type) {
+	case *sdk.VectorIndex_IndexSpec_DirectAccessIndexSpec:
+		if value != nil {
+			conv80, err := DirectAccessVectorIndexSpecFromSDK(&value.DirectAccessIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec", err)
+			}
+			out.DirectAccessIndexSpec = conv80
+		}
+	case *sdk.VectorIndex_IndexSpec_DeltaSyncIndexSpec:
+		if value != nil {
+			conv81, err := DeltaSyncVectorIndexSpecFromSDK(&value.DeltaSyncIndexSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "VectorIndex.IndexSpec", err)
+			}
+			out.DeltaSyncIndexSpec = conv81
+		}
+	}
+	conv82, err := VectorIndexStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "VectorIndex.Status", err)
+	}
+	out.Status = conv82
+	out.Creator = v.Creator
+	out.IndexSubtype = v.IndexSubtype
+	out.EndpointId = v.EndpointId
+	return out, nil
+}
+
+// VectorIndexStatusToSDK converts the mirror to the sdk-go type.
 func VectorIndexStatusToSDK(w *VectorIndexStatus) (*sdk.VectorIndexStatus, error) {
 	if w == nil {
 		return nil, nil
 	}
-	indexedRowCountPublicValue, err := int64FromWire(w.IndexedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "VectorIndexStatus.IndexedRowCount", err)
+	out := &sdk.VectorIndexStatus{}
+	out.Message = w.Message
+	out.IndexedRowCount = w.IndexedRowCount
+	out.Ready = w.Ready
+	out.IndexUrl = w.IndexUrl
+	return out, nil
+}
+
+// VectorIndexStatusFromSDK converts the sdk-go type to the mirror.
+func VectorIndexStatusFromSDK(v *sdk.VectorIndexStatus) (*VectorIndexStatus, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return &sdk.VectorIndexStatus{
-		Message:         w.Message,
-		IndexedRowCount: indexedRowCountPublicValue,
-		Ready:           w.Ready,
-		IndexUrl:        w.IndexUrl,
-	}, nil
+	out := &VectorIndexStatus{}
+	out.Message = v.Message
+	out.IndexedRowCount = v.IndexedRowCount
+	out.Ready = v.Ready
+	out.IndexUrl = v.IndexUrl
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

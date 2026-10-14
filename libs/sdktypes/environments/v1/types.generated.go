@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/environments/v1"
+	strings "strings"
 )
 
 type (
@@ -109,32 +110,12 @@ const (
 	WorkspaceBaseEnvironmentCache_Status_Refreshing  = sdk.WorkspaceBaseEnvironmentCache_Status_Refreshing
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
 	Details    []json.RawMessage `json:"details,omitempty"`
-}
-
-func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiError{
-		ErrorCode:  w.ErrorCode,
-		Message:    w.Message,
-		StackTrace: w.StackTrace,
-		Details:    w.Details,
-	}, nil
 }
 
 // Request message for CreateWorkspaceBaseEnvironment..
@@ -148,21 +129,6 @@ type CreateWorkspaceBaseEnvironmentRequest struct {
 	// A unique identifier for this request. A random UUID is recommended. This
 	// request is only idempotent if a request_id is provided.
 	RequestId *string `json:"request_id,omitempty"`
-}
-
-func CreateWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.CreateWorkspaceBaseEnvironmentRequest) (*CreateWorkspaceBaseEnvironmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceBaseEnvironmentWireValue, err := WorkspaceBaseEnvironmentFromSDK(v.WorkspaceBaseEnvironment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
-	}
-	return &CreateWorkspaceBaseEnvironmentRequest{
-		WorkspaceBaseEnvironment:   workspaceBaseEnvironmentWireValue,
-		WorkspaceBaseEnvironmentId: v.WorkspaceBaseEnvironmentId,
-		RequestId:                  v.RequestId,
-	}, nil
 }
 
 // A singleton resource representing the default workspace base environment
@@ -181,28 +147,6 @@ type DefaultWorkspaceBaseEnvironment struct {
 	GpuWorkspaceBaseEnvironment *string `json:"gpu_workspace_base_environment,omitempty"`
 }
 
-func DefaultWorkspaceBaseEnvironmentFromSDK(v *sdk.DefaultWorkspaceBaseEnvironment) (*DefaultWorkspaceBaseEnvironment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DefaultWorkspaceBaseEnvironment{
-		Name:                        v.Name,
-		CpuWorkspaceBaseEnvironment: v.CpuWorkspaceBaseEnvironment,
-		GpuWorkspaceBaseEnvironment: v.GpuWorkspaceBaseEnvironment,
-	}, nil
-}
-
-func DefaultWorkspaceBaseEnvironmentToSDK(w *DefaultWorkspaceBaseEnvironment) (*sdk.DefaultWorkspaceBaseEnvironment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DefaultWorkspaceBaseEnvironment{
-		Name:                        w.Name,
-		CpuWorkspaceBaseEnvironment: w.CpuWorkspaceBaseEnvironment,
-		GpuWorkspaceBaseEnvironment: w.GpuWorkspaceBaseEnvironment,
-	}, nil
-}
-
 // Environment specification for a WorkspaceBaseEnvironment. Contains the
 // environment version and dependencies configuration..
 type EnvironmentSpec struct {
@@ -218,26 +162,6 @@ type EnvironmentSpec struct {
 	EnvironmentVersion *string `json:"environment_version,omitempty"`
 }
 
-func EnvironmentSpecFromSDK(v *sdk.EnvironmentSpec) (*EnvironmentSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EnvironmentSpec{
-		Dependencies:       v.Dependencies,
-		EnvironmentVersion: v.EnvironmentVersion,
-	}, nil
-}
-
-func EnvironmentSpecToSDK(w *EnvironmentSpec) (*sdk.EnvironmentSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EnvironmentSpec{
-		Dependencies:       w.Dependencies,
-		EnvironmentVersion: w.EnvironmentVersion,
-	}, nil
-}
-
 // Request message for ListWorkspaceBaseEnvironments..
 type ListWorkspaceBaseEnvironmentsRequest struct {
 	// The maximum number of environments to return per page. Default is 1000.
@@ -247,16 +171,6 @@ type ListWorkspaceBaseEnvironmentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListWorkspaceBaseEnvironmentsRequestFromSDK(v *sdk.ListWorkspaceBaseEnvironmentsRequest) (*ListWorkspaceBaseEnvironmentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListWorkspaceBaseEnvironmentsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response message for ListWorkspaceBaseEnvironments..
 type ListWorkspaceBaseEnvironmentsResponse struct {
 	// The list of workspace base environments.
@@ -264,20 +178,6 @@ type ListWorkspaceBaseEnvironmentsResponse struct {
 	// Token to retrieve the next page of results. Empty if there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListWorkspaceBaseEnvironmentsResponseToSDK(w *ListWorkspaceBaseEnvironmentsResponse) (*sdk.ListWorkspaceBaseEnvironmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceBaseEnvironmentsPublicValue, err := convertSlice(w.WorkspaceBaseEnvironments, WorkspaceBaseEnvironmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWorkspaceBaseEnvironmentsResponse.WorkspaceBaseEnvironments", err)
-	}
-	return &sdk.ListWorkspaceBaseEnvironmentsResponse{
-		WorkspaceBaseEnvironments: workspaceBaseEnvironmentsPublicValue,
-		NextPageToken:             w.NextPageToken,
-	}, nil
 }
 
 // This resource represents a long-running operation that is the result of a
@@ -299,53 +199,11 @@ type Operation struct {
 	Response json.RawMessage `json:"response,omitempty"`
 }
 
-func OperationToSDK(w *Operation) (*sdk.Operation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultMembers := 0
-	if w.Error != nil {
-		resultMembers++
-	}
-	if w.Response != nil {
-		resultMembers++
-	}
-	if resultMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
-	}
-	resultSelection := (&sdk.Operation{}).Result
-	switch {
-	case w.Error != nil:
-		resultErrorConverted, err := ApiErrorToSDK(w.Error)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Operation.Result.Error", err)
-		}
-		resultSelection = &sdk.Operation_Result_Error{Error: *resultErrorConverted}
-	case w.Response != nil:
-		resultSelection = &sdk.Operation_Result_Response{Response: w.Response}
-	}
-	return &sdk.Operation{
-		Name:     w.Name,
-		Metadata: w.Metadata,
-		Done:     w.Done,
-		Result:   resultSelection,
-	}, nil
-}
-
 // Request message for RefreshWorkspaceBaseEnvironments..
 type RefreshWorkspaceBaseEnvironmentRequest struct {
 	// Required. The resource name of the workspace base environment to delete.
 	// Format: workspace-base-environments/{workspace_base_environment}
 	Name *string `json:"name,omitempty"`
-}
-
-func RefreshWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.RefreshWorkspaceBaseEnvironmentRequest) (*RefreshWorkspaceBaseEnvironmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RefreshWorkspaceBaseEnvironmentRequest{
-		Name: v.Name,
-	}, nil
 }
 
 // Request message for UpdateDefaultWorkspaceBaseEnvironment..
@@ -363,40 +221,12 @@ type UpdateDefaultWorkspaceBaseEnvironmentRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateDefaultWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.UpdateDefaultWorkspaceBaseEnvironmentRequest) (*UpdateDefaultWorkspaceBaseEnvironmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultWorkspaceBaseEnvironmentWireValue, err := DefaultWorkspaceBaseEnvironmentFromSDK(v.DefaultWorkspaceBaseEnvironment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWorkspaceBaseEnvironmentRequest.DefaultWorkspaceBaseEnvironment", err)
-	}
-	return &UpdateDefaultWorkspaceBaseEnvironmentRequest{
-		DefaultWorkspaceBaseEnvironment: defaultWorkspaceBaseEnvironmentWireValue,
-		UpdateMask:                      fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Request message for UpdateWorkspaceBaseEnvironment..
 type UpdateWorkspaceBaseEnvironmentRequest struct {
 	Name *string `json:"name,omitempty"`
 	// Required. The workspace base environment with updated fields. The name field
 	// is used to identify the environment to update.
 	WorkspaceBaseEnvironment *WorkspaceBaseEnvironment `json:"workspace_base_environment,omitempty"`
-}
-
-func UpdateWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.UpdateWorkspaceBaseEnvironmentRequest) (*UpdateWorkspaceBaseEnvironmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceBaseEnvironmentWireValue, err := WorkspaceBaseEnvironmentFromSDK(v.WorkspaceBaseEnvironment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
-	}
-	return &UpdateWorkspaceBaseEnvironmentRequest{
-		Name:                     v.Name,
-		WorkspaceBaseEnvironment: workspaceBaseEnvironmentWireValue,
-	}, nil
 }
 
 // A WorkspaceBaseEnvironment defines a workspace-level environment
@@ -430,65 +260,378 @@ type WorkspaceBaseEnvironment struct {
 	Spec *EnvironmentSpec `json:"spec,omitempty"`
 }
 
-func WorkspaceBaseEnvironmentFromSDK(v *sdk.WorkspaceBaseEnvironment) (*WorkspaceBaseEnvironment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := EnvironmentSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceBaseEnvironment.Spec", err)
-	}
-	return &WorkspaceBaseEnvironment{
-		Name:                v.Name,
-		DisplayName:         v.DisplayName,
-		Filepath:            v.Filepath,
-		CreatorUserId:       v.CreatorUserId,
-		CreateTime:          v.CreateTime,
-		LastUpdatedUserId:   v.LastUpdatedUserId,
-		UpdateTime:          v.UpdateTime,
-		Status:              v.Status,
-		Message:             v.Message,
-		IsDefault:           v.IsDefault,
-		BaseEnvironmentType: v.BaseEnvironmentType,
-		Spec:                specWireValue,
-	}, nil
-}
-
-func WorkspaceBaseEnvironmentToSDK(w *WorkspaceBaseEnvironment) (*sdk.WorkspaceBaseEnvironment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := EnvironmentSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceBaseEnvironment.Spec", err)
-	}
-	return &sdk.WorkspaceBaseEnvironment{
-		Name:                w.Name,
-		DisplayName:         w.DisplayName,
-		Filepath:            w.Filepath,
-		CreatorUserId:       w.CreatorUserId,
-		CreateTime:          w.CreateTime,
-		LastUpdatedUserId:   w.LastUpdatedUserId,
-		UpdateTime:          w.UpdateTime,
-		Status:              w.Status,
-		Message:             w.Message,
-		IsDefault:           w.IsDefault,
-		BaseEnvironmentType: w.BaseEnvironmentType,
-		Spec:                specPublicValue,
-	}, nil
-}
-
 // Metadata for the WorkspaceBaseEnvironment long-running operations. This
 // message tracks the progress of the workspace base environment long-running
 // process..
 type WorkspaceBaseEnvironmentOperationMetadata struct {
 }
 
+// ApiErrorToSDK converts the mirror to the sdk-go type.
+func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiError{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	out.StackTrace = w.StackTrace
+	out.Details = w.Details
+	return out, nil
+}
+
+// ApiErrorFromSDK converts the sdk-go type to the mirror.
+func ApiErrorFromSDK(v *sdk.ApiError) (*ApiError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApiError{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	out.StackTrace = v.StackTrace
+	out.Details = v.Details
+	return out, nil
+}
+
+// CreateWorkspaceBaseEnvironmentRequestToSDK converts the mirror to the sdk-go type.
+func CreateWorkspaceBaseEnvironmentRequestToSDK(w *CreateWorkspaceBaseEnvironmentRequest) (*sdk.CreateWorkspaceBaseEnvironmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateWorkspaceBaseEnvironmentRequest{}
+	conv1, err := WorkspaceBaseEnvironmentToSDK(w.WorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
+	}
+	out.WorkspaceBaseEnvironment = conv1
+	out.WorkspaceBaseEnvironmentId = w.WorkspaceBaseEnvironmentId
+	out.RequestId = w.RequestId
+	return out, nil
+}
+
+// CreateWorkspaceBaseEnvironmentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.CreateWorkspaceBaseEnvironmentRequest) (*CreateWorkspaceBaseEnvironmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateWorkspaceBaseEnvironmentRequest{}
+	conv2, err := WorkspaceBaseEnvironmentFromSDK(v.WorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
+	}
+	out.WorkspaceBaseEnvironment = conv2
+	out.WorkspaceBaseEnvironmentId = v.WorkspaceBaseEnvironmentId
+	out.RequestId = v.RequestId
+	return out, nil
+}
+
+// DefaultWorkspaceBaseEnvironmentToSDK converts the mirror to the sdk-go type.
+func DefaultWorkspaceBaseEnvironmentToSDK(w *DefaultWorkspaceBaseEnvironment) (*sdk.DefaultWorkspaceBaseEnvironment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DefaultWorkspaceBaseEnvironment{}
+	out.Name = w.Name
+	out.CpuWorkspaceBaseEnvironment = w.CpuWorkspaceBaseEnvironment
+	out.GpuWorkspaceBaseEnvironment = w.GpuWorkspaceBaseEnvironment
+	return out, nil
+}
+
+// DefaultWorkspaceBaseEnvironmentFromSDK converts the sdk-go type to the mirror.
+func DefaultWorkspaceBaseEnvironmentFromSDK(v *sdk.DefaultWorkspaceBaseEnvironment) (*DefaultWorkspaceBaseEnvironment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DefaultWorkspaceBaseEnvironment{}
+	out.Name = v.Name
+	out.CpuWorkspaceBaseEnvironment = v.CpuWorkspaceBaseEnvironment
+	out.GpuWorkspaceBaseEnvironment = v.GpuWorkspaceBaseEnvironment
+	return out, nil
+}
+
+// EnvironmentSpecToSDK converts the mirror to the sdk-go type.
+func EnvironmentSpecToSDK(w *EnvironmentSpec) (*sdk.EnvironmentSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnvironmentSpec{}
+	out.Dependencies = w.Dependencies
+	out.EnvironmentVersion = w.EnvironmentVersion
+	return out, nil
+}
+
+// EnvironmentSpecFromSDK converts the sdk-go type to the mirror.
+func EnvironmentSpecFromSDK(v *sdk.EnvironmentSpec) (*EnvironmentSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnvironmentSpec{}
+	out.Dependencies = v.Dependencies
+	out.EnvironmentVersion = v.EnvironmentVersion
+	return out, nil
+}
+
+// ListWorkspaceBaseEnvironmentsRequestToSDK converts the mirror to the sdk-go type.
+func ListWorkspaceBaseEnvironmentsRequestToSDK(w *ListWorkspaceBaseEnvironmentsRequest) (*sdk.ListWorkspaceBaseEnvironmentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspaceBaseEnvironmentsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListWorkspaceBaseEnvironmentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListWorkspaceBaseEnvironmentsRequestFromSDK(v *sdk.ListWorkspaceBaseEnvironmentsRequest) (*ListWorkspaceBaseEnvironmentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspaceBaseEnvironmentsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListWorkspaceBaseEnvironmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListWorkspaceBaseEnvironmentsResponseToSDK(w *ListWorkspaceBaseEnvironmentsResponse) (*sdk.ListWorkspaceBaseEnvironmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspaceBaseEnvironmentsResponse{}
+	conv3, err := convertSlice(w.WorkspaceBaseEnvironments, WorkspaceBaseEnvironmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspaceBaseEnvironmentsResponse.WorkspaceBaseEnvironments", err)
+	}
+	out.WorkspaceBaseEnvironments = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListWorkspaceBaseEnvironmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListWorkspaceBaseEnvironmentsResponseFromSDK(v *sdk.ListWorkspaceBaseEnvironmentsResponse) (*ListWorkspaceBaseEnvironmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspaceBaseEnvironmentsResponse{}
+	conv4, err := convertSlice(v.WorkspaceBaseEnvironments, WorkspaceBaseEnvironmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspaceBaseEnvironmentsResponse.WorkspaceBaseEnvironments", err)
+	}
+	out.WorkspaceBaseEnvironments = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OperationToSDK converts the mirror to the sdk-go type.
+func OperationToSDK(w *Operation) (*sdk.Operation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Operation{}
+	out.Name = w.Name
+	out.Metadata = w.Metadata
+	out.Done = w.Done
+	{
+		members := 0
+		if w.Error != nil {
+			members++
+		}
+		if w.Response != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		}
+	}
+	switch {
+	case w.Error != nil:
+		conv5, err := ApiErrorToSDK(w.Error)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+		}
+		out.Result = &sdk.Operation_Result_Error{Error: *conv5}
+	case w.Response != nil:
+		out.Result = &sdk.Operation_Result_Response{Response: w.Response}
+	}
+	return out, nil
+}
+
+// OperationFromSDK converts the sdk-go type to the mirror.
+func OperationFromSDK(v *sdk.Operation) (*Operation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Operation{}
+	out.Name = v.Name
+	out.Metadata = v.Metadata
+	out.Done = v.Done
+	switch value := v.Result.(type) {
+	case *sdk.Operation_Result_Error:
+		if value != nil {
+			conv6, err := ApiErrorFromSDK(&value.Error)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+			}
+			out.Error = conv6
+		}
+	case *sdk.Operation_Result_Response:
+		if value != nil {
+			out.Response = value.Response
+		}
+	}
+	return out, nil
+}
+
+// RefreshWorkspaceBaseEnvironmentRequestToSDK converts the mirror to the sdk-go type.
+func RefreshWorkspaceBaseEnvironmentRequestToSDK(w *RefreshWorkspaceBaseEnvironmentRequest) (*sdk.RefreshWorkspaceBaseEnvironmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RefreshWorkspaceBaseEnvironmentRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// RefreshWorkspaceBaseEnvironmentRequestFromSDK converts the sdk-go type to the mirror.
+func RefreshWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.RefreshWorkspaceBaseEnvironmentRequest) (*RefreshWorkspaceBaseEnvironmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RefreshWorkspaceBaseEnvironmentRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateDefaultWorkspaceBaseEnvironmentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDefaultWorkspaceBaseEnvironmentRequestToSDK(w *UpdateDefaultWorkspaceBaseEnvironmentRequest) (*sdk.UpdateDefaultWorkspaceBaseEnvironmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDefaultWorkspaceBaseEnvironmentRequest{}
+	conv7, err := DefaultWorkspaceBaseEnvironmentToSDK(w.DefaultWorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWorkspaceBaseEnvironmentRequest.DefaultWorkspaceBaseEnvironment", err)
+	}
+	out.DefaultWorkspaceBaseEnvironment = conv7
+	mask8, err := fieldMaskFromString[sdk.DefaultWorkspaceBaseEnvironment](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWorkspaceBaseEnvironmentRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask8
+	return out, nil
+}
+
+// UpdateDefaultWorkspaceBaseEnvironmentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDefaultWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.UpdateDefaultWorkspaceBaseEnvironmentRequest) (*UpdateDefaultWorkspaceBaseEnvironmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDefaultWorkspaceBaseEnvironmentRequest{}
+	conv9, err := DefaultWorkspaceBaseEnvironmentFromSDK(v.DefaultWorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWorkspaceBaseEnvironmentRequest.DefaultWorkspaceBaseEnvironment", err)
+	}
+	out.DefaultWorkspaceBaseEnvironment = conv9
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateWorkspaceBaseEnvironmentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspaceBaseEnvironmentRequestToSDK(w *UpdateWorkspaceBaseEnvironmentRequest) (*sdk.UpdateWorkspaceBaseEnvironmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspaceBaseEnvironmentRequest{}
+	out.Name = w.Name
+	conv10, err := WorkspaceBaseEnvironmentToSDK(w.WorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
+	}
+	out.WorkspaceBaseEnvironment = conv10
+	return out, nil
+}
+
+// UpdateWorkspaceBaseEnvironmentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspaceBaseEnvironmentRequestFromSDK(v *sdk.UpdateWorkspaceBaseEnvironmentRequest) (*UpdateWorkspaceBaseEnvironmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspaceBaseEnvironmentRequest{}
+	out.Name = v.Name
+	conv11, err := WorkspaceBaseEnvironmentFromSDK(v.WorkspaceBaseEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceBaseEnvironmentRequest.WorkspaceBaseEnvironment", err)
+	}
+	out.WorkspaceBaseEnvironment = conv11
+	return out, nil
+}
+
+// WorkspaceBaseEnvironmentToSDK converts the mirror to the sdk-go type.
+func WorkspaceBaseEnvironmentToSDK(w *WorkspaceBaseEnvironment) (*sdk.WorkspaceBaseEnvironment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WorkspaceBaseEnvironment{}
+	out.Name = w.Name
+	out.DisplayName = w.DisplayName
+	out.Filepath = w.Filepath
+	out.CreatorUserId = w.CreatorUserId
+	out.CreateTime = w.CreateTime
+	out.LastUpdatedUserId = w.LastUpdatedUserId
+	out.UpdateTime = w.UpdateTime
+	out.Status = w.Status
+	out.Message = w.Message
+	out.IsDefault = w.IsDefault
+	out.BaseEnvironmentType = w.BaseEnvironmentType
+	conv12, err := EnvironmentSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkspaceBaseEnvironment.Spec", err)
+	}
+	out.Spec = conv12
+	return out, nil
+}
+
+// WorkspaceBaseEnvironmentFromSDK converts the sdk-go type to the mirror.
+func WorkspaceBaseEnvironmentFromSDK(v *sdk.WorkspaceBaseEnvironment) (*WorkspaceBaseEnvironment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceBaseEnvironment{}
+	out.Name = v.Name
+	out.DisplayName = v.DisplayName
+	out.Filepath = v.Filepath
+	out.CreatorUserId = v.CreatorUserId
+	out.CreateTime = v.CreateTime
+	out.LastUpdatedUserId = v.LastUpdatedUserId
+	out.UpdateTime = v.UpdateTime
+	out.Status = v.Status
+	out.Message = v.Message
+	out.IsDefault = v.IsDefault
+	out.BaseEnvironmentType = v.BaseEnvironmentType
+	conv13, err := EnvironmentSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkspaceBaseEnvironment.Spec", err)
+	}
+	out.Spec = conv13
+	return out, nil
+}
+
+// WorkspaceBaseEnvironmentOperationMetadataToSDK converts the mirror to the sdk-go type.
 func WorkspaceBaseEnvironmentOperationMetadataToSDK(w *WorkspaceBaseEnvironmentOperationMetadata) (*sdk.WorkspaceBaseEnvironmentOperationMetadata, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WorkspaceBaseEnvironmentOperationMetadata{}, nil
+	out := &sdk.WorkspaceBaseEnvironmentOperationMetadata{}
+	return out, nil
+}
+
+// WorkspaceBaseEnvironmentOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func WorkspaceBaseEnvironmentOperationMetadataFromSDK(v *sdk.WorkspaceBaseEnvironmentOperationMetadata) (*WorkspaceBaseEnvironmentOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceBaseEnvironmentOperationMetadata{}
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -504,4 +647,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

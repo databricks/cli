@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/aigateway/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -62,30 +63,6 @@ const (
 	RateLimit_RateLimitRenewalPeriod_RateLimitRenewalPeriodHour                                              = sdk.RateLimit_RateLimitRenewalPeriod_RateLimitRenewalPeriodHour
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Request to create a new MCP service..
 type CreateMcpServiceRequest struct {
 	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
@@ -98,21 +75,6 @@ type CreateMcpServiceRequest struct {
 	McpService *McpService `json:"mcp_service,omitempty"`
 }
 
-func CreateMcpServiceRequestFromSDK(v *sdk.CreateMcpServiceRequest) (*CreateMcpServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	mcpServiceWireValue, err := McpServiceFromSDK(v.McpService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceRequest.McpService", err)
-	}
-	return &CreateMcpServiceRequest{
-		Parent:       v.Parent,
-		McpServiceId: v.McpServiceId,
-		McpService:   mcpServiceWireValue,
-	}, nil
-}
-
 // Request to log the caller in to an MCP service: create their user credential,
 // or re-authenticate it if one already exists..
 type CreateMcpServiceUserMappedCredentialRequest struct {
@@ -120,20 +82,6 @@ type CreateMcpServiceUserMappedCredentialRequest struct {
 	// `mcp-services/{catalog}.{schema}.{mcp_service}`.
 	Name  *string                              `json:"name,omitempty"`
 	Login *McpServiceUserMappedCredentialLogin `json:"login,omitempty"`
-}
-
-func CreateMcpServiceUserMappedCredentialRequestFromSDK(v *sdk.CreateMcpServiceUserMappedCredentialRequest) (*CreateMcpServiceUserMappedCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	loginWireValue, err := McpServiceUserMappedCredentialLoginFromSDK(v.Login)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceUserMappedCredentialRequest.Login", err)
-	}
-	return &CreateMcpServiceUserMappedCredentialRequest{
-		Name:  v.Name,
-		Login: loginWireValue,
-	}, nil
 }
 
 // Request to create a new model provider service..
@@ -148,21 +96,6 @@ type CreateModelProviderServiceRequest struct {
 	ModelProviderService *ModelProviderService `json:"model_provider_service,omitempty"`
 }
 
-func CreateModelProviderServiceRequestFromSDK(v *sdk.CreateModelProviderServiceRequest) (*CreateModelProviderServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	modelProviderServiceWireValue, err := ModelProviderServiceFromSDK(v.ModelProviderService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateModelProviderServiceRequest.ModelProviderService", err)
-	}
-	return &CreateModelProviderServiceRequest{
-		Parent:                 v.Parent,
-		ModelProviderServiceId: v.ModelProviderServiceId,
-		ModelProviderService:   modelProviderServiceWireValue,
-	}, nil
-}
-
 // Request to create a new model service..
 type CreateModelServiceRequest struct {
 	// Name of the parent schema. Format: `schemas/{catalog}.{schema}`. Each `{...}`
@@ -173,21 +106,6 @@ type CreateModelServiceRequest struct {
 	// The model service to create. Do not set `name`; the server derives it from
 	// `parent` and `model_service_id`.
 	ModelService *ModelService `json:"model_service,omitempty"`
-}
-
-func CreateModelServiceRequestFromSDK(v *sdk.CreateModelServiceRequest) (*CreateModelServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	modelServiceWireValue, err := ModelServiceFromSDK(v.ModelService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateModelServiceRequest.ModelService", err)
-	}
-	return &CreateModelServiceRequest{
-		Parent:         v.Parent,
-		ModelServiceId: v.ModelServiceId,
-		ModelService:   modelServiceWireValue,
-	}, nil
 }
 
 // Request to create a new skill..
@@ -204,21 +122,6 @@ type CreateSkillRequest struct {
 	Skill *Skill `json:"skill,omitempty"`
 }
 
-func CreateSkillRequestFromSDK(v *sdk.CreateSkillRequest) (*CreateSkillRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	skillWireValue, err := SkillFromSDK(v.Skill)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSkillRequest.Skill", err)
-	}
-	return &CreateSkillRequest{
-		Parent:  v.Parent,
-		SkillId: v.SkillId,
-		Skill:   skillWireValue,
-	}, nil
-}
-
 // Request to delete an MCP service..
 type DeleteMcpServiceRequest struct {
 	// Resource name of the MCP service. Format:
@@ -230,16 +133,6 @@ type DeleteMcpServiceRequest struct {
 	// unconditional delete. For REST requests, URL-encode the base64 string
 	// returned by the API when setting the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
-}
-
-func DeleteMcpServiceRequestFromSDK(v *sdk.DeleteMcpServiceRequest) (*DeleteMcpServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteMcpServiceRequest{
-		Name: v.Name,
-		Etag: v.Etag,
-	}, nil
 }
 
 // Request to delete a model provider service..
@@ -255,16 +148,6 @@ type DeleteModelProviderServiceRequest struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
-func DeleteModelProviderServiceRequestFromSDK(v *sdk.DeleteModelProviderServiceRequest) (*DeleteModelProviderServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteModelProviderServiceRequest{
-		Name: v.Name,
-		Etag: v.Etag,
-	}, nil
-}
-
 // Request to delete a model service..
 type DeleteModelServiceRequest struct {
 	// Resource name of the model service. Format:
@@ -278,16 +161,6 @@ type DeleteModelServiceRequest struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
-func DeleteModelServiceRequestFromSDK(v *sdk.DeleteModelServiceRequest) (*DeleteModelServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteModelServiceRequest{
-		Name: v.Name,
-		Etag: v.Etag,
-	}, nil
-}
-
 // Request to delete a skill..
 type DeleteSkillRequest struct {
 	// Full resource name of the skill. Format: `skills/{catalog}.{schema}.{skill}`.
@@ -298,16 +171,6 @@ type DeleteSkillRequest struct {
 	// unconditional delete. For REST requests, URL-encode the base64 string
 	// returned by the API when setting the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
-}
-
-func DeleteSkillRequestFromSDK(v *sdk.DeleteSkillRequest) (*DeleteSkillRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteSkillRequest{
-		Name: v.Name,
-		Etag: v.Etag,
-	}, nil
 }
 
 // Configuration for logging request and response payloads to a Unity Catalog
@@ -333,30 +196,6 @@ type InferenceTableConfig struct {
 	IsDeleted *bool `json:"is_deleted,omitempty"`
 }
 
-func InferenceTableConfigFromSDK(v *sdk.InferenceTableConfig) (*InferenceTableConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InferenceTableConfig{
-		Parent:          v.Parent,
-		TableNamePrefix: v.TableNamePrefix,
-		Table:           v.Table,
-		IsDeleted:       v.IsDeleted,
-	}, nil
-}
-
-func InferenceTableConfigToSDK(w *InferenceTableConfig) (*sdk.InferenceTableConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InferenceTableConfig{
-		Parent:          w.Parent,
-		TableNamePrefix: w.TableNamePrefix,
-		Table:           w.Table,
-		IsDeleted:       w.IsDeleted,
-	}, nil
-}
-
 // Request to list MCP services. Accepts `parent`, `page_size`, `page_token`,
 // and `view`..
 type ListMcpServicesRequest struct {
@@ -374,18 +213,6 @@ type ListMcpServicesRequest struct {
 	View ListMcpServicesRequest_View `json:"view,omitempty"`
 }
 
-func ListMcpServicesRequestFromSDK(v *sdk.ListMcpServicesRequest) (*ListMcpServicesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListMcpServicesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		View:      v.View,
-	}, nil
-}
-
 // Response for listing MCP services..
 type ListMcpServicesResponse struct {
 	// The list of MCP services.
@@ -393,20 +220,6 @@ type ListMcpServicesResponse struct {
 	// Pagination token for retrieving the next page. Empty when there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListMcpServicesResponseToSDK(w *ListMcpServicesResponse) (*sdk.ListMcpServicesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	mcpServicesPublicValue, err := convertSlice(w.McpServices, McpServiceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListMcpServicesResponse.McpServices", err)
-	}
-	return &sdk.ListMcpServicesResponse{
-		McpServices:   mcpServicesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list model provider services. Accepts `parent`, `page_size`,
@@ -427,18 +240,6 @@ type ListModelProviderServicesRequest struct {
 	View ListModelProviderServicesRequest_View `json:"view,omitempty"`
 }
 
-func ListModelProviderServicesRequestFromSDK(v *sdk.ListModelProviderServicesRequest) (*ListModelProviderServicesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListModelProviderServicesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		View:      v.View,
-	}, nil
-}
-
 // Response for listing model provider services..
 type ListModelProviderServicesResponse struct {
 	// The list of model provider services.
@@ -446,20 +247,6 @@ type ListModelProviderServicesResponse struct {
 	// Pagination token for retrieving the next page. Empty when there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListModelProviderServicesResponseToSDK(w *ListModelProviderServicesResponse) (*sdk.ListModelProviderServicesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelProviderServicesPublicValue, err := convertSlice(w.ModelProviderServices, ModelProviderServiceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListModelProviderServicesResponse.ModelProviderServices", err)
-	}
-	return &sdk.ListModelProviderServicesResponse{
-		ModelProviderServices: modelProviderServicesPublicValue,
-		NextPageToken:         w.NextPageToken,
-	}, nil
 }
 
 // Request to list model services..
@@ -479,18 +266,6 @@ type ListModelServicesRequest struct {
 	View ListModelServicesRequest_View `json:"view,omitempty"`
 }
 
-func ListModelServicesRequestFromSDK(v *sdk.ListModelServicesRequest) (*ListModelServicesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListModelServicesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		View:      v.View,
-	}, nil
-}
-
 // Response for listing model services..
 type ListModelServicesResponse struct {
 	// The list of model services.
@@ -498,20 +273,6 @@ type ListModelServicesResponse struct {
 	// Pagination token for retrieving the next page. Empty when there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListModelServicesResponseToSDK(w *ListModelServicesResponse) (*sdk.ListModelServicesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelServicesPublicValue, err := convertSlice(w.ModelServices, ModelServiceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListModelServicesResponse.ModelServices", err)
-	}
-	return &sdk.ListModelServicesResponse{
-		ModelServices: modelServicesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list skills. Accepts `parent`, `page_size`, and `page_token`. v1
@@ -529,37 +290,12 @@ type ListSkillsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSkillsRequestFromSDK(v *sdk.ListSkillsRequest) (*ListSkillsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSkillsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for listing skills..
 type ListSkillsResponse struct {
 	// The list of skills.
 	Skills []Skill `json:"skills,omitempty"`
 	// Pagination token for retrieving the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSkillsResponseToSDK(w *ListSkillsResponse) (*sdk.ListSkillsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	skillsPublicValue, err := convertSlice(w.Skills, SkillToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSkillsResponse.Skills", err)
-	}
-	return &sdk.ListSkillsResponse{
-		Skills:        skillsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A Unity Catalog securable that registers an MCP server through a Unity
@@ -596,50 +332,6 @@ type McpService struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
-func McpServiceFromSDK(v *sdk.McpService) (*McpService, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := McpServiceConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "McpService.Config", err)
-	}
-	return &McpService{
-		Name:           v.Name,
-		EffectiveOwner: v.EffectiveOwner,
-		MetastoreId:    v.MetastoreId,
-		CreateTime:     v.CreateTime,
-		CreatedBy:      v.CreatedBy,
-		UpdateTime:     v.UpdateTime,
-		UpdatedBy:      v.UpdatedBy,
-		Comment:        v.Comment,
-		Config:         configWireValue,
-		Etag:           v.Etag,
-	}, nil
-}
-
-func McpServiceToSDK(w *McpService) (*sdk.McpService, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := McpServiceConfigToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "McpService.Config", err)
-	}
-	return &sdk.McpService{
-		Name:           w.Name,
-		EffectiveOwner: w.EffectiveOwner,
-		MetastoreId:    w.MetastoreId,
-		CreateTime:     w.CreateTime,
-		CreatedBy:      w.CreatedBy,
-		UpdateTime:     w.UpdateTime,
-		UpdatedBy:      w.UpdatedBy,
-		Comment:        w.Comment,
-		Config:         configPublicValue,
-		Etag:           w.Etag,
-	}, nil
-}
-
 // Operational configuration for an MCP service. Groups the source reference,
 // tool selectors, and rate limits -- the fields that configure how the MCP
 // service behaves at invocation time..
@@ -654,66 +346,6 @@ type McpServiceConfig struct {
 	// principal, the service as a whole, and each user by default. Request and
 	// token limits are supported. Empty when no rate limit is configured.
 	RateLimits []RateLimit `json:"rate_limits,omitempty"`
-}
-
-func McpServiceConfigFromSDK(v *sdk.McpServiceConfig) (*McpServiceConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, RateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "McpServiceConfig.RateLimits", err)
-	}
-	var sourceSourceConnectionWire *McpServiceConfig_SourceConnection
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.McpServiceConfig_Source_SourceConnection:
-		if value != nil {
-			sourceSourceConnectionConverted, err := McpServiceConfig_SourceConnectionFromSDK(&value.SourceConnection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "McpServiceConfig.Source.SourceConnection", err)
-			}
-			sourceSourceConnectionWire = sourceSourceConnectionConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "McpServiceConfig.Source", value)
-	}
-	return &McpServiceConfig{
-		SourceConnection:     sourceSourceConnectionWire,
-		IncludeToolSelectors: v.IncludeToolSelectors,
-		RateLimits:           rateLimitsWireValue,
-	}, nil
-}
-
-func McpServiceConfigToSDK(w *McpServiceConfig) (*sdk.McpServiceConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.SourceConnection != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "McpServiceConfig.Source")
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, RateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "McpServiceConfig.RateLimits", err)
-	}
-	sourceSelection := (&sdk.McpServiceConfig{}).Source
-	switch {
-	case w.SourceConnection != nil:
-		sourceSourceConnectionConverted, err := McpServiceConfig_SourceConnectionToSDK(w.SourceConnection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "McpServiceConfig.Source.SourceConnection", err)
-		}
-		sourceSelection = &sdk.McpServiceConfig_Source_SourceConnection{SourceConnection: *sourceSourceConnectionConverted}
-	}
-	return &sdk.McpServiceConfig{
-		IncludeToolSelectors: w.IncludeToolSelectors,
-		RateLimits:           rateLimitsPublicValue,
-		Source:               sourceSelection,
-	}, nil
 }
 
 // Unity Catalog connection that points to the MCP server. On Create, provide
@@ -737,28 +369,6 @@ type McpServiceConfig_SourceConnection struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-func McpServiceConfig_SourceConnectionFromSDK(v *sdk.McpServiceConfig_SourceConnection) (*McpServiceConfig_SourceConnection, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &McpServiceConfig_SourceConnection{
-		Name:      v.Name,
-		IsDeleted: v.IsDeleted,
-		Options:   v.Options,
-	}, nil
-}
-
-func McpServiceConfig_SourceConnectionToSDK(w *McpServiceConfig_SourceConnection) (*sdk.McpServiceConfig_SourceConnection, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.McpServiceConfig_SourceConnection{
-		Name:      w.Name,
-		IsDeleted: w.IsDeleted,
-		Options:   w.Options,
-	}, nil
-}
-
 // A caller's per-user OAuth credential for an MCP service..
 type McpServiceUserMappedCredential struct {
 	// Token-expiry info for the credential, returned as a flat map:
@@ -771,35 +381,12 @@ type McpServiceUserMappedCredential struct {
 	ProvisioningInfo *ProvisioningInfo `json:"provisioning_info,omitempty"`
 }
 
-func McpServiceUserMappedCredentialToSDK(w *McpServiceUserMappedCredential) (*sdk.McpServiceUserMappedCredential, error) {
-	if w == nil {
-		return nil, nil
-	}
-	provisioningInfoPublicValue, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "McpServiceUserMappedCredential.ProvisioningInfo", err)
-	}
-	return &sdk.McpServiceUserMappedCredential{
-		Options:          w.Options,
-		ProvisioningInfo: provisioningInfoPublicValue,
-	}, nil
-}
-
 // Login input for an MCP service user credential. Carries the OAuth exchange
 // fields as a flat map..
 type McpServiceUserMappedCredentialLogin struct {
 	// OAuth exchange fields: `pkce_verifier`, `authorization_code`, and
 	// `oauth_redirect_uri`.
 	Options map[string]string `json:"options,omitempty"`
-}
-
-func McpServiceUserMappedCredentialLoginFromSDK(v *sdk.McpServiceUserMappedCredentialLogin) (*McpServiceUserMappedCredentialLogin, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &McpServiceUserMappedCredentialLogin{
-		Options: v.Options,
-	}, nil
 }
 
 // A Unity Catalog securable that stores authentication and request
@@ -840,50 +427,6 @@ type ModelProviderService struct {
 	// limits, and payload logging. Required on Create. On Update, it is required
 	// only when `config` or one of its subpaths appears in `update_mask`.
 	Config *ModelProviderServiceConfig `json:"config,omitempty"`
-}
-
-func ModelProviderServiceFromSDK(v *sdk.ModelProviderService) (*ModelProviderService, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := ModelProviderServiceConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderService.Config", err)
-	}
-	return &ModelProviderService{
-		Name:           v.Name,
-		EffectiveOwner: v.EffectiveOwner,
-		MetastoreId:    v.MetastoreId,
-		CreateTime:     v.CreateTime,
-		CreatedBy:      v.CreatedBy,
-		UpdateTime:     v.UpdateTime,
-		UpdatedBy:      v.UpdatedBy,
-		Comment:        v.Comment,
-		Etag:           v.Etag,
-		Config:         configWireValue,
-	}, nil
-}
-
-func ModelProviderServiceToSDK(w *ModelProviderService) (*sdk.ModelProviderService, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := ModelProviderServiceConfigToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderService.Config", err)
-	}
-	return &sdk.ModelProviderService{
-		Name:           w.Name,
-		EffectiveOwner: w.EffectiveOwner,
-		MetastoreId:    w.MetastoreId,
-		CreateTime:     w.CreateTime,
-		CreatedBy:      w.CreatedBy,
-		UpdateTime:     w.UpdateTime,
-		UpdatedBy:      w.UpdatedBy,
-		Comment:        w.Comment,
-		Etag:           w.Etag,
-		Config:         configPublicValue,
-	}, nil
 }
 
 // Behavioral configuration for a ModelProviderService: provider authentication
@@ -944,288 +487,9 @@ type ModelProviderServiceConfig struct {
 	Pricing *ModelProviderServiceConfig_ProviderPricingConfig `json:"pricing,omitempty"`
 }
 
-func ModelProviderServiceConfigFromSDK(v *sdk.ModelProviderServiceConfig) (*ModelProviderServiceConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	targetsWireValue, err := convertSlice(v.Targets, ModelProviderServiceConfig_ModelTargetConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Targets", err)
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, RateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.RateLimits", err)
-	}
-	inferenceTableWireValue, err := InferenceTableConfigFromSDK(v.InferenceTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.InferenceTable", err)
-	}
-	pricingWireValue, err := ModelProviderServiceConfig_ProviderPricingConfigFromSDK(v.Pricing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Pricing", err)
-	}
-	var providerOpenaiWire *ModelProviderServiceConfig_OpenAiProviderConfig
-	var providerAzureOpenaiWire *ModelProviderServiceConfig_AzureOpenAiProviderConfig
-	var providerAnthropicWire *ModelProviderServiceConfig_AnthropicProviderConfig
-	var providerAmazonBedrockWire *ModelProviderServiceConfig_AmazonBedrockProviderConfig
-	var providerCustomWire *ModelProviderServiceConfig_CustomProviderConfig
-	var providerMicrosoftFoundryWire *ModelProviderServiceConfig_MicrosoftFoundryProviderConfig
-	var providerGeminiEnterpriseWire *ModelProviderServiceConfig_GeminiEnterpriseProviderConfig
-	var providerBedrockMantleWire *ModelProviderServiceConfig_AmazonBedrockProviderConfig
-	switch value := v.Provider.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_Provider_Openai:
-		if value != nil {
-			providerOpenaiConverted, err := ModelProviderServiceConfig_OpenAiProviderConfigFromSDK(&value.Openai)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Openai", err)
-			}
-			providerOpenaiWire = providerOpenaiConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_AzureOpenai:
-		if value != nil {
-			providerAzureOpenaiConverted, err := ModelProviderServiceConfig_AzureOpenAiProviderConfigFromSDK(&value.AzureOpenai)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.AzureOpenai", err)
-			}
-			providerAzureOpenaiWire = providerAzureOpenaiConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_Anthropic:
-		if value != nil {
-			providerAnthropicConverted, err := ModelProviderServiceConfig_AnthropicProviderConfigFromSDK(&value.Anthropic)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Anthropic", err)
-			}
-			providerAnthropicWire = providerAnthropicConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_AmazonBedrock:
-		if value != nil {
-			providerAmazonBedrockConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(&value.AmazonBedrock)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.AmazonBedrock", err)
-			}
-			providerAmazonBedrockWire = providerAmazonBedrockConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_Custom:
-		if value != nil {
-			providerCustomConverted, err := ModelProviderServiceConfig_CustomProviderConfigFromSDK(&value.Custom)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Custom", err)
-			}
-			providerCustomWire = providerCustomConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_MicrosoftFoundry:
-		if value != nil {
-			providerMicrosoftFoundryConverted, err := ModelProviderServiceConfig_MicrosoftFoundryProviderConfigFromSDK(&value.MicrosoftFoundry)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.MicrosoftFoundry", err)
-			}
-			providerMicrosoftFoundryWire = providerMicrosoftFoundryConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_GeminiEnterprise:
-		if value != nil {
-			providerGeminiEnterpriseConverted, err := ModelProviderServiceConfig_GeminiEnterpriseProviderConfigFromSDK(&value.GeminiEnterprise)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.GeminiEnterprise", err)
-			}
-			providerGeminiEnterpriseWire = providerGeminiEnterpriseConverted
-		}
-	case *sdk.ModelProviderServiceConfig_Provider_BedrockMantle:
-		if value != nil {
-			providerBedrockMantleConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(&value.BedrockMantle)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.BedrockMantle", err)
-			}
-			providerBedrockMantleWire = providerBedrockMantleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig.Provider", value)
-	}
-	return &ModelProviderServiceConfig{
-		ProviderType:           v.ProviderType,
-		Openai:                 providerOpenaiWire,
-		AzureOpenai:            providerAzureOpenaiWire,
-		Anthropic:              providerAnthropicWire,
-		AmazonBedrock:          providerAmazonBedrockWire,
-		Custom:                 providerCustomWire,
-		MicrosoftFoundry:       providerMicrosoftFoundryWire,
-		GeminiEnterprise:       providerGeminiEnterpriseWire,
-		BedrockMantle:          providerBedrockMantleWire,
-		AllowAllTargets:        v.AllowAllTargets,
-		Targets:                targetsWireValue,
-		ForwardHeaders:         v.ForwardHeaders,
-		ForwardQueryParameters: v.ForwardQueryParameters,
-		ForwardUnmanagedPaths:  v.ForwardUnmanagedPaths,
-		RateLimits:             rateLimitsWireValue,
-		InferenceTable:         inferenceTableWireValue,
-		Pricing:                pricingWireValue,
-	}, nil
-}
-
-func ModelProviderServiceConfigToSDK(w *ModelProviderServiceConfig) (*sdk.ModelProviderServiceConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerMembers := 0
-	if w.Openai != nil {
-		providerMembers++
-	}
-	if w.AzureOpenai != nil {
-		providerMembers++
-	}
-	if w.Anthropic != nil {
-		providerMembers++
-	}
-	if w.AmazonBedrock != nil {
-		providerMembers++
-	}
-	if w.Custom != nil {
-		providerMembers++
-	}
-	if w.MicrosoftFoundry != nil {
-		providerMembers++
-	}
-	if w.GeminiEnterprise != nil {
-		providerMembers++
-	}
-	if w.BedrockMantle != nil {
-		providerMembers++
-	}
-	if providerMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig.Provider")
-	}
-	targetsPublicValue, err := convertSlice(w.Targets, ModelProviderServiceConfig_ModelTargetConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Targets", err)
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, RateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.RateLimits", err)
-	}
-	inferenceTablePublicValue, err := InferenceTableConfigToSDK(w.InferenceTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.InferenceTable", err)
-	}
-	pricingPublicValue, err := ModelProviderServiceConfig_ProviderPricingConfigToSDK(w.Pricing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Pricing", err)
-	}
-	providerSelection := (&sdk.ModelProviderServiceConfig{}).Provider
-	switch {
-	case w.Openai != nil:
-		providerOpenaiConverted, err := ModelProviderServiceConfig_OpenAiProviderConfigToSDK(w.Openai)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Openai", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_Openai{Openai: *providerOpenaiConverted}
-	case w.AzureOpenai != nil:
-		providerAzureOpenaiConverted, err := ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK(w.AzureOpenai)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.AzureOpenai", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_AzureOpenai{AzureOpenai: *providerAzureOpenaiConverted}
-	case w.Anthropic != nil:
-		providerAnthropicConverted, err := ModelProviderServiceConfig_AnthropicProviderConfigToSDK(w.Anthropic)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Anthropic", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_Anthropic{Anthropic: *providerAnthropicConverted}
-	case w.AmazonBedrock != nil:
-		providerAmazonBedrockConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w.AmazonBedrock)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.AmazonBedrock", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_AmazonBedrock{AmazonBedrock: *providerAmazonBedrockConverted}
-	case w.Custom != nil:
-		providerCustomConverted, err := ModelProviderServiceConfig_CustomProviderConfigToSDK(w.Custom)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.Custom", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_Custom{Custom: *providerCustomConverted}
-	case w.MicrosoftFoundry != nil:
-		providerMicrosoftFoundryConverted, err := ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK(w.MicrosoftFoundry)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.MicrosoftFoundry", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_MicrosoftFoundry{MicrosoftFoundry: *providerMicrosoftFoundryConverted}
-	case w.GeminiEnterprise != nil:
-		providerGeminiEnterpriseConverted, err := ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK(w.GeminiEnterprise)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.GeminiEnterprise", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_GeminiEnterprise{GeminiEnterprise: *providerGeminiEnterpriseConverted}
-	case w.BedrockMantle != nil:
-		providerBedrockMantleConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w.BedrockMantle)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider.BedrockMantle", err)
-		}
-		providerSelection = &sdk.ModelProviderServiceConfig_Provider_BedrockMantle{BedrockMantle: *providerBedrockMantleConverted}
-	}
-	return &sdk.ModelProviderServiceConfig{
-		ProviderType:           w.ProviderType,
-		AllowAllTargets:        w.AllowAllTargets,
-		Targets:                targetsPublicValue,
-		ForwardHeaders:         w.ForwardHeaders,
-		ForwardQueryParameters: w.ForwardQueryParameters,
-		ForwardUnmanagedPaths:  w.ForwardUnmanagedPaths,
-		RateLimits:             rateLimitsPublicValue,
-		InferenceTable:         inferenceTablePublicValue,
-		Pricing:                pricingPublicValue,
-		Provider:               providerSelection,
-	}, nil
-}
-
 // Amazon Bedrock provider configuration..
 type ModelProviderServiceConfig_AmazonBedrockProviderConfig struct {
 	Direct *ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig) (*ModelProviderServiceConfig_AmazonBedrockProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_AmazonBedrockProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w *ModelProviderServiceConfig_AmazonBedrockProviderConfig) (*sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct form of Amazon Bedrock provider config.
@@ -1245,75 +509,6 @@ type ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig struct {
 	AwsAccessKey      *ModelProviderServiceConfig_AwsAccessKey      `json:"aws_access_key,omitempty"`
 }
 
-func ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig) (*ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeServiceCredentialWire *ModelProviderServiceConfig_ServiceCredential
-	var authModeAwsAccessKeyWire *ModelProviderServiceConfig_AwsAccessKey
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_ServiceCredential:
-		if value != nil {
-			authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode.ServiceCredential", err)
-			}
-			authModeServiceCredentialWire = authModeServiceCredentialConverted
-		}
-	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_AwsAccessKey:
-		if value != nil {
-			authModeAwsAccessKeyConverted, err := ModelProviderServiceConfig_AwsAccessKeyFromSDK(&value.AwsAccessKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode.AwsAccessKey", err)
-			}
-			authModeAwsAccessKeyWire = authModeAwsAccessKeyConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{
-		Region:            v.Region,
-		ServiceCredential: authModeServiceCredentialWire,
-		AwsAccessKey:      authModeAwsAccessKeyWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ServiceCredential != nil {
-		authModeMembers++
-	}
-	if w.AwsAccessKey != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ServiceCredential != nil:
-		authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode.ServiceCredential", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *authModeServiceCredentialConverted}
-	case w.AwsAccessKey != nil:
-		authModeAwsAccessKeyConverted, err := ModelProviderServiceConfig_AwsAccessKeyToSDK(w.AwsAccessKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode.AwsAccessKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_AwsAccessKey{AwsAccessKey: *authModeAwsAccessKeyConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{
-		Region:   w.Region,
-		AuthMode: authModeSelection,
-	}, nil
-}
-
 // Anthropic provider configuration. Exactly one of `direct` or `relayed` must
 // be set on Create; the two are mutually exclusive..
 type ModelProviderServiceConfig_AnthropicProviderConfig struct {
@@ -1321,144 +516,15 @@ type ModelProviderServiceConfig_AnthropicProviderConfig struct {
 	Relayed *ModelProviderServiceConfig_AnthropicProviderRelayedConfig `json:"relayed,omitempty"`
 }
 
-func ModelProviderServiceConfig_AnthropicProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderConfig) (*ModelProviderServiceConfig_AnthropicProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_AnthropicProviderDirectConfig
-	var providerModeRelayedWire *ModelProviderServiceConfig_AnthropicProviderRelayedConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_AnthropicProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	case *sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Relayed:
-		if value != nil {
-			providerModeRelayedConverted, err := ModelProviderServiceConfig_AnthropicProviderRelayedConfigFromSDK(&value.Relayed)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode.Relayed", err)
-			}
-			providerModeRelayedWire = providerModeRelayedConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_AnthropicProviderConfig{
-		Direct:  providerModeDirectWire,
-		Relayed: providerModeRelayedWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AnthropicProviderConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if w.Relayed != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_AnthropicProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	case w.Relayed != nil:
-		providerModeRelayedConverted, err := ModelProviderServiceConfig_AnthropicProviderRelayedConfigToSDK(w.Relayed)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode.Relayed", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Relayed{Relayed: *providerModeRelayedConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AnthropicProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
-}
-
 // Direct form of Anthropic provider config..
 type ModelProviderServiceConfig_AnthropicProviderDirectConfig struct {
 	ApiKey *ModelProviderServiceConfig_ProviderSecret `json:"api_key,omitempty"`
-}
-
-func ModelProviderServiceConfig_AnthropicProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig) (*ModelProviderServiceConfig_AnthropicProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_AnthropicProviderDirectConfig{
-		ApiKey: authModeApiKeyWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig{
-		AuthMode: authModeSelection,
-	}, nil
 }
 
 // Relayed Anthropic provider configuration. Each inference request supplies the
 // caller's OAuth token, which is forwarded to Anthropic. No Anthropic
 // credential is stored..
 type ModelProviderServiceConfig_AnthropicProviderRelayedConfig struct {
-}
-
-func ModelProviderServiceConfig_AnthropicProviderRelayedConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig) (*ModelProviderServiceConfig_AnthropicProviderRelayedConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelProviderServiceConfig_AnthropicProviderRelayedConfig{}, nil
-}
-
-func ModelProviderServiceConfig_AnthropicProviderRelayedConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderRelayedConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig{}, nil
 }
 
 // AWS access-key-pair auth for Amazon Bedrock: a SigV4-signing key pair..
@@ -1473,85 +539,9 @@ type ModelProviderServiceConfig_AwsAccessKey struct {
 	SecretAccessKey *ModelProviderServiceConfig_ProviderSecret `json:"secret_access_key,omitempty"`
 }
 
-func ModelProviderServiceConfig_AwsAccessKeyFromSDK(v *sdk.ModelProviderServiceConfig_AwsAccessKey) (*ModelProviderServiceConfig_AwsAccessKey, error) {
-	if v == nil {
-		return nil, nil
-	}
-	secretAccessKeyWireValue, err := ModelProviderServiceConfig_ProviderSecretFromSDK(v.SecretAccessKey)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AwsAccessKey.SecretAccessKey", err)
-	}
-	return &ModelProviderServiceConfig_AwsAccessKey{
-		AccessKeyId:     v.AccessKeyId,
-		SecretAccessKey: secretAccessKeyWireValue,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AwsAccessKeyToSDK(w *ModelProviderServiceConfig_AwsAccessKey) (*sdk.ModelProviderServiceConfig_AwsAccessKey, error) {
-	if w == nil {
-		return nil, nil
-	}
-	secretAccessKeyPublicValue, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.SecretAccessKey)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AwsAccessKey.SecretAccessKey", err)
-	}
-	return &sdk.ModelProviderServiceConfig_AwsAccessKey{
-		AccessKeyId:     w.AccessKeyId,
-		SecretAccessKey: secretAccessKeyPublicValue,
-	}, nil
-}
-
 // Azure OpenAI provider configuration..
 type ModelProviderServiceConfig_AzureOpenAiProviderConfig struct {
 	Direct *ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_AzureOpenAiProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig) (*ModelProviderServiceConfig_AzureOpenAiProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_AzureOpenAiProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK(w *ModelProviderServiceConfig_AzureOpenAiProviderConfig) (*sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct form of Azure OpenAI provider config. Exactly one of three
@@ -1572,94 +562,6 @@ type ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig struct {
 	EntraServicePrincipal *ModelProviderServiceConfig_EntraServicePrincipal `json:"entra_service_principal,omitempty"`
 }
 
-func ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig) (*ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	var authModeServiceCredentialWire *ModelProviderServiceConfig_ServiceCredential
-	var authModeEntraServicePrincipalWire *ModelProviderServiceConfig_EntraServicePrincipal
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ServiceCredential:
-		if value != nil {
-			authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.ServiceCredential", err)
-			}
-			authModeServiceCredentialWire = authModeServiceCredentialConverted
-		}
-	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_EntraServicePrincipal:
-		if value != nil {
-			authModeEntraServicePrincipalConverted, err := ModelProviderServiceConfig_EntraServicePrincipalFromSDK(&value.EntraServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.EntraServicePrincipal", err)
-			}
-			authModeEntraServicePrincipalWire = authModeEntraServicePrincipalConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{
-		BaseUrl:               v.BaseUrl,
-		ApiKey:                authModeApiKeyWire,
-		ServiceCredential:     authModeServiceCredentialWire,
-		EntraServicePrincipal: authModeEntraServicePrincipalWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if w.ServiceCredential != nil {
-		authModeMembers++
-	}
-	if w.EntraServicePrincipal != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	case w.ServiceCredential != nil:
-		authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.ServiceCredential", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *authModeServiceCredentialConverted}
-	case w.EntraServicePrincipal != nil:
-		authModeEntraServicePrincipalConverted, err := ModelProviderServiceConfig_EntraServicePrincipalToSDK(w.EntraServicePrincipal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode.EntraServicePrincipal", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_EntraServicePrincipal{EntraServicePrincipal: *authModeEntraServicePrincipalConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{
-		BaseUrl:  w.BaseUrl,
-		AuthMode: authModeSelection,
-	}, nil
-}
-
 // Header-based API-key authentication for a custom provider: the secret is
 // forwarded on outbound requests under a caller-chosen HTTP header, as
 // `<api_key_name>: <api_key_value>`..
@@ -1673,86 +575,10 @@ type ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth struct {
 	ApiKeyValue *ModelProviderServiceConfig_ProviderSecret `json:"api_key_value,omitempty"`
 }
 
-func ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth) (*ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	apiKeyValueWireValue, err := ModelProviderServiceConfig_ProviderSecretFromSDK(v.ApiKeyValue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth.ApiKeyValue", err)
-	}
-	return &ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth{
-		ApiKeyName:  v.ApiKeyName,
-		ApiKeyValue: apiKeyValueWireValue,
-	}, nil
-}
-
-func ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthToSDK(w *ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth) (*sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	apiKeyValuePublicValue, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKeyValue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth.ApiKeyValue", err)
-	}
-	return &sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth{
-		ApiKeyName:  w.ApiKeyName,
-		ApiKeyValue: apiKeyValuePublicValue,
-	}, nil
-}
-
 // Custom OpenAI-compatible provider configuration with bearer-token
 // authentication..
 type ModelProviderServiceConfig_CustomProviderConfig struct {
 	Direct *ModelProviderServiceConfig_CustomProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_CustomProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderConfig) (*ModelProviderServiceConfig_CustomProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_CustomProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_CustomProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_CustomProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_CustomProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_CustomProviderConfigToSDK(w *ModelProviderServiceConfig_CustomProviderConfig) (*sdk.ModelProviderServiceConfig_CustomProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_CustomProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_CustomProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_CustomProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_CustomProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct form of a custom provider configuration. Set `api_key` to send the
@@ -1764,75 +590,6 @@ type ModelProviderServiceConfig_CustomProviderDirectConfig struct {
 	BaseUrl    *string                                                    `json:"base_url,omitempty"`
 	ApiKey     *ModelProviderServiceConfig_ProviderSecret                 `json:"api_key,omitempty"`
 	HeaderAuth *ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth `json:"header_auth,omitempty"`
-}
-
-func ModelProviderServiceConfig_CustomProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig) (*ModelProviderServiceConfig_CustomProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	var authModeHeaderAuthWire *ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	case *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_HeaderAuth:
-		if value != nil {
-			authModeHeaderAuthConverted, err := ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthFromSDK(&value.HeaderAuth)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode.HeaderAuth", err)
-			}
-			authModeHeaderAuthWire = authModeHeaderAuthConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_CustomProviderDirectConfig{
-		BaseUrl:    v.BaseUrl,
-		ApiKey:     authModeApiKeyWire,
-		HeaderAuth: authModeHeaderAuthWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_CustomProviderDirectConfigToSDK(w *ModelProviderServiceConfig_CustomProviderDirectConfig) (*sdk.ModelProviderServiceConfig_CustomProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if w.HeaderAuth != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_CustomProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	case w.HeaderAuth != nil:
-		authModeHeaderAuthConverted, err := ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthToSDK(w.HeaderAuth)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode.HeaderAuth", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_HeaderAuth{HeaderAuth: *authModeHeaderAuthConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig{
-		BaseUrl:  w.BaseUrl,
-		AuthMode: authModeSelection,
-	}, nil
 }
 
 // Entra ID (Azure AD) service-principal authentication. The `tenant_id` and
@@ -1847,109 +604,9 @@ type ModelProviderServiceConfig_EntraServicePrincipal struct {
 	ClientSecret *ModelProviderServiceConfig_ProviderSecret `json:"client_secret,omitempty"`
 }
 
-func ModelProviderServiceConfig_EntraServicePrincipalFromSDK(v *sdk.ModelProviderServiceConfig_EntraServicePrincipal) (*ModelProviderServiceConfig_EntraServicePrincipal, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credentialClientSecretWire *ModelProviderServiceConfig_ProviderSecret
-	switch value := v.Credential.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_EntraServicePrincipal_Credential_ClientSecret:
-		if value != nil {
-			credentialClientSecretConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ClientSecret)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_EntraServicePrincipal.Credential.ClientSecret", err)
-			}
-			credentialClientSecretWire = credentialClientSecretConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_EntraServicePrincipal.Credential", value)
-	}
-	return &ModelProviderServiceConfig_EntraServicePrincipal{
-		TenantId:     v.TenantId,
-		ClientId:     v.ClientId,
-		ClientSecret: credentialClientSecretWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_EntraServicePrincipalToSDK(w *ModelProviderServiceConfig_EntraServicePrincipal) (*sdk.ModelProviderServiceConfig_EntraServicePrincipal, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credentialMembers := 0
-	if w.ClientSecret != nil {
-		credentialMembers++
-	}
-	if credentialMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_EntraServicePrincipal.Credential")
-	}
-	credentialSelection := (&sdk.ModelProviderServiceConfig_EntraServicePrincipal{}).Credential
-	switch {
-	case w.ClientSecret != nil:
-		credentialClientSecretConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ClientSecret)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_EntraServicePrincipal.Credential.ClientSecret", err)
-		}
-		credentialSelection = &sdk.ModelProviderServiceConfig_EntraServicePrincipal_Credential_ClientSecret{ClientSecret: *credentialClientSecretConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_EntraServicePrincipal{
-		TenantId:   w.TenantId,
-		ClientId:   w.ClientId,
-		Credential: credentialSelection,
-	}, nil
-}
-
 // Gemini Enterprise provider configuration..
 type ModelProviderServiceConfig_GeminiEnterpriseProviderConfig struct {
 	Direct *ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_GeminiEnterpriseProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig) (*ModelProviderServiceConfig_GeminiEnterpriseProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK(w *ModelProviderServiceConfig_GeminiEnterpriseProviderConfig) (*sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct Gemini Enterprise provider configuration. An API key is required when
@@ -1964,128 +621,9 @@ type ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig struct {
 	Region *string `json:"region,omitempty"`
 }
 
-func ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig) (*ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	var authModeServiceCredentialWire *ModelProviderServiceConfig_ServiceCredential
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ServiceCredential:
-		if value != nil {
-			authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode.ServiceCredential", err)
-			}
-			authModeServiceCredentialWire = authModeServiceCredentialConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{
-		ApiKey:            authModeApiKeyWire,
-		ServiceCredential: authModeServiceCredentialWire,
-		ProjectId:         v.ProjectId,
-		Region:            v.Region,
-	}, nil
-}
-
-func ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK(w *ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig) (*sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if w.ServiceCredential != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	case w.ServiceCredential != nil:
-		authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode.ServiceCredential", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *authModeServiceCredentialConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{
-		ProjectId: w.ProjectId,
-		Region:    w.Region,
-		AuthMode:  authModeSelection,
-	}, nil
-}
-
 // Microsoft Foundry provider configuration..
 type ModelProviderServiceConfig_MicrosoftFoundryProviderConfig struct {
 	Direct *ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_MicrosoftFoundryProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig) (*ModelProviderServiceConfig_MicrosoftFoundryProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK(w *ModelProviderServiceConfig_MicrosoftFoundryProviderConfig) (*sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct form of Microsoft Foundry provider config.
@@ -2107,94 +645,6 @@ type ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig struct {
 	ApiKey                *ModelProviderServiceConfig_ProviderSecret        `json:"api_key,omitempty"`
 	ServiceCredential     *ModelProviderServiceConfig_ServiceCredential     `json:"service_credential,omitempty"`
 	EntraServicePrincipal *ModelProviderServiceConfig_EntraServicePrincipal `json:"entra_service_principal,omitempty"`
-}
-
-func ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig) (*ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	var authModeServiceCredentialWire *ModelProviderServiceConfig_ServiceCredential
-	var authModeEntraServicePrincipalWire *ModelProviderServiceConfig_EntraServicePrincipal
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ServiceCredential:
-		if value != nil {
-			authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.ServiceCredential", err)
-			}
-			authModeServiceCredentialWire = authModeServiceCredentialConverted
-		}
-	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_EntraServicePrincipal:
-		if value != nil {
-			authModeEntraServicePrincipalConverted, err := ModelProviderServiceConfig_EntraServicePrincipalFromSDK(&value.EntraServicePrincipal)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.EntraServicePrincipal", err)
-			}
-			authModeEntraServicePrincipalWire = authModeEntraServicePrincipalConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{
-		BaseUrl:               v.BaseUrl,
-		ApiKey:                authModeApiKeyWire,
-		ServiceCredential:     authModeServiceCredentialWire,
-		EntraServicePrincipal: authModeEntraServicePrincipalWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK(w *ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig) (*sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if w.ServiceCredential != nil {
-		authModeMembers++
-	}
-	if w.EntraServicePrincipal != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	case w.ServiceCredential != nil:
-		authModeServiceCredentialConverted, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.ServiceCredential", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *authModeServiceCredentialConverted}
-	case w.EntraServicePrincipal != nil:
-		authModeEntraServicePrincipalConverted, err := ModelProviderServiceConfig_EntraServicePrincipalToSDK(w.EntraServicePrincipal)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode.EntraServicePrincipal", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_EntraServicePrincipal{EntraServicePrincipal: *authModeEntraServicePrincipalConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{
-		BaseUrl:  w.BaseUrl,
-		AuthMode: authModeSelection,
-	}, nil
 }
 
 // Model target configuration shared by model provider service targets and
@@ -2219,79 +669,9 @@ type ModelProviderServiceConfig_ModelTargetConfig struct {
 	EndpointRoute *string `json:"endpoint_route,omitempty"`
 }
 
-func ModelProviderServiceConfig_ModelTargetConfigFromSDK(v *sdk.ModelProviderServiceConfig_ModelTargetConfig) (*ModelProviderServiceConfig_ModelTargetConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelProviderServiceConfig_ModelTargetConfig{
-		Model:          v.Model,
-		NativeApiTypes: v.NativeApiTypes,
-		EndpointRoute:  v.EndpointRoute,
-	}, nil
-}
-
-func ModelProviderServiceConfig_ModelTargetConfigToSDK(w *ModelProviderServiceConfig_ModelTargetConfig) (*sdk.ModelProviderServiceConfig_ModelTargetConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelProviderServiceConfig_ModelTargetConfig{
-		Model:          w.Model,
-		NativeApiTypes: w.NativeApiTypes,
-		EndpointRoute:  w.EndpointRoute,
-	}, nil
-}
-
 // OpenAI provider configuration..
 type ModelProviderServiceConfig_OpenAiProviderConfig struct {
 	Direct *ModelProviderServiceConfig_OpenAiProviderDirectConfig `json:"direct,omitempty"`
-}
-
-func ModelProviderServiceConfig_OpenAiProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_OpenAiProviderConfig) (*ModelProviderServiceConfig_OpenAiProviderConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providerModeDirectWire *ModelProviderServiceConfig_OpenAiProviderDirectConfig
-	switch value := v.ProviderMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_OpenAiProviderConfig_ProviderMode_Direct:
-		if value != nil {
-			providerModeDirectConverted, err := ModelProviderServiceConfig_OpenAiProviderDirectConfigFromSDK(&value.Direct)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode.Direct", err)
-			}
-			providerModeDirectWire = providerModeDirectConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode", value)
-	}
-	return &ModelProviderServiceConfig_OpenAiProviderConfig{
-		Direct: providerModeDirectWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_OpenAiProviderConfigToSDK(w *ModelProviderServiceConfig_OpenAiProviderConfig) (*sdk.ModelProviderServiceConfig_OpenAiProviderConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerModeMembers := 0
-	if w.Direct != nil {
-		providerModeMembers++
-	}
-	if providerModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode")
-	}
-	providerModeSelection := (&sdk.ModelProviderServiceConfig_OpenAiProviderConfig{}).ProviderMode
-	switch {
-	case w.Direct != nil:
-		providerModeDirectConverted, err := ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK(w.Direct)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode.Direct", err)
-		}
-		providerModeSelection = &sdk.ModelProviderServiceConfig_OpenAiProviderConfig_ProviderMode_Direct{Direct: *providerModeDirectConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_OpenAiProviderConfig{
-		ProviderMode: providerModeSelection,
-	}, nil
 }
 
 // Direct (inline-credentials) form of the OpenAI provider config..
@@ -2305,58 +685,6 @@ type ModelProviderServiceConfig_OpenAiProviderDirectConfig struct {
 	BaseUrl *string `json:"base_url,omitempty"`
 }
 
-func ModelProviderServiceConfig_OpenAiProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig) (*ModelProviderServiceConfig_OpenAiProviderDirectConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var authModeApiKeyWire *ModelProviderServiceConfig_ProviderSecret
-	switch value := v.AuthMode.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig_AuthMode_ApiKey:
-		if value != nil {
-			authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode.ApiKey", err)
-			}
-			authModeApiKeyWire = authModeApiKeyConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode", value)
-	}
-	return &ModelProviderServiceConfig_OpenAiProviderDirectConfig{
-		ApiKey:       authModeApiKeyWire,
-		Organization: v.Organization,
-		BaseUrl:      v.BaseUrl,
-	}, nil
-}
-
-func ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK(w *ModelProviderServiceConfig_OpenAiProviderDirectConfig) (*sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authModeMembers := 0
-	if w.ApiKey != nil {
-		authModeMembers++
-	}
-	if authModeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode")
-	}
-	authModeSelection := (&sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig{}).AuthMode
-	switch {
-	case w.ApiKey != nil:
-		authModeApiKeyConverted, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode.ApiKey", err)
-		}
-		authModeSelection = &sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig_AuthMode_ApiKey{ApiKey: *authModeApiKeyConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig{
-		Organization: w.Organization,
-		BaseUrl:      w.BaseUrl,
-		AuthMode:     authModeSelection,
-	}, nil
-}
-
 // Pricing adjustments applied to this provider service's external-model spend
 // estimates..
 type ModelProviderServiceConfig_ProviderPricingConfig struct {
@@ -2365,24 +693,6 @@ type ModelProviderServiceConfig_ProviderPricingConfig struct {
 	// beyond the int32 range. Values cannot exceed 10000 (100% off). An omitted
 	// value or zero leaves the estimate unchanged.
 	DefaultDiscountBasisPoints *int `json:"default_discount_basis_points,omitempty"`
-}
-
-func ModelProviderServiceConfig_ProviderPricingConfigFromSDK(v *sdk.ModelProviderServiceConfig_ProviderPricingConfig) (*ModelProviderServiceConfig_ProviderPricingConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelProviderServiceConfig_ProviderPricingConfig{
-		DefaultDiscountBasisPoints: v.DefaultDiscountBasisPoints,
-	}, nil
-}
-
-func ModelProviderServiceConfig_ProviderPricingConfigToSDK(w *ModelProviderServiceConfig_ProviderPricingConfig) (*sdk.ModelProviderServiceConfig_ProviderPricingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelProviderServiceConfig_ProviderPricingConfig{
-		DefaultDiscountBasisPoints: w.DefaultDiscountBasisPoints,
-	}, nil
 }
 
 // A secret value supplied as part of an inline provider config. The caller
@@ -2394,65 +704,6 @@ type ModelProviderServiceConfig_ProviderSecret struct {
 	SecretReference *ModelProviderServiceConfig_SecretReference `json:"secret_reference,omitempty"`
 }
 
-func ModelProviderServiceConfig_ProviderSecretFromSDK(v *sdk.ModelProviderServiceConfig_ProviderSecret) (*ModelProviderServiceConfig_ProviderSecret, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valuePlaintextWire *string
-	var valueSecretReferenceWire *ModelProviderServiceConfig_SecretReference
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.ModelProviderServiceConfig_ProviderSecret_Value_Plaintext:
-		if value != nil {
-			valuePlaintextWire = new(value.Plaintext)
-		}
-	case *sdk.ModelProviderServiceConfig_ProviderSecret_Value_SecretReference:
-		if value != nil {
-			valueSecretReferenceConverted, err := ModelProviderServiceConfig_SecretReferenceFromSDK(&value.SecretReference)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_ProviderSecret.Value.SecretReference", err)
-			}
-			valueSecretReferenceWire = valueSecretReferenceConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelProviderServiceConfig_ProviderSecret.Value", value)
-	}
-	return &ModelProviderServiceConfig_ProviderSecret{
-		Plaintext:       valuePlaintextWire,
-		SecretReference: valueSecretReferenceWire,
-	}, nil
-}
-
-func ModelProviderServiceConfig_ProviderSecretToSDK(w *ModelProviderServiceConfig_ProviderSecret) (*sdk.ModelProviderServiceConfig_ProviderSecret, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.Plaintext != nil {
-		valueMembers++
-	}
-	if w.SecretReference != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_ProviderSecret.Value")
-	}
-	valueSelection := (&sdk.ModelProviderServiceConfig_ProviderSecret{}).Value
-	switch {
-	case w.Plaintext != nil:
-		valueSelection = &sdk.ModelProviderServiceConfig_ProviderSecret_Value_Plaintext{Plaintext: *w.Plaintext}
-	case w.SecretReference != nil:
-		valueSecretReferenceConverted, err := ModelProviderServiceConfig_SecretReferenceToSDK(w.SecretReference)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_ProviderSecret.Value.SecretReference", err)
-		}
-		valueSelection = &sdk.ModelProviderServiceConfig_ProviderSecret_Value_SecretReference{SecretReference: *valueSecretReferenceConverted}
-	}
-	return &sdk.ModelProviderServiceConfig_ProviderSecret{
-		Value: valueSelection,
-	}, nil
-}
-
 // Reference to a customer-owned UC Secret backing a secret-bearing provider
 // field, in the `ProviderSecret.secret_reference` arm..
 type ModelProviderServiceConfig_SecretReference struct {
@@ -2462,24 +713,6 @@ type ModelProviderServiceConfig_SecretReference struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func ModelProviderServiceConfig_SecretReferenceFromSDK(v *sdk.ModelProviderServiceConfig_SecretReference) (*ModelProviderServiceConfig_SecretReference, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelProviderServiceConfig_SecretReference{
-		Name: v.Name,
-	}, nil
-}
-
-func ModelProviderServiceConfig_SecretReferenceToSDK(w *ModelProviderServiceConfig_SecretReference) (*sdk.ModelProviderServiceConfig_SecretReference, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelProviderServiceConfig_SecretReference{
-		Name: w.Name,
-	}, nil
-}
-
 // The customer-owned Unity Catalog service credential a model provider service
 // uses to authenticate to its provider, referenced by name..
 type ModelProviderServiceConfig_ServiceCredential struct {
@@ -2487,24 +720,6 @@ type ModelProviderServiceConfig_ServiceCredential struct {
 	// `credentials/{name}`. Supply this field when creating the service or
 	// rebinding its credential. On read, it reflects the credential's current name.
 	Name *string `json:"name,omitempty"`
-}
-
-func ModelProviderServiceConfig_ServiceCredentialFromSDK(v *sdk.ModelProviderServiceConfig_ServiceCredential) (*ModelProviderServiceConfig_ServiceCredential, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelProviderServiceConfig_ServiceCredential{
-		Name: v.Name,
-	}, nil
-}
-
-func ModelProviderServiceConfig_ServiceCredentialToSDK(w *ModelProviderServiceConfig_ServiceCredential) (*sdk.ModelProviderServiceConfig_ServiceCredential, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelProviderServiceConfig_ServiceCredential{
-		Name: w.Name,
-	}, nil
 }
 
 // A governed AI Gateway endpoint in Unity Catalog that routes inference
@@ -2547,52 +762,6 @@ type ModelService struct {
 	SupportedApiTypes []string `json:"supported_api_types,omitempty"`
 }
 
-func ModelServiceFromSDK(v *sdk.ModelService) (*ModelService, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := ModelServiceConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelService.Config", err)
-	}
-	return &ModelService{
-		Name:              v.Name,
-		EffectiveOwner:    v.EffectiveOwner,
-		MetastoreId:       v.MetastoreId,
-		CreateTime:        v.CreateTime,
-		CreatedBy:         v.CreatedBy,
-		UpdateTime:        v.UpdateTime,
-		UpdatedBy:         v.UpdatedBy,
-		Comment:           v.Comment,
-		Config:            configWireValue,
-		Etag:              v.Etag,
-		SupportedApiTypes: v.SupportedApiTypes,
-	}, nil
-}
-
-func ModelServiceToSDK(w *ModelService) (*sdk.ModelService, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := ModelServiceConfigToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelService.Config", err)
-	}
-	return &sdk.ModelService{
-		Name:              w.Name,
-		EffectiveOwner:    w.EffectiveOwner,
-		MetastoreId:       w.MetastoreId,
-		CreateTime:        w.CreateTime,
-		CreatedBy:         w.CreatedBy,
-		UpdateTime:        w.UpdateTime,
-		UpdatedBy:         w.UpdatedBy,
-		Comment:           w.Comment,
-		Config:            configPublicValue,
-		Etag:              w.Etag,
-		SupportedApiTypes: w.SupportedApiTypes,
-	}, nil
-}
-
 // Operational configuration wrapped around the ModelService resource..
 type ModelServiceConfig struct {
 	// Routing configuration: destinations and fallback.
@@ -2601,52 +770,6 @@ type ModelServiceConfig struct {
 	RateLimits []RateLimit `json:"rate_limits,omitempty"`
 	// Inference table configuration for payload logging.
 	InferenceTable *InferenceTableConfig `json:"inference_table,omitempty"`
-}
-
-func ModelServiceConfigFromSDK(v *sdk.ModelServiceConfig) (*ModelServiceConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	routingWireValue, err := ModelServiceConfig_RoutingConfigFromSDK(v.Routing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.Routing", err)
-	}
-	rateLimitsWireValue, err := convertSlice(v.RateLimits, RateLimitFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.RateLimits", err)
-	}
-	inferenceTableWireValue, err := InferenceTableConfigFromSDK(v.InferenceTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.InferenceTable", err)
-	}
-	return &ModelServiceConfig{
-		Routing:        routingWireValue,
-		RateLimits:     rateLimitsWireValue,
-		InferenceTable: inferenceTableWireValue,
-	}, nil
-}
-
-func ModelServiceConfigToSDK(w *ModelServiceConfig) (*sdk.ModelServiceConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	routingPublicValue, err := ModelServiceConfig_RoutingConfigToSDK(w.Routing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.Routing", err)
-	}
-	rateLimitsPublicValue, err := convertSlice(w.RateLimits, RateLimitToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.RateLimits", err)
-	}
-	inferenceTablePublicValue, err := InferenceTableConfigToSDK(w.InferenceTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.InferenceTable", err)
-	}
-	return &sdk.ModelServiceConfig{
-		Routing:        routingPublicValue,
-		RateLimits:     rateLimitsPublicValue,
-		InferenceTable: inferenceTablePublicValue,
-	}, nil
 }
 
 // A destination the model service can route traffic to. Exactly one of the
@@ -2673,100 +796,6 @@ type ModelServiceConfig_DestinationConfig struct {
 	IsDeleted *bool `json:"is_deleted,omitempty"`
 }
 
-func ModelServiceConfig_DestinationConfigFromSDK(v *sdk.ModelServiceConfig_DestinationConfig) (*ModelServiceConfig_DestinationConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var typeConfigPayPerTokenConfigWire *ModelServiceConfig_PayPerTokenConfig
-	var typeConfigProvisionedThroughputConfigWire *ModelServiceConfig_ProvisionedThroughputConfig
-	var typeConfigExternalModelConfigWire *ModelServiceConfig_ExternalModelConfig
-	switch value := v.TypeConfig.(type) {
-	case nil:
-	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_PayPerTokenConfig:
-		if value != nil {
-			typeConfigPayPerTokenConfigConverted, err := ModelServiceConfig_PayPerTokenConfigFromSDK(&value.PayPerTokenConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.PayPerTokenConfig", err)
-			}
-			typeConfigPayPerTokenConfigWire = typeConfigPayPerTokenConfigConverted
-		}
-	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ProvisionedThroughputConfig:
-		if value != nil {
-			typeConfigProvisionedThroughputConfigConverted, err := ModelServiceConfig_ProvisionedThroughputConfigFromSDK(&value.ProvisionedThroughputConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.ProvisionedThroughputConfig", err)
-			}
-			typeConfigProvisionedThroughputConfigWire = typeConfigProvisionedThroughputConfigConverted
-		}
-	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ExternalModelConfig:
-		if value != nil {
-			typeConfigExternalModelConfigConverted, err := ModelServiceConfig_ExternalModelConfigFromSDK(&value.ExternalModelConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.ExternalModelConfig", err)
-			}
-			typeConfigExternalModelConfigWire = typeConfigExternalModelConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ModelServiceConfig_DestinationConfig.TypeConfig", value)
-	}
-	return &ModelServiceConfig_DestinationConfig{
-		Name:                        v.Name,
-		DestinationType:             v.DestinationType,
-		TrafficPercentage:           v.TrafficPercentage,
-		PayPerTokenConfig:           typeConfigPayPerTokenConfigWire,
-		ProvisionedThroughputConfig: typeConfigProvisionedThroughputConfigWire,
-		ExternalModelConfig:         typeConfigExternalModelConfigWire,
-		IsDeleted:                   v.IsDeleted,
-	}, nil
-}
-
-func ModelServiceConfig_DestinationConfigToSDK(w *ModelServiceConfig_DestinationConfig) (*sdk.ModelServiceConfig_DestinationConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	typeConfigMembers := 0
-	if w.PayPerTokenConfig != nil {
-		typeConfigMembers++
-	}
-	if w.ProvisionedThroughputConfig != nil {
-		typeConfigMembers++
-	}
-	if w.ExternalModelConfig != nil {
-		typeConfigMembers++
-	}
-	if typeConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ModelServiceConfig_DestinationConfig.TypeConfig")
-	}
-	typeConfigSelection := (&sdk.ModelServiceConfig_DestinationConfig{}).TypeConfig
-	switch {
-	case w.PayPerTokenConfig != nil:
-		typeConfigPayPerTokenConfigConverted, err := ModelServiceConfig_PayPerTokenConfigToSDK(w.PayPerTokenConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.PayPerTokenConfig", err)
-		}
-		typeConfigSelection = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_PayPerTokenConfig{PayPerTokenConfig: *typeConfigPayPerTokenConfigConverted}
-	case w.ProvisionedThroughputConfig != nil:
-		typeConfigProvisionedThroughputConfigConverted, err := ModelServiceConfig_ProvisionedThroughputConfigToSDK(w.ProvisionedThroughputConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.ProvisionedThroughputConfig", err)
-		}
-		typeConfigSelection = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ProvisionedThroughputConfig{ProvisionedThroughputConfig: *typeConfigProvisionedThroughputConfigConverted}
-	case w.ExternalModelConfig != nil:
-		typeConfigExternalModelConfigConverted, err := ModelServiceConfig_ExternalModelConfigToSDK(w.ExternalModelConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig.ExternalModelConfig", err)
-		}
-		typeConfigSelection = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ExternalModelConfig{ExternalModelConfig: *typeConfigExternalModelConfigConverted}
-	}
-	return &sdk.ModelServiceConfig_DestinationConfig{
-		Name:              w.Name,
-		DestinationType:   w.DestinationType,
-		TrafficPercentage: w.TrafficPercentage,
-		IsDeleted:         w.IsDeleted,
-		TypeConfig:        typeConfigSelection,
-	}, nil
-}
-
 // Configuration for an external-foundation-model destination. Provider auth and
 // provider-specific cloud configuration are owned by a separate, governed
 // ModelProviderService entity referenced via `model_provider_service`; the
@@ -2785,65 +814,11 @@ type ModelServiceConfig_ExternalModelConfig struct {
 	Target *ModelProviderServiceConfig_ModelTargetConfig `json:"target,omitempty"`
 }
 
-func ModelServiceConfig_ExternalModelConfigFromSDK(v *sdk.ModelServiceConfig_ExternalModelConfig) (*ModelServiceConfig_ExternalModelConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	targetWireValue, err := ModelProviderServiceConfig_ModelTargetConfigFromSDK(v.Target)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_ExternalModelConfig.Target", err)
-	}
-	return &ModelServiceConfig_ExternalModelConfig{
-		ModelProviderService: v.ModelProviderService,
-		Target:               targetWireValue,
-	}, nil
-}
-
-func ModelServiceConfig_ExternalModelConfigToSDK(w *ModelServiceConfig_ExternalModelConfig) (*sdk.ModelServiceConfig_ExternalModelConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	targetPublicValue, err := ModelProviderServiceConfig_ModelTargetConfigToSDK(w.Target)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_ExternalModelConfig.Target", err)
-	}
-	return &sdk.ModelServiceConfig_ExternalModelConfig{
-		ModelProviderService: w.ModelProviderService,
-		Target:               targetPublicValue,
-	}, nil
-}
-
 // Fallback routing applied after a primary destination fails. Fallback
 // destinations are tried in the listed order..
 type ModelServiceConfig_FallbackConfig struct {
 	// Fallback destinations, tried in the listed order. At most 5 are allowed.
 	Destinations []ModelServiceConfig_DestinationConfig `json:"destinations,omitempty"`
-}
-
-func ModelServiceConfig_FallbackConfigFromSDK(v *sdk.ModelServiceConfig_FallbackConfig) (*ModelServiceConfig_FallbackConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	destinationsWireValue, err := convertSlice(v.Destinations, ModelServiceConfig_DestinationConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_FallbackConfig.Destinations", err)
-	}
-	return &ModelServiceConfig_FallbackConfig{
-		Destinations: destinationsWireValue,
-	}, nil
-}
-
-func ModelServiceConfig_FallbackConfigToSDK(w *ModelServiceConfig_FallbackConfig) (*sdk.ModelServiceConfig_FallbackConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	destinationsPublicValue, err := convertSlice(w.Destinations, ModelServiceConfig_DestinationConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_FallbackConfig.Destinations", err)
-	}
-	return &sdk.ModelServiceConfig_FallbackConfig{
-		Destinations: destinationsPublicValue,
-	}, nil
 }
 
 // Configuration for a pay-per-token foundation-model destination. Identifies
@@ -2853,24 +828,6 @@ type ModelServiceConfig_PayPerTokenConfig struct {
 	// Resource name of the Unity Catalog model. Format:
 	// `models/{catalog}.{schema}.{model}`.
 	Model *string `json:"model,omitempty"`
-}
-
-func ModelServiceConfig_PayPerTokenConfigFromSDK(v *sdk.ModelServiceConfig_PayPerTokenConfig) (*ModelServiceConfig_PayPerTokenConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelServiceConfig_PayPerTokenConfig{
-		Model: v.Model,
-	}, nil
-}
-
-func ModelServiceConfig_PayPerTokenConfigToSDK(w *ModelServiceConfig_PayPerTokenConfig) (*sdk.ModelServiceConfig_PayPerTokenConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelServiceConfig_PayPerTokenConfig{
-		Model: w.Model,
-	}, nil
 }
 
 // Configuration for a provisioned-throughput foundation-model destination.
@@ -2891,26 +848,6 @@ type ModelServiceConfig_ProvisionedThroughputConfig struct {
 	Model *string `json:"model,omitempty"`
 }
 
-func ModelServiceConfig_ProvisionedThroughputConfigFromSDK(v *sdk.ModelServiceConfig_ProvisionedThroughputConfig) (*ModelServiceConfig_ProvisionedThroughputConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelServiceConfig_ProvisionedThroughputConfig{
-		ModelServingEndpoint: v.ModelServingEndpoint,
-		Model:                v.Model,
-	}, nil
-}
-
-func ModelServiceConfig_ProvisionedThroughputConfigToSDK(w *ModelServiceConfig_ProvisionedThroughputConfig) (*sdk.ModelServiceConfig_ProvisionedThroughputConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelServiceConfig_ProvisionedThroughputConfig{
-		ModelServingEndpoint: w.ModelServingEndpoint,
-		Model:                w.Model,
-	}, nil
-}
-
 // Routing configuration for a model service, nesting destinations and fallback
 // under a single sub-message..
 type ModelServiceConfig_RoutingConfig struct {
@@ -2925,55 +862,10 @@ type ModelServiceConfig_RoutingConfig struct {
 	Fallback *ModelServiceConfig_FallbackConfig `json:"fallback,omitempty"`
 }
 
-func ModelServiceConfig_RoutingConfigFromSDK(v *sdk.ModelServiceConfig_RoutingConfig) (*ModelServiceConfig_RoutingConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	destinationsWireValue, err := convertSlice(v.Destinations, ModelServiceConfig_DestinationConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Destinations", err)
-	}
-	fallbackWireValue, err := ModelServiceConfig_FallbackConfigFromSDK(v.Fallback)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Fallback", err)
-	}
-	return &ModelServiceConfig_RoutingConfig{
-		Destinations: destinationsWireValue,
-		Fallback:     fallbackWireValue,
-	}, nil
-}
-
-func ModelServiceConfig_RoutingConfigToSDK(w *ModelServiceConfig_RoutingConfig) (*sdk.ModelServiceConfig_RoutingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	destinationsPublicValue, err := convertSlice(w.Destinations, ModelServiceConfig_DestinationConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Destinations", err)
-	}
-	fallbackPublicValue, err := ModelServiceConfig_FallbackConfigToSDK(w.Fallback)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Fallback", err)
-	}
-	return &sdk.ModelServiceConfig_RoutingConfig{
-		Destinations: destinationsPublicValue,
-		Fallback:     fallbackPublicValue,
-	}, nil
-}
-
 // Status of an asynchronously provisioned resource..
 type ProvisioningInfo struct {
 	// The provisioning state of the resource.
 	State ProvisioningInfo_State `json:"state,omitempty"`
-}
-
-func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProvisioningInfo{
-		State: w.State,
-	}, nil
 }
 
 // A rate limit applied to service requests. Leave `requests` or `tokens` unset
@@ -2995,48 +887,6 @@ type RateLimit struct {
 	// Maximum tokens allowed in one renewal period. Leave unset for no token limit.
 	// Set to `0` to deny all requests.
 	Tokens *int64 `json:"tokens,omitempty"`
-}
-
-func RateLimitFromSDK(v *sdk.RateLimit) (*RateLimit, error) {
-	if v == nil {
-		return nil, nil
-	}
-	requestsWireValue, err := int64ToWire(v.Requests)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Requests", err)
-	}
-	tokensWireValue, err := int64ToWire(v.Tokens)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Tokens", err)
-	}
-	return &RateLimit{
-		Key:           v.Key,
-		RenewalPeriod: v.RenewalPeriod,
-		Principal:     v.Principal,
-		Requests:      requestsWireValue,
-		Tokens:        tokensWireValue,
-	}, nil
-}
-
-func RateLimitToSDK(w *RateLimit) (*sdk.RateLimit, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestsPublicValue, err := int64FromWire(w.Requests)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Requests", err)
-	}
-	tokensPublicValue, err := int64FromWire(w.Tokens)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RateLimit.Tokens", err)
-	}
-	return &sdk.RateLimit{
-		Key:           w.Key,
-		RenewalPeriod: w.RenewalPeriod,
-		Principal:     w.Principal,
-		Requests:      requestsPublicValue,
-		Tokens:        tokensPublicValue,
-	}, nil
 }
 
 // A Skill is an agentskills.io bundle registered in Unity Catalog. Clients
@@ -3084,46 +934,6 @@ type Skill struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func SkillFromSDK(v *sdk.Skill) (*Skill, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Skill{
-		Name:           v.Name,
-		BundleName:     v.BundleName,
-		Description:    v.Description,
-		Etag:           v.Etag,
-		CreateTime:     v.CreateTime,
-		UpdateTime:     v.UpdateTime,
-		FinalizeTime:   v.FinalizeTime,
-		CreatedBy:      v.CreatedBy,
-		UpdatedBy:      v.UpdatedBy,
-		EffectiveOwner: v.EffectiveOwner,
-		MetastoreId:    v.MetastoreId,
-		Comment:        v.Comment,
-	}, nil
-}
-
-func SkillToSDK(w *Skill) (*sdk.Skill, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Skill{
-		Name:           w.Name,
-		BundleName:     w.BundleName,
-		Description:    w.Description,
-		Etag:           w.Etag,
-		CreateTime:     w.CreateTime,
-		UpdateTime:     w.UpdateTime,
-		FinalizeTime:   w.FinalizeTime,
-		CreatedBy:      w.CreatedBy,
-		UpdatedBy:      w.UpdatedBy,
-		EffectiveOwner: w.EffectiveOwner,
-		MetastoreId:    w.MetastoreId,
-		Comment:        w.Comment,
-	}, nil
-}
-
 // Request to update an MCP service. `name` cannot appear in `update_mask`..
 type UpdateMcpServiceRequest struct {
 	// The MCP service with the updated field values. `name` identifies the resource
@@ -3141,21 +951,6 @@ type UpdateMcpServiceRequest struct {
 	// unconditional update. For REST requests, URL-encode the base64 string
 	// returned by the API when setting the `etag` query parameter.
 	Etag []byte `json:"etag,omitempty"`
-}
-
-func UpdateMcpServiceRequestFromSDK(v *sdk.UpdateMcpServiceRequest) (*UpdateMcpServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	mcpServiceWireValue, err := McpServiceFromSDK(v.McpService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMcpServiceRequest.McpService", err)
-	}
-	return &UpdateMcpServiceRequest{
-		McpService: mcpServiceWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-		Etag:       v.Etag,
-	}, nil
 }
 
 // Request to update a model provider service. `name` and `config.provider_type`
@@ -3188,21 +983,6 @@ type UpdateModelProviderServiceRequest struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
-func UpdateModelProviderServiceRequestFromSDK(v *sdk.UpdateModelProviderServiceRequest) (*UpdateModelProviderServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	modelProviderServiceWireValue, err := ModelProviderServiceFromSDK(v.ModelProviderService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelProviderServiceRequest.ModelProviderService", err)
-	}
-	return &UpdateModelProviderServiceRequest{
-		ModelProviderService: modelProviderServiceWireValue,
-		UpdateMask:           fieldMaskToWire(v.UpdateMask),
-		Etag:                 v.Etag,
-	}, nil
-}
-
 // Request to update a model service. `name` cannot appear in `update_mask`; the
 // model service name is immutable..
 type UpdateModelServiceRequest struct {
@@ -3225,21 +1005,6 @@ type UpdateModelServiceRequest struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
-func UpdateModelServiceRequestFromSDK(v *sdk.UpdateModelServiceRequest) (*UpdateModelServiceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	modelServiceWireValue, err := ModelServiceFromSDK(v.ModelService)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelServiceRequest.ModelService", err)
-	}
-	return &UpdateModelServiceRequest{
-		ModelService: modelServiceWireValue,
-		UpdateMask:   fieldMaskToWire(v.UpdateMask),
-		Etag:         v.Etag,
-	}, nil
-}
-
 // Request to update a skill. `name` cannot appear in `update_mask`; the skill
 // name is immutable..
 type UpdateSkillRequest struct {
@@ -3257,19 +1022,2537 @@ type UpdateSkillRequest struct {
 	Etag []byte `json:"etag,omitempty"`
 }
 
+// CreateMcpServiceRequestToSDK converts the mirror to the sdk-go type.
+func CreateMcpServiceRequestToSDK(w *CreateMcpServiceRequest) (*sdk.CreateMcpServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMcpServiceRequest{}
+	out.Parent = w.Parent
+	out.McpServiceId = w.McpServiceId
+	conv1, err := McpServiceToSDK(w.McpService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceRequest.McpService", err)
+	}
+	out.McpService = conv1
+	return out, nil
+}
+
+// CreateMcpServiceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMcpServiceRequestFromSDK(v *sdk.CreateMcpServiceRequest) (*CreateMcpServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMcpServiceRequest{}
+	out.Parent = v.Parent
+	out.McpServiceId = v.McpServiceId
+	conv2, err := McpServiceFromSDK(v.McpService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceRequest.McpService", err)
+	}
+	out.McpService = conv2
+	return out, nil
+}
+
+// CreateMcpServiceUserMappedCredentialRequestToSDK converts the mirror to the sdk-go type.
+func CreateMcpServiceUserMappedCredentialRequestToSDK(w *CreateMcpServiceUserMappedCredentialRequest) (*sdk.CreateMcpServiceUserMappedCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMcpServiceUserMappedCredentialRequest{}
+	out.Name = w.Name
+	conv3, err := McpServiceUserMappedCredentialLoginToSDK(w.Login)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceUserMappedCredentialRequest.Login", err)
+	}
+	out.Login = conv3
+	return out, nil
+}
+
+// CreateMcpServiceUserMappedCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMcpServiceUserMappedCredentialRequestFromSDK(v *sdk.CreateMcpServiceUserMappedCredentialRequest) (*CreateMcpServiceUserMappedCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMcpServiceUserMappedCredentialRequest{}
+	out.Name = v.Name
+	conv4, err := McpServiceUserMappedCredentialLoginFromSDK(v.Login)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMcpServiceUserMappedCredentialRequest.Login", err)
+	}
+	out.Login = conv4
+	return out, nil
+}
+
+// CreateModelProviderServiceRequestToSDK converts the mirror to the sdk-go type.
+func CreateModelProviderServiceRequestToSDK(w *CreateModelProviderServiceRequest) (*sdk.CreateModelProviderServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateModelProviderServiceRequest{}
+	out.Parent = w.Parent
+	out.ModelProviderServiceId = w.ModelProviderServiceId
+	conv5, err := ModelProviderServiceToSDK(w.ModelProviderService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelProviderServiceRequest.ModelProviderService", err)
+	}
+	out.ModelProviderService = conv5
+	return out, nil
+}
+
+// CreateModelProviderServiceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateModelProviderServiceRequestFromSDK(v *sdk.CreateModelProviderServiceRequest) (*CreateModelProviderServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateModelProviderServiceRequest{}
+	out.Parent = v.Parent
+	out.ModelProviderServiceId = v.ModelProviderServiceId
+	conv6, err := ModelProviderServiceFromSDK(v.ModelProviderService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelProviderServiceRequest.ModelProviderService", err)
+	}
+	out.ModelProviderService = conv6
+	return out, nil
+}
+
+// CreateModelServiceRequestToSDK converts the mirror to the sdk-go type.
+func CreateModelServiceRequestToSDK(w *CreateModelServiceRequest) (*sdk.CreateModelServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateModelServiceRequest{}
+	out.Parent = w.Parent
+	out.ModelServiceId = w.ModelServiceId
+	conv7, err := ModelServiceToSDK(w.ModelService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelServiceRequest.ModelService", err)
+	}
+	out.ModelService = conv7
+	return out, nil
+}
+
+// CreateModelServiceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateModelServiceRequestFromSDK(v *sdk.CreateModelServiceRequest) (*CreateModelServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateModelServiceRequest{}
+	out.Parent = v.Parent
+	out.ModelServiceId = v.ModelServiceId
+	conv8, err := ModelServiceFromSDK(v.ModelService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelServiceRequest.ModelService", err)
+	}
+	out.ModelService = conv8
+	return out, nil
+}
+
+// CreateSkillRequestToSDK converts the mirror to the sdk-go type.
+func CreateSkillRequestToSDK(w *CreateSkillRequest) (*sdk.CreateSkillRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSkillRequest{}
+	out.Parent = w.Parent
+	out.SkillId = w.SkillId
+	conv9, err := SkillToSDK(w.Skill)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSkillRequest.Skill", err)
+	}
+	out.Skill = conv9
+	return out, nil
+}
+
+// CreateSkillRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSkillRequestFromSDK(v *sdk.CreateSkillRequest) (*CreateSkillRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSkillRequest{}
+	out.Parent = v.Parent
+	out.SkillId = v.SkillId
+	conv10, err := SkillFromSDK(v.Skill)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSkillRequest.Skill", err)
+	}
+	out.Skill = conv10
+	return out, nil
+}
+
+// DeleteMcpServiceRequestToSDK converts the mirror to the sdk-go type.
+func DeleteMcpServiceRequestToSDK(w *DeleteMcpServiceRequest) (*sdk.DeleteMcpServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteMcpServiceRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteMcpServiceRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteMcpServiceRequestFromSDK(v *sdk.DeleteMcpServiceRequest) (*DeleteMcpServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteMcpServiceRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// DeleteModelProviderServiceRequestToSDK converts the mirror to the sdk-go type.
+func DeleteModelProviderServiceRequestToSDK(w *DeleteModelProviderServiceRequest) (*sdk.DeleteModelProviderServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteModelProviderServiceRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteModelProviderServiceRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteModelProviderServiceRequestFromSDK(v *sdk.DeleteModelProviderServiceRequest) (*DeleteModelProviderServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteModelProviderServiceRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// DeleteModelServiceRequestToSDK converts the mirror to the sdk-go type.
+func DeleteModelServiceRequestToSDK(w *DeleteModelServiceRequest) (*sdk.DeleteModelServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteModelServiceRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteModelServiceRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteModelServiceRequestFromSDK(v *sdk.DeleteModelServiceRequest) (*DeleteModelServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteModelServiceRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// DeleteSkillRequestToSDK converts the mirror to the sdk-go type.
+func DeleteSkillRequestToSDK(w *DeleteSkillRequest) (*sdk.DeleteSkillRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteSkillRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteSkillRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteSkillRequestFromSDK(v *sdk.DeleteSkillRequest) (*DeleteSkillRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteSkillRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// InferenceTableConfigToSDK converts the mirror to the sdk-go type.
+func InferenceTableConfigToSDK(w *InferenceTableConfig) (*sdk.InferenceTableConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceTableConfig{}
+	out.Parent = w.Parent
+	out.TableNamePrefix = w.TableNamePrefix
+	out.Table = w.Table
+	out.IsDeleted = w.IsDeleted
+	return out, nil
+}
+
+// InferenceTableConfigFromSDK converts the sdk-go type to the mirror.
+func InferenceTableConfigFromSDK(v *sdk.InferenceTableConfig) (*InferenceTableConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceTableConfig{}
+	out.Parent = v.Parent
+	out.TableNamePrefix = v.TableNamePrefix
+	out.Table = v.Table
+	out.IsDeleted = v.IsDeleted
+	return out, nil
+}
+
+// ListMcpServicesRequestToSDK converts the mirror to the sdk-go type.
+func ListMcpServicesRequestToSDK(w *ListMcpServicesRequest) (*sdk.ListMcpServicesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMcpServicesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.View = w.View
+	return out, nil
+}
+
+// ListMcpServicesRequestFromSDK converts the sdk-go type to the mirror.
+func ListMcpServicesRequestFromSDK(v *sdk.ListMcpServicesRequest) (*ListMcpServicesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMcpServicesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.View = v.View
+	return out, nil
+}
+
+// ListMcpServicesResponseToSDK converts the mirror to the sdk-go type.
+func ListMcpServicesResponseToSDK(w *ListMcpServicesResponse) (*sdk.ListMcpServicesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMcpServicesResponse{}
+	conv11, err := convertSlice(w.McpServices, McpServiceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMcpServicesResponse.McpServices", err)
+	}
+	out.McpServices = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListMcpServicesResponseFromSDK converts the sdk-go type to the mirror.
+func ListMcpServicesResponseFromSDK(v *sdk.ListMcpServicesResponse) (*ListMcpServicesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMcpServicesResponse{}
+	conv12, err := convertSlice(v.McpServices, McpServiceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMcpServicesResponse.McpServices", err)
+	}
+	out.McpServices = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListModelProviderServicesRequestToSDK converts the mirror to the sdk-go type.
+func ListModelProviderServicesRequestToSDK(w *ListModelProviderServicesRequest) (*sdk.ListModelProviderServicesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelProviderServicesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.View = w.View
+	return out, nil
+}
+
+// ListModelProviderServicesRequestFromSDK converts the sdk-go type to the mirror.
+func ListModelProviderServicesRequestFromSDK(v *sdk.ListModelProviderServicesRequest) (*ListModelProviderServicesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelProviderServicesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.View = v.View
+	return out, nil
+}
+
+// ListModelProviderServicesResponseToSDK converts the mirror to the sdk-go type.
+func ListModelProviderServicesResponseToSDK(w *ListModelProviderServicesResponse) (*sdk.ListModelProviderServicesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelProviderServicesResponse{}
+	conv13, err := convertSlice(w.ModelProviderServices, ModelProviderServiceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelProviderServicesResponse.ModelProviderServices", err)
+	}
+	out.ModelProviderServices = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListModelProviderServicesResponseFromSDK converts the sdk-go type to the mirror.
+func ListModelProviderServicesResponseFromSDK(v *sdk.ListModelProviderServicesResponse) (*ListModelProviderServicesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelProviderServicesResponse{}
+	conv14, err := convertSlice(v.ModelProviderServices, ModelProviderServiceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelProviderServicesResponse.ModelProviderServices", err)
+	}
+	out.ModelProviderServices = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListModelServicesRequestToSDK converts the mirror to the sdk-go type.
+func ListModelServicesRequestToSDK(w *ListModelServicesRequest) (*sdk.ListModelServicesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelServicesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.View = w.View
+	return out, nil
+}
+
+// ListModelServicesRequestFromSDK converts the sdk-go type to the mirror.
+func ListModelServicesRequestFromSDK(v *sdk.ListModelServicesRequest) (*ListModelServicesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelServicesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.View = v.View
+	return out, nil
+}
+
+// ListModelServicesResponseToSDK converts the mirror to the sdk-go type.
+func ListModelServicesResponseToSDK(w *ListModelServicesResponse) (*sdk.ListModelServicesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListModelServicesResponse{}
+	conv15, err := convertSlice(w.ModelServices, ModelServiceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelServicesResponse.ModelServices", err)
+	}
+	out.ModelServices = conv15
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListModelServicesResponseFromSDK converts the sdk-go type to the mirror.
+func ListModelServicesResponseFromSDK(v *sdk.ListModelServicesResponse) (*ListModelServicesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListModelServicesResponse{}
+	conv16, err := convertSlice(v.ModelServices, ModelServiceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListModelServicesResponse.ModelServices", err)
+	}
+	out.ModelServices = conv16
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSkillsRequestToSDK converts the mirror to the sdk-go type.
+func ListSkillsRequestToSDK(w *ListSkillsRequest) (*sdk.ListSkillsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSkillsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSkillsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSkillsRequestFromSDK(v *sdk.ListSkillsRequest) (*ListSkillsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSkillsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSkillsResponseToSDK converts the mirror to the sdk-go type.
+func ListSkillsResponseToSDK(w *ListSkillsResponse) (*sdk.ListSkillsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSkillsResponse{}
+	conv17, err := convertSlice(w.Skills, SkillToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSkillsResponse.Skills", err)
+	}
+	out.Skills = conv17
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSkillsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSkillsResponseFromSDK(v *sdk.ListSkillsResponse) (*ListSkillsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSkillsResponse{}
+	conv18, err := convertSlice(v.Skills, SkillFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSkillsResponse.Skills", err)
+	}
+	out.Skills = conv18
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// McpServiceToSDK converts the mirror to the sdk-go type.
+func McpServiceToSDK(w *McpService) (*sdk.McpService, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.McpService{}
+	out.Name = w.Name
+	out.EffectiveOwner = w.EffectiveOwner
+	out.MetastoreId = w.MetastoreId
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.Comment = w.Comment
+	conv19, err := McpServiceConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpService.Config", err)
+	}
+	out.Config = conv19
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// McpServiceFromSDK converts the sdk-go type to the mirror.
+func McpServiceFromSDK(v *sdk.McpService) (*McpService, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &McpService{}
+	out.Name = v.Name
+	out.EffectiveOwner = v.EffectiveOwner
+	out.MetastoreId = v.MetastoreId
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.Comment = v.Comment
+	conv20, err := McpServiceConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpService.Config", err)
+	}
+	out.Config = conv20
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// McpServiceConfigToSDK converts the mirror to the sdk-go type.
+func McpServiceConfigToSDK(w *McpServiceConfig) (*sdk.McpServiceConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.McpServiceConfig{}
+	{
+		members := 0
+		if w.SourceConnection != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "McpServiceConfig.Source")
+		}
+	}
+	switch {
+	case w.SourceConnection != nil:
+		conv21, err := McpServiceConfig_SourceConnectionToSDK(w.SourceConnection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "McpServiceConfig.Source", err)
+		}
+		out.Source = &sdk.McpServiceConfig_Source_SourceConnection{SourceConnection: *conv21}
+	}
+	out.IncludeToolSelectors = w.IncludeToolSelectors
+	conv22, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv22
+	return out, nil
+}
+
+// McpServiceConfigFromSDK converts the sdk-go type to the mirror.
+func McpServiceConfigFromSDK(v *sdk.McpServiceConfig) (*McpServiceConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &McpServiceConfig{}
+	switch value := v.Source.(type) {
+	case *sdk.McpServiceConfig_Source_SourceConnection:
+		if value != nil {
+			conv23, err := McpServiceConfig_SourceConnectionFromSDK(&value.SourceConnection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "McpServiceConfig.Source", err)
+			}
+			out.SourceConnection = conv23
+		}
+	}
+	out.IncludeToolSelectors = v.IncludeToolSelectors
+	conv24, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv24
+	return out, nil
+}
+
+// McpServiceConfig_SourceConnectionToSDK converts the mirror to the sdk-go type.
+func McpServiceConfig_SourceConnectionToSDK(w *McpServiceConfig_SourceConnection) (*sdk.McpServiceConfig_SourceConnection, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.McpServiceConfig_SourceConnection{}
+	out.Name = w.Name
+	out.IsDeleted = w.IsDeleted
+	out.Options = w.Options
+	return out, nil
+}
+
+// McpServiceConfig_SourceConnectionFromSDK converts the sdk-go type to the mirror.
+func McpServiceConfig_SourceConnectionFromSDK(v *sdk.McpServiceConfig_SourceConnection) (*McpServiceConfig_SourceConnection, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &McpServiceConfig_SourceConnection{}
+	out.Name = v.Name
+	out.IsDeleted = v.IsDeleted
+	out.Options = v.Options
+	return out, nil
+}
+
+// McpServiceUserMappedCredentialToSDK converts the mirror to the sdk-go type.
+func McpServiceUserMappedCredentialToSDK(w *McpServiceUserMappedCredential) (*sdk.McpServiceUserMappedCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.McpServiceUserMappedCredential{}
+	out.Options = w.Options
+	conv25, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpServiceUserMappedCredential.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv25
+	return out, nil
+}
+
+// McpServiceUserMappedCredentialFromSDK converts the sdk-go type to the mirror.
+func McpServiceUserMappedCredentialFromSDK(v *sdk.McpServiceUserMappedCredential) (*McpServiceUserMappedCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &McpServiceUserMappedCredential{}
+	out.Options = v.Options
+	conv26, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "McpServiceUserMappedCredential.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv26
+	return out, nil
+}
+
+// McpServiceUserMappedCredentialLoginToSDK converts the mirror to the sdk-go type.
+func McpServiceUserMappedCredentialLoginToSDK(w *McpServiceUserMappedCredentialLogin) (*sdk.McpServiceUserMappedCredentialLogin, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.McpServiceUserMappedCredentialLogin{}
+	out.Options = w.Options
+	return out, nil
+}
+
+// McpServiceUserMappedCredentialLoginFromSDK converts the sdk-go type to the mirror.
+func McpServiceUserMappedCredentialLoginFromSDK(v *sdk.McpServiceUserMappedCredentialLogin) (*McpServiceUserMappedCredentialLogin, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &McpServiceUserMappedCredentialLogin{}
+	out.Options = v.Options
+	return out, nil
+}
+
+// ModelProviderServiceToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceToSDK(w *ModelProviderService) (*sdk.ModelProviderService, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderService{}
+	out.Name = w.Name
+	out.EffectiveOwner = w.EffectiveOwner
+	out.MetastoreId = w.MetastoreId
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.Comment = w.Comment
+	out.Etag = w.Etag
+	conv27, err := ModelProviderServiceConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderService.Config", err)
+	}
+	out.Config = conv27
+	return out, nil
+}
+
+// ModelProviderServiceFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceFromSDK(v *sdk.ModelProviderService) (*ModelProviderService, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderService{}
+	out.Name = v.Name
+	out.EffectiveOwner = v.EffectiveOwner
+	out.MetastoreId = v.MetastoreId
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.Comment = v.Comment
+	out.Etag = v.Etag
+	conv28, err := ModelProviderServiceConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderService.Config", err)
+	}
+	out.Config = conv28
+	return out, nil
+}
+
+// ModelProviderServiceConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfigToSDK(w *ModelProviderServiceConfig) (*sdk.ModelProviderServiceConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig{}
+	out.ProviderType = w.ProviderType
+	{
+		members := 0
+		if w.Openai != nil {
+			members++
+		}
+		if w.AzureOpenai != nil {
+			members++
+		}
+		if w.Anthropic != nil {
+			members++
+		}
+		if w.AmazonBedrock != nil {
+			members++
+		}
+		if w.Custom != nil {
+			members++
+		}
+		if w.MicrosoftFoundry != nil {
+			members++
+		}
+		if w.GeminiEnterprise != nil {
+			members++
+		}
+		if w.BedrockMantle != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig.Provider")
+		}
+	}
+	switch {
+	case w.Openai != nil:
+		conv29, err := ModelProviderServiceConfig_OpenAiProviderConfigToSDK(w.Openai)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_Openai{Openai: *conv29}
+	case w.AzureOpenai != nil:
+		conv30, err := ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK(w.AzureOpenai)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_AzureOpenai{AzureOpenai: *conv30}
+	case w.Anthropic != nil:
+		conv31, err := ModelProviderServiceConfig_AnthropicProviderConfigToSDK(w.Anthropic)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_Anthropic{Anthropic: *conv31}
+	case w.AmazonBedrock != nil:
+		conv32, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w.AmazonBedrock)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_AmazonBedrock{AmazonBedrock: *conv32}
+	case w.Custom != nil:
+		conv33, err := ModelProviderServiceConfig_CustomProviderConfigToSDK(w.Custom)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_Custom{Custom: *conv33}
+	case w.MicrosoftFoundry != nil:
+		conv34, err := ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK(w.MicrosoftFoundry)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_MicrosoftFoundry{MicrosoftFoundry: *conv34}
+	case w.GeminiEnterprise != nil:
+		conv35, err := ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK(w.GeminiEnterprise)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_GeminiEnterprise{GeminiEnterprise: *conv35}
+	case w.BedrockMantle != nil:
+		conv36, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w.BedrockMantle)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+		}
+		out.Provider = &sdk.ModelProviderServiceConfig_Provider_BedrockMantle{BedrockMantle: *conv36}
+	}
+	out.AllowAllTargets = w.AllowAllTargets
+	conv37, err := convertSlice(w.Targets, ModelProviderServiceConfig_ModelTargetConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Targets", err)
+	}
+	out.Targets = conv37
+	out.ForwardHeaders = w.ForwardHeaders
+	out.ForwardQueryParameters = w.ForwardQueryParameters
+	out.ForwardUnmanagedPaths = w.ForwardUnmanagedPaths
+	conv38, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv38
+	conv39, err := InferenceTableConfigToSDK(w.InferenceTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.InferenceTable", err)
+	}
+	out.InferenceTable = conv39
+	conv40, err := ModelProviderServiceConfig_ProviderPricingConfigToSDK(w.Pricing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Pricing", err)
+	}
+	out.Pricing = conv40
+	return out, nil
+}
+
+// ModelProviderServiceConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfigFromSDK(v *sdk.ModelProviderServiceConfig) (*ModelProviderServiceConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig{}
+	out.ProviderType = v.ProviderType
+	switch value := v.Provider.(type) {
+	case *sdk.ModelProviderServiceConfig_Provider_Openai:
+		if value != nil {
+			conv41, err := ModelProviderServiceConfig_OpenAiProviderConfigFromSDK(&value.Openai)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.Openai = conv41
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_AzureOpenai:
+		if value != nil {
+			conv42, err := ModelProviderServiceConfig_AzureOpenAiProviderConfigFromSDK(&value.AzureOpenai)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.AzureOpenai = conv42
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_Anthropic:
+		if value != nil {
+			conv43, err := ModelProviderServiceConfig_AnthropicProviderConfigFromSDK(&value.Anthropic)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.Anthropic = conv43
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_AmazonBedrock:
+		if value != nil {
+			conv44, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(&value.AmazonBedrock)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.AmazonBedrock = conv44
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_Custom:
+		if value != nil {
+			conv45, err := ModelProviderServiceConfig_CustomProviderConfigFromSDK(&value.Custom)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.Custom = conv45
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_MicrosoftFoundry:
+		if value != nil {
+			conv46, err := ModelProviderServiceConfig_MicrosoftFoundryProviderConfigFromSDK(&value.MicrosoftFoundry)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.MicrosoftFoundry = conv46
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_GeminiEnterprise:
+		if value != nil {
+			conv47, err := ModelProviderServiceConfig_GeminiEnterpriseProviderConfigFromSDK(&value.GeminiEnterprise)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.GeminiEnterprise = conv47
+		}
+	case *sdk.ModelProviderServiceConfig_Provider_BedrockMantle:
+		if value != nil {
+			conv48, err := ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(&value.BedrockMantle)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Provider", err)
+			}
+			out.BedrockMantle = conv48
+		}
+	}
+	out.AllowAllTargets = v.AllowAllTargets
+	conv49, err := convertSlice(v.Targets, ModelProviderServiceConfig_ModelTargetConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Targets", err)
+	}
+	out.Targets = conv49
+	out.ForwardHeaders = v.ForwardHeaders
+	out.ForwardQueryParameters = v.ForwardQueryParameters
+	out.ForwardUnmanagedPaths = v.ForwardUnmanagedPaths
+	conv50, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv50
+	conv51, err := InferenceTableConfigFromSDK(v.InferenceTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.InferenceTable", err)
+	}
+	out.InferenceTable = conv51
+	conv52, err := ModelProviderServiceConfig_ProviderPricingConfigFromSDK(v.Pricing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig.Pricing", err)
+	}
+	out.Pricing = conv52
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AmazonBedrockProviderConfigToSDK(w *ModelProviderServiceConfig_AmazonBedrockProviderConfig) (*sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv53, err := ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig_ProviderMode_Direct{Direct: *conv53}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AmazonBedrockProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig) (*ModelProviderServiceConfig_AmazonBedrockProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AmazonBedrockProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv54, err := ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv54
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{}
+	out.Region = w.Region
+	{
+		members := 0
+		if w.ServiceCredential != nil {
+			members++
+		}
+		if w.AwsAccessKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ServiceCredential != nil:
+		conv55, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *conv55}
+	case w.AwsAccessKey != nil:
+		conv56, err := ModelProviderServiceConfig_AwsAccessKeyToSDK(w.AwsAccessKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_AwsAccessKey{AwsAccessKey: *conv56}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AmazonBedrockProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig) (*ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig{}
+	out.Region = v.Region
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_ServiceCredential:
+		if value != nil {
+			conv57, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode", err)
+			}
+			out.ServiceCredential = conv57
+		}
+	case *sdk.ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig_AuthMode_AwsAccessKey:
+		if value != nil {
+			conv58, err := ModelProviderServiceConfig_AwsAccessKeyFromSDK(&value.AwsAccessKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AmazonBedrockProviderDirectConfig.AuthMode", err)
+			}
+			out.AwsAccessKey = conv58
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AnthropicProviderConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AnthropicProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if w.Relayed != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv59, err := ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Direct{Direct: *conv59}
+	case w.Relayed != nil:
+		conv60, err := ModelProviderServiceConfig_AnthropicProviderRelayedConfigToSDK(w.Relayed)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Relayed{Relayed: *conv60}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AnthropicProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderConfig) (*ModelProviderServiceConfig_AnthropicProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AnthropicProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv61, err := ModelProviderServiceConfig_AnthropicProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv61
+		}
+	case *sdk.ModelProviderServiceConfig_AnthropicProviderConfig_ProviderMode_Relayed:
+		if value != nil {
+			conv62, err := ModelProviderServiceConfig_AnthropicProviderRelayedConfigFromSDK(&value.Relayed)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderConfig.ProviderMode", err)
+			}
+			out.Relayed = conv62
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AnthropicProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig{}
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv63, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv63}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AnthropicProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig) (*ModelProviderServiceConfig_AnthropicProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AnthropicProviderDirectConfig{}
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AnthropicProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv64, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AnthropicProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv64
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderRelayedConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AnthropicProviderRelayedConfigToSDK(w *ModelProviderServiceConfig_AnthropicProviderRelayedConfig) (*sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig{}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AnthropicProviderRelayedConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AnthropicProviderRelayedConfigFromSDK(v *sdk.ModelProviderServiceConfig_AnthropicProviderRelayedConfig) (*ModelProviderServiceConfig_AnthropicProviderRelayedConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AnthropicProviderRelayedConfig{}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AwsAccessKeyToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AwsAccessKeyToSDK(w *ModelProviderServiceConfig_AwsAccessKey) (*sdk.ModelProviderServiceConfig_AwsAccessKey, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AwsAccessKey{}
+	out.AccessKeyId = w.AccessKeyId
+	conv65, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.SecretAccessKey)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AwsAccessKey.SecretAccessKey", err)
+	}
+	out.SecretAccessKey = conv65
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AwsAccessKeyFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AwsAccessKeyFromSDK(v *sdk.ModelProviderServiceConfig_AwsAccessKey) (*ModelProviderServiceConfig_AwsAccessKey, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AwsAccessKey{}
+	out.AccessKeyId = v.AccessKeyId
+	conv66, err := ModelProviderServiceConfig_ProviderSecretFromSDK(v.SecretAccessKey)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AwsAccessKey.SecretAccessKey", err)
+	}
+	out.SecretAccessKey = conv66
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AzureOpenAiProviderConfigToSDK(w *ModelProviderServiceConfig_AzureOpenAiProviderConfig) (*sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv67, err := ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig_ProviderMode_Direct{Direct: *conv67}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AzureOpenAiProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AzureOpenAiProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig) (*ModelProviderServiceConfig_AzureOpenAiProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AzureOpenAiProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv68, err := ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv68
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigToSDK(w *ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig) (*sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{}
+	out.BaseUrl = w.BaseUrl
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if w.ServiceCredential != nil {
+			members++
+		}
+		if w.EntraServicePrincipal != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv69, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv69}
+	case w.ServiceCredential != nil:
+		conv70, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *conv70}
+	case w.EntraServicePrincipal != nil:
+		conv71, err := ModelProviderServiceConfig_EntraServicePrincipalToSDK(w.EntraServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_EntraServicePrincipal{EntraServicePrincipal: *conv71}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_AzureOpenAiProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig) (*ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig{}
+	out.BaseUrl = v.BaseUrl
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv72, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv72
+		}
+	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_ServiceCredential:
+		if value != nil {
+			conv73, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+			}
+			out.ServiceCredential = conv73
+		}
+	case *sdk.ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig_AuthMode_EntraServicePrincipal:
+		if value != nil {
+			conv74, err := ModelProviderServiceConfig_EntraServicePrincipalFromSDK(&value.EntraServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_AzureOpenAiProviderDirectConfig.AuthMode", err)
+			}
+			out.EntraServicePrincipal = conv74
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthToSDK(w *ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth) (*sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth{}
+	out.ApiKeyName = w.ApiKeyName
+	conv75, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKeyValue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth.ApiKeyValue", err)
+	}
+	out.ApiKeyValue = conv75
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth) (*ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth{}
+	out.ApiKeyName = v.ApiKeyName
+	conv76, err := ModelProviderServiceConfig_ProviderSecretFromSDK(v.ApiKeyValue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuth.ApiKeyValue", err)
+	}
+	out.ApiKeyValue = conv76
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_CustomProviderConfigToSDK(w *ModelProviderServiceConfig_CustomProviderConfig) (*sdk.ModelProviderServiceConfig_CustomProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_CustomProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv77, err := ModelProviderServiceConfig_CustomProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_CustomProviderConfig_ProviderMode_Direct{Direct: *conv77}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_CustomProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderConfig) (*ModelProviderServiceConfig_CustomProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_CustomProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_CustomProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv78, err := ModelProviderServiceConfig_CustomProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv78
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_CustomProviderDirectConfigToSDK(w *ModelProviderServiceConfig_CustomProviderDirectConfig) (*sdk.ModelProviderServiceConfig_CustomProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig{}
+	out.BaseUrl = w.BaseUrl
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if w.HeaderAuth != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv79, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv79}
+	case w.HeaderAuth != nil:
+		conv80, err := ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthToSDK(w.HeaderAuth)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_HeaderAuth{HeaderAuth: *conv80}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_CustomProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_CustomProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig) (*ModelProviderServiceConfig_CustomProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_CustomProviderDirectConfig{}
+	out.BaseUrl = v.BaseUrl
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv81, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv81
+		}
+	case *sdk.ModelProviderServiceConfig_CustomProviderDirectConfig_AuthMode_HeaderAuth:
+		if value != nil {
+			conv82, err := ModelProviderServiceConfig_CustomProviderApiKeyHeaderAuthFromSDK(&value.HeaderAuth)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_CustomProviderDirectConfig.AuthMode", err)
+			}
+			out.HeaderAuth = conv82
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_EntraServicePrincipalToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_EntraServicePrincipalToSDK(w *ModelProviderServiceConfig_EntraServicePrincipal) (*sdk.ModelProviderServiceConfig_EntraServicePrincipal, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_EntraServicePrincipal{}
+	out.TenantId = w.TenantId
+	out.ClientId = w.ClientId
+	{
+		members := 0
+		if w.ClientSecret != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_EntraServicePrincipal.Credential")
+		}
+	}
+	switch {
+	case w.ClientSecret != nil:
+		conv83, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ClientSecret)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_EntraServicePrincipal.Credential", err)
+		}
+		out.Credential = &sdk.ModelProviderServiceConfig_EntraServicePrincipal_Credential_ClientSecret{ClientSecret: *conv83}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_EntraServicePrincipalFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_EntraServicePrincipalFromSDK(v *sdk.ModelProviderServiceConfig_EntraServicePrincipal) (*ModelProviderServiceConfig_EntraServicePrincipal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_EntraServicePrincipal{}
+	out.TenantId = v.TenantId
+	out.ClientId = v.ClientId
+	switch value := v.Credential.(type) {
+	case *sdk.ModelProviderServiceConfig_EntraServicePrincipal_Credential_ClientSecret:
+		if value != nil {
+			conv84, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ClientSecret)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_EntraServicePrincipal.Credential", err)
+			}
+			out.ClientSecret = conv84
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_GeminiEnterpriseProviderConfigToSDK(w *ModelProviderServiceConfig_GeminiEnterpriseProviderConfig) (*sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv85, err := ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig_ProviderMode_Direct{Direct: *conv85}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_GeminiEnterpriseProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_GeminiEnterpriseProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig) (*ModelProviderServiceConfig_GeminiEnterpriseProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_GeminiEnterpriseProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv86, err := ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv86
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigToSDK(w *ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig) (*sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{}
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if w.ServiceCredential != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv87, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv87}
+	case w.ServiceCredential != nil:
+		conv88, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *conv88}
+	}
+	out.ProjectId = w.ProjectId
+	out.Region = w.Region
+	return out, nil
+}
+
+// ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig) (*ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig{}
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv89, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv89
+		}
+	case *sdk.ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig_AuthMode_ServiceCredential:
+		if value != nil {
+			conv90, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_GeminiEnterpriseProviderDirectConfig.AuthMode", err)
+			}
+			out.ServiceCredential = conv90
+		}
+	}
+	out.ProjectId = v.ProjectId
+	out.Region = v.Region
+	return out, nil
+}
+
+// ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_MicrosoftFoundryProviderConfigToSDK(w *ModelProviderServiceConfig_MicrosoftFoundryProviderConfig) (*sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv91, err := ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig_ProviderMode_Direct{Direct: *conv91}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_MicrosoftFoundryProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_MicrosoftFoundryProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig) (*ModelProviderServiceConfig_MicrosoftFoundryProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_MicrosoftFoundryProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv92, err := ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv92
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigToSDK(w *ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig) (*sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{}
+	out.BaseUrl = w.BaseUrl
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if w.ServiceCredential != nil {
+			members++
+		}
+		if w.EntraServicePrincipal != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv93, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv93}
+	case w.ServiceCredential != nil:
+		conv94, err := ModelProviderServiceConfig_ServiceCredentialToSDK(w.ServiceCredential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ServiceCredential{ServiceCredential: *conv94}
+	case w.EntraServicePrincipal != nil:
+		conv95, err := ModelProviderServiceConfig_EntraServicePrincipalToSDK(w.EntraServicePrincipal)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_EntraServicePrincipal{EntraServicePrincipal: *conv95}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig) (*ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig{}
+	out.BaseUrl = v.BaseUrl
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv96, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv96
+		}
+	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_ServiceCredential:
+		if value != nil {
+			conv97, err := ModelProviderServiceConfig_ServiceCredentialFromSDK(&value.ServiceCredential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+			}
+			out.ServiceCredential = conv97
+		}
+	case *sdk.ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig_AuthMode_EntraServicePrincipal:
+		if value != nil {
+			conv98, err := ModelProviderServiceConfig_EntraServicePrincipalFromSDK(&value.EntraServicePrincipal)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_MicrosoftFoundryProviderDirectConfig.AuthMode", err)
+			}
+			out.EntraServicePrincipal = conv98
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ModelTargetConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_ModelTargetConfigToSDK(w *ModelProviderServiceConfig_ModelTargetConfig) (*sdk.ModelProviderServiceConfig_ModelTargetConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_ModelTargetConfig{}
+	out.Model = w.Model
+	out.NativeApiTypes = w.NativeApiTypes
+	out.EndpointRoute = w.EndpointRoute
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ModelTargetConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_ModelTargetConfigFromSDK(v *sdk.ModelProviderServiceConfig_ModelTargetConfig) (*ModelProviderServiceConfig_ModelTargetConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_ModelTargetConfig{}
+	out.Model = v.Model
+	out.NativeApiTypes = v.NativeApiTypes
+	out.EndpointRoute = v.EndpointRoute
+	return out, nil
+}
+
+// ModelProviderServiceConfig_OpenAiProviderConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_OpenAiProviderConfigToSDK(w *ModelProviderServiceConfig_OpenAiProviderConfig) (*sdk.ModelProviderServiceConfig_OpenAiProviderConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_OpenAiProviderConfig{}
+	{
+		members := 0
+		if w.Direct != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode")
+		}
+	}
+	switch {
+	case w.Direct != nil:
+		conv99, err := ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK(w.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode", err)
+		}
+		out.ProviderMode = &sdk.ModelProviderServiceConfig_OpenAiProviderConfig_ProviderMode_Direct{Direct: *conv99}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_OpenAiProviderConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_OpenAiProviderConfigFromSDK(v *sdk.ModelProviderServiceConfig_OpenAiProviderConfig) (*ModelProviderServiceConfig_OpenAiProviderConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_OpenAiProviderConfig{}
+	switch value := v.ProviderMode.(type) {
+	case *sdk.ModelProviderServiceConfig_OpenAiProviderConfig_ProviderMode_Direct:
+		if value != nil {
+			conv100, err := ModelProviderServiceConfig_OpenAiProviderDirectConfigFromSDK(&value.Direct)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderConfig.ProviderMode", err)
+			}
+			out.Direct = conv100
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_OpenAiProviderDirectConfigToSDK(w *ModelProviderServiceConfig_OpenAiProviderDirectConfig) (*sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig{}
+	{
+		members := 0
+		if w.ApiKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode")
+		}
+	}
+	switch {
+	case w.ApiKey != nil:
+		conv101, err := ModelProviderServiceConfig_ProviderSecretToSDK(w.ApiKey)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode", err)
+		}
+		out.AuthMode = &sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig_AuthMode_ApiKey{ApiKey: *conv101}
+	}
+	out.Organization = w.Organization
+	out.BaseUrl = w.BaseUrl
+	return out, nil
+}
+
+// ModelProviderServiceConfig_OpenAiProviderDirectConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_OpenAiProviderDirectConfigFromSDK(v *sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig) (*ModelProviderServiceConfig_OpenAiProviderDirectConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_OpenAiProviderDirectConfig{}
+	switch value := v.AuthMode.(type) {
+	case *sdk.ModelProviderServiceConfig_OpenAiProviderDirectConfig_AuthMode_ApiKey:
+		if value != nil {
+			conv102, err := ModelProviderServiceConfig_ProviderSecretFromSDK(&value.ApiKey)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_OpenAiProviderDirectConfig.AuthMode", err)
+			}
+			out.ApiKey = conv102
+		}
+	}
+	out.Organization = v.Organization
+	out.BaseUrl = v.BaseUrl
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ProviderPricingConfigToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_ProviderPricingConfigToSDK(w *ModelProviderServiceConfig_ProviderPricingConfig) (*sdk.ModelProviderServiceConfig_ProviderPricingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_ProviderPricingConfig{}
+	out.DefaultDiscountBasisPoints = w.DefaultDiscountBasisPoints
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ProviderPricingConfigFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_ProviderPricingConfigFromSDK(v *sdk.ModelProviderServiceConfig_ProviderPricingConfig) (*ModelProviderServiceConfig_ProviderPricingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_ProviderPricingConfig{}
+	out.DefaultDiscountBasisPoints = v.DefaultDiscountBasisPoints
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ProviderSecretToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_ProviderSecretToSDK(w *ModelProviderServiceConfig_ProviderSecret) (*sdk.ModelProviderServiceConfig_ProviderSecret, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_ProviderSecret{}
+	{
+		members := 0
+		if w.Plaintext != nil {
+			members++
+		}
+		if w.SecretReference != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelProviderServiceConfig_ProviderSecret.Value")
+		}
+	}
+	switch {
+	case w.Plaintext != nil:
+		out.Value = &sdk.ModelProviderServiceConfig_ProviderSecret_Value_Plaintext{Plaintext: *w.Plaintext}
+	case w.SecretReference != nil:
+		conv103, err := ModelProviderServiceConfig_SecretReferenceToSDK(w.SecretReference)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_ProviderSecret.Value", err)
+		}
+		out.Value = &sdk.ModelProviderServiceConfig_ProviderSecret_Value_SecretReference{SecretReference: *conv103}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ProviderSecretFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_ProviderSecretFromSDK(v *sdk.ModelProviderServiceConfig_ProviderSecret) (*ModelProviderServiceConfig_ProviderSecret, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_ProviderSecret{}
+	switch value := v.Value.(type) {
+	case *sdk.ModelProviderServiceConfig_ProviderSecret_Value_Plaintext:
+		if value != nil {
+			out.Plaintext = new(value.Plaintext)
+		}
+	case *sdk.ModelProviderServiceConfig_ProviderSecret_Value_SecretReference:
+		if value != nil {
+			conv104, err := ModelProviderServiceConfig_SecretReferenceFromSDK(&value.SecretReference)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelProviderServiceConfig_ProviderSecret.Value", err)
+			}
+			out.SecretReference = conv104
+		}
+	}
+	return out, nil
+}
+
+// ModelProviderServiceConfig_SecretReferenceToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_SecretReferenceToSDK(w *ModelProviderServiceConfig_SecretReference) (*sdk.ModelProviderServiceConfig_SecretReference, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_SecretReference{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ModelProviderServiceConfig_SecretReferenceFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_SecretReferenceFromSDK(v *sdk.ModelProviderServiceConfig_SecretReference) (*ModelProviderServiceConfig_SecretReference, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_SecretReference{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ServiceCredentialToSDK converts the mirror to the sdk-go type.
+func ModelProviderServiceConfig_ServiceCredentialToSDK(w *ModelProviderServiceConfig_ServiceCredential) (*sdk.ModelProviderServiceConfig_ServiceCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelProviderServiceConfig_ServiceCredential{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// ModelProviderServiceConfig_ServiceCredentialFromSDK converts the sdk-go type to the mirror.
+func ModelProviderServiceConfig_ServiceCredentialFromSDK(v *sdk.ModelProviderServiceConfig_ServiceCredential) (*ModelProviderServiceConfig_ServiceCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelProviderServiceConfig_ServiceCredential{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// ModelServiceToSDK converts the mirror to the sdk-go type.
+func ModelServiceToSDK(w *ModelService) (*sdk.ModelService, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelService{}
+	out.Name = w.Name
+	out.EffectiveOwner = w.EffectiveOwner
+	out.MetastoreId = w.MetastoreId
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.Comment = w.Comment
+	conv105, err := ModelServiceConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelService.Config", err)
+	}
+	out.Config = conv105
+	out.Etag = w.Etag
+	out.SupportedApiTypes = w.SupportedApiTypes
+	return out, nil
+}
+
+// ModelServiceFromSDK converts the sdk-go type to the mirror.
+func ModelServiceFromSDK(v *sdk.ModelService) (*ModelService, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelService{}
+	out.Name = v.Name
+	out.EffectiveOwner = v.EffectiveOwner
+	out.MetastoreId = v.MetastoreId
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.Comment = v.Comment
+	conv106, err := ModelServiceConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelService.Config", err)
+	}
+	out.Config = conv106
+	out.Etag = v.Etag
+	out.SupportedApiTypes = v.SupportedApiTypes
+	return out, nil
+}
+
+// ModelServiceConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfigToSDK(w *ModelServiceConfig) (*sdk.ModelServiceConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig{}
+	conv107, err := ModelServiceConfig_RoutingConfigToSDK(w.Routing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.Routing", err)
+	}
+	out.Routing = conv107
+	conv108, err := convertSlice(w.RateLimits, RateLimitToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv108
+	conv109, err := InferenceTableConfigToSDK(w.InferenceTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.InferenceTable", err)
+	}
+	out.InferenceTable = conv109
+	return out, nil
+}
+
+// ModelServiceConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfigFromSDK(v *sdk.ModelServiceConfig) (*ModelServiceConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig{}
+	conv110, err := ModelServiceConfig_RoutingConfigFromSDK(v.Routing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.Routing", err)
+	}
+	out.Routing = conv110
+	conv111, err := convertSlice(v.RateLimits, RateLimitFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.RateLimits", err)
+	}
+	out.RateLimits = conv111
+	conv112, err := InferenceTableConfigFromSDK(v.InferenceTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig.InferenceTable", err)
+	}
+	out.InferenceTable = conv112
+	return out, nil
+}
+
+// ModelServiceConfig_DestinationConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_DestinationConfigToSDK(w *ModelServiceConfig_DestinationConfig) (*sdk.ModelServiceConfig_DestinationConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_DestinationConfig{}
+	out.Name = w.Name
+	out.DestinationType = w.DestinationType
+	out.TrafficPercentage = w.TrafficPercentage
+	{
+		members := 0
+		if w.PayPerTokenConfig != nil {
+			members++
+		}
+		if w.ProvisionedThroughputConfig != nil {
+			members++
+		}
+		if w.ExternalModelConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ModelServiceConfig_DestinationConfig.TypeConfig")
+		}
+	}
+	switch {
+	case w.PayPerTokenConfig != nil:
+		conv113, err := ModelServiceConfig_PayPerTokenConfigToSDK(w.PayPerTokenConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+		}
+		out.TypeConfig = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_PayPerTokenConfig{PayPerTokenConfig: *conv113}
+	case w.ProvisionedThroughputConfig != nil:
+		conv114, err := ModelServiceConfig_ProvisionedThroughputConfigToSDK(w.ProvisionedThroughputConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+		}
+		out.TypeConfig = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ProvisionedThroughputConfig{ProvisionedThroughputConfig: *conv114}
+	case w.ExternalModelConfig != nil:
+		conv115, err := ModelServiceConfig_ExternalModelConfigToSDK(w.ExternalModelConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+		}
+		out.TypeConfig = &sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ExternalModelConfig{ExternalModelConfig: *conv115}
+	}
+	out.IsDeleted = w.IsDeleted
+	return out, nil
+}
+
+// ModelServiceConfig_DestinationConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_DestinationConfigFromSDK(v *sdk.ModelServiceConfig_DestinationConfig) (*ModelServiceConfig_DestinationConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_DestinationConfig{}
+	out.Name = v.Name
+	out.DestinationType = v.DestinationType
+	out.TrafficPercentage = v.TrafficPercentage
+	switch value := v.TypeConfig.(type) {
+	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_PayPerTokenConfig:
+		if value != nil {
+			conv116, err := ModelServiceConfig_PayPerTokenConfigFromSDK(&value.PayPerTokenConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+			}
+			out.PayPerTokenConfig = conv116
+		}
+	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ProvisionedThroughputConfig:
+		if value != nil {
+			conv117, err := ModelServiceConfig_ProvisionedThroughputConfigFromSDK(&value.ProvisionedThroughputConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+			}
+			out.ProvisionedThroughputConfig = conv117
+		}
+	case *sdk.ModelServiceConfig_DestinationConfig_TypeConfig_ExternalModelConfig:
+		if value != nil {
+			conv118, err := ModelServiceConfig_ExternalModelConfigFromSDK(&value.ExternalModelConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_DestinationConfig.TypeConfig", err)
+			}
+			out.ExternalModelConfig = conv118
+		}
+	}
+	out.IsDeleted = v.IsDeleted
+	return out, nil
+}
+
+// ModelServiceConfig_ExternalModelConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_ExternalModelConfigToSDK(w *ModelServiceConfig_ExternalModelConfig) (*sdk.ModelServiceConfig_ExternalModelConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_ExternalModelConfig{}
+	out.ModelProviderService = w.ModelProviderService
+	conv119, err := ModelProviderServiceConfig_ModelTargetConfigToSDK(w.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_ExternalModelConfig.Target", err)
+	}
+	out.Target = conv119
+	return out, nil
+}
+
+// ModelServiceConfig_ExternalModelConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_ExternalModelConfigFromSDK(v *sdk.ModelServiceConfig_ExternalModelConfig) (*ModelServiceConfig_ExternalModelConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_ExternalModelConfig{}
+	out.ModelProviderService = v.ModelProviderService
+	conv120, err := ModelProviderServiceConfig_ModelTargetConfigFromSDK(v.Target)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_ExternalModelConfig.Target", err)
+	}
+	out.Target = conv120
+	return out, nil
+}
+
+// ModelServiceConfig_FallbackConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_FallbackConfigToSDK(w *ModelServiceConfig_FallbackConfig) (*sdk.ModelServiceConfig_FallbackConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_FallbackConfig{}
+	conv121, err := convertSlice(w.Destinations, ModelServiceConfig_DestinationConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_FallbackConfig.Destinations", err)
+	}
+	out.Destinations = conv121
+	return out, nil
+}
+
+// ModelServiceConfig_FallbackConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_FallbackConfigFromSDK(v *sdk.ModelServiceConfig_FallbackConfig) (*ModelServiceConfig_FallbackConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_FallbackConfig{}
+	conv122, err := convertSlice(v.Destinations, ModelServiceConfig_DestinationConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_FallbackConfig.Destinations", err)
+	}
+	out.Destinations = conv122
+	return out, nil
+}
+
+// ModelServiceConfig_PayPerTokenConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_PayPerTokenConfigToSDK(w *ModelServiceConfig_PayPerTokenConfig) (*sdk.ModelServiceConfig_PayPerTokenConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_PayPerTokenConfig{}
+	out.Model = w.Model
+	return out, nil
+}
+
+// ModelServiceConfig_PayPerTokenConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_PayPerTokenConfigFromSDK(v *sdk.ModelServiceConfig_PayPerTokenConfig) (*ModelServiceConfig_PayPerTokenConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_PayPerTokenConfig{}
+	out.Model = v.Model
+	return out, nil
+}
+
+// ModelServiceConfig_ProvisionedThroughputConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_ProvisionedThroughputConfigToSDK(w *ModelServiceConfig_ProvisionedThroughputConfig) (*sdk.ModelServiceConfig_ProvisionedThroughputConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_ProvisionedThroughputConfig{}
+	out.ModelServingEndpoint = w.ModelServingEndpoint
+	out.Model = w.Model
+	return out, nil
+}
+
+// ModelServiceConfig_ProvisionedThroughputConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_ProvisionedThroughputConfigFromSDK(v *sdk.ModelServiceConfig_ProvisionedThroughputConfig) (*ModelServiceConfig_ProvisionedThroughputConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_ProvisionedThroughputConfig{}
+	out.ModelServingEndpoint = v.ModelServingEndpoint
+	out.Model = v.Model
+	return out, nil
+}
+
+// ModelServiceConfig_RoutingConfigToSDK converts the mirror to the sdk-go type.
+func ModelServiceConfig_RoutingConfigToSDK(w *ModelServiceConfig_RoutingConfig) (*sdk.ModelServiceConfig_RoutingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelServiceConfig_RoutingConfig{}
+	conv123, err := convertSlice(w.Destinations, ModelServiceConfig_DestinationConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Destinations", err)
+	}
+	out.Destinations = conv123
+	conv124, err := ModelServiceConfig_FallbackConfigToSDK(w.Fallback)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Fallback", err)
+	}
+	out.Fallback = conv124
+	return out, nil
+}
+
+// ModelServiceConfig_RoutingConfigFromSDK converts the sdk-go type to the mirror.
+func ModelServiceConfig_RoutingConfigFromSDK(v *sdk.ModelServiceConfig_RoutingConfig) (*ModelServiceConfig_RoutingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelServiceConfig_RoutingConfig{}
+	conv125, err := convertSlice(v.Destinations, ModelServiceConfig_DestinationConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Destinations", err)
+	}
+	out.Destinations = conv125
+	conv126, err := ModelServiceConfig_FallbackConfigFromSDK(v.Fallback)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelServiceConfig_RoutingConfig.Fallback", err)
+	}
+	out.Fallback = conv126
+	return out, nil
+}
+
+// ProvisioningInfoToSDK converts the mirror to the sdk-go type.
+func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProvisioningInfo{}
+	out.State = w.State
+	return out, nil
+}
+
+// ProvisioningInfoFromSDK converts the sdk-go type to the mirror.
+func ProvisioningInfoFromSDK(v *sdk.ProvisioningInfo) (*ProvisioningInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProvisioningInfo{}
+	out.State = v.State
+	return out, nil
+}
+
+// RateLimitToSDK converts the mirror to the sdk-go type.
+func RateLimitToSDK(w *RateLimit) (*sdk.RateLimit, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RateLimit{}
+	out.Key = w.Key
+	out.RenewalPeriod = w.RenewalPeriod
+	out.Principal = w.Principal
+	out.Requests = w.Requests
+	out.Tokens = w.Tokens
+	return out, nil
+}
+
+// RateLimitFromSDK converts the sdk-go type to the mirror.
+func RateLimitFromSDK(v *sdk.RateLimit) (*RateLimit, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RateLimit{}
+	out.Key = v.Key
+	out.RenewalPeriod = v.RenewalPeriod
+	out.Principal = v.Principal
+	out.Requests = v.Requests
+	out.Tokens = v.Tokens
+	return out, nil
+}
+
+// SkillToSDK converts the mirror to the sdk-go type.
+func SkillToSDK(w *Skill) (*sdk.Skill, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Skill{}
+	out.Name = w.Name
+	out.BundleName = w.BundleName
+	out.Description = w.Description
+	out.Etag = w.Etag
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.FinalizeTime = w.FinalizeTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedBy = w.UpdatedBy
+	out.EffectiveOwner = w.EffectiveOwner
+	out.MetastoreId = w.MetastoreId
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// SkillFromSDK converts the sdk-go type to the mirror.
+func SkillFromSDK(v *sdk.Skill) (*Skill, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Skill{}
+	out.Name = v.Name
+	out.BundleName = v.BundleName
+	out.Description = v.Description
+	out.Etag = v.Etag
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.FinalizeTime = v.FinalizeTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedBy = v.UpdatedBy
+	out.EffectiveOwner = v.EffectiveOwner
+	out.MetastoreId = v.MetastoreId
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// UpdateMcpServiceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateMcpServiceRequestToSDK(w *UpdateMcpServiceRequest) (*sdk.UpdateMcpServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateMcpServiceRequest{}
+	conv127, err := McpServiceToSDK(w.McpService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMcpServiceRequest.McpService", err)
+	}
+	out.McpService = conv127
+	mask128, err := fieldMaskFromString[sdk.McpService](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMcpServiceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask128
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// UpdateMcpServiceRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateMcpServiceRequestFromSDK(v *sdk.UpdateMcpServiceRequest) (*UpdateMcpServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateMcpServiceRequest{}
+	conv129, err := McpServiceFromSDK(v.McpService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMcpServiceRequest.McpService", err)
+	}
+	out.McpService = conv129
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// UpdateModelProviderServiceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateModelProviderServiceRequestToSDK(w *UpdateModelProviderServiceRequest) (*sdk.UpdateModelProviderServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateModelProviderServiceRequest{}
+	conv130, err := ModelProviderServiceToSDK(w.ModelProviderService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelProviderServiceRequest.ModelProviderService", err)
+	}
+	out.ModelProviderService = conv130
+	mask131, err := fieldMaskFromString[sdk.ModelProviderService](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelProviderServiceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask131
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// UpdateModelProviderServiceRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateModelProviderServiceRequestFromSDK(v *sdk.UpdateModelProviderServiceRequest) (*UpdateModelProviderServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateModelProviderServiceRequest{}
+	conv132, err := ModelProviderServiceFromSDK(v.ModelProviderService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelProviderServiceRequest.ModelProviderService", err)
+	}
+	out.ModelProviderService = conv132
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// UpdateModelServiceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateModelServiceRequestToSDK(w *UpdateModelServiceRequest) (*sdk.UpdateModelServiceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateModelServiceRequest{}
+	conv133, err := ModelServiceToSDK(w.ModelService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelServiceRequest.ModelService", err)
+	}
+	out.ModelService = conv133
+	mask134, err := fieldMaskFromString[sdk.ModelService](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelServiceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask134
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// UpdateModelServiceRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateModelServiceRequestFromSDK(v *sdk.UpdateModelServiceRequest) (*UpdateModelServiceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateModelServiceRequest{}
+	conv135, err := ModelServiceFromSDK(v.ModelService)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelServiceRequest.ModelService", err)
+	}
+	out.ModelService = conv135
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// UpdateSkillRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSkillRequestToSDK(w *UpdateSkillRequest) (*sdk.UpdateSkillRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSkillRequest{}
+	conv136, err := SkillToSDK(w.Skill)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSkillRequest.Skill", err)
+	}
+	out.Skill = conv136
+	mask137, err := fieldMaskFromString[sdk.Skill](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSkillRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask137
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// UpdateSkillRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSkillRequestFromSDK(v *sdk.UpdateSkillRequest) (*UpdateSkillRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	skillWireValue, err := SkillFromSDK(v.Skill)
+	out := &UpdateSkillRequest{}
+	conv138, err := SkillFromSDK(v.Skill)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSkillRequest.Skill", err)
 	}
-	return &UpdateSkillRequest{
-		Skill:      skillWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-		Etag:       v.Etag,
-	}, nil
+	out.Skill = conv138
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Etag = v.Etag
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -3285,4 +3568,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

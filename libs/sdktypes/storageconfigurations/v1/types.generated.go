@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/storageconfigurations/v1"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateStorageConfigurationRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// The human-readable name of the storage configuration.
@@ -39,43 +23,9 @@ type CreateStorageConfigurationRequest struct {
 	RoleArn *string `json:"role_arn,omitempty"`
 }
 
-func CreateStorageConfigurationRequestFromSDK(v *sdk.CreateStorageConfigurationRequest) (*CreateStorageConfigurationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rootBucketInfoWireValue, err := RootBucketInfoFromSDK(v.RootBucketInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateStorageConfigurationRequest.RootBucketInfo", err)
-	}
-	return &CreateStorageConfigurationRequest{
-		AccountId:                v.AccountId,
-		StorageConfigurationName: v.StorageConfigurationName,
-		RootBucketInfo:           rootBucketInfoWireValue,
-		RoleArn:                  v.RoleArn,
-	}, nil
-}
-
 type RootBucketInfo struct {
 	// Name of the S3 bucket
 	BucketName *string `json:"bucket_name,omitempty"`
-}
-
-func RootBucketInfoFromSDK(v *sdk.RootBucketInfo) (*RootBucketInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RootBucketInfo{
-		BucketName: v.BucketName,
-	}, nil
-}
-
-func RootBucketInfoToSDK(w *RootBucketInfo) (*sdk.RootBucketInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RootBucketInfo{
-		BucketName: w.BucketName,
-	}, nil
 }
 
 type StorageConfiguration struct {
@@ -98,39 +48,94 @@ type StorageConfiguration struct {
 	RoleArn *string `json:"role_arn,omitempty"`
 }
 
+// CreateStorageConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func CreateStorageConfigurationRequestToSDK(w *CreateStorageConfigurationRequest) (*sdk.CreateStorageConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateStorageConfigurationRequest{}
+	out.AccountId = w.AccountId
+	out.StorageConfigurationName = w.StorageConfigurationName
+	conv1, err := RootBucketInfoToSDK(w.RootBucketInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStorageConfigurationRequest.RootBucketInfo", err)
+	}
+	out.RootBucketInfo = conv1
+	out.RoleArn = w.RoleArn
+	return out, nil
+}
+
+// CreateStorageConfigurationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateStorageConfigurationRequestFromSDK(v *sdk.CreateStorageConfigurationRequest) (*CreateStorageConfigurationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateStorageConfigurationRequest{}
+	out.AccountId = v.AccountId
+	out.StorageConfigurationName = v.StorageConfigurationName
+	conv2, err := RootBucketInfoFromSDK(v.RootBucketInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStorageConfigurationRequest.RootBucketInfo", err)
+	}
+	out.RootBucketInfo = conv2
+	out.RoleArn = v.RoleArn
+	return out, nil
+}
+
+// RootBucketInfoToSDK converts the mirror to the sdk-go type.
+func RootBucketInfoToSDK(w *RootBucketInfo) (*sdk.RootBucketInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RootBucketInfo{}
+	out.BucketName = w.BucketName
+	return out, nil
+}
+
+// RootBucketInfoFromSDK converts the sdk-go type to the mirror.
+func RootBucketInfoFromSDK(v *sdk.RootBucketInfo) (*RootBucketInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RootBucketInfo{}
+	out.BucketName = v.BucketName
+	return out, nil
+}
+
+// StorageConfigurationToSDK converts the mirror to the sdk-go type.
 func StorageConfigurationToSDK(w *StorageConfiguration) (*sdk.StorageConfiguration, error) {
 	if w == nil {
 		return nil, nil
 	}
-	rootBucketInfoPublicValue, err := RootBucketInfoToSDK(w.RootBucketInfo)
+	out := &sdk.StorageConfiguration{}
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.AccountId = w.AccountId
+	conv3, err := RootBucketInfoToSDK(w.RootBucketInfo)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "StorageConfiguration.RootBucketInfo", err)
 	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StorageConfiguration.CreationTime", err)
-	}
-	return &sdk.StorageConfiguration{
-		StorageConfigurationId:   w.StorageConfigurationId,
-		AccountId:                w.AccountId,
-		RootBucketInfo:           rootBucketInfoPublicValue,
-		StorageConfigurationName: w.StorageConfigurationName,
-		CreationTime:             creationTimePublicValue,
-		RoleArn:                  w.RoleArn,
-	}, nil
+	out.RootBucketInfo = conv3
+	out.StorageConfigurationName = w.StorageConfigurationName
+	out.CreationTime = w.CreationTime
+	out.RoleArn = w.RoleArn
+	return out, nil
 }
 
-func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
-	if s == nil {
+// StorageConfigurationFromSDK converts the sdk-go type to the mirror.
+func StorageConfigurationFromSDK(v *sdk.StorageConfiguration) (*StorageConfiguration, error) {
+	if v == nil {
 		return nil, nil
 	}
-	out := make([]W, len(s))
-	for i := range s {
-		converted, err := conv(&s[i])
-		if err != nil {
-			return nil, fmt.Errorf("element %d: %w", i, err)
-		}
-		out[i] = *converted
+	out := &StorageConfiguration{}
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.AccountId = v.AccountId
+	conv4, err := RootBucketInfoFromSDK(v.RootBucketInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StorageConfiguration.RootBucketInfo", err)
 	}
+	out.RootBucketInfo = conv4
+	out.StorageConfigurationName = v.StorageConfigurationName
+	out.CreationTime = v.CreationTime
+	out.RoleArn = v.RoleArn
 	return out, nil
 }

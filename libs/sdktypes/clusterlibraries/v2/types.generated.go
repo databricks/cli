@@ -29,32 +29,9 @@ type ClusterLibraryStatuses struct {
 	LibraryStatuses []LibraryFullStatus `json:"library_statuses,omitempty"`
 }
 
-func ClusterLibraryStatusesToSDK(w *ClusterLibraryStatuses) (*sdk.ClusterLibraryStatuses, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libraryStatusesPublicValue, err := convertSlice(w.LibraryStatuses, LibraryFullStatusToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterLibraryStatuses.LibraryStatuses", err)
-	}
-	return &sdk.ClusterLibraryStatuses{
-		ClusterId:       w.ClusterId,
-		LibraryStatuses: libraryStatusesPublicValue,
-	}, nil
-}
-
 type ClusterStatusRequest struct {
 	// Unique identifier of the cluster whose status should be retrieved.
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func ClusterStatusRequestFromSDK(v *sdk.ClusterStatusRequest) (*ClusterStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ClusterStatusRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type InstallLibrariesRequest struct {
@@ -62,20 +39,6 @@ type InstallLibrariesRequest struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
 	// The libraries to install.
 	Libraries []Library `json:"libraries,omitempty"`
-}
-
-func InstallLibrariesRequestFromSDK(v *sdk.InstallLibrariesRequest) (*InstallLibrariesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallLibrariesRequest.Libraries", err)
-	}
-	return &InstallLibrariesRequest{
-		ClusterId: v.ClusterId,
-		Libraries: librariesWireValue,
-	}, nil
 }
 
 type Library struct {
@@ -86,136 +49,6 @@ type Library struct {
 	Cran         *RCranLibrary      `json:"cran,omitempty"`
 	Whl          *string            `json:"whl,omitempty"`
 	Requirements *string            `json:"requirements,omitempty"`
-}
-
-func LibraryFromSDK(v *sdk.Library) (*Library, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var libJarWire *string
-	var libEggWire *string
-	var libPypiWire *PythonPyPiLibrary
-	var libMavenWire *MavenLibrary
-	var libCranWire *RCranLibrary
-	var libWhlWire *string
-	var libRequirementsWire *string
-	switch value := v.Lib.(type) {
-	case nil:
-	case *sdk.Library_Lib_Jar:
-		if value != nil {
-			libJarWire = new(value.Jar)
-		}
-	case *sdk.Library_Lib_Egg:
-		if value != nil {
-			libEggWire = new(value.Egg)
-		}
-	case *sdk.Library_Lib_Pypi:
-		if value != nil {
-			libPypiConverted, err := PythonPyPiLibraryFromSDK(&value.Pypi)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-			}
-			libPypiWire = libPypiConverted
-		}
-	case *sdk.Library_Lib_Maven:
-		if value != nil {
-			libMavenConverted, err := MavenLibraryFromSDK(&value.Maven)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-			}
-			libMavenWire = libMavenConverted
-		}
-	case *sdk.Library_Lib_Cran:
-		if value != nil {
-			libCranConverted, err := RCranLibraryFromSDK(&value.Cran)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-			}
-			libCranWire = libCranConverted
-		}
-	case *sdk.Library_Lib_Whl:
-		if value != nil {
-			libWhlWire = new(value.Whl)
-		}
-	case *sdk.Library_Lib_Requirements:
-		if value != nil {
-			libRequirementsWire = new(value.Requirements)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Library.Lib", value)
-	}
-	return &Library{
-		Jar:          libJarWire,
-		Egg:          libEggWire,
-		Pypi:         libPypiWire,
-		Maven:        libMavenWire,
-		Cran:         libCranWire,
-		Whl:          libWhlWire,
-		Requirements: libRequirementsWire,
-	}, nil
-}
-
-func LibraryToSDK(w *Library) (*sdk.Library, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libMembers := 0
-	if w.Jar != nil {
-		libMembers++
-	}
-	if w.Egg != nil {
-		libMembers++
-	}
-	if w.Pypi != nil {
-		libMembers++
-	}
-	if w.Maven != nil {
-		libMembers++
-	}
-	if w.Cran != nil {
-		libMembers++
-	}
-	if w.Whl != nil {
-		libMembers++
-	}
-	if w.Requirements != nil {
-		libMembers++
-	}
-	if libMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
-	}
-	libSelection := (&sdk.Library{}).Lib
-	switch {
-	case w.Jar != nil:
-		libSelection = &sdk.Library_Lib_Jar{Jar: *w.Jar}
-	case w.Egg != nil:
-		libSelection = &sdk.Library_Lib_Egg{Egg: *w.Egg}
-	case w.Pypi != nil:
-		libPypiConverted, err := PythonPyPiLibraryToSDK(w.Pypi)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-		}
-		libSelection = &sdk.Library_Lib_Pypi{Pypi: *libPypiConverted}
-	case w.Maven != nil:
-		libMavenConverted, err := MavenLibraryToSDK(w.Maven)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-		}
-		libSelection = &sdk.Library_Lib_Maven{Maven: *libMavenConverted}
-	case w.Cran != nil:
-		libCranConverted, err := RCranLibraryToSDK(w.Cran)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-		}
-		libSelection = &sdk.Library_Lib_Cran{Cran: *libCranConverted}
-	case w.Whl != nil:
-		libSelection = &sdk.Library_Lib_Whl{Whl: *w.Whl}
-	case w.Requirements != nil:
-		libSelection = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
-	}
-	return &sdk.Library{
-		Lib: libSelection,
-	}, nil
 }
 
 // The status of the library on a specific cluster..
@@ -231,38 +64,9 @@ type LibraryFullStatus struct {
 	IsLibraryForAllClusters *bool `json:"is_library_for_all_clusters,omitempty"`
 }
 
-func LibraryFullStatusToSDK(w *LibraryFullStatus) (*sdk.LibraryFullStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libraryPublicValue, err := LibraryToSDK(w.Library)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LibraryFullStatus.Library", err)
-	}
-	return &sdk.LibraryFullStatus{
-		Library:                 libraryPublicValue,
-		Status:                  w.Status,
-		Messages:                w.Messages,
-		IsLibraryForAllClusters: w.IsLibraryForAllClusters,
-	}, nil
-}
-
 type ListAllClusterLibraryStatusesResponse struct {
 	// A list of cluster statuses.
 	Statuses []ClusterLibraryStatuses `json:"statuses,omitempty"`
-}
-
-func ListAllClusterLibraryStatusesResponseToSDK(w *ListAllClusterLibraryStatusesResponse) (*sdk.ListAllClusterLibraryStatusesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusesPublicValue, err := convertSlice(w.Statuses, ClusterLibraryStatusesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAllClusterLibraryStatusesResponse.Statuses", err)
-	}
-	return &sdk.ListAllClusterLibraryStatusesResponse{
-		Statuses: statusesPublicValue,
-	}, nil
 }
 
 type MavenLibrary struct {
@@ -279,28 +83,6 @@ type MavenLibrary struct {
 	Exclusions []string `json:"exclusions,omitempty"`
 }
 
-func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MavenLibrary{
-		Coordinates: v.Coordinates,
-		Repo:        v.Repo,
-		Exclusions:  v.Exclusions,
-	}, nil
-}
-
-func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MavenLibrary{
-		Coordinates: w.Coordinates,
-		Repo:        w.Repo,
-		Exclusions:  w.Exclusions,
-	}, nil
-}
-
 type PythonPyPiLibrary struct {
 	// The name of the pypi package to install. An optional exact version
 	// specification is also supported. Examples: "simplejson" and
@@ -311,52 +93,12 @@ type PythonPyPiLibrary struct {
 	Repo *string `json:"repo,omitempty"`
 }
 
-func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PythonPyPiLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
-}
-
-func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PythonPyPiLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
-}
-
 type RCranLibrary struct {
 	// The name of the CRAN package to install.
 	Package *string `json:"package,omitempty"`
 	// The repository where the package can be found. If not specified, the default
 	// CRAN repo is used.
 	Repo *string `json:"repo,omitempty"`
-}
-
-func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RCranLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
-}
-
-func RCranLibraryToSDK(w *RCranLibrary) (*sdk.RCranLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RCranLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
 }
 
 type UninstallLibrariesRequest struct {
@@ -366,18 +108,359 @@ type UninstallLibrariesRequest struct {
 	Libraries []Library `json:"libraries,omitempty"`
 }
 
+// ClusterLibraryStatusesToSDK converts the mirror to the sdk-go type.
+func ClusterLibraryStatusesToSDK(w *ClusterLibraryStatuses) (*sdk.ClusterLibraryStatuses, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterLibraryStatuses{}
+	out.ClusterId = w.ClusterId
+	conv1, err := convertSlice(w.LibraryStatuses, LibraryFullStatusToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterLibraryStatuses.LibraryStatuses", err)
+	}
+	out.LibraryStatuses = conv1
+	return out, nil
+}
+
+// ClusterLibraryStatusesFromSDK converts the sdk-go type to the mirror.
+func ClusterLibraryStatusesFromSDK(v *sdk.ClusterLibraryStatuses) (*ClusterLibraryStatuses, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterLibraryStatuses{}
+	out.ClusterId = v.ClusterId
+	conv2, err := convertSlice(v.LibraryStatuses, LibraryFullStatusFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterLibraryStatuses.LibraryStatuses", err)
+	}
+	out.LibraryStatuses = conv2
+	return out, nil
+}
+
+// ClusterStatusRequestToSDK converts the mirror to the sdk-go type.
+func ClusterStatusRequestToSDK(w *ClusterStatusRequest) (*sdk.ClusterStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterStatusRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// ClusterStatusRequestFromSDK converts the sdk-go type to the mirror.
+func ClusterStatusRequestFromSDK(v *sdk.ClusterStatusRequest) (*ClusterStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterStatusRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// InstallLibrariesRequestToSDK converts the mirror to the sdk-go type.
+func InstallLibrariesRequestToSDK(w *InstallLibrariesRequest) (*sdk.InstallLibrariesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstallLibrariesRequest{}
+	out.ClusterId = w.ClusterId
+	conv3, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallLibrariesRequest.Libraries", err)
+	}
+	out.Libraries = conv3
+	return out, nil
+}
+
+// InstallLibrariesRequestFromSDK converts the sdk-go type to the mirror.
+func InstallLibrariesRequestFromSDK(v *sdk.InstallLibrariesRequest) (*InstallLibrariesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstallLibrariesRequest{}
+	out.ClusterId = v.ClusterId
+	conv4, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallLibrariesRequest.Libraries", err)
+	}
+	out.Libraries = conv4
+	return out, nil
+}
+
+// LibraryToSDK converts the mirror to the sdk-go type.
+func LibraryToSDK(w *Library) (*sdk.Library, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Library{}
+	{
+		members := 0
+		if w.Jar != nil {
+			members++
+		}
+		if w.Egg != nil {
+			members++
+		}
+		if w.Pypi != nil {
+			members++
+		}
+		if w.Maven != nil {
+			members++
+		}
+		if w.Cran != nil {
+			members++
+		}
+		if w.Whl != nil {
+			members++
+		}
+		if w.Requirements != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
+		}
+	}
+	switch {
+	case w.Jar != nil:
+		out.Lib = &sdk.Library_Lib_Jar{Jar: *w.Jar}
+	case w.Egg != nil:
+		out.Lib = &sdk.Library_Lib_Egg{Egg: *w.Egg}
+	case w.Pypi != nil:
+		conv5, err := PythonPyPiLibraryToSDK(w.Pypi)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Pypi{Pypi: *conv5}
+	case w.Maven != nil:
+		conv6, err := MavenLibraryToSDK(w.Maven)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Maven{Maven: *conv6}
+	case w.Cran != nil:
+		conv7, err := RCranLibraryToSDK(w.Cran)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Cran{Cran: *conv7}
+	case w.Whl != nil:
+		out.Lib = &sdk.Library_Lib_Whl{Whl: *w.Whl}
+	case w.Requirements != nil:
+		out.Lib = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
+	}
+	return out, nil
+}
+
+// LibraryFromSDK converts the sdk-go type to the mirror.
+func LibraryFromSDK(v *sdk.Library) (*Library, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Library{}
+	switch value := v.Lib.(type) {
+	case *sdk.Library_Lib_Jar:
+		if value != nil {
+			out.Jar = new(value.Jar)
+		}
+	case *sdk.Library_Lib_Egg:
+		if value != nil {
+			out.Egg = new(value.Egg)
+		}
+	case *sdk.Library_Lib_Pypi:
+		if value != nil {
+			conv8, err := PythonPyPiLibraryFromSDK(&value.Pypi)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Pypi = conv8
+		}
+	case *sdk.Library_Lib_Maven:
+		if value != nil {
+			conv9, err := MavenLibraryFromSDK(&value.Maven)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Maven = conv9
+		}
+	case *sdk.Library_Lib_Cran:
+		if value != nil {
+			conv10, err := RCranLibraryFromSDK(&value.Cran)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Cran = conv10
+		}
+	case *sdk.Library_Lib_Whl:
+		if value != nil {
+			out.Whl = new(value.Whl)
+		}
+	case *sdk.Library_Lib_Requirements:
+		if value != nil {
+			out.Requirements = new(value.Requirements)
+		}
+	}
+	return out, nil
+}
+
+// LibraryFullStatusToSDK converts the mirror to the sdk-go type.
+func LibraryFullStatusToSDK(w *LibraryFullStatus) (*sdk.LibraryFullStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LibraryFullStatus{}
+	conv11, err := LibraryToSDK(w.Library)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LibraryFullStatus.Library", err)
+	}
+	out.Library = conv11
+	out.Status = w.Status
+	out.Messages = w.Messages
+	out.IsLibraryForAllClusters = w.IsLibraryForAllClusters
+	return out, nil
+}
+
+// LibraryFullStatusFromSDK converts the sdk-go type to the mirror.
+func LibraryFullStatusFromSDK(v *sdk.LibraryFullStatus) (*LibraryFullStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LibraryFullStatus{}
+	conv12, err := LibraryFromSDK(v.Library)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LibraryFullStatus.Library", err)
+	}
+	out.Library = conv12
+	out.Status = v.Status
+	out.Messages = v.Messages
+	out.IsLibraryForAllClusters = v.IsLibraryForAllClusters
+	return out, nil
+}
+
+// ListAllClusterLibraryStatusesResponseToSDK converts the mirror to the sdk-go type.
+func ListAllClusterLibraryStatusesResponseToSDK(w *ListAllClusterLibraryStatusesResponse) (*sdk.ListAllClusterLibraryStatusesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAllClusterLibraryStatusesResponse{}
+	conv13, err := convertSlice(w.Statuses, ClusterLibraryStatusesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAllClusterLibraryStatusesResponse.Statuses", err)
+	}
+	out.Statuses = conv13
+	return out, nil
+}
+
+// ListAllClusterLibraryStatusesResponseFromSDK converts the sdk-go type to the mirror.
+func ListAllClusterLibraryStatusesResponseFromSDK(v *sdk.ListAllClusterLibraryStatusesResponse) (*ListAllClusterLibraryStatusesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAllClusterLibraryStatusesResponse{}
+	conv14, err := convertSlice(v.Statuses, ClusterLibraryStatusesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAllClusterLibraryStatusesResponse.Statuses", err)
+	}
+	out.Statuses = conv14
+	return out, nil
+}
+
+// MavenLibraryToSDK converts the mirror to the sdk-go type.
+func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MavenLibrary{}
+	out.Coordinates = w.Coordinates
+	out.Repo = w.Repo
+	out.Exclusions = w.Exclusions
+	return out, nil
+}
+
+// MavenLibraryFromSDK converts the sdk-go type to the mirror.
+func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MavenLibrary{}
+	out.Coordinates = v.Coordinates
+	out.Repo = v.Repo
+	out.Exclusions = v.Exclusions
+	return out, nil
+}
+
+// PythonPyPiLibraryToSDK converts the mirror to the sdk-go type.
+func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonPyPiLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// PythonPyPiLibraryFromSDK converts the sdk-go type to the mirror.
+func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonPyPiLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
+}
+
+// RCranLibraryToSDK converts the mirror to the sdk-go type.
+func RCranLibraryToSDK(w *RCranLibrary) (*sdk.RCranLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RCranLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// RCranLibraryFromSDK converts the sdk-go type to the mirror.
+func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RCranLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
+}
+
+// UninstallLibrariesRequestToSDK converts the mirror to the sdk-go type.
+func UninstallLibrariesRequestToSDK(w *UninstallLibrariesRequest) (*sdk.UninstallLibrariesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UninstallLibrariesRequest{}
+	out.ClusterId = w.ClusterId
+	conv15, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UninstallLibrariesRequest.Libraries", err)
+	}
+	out.Libraries = conv15
+	return out, nil
+}
+
+// UninstallLibrariesRequestFromSDK converts the sdk-go type to the mirror.
 func UninstallLibrariesRequestFromSDK(v *sdk.UninstallLibrariesRequest) (*UninstallLibrariesRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
+	out := &UninstallLibrariesRequest{}
+	out.ClusterId = v.ClusterId
+	conv16, err := convertSlice(v.Libraries, LibraryFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UninstallLibrariesRequest.Libraries", err)
 	}
-	return &UninstallLibrariesRequest{
-		ClusterId: v.ClusterId,
-		Libraries: librariesWireValue,
-	}, nil
+	out.Libraries = conv16
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

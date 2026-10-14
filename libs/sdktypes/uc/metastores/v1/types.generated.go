@@ -18,22 +18,6 @@ const (
 	DeltaSharingScope_Enum_InternalAndExternal = sdk.DeltaSharingScope_Enum_InternalAndExternal
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // The mapping from workspace to metastore..
 type AccountsCreateMetastoreAssignmentRequest struct {
 	// <Databricks> account ID of any type. For non-E2 account types, get your
@@ -48,26 +32,6 @@ type AccountsCreateMetastoreAssignmentRequest struct {
 	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
 }
 
-func AccountsCreateMetastoreAssignmentRequestFromSDK(v *sdk.AccountsCreateMetastoreAssignmentRequest) (*AccountsCreateMetastoreAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreAssignmentRequest.WorkspaceId", err)
-	}
-	metastoreAssignmentWireValue, err := MetastoreAssignmentFromSDK(v.MetastoreAssignment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreAssignmentRequest.MetastoreAssignment", err)
-	}
-	return &AccountsCreateMetastoreAssignmentRequest{
-		AccountId:           v.AccountId,
-		WorkspaceId:         workspaceIdWireValue,
-		MetastoreId:         v.MetastoreId,
-		MetastoreAssignment: metastoreAssignmentWireValue,
-	}, nil
-}
-
 // Properties of the new metastore..
 type AccountsCreateMetastoreRequest struct {
 	// <Databricks> account ID of any type. For non-E2 account types, get your
@@ -78,35 +42,8 @@ type AccountsCreateMetastoreRequest struct {
 	MetastoreInfo *CreateAccountsMetastore `json:"metastore_info,omitempty"`
 }
 
-func AccountsCreateMetastoreRequestFromSDK(v *sdk.AccountsCreateMetastoreRequest) (*AccountsCreateMetastoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	metastoreInfoWireValue, err := CreateAccountsMetastoreFromSDK(v.MetastoreInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreRequest.MetastoreInfo", err)
-	}
-	return &AccountsCreateMetastoreRequest{
-		AccountId:     v.AccountId,
-		MetastoreInfo: metastoreInfoWireValue,
-	}, nil
-}
-
 type AccountsCreateMetastoreResponse struct {
 	MetastoreInfo *MetastoreInfo `json:"metastore_info,omitempty"`
-}
-
-func AccountsCreateMetastoreResponseToSDK(w *AccountsCreateMetastoreResponse) (*sdk.AccountsCreateMetastoreResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoreInfoPublicValue, err := MetastoreInfoToSDK(w.MetastoreInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreResponse.MetastoreInfo", err)
-	}
-	return &sdk.AccountsCreateMetastoreResponse{
-		MetastoreInfo: metastoreInfoPublicValue,
-	}, nil
 }
 
 // Delete a metastore for the given account.
@@ -122,51 +59,14 @@ type AccountsDeleteMetastoreRequest struct {
 	Force *bool `json:"force,omitempty"`
 }
 
-func AccountsDeleteMetastoreRequestFromSDK(v *sdk.AccountsDeleteMetastoreRequest) (*AccountsDeleteMetastoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountsDeleteMetastoreRequest{
-		AccountId:   v.AccountId,
-		MetastoreId: v.MetastoreId,
-		Force:       v.Force,
-	}, nil
-}
-
 // The workspace metastore assignment was successfully returned..
 type AccountsGetMetastoreAssignmentResponse struct {
 	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
 }
 
-func AccountsGetMetastoreAssignmentResponseToSDK(w *AccountsGetMetastoreAssignmentResponse) (*sdk.AccountsGetMetastoreAssignmentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoreAssignmentPublicValue, err := MetastoreAssignmentToSDK(w.MetastoreAssignment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreAssignmentResponse.MetastoreAssignment", err)
-	}
-	return &sdk.AccountsGetMetastoreAssignmentResponse{
-		MetastoreAssignment: metastoreAssignmentPublicValue,
-	}, nil
-}
-
 // The metastore was successfully returned..
 type AccountsGetMetastoreResponse struct {
 	MetastoreInfo *MetastoreInfo `json:"metastore_info,omitempty"`
-}
-
-func AccountsGetMetastoreResponseToSDK(w *AccountsGetMetastoreResponse) (*sdk.AccountsGetMetastoreResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoreInfoPublicValue, err := MetastoreInfoToSDK(w.MetastoreInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreResponse.MetastoreInfo", err)
-	}
-	return &sdk.AccountsGetMetastoreResponse{
-		MetastoreInfo: metastoreInfoPublicValue,
-	}, nil
 }
 
 // Metastores were returned successfully..
@@ -175,35 +75,9 @@ type AccountsListMetastoresResponse struct {
 	Metastores []MetastoreInfo `json:"metastores,omitempty"`
 }
 
-func AccountsListMetastoresResponseToSDK(w *AccountsListMetastoresResponse) (*sdk.AccountsListMetastoresResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoresPublicValue, err := convertSlice(w.Metastores, MetastoreInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsListMetastoresResponse.Metastores", err)
-	}
-	return &sdk.AccountsListMetastoresResponse{
-		Metastores: metastoresPublicValue,
-	}, nil
-}
-
 // The metastore assignments were successfully returned..
 type AccountsListWorkspaceIdsForMetastoreResponse struct {
 	WorkspaceIds []int64 `json:"workspace_ids,omitempty"`
-}
-
-func AccountsListWorkspaceIdsForMetastoreResponseToSDK(w *AccountsListWorkspaceIdsForMetastoreResponse) (*sdk.AccountsListWorkspaceIdsForMetastoreResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdsPublicValue, err := convertSlice(w.WorkspaceIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsListWorkspaceIdsForMetastoreResponse.WorkspaceIds", err)
-	}
-	return &sdk.AccountsListWorkspaceIdsForMetastoreResponse{
-		WorkspaceIds: workspaceIdsPublicValue,
-	}, nil
 }
 
 // The metastore assignment to update..
@@ -220,26 +94,6 @@ type AccountsUpdateMetastoreAssignmentRequest struct {
 	MetastoreAssignment *MetastoreAssignment `json:"metastore_assignment,omitempty"`
 }
 
-func AccountsUpdateMetastoreAssignmentRequestFromSDK(v *sdk.AccountsUpdateMetastoreAssignmentRequest) (*AccountsUpdateMetastoreAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreAssignmentRequest.WorkspaceId", err)
-	}
-	metastoreAssignmentWireValue, err := MetastoreAssignmentFromSDK(v.MetastoreAssignment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreAssignmentRequest.MetastoreAssignment", err)
-	}
-	return &AccountsUpdateMetastoreAssignmentRequest{
-		AccountId:           v.AccountId,
-		WorkspaceId:         workspaceIdWireValue,
-		MetastoreId:         v.MetastoreId,
-		MetastoreAssignment: metastoreAssignmentWireValue,
-	}, nil
-}
-
 // Properties of the metastore to change..
 type AccountsUpdateMetastoreRequest struct {
 	// <Databricks> account ID of any type. For non-E2 account types, get your
@@ -253,37 +107,9 @@ type AccountsUpdateMetastoreRequest struct {
 	MetastoreInfo *UpdateAccountsMetastore `json:"metastore_info,omitempty"`
 }
 
-func AccountsUpdateMetastoreRequestFromSDK(v *sdk.AccountsUpdateMetastoreRequest) (*AccountsUpdateMetastoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	metastoreInfoWireValue, err := UpdateAccountsMetastoreFromSDK(v.MetastoreInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreRequest.MetastoreInfo", err)
-	}
-	return &AccountsUpdateMetastoreRequest{
-		AccountId:     v.AccountId,
-		MetastoreId:   v.MetastoreId,
-		MetastoreInfo: metastoreInfoWireValue,
-	}, nil
-}
-
 // The metastore update request succeeded..
 type AccountsUpdateMetastoreResponse struct {
 	MetastoreInfo *MetastoreInfo `json:"metastore_info,omitempty"`
-}
-
-func AccountsUpdateMetastoreResponseToSDK(w *AccountsUpdateMetastoreResponse) (*sdk.AccountsUpdateMetastoreResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoreInfoPublicValue, err := MetastoreInfoToSDK(w.MetastoreInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreResponse.MetastoreInfo", err)
-	}
-	return &sdk.AccountsUpdateMetastoreResponse{
-		MetastoreInfo: metastoreInfoPublicValue,
-	}, nil
 }
 
 type CreateAccountsMetastore struct {
@@ -331,45 +157,6 @@ type CreateAccountsMetastore struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
-func CreateAccountsMetastoreFromSDK(v *sdk.CreateAccountsMetastore) (*CreateAccountsMetastore, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deltaSharingRecipientTokenLifetimeInSecondsWireValue, err := int64ToWire(v.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountsMetastore.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountsMetastore.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountsMetastore.UpdatedAt", err)
-	}
-	return &CreateAccountsMetastore{
-		Name:                      v.Name,
-		StorageRoot:               v.StorageRoot,
-		DefaultDataAccessConfigId: v.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   v.StorageRootCredentialId,
-		DeltaSharingScope:         v.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsWireValue,
-		DeltaSharingOrganizationName:                v.DeltaSharingOrganizationName,
-		Owner:                                       v.Owner,
-		PrivilegeModelVersion:                       v.PrivilegeModelVersion,
-		Region:                                      v.Region,
-		MetastoreId:                                 v.MetastoreId,
-		CreatedAt:                                   createdAtWireValue,
-		CreatedBy:                                   v.CreatedBy,
-		UpdatedAt:                                   updatedAtWireValue,
-		UpdatedBy:                                   v.UpdatedBy,
-		StorageRootCredentialName:                   v.StorageRootCredentialName,
-		Cloud:                                       v.Cloud,
-		GlobalMetastoreId:                           v.GlobalMetastoreId,
-		ExternalAccessEnabled:                       v.ExternalAccessEnabled,
-	}, nil
-}
-
 type CreateMetastoreAssignmentRequest struct {
 	// A workspace ID.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
@@ -379,21 +166,6 @@ type CreateMetastoreAssignmentRequest struct {
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
-}
-
-func CreateMetastoreAssignmentRequestFromSDK(v *sdk.CreateMetastoreAssignmentRequest) (*CreateMetastoreAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMetastoreAssignmentRequest.WorkspaceId", err)
-	}
-	return &CreateMetastoreAssignmentRequest{
-		WorkspaceId:        workspaceIdWireValue,
-		MetastoreId:        v.MetastoreId,
-		DefaultCatalogName: v.DefaultCatalogName,
-	}, nil
 }
 
 type CreateMetastoreRequest struct {
@@ -441,45 +213,6 @@ type CreateMetastoreRequest struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
-func CreateMetastoreRequestFromSDK(v *sdk.CreateMetastoreRequest) (*CreateMetastoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deltaSharingRecipientTokenLifetimeInSecondsWireValue, err := int64ToWire(v.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMetastoreRequest.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMetastoreRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMetastoreRequest.UpdatedAt", err)
-	}
-	return &CreateMetastoreRequest{
-		Name:                      v.Name,
-		StorageRoot:               v.StorageRoot,
-		DefaultDataAccessConfigId: v.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   v.StorageRootCredentialId,
-		DeltaSharingScope:         v.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsWireValue,
-		DeltaSharingOrganizationName:                v.DeltaSharingOrganizationName,
-		Owner:                                       v.Owner,
-		PrivilegeModelVersion:                       v.PrivilegeModelVersion,
-		Region:                                      v.Region,
-		MetastoreId:                                 v.MetastoreId,
-		CreatedAt:                                   createdAtWireValue,
-		CreatedBy:                                   v.CreatedBy,
-		UpdatedAt:                                   updatedAtWireValue,
-		UpdatedBy:                                   v.UpdatedBy,
-		StorageRootCredentialName:                   v.StorageRootCredentialName,
-		Cloud:                                       v.Cloud,
-		GlobalMetastoreId:                           v.GlobalMetastoreId,
-		ExternalAccessEnabled:                       v.ExternalAccessEnabled,
-	}, nil
-}
-
 type DeleteMetastoreAssignmentRequest struct {
 	// A workspace ID.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
@@ -487,35 +220,11 @@ type DeleteMetastoreAssignmentRequest struct {
 	MetastoreId *string `json:"metastore_id,omitempty"`
 }
 
-func DeleteMetastoreAssignmentRequestFromSDK(v *sdk.DeleteMetastoreAssignmentRequest) (*DeleteMetastoreAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteMetastoreAssignmentRequest.WorkspaceId", err)
-	}
-	return &DeleteMetastoreAssignmentRequest{
-		WorkspaceId: workspaceIdWireValue,
-		MetastoreId: v.MetastoreId,
-	}, nil
-}
-
 type DeleteMetastoreRequest struct {
 	// Unique ID of the metastore.
 	Id *string `json:"id,omitempty"`
 	// Force deletion even if the metastore is not empty. Default is false.
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteMetastoreRequestFromSDK(v *sdk.DeleteMetastoreRequest) (*DeleteMetastoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteMetastoreRequest{
-		Id:    v.Id,
-		Force: v.Force,
-	}, nil
 }
 
 type GetMetastoreSummaryResponse struct {
@@ -563,45 +272,6 @@ type GetMetastoreSummaryResponse struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
-func GetMetastoreSummaryResponseToSDK(w *GetMetastoreSummaryResponse) (*sdk.GetMetastoreSummaryResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deltaSharingRecipientTokenLifetimeInSecondsPublicValue, err := int64FromWire(w.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetMetastoreSummaryResponse.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetMetastoreSummaryResponse.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetMetastoreSummaryResponse.UpdatedAt", err)
-	}
-	return &sdk.GetMetastoreSummaryResponse{
-		MetastoreId:               w.MetastoreId,
-		Name:                      w.Name,
-		DefaultDataAccessConfigId: w.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   w.StorageRootCredentialId,
-		Cloud:                     w.Cloud,
-		Region:                    w.Region,
-		GlobalMetastoreId:         w.GlobalMetastoreId,
-		StorageRootCredentialName: w.StorageRootCredentialName,
-		PrivilegeModelVersion:     w.PrivilegeModelVersion,
-		DeltaSharingScope:         w.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsPublicValue,
-		DeltaSharingOrganizationName:                w.DeltaSharingOrganizationName,
-		StorageRoot:                                 w.StorageRoot,
-		Owner:                                       w.Owner,
-		CreatedAt:                                   createdAtPublicValue,
-		CreatedBy:                                   w.CreatedBy,
-		UpdatedAt:                                   updatedAtPublicValue,
-		UpdatedBy:                                   w.UpdatedBy,
-		ExternalAccessEnabled:                       w.ExternalAccessEnabled,
-	}, nil
-}
-
 type ListMetastoresRequest struct {
 	// Maximum number of metastores to return. - when set to a value greater than 0,
 	// the page length is the minimum of this value and a server configured value; -
@@ -617,16 +287,6 @@ type ListMetastoresRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListMetastoresRequestFromSDK(v *sdk.ListMetastoresRequest) (*ListMetastoresRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListMetastoresRequest{
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListMetastoresResponse struct {
 	// An array of metastore information objects.
 	Metastores []MetastoreInfo `json:"metastores,omitempty"`
@@ -634,20 +294,6 @@ type ListMetastoresResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListMetastoresResponseToSDK(w *ListMetastoresResponse) (*sdk.ListMetastoresResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	metastoresPublicValue, err := convertSlice(w.Metastores, MetastoreInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListMetastoresResponse.Metastores", err)
-	}
-	return &sdk.ListMetastoresResponse{
-		Metastores:    metastoresPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type MetastoreAssignment struct {
@@ -659,36 +305,6 @@ type MetastoreAssignment struct {
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
-}
-
-func MetastoreAssignmentFromSDK(v *sdk.MetastoreAssignment) (*MetastoreAssignment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetastoreAssignment.WorkspaceId", err)
-	}
-	return &MetastoreAssignment{
-		WorkspaceId:        workspaceIdWireValue,
-		MetastoreId:        v.MetastoreId,
-		DefaultCatalogName: v.DefaultCatalogName,
-	}, nil
-}
-
-func MetastoreAssignmentToSDK(w *MetastoreAssignment) (*sdk.MetastoreAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetastoreAssignment.WorkspaceId", err)
-	}
-	return &sdk.MetastoreAssignment{
-		WorkspaceId:        workspaceIdPublicValue,
-		MetastoreId:        w.MetastoreId,
-		DefaultCatalogName: w.DefaultCatalogName,
-	}, nil
 }
 
 type MetastoreInfo struct {
@@ -736,45 +352,6 @@ type MetastoreInfo struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
-func MetastoreInfoToSDK(w *MetastoreInfo) (*sdk.MetastoreInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deltaSharingRecipientTokenLifetimeInSecondsPublicValue, err := int64FromWire(w.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetastoreInfo.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetastoreInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetastoreInfo.UpdatedAt", err)
-	}
-	return &sdk.MetastoreInfo{
-		Name:                      w.Name,
-		StorageRoot:               w.StorageRoot,
-		DefaultDataAccessConfigId: w.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   w.StorageRootCredentialId,
-		DeltaSharingScope:         w.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsPublicValue,
-		DeltaSharingOrganizationName:                w.DeltaSharingOrganizationName,
-		Owner:                                       w.Owner,
-		PrivilegeModelVersion:                       w.PrivilegeModelVersion,
-		Region:                                      w.Region,
-		MetastoreId:                                 w.MetastoreId,
-		CreatedAt:                                   createdAtPublicValue,
-		CreatedBy:                                   w.CreatedBy,
-		UpdatedAt:                                   updatedAtPublicValue,
-		UpdatedBy:                                   w.UpdatedBy,
-		StorageRootCredentialName:                   w.StorageRootCredentialName,
-		Cloud:                                       w.Cloud,
-		GlobalMetastoreId:                           w.GlobalMetastoreId,
-		ExternalAccessEnabled:                       w.ExternalAccessEnabled,
-	}, nil
-}
-
 type UpdateAccountsMetastore struct {
 	// The user-specified name of the metastore.
 	Name *string `json:"name,omitempty"`
@@ -820,45 +397,6 @@ type UpdateAccountsMetastore struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
-func UpdateAccountsMetastoreFromSDK(v *sdk.UpdateAccountsMetastore) (*UpdateAccountsMetastore, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deltaSharingRecipientTokenLifetimeInSecondsWireValue, err := int64ToWire(v.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountsMetastore.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountsMetastore.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountsMetastore.UpdatedAt", err)
-	}
-	return &UpdateAccountsMetastore{
-		Name:                      v.Name,
-		StorageRoot:               v.StorageRoot,
-		DefaultDataAccessConfigId: v.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   v.StorageRootCredentialId,
-		DeltaSharingScope:         v.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsWireValue,
-		DeltaSharingOrganizationName:                v.DeltaSharingOrganizationName,
-		Owner:                                       v.Owner,
-		PrivilegeModelVersion:                       v.PrivilegeModelVersion,
-		Region:                                      v.Region,
-		MetastoreId:                                 v.MetastoreId,
-		CreatedAt:                                   createdAtWireValue,
-		CreatedBy:                                   v.CreatedBy,
-		UpdatedAt:                                   updatedAtWireValue,
-		UpdatedBy:                                   v.UpdatedBy,
-		StorageRootCredentialName:                   v.StorageRootCredentialName,
-		Cloud:                                       v.Cloud,
-		GlobalMetastoreId:                           v.GlobalMetastoreId,
-		ExternalAccessEnabled:                       v.ExternalAccessEnabled,
-	}, nil
-}
-
 type UpdateMetastoreAssignmentRequest struct {
 	// A workspace ID.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
@@ -868,21 +406,6 @@ type UpdateMetastoreAssignmentRequest struct {
 	// Please use "Default Namespace API" to configure the default catalog for a
 	// <Databricks> workspace.
 	DefaultCatalogName *string `json:"default_catalog_name,omitempty"`
-}
-
-func UpdateMetastoreAssignmentRequestFromSDK(v *sdk.UpdateMetastoreAssignmentRequest) (*UpdateMetastoreAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMetastoreAssignmentRequest.WorkspaceId", err)
-	}
-	return &UpdateMetastoreAssignmentRequest{
-		WorkspaceId:        workspaceIdWireValue,
-		MetastoreId:        v.MetastoreId,
-		DefaultCatalogName: v.DefaultCatalogName,
-	}, nil
 }
 
 type UpdateMetastoreRequest struct {
@@ -934,45 +457,826 @@ type UpdateMetastoreRequest struct {
 	ExternalAccessEnabled *bool `json:"external_access_enabled,omitempty"`
 }
 
+// AccountsCreateMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func AccountsCreateMetastoreAssignmentRequestToSDK(w *AccountsCreateMetastoreAssignmentRequest) (*sdk.AccountsCreateMetastoreAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsCreateMetastoreAssignmentRequest{}
+	out.AccountId = w.AccountId
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	conv1, err := MetastoreAssignmentToSDK(w.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreAssignmentRequest.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv1
+	return out, nil
+}
+
+// AccountsCreateMetastoreAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsCreateMetastoreAssignmentRequestFromSDK(v *sdk.AccountsCreateMetastoreAssignmentRequest) (*AccountsCreateMetastoreAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsCreateMetastoreAssignmentRequest{}
+	out.AccountId = v.AccountId
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	conv2, err := MetastoreAssignmentFromSDK(v.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreAssignmentRequest.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv2
+	return out, nil
+}
+
+// AccountsCreateMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func AccountsCreateMetastoreRequestToSDK(w *AccountsCreateMetastoreRequest) (*sdk.AccountsCreateMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsCreateMetastoreRequest{}
+	out.AccountId = w.AccountId
+	conv3, err := CreateAccountsMetastoreToSDK(w.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreRequest.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv3
+	return out, nil
+}
+
+// AccountsCreateMetastoreRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsCreateMetastoreRequestFromSDK(v *sdk.AccountsCreateMetastoreRequest) (*AccountsCreateMetastoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsCreateMetastoreRequest{}
+	out.AccountId = v.AccountId
+	conv4, err := CreateAccountsMetastoreFromSDK(v.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreRequest.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv4
+	return out, nil
+}
+
+// AccountsCreateMetastoreResponseToSDK converts the mirror to the sdk-go type.
+func AccountsCreateMetastoreResponseToSDK(w *AccountsCreateMetastoreResponse) (*sdk.AccountsCreateMetastoreResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsCreateMetastoreResponse{}
+	conv5, err := MetastoreInfoToSDK(w.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv5
+	return out, nil
+}
+
+// AccountsCreateMetastoreResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsCreateMetastoreResponseFromSDK(v *sdk.AccountsCreateMetastoreResponse) (*AccountsCreateMetastoreResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsCreateMetastoreResponse{}
+	conv6, err := MetastoreInfoFromSDK(v.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsCreateMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv6
+	return out, nil
+}
+
+// AccountsDeleteMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func AccountsDeleteMetastoreRequestToSDK(w *AccountsDeleteMetastoreRequest) (*sdk.AccountsDeleteMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsDeleteMetastoreRequest{}
+	out.AccountId = w.AccountId
+	out.MetastoreId = w.MetastoreId
+	out.Force = w.Force
+	return out, nil
+}
+
+// AccountsDeleteMetastoreRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsDeleteMetastoreRequestFromSDK(v *sdk.AccountsDeleteMetastoreRequest) (*AccountsDeleteMetastoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsDeleteMetastoreRequest{}
+	out.AccountId = v.AccountId
+	out.MetastoreId = v.MetastoreId
+	out.Force = v.Force
+	return out, nil
+}
+
+// AccountsGetMetastoreAssignmentResponseToSDK converts the mirror to the sdk-go type.
+func AccountsGetMetastoreAssignmentResponseToSDK(w *AccountsGetMetastoreAssignmentResponse) (*sdk.AccountsGetMetastoreAssignmentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsGetMetastoreAssignmentResponse{}
+	conv7, err := MetastoreAssignmentToSDK(w.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreAssignmentResponse.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv7
+	return out, nil
+}
+
+// AccountsGetMetastoreAssignmentResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsGetMetastoreAssignmentResponseFromSDK(v *sdk.AccountsGetMetastoreAssignmentResponse) (*AccountsGetMetastoreAssignmentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsGetMetastoreAssignmentResponse{}
+	conv8, err := MetastoreAssignmentFromSDK(v.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreAssignmentResponse.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv8
+	return out, nil
+}
+
+// AccountsGetMetastoreResponseToSDK converts the mirror to the sdk-go type.
+func AccountsGetMetastoreResponseToSDK(w *AccountsGetMetastoreResponse) (*sdk.AccountsGetMetastoreResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsGetMetastoreResponse{}
+	conv9, err := MetastoreInfoToSDK(w.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv9
+	return out, nil
+}
+
+// AccountsGetMetastoreResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsGetMetastoreResponseFromSDK(v *sdk.AccountsGetMetastoreResponse) (*AccountsGetMetastoreResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsGetMetastoreResponse{}
+	conv10, err := MetastoreInfoFromSDK(v.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsGetMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv10
+	return out, nil
+}
+
+// AccountsListMetastoresResponseToSDK converts the mirror to the sdk-go type.
+func AccountsListMetastoresResponseToSDK(w *AccountsListMetastoresResponse) (*sdk.AccountsListMetastoresResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsListMetastoresResponse{}
+	conv11, err := convertSlice(w.Metastores, MetastoreInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsListMetastoresResponse.Metastores", err)
+	}
+	out.Metastores = conv11
+	return out, nil
+}
+
+// AccountsListMetastoresResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsListMetastoresResponseFromSDK(v *sdk.AccountsListMetastoresResponse) (*AccountsListMetastoresResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsListMetastoresResponse{}
+	conv12, err := convertSlice(v.Metastores, MetastoreInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsListMetastoresResponse.Metastores", err)
+	}
+	out.Metastores = conv12
+	return out, nil
+}
+
+// AccountsListWorkspaceIdsForMetastoreResponseToSDK converts the mirror to the sdk-go type.
+func AccountsListWorkspaceIdsForMetastoreResponseToSDK(w *AccountsListWorkspaceIdsForMetastoreResponse) (*sdk.AccountsListWorkspaceIdsForMetastoreResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsListWorkspaceIdsForMetastoreResponse{}
+	out.WorkspaceIds = w.WorkspaceIds
+	return out, nil
+}
+
+// AccountsListWorkspaceIdsForMetastoreResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsListWorkspaceIdsForMetastoreResponseFromSDK(v *sdk.AccountsListWorkspaceIdsForMetastoreResponse) (*AccountsListWorkspaceIdsForMetastoreResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsListWorkspaceIdsForMetastoreResponse{}
+	out.WorkspaceIds = v.WorkspaceIds
+	return out, nil
+}
+
+// AccountsUpdateMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func AccountsUpdateMetastoreAssignmentRequestToSDK(w *AccountsUpdateMetastoreAssignmentRequest) (*sdk.AccountsUpdateMetastoreAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsUpdateMetastoreAssignmentRequest{}
+	out.AccountId = w.AccountId
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	conv13, err := MetastoreAssignmentToSDK(w.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreAssignmentRequest.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv13
+	return out, nil
+}
+
+// AccountsUpdateMetastoreAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsUpdateMetastoreAssignmentRequestFromSDK(v *sdk.AccountsUpdateMetastoreAssignmentRequest) (*AccountsUpdateMetastoreAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsUpdateMetastoreAssignmentRequest{}
+	out.AccountId = v.AccountId
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	conv14, err := MetastoreAssignmentFromSDK(v.MetastoreAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreAssignmentRequest.MetastoreAssignment", err)
+	}
+	out.MetastoreAssignment = conv14
+	return out, nil
+}
+
+// AccountsUpdateMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func AccountsUpdateMetastoreRequestToSDK(w *AccountsUpdateMetastoreRequest) (*sdk.AccountsUpdateMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsUpdateMetastoreRequest{}
+	out.AccountId = w.AccountId
+	out.MetastoreId = w.MetastoreId
+	conv15, err := UpdateAccountsMetastoreToSDK(w.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreRequest.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv15
+	return out, nil
+}
+
+// AccountsUpdateMetastoreRequestFromSDK converts the sdk-go type to the mirror.
+func AccountsUpdateMetastoreRequestFromSDK(v *sdk.AccountsUpdateMetastoreRequest) (*AccountsUpdateMetastoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsUpdateMetastoreRequest{}
+	out.AccountId = v.AccountId
+	out.MetastoreId = v.MetastoreId
+	conv16, err := UpdateAccountsMetastoreFromSDK(v.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreRequest.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv16
+	return out, nil
+}
+
+// AccountsUpdateMetastoreResponseToSDK converts the mirror to the sdk-go type.
+func AccountsUpdateMetastoreResponseToSDK(w *AccountsUpdateMetastoreResponse) (*sdk.AccountsUpdateMetastoreResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountsUpdateMetastoreResponse{}
+	conv17, err := MetastoreInfoToSDK(w.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv17
+	return out, nil
+}
+
+// AccountsUpdateMetastoreResponseFromSDK converts the sdk-go type to the mirror.
+func AccountsUpdateMetastoreResponseFromSDK(v *sdk.AccountsUpdateMetastoreResponse) (*AccountsUpdateMetastoreResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountsUpdateMetastoreResponse{}
+	conv18, err := MetastoreInfoFromSDK(v.MetastoreInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountsUpdateMetastoreResponse.MetastoreInfo", err)
+	}
+	out.MetastoreInfo = conv18
+	return out, nil
+}
+
+// CreateAccountsMetastoreToSDK converts the mirror to the sdk-go type.
+func CreateAccountsMetastoreToSDK(w *CreateAccountsMetastore) (*sdk.CreateAccountsMetastore, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountsMetastore{}
+	out.Name = w.Name
+	out.StorageRoot = w.StorageRoot
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.Owner = w.Owner
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.Cloud = w.Cloud
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// CreateAccountsMetastoreFromSDK converts the sdk-go type to the mirror.
+func CreateAccountsMetastoreFromSDK(v *sdk.CreateAccountsMetastore) (*CreateAccountsMetastore, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountsMetastore{}
+	out.Name = v.Name
+	out.StorageRoot = v.StorageRoot
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.Owner = v.Owner
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.Cloud = v.Cloud
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
+}
+
+// CreateMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func CreateMetastoreAssignmentRequestToSDK(w *CreateMetastoreAssignmentRequest) (*sdk.CreateMetastoreAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMetastoreAssignmentRequest{}
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	out.DefaultCatalogName = w.DefaultCatalogName
+	return out, nil
+}
+
+// CreateMetastoreAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMetastoreAssignmentRequestFromSDK(v *sdk.CreateMetastoreAssignmentRequest) (*CreateMetastoreAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMetastoreAssignmentRequest{}
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	out.DefaultCatalogName = v.DefaultCatalogName
+	return out, nil
+}
+
+// CreateMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func CreateMetastoreRequestToSDK(w *CreateMetastoreRequest) (*sdk.CreateMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMetastoreRequest{}
+	out.Name = w.Name
+	out.StorageRoot = w.StorageRoot
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.Owner = w.Owner
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.Cloud = w.Cloud
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// CreateMetastoreRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMetastoreRequestFromSDK(v *sdk.CreateMetastoreRequest) (*CreateMetastoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMetastoreRequest{}
+	out.Name = v.Name
+	out.StorageRoot = v.StorageRoot
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.Owner = v.Owner
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.Cloud = v.Cloud
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
+}
+
+// DeleteMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func DeleteMetastoreAssignmentRequestToSDK(w *DeleteMetastoreAssignmentRequest) (*sdk.DeleteMetastoreAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteMetastoreAssignmentRequest{}
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	return out, nil
+}
+
+// DeleteMetastoreAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteMetastoreAssignmentRequestFromSDK(v *sdk.DeleteMetastoreAssignmentRequest) (*DeleteMetastoreAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteMetastoreAssignmentRequest{}
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	return out, nil
+}
+
+// DeleteMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func DeleteMetastoreRequestToSDK(w *DeleteMetastoreRequest) (*sdk.DeleteMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteMetastoreRequest{}
+	out.Id = w.Id
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteMetastoreRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteMetastoreRequestFromSDK(v *sdk.DeleteMetastoreRequest) (*DeleteMetastoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteMetastoreRequest{}
+	out.Id = v.Id
+	out.Force = v.Force
+	return out, nil
+}
+
+// GetMetastoreSummaryResponseToSDK converts the mirror to the sdk-go type.
+func GetMetastoreSummaryResponseToSDK(w *GetMetastoreSummaryResponse) (*sdk.GetMetastoreSummaryResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetMetastoreSummaryResponse{}
+	out.MetastoreId = w.MetastoreId
+	out.Name = w.Name
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.StorageRoot = w.StorageRoot
+	out.Owner = w.Owner
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// GetMetastoreSummaryResponseFromSDK converts the sdk-go type to the mirror.
+func GetMetastoreSummaryResponseFromSDK(v *sdk.GetMetastoreSummaryResponse) (*GetMetastoreSummaryResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetMetastoreSummaryResponse{}
+	out.MetastoreId = v.MetastoreId
+	out.Name = v.Name
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.StorageRoot = v.StorageRoot
+	out.Owner = v.Owner
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
+}
+
+// ListMetastoresRequestToSDK converts the mirror to the sdk-go type.
+func ListMetastoresRequestToSDK(w *ListMetastoresRequest) (*sdk.ListMetastoresRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMetastoresRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListMetastoresRequestFromSDK converts the sdk-go type to the mirror.
+func ListMetastoresRequestFromSDK(v *sdk.ListMetastoresRequest) (*ListMetastoresRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMetastoresRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListMetastoresResponseToSDK converts the mirror to the sdk-go type.
+func ListMetastoresResponseToSDK(w *ListMetastoresResponse) (*sdk.ListMetastoresResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMetastoresResponse{}
+	conv19, err := convertSlice(w.Metastores, MetastoreInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMetastoresResponse.Metastores", err)
+	}
+	out.Metastores = conv19
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListMetastoresResponseFromSDK converts the sdk-go type to the mirror.
+func ListMetastoresResponseFromSDK(v *sdk.ListMetastoresResponse) (*ListMetastoresResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMetastoresResponse{}
+	conv20, err := convertSlice(v.Metastores, MetastoreInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMetastoresResponse.Metastores", err)
+	}
+	out.Metastores = conv20
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MetastoreAssignmentToSDK converts the mirror to the sdk-go type.
+func MetastoreAssignmentToSDK(w *MetastoreAssignment) (*sdk.MetastoreAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetastoreAssignment{}
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	out.DefaultCatalogName = w.DefaultCatalogName
+	return out, nil
+}
+
+// MetastoreAssignmentFromSDK converts the sdk-go type to the mirror.
+func MetastoreAssignmentFromSDK(v *sdk.MetastoreAssignment) (*MetastoreAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetastoreAssignment{}
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	out.DefaultCatalogName = v.DefaultCatalogName
+	return out, nil
+}
+
+// MetastoreInfoToSDK converts the mirror to the sdk-go type.
+func MetastoreInfoToSDK(w *MetastoreInfo) (*sdk.MetastoreInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetastoreInfo{}
+	out.Name = w.Name
+	out.StorageRoot = w.StorageRoot
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.Owner = w.Owner
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.Cloud = w.Cloud
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// MetastoreInfoFromSDK converts the sdk-go type to the mirror.
+func MetastoreInfoFromSDK(v *sdk.MetastoreInfo) (*MetastoreInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetastoreInfo{}
+	out.Name = v.Name
+	out.StorageRoot = v.StorageRoot
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.Owner = v.Owner
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.Cloud = v.Cloud
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
+}
+
+// UpdateAccountsMetastoreToSDK converts the mirror to the sdk-go type.
+func UpdateAccountsMetastoreToSDK(w *UpdateAccountsMetastore) (*sdk.UpdateAccountsMetastore, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountsMetastore{}
+	out.Name = w.Name
+	out.StorageRoot = w.StorageRoot
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.Owner = w.Owner
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.Cloud = w.Cloud
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// UpdateAccountsMetastoreFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountsMetastoreFromSDK(v *sdk.UpdateAccountsMetastore) (*UpdateAccountsMetastore, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountsMetastore{}
+	out.Name = v.Name
+	out.StorageRoot = v.StorageRoot
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.Owner = v.Owner
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.Cloud = v.Cloud
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
+}
+
+// UpdateMetastoreAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateMetastoreAssignmentRequestToSDK(w *UpdateMetastoreAssignmentRequest) (*sdk.UpdateMetastoreAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateMetastoreAssignmentRequest{}
+	out.WorkspaceId = w.WorkspaceId
+	out.MetastoreId = w.MetastoreId
+	out.DefaultCatalogName = w.DefaultCatalogName
+	return out, nil
+}
+
+// UpdateMetastoreAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateMetastoreAssignmentRequestFromSDK(v *sdk.UpdateMetastoreAssignmentRequest) (*UpdateMetastoreAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateMetastoreAssignmentRequest{}
+	out.WorkspaceId = v.WorkspaceId
+	out.MetastoreId = v.MetastoreId
+	out.DefaultCatalogName = v.DefaultCatalogName
+	return out, nil
+}
+
+// UpdateMetastoreRequestToSDK converts the mirror to the sdk-go type.
+func UpdateMetastoreRequestToSDK(w *UpdateMetastoreRequest) (*sdk.UpdateMetastoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateMetastoreRequest{}
+	out.Id = w.Id
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.StorageRoot = w.StorageRoot
+	out.DefaultDataAccessConfigId = w.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = w.StorageRootCredentialId
+	out.DeltaSharingScope = w.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = w.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = w.DeltaSharingOrganizationName
+	out.Owner = w.Owner
+	out.PrivilegeModelVersion = w.PrivilegeModelVersion
+	out.Region = w.Region
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageRootCredentialName = w.StorageRootCredentialName
+	out.Cloud = w.Cloud
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.ExternalAccessEnabled = w.ExternalAccessEnabled
+	return out, nil
+}
+
+// UpdateMetastoreRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateMetastoreRequestFromSDK(v *sdk.UpdateMetastoreRequest) (*UpdateMetastoreRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	deltaSharingRecipientTokenLifetimeInSecondsWireValue, err := int64ToWire(v.DeltaSharingRecipientTokenLifetimeInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMetastoreRequest.DeltaSharingRecipientTokenLifetimeInSeconds", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMetastoreRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMetastoreRequest.UpdatedAt", err)
-	}
-	return &UpdateMetastoreRequest{
-		Id:                        v.Id,
-		NewName:                   v.NewName,
-		Name:                      v.Name,
-		StorageRoot:               v.StorageRoot,
-		DefaultDataAccessConfigId: v.DefaultDataAccessConfigId,
-		StorageRootCredentialId:   v.StorageRootCredentialId,
-		DeltaSharingScope:         v.DeltaSharingScope,
-		DeltaSharingRecipientTokenLifetimeInSeconds: deltaSharingRecipientTokenLifetimeInSecondsWireValue,
-		DeltaSharingOrganizationName:                v.DeltaSharingOrganizationName,
-		Owner:                                       v.Owner,
-		PrivilegeModelVersion:                       v.PrivilegeModelVersion,
-		Region:                                      v.Region,
-		MetastoreId:                                 v.MetastoreId,
-		CreatedAt:                                   createdAtWireValue,
-		CreatedBy:                                   v.CreatedBy,
-		UpdatedAt:                                   updatedAtWireValue,
-		UpdatedBy:                                   v.UpdatedBy,
-		StorageRootCredentialName:                   v.StorageRootCredentialName,
-		Cloud:                                       v.Cloud,
-		GlobalMetastoreId:                           v.GlobalMetastoreId,
-		ExternalAccessEnabled:                       v.ExternalAccessEnabled,
-	}, nil
+	out := &UpdateMetastoreRequest{}
+	out.Id = v.Id
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.StorageRoot = v.StorageRoot
+	out.DefaultDataAccessConfigId = v.DefaultDataAccessConfigId
+	out.StorageRootCredentialId = v.StorageRootCredentialId
+	out.DeltaSharingScope = v.DeltaSharingScope
+	out.DeltaSharingRecipientTokenLifetimeInSeconds = v.DeltaSharingRecipientTokenLifetimeInSeconds
+	out.DeltaSharingOrganizationName = v.DeltaSharingOrganizationName
+	out.Owner = v.Owner
+	out.PrivilegeModelVersion = v.PrivilegeModelVersion
+	out.Region = v.Region
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageRootCredentialName = v.StorageRootCredentialName
+	out.Cloud = v.Cloud
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.ExternalAccessEnabled = v.ExternalAccessEnabled
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

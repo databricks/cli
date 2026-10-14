@@ -22,22 +22,6 @@ const (
 	SseEncryptionAlgorithm_AwsSseKms    = sdk.SseEncryptionAlgorithm_AwsSseKms
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AwsSqsQueue struct {
 	// The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account
 	// id}/{queue name}. Only required for provided_sqs.
@@ -45,26 +29,6 @@ type AwsSqsQueue struct {
 	// Unique identifier included in the name of file events managed cloud
 	// resources.
 	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
-}
-
-func AwsSqsQueueFromSDK(v *sdk.AwsSqsQueue) (*AwsSqsQueue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsSqsQueue{
-		QueueUrl:          v.QueueUrl,
-		ManagedResourceId: v.ManagedResourceId,
-	}, nil
-}
-
-func AwsSqsQueueToSDK(w *AwsSqsQueue) (*sdk.AwsSqsQueue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsSqsQueue{
-		QueueUrl:          w.QueueUrl,
-		ManagedResourceId: w.ManagedResourceId,
-	}, nil
 }
 
 type AzureQueueStorage struct {
@@ -82,30 +46,6 @@ type AzureQueueStorage struct {
 	// Unique identifier included in the name of file events managed cloud
 	// resources.
 	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
-}
-
-func AzureQueueStorageFromSDK(v *sdk.AzureQueueStorage) (*AzureQueueStorage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureQueueStorage{
-		QueueUrl:          v.QueueUrl,
-		SubscriptionId:    v.SubscriptionId,
-		ResourceGroup:     v.ResourceGroup,
-		ManagedResourceId: v.ManagedResourceId,
-	}, nil
-}
-
-func AzureQueueStorageToSDK(w *AzureQueueStorage) (*sdk.AzureQueueStorage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureQueueStorage{
-		QueueUrl:          w.QueueUrl,
-		SubscriptionId:    w.SubscriptionId,
-		ResourceGroup:     w.ResourceGroup,
-		ManagedResourceId: w.ManagedResourceId,
-	}, nil
 }
 
 type CreateExternalLocationRequest struct {
@@ -165,55 +105,6 @@ type CreateExternalLocationRequest struct {
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
 }
 
-func CreateExternalLocationRequestFromSDK(v *sdk.CreateExternalLocationRequest) (*CreateExternalLocationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileEventQueueWireValue, err := FileEventQueueFromSDK(v.FileEventQueue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.FileEventQueue", err)
-	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EncryptionDetails", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.UpdatedAt", err)
-	}
-	effectiveFileEventQueueWireValue, err := FileEventQueueFromSDK(v.EffectiveFileEventQueue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EffectiveFileEventQueue", err)
-	}
-	return &CreateExternalLocationRequest{
-		SkipValidation:            v.SkipValidation,
-		Name:                      v.Name,
-		Url:                       v.Url,
-		CredentialName:            v.CredentialName,
-		ReadOnly:                  v.ReadOnly,
-		Comment:                   v.Comment,
-		EnableFileEvents:          v.EnableFileEvents,
-		FileEventQueue:            fileEventQueueWireValue,
-		Owner:                     v.Owner,
-		EncryptionDetails:         encryptionDetailsWireValue,
-		MetastoreId:               v.MetastoreId,
-		CredentialId:              v.CredentialId,
-		CreatedAt:                 createdAtWireValue,
-		CreatedBy:                 v.CreatedBy,
-		UpdatedAt:                 updatedAtWireValue,
-		UpdatedBy:                 v.UpdatedBy,
-		BrowseOnly:                v.BrowseOnly,
-		IsolationMode:             v.IsolationMode,
-		Fallback:                  v.Fallback,
-		EffectiveEnableFileEvents: v.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   effectiveFileEventQueueWireValue,
-	}, nil
-}
-
 type DeleteExternalLocationRequest struct {
 	// Name of the external location.
 	NameArg *string `json:"name_arg,omitempty"`
@@ -221,67 +112,9 @@ type DeleteExternalLocationRequest struct {
 	Force *bool `json:"force,omitempty"`
 }
 
-func DeleteExternalLocationRequestFromSDK(v *sdk.DeleteExternalLocationRequest) (*DeleteExternalLocationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteExternalLocationRequest{
-		NameArg: v.NameArg,
-		Force:   v.Force,
-	}, nil
-}
-
 // Encryption options that apply to clients connecting to cloud storage..
 type EncryptionDetails struct {
 	SseEncryptionDetails *SseEncryptionDetails `json:"sse_encryption_details,omitempty"`
-}
-
-func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var encryptionDetailsTypeSseEncryptionDetailsWire *SseEncryptionDetails
-	switch value := v.EncryptionDetailsType.(type) {
-	case nil:
-	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
-		if value != nil {
-			encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-			}
-			encryptionDetailsTypeSseEncryptionDetailsWire = encryptionDetailsTypeSseEncryptionDetailsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EncryptionDetails.EncryptionDetailsType", value)
-	}
-	return &EncryptionDetails{
-		SseEncryptionDetails: encryptionDetailsTypeSseEncryptionDetailsWire,
-	}, nil
-}
-
-func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	encryptionDetailsTypeMembers := 0
-	if w.SseEncryptionDetails != nil {
-		encryptionDetailsTypeMembers++
-	}
-	if encryptionDetailsTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
-	}
-	encryptionDetailsTypeSelection := (&sdk.EncryptionDetails{}).EncryptionDetailsType
-	switch {
-	case w.SseEncryptionDetails != nil:
-		encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-		}
-		encryptionDetailsTypeSelection = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *encryptionDetailsTypeSseEncryptionDetailsConverted}
-	}
-	return &sdk.EncryptionDetails{
-		EncryptionDetailsType: encryptionDetailsTypeSelection,
-	}, nil
 }
 
 type ExternalLocationInfo struct {
@@ -338,54 +171,6 @@ type ExternalLocationInfo struct {
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
 }
 
-func ExternalLocationInfoToSDK(w *ExternalLocationInfo) (*sdk.ExternalLocationInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileEventQueuePublicValue, err := FileEventQueueToSDK(w.FileEventQueue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.FileEventQueue", err)
-	}
-	encryptionDetailsPublicValue, err := EncryptionDetailsToSDK(w.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EncryptionDetails", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.UpdatedAt", err)
-	}
-	effectiveFileEventQueuePublicValue, err := FileEventQueueToSDK(w.EffectiveFileEventQueue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EffectiveFileEventQueue", err)
-	}
-	return &sdk.ExternalLocationInfo{
-		Name:                      w.Name,
-		Url:                       w.Url,
-		CredentialName:            w.CredentialName,
-		ReadOnly:                  w.ReadOnly,
-		Comment:                   w.Comment,
-		EnableFileEvents:          w.EnableFileEvents,
-		FileEventQueue:            fileEventQueuePublicValue,
-		Owner:                     w.Owner,
-		EncryptionDetails:         encryptionDetailsPublicValue,
-		MetastoreId:               w.MetastoreId,
-		CredentialId:              w.CredentialId,
-		CreatedAt:                 createdAtPublicValue,
-		CreatedBy:                 w.CreatedBy,
-		UpdatedAt:                 updatedAtPublicValue,
-		UpdatedBy:                 w.UpdatedBy,
-		BrowseOnly:                w.BrowseOnly,
-		IsolationMode:             w.IsolationMode,
-		Fallback:                  w.Fallback,
-		EffectiveEnableFileEvents: w.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   effectiveFileEventQueuePublicValue,
-	}, nil
-}
-
 type FileEventQueue struct {
 	ProvidedAqs    *AzureQueueStorage `json:"provided_aqs,omitempty"`
 	ProvidedSqs    *AwsSqsQueue       `json:"provided_sqs,omitempty"`
@@ -393,162 +178,6 @@ type FileEventQueue struct {
 	ManagedAqs     *AzureQueueStorage `json:"managed_aqs,omitempty"`
 	ManagedSqs     *AwsSqsQueue       `json:"managed_sqs,omitempty"`
 	ManagedPubsub  *GcpPubsub         `json:"managed_pubsub,omitempty"`
-}
-
-func FileEventQueueFromSDK(v *sdk.FileEventQueue) (*FileEventQueue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var providedProvidedAqsWire *AzureQueueStorage
-	var providedProvidedSqsWire *AwsSqsQueue
-	var providedProvidedPubsubWire *GcpPubsub
-	switch value := v.Provided.(type) {
-	case nil:
-	case *sdk.FileEventQueue_Provided_ProvidedAqs:
-		if value != nil {
-			providedProvidedAqsConverted, err := AzureQueueStorageFromSDK(&value.ProvidedAqs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedAqs", err)
-			}
-			providedProvidedAqsWire = providedProvidedAqsConverted
-		}
-	case *sdk.FileEventQueue_Provided_ProvidedSqs:
-		if value != nil {
-			providedProvidedSqsConverted, err := AwsSqsQueueFromSDK(&value.ProvidedSqs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedSqs", err)
-			}
-			providedProvidedSqsWire = providedProvidedSqsConverted
-		}
-	case *sdk.FileEventQueue_Provided_ProvidedPubsub:
-		if value != nil {
-			providedProvidedPubsubConverted, err := GcpPubsubFromSDK(&value.ProvidedPubsub)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedPubsub", err)
-			}
-			providedProvidedPubsubWire = providedProvidedPubsubConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FileEventQueue.Provided", value)
-	}
-	var managedManagedAqsWire *AzureQueueStorage
-	var managedManagedSqsWire *AwsSqsQueue
-	var managedManagedPubsubWire *GcpPubsub
-	switch value := v.Managed.(type) {
-	case nil:
-	case *sdk.FileEventQueue_Managed_ManagedAqs:
-		if value != nil {
-			managedManagedAqsConverted, err := AzureQueueStorageFromSDK(&value.ManagedAqs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedAqs", err)
-			}
-			managedManagedAqsWire = managedManagedAqsConverted
-		}
-	case *sdk.FileEventQueue_Managed_ManagedSqs:
-		if value != nil {
-			managedManagedSqsConverted, err := AwsSqsQueueFromSDK(&value.ManagedSqs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedSqs", err)
-			}
-			managedManagedSqsWire = managedManagedSqsConverted
-		}
-	case *sdk.FileEventQueue_Managed_ManagedPubsub:
-		if value != nil {
-			managedManagedPubsubConverted, err := GcpPubsubFromSDK(&value.ManagedPubsub)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedPubsub", err)
-			}
-			managedManagedPubsubWire = managedManagedPubsubConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FileEventQueue.Managed", value)
-	}
-	return &FileEventQueue{
-		ProvidedAqs:    providedProvidedAqsWire,
-		ProvidedSqs:    providedProvidedSqsWire,
-		ProvidedPubsub: providedProvidedPubsubWire,
-		ManagedAqs:     managedManagedAqsWire,
-		ManagedSqs:     managedManagedSqsWire,
-		ManagedPubsub:  managedManagedPubsubWire,
-	}, nil
-}
-
-func FileEventQueueToSDK(w *FileEventQueue) (*sdk.FileEventQueue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providedMembers := 0
-	if w.ProvidedAqs != nil {
-		providedMembers++
-	}
-	if w.ProvidedSqs != nil {
-		providedMembers++
-	}
-	if w.ProvidedPubsub != nil {
-		providedMembers++
-	}
-	if providedMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FileEventQueue.Provided")
-	}
-	managedMembers := 0
-	if w.ManagedAqs != nil {
-		managedMembers++
-	}
-	if w.ManagedSqs != nil {
-		managedMembers++
-	}
-	if w.ManagedPubsub != nil {
-		managedMembers++
-	}
-	if managedMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FileEventQueue.Managed")
-	}
-	providedSelection := (&sdk.FileEventQueue{}).Provided
-	switch {
-	case w.ProvidedAqs != nil:
-		providedProvidedAqsConverted, err := AzureQueueStorageToSDK(w.ProvidedAqs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedAqs", err)
-		}
-		providedSelection = &sdk.FileEventQueue_Provided_ProvidedAqs{ProvidedAqs: *providedProvidedAqsConverted}
-	case w.ProvidedSqs != nil:
-		providedProvidedSqsConverted, err := AwsSqsQueueToSDK(w.ProvidedSqs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedSqs", err)
-		}
-		providedSelection = &sdk.FileEventQueue_Provided_ProvidedSqs{ProvidedSqs: *providedProvidedSqsConverted}
-	case w.ProvidedPubsub != nil:
-		providedProvidedPubsubConverted, err := GcpPubsubToSDK(w.ProvidedPubsub)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided.ProvidedPubsub", err)
-		}
-		providedSelection = &sdk.FileEventQueue_Provided_ProvidedPubsub{ProvidedPubsub: *providedProvidedPubsubConverted}
-	}
-	managedSelection := (&sdk.FileEventQueue{}).Managed
-	switch {
-	case w.ManagedAqs != nil:
-		managedManagedAqsConverted, err := AzureQueueStorageToSDK(w.ManagedAqs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedAqs", err)
-		}
-		managedSelection = &sdk.FileEventQueue_Managed_ManagedAqs{ManagedAqs: *managedManagedAqsConverted}
-	case w.ManagedSqs != nil:
-		managedManagedSqsConverted, err := AwsSqsQueueToSDK(w.ManagedSqs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedSqs", err)
-		}
-		managedSelection = &sdk.FileEventQueue_Managed_ManagedSqs{ManagedSqs: *managedManagedSqsConverted}
-	case w.ManagedPubsub != nil:
-		managedManagedPubsubConverted, err := GcpPubsubToSDK(w.ManagedPubsub)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed.ManagedPubsub", err)
-		}
-		managedSelection = &sdk.FileEventQueue_Managed_ManagedPubsub{ManagedPubsub: *managedManagedPubsubConverted}
-	}
-	return &sdk.FileEventQueue{
-		Provided: providedSelection,
-		Managed:  managedSelection,
-	}, nil
 }
 
 type GcpPubsub struct {
@@ -561,42 +190,12 @@ type GcpPubsub struct {
 	ManagedResourceId *string `json:"managed_resource_id,omitempty"`
 }
 
-func GcpPubsubFromSDK(v *sdk.GcpPubsub) (*GcpPubsub, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpPubsub{
-		SubscriptionName:  v.SubscriptionName,
-		ManagedResourceId: v.ManagedResourceId,
-	}, nil
-}
-
-func GcpPubsubToSDK(w *GcpPubsub) (*sdk.GcpPubsub, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpPubsub{
-		SubscriptionName:  w.SubscriptionName,
-		ManagedResourceId: w.ManagedResourceId,
-	}, nil
-}
-
 type GetExternalLocationRequest struct {
 	// Name of the external location.
 	NameArg *string `json:"name_arg,omitempty"`
 	// Whether to include external locations in the response for which the principal
 	// can only access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetExternalLocationRequestFromSDK(v *sdk.GetExternalLocationRequest) (*GetExternalLocationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetExternalLocationRequest{
-		NameArg:       v.NameArg,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
 }
 
 type ListExternalLocationsRequest struct {
@@ -617,18 +216,6 @@ type ListExternalLocationsRequest struct {
 	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 }
 
-func ListExternalLocationsRequestFromSDK(v *sdk.ListExternalLocationsRequest) (*ListExternalLocationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExternalLocationsRequest{
-		IncludeBrowse:  v.IncludeBrowse,
-		MaxResults:     v.MaxResults,
-		PageToken:      v.PageToken,
-		IncludeUnbound: v.IncludeUnbound,
-	}, nil
-}
-
 type ListExternalLocationsResponse struct {
 	// An array of external locations.
 	ExternalLocations []ExternalLocationInfo `json:"external_locations,omitempty"`
@@ -636,20 +223,6 @@ type ListExternalLocationsResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListExternalLocationsResponseToSDK(w *ListExternalLocationsResponse) (*sdk.ListExternalLocationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalLocationsPublicValue, err := convertSlice(w.ExternalLocations, ExternalLocationInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExternalLocationsResponse.ExternalLocations", err)
-	}
-	return &sdk.ListExternalLocationsResponse{
-		ExternalLocations: externalLocationsPublicValue,
-		NextPageToken:     w.NextPageToken,
-	}, nil
 }
 
 // Server-Side Encryption properties for clients communicating with AWS s3..
@@ -660,26 +233,6 @@ type SseEncryptionDetails struct {
 	// algorithm = "SSE-KMS". Sets the value of the
 	// 'x-amz-server-side-encryption-aws-kms-key-id' header.
 	AwsKmsKeyArn *string `json:"aws_kms_key_arn,omitempty"`
-}
-
-func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SseEncryptionDetails{
-		Algorithm:    v.Algorithm,
-		AwsKmsKeyArn: v.AwsKmsKeyArn,
-	}, nil
-}
-
-func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SseEncryptionDetails{
-		Algorithm:    w.Algorithm,
-		AwsKmsKeyArn: w.AwsKmsKeyArn,
-	}, nil
 }
 
 type UpdateExternalLocationRequest struct {
@@ -746,56 +299,637 @@ type UpdateExternalLocationRequest struct {
 	EffectiveFileEventQueue *FileEventQueue `json:"effective_file_event_queue,omitempty"`
 }
 
+// AwsSqsQueueToSDK converts the mirror to the sdk-go type.
+func AwsSqsQueueToSDK(w *AwsSqsQueue) (*sdk.AwsSqsQueue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsSqsQueue{}
+	out.QueueUrl = w.QueueUrl
+	out.ManagedResourceId = w.ManagedResourceId
+	return out, nil
+}
+
+// AwsSqsQueueFromSDK converts the sdk-go type to the mirror.
+func AwsSqsQueueFromSDK(v *sdk.AwsSqsQueue) (*AwsSqsQueue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsSqsQueue{}
+	out.QueueUrl = v.QueueUrl
+	out.ManagedResourceId = v.ManagedResourceId
+	return out, nil
+}
+
+// AzureQueueStorageToSDK converts the mirror to the sdk-go type.
+func AzureQueueStorageToSDK(w *AzureQueueStorage) (*sdk.AzureQueueStorage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureQueueStorage{}
+	out.QueueUrl = w.QueueUrl
+	out.SubscriptionId = w.SubscriptionId
+	out.ResourceGroup = w.ResourceGroup
+	out.ManagedResourceId = w.ManagedResourceId
+	return out, nil
+}
+
+// AzureQueueStorageFromSDK converts the sdk-go type to the mirror.
+func AzureQueueStorageFromSDK(v *sdk.AzureQueueStorage) (*AzureQueueStorage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureQueueStorage{}
+	out.QueueUrl = v.QueueUrl
+	out.SubscriptionId = v.SubscriptionId
+	out.ResourceGroup = v.ResourceGroup
+	out.ManagedResourceId = v.ManagedResourceId
+	return out, nil
+}
+
+// CreateExternalLocationRequestToSDK converts the mirror to the sdk-go type.
+func CreateExternalLocationRequestToSDK(w *CreateExternalLocationRequest) (*sdk.CreateExternalLocationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExternalLocationRequest{}
+	out.SkipValidation = w.SkipValidation
+	out.Name = w.Name
+	out.Url = w.Url
+	out.CredentialName = w.CredentialName
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	out.EnableFileEvents = w.EnableFileEvents
+	conv1, err := FileEventQueueToSDK(w.FileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.FileEventQueue", err)
+	}
+	out.FileEventQueue = conv1
+	out.Owner = w.Owner
+	conv2, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv2
+	out.MetastoreId = w.MetastoreId
+	out.CredentialId = w.CredentialId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.BrowseOnly = w.BrowseOnly
+	out.IsolationMode = w.IsolationMode
+	out.Fallback = w.Fallback
+	out.EffectiveEnableFileEvents = w.EffectiveEnableFileEvents
+	conv3, err := FileEventQueueToSDK(w.EffectiveFileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EffectiveFileEventQueue", err)
+	}
+	out.EffectiveFileEventQueue = conv3
+	return out, nil
+}
+
+// CreateExternalLocationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExternalLocationRequestFromSDK(v *sdk.CreateExternalLocationRequest) (*CreateExternalLocationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExternalLocationRequest{}
+	out.SkipValidation = v.SkipValidation
+	out.Name = v.Name
+	out.Url = v.Url
+	out.CredentialName = v.CredentialName
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	out.EnableFileEvents = v.EnableFileEvents
+	conv4, err := FileEventQueueFromSDK(v.FileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.FileEventQueue", err)
+	}
+	out.FileEventQueue = conv4
+	out.Owner = v.Owner
+	conv5, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv5
+	out.MetastoreId = v.MetastoreId
+	out.CredentialId = v.CredentialId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.BrowseOnly = v.BrowseOnly
+	out.IsolationMode = v.IsolationMode
+	out.Fallback = v.Fallback
+	out.EffectiveEnableFileEvents = v.EffectiveEnableFileEvents
+	conv6, err := FileEventQueueFromSDK(v.EffectiveFileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalLocationRequest.EffectiveFileEventQueue", err)
+	}
+	out.EffectiveFileEventQueue = conv6
+	return out, nil
+}
+
+// DeleteExternalLocationRequestToSDK converts the mirror to the sdk-go type.
+func DeleteExternalLocationRequestToSDK(w *DeleteExternalLocationRequest) (*sdk.DeleteExternalLocationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteExternalLocationRequest{}
+	out.NameArg = w.NameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteExternalLocationRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteExternalLocationRequestFromSDK(v *sdk.DeleteExternalLocationRequest) (*DeleteExternalLocationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteExternalLocationRequest{}
+	out.NameArg = v.NameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// EncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EncryptionDetails{}
+	{
+		members := 0
+		if w.SseEncryptionDetails != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
+		}
+	}
+	switch {
+	case w.SseEncryptionDetails != nil:
+		conv7, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+		}
+		out.EncryptionDetailsType = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *conv7}
+	}
+	return out, nil
+}
+
+// EncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EncryptionDetails{}
+	switch value := v.EncryptionDetailsType.(type) {
+	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
+		if value != nil {
+			conv8, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+			}
+			out.SseEncryptionDetails = conv8
+		}
+	}
+	return out, nil
+}
+
+// ExternalLocationInfoToSDK converts the mirror to the sdk-go type.
+func ExternalLocationInfoToSDK(w *ExternalLocationInfo) (*sdk.ExternalLocationInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLocationInfo{}
+	out.Name = w.Name
+	out.Url = w.Url
+	out.CredentialName = w.CredentialName
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	out.EnableFileEvents = w.EnableFileEvents
+	conv9, err := FileEventQueueToSDK(w.FileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.FileEventQueue", err)
+	}
+	out.FileEventQueue = conv9
+	out.Owner = w.Owner
+	conv10, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv10
+	out.MetastoreId = w.MetastoreId
+	out.CredentialId = w.CredentialId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.BrowseOnly = w.BrowseOnly
+	out.IsolationMode = w.IsolationMode
+	out.Fallback = w.Fallback
+	out.EffectiveEnableFileEvents = w.EffectiveEnableFileEvents
+	conv11, err := FileEventQueueToSDK(w.EffectiveFileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EffectiveFileEventQueue", err)
+	}
+	out.EffectiveFileEventQueue = conv11
+	return out, nil
+}
+
+// ExternalLocationInfoFromSDK converts the sdk-go type to the mirror.
+func ExternalLocationInfoFromSDK(v *sdk.ExternalLocationInfo) (*ExternalLocationInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLocationInfo{}
+	out.Name = v.Name
+	out.Url = v.Url
+	out.CredentialName = v.CredentialName
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	out.EnableFileEvents = v.EnableFileEvents
+	conv12, err := FileEventQueueFromSDK(v.FileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.FileEventQueue", err)
+	}
+	out.FileEventQueue = conv12
+	out.Owner = v.Owner
+	conv13, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv13
+	out.MetastoreId = v.MetastoreId
+	out.CredentialId = v.CredentialId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.BrowseOnly = v.BrowseOnly
+	out.IsolationMode = v.IsolationMode
+	out.Fallback = v.Fallback
+	out.EffectiveEnableFileEvents = v.EffectiveEnableFileEvents
+	conv14, err := FileEventQueueFromSDK(v.EffectiveFileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExternalLocationInfo.EffectiveFileEventQueue", err)
+	}
+	out.EffectiveFileEventQueue = conv14
+	return out, nil
+}
+
+// FileEventQueueToSDK converts the mirror to the sdk-go type.
+func FileEventQueueToSDK(w *FileEventQueue) (*sdk.FileEventQueue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileEventQueue{}
+	{
+		members := 0
+		if w.ProvidedAqs != nil {
+			members++
+		}
+		if w.ProvidedSqs != nil {
+			members++
+		}
+		if w.ProvidedPubsub != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FileEventQueue.Provided")
+		}
+	}
+	switch {
+	case w.ProvidedAqs != nil:
+		conv15, err := AzureQueueStorageToSDK(w.ProvidedAqs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+		}
+		out.Provided = &sdk.FileEventQueue_Provided_ProvidedAqs{ProvidedAqs: *conv15}
+	case w.ProvidedSqs != nil:
+		conv16, err := AwsSqsQueueToSDK(w.ProvidedSqs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+		}
+		out.Provided = &sdk.FileEventQueue_Provided_ProvidedSqs{ProvidedSqs: *conv16}
+	case w.ProvidedPubsub != nil:
+		conv17, err := GcpPubsubToSDK(w.ProvidedPubsub)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+		}
+		out.Provided = &sdk.FileEventQueue_Provided_ProvidedPubsub{ProvidedPubsub: *conv17}
+	}
+	{
+		members := 0
+		if w.ManagedAqs != nil {
+			members++
+		}
+		if w.ManagedSqs != nil {
+			members++
+		}
+		if w.ManagedPubsub != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FileEventQueue.Managed")
+		}
+	}
+	switch {
+	case w.ManagedAqs != nil:
+		conv18, err := AzureQueueStorageToSDK(w.ManagedAqs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+		}
+		out.Managed = &sdk.FileEventQueue_Managed_ManagedAqs{ManagedAqs: *conv18}
+	case w.ManagedSqs != nil:
+		conv19, err := AwsSqsQueueToSDK(w.ManagedSqs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+		}
+		out.Managed = &sdk.FileEventQueue_Managed_ManagedSqs{ManagedSqs: *conv19}
+	case w.ManagedPubsub != nil:
+		conv20, err := GcpPubsubToSDK(w.ManagedPubsub)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+		}
+		out.Managed = &sdk.FileEventQueue_Managed_ManagedPubsub{ManagedPubsub: *conv20}
+	}
+	return out, nil
+}
+
+// FileEventQueueFromSDK converts the sdk-go type to the mirror.
+func FileEventQueueFromSDK(v *sdk.FileEventQueue) (*FileEventQueue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileEventQueue{}
+	switch value := v.Provided.(type) {
+	case *sdk.FileEventQueue_Provided_ProvidedAqs:
+		if value != nil {
+			conv21, err := AzureQueueStorageFromSDK(&value.ProvidedAqs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+			}
+			out.ProvidedAqs = conv21
+		}
+	case *sdk.FileEventQueue_Provided_ProvidedSqs:
+		if value != nil {
+			conv22, err := AwsSqsQueueFromSDK(&value.ProvidedSqs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+			}
+			out.ProvidedSqs = conv22
+		}
+	case *sdk.FileEventQueue_Provided_ProvidedPubsub:
+		if value != nil {
+			conv23, err := GcpPubsubFromSDK(&value.ProvidedPubsub)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Provided", err)
+			}
+			out.ProvidedPubsub = conv23
+		}
+	}
+	switch value := v.Managed.(type) {
+	case *sdk.FileEventQueue_Managed_ManagedAqs:
+		if value != nil {
+			conv24, err := AzureQueueStorageFromSDK(&value.ManagedAqs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+			}
+			out.ManagedAqs = conv24
+		}
+	case *sdk.FileEventQueue_Managed_ManagedSqs:
+		if value != nil {
+			conv25, err := AwsSqsQueueFromSDK(&value.ManagedSqs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+			}
+			out.ManagedSqs = conv25
+		}
+	case *sdk.FileEventQueue_Managed_ManagedPubsub:
+		if value != nil {
+			conv26, err := GcpPubsubFromSDK(&value.ManagedPubsub)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "FileEventQueue.Managed", err)
+			}
+			out.ManagedPubsub = conv26
+		}
+	}
+	return out, nil
+}
+
+// GcpPubsubToSDK converts the mirror to the sdk-go type.
+func GcpPubsubToSDK(w *GcpPubsub) (*sdk.GcpPubsub, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpPubsub{}
+	out.SubscriptionName = w.SubscriptionName
+	out.ManagedResourceId = w.ManagedResourceId
+	return out, nil
+}
+
+// GcpPubsubFromSDK converts the sdk-go type to the mirror.
+func GcpPubsubFromSDK(v *sdk.GcpPubsub) (*GcpPubsub, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpPubsub{}
+	out.SubscriptionName = v.SubscriptionName
+	out.ManagedResourceId = v.ManagedResourceId
+	return out, nil
+}
+
+// GetExternalLocationRequestToSDK converts the mirror to the sdk-go type.
+func GetExternalLocationRequestToSDK(w *GetExternalLocationRequest) (*sdk.GetExternalLocationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExternalLocationRequest{}
+	out.NameArg = w.NameArg
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetExternalLocationRequestFromSDK converts the sdk-go type to the mirror.
+func GetExternalLocationRequestFromSDK(v *sdk.GetExternalLocationRequest) (*GetExternalLocationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExternalLocationRequest{}
+	out.NameArg = v.NameArg
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListExternalLocationsRequestToSDK converts the mirror to the sdk-go type.
+func ListExternalLocationsRequestToSDK(w *ListExternalLocationsRequest) (*sdk.ListExternalLocationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalLocationsRequest{}
+	out.IncludeBrowse = w.IncludeBrowse
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeUnbound = w.IncludeUnbound
+	return out, nil
+}
+
+// ListExternalLocationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListExternalLocationsRequestFromSDK(v *sdk.ListExternalLocationsRequest) (*ListExternalLocationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalLocationsRequest{}
+	out.IncludeBrowse = v.IncludeBrowse
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeUnbound = v.IncludeUnbound
+	return out, nil
+}
+
+// ListExternalLocationsResponseToSDK converts the mirror to the sdk-go type.
+func ListExternalLocationsResponseToSDK(w *ListExternalLocationsResponse) (*sdk.ListExternalLocationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalLocationsResponse{}
+	conv27, err := convertSlice(w.ExternalLocations, ExternalLocationInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLocationsResponse.ExternalLocations", err)
+	}
+	out.ExternalLocations = conv27
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExternalLocationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListExternalLocationsResponseFromSDK(v *sdk.ListExternalLocationsResponse) (*ListExternalLocationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalLocationsResponse{}
+	conv28, err := convertSlice(v.ExternalLocations, ExternalLocationInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalLocationsResponse.ExternalLocations", err)
+	}
+	out.ExternalLocations = conv28
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SseEncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SseEncryptionDetails{}
+	out.Algorithm = w.Algorithm
+	out.AwsKmsKeyArn = w.AwsKmsKeyArn
+	return out, nil
+}
+
+// SseEncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SseEncryptionDetails{}
+	out.Algorithm = v.Algorithm
+	out.AwsKmsKeyArn = v.AwsKmsKeyArn
+	return out, nil
+}
+
+// UpdateExternalLocationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExternalLocationRequestToSDK(w *UpdateExternalLocationRequest) (*sdk.UpdateExternalLocationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExternalLocationRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.Force = w.Force
+	out.SkipValidation = w.SkipValidation
+	out.Name = w.Name
+	out.Url = w.Url
+	out.CredentialName = w.CredentialName
+	out.ReadOnly = w.ReadOnly
+	out.Comment = w.Comment
+	out.EnableFileEvents = w.EnableFileEvents
+	conv29, err := FileEventQueueToSDK(w.FileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.FileEventQueue", err)
+	}
+	out.FileEventQueue = conv29
+	out.Owner = w.Owner
+	conv30, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv30
+	out.MetastoreId = w.MetastoreId
+	out.CredentialId = w.CredentialId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.BrowseOnly = w.BrowseOnly
+	out.IsolationMode = w.IsolationMode
+	out.Fallback = w.Fallback
+	out.EffectiveEnableFileEvents = w.EffectiveEnableFileEvents
+	conv31, err := FileEventQueueToSDK(w.EffectiveFileEventQueue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.EffectiveFileEventQueue", err)
+	}
+	out.EffectiveFileEventQueue = conv31
+	return out, nil
+}
+
+// UpdateExternalLocationRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateExternalLocationRequestFromSDK(v *sdk.UpdateExternalLocationRequest) (*UpdateExternalLocationRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	fileEventQueueWireValue, err := FileEventQueueFromSDK(v.FileEventQueue)
+	out := &UpdateExternalLocationRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.Force = v.Force
+	out.SkipValidation = v.SkipValidation
+	out.Name = v.Name
+	out.Url = v.Url
+	out.CredentialName = v.CredentialName
+	out.ReadOnly = v.ReadOnly
+	out.Comment = v.Comment
+	out.EnableFileEvents = v.EnableFileEvents
+	conv32, err := FileEventQueueFromSDK(v.FileEventQueue)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.FileEventQueue", err)
 	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	out.FileEventQueue = conv32
+	out.Owner = v.Owner
+	conv33, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.EncryptionDetails", err)
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.UpdatedAt", err)
-	}
-	effectiveFileEventQueueWireValue, err := FileEventQueueFromSDK(v.EffectiveFileEventQueue)
+	out.EncryptionDetails = conv33
+	out.MetastoreId = v.MetastoreId
+	out.CredentialId = v.CredentialId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.BrowseOnly = v.BrowseOnly
+	out.IsolationMode = v.IsolationMode
+	out.Fallback = v.Fallback
+	out.EffectiveEnableFileEvents = v.EffectiveEnableFileEvents
+	conv34, err := FileEventQueueFromSDK(v.EffectiveFileEventQueue)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateExternalLocationRequest.EffectiveFileEventQueue", err)
 	}
-	return &UpdateExternalLocationRequest{
-		NameArg:                   v.NameArg,
-		NewName:                   v.NewName,
-		Force:                     v.Force,
-		SkipValidation:            v.SkipValidation,
-		Name:                      v.Name,
-		Url:                       v.Url,
-		CredentialName:            v.CredentialName,
-		ReadOnly:                  v.ReadOnly,
-		Comment:                   v.Comment,
-		EnableFileEvents:          v.EnableFileEvents,
-		FileEventQueue:            fileEventQueueWireValue,
-		Owner:                     v.Owner,
-		EncryptionDetails:         encryptionDetailsWireValue,
-		MetastoreId:               v.MetastoreId,
-		CredentialId:              v.CredentialId,
-		CreatedAt:                 createdAtWireValue,
-		CreatedBy:                 v.CreatedBy,
-		UpdatedAt:                 updatedAtWireValue,
-		UpdatedBy:                 v.UpdatedBy,
-		BrowseOnly:                v.BrowseOnly,
-		IsolationMode:             v.IsolationMode,
-		Fallback:                  v.Fallback,
-		EffectiveEnableFileEvents: v.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   effectiveFileEventQueueWireValue,
-	}, nil
+	out.EffectiveFileEventQueue = conv34
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

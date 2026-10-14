@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/files/v2"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AddBlockRequest struct {
 	// The handle on an open stream.
 	Handle *int64 `json:"handle,omitempty"`
@@ -31,36 +15,9 @@ type AddBlockRequest struct {
 	Data []byte `json:"data,omitempty"`
 }
 
-func AddBlockRequestFromSDK(v *sdk.AddBlockRequest) (*AddBlockRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	handleWireValue, err := int64ToWire(v.Handle)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AddBlockRequest.Handle", err)
-	}
-	return &AddBlockRequest{
-		Handle: handleWireValue,
-		Data:   v.Data,
-	}, nil
-}
-
 type CloseRequest struct {
 	// The handle on an open stream.
 	Handle *int64 `json:"handle,omitempty"`
-}
-
-func CloseRequestFromSDK(v *sdk.CloseRequest) (*CloseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	handleWireValue, err := int64ToWire(v.Handle)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CloseRequest.Handle", err)
-	}
-	return &CloseRequest{
-		Handle: handleWireValue,
-	}, nil
 }
 
 type CreateRequest struct {
@@ -70,33 +27,10 @@ type CreateRequest struct {
 	Overwrite *bool `json:"overwrite,omitempty"`
 }
 
-func CreateRequestFromSDK(v *sdk.CreateRequest) (*CreateRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateRequest{
-		Path:      v.Path,
-		Overwrite: v.Overwrite,
-	}, nil
-}
-
 type CreateResponse struct {
 	// Handle which should subsequently be passed into the AddBlock and Close calls
 	// when writing to a file through a stream.
 	Handle *int64 `json:"handle,omitempty"`
-}
-
-func CreateResponseToSDK(w *CreateResponse) (*sdk.CreateResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	handlePublicValue, err := int64FromWire(w.Handle)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateResponse.Handle", err)
-	}
-	return &sdk.CreateResponse{
-		Handle: handlePublicValue,
-	}, nil
 }
 
 type DeleteRequest struct {
@@ -106,16 +40,6 @@ type DeleteRequest struct {
 	// Whether or not to recursively delete the directory's contents. Deleting empty
 	// directories can be done without providing the recursive flag.
 	Recursive *bool `json:"recursive,omitempty"`
-}
-
-func DeleteRequestFromSDK(v *sdk.DeleteRequest) (*DeleteRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRequest{
-		Path:      v.Path,
-		Recursive: v.Recursive,
-	}, nil
 }
 
 type DirectoryEntry struct {
@@ -131,19 +55,6 @@ type DirectoryEntry struct {
 	Path *string `json:"path,omitempty"`
 }
 
-func DirectoryEntryToSDK(w *DirectoryEntry) (*sdk.DirectoryEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DirectoryEntry{
-		FileSize:     w.FileSize,
-		IsDirectory:  w.IsDirectory,
-		LastModified: w.LastModified,
-		Name:         w.Name,
-		Path:         w.Path,
-	}, nil
-}
-
 // Stores the attributes of a file or directory..
 type FileInfo struct {
 	// The absolute path of the file or directory.
@@ -156,38 +67,9 @@ type FileInfo struct {
 	ModificationTime *int64 `json:"modification_time,omitempty"`
 }
 
-func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileSizePublicValue, err := int64FromWire(w.FileSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.FileSize", err)
-	}
-	modificationTimePublicValue, err := int64FromWire(w.ModificationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.ModificationTime", err)
-	}
-	return &sdk.FileInfo{
-		Path:             w.Path,
-		IsDir:            w.IsDir,
-		FileSize:         fileSizePublicValue,
-		ModificationTime: modificationTimePublicValue,
-	}, nil
-}
-
 type GetStatusRequest struct {
 	// The path of the file or directory. The path should be the absolute DBFS path.
 	Path *string `json:"path,omitempty"`
-}
-
-func GetStatusRequestFromSDK(v *sdk.GetStatusRequest) (*GetStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetStatusRequest{
-		Path: v.Path,
-	}, nil
 }
 
 type GetStatusResponse struct {
@@ -199,26 +81,6 @@ type GetStatusResponse struct {
 	FileSize *int64 `json:"file_size,omitempty"`
 	// Last modification time of given file in milliseconds since epoch.
 	ModificationTime *int64 `json:"modification_time,omitempty"`
-}
-
-func GetStatusResponseToSDK(w *GetStatusResponse) (*sdk.GetStatusResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileSizePublicValue, err := int64FromWire(w.FileSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetStatusResponse.FileSize", err)
-	}
-	modificationTimePublicValue, err := int64FromWire(w.ModificationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetStatusResponse.ModificationTime", err)
-	}
-	return &sdk.GetStatusResponse{
-		Path:             w.Path,
-		IsDir:            w.IsDir,
-		FileSize:         fileSizePublicValue,
-		ModificationTime: modificationTimePublicValue,
-	}, nil
 }
 
 // List directory contents.
@@ -246,21 +108,6 @@ type ListDirectoryContentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListDirectoryContentsRequestFromSDK(v *sdk.ListDirectoryContentsRequest) (*ListDirectoryContentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	pageSizeWireValue, err := int64ToWire(v.PageSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDirectoryContentsRequest.PageSize", err)
-	}
-	return &ListDirectoryContentsRequest{
-		DirectoryPath: v.DirectoryPath,
-		PageSize:      pageSizeWireValue,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListDirectoryResponse struct {
 	// Array of DirectoryEntry.
 	Contents []DirectoryEntry `json:"contents,omitempty"`
@@ -268,32 +115,9 @@ type ListDirectoryResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListDirectoryResponseToSDK(w *ListDirectoryResponse) (*sdk.ListDirectoryResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	contentsPublicValue, err := convertSlice(w.Contents, DirectoryEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDirectoryResponse.Contents", err)
-	}
-	return &sdk.ListDirectoryResponse{
-		Contents:      contentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ListStatusRequest struct {
 	// The path of the file or directory. The path should be the absolute DBFS path.
 	Path *string `json:"path,omitempty"`
-}
-
-func ListStatusRequestFromSDK(v *sdk.ListStatusRequest) (*ListStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListStatusRequest{
-		Path: v.Path,
-	}, nil
 }
 
 type ListStatusResponse struct {
@@ -302,31 +126,9 @@ type ListStatusResponse struct {
 	Files []FileInfo `json:"files,omitempty"`
 }
 
-func ListStatusResponseToSDK(w *ListStatusResponse) (*sdk.ListStatusResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filesPublicValue, err := convertSlice(w.Files, FileInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListStatusResponse.Files", err)
-	}
-	return &sdk.ListStatusResponse{
-		Files: filesPublicValue,
-	}, nil
-}
-
 type MkDirsRequest struct {
 	// The path of the new directory. The path should be the absolute DBFS path.
 	Path *string `json:"path,omitempty"`
-}
-
-func MkDirsRequestFromSDK(v *sdk.MkDirsRequest) (*MkDirsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MkDirsRequest{
-		Path: v.Path,
-	}, nil
 }
 
 type MoveRequest struct {
@@ -338,16 +140,6 @@ type MoveRequest struct {
 	DestinationPath *string `json:"destination_path,omitempty"`
 }
 
-func MoveRequestFromSDK(v *sdk.MoveRequest) (*MoveRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MoveRequest{
-		SourcePath:      v.SourcePath,
-		DestinationPath: v.DestinationPath,
-	}, nil
-}
-
 type PutRequest struct {
 	// The path of the new file. The path should be the absolute DBFS path.
 	Path *string `json:"path,omitempty"`
@@ -355,17 +147,6 @@ type PutRequest struct {
 	Contents []byte `json:"contents,omitempty"`
 	// The flag that specifies whether to overwrite existing file/files.
 	Overwrite *bool `json:"overwrite,omitempty"`
-}
-
-func PutRequestFromSDK(v *sdk.PutRequest) (*PutRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PutRequest{
-		Path:      v.Path,
-		Contents:  v.Contents,
-		Overwrite: v.Overwrite,
-	}, nil
 }
 
 type ReadRequest struct {
@@ -378,25 +159,6 @@ type ReadRequest struct {
 	Length *int64 `json:"length,omitempty"`
 }
 
-func ReadRequestFromSDK(v *sdk.ReadRequest) (*ReadRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	offsetWireValue, err := int64ToWire(v.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ReadRequest.Offset", err)
-	}
-	lengthWireValue, err := int64ToWire(v.Length)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ReadRequest.Length", err)
-	}
-	return &ReadRequest{
-		Path:   v.Path,
-		Offset: offsetWireValue,
-		Length: lengthWireValue,
-	}, nil
-}
-
 type ReadResponse struct {
 	// The number of bytes read (could be less than ``length`` if we hit end of
 	// file). This refers to number of bytes read in unencoded version (response
@@ -404,20 +166,6 @@ type ReadResponse struct {
 	BytesRead *int64 `json:"bytes_read,omitempty"`
 	// The base64-encoded contents of the file read.
 	Data []byte `json:"data,omitempty"`
-}
-
-func ReadResponseToSDK(w *ReadResponse) (*sdk.ReadResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	bytesReadPublicValue, err := int64FromWire(w.BytesRead)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ReadResponse.BytesRead", err)
-	}
-	return &sdk.ReadResponse{
-		BytesRead: bytesReadPublicValue,
-		Data:      w.Data,
-	}, nil
 }
 
 // Upload a file.
@@ -429,14 +177,446 @@ type UploadFileRequest struct {
 	Overwrite *bool `json:"overwrite,omitempty"`
 }
 
+// AddBlockRequestToSDK converts the mirror to the sdk-go type.
+func AddBlockRequestToSDK(w *AddBlockRequest) (*sdk.AddBlockRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AddBlockRequest{}
+	out.Handle = w.Handle
+	out.Data = w.Data
+	return out, nil
+}
+
+// AddBlockRequestFromSDK converts the sdk-go type to the mirror.
+func AddBlockRequestFromSDK(v *sdk.AddBlockRequest) (*AddBlockRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AddBlockRequest{}
+	out.Handle = v.Handle
+	out.Data = v.Data
+	return out, nil
+}
+
+// CloseRequestToSDK converts the mirror to the sdk-go type.
+func CloseRequestToSDK(w *CloseRequest) (*sdk.CloseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CloseRequest{}
+	out.Handle = w.Handle
+	return out, nil
+}
+
+// CloseRequestFromSDK converts the sdk-go type to the mirror.
+func CloseRequestFromSDK(v *sdk.CloseRequest) (*CloseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CloseRequest{}
+	out.Handle = v.Handle
+	return out, nil
+}
+
+// CreateRequestToSDK converts the mirror to the sdk-go type.
+func CreateRequestToSDK(w *CreateRequest) (*sdk.CreateRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRequest{}
+	out.Path = w.Path
+	out.Overwrite = w.Overwrite
+	return out, nil
+}
+
+// CreateRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRequestFromSDK(v *sdk.CreateRequest) (*CreateRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRequest{}
+	out.Path = v.Path
+	out.Overwrite = v.Overwrite
+	return out, nil
+}
+
+// CreateResponseToSDK converts the mirror to the sdk-go type.
+func CreateResponseToSDK(w *CreateResponse) (*sdk.CreateResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateResponse{}
+	out.Handle = w.Handle
+	return out, nil
+}
+
+// CreateResponseFromSDK converts the sdk-go type to the mirror.
+func CreateResponseFromSDK(v *sdk.CreateResponse) (*CreateResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateResponse{}
+	out.Handle = v.Handle
+	return out, nil
+}
+
+// DeleteRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRequestToSDK(w *DeleteRequest) (*sdk.DeleteRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRequest{}
+	out.Path = w.Path
+	out.Recursive = w.Recursive
+	return out, nil
+}
+
+// DeleteRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRequestFromSDK(v *sdk.DeleteRequest) (*DeleteRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRequest{}
+	out.Path = v.Path
+	out.Recursive = v.Recursive
+	return out, nil
+}
+
+// DirectoryEntryToSDK converts the mirror to the sdk-go type.
+func DirectoryEntryToSDK(w *DirectoryEntry) (*sdk.DirectoryEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DirectoryEntry{}
+	out.FileSize = w.FileSize
+	out.IsDirectory = w.IsDirectory
+	out.LastModified = w.LastModified
+	out.Name = w.Name
+	out.Path = w.Path
+	return out, nil
+}
+
+// DirectoryEntryFromSDK converts the sdk-go type to the mirror.
+func DirectoryEntryFromSDK(v *sdk.DirectoryEntry) (*DirectoryEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DirectoryEntry{}
+	out.FileSize = v.FileSize
+	out.IsDirectory = v.IsDirectory
+	out.LastModified = v.LastModified
+	out.Name = v.Name
+	out.Path = v.Path
+	return out, nil
+}
+
+// FileInfoToSDK converts the mirror to the sdk-go type.
+func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileInfo{}
+	out.Path = w.Path
+	out.IsDir = w.IsDir
+	out.FileSize = w.FileSize
+	out.ModificationTime = w.ModificationTime
+	return out, nil
+}
+
+// FileInfoFromSDK converts the sdk-go type to the mirror.
+func FileInfoFromSDK(v *sdk.FileInfo) (*FileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileInfo{}
+	out.Path = v.Path
+	out.IsDir = v.IsDir
+	out.FileSize = v.FileSize
+	out.ModificationTime = v.ModificationTime
+	return out, nil
+}
+
+// GetStatusRequestToSDK converts the mirror to the sdk-go type.
+func GetStatusRequestToSDK(w *GetStatusRequest) (*sdk.GetStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetStatusRequest{}
+	out.Path = w.Path
+	return out, nil
+}
+
+// GetStatusRequestFromSDK converts the sdk-go type to the mirror.
+func GetStatusRequestFromSDK(v *sdk.GetStatusRequest) (*GetStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetStatusRequest{}
+	out.Path = v.Path
+	return out, nil
+}
+
+// GetStatusResponseToSDK converts the mirror to the sdk-go type.
+func GetStatusResponseToSDK(w *GetStatusResponse) (*sdk.GetStatusResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetStatusResponse{}
+	out.Path = w.Path
+	out.IsDir = w.IsDir
+	out.FileSize = w.FileSize
+	out.ModificationTime = w.ModificationTime
+	return out, nil
+}
+
+// GetStatusResponseFromSDK converts the sdk-go type to the mirror.
+func GetStatusResponseFromSDK(v *sdk.GetStatusResponse) (*GetStatusResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetStatusResponse{}
+	out.Path = v.Path
+	out.IsDir = v.IsDir
+	out.FileSize = v.FileSize
+	out.ModificationTime = v.ModificationTime
+	return out, nil
+}
+
+// ListDirectoryContentsRequestToSDK converts the mirror to the sdk-go type.
+func ListDirectoryContentsRequestToSDK(w *ListDirectoryContentsRequest) (*sdk.ListDirectoryContentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDirectoryContentsRequest{}
+	out.DirectoryPath = w.DirectoryPath
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListDirectoryContentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListDirectoryContentsRequestFromSDK(v *sdk.ListDirectoryContentsRequest) (*ListDirectoryContentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDirectoryContentsRequest{}
+	out.DirectoryPath = v.DirectoryPath
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListDirectoryResponseToSDK converts the mirror to the sdk-go type.
+func ListDirectoryResponseToSDK(w *ListDirectoryResponse) (*sdk.ListDirectoryResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDirectoryResponse{}
+	conv1, err := convertSlice(w.Contents, DirectoryEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDirectoryResponse.Contents", err)
+	}
+	out.Contents = conv1
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDirectoryResponseFromSDK converts the sdk-go type to the mirror.
+func ListDirectoryResponseFromSDK(v *sdk.ListDirectoryResponse) (*ListDirectoryResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDirectoryResponse{}
+	conv2, err := convertSlice(v.Contents, DirectoryEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDirectoryResponse.Contents", err)
+	}
+	out.Contents = conv2
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListStatusRequestToSDK converts the mirror to the sdk-go type.
+func ListStatusRequestToSDK(w *ListStatusRequest) (*sdk.ListStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStatusRequest{}
+	out.Path = w.Path
+	return out, nil
+}
+
+// ListStatusRequestFromSDK converts the sdk-go type to the mirror.
+func ListStatusRequestFromSDK(v *sdk.ListStatusRequest) (*ListStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStatusRequest{}
+	out.Path = v.Path
+	return out, nil
+}
+
+// ListStatusResponseToSDK converts the mirror to the sdk-go type.
+func ListStatusResponseToSDK(w *ListStatusResponse) (*sdk.ListStatusResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStatusResponse{}
+	conv3, err := convertSlice(w.Files, FileInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStatusResponse.Files", err)
+	}
+	out.Files = conv3
+	return out, nil
+}
+
+// ListStatusResponseFromSDK converts the sdk-go type to the mirror.
+func ListStatusResponseFromSDK(v *sdk.ListStatusResponse) (*ListStatusResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStatusResponse{}
+	conv4, err := convertSlice(v.Files, FileInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStatusResponse.Files", err)
+	}
+	out.Files = conv4
+	return out, nil
+}
+
+// MkDirsRequestToSDK converts the mirror to the sdk-go type.
+func MkDirsRequestToSDK(w *MkDirsRequest) (*sdk.MkDirsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MkDirsRequest{}
+	out.Path = w.Path
+	return out, nil
+}
+
+// MkDirsRequestFromSDK converts the sdk-go type to the mirror.
+func MkDirsRequestFromSDK(v *sdk.MkDirsRequest) (*MkDirsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MkDirsRequest{}
+	out.Path = v.Path
+	return out, nil
+}
+
+// MoveRequestToSDK converts the mirror to the sdk-go type.
+func MoveRequestToSDK(w *MoveRequest) (*sdk.MoveRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MoveRequest{}
+	out.SourcePath = w.SourcePath
+	out.DestinationPath = w.DestinationPath
+	return out, nil
+}
+
+// MoveRequestFromSDK converts the sdk-go type to the mirror.
+func MoveRequestFromSDK(v *sdk.MoveRequest) (*MoveRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MoveRequest{}
+	out.SourcePath = v.SourcePath
+	out.DestinationPath = v.DestinationPath
+	return out, nil
+}
+
+// PutRequestToSDK converts the mirror to the sdk-go type.
+func PutRequestToSDK(w *PutRequest) (*sdk.PutRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutRequest{}
+	out.Path = w.Path
+	out.Contents = w.Contents
+	out.Overwrite = w.Overwrite
+	return out, nil
+}
+
+// PutRequestFromSDK converts the sdk-go type to the mirror.
+func PutRequestFromSDK(v *sdk.PutRequest) (*PutRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutRequest{}
+	out.Path = v.Path
+	out.Contents = v.Contents
+	out.Overwrite = v.Overwrite
+	return out, nil
+}
+
+// ReadRequestToSDK converts the mirror to the sdk-go type.
+func ReadRequestToSDK(w *ReadRequest) (*sdk.ReadRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReadRequest{}
+	out.Path = w.Path
+	out.Offset = w.Offset
+	out.Length = w.Length
+	return out, nil
+}
+
+// ReadRequestFromSDK converts the sdk-go type to the mirror.
+func ReadRequestFromSDK(v *sdk.ReadRequest) (*ReadRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReadRequest{}
+	out.Path = v.Path
+	out.Offset = v.Offset
+	out.Length = v.Length
+	return out, nil
+}
+
+// ReadResponseToSDK converts the mirror to the sdk-go type.
+func ReadResponseToSDK(w *ReadResponse) (*sdk.ReadResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReadResponse{}
+	out.BytesRead = w.BytesRead
+	out.Data = w.Data
+	return out, nil
+}
+
+// ReadResponseFromSDK converts the sdk-go type to the mirror.
+func ReadResponseFromSDK(v *sdk.ReadResponse) (*ReadResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReadResponse{}
+	out.BytesRead = v.BytesRead
+	out.Data = v.Data
+	return out, nil
+}
+
+// UploadFileRequestToSDK converts the mirror to the sdk-go type.
+func UploadFileRequestToSDK(w *UploadFileRequest) (*sdk.UploadFileRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UploadFileRequest{}
+	out.FilePath = w.FilePath
+	out.Overwrite = w.Overwrite
+	return out, nil
+}
+
+// UploadFileRequestFromSDK converts the sdk-go type to the mirror.
 func UploadFileRequestFromSDK(v *sdk.UploadFileRequest) (*UploadFileRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &UploadFileRequest{
-		FilePath:  v.FilePath,
-		Overwrite: v.Overwrite,
-	}, nil
+	out := &UploadFileRequest{}
+	out.FilePath = v.FilePath
+	out.Overwrite = v.Overwrite
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

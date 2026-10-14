@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/postgres/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -194,48 +195,12 @@ const (
 	SyncedTable_SyncedTableSpec_SyncedTableSchedulingPolicy_Snapshot    = sdk.SyncedTable_SyncedTableSpec_SyncedTableSchedulingPolicy_Snapshot
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
 	Details    []json.RawMessage `json:"details,omitempty"`
-}
-
-func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiError{
-		ErrorCode:  w.ErrorCode,
-		Message:    w.Message,
-		StackTrace: w.StackTrace,
-		Details:    w.Details,
-	}, nil
 }
 
 type Branch struct {
@@ -262,62 +227,7 @@ type Branch struct {
 	BranchId *string `json:"branch_id,omitempty"`
 }
 
-func BranchFromSDK(v *sdk.Branch) (*Branch, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := BranchSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Branch.Spec", err)
-	}
-	statusWireValue, err := BranchStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Branch.Status", err)
-	}
-	return &Branch{
-		Name:       v.Name,
-		Uid:        v.Uid,
-		Parent:     v.Parent,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		BranchId:   v.BranchId,
-	}, nil
-}
-
-func BranchToSDK(w *Branch) (*sdk.Branch, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := BranchSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Branch.Spec", err)
-	}
-	statusPublicValue, err := BranchStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Branch.Status", err)
-	}
-	return &sdk.Branch{
-		Name:       w.Name,
-		Uid:        w.Uid,
-		Parent:     w.Parent,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		BranchId:   w.BranchId,
-	}, nil
-}
-
 type BranchOperationMetadata struct {
-}
-
-func BranchOperationMetadataToSDK(w *BranchOperationMetadata) (*sdk.BranchOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BranchOperationMetadata{}, nil
 }
 
 type BranchSpec struct {
@@ -343,78 +253,6 @@ type BranchSpec struct {
 	// AVAILABLE and belong to this branch's project. Format:
 	// projects/{project_id}/snapshots/{snapshot_id}
 	SourceSnapshot *string `json:"source_snapshot,omitempty"`
-}
-
-func BranchSpecFromSDK(v *sdk.BranchSpec) (*BranchSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var expirationExpireTimeWire *types.Time
-	var expirationTtlWire *types.Duration
-	var expirationNoExpiryWire *bool
-	switch value := v.Expiration.(type) {
-	case nil:
-	case *sdk.BranchSpec_Expiration_ExpireTime:
-		if value != nil {
-			expirationExpireTimeWire = new(value.ExpireTime)
-		}
-	case *sdk.BranchSpec_Expiration_Ttl:
-		if value != nil {
-			expirationTtlWire = new(value.Ttl)
-		}
-	case *sdk.BranchSpec_Expiration_NoExpiry:
-		if value != nil {
-			expirationNoExpiryWire = new(value.NoExpiry)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "BranchSpec.Expiration", value)
-	}
-	return &BranchSpec{
-		SourceBranch:     v.SourceBranch,
-		SourceBranchLsn:  v.SourceBranchLsn,
-		SourceBranchTime: v.SourceBranchTime,
-		IsProtected:      v.IsProtected,
-		ExpireTime:       expirationExpireTimeWire,
-		Ttl:              expirationTtlWire,
-		NoExpiry:         expirationNoExpiryWire,
-		SourceSnapshot:   v.SourceSnapshot,
-	}, nil
-}
-
-func BranchSpecToSDK(w *BranchSpec) (*sdk.BranchSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	expirationMembers := 0
-	if w.ExpireTime != nil {
-		expirationMembers++
-	}
-	if w.Ttl != nil {
-		expirationMembers++
-	}
-	if w.NoExpiry != nil {
-		expirationMembers++
-	}
-	if expirationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "BranchSpec.Expiration")
-	}
-	expirationSelection := (&sdk.BranchSpec{}).Expiration
-	switch {
-	case w.ExpireTime != nil:
-		expirationSelection = &sdk.BranchSpec_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
-	case w.Ttl != nil:
-		expirationSelection = &sdk.BranchSpec_Expiration_Ttl{Ttl: *w.Ttl}
-	case w.NoExpiry != nil:
-		expirationSelection = &sdk.BranchSpec_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
-	}
-	return &sdk.BranchSpec{
-		SourceBranch:     w.SourceBranch,
-		SourceBranchLsn:  w.SourceBranchLsn,
-		SourceBranchTime: w.SourceBranchTime,
-		IsProtected:      w.IsProtected,
-		SourceSnapshot:   w.SourceSnapshot,
-		Expiration:       expirationSelection,
-	}, nil
 }
 
 type BranchStatus struct {
@@ -455,58 +293,6 @@ type BranchStatus struct {
 	SourceSnapshot *string `json:"source_snapshot,omitempty"`
 }
 
-func BranchStatusFromSDK(v *sdk.BranchStatus) (*BranchStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	logicalSizeBytesWireValue, err := int64ToWire(v.LogicalSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BranchStatus.LogicalSizeBytes", err)
-	}
-	return &BranchStatus{
-		SourceBranch:     v.SourceBranch,
-		SourceBranchLsn:  v.SourceBranchLsn,
-		SourceBranchTime: v.SourceBranchTime,
-		Default:          v.Default,
-		IsProtected:      v.IsProtected,
-		CurrentState:     v.CurrentState,
-		PendingState:     v.PendingState,
-		StateChangeTime:  v.StateChangeTime,
-		LogicalSizeBytes: logicalSizeBytesWireValue,
-		ExpireTime:       v.ExpireTime,
-		BranchId:         v.BranchId,
-		DeleteTime:       v.DeleteTime,
-		PurgeTime:        v.PurgeTime,
-		SourceSnapshot:   v.SourceSnapshot,
-	}, nil
-}
-
-func BranchStatusToSDK(w *BranchStatus) (*sdk.BranchStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logicalSizeBytesPublicValue, err := int64FromWire(w.LogicalSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BranchStatus.LogicalSizeBytes", err)
-	}
-	return &sdk.BranchStatus{
-		SourceBranch:     w.SourceBranch,
-		SourceBranchLsn:  w.SourceBranchLsn,
-		SourceBranchTime: w.SourceBranchTime,
-		Default:          w.Default,
-		IsProtected:      w.IsProtected,
-		CurrentState:     w.CurrentState,
-		PendingState:     w.PendingState,
-		StateChangeTime:  w.StateChangeTime,
-		LogicalSizeBytes: logicalSizeBytesPublicValue,
-		ExpireTime:       w.ExpireTime,
-		BranchId:         w.BranchId,
-		DeleteTime:       w.DeleteTime,
-		PurgeTime:        w.PurgeTime,
-		SourceSnapshot:   w.SourceSnapshot,
-	}, nil
-}
-
 type Catalog struct {
 	// Output only. The full resource path of the catalog.
 	//
@@ -524,52 +310,6 @@ type Catalog struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The part of the name, chosen by the user when the resource was created.
 	CatalogId *string `json:"catalog_id,omitempty"`
-}
-
-func CatalogFromSDK(v *sdk.Catalog) (*Catalog, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := Catalog_CatalogSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Catalog.Spec", err)
-	}
-	statusWireValue, err := Catalog_CatalogStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Catalog.Status", err)
-	}
-	return &Catalog{
-		Name:       v.Name,
-		Uid:        v.Uid,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		CatalogId:  v.CatalogId,
-	}, nil
-}
-
-func CatalogToSDK(w *Catalog) (*sdk.Catalog, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := Catalog_CatalogSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Catalog.Spec", err)
-	}
-	statusPublicValue, err := Catalog_CatalogStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Catalog.Status", err)
-	}
-	return &sdk.Catalog{
-		Name:       w.Name,
-		Uid:        w.Uid,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		CatalogId:  w.CatalogId,
-	}, nil
 }
 
 // The desired state of the Catalog..
@@ -605,28 +345,6 @@ type Catalog_CatalogSpec struct {
 	Branch *string `json:"branch,omitempty"`
 }
 
-func Catalog_CatalogSpecFromSDK(v *sdk.Catalog_CatalogSpec) (*Catalog_CatalogSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Catalog_CatalogSpec{
-		PostgresDatabase:        v.PostgresDatabase,
-		CreateDatabaseIfMissing: v.CreateDatabaseIfMissing,
-		Branch:                  v.Branch,
-	}, nil
-}
-
-func Catalog_CatalogSpecToSDK(w *Catalog_CatalogSpec) (*sdk.Catalog_CatalogSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Catalog_CatalogSpec{
-		PostgresDatabase:        w.PostgresDatabase,
-		CreateDatabaseIfMissing: w.CreateDatabaseIfMissing,
-		Branch:                  w.Branch,
-	}, nil
-}
-
 // The observed state of the Catalog..
 type Catalog_CatalogStatus struct {
 	// The name of the Postgres database associated with the catalog.
@@ -641,36 +359,7 @@ type Catalog_CatalogStatus struct {
 	Branch *string `json:"branch,omitempty"`
 }
 
-func Catalog_CatalogStatusFromSDK(v *sdk.Catalog_CatalogStatus) (*Catalog_CatalogStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Catalog_CatalogStatus{
-		PostgresDatabase: v.PostgresDatabase,
-		Project:          v.Project,
-		Branch:           v.Branch,
-	}, nil
-}
-
-func Catalog_CatalogStatusToSDK(w *Catalog_CatalogStatus) (*sdk.Catalog_CatalogStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Catalog_CatalogStatus{
-		PostgresDatabase: w.PostgresDatabase,
-		Project:          w.Project,
-		Branch:           w.Branch,
-	}, nil
-}
-
 type CatalogOperationMetadata struct {
-}
-
-func CatalogOperationMetadataToSDK(w *CatalogOperationMetadata) (*sdk.CatalogOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CatalogOperationMetadata{}, nil
 }
 
 // A Lakebase CDF configuration (CdfConfig): one per Postgres schema per
@@ -696,44 +385,9 @@ type CdfConfig struct {
 	PostgresSchema *string `json:"postgres_schema,omitempty"`
 }
 
-func CdfConfigFromSDK(v *sdk.CdfConfig) (*CdfConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CdfConfig{
-		Name:           v.Name,
-		Catalog:        v.Catalog,
-		Schema:         v.Schema,
-		CreateTime:     v.CreateTime,
-		CdfConfigId:    v.CdfConfigId,
-		PostgresSchema: v.PostgresSchema,
-	}, nil
-}
-
-func CdfConfigToSDK(w *CdfConfig) (*sdk.CdfConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CdfConfig{
-		Name:           w.Name,
-		Catalog:        w.Catalog,
-		Schema:         w.Schema,
-		CreateTime:     w.CreateTime,
-		CdfConfigId:    w.CdfConfigId,
-		PostgresSchema: w.PostgresSchema,
-	}, nil
-}
-
 // Metadata for CdfConfig long-running operations. Intentionally empty today;
 // fields (e.g. progress) may be added as the operation contract grows..
 type CdfConfigOperationMetadata struct {
-}
-
-func CdfConfigOperationMetadataToSDK(w *CdfConfigOperationMetadata) (*sdk.CdfConfigOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CdfConfigOperationMetadata{}, nil
 }
 
 // The read-only replication status of a single Postgres table replicated under
@@ -761,22 +415,6 @@ type CdfStatus struct {
 	StatusDetail *string `json:"status_detail,omitempty"`
 }
 
-func CdfStatusToSDK(w *CdfStatus) (*sdk.CdfStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CdfStatus{
-		Name:          w.Name,
-		PostgresTable: w.PostgresTable,
-		UcTable:       w.UcTable,
-		State:         w.State,
-		CommittedLsn:  w.CommittedLsn,
-		LastSyncTime:  w.LastSyncTime,
-		CreateTime:    w.CreateTime,
-		StatusDetail:  w.StatusDetail,
-	}, nil
-}
-
 type CreateBranchRequest struct {
 	// The Project where this Branch will be created. Format: projects/{project_id}
 	Parent *string `json:"parent,omitempty"`
@@ -793,41 +431,11 @@ type CreateBranchRequest struct {
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
-func CreateBranchRequestFromSDK(v *sdk.CreateBranchRequest) (*CreateBranchRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	branchWireValue, err := BranchFromSDK(v.Branch)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBranchRequest.Branch", err)
-	}
-	return &CreateBranchRequest{
-		Parent:          v.Parent,
-		BranchId:        v.BranchId,
-		Branch:          branchWireValue,
-		ReplaceExisting: v.ReplaceExisting,
-	}, nil
-}
-
 type CreateCatalogRequest struct {
 	// The ID in the Unity Catalog. It becomes the full resource name, for example
 	// "my_catalog" becomes "catalogs/my_catalog".
 	CatalogId *string  `json:"catalog_id,omitempty"`
 	Catalog   *Catalog `json:"catalog,omitempty"`
-}
-
-func CreateCatalogRequestFromSDK(v *sdk.CreateCatalogRequest) (*CreateCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	catalogWireValue, err := CatalogFromSDK(v.Catalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.Catalog", err)
-	}
-	return &CreateCatalogRequest{
-		CatalogId: v.CatalogId,
-		Catalog:   catalogWireValue,
-	}, nil
 }
 
 // Request to create a Lakebase CDF configuration (CdfConfig)..
@@ -845,21 +453,6 @@ type CreateCdfConfigRequest struct {
 	CdfConfigId *string `json:"cdf_config_id,omitempty"`
 }
 
-func CreateCdfConfigRequestFromSDK(v *sdk.CreateCdfConfigRequest) (*CreateCdfConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cdfConfigWireValue, err := CdfConfigFromSDK(v.CdfConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCdfConfigRequest.CdfConfig", err)
-	}
-	return &CreateCdfConfigRequest{
-		Parent:      v.Parent,
-		CdfConfig:   cdfConfigWireValue,
-		CdfConfigId: v.CdfConfigId,
-	}, nil
-}
-
 // Enable Data API for a database..
 type CreateDataApiRequest struct {
 	// Parent database:
@@ -867,20 +460,6 @@ type CreateDataApiRequest struct {
 	Parent *string `json:"parent,omitempty"`
 	// The Data API configuration to create.
 	DataApi *DataApi `json:"data_api,omitempty"`
-}
-
-func CreateDataApiRequestFromSDK(v *sdk.CreateDataApiRequest) (*CreateDataApiRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dataApiWireValue, err := DataApiFromSDK(v.DataApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDataApiRequest.DataApi", err)
-	}
-	return &CreateDataApiRequest{
-		Parent:  v.Parent,
-		DataApi: dataApiWireValue,
-	}, nil
 }
 
 type CreateDatabaseRequest struct {
@@ -903,22 +482,6 @@ type CreateDatabaseRequest struct {
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
-func CreateDatabaseRequestFromSDK(v *sdk.CreateDatabaseRequest) (*CreateDatabaseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseWireValue, err := DatabaseFromSDK(v.Database)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDatabaseRequest.Database", err)
-	}
-	return &CreateDatabaseRequest{
-		Parent:          v.Parent,
-		DatabaseId:      v.DatabaseId,
-		Database:        databaseWireValue,
-		ReplaceExisting: v.ReplaceExisting,
-	}, nil
-}
-
 type CreateEndpointRequest struct {
 	// The Branch where this Endpoint will be created. Format:
 	// projects/{project_id}/branches/{branch_id}
@@ -936,22 +499,6 @@ type CreateEndpointRequest struct {
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
-func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointWireValue, err := EndpointFromSDK(v.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
-	}
-	return &CreateEndpointRequest{
-		Parent:          v.Parent,
-		EndpointId:      v.EndpointId,
-		Endpoint:        endpointWireValue,
-		ReplaceExisting: v.ReplaceExisting,
-	}, nil
-}
-
 type CreateProjectRequest struct {
 	// The ID to use for the Project. This becomes the final component of the
 	// project's resource name. The ID is required and must be 1-63 characters long,
@@ -960,20 +507,6 @@ type CreateProjectRequest struct {
 	ProjectId *string `json:"project_id,omitempty"`
 	// The Project to create.
 	Project *Project `json:"project,omitempty"`
-}
-
-func CreateProjectRequestFromSDK(v *sdk.CreateProjectRequest) (*CreateProjectRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	projectWireValue, err := ProjectFromSDK(v.Project)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateProjectRequest.Project", err)
-	}
-	return &CreateProjectRequest{
-		ProjectId: v.ProjectId,
-		Project:   projectWireValue,
-	}, nil
 }
 
 type CreateRoleRequest struct {
@@ -1000,22 +533,6 @@ type CreateRoleRequest struct {
 	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
-func CreateRoleRequestFromSDK(v *sdk.CreateRoleRequest) (*CreateRoleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	roleWireValue, err := RoleFromSDK(v.Role)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRoleRequest.Role", err)
-	}
-	return &CreateRoleRequest{
-		Parent:          v.Parent,
-		RoleId:          v.RoleId,
-		Role:            roleWireValue,
-		ReplaceExisting: v.ReplaceExisting,
-	}, nil
-}
-
 type CreateSnapshotRequest struct {
 	// The project in which to create the snapshot. Format: projects/{project_id}
 	Parent *string `json:"parent,omitempty"`
@@ -1024,21 +541,6 @@ type CreateSnapshotRequest struct {
 	// Client-chosen ID for the snapshot. It becomes the final segment of the
 	// snapshot resource name and cannot be changed after creation.
 	SnapshotId *string `json:"snapshot_id,omitempty"`
-}
-
-func CreateSnapshotRequestFromSDK(v *sdk.CreateSnapshotRequest) (*CreateSnapshotRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	snapshotWireValue, err := SnapshotFromSDK(v.Snapshot)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSnapshotRequest.Snapshot", err)
-	}
-	return &CreateSnapshotRequest{
-		Parent:     v.Parent,
-		Snapshot:   snapshotWireValue,
-		SnapshotId: v.SnapshotId,
-	}, nil
 }
 
 // Establish a synchronisation to the Postgres database for Reverse ETL for the
@@ -1060,42 +562,10 @@ type CreateSyncedTableRequest struct {
 	SyncedTable   *SyncedTable `json:"synced_table,omitempty"`
 }
 
-func CreateSyncedTableRequestFromSDK(v *sdk.CreateSyncedTableRequest) (*CreateSyncedTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	syncedTableWireValue, err := SyncedTableFromSDK(v.SyncedTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSyncedTableRequest.SyncedTable", err)
-	}
-	return &CreateSyncedTableRequest{
-		SyncedTableId: v.SyncedTableId,
-		SyncedTable:   syncedTableWireValue,
-	}, nil
-}
-
 // Take a snapshot once per day, at the configured hour..
 type DailySchedule struct {
 	// The hour of the day, in UTC, at which to take the snapshot, in [0, 23].
 	Hour *int `json:"hour,omitempty"`
-}
-
-func DailyScheduleFromSDK(v *sdk.DailySchedule) (*DailySchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DailySchedule{
-		Hour: v.Hour,
-	}, nil
-}
-
-func DailyScheduleToSDK(w *DailySchedule) (*sdk.DailySchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DailySchedule{
-		Hour: w.Hour,
-	}, nil
 }
 
 // DataApi represents the Data API (PostgREST) configuration for a Database. At
@@ -1115,50 +585,6 @@ type DataApi struct {
 	Spec *DataApi_DataApiSpec `json:"spec,omitempty"`
 	// The observed Data API state (read-only).
 	Status *DataApi_DataApiStatus `json:"status,omitempty"`
-}
-
-func DataApiFromSDK(v *sdk.DataApi) (*DataApi, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := DataApi_DataApiSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataApi.Spec", err)
-	}
-	statusWireValue, err := DataApi_DataApiStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataApi.Status", err)
-	}
-	return &DataApi{
-		Name:       v.Name,
-		Parent:     v.Parent,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-	}, nil
-}
-
-func DataApiToSDK(w *DataApi) (*sdk.DataApi, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := DataApi_DataApiSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataApi.Spec", err)
-	}
-	statusPublicValue, err := DataApi_DataApiStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataApi.Status", err)
-	}
-	return &sdk.DataApi{
-		Name:       w.Name,
-		Parent:     w.Parent,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-	}, nil
 }
 
 // Desired PostgREST configuration (input)..
@@ -1189,40 +615,6 @@ type DataApi_DataApiSpec struct {
 	ServerTimingEnabled *bool `json:"server_timing_enabled,omitempty"`
 }
 
-func DataApi_DataApiSpecFromSDK(v *sdk.DataApi_DataApiSpec) (*DataApi_DataApiSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DataApi_DataApiSpec{
-		DbAggregatesEnabled:      v.DbAggregatesEnabled,
-		DbExtraSearchPath:        v.DbExtraSearchPath,
-		DbMaxRows:                v.DbMaxRows,
-		DbSchemas:                v.DbSchemas,
-		JwtRoleClaimKey:          v.JwtRoleClaimKey,
-		JwtCacheMaxLifetime:      v.JwtCacheMaxLifetime,
-		OpenapiMode:              v.OpenapiMode,
-		ServerCorsAllowedOrigins: v.ServerCorsAllowedOrigins,
-		ServerTimingEnabled:      v.ServerTimingEnabled,
-	}, nil
-}
-
-func DataApi_DataApiSpecToSDK(w *DataApi_DataApiSpec) (*sdk.DataApi_DataApiSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataApi_DataApiSpec{
-		DbAggregatesEnabled:      w.DbAggregatesEnabled,
-		DbExtraSearchPath:        w.DbExtraSearchPath,
-		DbMaxRows:                w.DbMaxRows,
-		DbSchemas:                w.DbSchemas,
-		JwtRoleClaimKey:          w.JwtRoleClaimKey,
-		JwtCacheMaxLifetime:      w.JwtCacheMaxLifetime,
-		OpenapiMode:              w.OpenapiMode,
-		ServerCorsAllowedOrigins: w.ServerCorsAllowedOrigins,
-		ServerTimingEnabled:      w.ServerTimingEnabled,
-	}, nil
-}
-
 // Observed state (output-only)..
 type DataApi_DataApiStatus struct {
 	// Actual aggregate function setting read from the database.
@@ -1250,52 +642,7 @@ type DataApi_DataApiStatus struct {
 	AvailableSchemas []string `json:"available_schemas,omitempty"`
 }
 
-func DataApi_DataApiStatusFromSDK(v *sdk.DataApi_DataApiStatus) (*DataApi_DataApiStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DataApi_DataApiStatus{
-		DbAggregatesEnabled:      v.DbAggregatesEnabled,
-		DbExtraSearchPath:        v.DbExtraSearchPath,
-		DbMaxRows:                v.DbMaxRows,
-		DbSchemas:                v.DbSchemas,
-		JwtRoleClaimKey:          v.JwtRoleClaimKey,
-		JwtCacheMaxLifetime:      v.JwtCacheMaxLifetime,
-		OpenapiMode:              v.OpenapiMode,
-		ServerCorsAllowedOrigins: v.ServerCorsAllowedOrigins,
-		ServerTimingEnabled:      v.ServerTimingEnabled,
-		Url:                      v.Url,
-		AvailableSchemas:         v.AvailableSchemas,
-	}, nil
-}
-
-func DataApi_DataApiStatusToSDK(w *DataApi_DataApiStatus) (*sdk.DataApi_DataApiStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataApi_DataApiStatus{
-		DbAggregatesEnabled:      w.DbAggregatesEnabled,
-		DbExtraSearchPath:        w.DbExtraSearchPath,
-		DbMaxRows:                w.DbMaxRows,
-		DbSchemas:                w.DbSchemas,
-		JwtRoleClaimKey:          w.JwtRoleClaimKey,
-		JwtCacheMaxLifetime:      w.JwtCacheMaxLifetime,
-		OpenapiMode:              w.OpenapiMode,
-		ServerCorsAllowedOrigins: w.ServerCorsAllowedOrigins,
-		ServerTimingEnabled:      w.ServerTimingEnabled,
-		Url:                      w.Url,
-		AvailableSchemas:         w.AvailableSchemas,
-	}, nil
-}
-
 type DataApiOperationMetadata struct {
-}
-
-func DataApiOperationMetadataToSDK(w *DataApiOperationMetadata) (*sdk.DataApiOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataApiOperationMetadata{}, nil
 }
 
 // Database represents a Postgres database within a Branch..
@@ -1318,52 +665,6 @@ type Database struct {
 	DatabaseId *string `json:"database_id,omitempty"`
 }
 
-func DatabaseFromSDK(v *sdk.Database) (*Database, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := Database_DatabaseSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Database.Spec", err)
-	}
-	statusWireValue, err := Database_DatabaseStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Database.Status", err)
-	}
-	return &Database{
-		Name:       v.Name,
-		Parent:     v.Parent,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		DatabaseId: v.DatabaseId,
-	}, nil
-}
-
-func DatabaseToSDK(w *Database) (*sdk.Database, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := Database_DatabaseSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Database.Spec", err)
-	}
-	statusPublicValue, err := Database_DatabaseStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Database.Status", err)
-	}
-	return &sdk.Database{
-		Name:       w.Name,
-		Parent:     w.Parent,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		DatabaseId: w.DatabaseId,
-	}, nil
-}
-
 type Database_DatabaseSpec struct {
 	// The name of the role that owns the database. Format:
 	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
@@ -1382,26 +683,6 @@ type Database_DatabaseSpec struct {
 	PostgresDatabase *string `json:"postgres_database,omitempty"`
 }
 
-func Database_DatabaseSpecFromSDK(v *sdk.Database_DatabaseSpec) (*Database_DatabaseSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Database_DatabaseSpec{
-		Role:             v.Role,
-		PostgresDatabase: v.PostgresDatabase,
-	}, nil
-}
-
-func Database_DatabaseSpecToSDK(w *Database_DatabaseSpec) (*sdk.Database_DatabaseSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Database_DatabaseSpec{
-		Role:             w.Role,
-		PostgresDatabase: w.PostgresDatabase,
-	}, nil
-}
-
 type Database_DatabaseStatus struct {
 	// The name of the role that owns the database. Format:
 	// projects/{project_id}/branches/{branch_id}/roles/{role_id}
@@ -1412,28 +693,6 @@ type Database_DatabaseStatus struct {
 	DatabaseId *string `json:"database_id,omitempty"`
 }
 
-func Database_DatabaseStatusFromSDK(v *sdk.Database_DatabaseStatus) (*Database_DatabaseStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Database_DatabaseStatus{
-		Role:             v.Role,
-		PostgresDatabase: v.PostgresDatabase,
-		DatabaseId:       v.DatabaseId,
-	}, nil
-}
-
-func Database_DatabaseStatusToSDK(w *Database_DatabaseStatus) (*sdk.Database_DatabaseStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Database_DatabaseStatus{
-		Role:             w.Role,
-		PostgresDatabase: w.PostgresDatabase,
-		DatabaseId:       w.DatabaseId,
-	}, nil
-}
-
 type DatabaseCredential struct {
 	// The OAuth token that can be used as a password when connecting to a database.
 	Token *string `json:"token,omitempty"`
@@ -1441,24 +700,7 @@ type DatabaseCredential struct {
 	ExpireTime *types.Time `json:"expire_time,omitempty"`
 }
 
-func DatabaseCredentialToSDK(w *DatabaseCredential) (*sdk.DatabaseCredential, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseCredential{
-		Token:      w.Token,
-		ExpireTime: w.ExpireTime,
-	}, nil
-}
-
 type DatabaseOperationMetadata struct {
-}
-
-func DatabaseOperationMetadataToSDK(w *DatabaseOperationMetadata) (*sdk.DatabaseOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseOperationMetadata{}, nil
 }
 
 type DeleteBranchRequest struct {
@@ -1467,16 +709,6 @@ type DeleteBranchRequest struct {
 	Name *string `json:"name,omitempty"`
 	// If true, permanently delete the branch; if false, soft delete.
 	Purge *bool `json:"purge,omitempty"`
-}
-
-func DeleteBranchRequestFromSDK(v *sdk.DeleteBranchRequest) (*DeleteBranchRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteBranchRequest{
-		Name:  v.Name,
-		Purge: v.Purge,
-	}, nil
 }
 
 // Request to delete a Lakebase CDF configuration (CdfConfig)..
@@ -1490,16 +722,6 @@ type DeleteCdfConfigRequest struct {
 	Force *bool `json:"force,omitempty"`
 }
 
-func DeleteCdfConfigRequestFromSDK(v *sdk.DeleteCdfConfigRequest) (*DeleteCdfConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteCdfConfigRequest{
-		Name:  v.Name,
-		Force: v.Force,
-	}, nil
-}
-
 type DeleteProjectRequest struct {
 	// The full resource path of the project to delete. Format:
 	// projects/{project_id}
@@ -1507,16 +729,6 @@ type DeleteProjectRequest struct {
 	// If true, permanently deletes the project (hard delete). If false or unset,
 	// performs a soft delete.
 	Purge *bool `json:"purge,omitempty"`
-}
-
-func DeleteProjectRequestFromSDK(v *sdk.DeleteProjectRequest) (*DeleteProjectRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteProjectRequest{
-		Name:  v.Name,
-		Purge: v.Purge,
-	}, nil
 }
 
 type DeleteRoleRequest struct {
@@ -1531,16 +743,6 @@ type DeleteRoleRequest struct {
 	ReassignOwnedTo *string `json:"reassign_owned_to,omitempty"`
 }
 
-func DeleteRoleRequestFromSDK(v *sdk.DeleteRoleRequest) (*DeleteRoleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRoleRequest{
-		Name:            v.Name,
-		ReassignOwnedTo: v.ReassignOwnedTo,
-	}, nil
-}
-
 type DeltaTableSyncInfo struct {
 	// The Delta Lake commit version that was last successfully synced.
 	DeltaCommitVersion *int64 `json:"delta_commit_version,omitempty"`
@@ -1548,34 +750,6 @@ type DeltaTableSyncInfo struct {
 	// table. Note: This is the Delta commit time, not the time the data was written
 	// to the synced table.
 	DeltaCommitTime *types.Time `json:"delta_commit_time,omitempty"`
-}
-
-func DeltaTableSyncInfoFromSDK(v *sdk.DeltaTableSyncInfo) (*DeltaTableSyncInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deltaCommitVersionWireValue, err := int64ToWire(v.DeltaCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaTableSyncInfo.DeltaCommitVersion", err)
-	}
-	return &DeltaTableSyncInfo{
-		DeltaCommitVersion: deltaCommitVersionWireValue,
-		DeltaCommitTime:    v.DeltaCommitTime,
-	}, nil
-}
-
-func DeltaTableSyncInfoToSDK(w *DeltaTableSyncInfo) (*sdk.DeltaTableSyncInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deltaCommitVersionPublicValue, err := int64FromWire(w.DeltaCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaTableSyncInfo.DeltaCommitVersion", err)
-	}
-	return &sdk.DeltaTableSyncInfo{
-		DeltaCommitVersion: deltaCommitVersionPublicValue,
-		DeltaCommitTime:    w.DeltaCommitTime,
-	}, nil
 }
 
 type Endpoint struct {
@@ -1600,54 +774,6 @@ type Endpoint struct {
 	EndpointId *string `json:"endpoint_id,omitempty"`
 }
 
-func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := EndpointSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.Spec", err)
-	}
-	statusWireValue, err := EndpointStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.Status", err)
-	}
-	return &Endpoint{
-		Name:       v.Name,
-		Uid:        v.Uid,
-		Parent:     v.Parent,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		EndpointId: v.EndpointId,
-	}, nil
-}
-
-func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := EndpointSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.Spec", err)
-	}
-	statusPublicValue, err := EndpointStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Endpoint.Status", err)
-	}
-	return &sdk.Endpoint{
-		Name:       w.Name,
-		Uid:        w.Uid,
-		Parent:     w.Parent,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		EndpointId: w.EndpointId,
-	}, nil
-}
-
 type EndpointGroupSpec struct {
 	// The minimum number of computes in the endpoint group. Currently, this must be
 	// equal to max. This must be greater than or equal to 1.
@@ -1662,28 +788,6 @@ type EndpointGroupSpec struct {
 	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
 }
 
-func EndpointGroupSpecFromSDK(v *sdk.EndpointGroupSpec) (*EndpointGroupSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointGroupSpec{
-		Min:                       v.Min,
-		Max:                       v.Max,
-		EnableReadableSecondaries: v.EnableReadableSecondaries,
-	}, nil
-}
-
-func EndpointGroupSpecToSDK(w *EndpointGroupSpec) (*sdk.EndpointGroupSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointGroupSpec{
-		Min:                       w.Min,
-		Max:                       w.Max,
-		EnableReadableSecondaries: w.EnableReadableSecondaries,
-	}, nil
-}
-
 type EndpointGroupStatus struct {
 	// The minimum number of computes in the endpoint group. Currently, this must be
 	// equal to max. This must be greater than or equal to 1.
@@ -1696,28 +800,6 @@ type EndpointGroupStatus struct {
 	// Whether read-only connections to read-write endpoints are allowed. Only
 	// relevant if read replicas are configured by specifying size.max > 1.
 	EnableReadableSecondaries *bool `json:"enable_readable_secondaries,omitempty"`
-}
-
-func EndpointGroupStatusFromSDK(v *sdk.EndpointGroupStatus) (*EndpointGroupStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointGroupStatus{
-		Min:                       v.Min,
-		Max:                       v.Max,
-		EnableReadableSecondaries: v.EnableReadableSecondaries,
-	}, nil
-}
-
-func EndpointGroupStatusToSDK(w *EndpointGroupStatus) (*sdk.EndpointGroupStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointGroupStatus{
-		Min:                       w.Min,
-		Max:                       w.Max,
-		EnableReadableSecondaries: w.EnableReadableSecondaries,
-	}, nil
 }
 
 // Encapsulates various hostnames (r/w or r/o, pooled or not) for an endpoint..
@@ -1741,62 +823,13 @@ type EndpointHosts struct {
 	ReadOnlyPooledHost *string `json:"read_only_pooled_host,omitempty"`
 }
 
-func EndpointHostsFromSDK(v *sdk.EndpointHosts) (*EndpointHosts, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointHosts{
-		Host:                v.Host,
-		ReadOnlyHost:        v.ReadOnlyHost,
-		ReadWritePooledHost: v.ReadWritePooledHost,
-		ReadOnlyPooledHost:  v.ReadOnlyPooledHost,
-	}, nil
-}
-
-func EndpointHostsToSDK(w *EndpointHosts) (*sdk.EndpointHosts, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointHosts{
-		Host:                w.Host,
-		ReadOnlyHost:        w.ReadOnlyHost,
-		ReadWritePooledHost: w.ReadWritePooledHost,
-		ReadOnlyPooledHost:  w.ReadOnlyPooledHost,
-	}, nil
-}
-
 type EndpointOperationMetadata struct {
-}
-
-func EndpointOperationMetadataToSDK(w *EndpointOperationMetadata) (*sdk.EndpointOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointOperationMetadata{}, nil
 }
 
 // A collection of settings for a compute endpoint..
 type EndpointSettings struct {
 	// A raw representation of Postgres settings.
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
-}
-
-func EndpointSettingsFromSDK(v *sdk.EndpointSettings) (*EndpointSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointSettings{
-		PgSettings: v.PgSettings,
-	}, nil
-}
-
-func EndpointSettingsToSDK(w *EndpointSettings) (*sdk.EndpointSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointSettings{
-		PgSettings: w.PgSettings,
-	}, nil
 }
 
 type EndpointSpec struct {
@@ -1818,85 +851,6 @@ type EndpointSpec struct {
 	// endpoint defaults to non HA settings, with a single compute backing the
 	// endpoint (and no readable secondaries for Read/Write endpoints).
 	Group *EndpointGroupSpec `json:"group,omitempty"`
-}
-
-func EndpointSpecFromSDK(v *sdk.EndpointSpec) (*EndpointSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	settingsWireValue, err := EndpointSettingsFromSDK(v.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Settings", err)
-	}
-	groupWireValue, err := EndpointGroupSpecFromSDK(v.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Group", err)
-	}
-	var suspensionSuspendTimeoutDurationWire *types.Duration
-	var suspensionNoSuspensionWire *bool
-	switch value := v.Suspension.(type) {
-	case nil:
-	case *sdk.EndpointSpec_Suspension_SuspendTimeoutDuration:
-		if value != nil {
-			suspensionSuspendTimeoutDurationWire = new(value.SuspendTimeoutDuration)
-		}
-	case *sdk.EndpointSpec_Suspension_NoSuspension:
-		if value != nil {
-			suspensionNoSuspensionWire = new(value.NoSuspension)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EndpointSpec.Suspension", value)
-	}
-	return &EndpointSpec{
-		EndpointType:           v.EndpointType,
-		AutoscalingLimitMinCu:  v.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu:  v.AutoscalingLimitMaxCu,
-		Disabled:               v.Disabled,
-		SuspendTimeoutDuration: suspensionSuspendTimeoutDurationWire,
-		NoSuspension:           suspensionNoSuspensionWire,
-		Settings:               settingsWireValue,
-		Group:                  groupWireValue,
-	}, nil
-}
-
-func EndpointSpecToSDK(w *EndpointSpec) (*sdk.EndpointSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	suspensionMembers := 0
-	if w.SuspendTimeoutDuration != nil {
-		suspensionMembers++
-	}
-	if w.NoSuspension != nil {
-		suspensionMembers++
-	}
-	if suspensionMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EndpointSpec.Suspension")
-	}
-	settingsPublicValue, err := EndpointSettingsToSDK(w.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Settings", err)
-	}
-	groupPublicValue, err := EndpointGroupSpecToSDK(w.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Group", err)
-	}
-	suspensionSelection := (&sdk.EndpointSpec{}).Suspension
-	switch {
-	case w.SuspendTimeoutDuration != nil:
-		suspensionSelection = &sdk.EndpointSpec_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
-	case w.NoSuspension != nil:
-		suspensionSelection = &sdk.EndpointSpec_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
-	}
-	return &sdk.EndpointSpec{
-		EndpointType:          w.EndpointType,
-		AutoscalingLimitMinCu: w.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu: w.AutoscalingLimitMaxCu,
-		Disabled:              w.Disabled,
-		Settings:              settingsPublicValue,
-		Group:                 groupPublicValue,
-		Suspension:            suspensionSelection,
-	}, nil
 }
 
 type EndpointStatus struct {
@@ -1927,70 +881,6 @@ type EndpointStatus struct {
 	EndpointId *string `json:"endpoint_id,omitempty"`
 }
 
-func EndpointStatusFromSDK(v *sdk.EndpointStatus) (*EndpointStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	hostsWireValue, err := EndpointHostsFromSDK(v.Hosts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Hosts", err)
-	}
-	settingsWireValue, err := EndpointSettingsFromSDK(v.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Settings", err)
-	}
-	groupWireValue, err := EndpointGroupStatusFromSDK(v.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Group", err)
-	}
-	return &EndpointStatus{
-		EndpointType:           v.EndpointType,
-		Hosts:                  hostsWireValue,
-		LastActiveTime:         v.LastActiveTime,
-		AutoscalingLimitMinCu:  v.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu:  v.AutoscalingLimitMaxCu,
-		CurrentState:           v.CurrentState,
-		PendingState:           v.PendingState,
-		Disabled:               v.Disabled,
-		SuspendTimeoutDuration: v.SuspendTimeoutDuration,
-		Settings:               settingsWireValue,
-		Group:                  groupWireValue,
-		EndpointId:             v.EndpointId,
-	}, nil
-}
-
-func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	hostsPublicValue, err := EndpointHostsToSDK(w.Hosts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Hosts", err)
-	}
-	settingsPublicValue, err := EndpointSettingsToSDK(w.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Settings", err)
-	}
-	groupPublicValue, err := EndpointGroupStatusToSDK(w.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Group", err)
-	}
-	return &sdk.EndpointStatus{
-		EndpointType:           w.EndpointType,
-		Hosts:                  hostsPublicValue,
-		LastActiveTime:         w.LastActiveTime,
-		AutoscalingLimitMinCu:  w.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu:  w.AutoscalingLimitMaxCu,
-		CurrentState:           w.CurrentState,
-		PendingState:           w.PendingState,
-		Disabled:               w.Disabled,
-		SuspendTimeoutDuration: w.SuspendTimeoutDuration,
-		Settings:               settingsPublicValue,
-		Group:                  groupPublicValue,
-		EndpointId:             w.EndpointId,
-	}, nil
-}
-
 type GenerateDatabaseCredentialRequest struct {
 	// The returned token will be scoped to UC tables with the specified
 	// permissions.
@@ -2002,59 +892,10 @@ type GenerateDatabaseCredentialRequest struct {
 	ExpireTime *types.Time     `json:"expire_time,omitempty"`
 }
 
-func GenerateDatabaseCredentialRequestFromSDK(v *sdk.GenerateDatabaseCredentialRequest) (*GenerateDatabaseCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	claimsWireValue, err := convertSlice(v.Claims, RequestedClaimsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
-	}
-	var expirationTtlWire *types.Duration
-	var expirationExpireTimeWire *types.Time
-	switch value := v.Expiration.(type) {
-	case nil:
-	case *sdk.GenerateDatabaseCredentialRequest_Expiration_Ttl:
-		if value != nil {
-			expirationTtlWire = new(value.Ttl)
-		}
-	case *sdk.GenerateDatabaseCredentialRequest_Expiration_ExpireTime:
-		if value != nil {
-			expirationExpireTimeWire = new(value.ExpireTime)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "GenerateDatabaseCredentialRequest.Expiration", value)
-	}
-	return &GenerateDatabaseCredentialRequest{
-		Claims:     claimsWireValue,
-		Endpoint:   v.Endpoint,
-		Ttl:        expirationTtlWire,
-		ExpireTime: expirationExpireTimeWire,
-	}, nil
-}
-
 // Configuration for the initial default branch created during project creation..
 type InitialBranchSpec struct {
 	// Whether the initial default branch should be protected from deletion.
 	IsProtected *bool `json:"is_protected,omitempty"`
-}
-
-func InitialBranchSpecFromSDK(v *sdk.InitialBranchSpec) (*InitialBranchSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InitialBranchSpec{
-		IsProtected: v.IsProtected,
-	}, nil
-}
-
-func InitialBranchSpecToSDK(w *InitialBranchSpec) (*sdk.InitialBranchSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InitialBranchSpec{
-		IsProtected: w.IsProtected,
-	}, nil
 }
 
 // Configuration for the initial Read/Write endpoint created during project
@@ -2068,71 +909,6 @@ type InitialEndpointSpec struct {
 	AutoscalingLimitMaxCu  *float64        `json:"autoscaling_limit_max_cu,omitempty"`
 	SuspendTimeoutDuration *types.Duration `json:"suspend_timeout_duration,omitempty"`
 	NoSuspension           *bool           `json:"no_suspension,omitempty"`
-}
-
-func InitialEndpointSpecFromSDK(v *sdk.InitialEndpointSpec) (*InitialEndpointSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	groupWireValue, err := EndpointGroupSpecFromSDK(v.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InitialEndpointSpec.Group", err)
-	}
-	var suspensionSuspendTimeoutDurationWire *types.Duration
-	var suspensionNoSuspensionWire *bool
-	switch value := v.Suspension.(type) {
-	case nil:
-	case *sdk.InitialEndpointSpec_Suspension_SuspendTimeoutDuration:
-		if value != nil {
-			suspensionSuspendTimeoutDurationWire = new(value.SuspendTimeoutDuration)
-		}
-	case *sdk.InitialEndpointSpec_Suspension_NoSuspension:
-		if value != nil {
-			suspensionNoSuspensionWire = new(value.NoSuspension)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "InitialEndpointSpec.Suspension", value)
-	}
-	return &InitialEndpointSpec{
-		Group:                  groupWireValue,
-		AutoscalingLimitMinCu:  v.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu:  v.AutoscalingLimitMaxCu,
-		SuspendTimeoutDuration: suspensionSuspendTimeoutDurationWire,
-		NoSuspension:           suspensionNoSuspensionWire,
-	}, nil
-}
-
-func InitialEndpointSpecToSDK(w *InitialEndpointSpec) (*sdk.InitialEndpointSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	suspensionMembers := 0
-	if w.SuspendTimeoutDuration != nil {
-		suspensionMembers++
-	}
-	if w.NoSuspension != nil {
-		suspensionMembers++
-	}
-	if suspensionMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "InitialEndpointSpec.Suspension")
-	}
-	groupPublicValue, err := EndpointGroupSpecToSDK(w.Group)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InitialEndpointSpec.Group", err)
-	}
-	suspensionSelection := (&sdk.InitialEndpointSpec{}).Suspension
-	switch {
-	case w.SuspendTimeoutDuration != nil:
-		suspensionSelection = &sdk.InitialEndpointSpec_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
-	case w.NoSuspension != nil:
-		suspensionSelection = &sdk.InitialEndpointSpec_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
-	}
-	return &sdk.InitialEndpointSpec{
-		Group:                 groupPublicValue,
-		AutoscalingLimitMinCu: w.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu: w.AutoscalingLimitMaxCu,
-		Suspension:            suspensionSelection,
-	}, nil
 }
 
 type ListBranchesRequest struct {
@@ -2149,37 +925,11 @@ type ListBranchesRequest struct {
 	ShowDeleted *bool `json:"show_deleted,omitempty"`
 }
 
-func ListBranchesRequestFromSDK(v *sdk.ListBranchesRequest) (*ListBranchesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListBranchesRequest{
-		Parent:      v.Parent,
-		PageToken:   v.PageToken,
-		PageSize:    v.PageSize,
-		ShowDeleted: v.ShowDeleted,
-	}, nil
-}
-
 type ListBranchesResponse struct {
 	// List of branches in the project.
 	Branches []Branch `json:"branches,omitempty"`
 	// Token to request the next page of branches.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListBranchesResponseToSDK(w *ListBranchesResponse) (*sdk.ListBranchesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	branchesPublicValue, err := convertSlice(w.Branches, BranchToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListBranchesResponse.Branches", err)
-	}
-	return &sdk.ListBranchesResponse{
-		Branches:      branchesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list the Lakebase CDF configurations (CdfConfigs) under a
@@ -2195,17 +945,6 @@ type ListCdfConfigsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCdfConfigsRequestFromSDK(v *sdk.ListCdfConfigsRequest) (*ListCdfConfigsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCdfConfigsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response to a ListCdfConfigs request, containing a page of CdfConfigs and a
 // token for fetching the next page..
 type ListCdfConfigsResponse struct {
@@ -2213,20 +952,6 @@ type ListCdfConfigsResponse struct {
 	CdfConfigs []CdfConfig `json:"cdf_configs,omitempty"`
 	// Token to retrieve the next page of results; empty when there are no more.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCdfConfigsResponseToSDK(w *ListCdfConfigsResponse) (*sdk.ListCdfConfigsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cdfConfigsPublicValue, err := convertSlice(w.CdfConfigs, CdfConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCdfConfigsResponse.CdfConfigs", err)
-	}
-	return &sdk.ListCdfConfigsResponse{
-		CdfConfigs:    cdfConfigsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list the statuses of all tables replicated under a Lakebase CDF
@@ -2242,17 +967,6 @@ type ListCdfStatusesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCdfStatusesRequestFromSDK(v *sdk.ListCdfStatusesRequest) (*ListCdfStatusesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCdfStatusesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response to a ListCdfStatuses request, containing a page of replicated table
 // statuses and a token for fetching the next page..
 type ListCdfStatusesResponse struct {
@@ -2260,20 +974,6 @@ type ListCdfStatusesResponse struct {
 	CdfStatuses []CdfStatus `json:"cdf_statuses,omitempty"`
 	// Token to retrieve the next page of results; empty when there are no more.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCdfStatusesResponseToSDK(w *ListCdfStatusesResponse) (*sdk.ListCdfStatusesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cdfStatusesPublicValue, err := convertSlice(w.CdfStatuses, CdfStatusToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCdfStatusesResponse.CdfStatuses", err)
-	}
-	return &sdk.ListCdfStatusesResponse{
-		CdfStatuses:   cdfStatusesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // List Databases..
@@ -2288,36 +988,11 @@ type ListDatabasesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListDatabasesRequestFromSDK(v *sdk.ListDatabasesRequest) (*ListDatabasesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDatabasesRequest{
-		Parent:    v.Parent,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListDatabasesResponse struct {
 	// List of databases.
 	Databases []Database `json:"databases,omitempty"`
 	// Pagination token to request the next page of databases.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDatabasesResponseToSDK(w *ListDatabasesResponse) (*sdk.ListDatabasesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	databasesPublicValue, err := convertSlice(w.Databases, DatabaseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDatabasesResponse.Databases", err)
-	}
-	return &sdk.ListDatabasesResponse{
-		Databases:     databasesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListEndpointsRequest struct {
@@ -2330,36 +1005,11 @@ type ListEndpointsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListEndpointsRequest{
-		Parent:    v.Parent,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListEndpointsResponse struct {
 	// List of compute endpoints in the branch.
 	Endpoints []Endpoint `json:"endpoints,omitempty"`
 	// Token to request the next page of compute endpoints.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointsPublicValue, err := convertSlice(w.Endpoints, EndpointToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
-	}
-	return &sdk.ListEndpointsResponse{
-		Endpoints:     endpointsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListProjectsRequest struct {
@@ -2373,36 +1023,11 @@ type ListProjectsRequest struct {
 	ShowDeleted *bool `json:"show_deleted,omitempty"`
 }
 
-func ListProjectsRequestFromSDK(v *sdk.ListProjectsRequest) (*ListProjectsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListProjectsRequest{
-		PageToken:   v.PageToken,
-		PageSize:    v.PageSize,
-		ShowDeleted: v.ShowDeleted,
-	}, nil
-}
-
 type ListProjectsResponse struct {
 	// List of all projects in the workspace that the user has permission to access.
 	Projects []Project `json:"projects,omitempty"`
 	// Token to request the next page of projects.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListProjectsResponseToSDK(w *ListProjectsResponse) (*sdk.ListProjectsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	projectsPublicValue, err := convertSlice(w.Projects, ProjectToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProjectsResponse.Projects", err)
-	}
-	return &sdk.ListProjectsResponse{
-		Projects:      projectsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListRolesRequest struct {
@@ -2415,36 +1040,11 @@ type ListRolesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListRolesRequestFromSDK(v *sdk.ListRolesRequest) (*ListRolesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListRolesRequest{
-		Parent:    v.Parent,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListRolesResponse struct {
 	// List of Postgres roles in the branch.
 	Roles []Role `json:"roles,omitempty"`
 	// Token to request the next page of Postgres roles.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListRolesResponseToSDK(w *ListRolesResponse) (*sdk.ListRolesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, RoleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRolesResponse.Roles", err)
-	}
-	return &sdk.ListRolesResponse{
-		Roles:         rolesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSnapshotsRequest struct {
@@ -2456,36 +1056,11 @@ type ListSnapshotsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListSnapshotsRequestFromSDK(v *sdk.ListSnapshotsRequest) (*ListSnapshotsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSnapshotsRequest{
-		Parent:    v.Parent,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListSnapshotsResponse struct {
 	// The snapshots in the project.
 	Snapshots []Snapshot `json:"snapshots,omitempty"`
 	// Token to retrieve the next page; empty if there are no more pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSnapshotsResponseToSDK(w *ListSnapshotsResponse) (*sdk.ListSnapshotsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	snapshotsPublicValue, err := convertSlice(w.Snapshots, SnapshotToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSnapshotsResponse.Snapshots", err)
-	}
-	return &sdk.ListSnapshotsResponse{
-		Snapshots:     snapshotsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Take a snapshot once per month, on the configured day at the configured hour..
@@ -2496,26 +1071,6 @@ type MonthlySchedule struct {
 	Day *int `json:"day,omitempty"`
 	// The hour of the day, in UTC, at which to take the snapshot, in [0, 23].
 	Hour *int `json:"hour,omitempty"`
-}
-
-func MonthlyScheduleFromSDK(v *sdk.MonthlySchedule) (*MonthlySchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MonthlySchedule{
-		Day:  v.Day,
-		Hour: v.Hour,
-	}, nil
-}
-
-func MonthlyScheduleToSDK(w *MonthlySchedule) (*sdk.MonthlySchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MonthlySchedule{
-		Day:  w.Day,
-		Hour: w.Hour,
-	}, nil
 }
 
 type NewPipelineSpec struct {
@@ -2535,30 +1090,6 @@ type NewPipelineSpec struct {
 	PipelineChannel NewPipelineSpec_PipelineChannel `json:"pipeline_channel,omitempty"`
 }
 
-func NewPipelineSpecFromSDK(v *sdk.NewPipelineSpec) (*NewPipelineSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NewPipelineSpec{
-		StorageCatalog:  v.StorageCatalog,
-		StorageSchema:   v.StorageSchema,
-		BudgetPolicyId:  v.BudgetPolicyId,
-		PipelineChannel: v.PipelineChannel,
-	}, nil
-}
-
-func NewPipelineSpecToSDK(w *NewPipelineSpec) (*sdk.NewPipelineSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NewPipelineSpec{
-		StorageCatalog:  w.StorageCatalog,
-		StorageSchema:   w.StorageSchema,
-		BudgetPolicyId:  w.BudgetPolicyId,
-		PipelineChannel: w.PipelineChannel,
-	}, nil
-}
-
 // This resource represents a long-running operation that is the result of a
 // network API call..
 type Operation struct {
@@ -2576,39 +1107,6 @@ type Operation struct {
 	Done     *bool           `json:"done,omitempty"`
 	Error    *ApiError       `json:"error,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
-}
-
-func OperationToSDK(w *Operation) (*sdk.Operation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultMembers := 0
-	if w.Error != nil {
-		resultMembers++
-	}
-	if w.Response != nil {
-		resultMembers++
-	}
-	if resultMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
-	}
-	resultSelection := (&sdk.Operation{}).Result
-	switch {
-	case w.Error != nil:
-		resultErrorConverted, err := ApiErrorToSDK(w.Error)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Operation.Result.Error", err)
-		}
-		resultSelection = &sdk.Operation_Result_Error{Error: *resultErrorConverted}
-	case w.Response != nil:
-		resultSelection = &sdk.Operation_Result_Response{Response: w.Response}
-	}
-	return &sdk.Operation{
-		Name:     w.Name,
-		Metadata: w.Metadata,
-		Done:     w.Done,
-		Result:   resultSelection,
-	}, nil
 }
 
 type Project struct {
@@ -2649,101 +1147,11 @@ type Project struct {
 	ProjectId *string `json:"project_id,omitempty"`
 }
 
-func ProjectFromSDK(v *sdk.Project) (*Project, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := ProjectSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.Spec", err)
-	}
-	statusWireValue, err := ProjectStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.Status", err)
-	}
-	initialEndpointSpecWireValue, err := InitialEndpointSpecFromSDK(v.InitialEndpointSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.InitialEndpointSpec", err)
-	}
-	initialBranchSpecWireValue, err := InitialBranchSpecFromSDK(v.InitialBranchSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.InitialBranchSpec", err)
-	}
-	return &Project{
-		Name:                v.Name,
-		Uid:                 v.Uid,
-		CreateTime:          v.CreateTime,
-		UpdateTime:          v.UpdateTime,
-		Spec:                specWireValue,
-		Status:              statusWireValue,
-		InitialEndpointSpec: initialEndpointSpecWireValue,
-		DeleteTime:          v.DeleteTime,
-		PurgeTime:           v.PurgeTime,
-		InitialBranchSpec:   initialBranchSpecWireValue,
-		ProjectId:           v.ProjectId,
-	}, nil
-}
-
-func ProjectToSDK(w *Project) (*sdk.Project, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := ProjectSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.Spec", err)
-	}
-	statusPublicValue, err := ProjectStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.Status", err)
-	}
-	initialEndpointSpecPublicValue, err := InitialEndpointSpecToSDK(w.InitialEndpointSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.InitialEndpointSpec", err)
-	}
-	initialBranchSpecPublicValue, err := InitialBranchSpecToSDK(w.InitialBranchSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Project.InitialBranchSpec", err)
-	}
-	return &sdk.Project{
-		Name:                w.Name,
-		Uid:                 w.Uid,
-		CreateTime:          w.CreateTime,
-		UpdateTime:          w.UpdateTime,
-		Spec:                specPublicValue,
-		Status:              statusPublicValue,
-		InitialEndpointSpec: initialEndpointSpecPublicValue,
-		DeleteTime:          w.DeleteTime,
-		PurgeTime:           w.PurgeTime,
-		InitialBranchSpec:   initialBranchSpecPublicValue,
-		ProjectId:           w.ProjectId,
-	}, nil
-}
-
 type ProjectCustomTag struct {
 	// The key of the custom tag.
 	Key *string `json:"key,omitempty"`
 	// The value of the custom tag.
 	Value *string `json:"value,omitempty"`
-}
-
-func ProjectCustomTagFromSDK(v *sdk.ProjectCustomTag) (*ProjectCustomTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ProjectCustomTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func ProjectCustomTagToSDK(w *ProjectCustomTag) (*sdk.ProjectCustomTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProjectCustomTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 // A collection of settings for a compute endpoint..
@@ -2758,71 +1166,7 @@ type ProjectDefaultEndpointSettings struct {
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
 
-func ProjectDefaultEndpointSettingsFromSDK(v *sdk.ProjectDefaultEndpointSettings) (*ProjectDefaultEndpointSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var suspensionSuspendTimeoutDurationWire *types.Duration
-	var suspensionNoSuspensionWire *bool
-	switch value := v.Suspension.(type) {
-	case nil:
-	case *sdk.ProjectDefaultEndpointSettings_Suspension_SuspendTimeoutDuration:
-		if value != nil {
-			suspensionSuspendTimeoutDurationWire = new(value.SuspendTimeoutDuration)
-		}
-	case *sdk.ProjectDefaultEndpointSettings_Suspension_NoSuspension:
-		if value != nil {
-			suspensionNoSuspensionWire = new(value.NoSuspension)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ProjectDefaultEndpointSettings.Suspension", value)
-	}
-	return &ProjectDefaultEndpointSettings{
-		AutoscalingLimitMinCu:  v.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu:  v.AutoscalingLimitMaxCu,
-		SuspendTimeoutDuration: suspensionSuspendTimeoutDurationWire,
-		NoSuspension:           suspensionNoSuspensionWire,
-		PgSettings:             v.PgSettings,
-	}, nil
-}
-
-func ProjectDefaultEndpointSettingsToSDK(w *ProjectDefaultEndpointSettings) (*sdk.ProjectDefaultEndpointSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	suspensionMembers := 0
-	if w.SuspendTimeoutDuration != nil {
-		suspensionMembers++
-	}
-	if w.NoSuspension != nil {
-		suspensionMembers++
-	}
-	if suspensionMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ProjectDefaultEndpointSettings.Suspension")
-	}
-	suspensionSelection := (&sdk.ProjectDefaultEndpointSettings{}).Suspension
-	switch {
-	case w.SuspendTimeoutDuration != nil:
-		suspensionSelection = &sdk.ProjectDefaultEndpointSettings_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
-	case w.NoSuspension != nil:
-		suspensionSelection = &sdk.ProjectDefaultEndpointSettings_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
-	}
-	return &sdk.ProjectDefaultEndpointSettings{
-		AutoscalingLimitMinCu: w.AutoscalingLimitMinCu,
-		AutoscalingLimitMaxCu: w.AutoscalingLimitMaxCu,
-		PgSettings:            w.PgSettings,
-		Suspension:            suspensionSelection,
-	}, nil
-}
-
 type ProjectOperationMetadata struct {
-}
-
-func ProjectOperationMetadataToSDK(w *ProjectOperationMetadata) (*sdk.ProjectOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProjectOperationMetadata{}, nil
 }
 
 type ProjectSpec struct {
@@ -2855,54 +1199,6 @@ type ProjectSpec struct {
 	DefaultBranch *string `json:"default_branch,omitempty"`
 }
 
-func ProjectSpecFromSDK(v *sdk.ProjectSpec) (*ProjectSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultEndpointSettingsWireValue, err := ProjectDefaultEndpointSettingsFromSDK(v.DefaultEndpointSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectSpec.DefaultEndpointSettings", err)
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, ProjectCustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectSpec.CustomTags", err)
-	}
-	return &ProjectSpec{
-		DisplayName:              v.DisplayName,
-		PgVersion:                v.PgVersion,
-		HistoryRetentionDuration: v.HistoryRetentionDuration,
-		DefaultEndpointSettings:  defaultEndpointSettingsWireValue,
-		BudgetPolicyId:           v.BudgetPolicyId,
-		CustomTags:               customTagsWireValue,
-		EnablePgNativeLogin:      v.EnablePgNativeLogin,
-		DefaultBranch:            v.DefaultBranch,
-	}, nil
-}
-
-func ProjectSpecToSDK(w *ProjectSpec) (*sdk.ProjectSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	defaultEndpointSettingsPublicValue, err := ProjectDefaultEndpointSettingsToSDK(w.DefaultEndpointSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectSpec.DefaultEndpointSettings", err)
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, ProjectCustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectSpec.CustomTags", err)
-	}
-	return &sdk.ProjectSpec{
-		DisplayName:              w.DisplayName,
-		PgVersion:                w.PgVersion,
-		HistoryRetentionDuration: w.HistoryRetentionDuration,
-		DefaultEndpointSettings:  defaultEndpointSettingsPublicValue,
-		BudgetPolicyId:           w.BudgetPolicyId,
-		CustomTags:               customTagsPublicValue,
-		EnablePgNativeLogin:      w.EnablePgNativeLogin,
-		DefaultBranch:            w.DefaultBranch,
-	}, nil
-}
-
 type ProjectStatus struct {
 	// The effective human-readable project name.
 	DisplayName *string `json:"display_name,omitempty"`
@@ -2933,120 +1229,13 @@ type ProjectStatus struct {
 	ProjectId *string `json:"project_id,omitempty"`
 }
 
-func ProjectStatusFromSDK(v *sdk.ProjectStatus) (*ProjectStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultEndpointSettingsWireValue, err := ProjectDefaultEndpointSettingsFromSDK(v.DefaultEndpointSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.DefaultEndpointSettings", err)
-	}
-	branchLogicalSizeLimitBytesWireValue, err := int64ToWire(v.BranchLogicalSizeLimitBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.BranchLogicalSizeLimitBytes", err)
-	}
-	syntheticStorageSizeBytesWireValue, err := int64ToWire(v.SyntheticStorageSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.SyntheticStorageSizeBytes", err)
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, ProjectCustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.CustomTags", err)
-	}
-	return &ProjectStatus{
-		DisplayName:                 v.DisplayName,
-		PgVersion:                   v.PgVersion,
-		HistoryRetentionDuration:    v.HistoryRetentionDuration,
-		DefaultEndpointSettings:     defaultEndpointSettingsWireValue,
-		BranchLogicalSizeLimitBytes: branchLogicalSizeLimitBytesWireValue,
-		SyntheticStorageSizeBytes:   syntheticStorageSizeBytesWireValue,
-		ComputeLastActiveTime:       v.ComputeLastActiveTime,
-		BudgetPolicyId:              v.BudgetPolicyId,
-		CustomTags:                  customTagsWireValue,
-		Owner:                       v.Owner,
-		EnablePgNativeLogin:         v.EnablePgNativeLogin,
-		DefaultBranch:               v.DefaultBranch,
-		ProjectId:                   v.ProjectId,
-	}, nil
-}
-
-func ProjectStatusToSDK(w *ProjectStatus) (*sdk.ProjectStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	defaultEndpointSettingsPublicValue, err := ProjectDefaultEndpointSettingsToSDK(w.DefaultEndpointSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.DefaultEndpointSettings", err)
-	}
-	branchLogicalSizeLimitBytesPublicValue, err := int64FromWire(w.BranchLogicalSizeLimitBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.BranchLogicalSizeLimitBytes", err)
-	}
-	syntheticStorageSizeBytesPublicValue, err := int64FromWire(w.SyntheticStorageSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.SyntheticStorageSizeBytes", err)
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, ProjectCustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProjectStatus.CustomTags", err)
-	}
-	return &sdk.ProjectStatus{
-		DisplayName:                 w.DisplayName,
-		PgVersion:                   w.PgVersion,
-		HistoryRetentionDuration:    w.HistoryRetentionDuration,
-		DefaultEndpointSettings:     defaultEndpointSettingsPublicValue,
-		BranchLogicalSizeLimitBytes: branchLogicalSizeLimitBytesPublicValue,
-		SyntheticStorageSizeBytes:   syntheticStorageSizeBytesPublicValue,
-		ComputeLastActiveTime:       w.ComputeLastActiveTime,
-		BudgetPolicyId:              w.BudgetPolicyId,
-		CustomTags:                  customTagsPublicValue,
-		Owner:                       w.Owner,
-		EnablePgNativeLogin:         w.EnablePgNativeLogin,
-		DefaultBranch:               w.DefaultBranch,
-		ProjectId:                   w.ProjectId,
-	}, nil
-}
-
 type RequestedClaims struct {
 	PermissionSet RequestedClaims_PermissionSet `json:"permission_set,omitempty"`
 	Resources     []RequestedResource           `json:"resources,omitempty"`
 }
 
-func RequestedClaimsFromSDK(v *sdk.RequestedClaims) (*RequestedClaims, error) {
-	if v == nil {
-		return nil, nil
-	}
-	resourcesWireValue, err := convertSlice(v.Resources, RequestedResourceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
-	}
-	return &RequestedClaims{
-		PermissionSet: v.PermissionSet,
-		Resources:     resourcesWireValue,
-	}, nil
-}
-
 type RequestedResource struct {
 	TableName *string `json:"table_name,omitempty"`
-}
-
-func RequestedResourceFromSDK(v *sdk.RequestedResource) (*RequestedResource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var resourceNameTableNameWire *string
-	switch value := v.ResourceName.(type) {
-	case nil:
-	case *sdk.RequestedResource_ResourceName_TableName:
-		if value != nil {
-			resourceNameTableNameWire = new(value.TableName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RequestedResource.ResourceName", value)
-	}
-	return &RequestedResource{
-		TableName: resourceNameTableNameWire,
-	}, nil
 }
 
 // Request to reveal the current password for a password-authenticated Postgres
@@ -3057,28 +1246,10 @@ type RevealRolePasswordRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func RevealRolePasswordRequestFromSDK(v *sdk.RevealRolePasswordRequest) (*RevealRolePasswordRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RevealRolePasswordRequest{
-		Name: v.Name,
-	}, nil
-}
-
 // Response containing the password for a password-authenticated Postgres role..
 type RevealRolePasswordResponse struct {
 	// The current password for the Postgres role.
 	Password *string `json:"password,omitempty"`
-}
-
-func RevealRolePasswordResponseToSDK(w *RevealRolePasswordResponse) (*sdk.RevealRolePasswordResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RevealRolePasswordResponse{
-		Password: w.Password,
-	}, nil
 }
 
 // Role represents a Postgres role within a Branch..
@@ -3101,52 +1272,6 @@ type Role struct {
 	RoleId *string `json:"role_id,omitempty"`
 }
 
-func RoleFromSDK(v *sdk.Role) (*Role, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := Role_RoleSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role.Spec", err)
-	}
-	statusWireValue, err := Role_RoleStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role.Status", err)
-	}
-	return &Role{
-		Name:       v.Name,
-		Parent:     v.Parent,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		RoleId:     v.RoleId,
-	}, nil
-}
-
-func RoleToSDK(w *Role) (*sdk.Role, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := Role_RoleSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role.Spec", err)
-	}
-	statusPublicValue, err := Role_RoleStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role.Status", err)
-	}
-	return &sdk.Role{
-		Name:       w.Name,
-		Parent:     w.Parent,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		RoleId:     w.RoleId,
-	}, nil
-}
-
 // Attributes that can be granted to a Postgres role. We are only implementing a
 // subset for now, see xref:
 // https://www.postgresql.org/docs/16/sql-createrole.html The values follow
@@ -3156,28 +1281,6 @@ type Role_Attributes struct {
 	Createdb   *bool `json:"createdb,omitempty"`
 	Createrole *bool `json:"createrole,omitempty"`
 	Bypassrls  *bool `json:"bypassrls,omitempty"`
-}
-
-func Role_AttributesFromSDK(v *sdk.Role_Attributes) (*Role_Attributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Role_Attributes{
-		Createdb:   v.Createdb,
-		Createrole: v.Createrole,
-		Bypassrls:  v.Bypassrls,
-	}, nil
-}
-
-func Role_AttributesToSDK(w *Role_Attributes) (*sdk.Role_Attributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Role_Attributes{
-		Createdb:   w.Createdb,
-		Createrole: w.Createrole,
-		Bypassrls:  w.Bypassrls,
-	}, nil
 }
 
 type Role_RoleSpec struct {
@@ -3228,40 +1331,6 @@ type Role_RoleSpec struct {
 	PostgresRole *string `json:"postgres_role,omitempty"`
 }
 
-func Role_RoleSpecFromSDK(v *sdk.Role_RoleSpec) (*Role_RoleSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	attributesWireValue, err := Role_AttributesFromSDK(v.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role_RoleSpec.Attributes", err)
-	}
-	return &Role_RoleSpec{
-		MembershipRoles: v.MembershipRoles,
-		IdentityType:    v.IdentityType,
-		Attributes:      attributesWireValue,
-		AuthMethod:      v.AuthMethod,
-		PostgresRole:    v.PostgresRole,
-	}, nil
-}
-
-func Role_RoleSpecToSDK(w *Role_RoleSpec) (*sdk.Role_RoleSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	attributesPublicValue, err := Role_AttributesToSDK(w.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role_RoleSpec.Attributes", err)
-	}
-	return &sdk.Role_RoleSpec{
-		MembershipRoles: w.MembershipRoles,
-		IdentityType:    w.IdentityType,
-		Attributes:      attributesPublicValue,
-		AuthMethod:      w.AuthMethod,
-		PostgresRole:    w.PostgresRole,
-	}, nil
-}
-
 type Role_RoleStatus struct {
 	// An enum value for a standard role that this role is a member of.
 	MembershipRoles []Role_MembershipRole `json:"membership_roles,omitempty"`
@@ -3276,50 +1345,7 @@ type Role_RoleStatus struct {
 	RoleId *string `json:"role_id,omitempty"`
 }
 
-func Role_RoleStatusFromSDK(v *sdk.Role_RoleStatus) (*Role_RoleStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	attributesWireValue, err := Role_AttributesFromSDK(v.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role_RoleStatus.Attributes", err)
-	}
-	return &Role_RoleStatus{
-		MembershipRoles: v.MembershipRoles,
-		IdentityType:    v.IdentityType,
-		Attributes:      attributesWireValue,
-		AuthMethod:      v.AuthMethod,
-		PostgresRole:    v.PostgresRole,
-		RoleId:          v.RoleId,
-	}, nil
-}
-
-func Role_RoleStatusToSDK(w *Role_RoleStatus) (*sdk.Role_RoleStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	attributesPublicValue, err := Role_AttributesToSDK(w.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Role_RoleStatus.Attributes", err)
-	}
-	return &sdk.Role_RoleStatus{
-		MembershipRoles: w.MembershipRoles,
-		IdentityType:    w.IdentityType,
-		Attributes:      attributesPublicValue,
-		AuthMethod:      w.AuthMethod,
-		PostgresRole:    w.PostgresRole,
-		RoleId:          w.RoleId,
-	}, nil
-}
-
 type RoleOperationMetadata struct {
-}
-
-func RoleOperationMetadataToSDK(w *RoleOperationMetadata) (*sdk.RoleOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RoleOperationMetadata{}, nil
 }
 
 // One cadence at which automatic snapshots are taken..
@@ -3331,94 +1357,6 @@ type ScheduleCadence struct {
 	// be at least 1 hour. Applied when a snapshot is taken; not retroactive, so
 	// changing it affects only later snapshots.
 	Retention *types.Duration `json:"retention,omitempty"`
-}
-
-func ScheduleCadenceFromSDK(v *sdk.ScheduleCadence) (*ScheduleCadence, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var scheduleDailyScheduleWire *DailySchedule
-	var scheduleWeeklyScheduleWire *WeeklySchedule
-	var scheduleMonthlyScheduleWire *MonthlySchedule
-	switch value := v.Schedule.(type) {
-	case nil:
-	case *sdk.ScheduleCadence_Schedule_DailySchedule:
-		if value != nil {
-			scheduleDailyScheduleConverted, err := DailyScheduleFromSDK(&value.DailySchedule)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.DailySchedule", err)
-			}
-			scheduleDailyScheduleWire = scheduleDailyScheduleConverted
-		}
-	case *sdk.ScheduleCadence_Schedule_WeeklySchedule:
-		if value != nil {
-			scheduleWeeklyScheduleConverted, err := WeeklyScheduleFromSDK(&value.WeeklySchedule)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.WeeklySchedule", err)
-			}
-			scheduleWeeklyScheduleWire = scheduleWeeklyScheduleConverted
-		}
-	case *sdk.ScheduleCadence_Schedule_MonthlySchedule:
-		if value != nil {
-			scheduleMonthlyScheduleConverted, err := MonthlyScheduleFromSDK(&value.MonthlySchedule)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.MonthlySchedule", err)
-			}
-			scheduleMonthlyScheduleWire = scheduleMonthlyScheduleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ScheduleCadence.Schedule", value)
-	}
-	return &ScheduleCadence{
-		DailySchedule:   scheduleDailyScheduleWire,
-		WeeklySchedule:  scheduleWeeklyScheduleWire,
-		MonthlySchedule: scheduleMonthlyScheduleWire,
-		Retention:       v.Retention,
-	}, nil
-}
-
-func ScheduleCadenceToSDK(w *ScheduleCadence) (*sdk.ScheduleCadence, error) {
-	if w == nil {
-		return nil, nil
-	}
-	scheduleMembers := 0
-	if w.DailySchedule != nil {
-		scheduleMembers++
-	}
-	if w.WeeklySchedule != nil {
-		scheduleMembers++
-	}
-	if w.MonthlySchedule != nil {
-		scheduleMembers++
-	}
-	if scheduleMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ScheduleCadence.Schedule")
-	}
-	scheduleSelection := (&sdk.ScheduleCadence{}).Schedule
-	switch {
-	case w.DailySchedule != nil:
-		scheduleDailyScheduleConverted, err := DailyScheduleToSDK(w.DailySchedule)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.DailySchedule", err)
-		}
-		scheduleSelection = &sdk.ScheduleCadence_Schedule_DailySchedule{DailySchedule: *scheduleDailyScheduleConverted}
-	case w.WeeklySchedule != nil:
-		scheduleWeeklyScheduleConverted, err := WeeklyScheduleToSDK(w.WeeklySchedule)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.WeeklySchedule", err)
-		}
-		scheduleSelection = &sdk.ScheduleCadence_Schedule_WeeklySchedule{WeeklySchedule: *scheduleWeeklyScheduleConverted}
-	case w.MonthlySchedule != nil:
-		scheduleMonthlyScheduleConverted, err := MonthlyScheduleToSDK(w.MonthlySchedule)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule.MonthlySchedule", err)
-		}
-		scheduleSelection = &sdk.ScheduleCadence_Schedule_MonthlySchedule{MonthlySchedule: *scheduleMonthlyScheduleConverted}
-	}
-	return &sdk.ScheduleCadence{
-		Retention: w.Retention,
-		Schedule:  scheduleSelection,
-	}, nil
 }
 
 // An immutable, point-in-time copy of a branch's data within a project. It
@@ -3439,59 +1377,8 @@ type Snapshot struct {
 	SnapshotId *string `json:"snapshot_id,omitempty"`
 }
 
-func SnapshotFromSDK(v *sdk.Snapshot) (*Snapshot, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := SnapshotSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Snapshot.Spec", err)
-	}
-	statusWireValue, err := SnapshotStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Snapshot.Status", err)
-	}
-	return &Snapshot{
-		Name:       v.Name,
-		Uid:        v.Uid,
-		CreateTime: v.CreateTime,
-		Spec:       specWireValue,
-		Status:     statusWireValue,
-		SnapshotId: v.SnapshotId,
-	}, nil
-}
-
-func SnapshotToSDK(w *Snapshot) (*sdk.Snapshot, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := SnapshotSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Snapshot.Spec", err)
-	}
-	statusPublicValue, err := SnapshotStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Snapshot.Status", err)
-	}
-	return &sdk.Snapshot{
-		Name:       w.Name,
-		Uid:        w.Uid,
-		CreateTime: w.CreateTime,
-		Spec:       specPublicValue,
-		Status:     statusPublicValue,
-		SnapshotId: w.SnapshotId,
-	}, nil
-}
-
 // Metadata for the long-running snapshot Create and Delete operations..
 type SnapshotOperationMetadata struct {
-}
-
-func SnapshotOperationMetadataToSDK(w *SnapshotOperationMetadata) (*sdk.SnapshotOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SnapshotOperationMetadata{}, nil
 }
 
 // The automatic snapshot cadences for a branch. There is exactly one schedule
@@ -3509,43 +1396,8 @@ type SnapshotSchedule struct {
 	Schedule []ScheduleCadence `json:"schedule,omitempty"`
 }
 
-func SnapshotScheduleFromSDK(v *sdk.SnapshotSchedule) (*SnapshotSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	scheduleWireValue, err := convertSlice(v.Schedule, ScheduleCadenceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotSchedule.Schedule", err)
-	}
-	return &SnapshotSchedule{
-		Name:     v.Name,
-		Schedule: scheduleWireValue,
-	}, nil
-}
-
-func SnapshotScheduleToSDK(w *SnapshotSchedule) (*sdk.SnapshotSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schedulePublicValue, err := convertSlice(w.Schedule, ScheduleCadenceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotSchedule.Schedule", err)
-	}
-	return &sdk.SnapshotSchedule{
-		Name:     w.Name,
-		Schedule: schedulePublicValue,
-	}, nil
-}
-
 // Metadata for the long-running snapshot schedule Update operation..
 type SnapshotScheduleOperationMetadata struct {
-}
-
-func SnapshotScheduleOperationMetadataToSDK(w *SnapshotScheduleOperationMetadata) (*sdk.SnapshotScheduleOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SnapshotScheduleOperationMetadata{}, nil
 }
 
 // Client-provided configuration of the snapshot..
@@ -3560,105 +1412,6 @@ type SnapshotSpec struct {
 	NoExpiry         *bool           `json:"no_expiry,omitempty"`
 }
 
-func SnapshotSpecFromSDK(v *sdk.SnapshotSpec) (*SnapshotSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var pointInTimeSourceBranchLsnWire *string
-	var pointInTimeSourceBranchTimeWire *types.Time
-	switch value := v.PointInTime.(type) {
-	case nil:
-	case *sdk.SnapshotSpec_PointInTime_SourceBranchLsn:
-		if value != nil {
-			pointInTimeSourceBranchLsnWire = new(value.SourceBranchLsn)
-		}
-	case *sdk.SnapshotSpec_PointInTime_SourceBranchTime:
-		if value != nil {
-			pointInTimeSourceBranchTimeWire = new(value.SourceBranchTime)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SnapshotSpec.PointInTime", value)
-	}
-	var expirationExpireTimeWire *types.Time
-	var expirationTtlWire *types.Duration
-	var expirationNoExpiryWire *bool
-	switch value := v.Expiration.(type) {
-	case nil:
-	case *sdk.SnapshotSpec_Expiration_ExpireTime:
-		if value != nil {
-			expirationExpireTimeWire = new(value.ExpireTime)
-		}
-	case *sdk.SnapshotSpec_Expiration_Ttl:
-		if value != nil {
-			expirationTtlWire = new(value.Ttl)
-		}
-	case *sdk.SnapshotSpec_Expiration_NoExpiry:
-		if value != nil {
-			expirationNoExpiryWire = new(value.NoExpiry)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SnapshotSpec.Expiration", value)
-	}
-	return &SnapshotSpec{
-		SourceBranch:     v.SourceBranch,
-		SourceBranchLsn:  pointInTimeSourceBranchLsnWire,
-		SourceBranchTime: pointInTimeSourceBranchTimeWire,
-		ExpireTime:       expirationExpireTimeWire,
-		Ttl:              expirationTtlWire,
-		NoExpiry:         expirationNoExpiryWire,
-	}, nil
-}
-
-func SnapshotSpecToSDK(w *SnapshotSpec) (*sdk.SnapshotSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pointInTimeMembers := 0
-	if w.SourceBranchLsn != nil {
-		pointInTimeMembers++
-	}
-	if w.SourceBranchTime != nil {
-		pointInTimeMembers++
-	}
-	if pointInTimeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.PointInTime")
-	}
-	expirationMembers := 0
-	if w.ExpireTime != nil {
-		expirationMembers++
-	}
-	if w.Ttl != nil {
-		expirationMembers++
-	}
-	if w.NoExpiry != nil {
-		expirationMembers++
-	}
-	if expirationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.Expiration")
-	}
-	pointInTimeSelection := (&sdk.SnapshotSpec{}).PointInTime
-	switch {
-	case w.SourceBranchLsn != nil:
-		pointInTimeSelection = &sdk.SnapshotSpec_PointInTime_SourceBranchLsn{SourceBranchLsn: *w.SourceBranchLsn}
-	case w.SourceBranchTime != nil:
-		pointInTimeSelection = &sdk.SnapshotSpec_PointInTime_SourceBranchTime{SourceBranchTime: *w.SourceBranchTime}
-	}
-	expirationSelection := (&sdk.SnapshotSpec{}).Expiration
-	switch {
-	case w.ExpireTime != nil:
-		expirationSelection = &sdk.SnapshotSpec_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
-	case w.Ttl != nil:
-		expirationSelection = &sdk.SnapshotSpec_Expiration_Ttl{Ttl: *w.Ttl}
-	case w.NoExpiry != nil:
-		expirationSelection = &sdk.SnapshotSpec_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
-	}
-	return &sdk.SnapshotSpec{
-		SourceBranch: w.SourceBranch,
-		PointInTime:  pointInTimeSelection,
-		Expiration:   expirationSelection,
-	}, nil
-}
-
 // Server-observed state of a snapshot..
 type SnapshotStatus struct {
 	// The source branch the snapshot was taken from. Format:
@@ -3671,79 +1424,6 @@ type SnapshotStatus struct {
 	// Incremental storage size in bytes since the previous snapshot. Unset when the
 	// snapshot is not billed on incremental usage.
 	DiffSizeBytes *int64 `json:"diff_size_bytes,omitempty"`
-}
-
-func SnapshotStatusFromSDK(v *sdk.SnapshotStatus) (*SnapshotStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fullSizeBytesWireValue, err := int64ToWire(v.FullSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotStatus.FullSizeBytes", err)
-	}
-	diffSizeBytesWireValue, err := int64ToWire(v.DiffSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotStatus.DiffSizeBytes", err)
-	}
-	var expirationExpireTimeWire *types.Time
-	var expirationNoExpiryWire *bool
-	switch value := v.Expiration.(type) {
-	case nil:
-	case *sdk.SnapshotStatus_Expiration_ExpireTime:
-		if value != nil {
-			expirationExpireTimeWire = new(value.ExpireTime)
-		}
-	case *sdk.SnapshotStatus_Expiration_NoExpiry:
-		if value != nil {
-			expirationNoExpiryWire = new(value.NoExpiry)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SnapshotStatus.Expiration", value)
-	}
-	return &SnapshotStatus{
-		SourceBranch:  v.SourceBranch,
-		ExpireTime:    expirationExpireTimeWire,
-		NoExpiry:      expirationNoExpiryWire,
-		FullSizeBytes: fullSizeBytesWireValue,
-		DiffSizeBytes: diffSizeBytesWireValue,
-	}, nil
-}
-
-func SnapshotStatusToSDK(w *SnapshotStatus) (*sdk.SnapshotStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	expirationMembers := 0
-	if w.ExpireTime != nil {
-		expirationMembers++
-	}
-	if w.NoExpiry != nil {
-		expirationMembers++
-	}
-	if expirationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotStatus.Expiration")
-	}
-	fullSizeBytesPublicValue, err := int64FromWire(w.FullSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotStatus.FullSizeBytes", err)
-	}
-	diffSizeBytesPublicValue, err := int64FromWire(w.DiffSizeBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SnapshotStatus.DiffSizeBytes", err)
-	}
-	expirationSelection := (&sdk.SnapshotStatus{}).Expiration
-	switch {
-	case w.ExpireTime != nil:
-		expirationSelection = &sdk.SnapshotStatus_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
-	case w.NoExpiry != nil:
-		expirationSelection = &sdk.SnapshotStatus_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
-	}
-	return &sdk.SnapshotStatus{
-		SourceBranch:  w.SourceBranch,
-		FullSizeBytes: fullSizeBytesPublicValue,
-		DiffSizeBytes: diffSizeBytesPublicValue,
-		Expiration:    expirationSelection,
-	}, nil
 }
 
 type SyncedTable struct {
@@ -3766,50 +1446,6 @@ type SyncedTable struct {
 	CreateTime *types.Time                    `json:"create_time,omitempty"`
 	// The part of the name, chosen by the user when the resource was created.
 	SyncedTableId *string `json:"synced_table_id,omitempty"`
-}
-
-func SyncedTableFromSDK(v *sdk.SyncedTable) (*SyncedTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := SyncedTable_SyncedTableSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable.Spec", err)
-	}
-	statusWireValue, err := SyncedTable_SyncedTableStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable.Status", err)
-	}
-	return &SyncedTable{
-		Name:          v.Name,
-		Uid:           v.Uid,
-		Spec:          specWireValue,
-		Status:        statusWireValue,
-		CreateTime:    v.CreateTime,
-		SyncedTableId: v.SyncedTableId,
-	}, nil
-}
-
-func SyncedTableToSDK(w *SyncedTable) (*sdk.SyncedTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := SyncedTable_SyncedTableSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable.Spec", err)
-	}
-	statusPublicValue, err := SyncedTable_SyncedTableStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable.Status", err)
-	}
-	return &sdk.SyncedTable{
-		Name:          w.Name,
-		Uid:           w.Uid,
-		Spec:          specPublicValue,
-		Status:        statusPublicValue,
-		CreateTime:    w.CreateTime,
-		SyncedTableId: w.SyncedTableId,
-	}, nil
 }
 
 type SyncedTable_SyncedTableSpec struct {
@@ -3870,70 +1506,6 @@ type SyncedTable_SyncedTableSpec struct {
 	ExtraColumns []SyncedTable_SyncedTableSpec_ExtraColumn `json:"extra_columns,omitempty"`
 }
 
-func SyncedTable_SyncedTableSpecFromSDK(v *sdk.SyncedTable_SyncedTableSpec) (*SyncedTable_SyncedTableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	newPipelineSpecWireValue, err := NewPipelineSpecFromSDK(v.NewPipelineSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.NewPipelineSpec", err)
-	}
-	typeOverridesWireValue, err := convertSlice(v.TypeOverrides, SyncedTable_SyncedTableSpec_TypeOverrideFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.TypeOverrides", err)
-	}
-	extraColumnsWireValue, err := convertSlice(v.ExtraColumns, SyncedTable_SyncedTableSpec_ExtraColumnFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.ExtraColumns", err)
-	}
-	return &SyncedTable_SyncedTableSpec{
-		PostgresDatabase:               v.PostgresDatabase,
-		Branch:                         v.Branch,
-		SchedulingPolicy:               v.SchedulingPolicy,
-		SourceTableFullName:            v.SourceTableFullName,
-		PrimaryKeyColumns:              v.PrimaryKeyColumns,
-		TimeseriesKey:                  v.TimeseriesKey,
-		ExistingPipelineId:             v.ExistingPipelineId,
-		CreateDatabaseObjectsIfMissing: v.CreateDatabaseObjectsIfMissing,
-		NewPipelineSpec:                newPipelineSpecWireValue,
-		AcceleratedSync:                v.AcceleratedSync,
-		TypeOverrides:                  typeOverridesWireValue,
-		ExtraColumns:                   extraColumnsWireValue,
-	}, nil
-}
-
-func SyncedTable_SyncedTableSpecToSDK(w *SyncedTable_SyncedTableSpec) (*sdk.SyncedTable_SyncedTableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	newPipelineSpecPublicValue, err := NewPipelineSpecToSDK(w.NewPipelineSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.NewPipelineSpec", err)
-	}
-	typeOverridesPublicValue, err := convertSlice(w.TypeOverrides, SyncedTable_SyncedTableSpec_TypeOverrideToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.TypeOverrides", err)
-	}
-	extraColumnsPublicValue, err := convertSlice(w.ExtraColumns, SyncedTable_SyncedTableSpec_ExtraColumnToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.ExtraColumns", err)
-	}
-	return &sdk.SyncedTable_SyncedTableSpec{
-		PostgresDatabase:               w.PostgresDatabase,
-		Branch:                         w.Branch,
-		SchedulingPolicy:               w.SchedulingPolicy,
-		SourceTableFullName:            w.SourceTableFullName,
-		PrimaryKeyColumns:              w.PrimaryKeyColumns,
-		TimeseriesKey:                  w.TimeseriesKey,
-		ExistingPipelineId:             w.ExistingPipelineId,
-		CreateDatabaseObjectsIfMissing: w.CreateDatabaseObjectsIfMissing,
-		NewPipelineSpec:                newPipelineSpecPublicValue,
-		AcceleratedSync:                w.AcceleratedSync,
-		TypeOverrides:                  typeOverridesPublicValue,
-		ExtraColumns:                   extraColumnsPublicValue,
-	}, nil
-}
-
 // An extra PostgreSQL column to add to the synced table..
 type SyncedTable_SyncedTableSpec_ExtraColumn struct {
 	// Name of the column.
@@ -3946,30 +1518,6 @@ type SyncedTable_SyncedTableSpec_ExtraColumn struct {
 	Compute *string `json:"compute,omitempty"`
 }
 
-func SyncedTable_SyncedTableSpec_ExtraColumnFromSDK(v *sdk.SyncedTable_SyncedTableSpec_ExtraColumn) (*SyncedTable_SyncedTableSpec_ExtraColumn, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncedTable_SyncedTableSpec_ExtraColumn{
-		ColumnName:  v.ColumnName,
-		ColumnType:  v.ColumnType,
-		Maintenance: v.Maintenance,
-		Compute:     v.Compute,
-	}, nil
-}
-
-func SyncedTable_SyncedTableSpec_ExtraColumnToSDK(w *SyncedTable_SyncedTableSpec_ExtraColumn) (*sdk.SyncedTable_SyncedTableSpec_ExtraColumn, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SyncedTable_SyncedTableSpec_ExtraColumn{
-		ColumnName:  w.ColumnName,
-		ColumnType:  w.ColumnType,
-		Maintenance: w.Maintenance,
-		Compute:     w.Compute,
-	}, nil
-}
-
 // Overrides the default Delta-to-PostgreSQL type mapping for a single column..
 type SyncedTable_SyncedTableSpec_TypeOverride struct {
 	// Name of the source column whose target PostgreSQL type should be overridden.
@@ -3979,28 +1527,6 @@ type SyncedTable_SyncedTableSpec_TypeOverride struct {
 	// Size parameter for the target type, for types that take one (e.g. vector
 	// dimension, varchar length). Required when the chosen pg_type needs a size.
 	Size *int `json:"size,omitempty"`
-}
-
-func SyncedTable_SyncedTableSpec_TypeOverrideFromSDK(v *sdk.SyncedTable_SyncedTableSpec_TypeOverride) (*SyncedTable_SyncedTableSpec_TypeOverride, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncedTable_SyncedTableSpec_TypeOverride{
-		ColumnName: v.ColumnName,
-		PgType:     v.PgType,
-		Size:       v.Size,
-	}, nil
-}
-
-func SyncedTable_SyncedTableSpec_TypeOverrideToSDK(w *SyncedTable_SyncedTableSpec_TypeOverride) (*sdk.SyncedTable_SyncedTableSpec_TypeOverride, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SyncedTable_SyncedTableSpec_TypeOverride{
-		ColumnName: w.ColumnName,
-		PgType:     w.PgType,
-		Size:       w.Size,
-	}, nil
 }
 
 type SyncedTable_SyncedTableStatus struct {
@@ -4030,75 +1556,8 @@ type SyncedTable_SyncedTableStatus struct {
 	Project *string `json:"project,omitempty"`
 }
 
-func SyncedTable_SyncedTableStatusFromSDK(v *sdk.SyncedTable_SyncedTableStatus) (*SyncedTable_SyncedTableStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastSyncWireValue, err := SyncedTablePositionFromSDK(v.LastSync)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastSync", err)
-	}
-	ongoingSyncProgressWireValue, err := SyncedTablePipelineProgressFromSDK(v.OngoingSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.OngoingSyncProgress", err)
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastProcessedCommitVersion", err)
-	}
-	return &SyncedTable_SyncedTableStatus{
-		Message:                       v.Message,
-		DetailedState:                 v.DetailedState,
-		LastSync:                      lastSyncWireValue,
-		OngoingSyncProgress:           ongoingSyncProgressWireValue,
-		ProvisioningPhase:             v.ProvisioningPhase,
-		LastProcessedCommitVersion:    lastProcessedCommitVersionWireValue,
-		LastSyncTime:                  v.LastSyncTime,
-		PipelineId:                    v.PipelineId,
-		UnityCatalogProvisioningState: v.UnityCatalogProvisioningState,
-		Project:                       v.Project,
-	}, nil
-}
-
-func SyncedTable_SyncedTableStatusToSDK(w *SyncedTable_SyncedTableStatus) (*sdk.SyncedTable_SyncedTableStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastSyncPublicValue, err := SyncedTablePositionToSDK(w.LastSync)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastSync", err)
-	}
-	ongoingSyncProgressPublicValue, err := SyncedTablePipelineProgressToSDK(w.OngoingSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.OngoingSyncProgress", err)
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastProcessedCommitVersion", err)
-	}
-	return &sdk.SyncedTable_SyncedTableStatus{
-		Message:                       w.Message,
-		DetailedState:                 w.DetailedState,
-		LastSync:                      lastSyncPublicValue,
-		OngoingSyncProgress:           ongoingSyncProgressPublicValue,
-		ProvisioningPhase:             w.ProvisioningPhase,
-		LastProcessedCommitVersion:    lastProcessedCommitVersionPublicValue,
-		LastSyncTime:                  w.LastSyncTime,
-		PipelineId:                    w.PipelineId,
-		UnityCatalogProvisioningState: w.UnityCatalogProvisioningState,
-		Project:                       w.Project,
-	}, nil
-}
-
 // Metadata for SyncedTable long-running operations..
 type SyncedTableOperationMetadata struct {
-}
-
-func SyncedTableOperationMetadataToSDK(w *SyncedTableOperationMetadata) (*sdk.SyncedTableOperationMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SyncedTableOperationMetadata{}, nil
 }
 
 // Progress information of the Synced Table data synchronization pipeline..
@@ -4117,56 +1576,6 @@ type SyncedTablePipelineProgress struct {
 	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
 }
 
-func SyncedTablePipelineProgressFromSDK(v *sdk.SyncedTablePipelineProgress) (*SyncedTablePipelineProgress, error) {
-	if v == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingWireValue, err := int64ToWire(v.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountWireValue, err := int64ToWire(v.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountWireValue, err := int64ToWire(v.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.TotalRowCount", err)
-	}
-	return &SyncedTablePipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingWireValue,
-		SyncedRowCount:                   syncedRowCountWireValue,
-		TotalRowCount:                    totalRowCountWireValue,
-		SyncProgressCompletion:           v.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   v.EstimatedCompletionTimeSeconds,
-	}, nil
-}
-
-func SyncedTablePipelineProgressToSDK(w *SyncedTablePipelineProgress) (*sdk.SyncedTablePipelineProgress, error) {
-	if w == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingPublicValue, err := int64FromWire(w.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountPublicValue, err := int64FromWire(w.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountPublicValue, err := int64FromWire(w.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.TotalRowCount", err)
-	}
-	return &sdk.SyncedTablePipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingPublicValue,
-		SyncedRowCount:                   syncedRowCountPublicValue,
-		TotalRowCount:                    totalRowCountPublicValue,
-		SyncProgressCompletion:           w.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   w.EstimatedCompletionTimeSeconds,
-	}, nil
-}
-
 type SyncedTablePosition struct {
 	// The starting timestamp of the most recent successful synchronization from the
 	// source table to the destination (synced) table. Note this is the starting
@@ -4179,71 +1588,10 @@ type SyncedTablePosition struct {
 	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
 }
 
-func SyncedTablePositionFromSDK(v *sdk.SyncedTablePosition) (*SyncedTablePosition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceSyncInfoDeltaTableSyncInfoWire *DeltaTableSyncInfo
-	switch value := v.SourceSyncInfo.(type) {
-	case nil:
-	case *sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo:
-		if value != nil {
-			sourceSyncInfoDeltaTableSyncInfoConverted, err := DeltaTableSyncInfoFromSDK(&value.DeltaTableSyncInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo.DeltaTableSyncInfo", err)
-			}
-			sourceSyncInfoDeltaTableSyncInfoWire = sourceSyncInfoDeltaTableSyncInfoConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SyncedTablePosition.SourceSyncInfo", value)
-	}
-	return &SyncedTablePosition{
-		SyncStartTime:      v.SyncStartTime,
-		SyncEndTime:        v.SyncEndTime,
-		DeltaTableSyncInfo: sourceSyncInfoDeltaTableSyncInfoWire,
-	}, nil
-}
-
-func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceSyncInfoMembers := 0
-	if w.DeltaTableSyncInfo != nil {
-		sourceSyncInfoMembers++
-	}
-	if sourceSyncInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
-	}
-	sourceSyncInfoSelection := (&sdk.SyncedTablePosition{}).SourceSyncInfo
-	switch {
-	case w.DeltaTableSyncInfo != nil:
-		sourceSyncInfoDeltaTableSyncInfoConverted, err := DeltaTableSyncInfoToSDK(w.DeltaTableSyncInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo.DeltaTableSyncInfo", err)
-		}
-		sourceSyncInfoSelection = &sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo{DeltaTableSyncInfo: *sourceSyncInfoDeltaTableSyncInfoConverted}
-	}
-	return &sdk.SyncedTablePosition{
-		SyncStartTime:  w.SyncStartTime,
-		SyncEndTime:    w.SyncEndTime,
-		SourceSyncInfo: sourceSyncInfoSelection,
-	}, nil
-}
-
 type UndeleteBranchRequest struct {
 	// The full resource path of the branch to undelete. Format:
 	// projects/{project_id}/branches/{branch_id}
 	Name *string `json:"name,omitempty"`
-}
-
-func UndeleteBranchRequestFromSDK(v *sdk.UndeleteBranchRequest) (*UndeleteBranchRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UndeleteBranchRequest{
-		Name: v.Name,
-	}, nil
 }
 
 // Request to restore a soft-deleted project within its retention period..
@@ -4251,15 +1599,6 @@ type UndeleteProjectRequest struct {
 	// The full resource path of the project to undelete. Format:
 	// projects/{project_id}
 	Name *string `json:"name,omitempty"`
-}
-
-func UndeleteProjectRequestFromSDK(v *sdk.UndeleteProjectRequest) (*UndeleteProjectRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UndeleteProjectRequest{
-		Name: v.Name,
-	}, nil
 }
 
 type UpdateBranchRequest struct {
@@ -4272,20 +1611,6 @@ type UpdateBranchRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateBranchRequestFromSDK(v *sdk.UpdateBranchRequest) (*UpdateBranchRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	branchWireValue, err := BranchFromSDK(v.Branch)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateBranchRequest.Branch", err)
-	}
-	return &UpdateBranchRequest{
-		Branch:     branchWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Update Data API configuration for a database..
 type UpdateDataApiRequest struct {
 	// The Data API configuration to update. The data_api's `name` field identifies
@@ -4293,20 +1618,6 @@ type UpdateDataApiRequest struct {
 	DataApi *DataApi `json:"data_api,omitempty"`
 	// The list of fields to update.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateDataApiRequestFromSDK(v *sdk.UpdateDataApiRequest) (*UpdateDataApiRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dataApiWireValue, err := DataApiFromSDK(v.DataApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDataApiRequest.DataApi", err)
-	}
-	return &UpdateDataApiRequest{
-		DataApi:    dataApiWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateDatabaseRequest struct {
@@ -4319,20 +1630,6 @@ type UpdateDatabaseRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateDatabaseRequestFromSDK(v *sdk.UpdateDatabaseRequest) (*UpdateDatabaseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseWireValue, err := DatabaseFromSDK(v.Database)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseRequest.Database", err)
-	}
-	return &UpdateDatabaseRequest{
-		Database:   databaseWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateEndpointRequest struct {
 	// The Endpoint to update.
 	//
@@ -4341,20 +1638,6 @@ type UpdateEndpointRequest struct {
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// The list of fields to update.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateEndpointRequestFromSDK(v *sdk.UpdateEndpointRequest) (*UpdateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointWireValue, err := EndpointFromSDK(v.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
-	}
-	return &UpdateEndpointRequest{
-		Endpoint:   endpointWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateProjectRequest struct {
@@ -4367,20 +1650,6 @@ type UpdateProjectRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateProjectRequestFromSDK(v *sdk.UpdateProjectRequest) (*UpdateProjectRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	projectWireValue, err := ProjectFromSDK(v.Project)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProjectRequest.Project", err)
-	}
-	return &UpdateProjectRequest{
-		Project:    projectWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateRoleRequest struct {
 	// The Postgres Role to update.
 	//
@@ -4389,20 +1658,6 @@ type UpdateRoleRequest struct {
 	Role *Role `json:"role,omitempty"`
 	// The list of fields to update.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateRoleRequestFromSDK(v *sdk.UpdateRoleRequest) (*UpdateRoleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	roleWireValue, err := RoleFromSDK(v.Role)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRoleRequest.Role", err)
-	}
-	return &UpdateRoleRequest{
-		Role:       roleWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 // Request to set the snapshot schedule for a branch. Returns a completed
@@ -4416,20 +1671,6 @@ type UpdateSnapshotScheduleRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateSnapshotScheduleRequestFromSDK(v *sdk.UpdateSnapshotScheduleRequest) (*UpdateSnapshotScheduleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	snapshotScheduleWireValue, err := SnapshotScheduleFromSDK(v.SnapshotSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSnapshotScheduleRequest.SnapshotSchedule", err)
-	}
-	return &UpdateSnapshotScheduleRequest{
-		SnapshotSchedule: snapshotScheduleWireValue,
-		UpdateMask:       fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Take a snapshot once per week, on the configured day at the configured hour..
 type WeeklySchedule struct {
 	// The day of the week on which to take the snapshot.
@@ -4438,24 +1679,3597 @@ type WeeklySchedule struct {
 	Hour *int `json:"hour,omitempty"`
 }
 
-func WeeklyScheduleFromSDK(v *sdk.WeeklySchedule) (*WeeklySchedule, error) {
+// ApiErrorToSDK converts the mirror to the sdk-go type.
+func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiError{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	out.StackTrace = w.StackTrace
+	out.Details = w.Details
+	return out, nil
+}
+
+// ApiErrorFromSDK converts the sdk-go type to the mirror.
+func ApiErrorFromSDK(v *sdk.ApiError) (*ApiError, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &WeeklySchedule{
-		DayOfWeek: v.DayOfWeek,
-		Hour:      v.Hour,
-	}, nil
+	out := &ApiError{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	out.StackTrace = v.StackTrace
+	out.Details = v.Details
+	return out, nil
 }
 
+// BranchToSDK converts the mirror to the sdk-go type.
+func BranchToSDK(w *Branch) (*sdk.Branch, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Branch{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	out.Parent = w.Parent
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv1, err := BranchSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Branch.Spec", err)
+	}
+	out.Spec = conv1
+	conv2, err := BranchStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Branch.Status", err)
+	}
+	out.Status = conv2
+	out.BranchId = w.BranchId
+	return out, nil
+}
+
+// BranchFromSDK converts the sdk-go type to the mirror.
+func BranchFromSDK(v *sdk.Branch) (*Branch, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Branch{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	out.Parent = v.Parent
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv3, err := BranchSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Branch.Spec", err)
+	}
+	out.Spec = conv3
+	conv4, err := BranchStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Branch.Status", err)
+	}
+	out.Status = conv4
+	out.BranchId = v.BranchId
+	return out, nil
+}
+
+// BranchOperationMetadataToSDK converts the mirror to the sdk-go type.
+func BranchOperationMetadataToSDK(w *BranchOperationMetadata) (*sdk.BranchOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BranchOperationMetadata{}
+	return out, nil
+}
+
+// BranchOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func BranchOperationMetadataFromSDK(v *sdk.BranchOperationMetadata) (*BranchOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BranchOperationMetadata{}
+	return out, nil
+}
+
+// BranchSpecToSDK converts the mirror to the sdk-go type.
+func BranchSpecToSDK(w *BranchSpec) (*sdk.BranchSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BranchSpec{}
+	out.SourceBranch = w.SourceBranch
+	out.SourceBranchLsn = w.SourceBranchLsn
+	out.SourceBranchTime = w.SourceBranchTime
+	out.IsProtected = w.IsProtected
+	{
+		members := 0
+		if w.ExpireTime != nil {
+			members++
+		}
+		if w.Ttl != nil {
+			members++
+		}
+		if w.NoExpiry != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "BranchSpec.Expiration")
+		}
+	}
+	switch {
+	case w.ExpireTime != nil:
+		out.Expiration = &sdk.BranchSpec_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
+	case w.Ttl != nil:
+		out.Expiration = &sdk.BranchSpec_Expiration_Ttl{Ttl: *w.Ttl}
+	case w.NoExpiry != nil:
+		out.Expiration = &sdk.BranchSpec_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
+	}
+	out.SourceSnapshot = w.SourceSnapshot
+	return out, nil
+}
+
+// BranchSpecFromSDK converts the sdk-go type to the mirror.
+func BranchSpecFromSDK(v *sdk.BranchSpec) (*BranchSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BranchSpec{}
+	out.SourceBranch = v.SourceBranch
+	out.SourceBranchLsn = v.SourceBranchLsn
+	out.SourceBranchTime = v.SourceBranchTime
+	out.IsProtected = v.IsProtected
+	switch value := v.Expiration.(type) {
+	case *sdk.BranchSpec_Expiration_ExpireTime:
+		if value != nil {
+			out.ExpireTime = new(value.ExpireTime)
+		}
+	case *sdk.BranchSpec_Expiration_Ttl:
+		if value != nil {
+			out.Ttl = new(value.Ttl)
+		}
+	case *sdk.BranchSpec_Expiration_NoExpiry:
+		if value != nil {
+			out.NoExpiry = new(value.NoExpiry)
+		}
+	}
+	out.SourceSnapshot = v.SourceSnapshot
+	return out, nil
+}
+
+// BranchStatusToSDK converts the mirror to the sdk-go type.
+func BranchStatusToSDK(w *BranchStatus) (*sdk.BranchStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BranchStatus{}
+	out.SourceBranch = w.SourceBranch
+	out.SourceBranchLsn = w.SourceBranchLsn
+	out.SourceBranchTime = w.SourceBranchTime
+	out.Default = w.Default
+	out.IsProtected = w.IsProtected
+	out.CurrentState = w.CurrentState
+	out.PendingState = w.PendingState
+	out.StateChangeTime = w.StateChangeTime
+	out.LogicalSizeBytes = w.LogicalSizeBytes
+	out.ExpireTime = w.ExpireTime
+	out.BranchId = w.BranchId
+	out.DeleteTime = w.DeleteTime
+	out.PurgeTime = w.PurgeTime
+	out.SourceSnapshot = w.SourceSnapshot
+	return out, nil
+}
+
+// BranchStatusFromSDK converts the sdk-go type to the mirror.
+func BranchStatusFromSDK(v *sdk.BranchStatus) (*BranchStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BranchStatus{}
+	out.SourceBranch = v.SourceBranch
+	out.SourceBranchLsn = v.SourceBranchLsn
+	out.SourceBranchTime = v.SourceBranchTime
+	out.Default = v.Default
+	out.IsProtected = v.IsProtected
+	out.CurrentState = v.CurrentState
+	out.PendingState = v.PendingState
+	out.StateChangeTime = v.StateChangeTime
+	out.LogicalSizeBytes = v.LogicalSizeBytes
+	out.ExpireTime = v.ExpireTime
+	out.BranchId = v.BranchId
+	out.DeleteTime = v.DeleteTime
+	out.PurgeTime = v.PurgeTime
+	out.SourceSnapshot = v.SourceSnapshot
+	return out, nil
+}
+
+// CatalogToSDK converts the mirror to the sdk-go type.
+func CatalogToSDK(w *Catalog) (*sdk.Catalog, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Catalog{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	conv5, err := Catalog_CatalogSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Catalog.Spec", err)
+	}
+	out.Spec = conv5
+	conv6, err := Catalog_CatalogStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Catalog.Status", err)
+	}
+	out.Status = conv6
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.CatalogId = w.CatalogId
+	return out, nil
+}
+
+// CatalogFromSDK converts the sdk-go type to the mirror.
+func CatalogFromSDK(v *sdk.Catalog) (*Catalog, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Catalog{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	conv7, err := Catalog_CatalogSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Catalog.Spec", err)
+	}
+	out.Spec = conv7
+	conv8, err := Catalog_CatalogStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Catalog.Status", err)
+	}
+	out.Status = conv8
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.CatalogId = v.CatalogId
+	return out, nil
+}
+
+// CatalogOperationMetadataToSDK converts the mirror to the sdk-go type.
+func CatalogOperationMetadataToSDK(w *CatalogOperationMetadata) (*sdk.CatalogOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CatalogOperationMetadata{}
+	return out, nil
+}
+
+// CatalogOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func CatalogOperationMetadataFromSDK(v *sdk.CatalogOperationMetadata) (*CatalogOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CatalogOperationMetadata{}
+	return out, nil
+}
+
+// Catalog_CatalogSpecToSDK converts the mirror to the sdk-go type.
+func Catalog_CatalogSpecToSDK(w *Catalog_CatalogSpec) (*sdk.Catalog_CatalogSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Catalog_CatalogSpec{}
+	out.PostgresDatabase = w.PostgresDatabase
+	out.CreateDatabaseIfMissing = w.CreateDatabaseIfMissing
+	out.Branch = w.Branch
+	return out, nil
+}
+
+// Catalog_CatalogSpecFromSDK converts the sdk-go type to the mirror.
+func Catalog_CatalogSpecFromSDK(v *sdk.Catalog_CatalogSpec) (*Catalog_CatalogSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Catalog_CatalogSpec{}
+	out.PostgresDatabase = v.PostgresDatabase
+	out.CreateDatabaseIfMissing = v.CreateDatabaseIfMissing
+	out.Branch = v.Branch
+	return out, nil
+}
+
+// Catalog_CatalogStatusToSDK converts the mirror to the sdk-go type.
+func Catalog_CatalogStatusToSDK(w *Catalog_CatalogStatus) (*sdk.Catalog_CatalogStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Catalog_CatalogStatus{}
+	out.PostgresDatabase = w.PostgresDatabase
+	out.Project = w.Project
+	out.Branch = w.Branch
+	return out, nil
+}
+
+// Catalog_CatalogStatusFromSDK converts the sdk-go type to the mirror.
+func Catalog_CatalogStatusFromSDK(v *sdk.Catalog_CatalogStatus) (*Catalog_CatalogStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Catalog_CatalogStatus{}
+	out.PostgresDatabase = v.PostgresDatabase
+	out.Project = v.Project
+	out.Branch = v.Branch
+	return out, nil
+}
+
+// CdfConfigToSDK converts the mirror to the sdk-go type.
+func CdfConfigToSDK(w *CdfConfig) (*sdk.CdfConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CdfConfig{}
+	out.Name = w.Name
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	out.CreateTime = w.CreateTime
+	out.CdfConfigId = w.CdfConfigId
+	out.PostgresSchema = w.PostgresSchema
+	return out, nil
+}
+
+// CdfConfigFromSDK converts the sdk-go type to the mirror.
+func CdfConfigFromSDK(v *sdk.CdfConfig) (*CdfConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CdfConfig{}
+	out.Name = v.Name
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	out.CreateTime = v.CreateTime
+	out.CdfConfigId = v.CdfConfigId
+	out.PostgresSchema = v.PostgresSchema
+	return out, nil
+}
+
+// CdfConfigOperationMetadataToSDK converts the mirror to the sdk-go type.
+func CdfConfigOperationMetadataToSDK(w *CdfConfigOperationMetadata) (*sdk.CdfConfigOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CdfConfigOperationMetadata{}
+	return out, nil
+}
+
+// CdfConfigOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func CdfConfigOperationMetadataFromSDK(v *sdk.CdfConfigOperationMetadata) (*CdfConfigOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CdfConfigOperationMetadata{}
+	return out, nil
+}
+
+// CdfStatusToSDK converts the mirror to the sdk-go type.
+func CdfStatusToSDK(w *CdfStatus) (*sdk.CdfStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CdfStatus{}
+	out.Name = w.Name
+	out.PostgresTable = w.PostgresTable
+	out.UcTable = w.UcTable
+	out.State = w.State
+	out.CommittedLsn = w.CommittedLsn
+	out.LastSyncTime = w.LastSyncTime
+	out.CreateTime = w.CreateTime
+	out.StatusDetail = w.StatusDetail
+	return out, nil
+}
+
+// CdfStatusFromSDK converts the sdk-go type to the mirror.
+func CdfStatusFromSDK(v *sdk.CdfStatus) (*CdfStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CdfStatus{}
+	out.Name = v.Name
+	out.PostgresTable = v.PostgresTable
+	out.UcTable = v.UcTable
+	out.State = v.State
+	out.CommittedLsn = v.CommittedLsn
+	out.LastSyncTime = v.LastSyncTime
+	out.CreateTime = v.CreateTime
+	out.StatusDetail = v.StatusDetail
+	return out, nil
+}
+
+// CreateBranchRequestToSDK converts the mirror to the sdk-go type.
+func CreateBranchRequestToSDK(w *CreateBranchRequest) (*sdk.CreateBranchRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBranchRequest{}
+	out.Parent = w.Parent
+	out.BranchId = w.BranchId
+	conv9, err := BranchToSDK(w.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBranchRequest.Branch", err)
+	}
+	out.Branch = conv9
+	out.ReplaceExisting = w.ReplaceExisting
+	return out, nil
+}
+
+// CreateBranchRequestFromSDK converts the sdk-go type to the mirror.
+func CreateBranchRequestFromSDK(v *sdk.CreateBranchRequest) (*CreateBranchRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBranchRequest{}
+	out.Parent = v.Parent
+	out.BranchId = v.BranchId
+	conv10, err := BranchFromSDK(v.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBranchRequest.Branch", err)
+	}
+	out.Branch = conv10
+	out.ReplaceExisting = v.ReplaceExisting
+	return out, nil
+}
+
+// CreateCatalogRequestToSDK converts the mirror to the sdk-go type.
+func CreateCatalogRequestToSDK(w *CreateCatalogRequest) (*sdk.CreateCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCatalogRequest{}
+	out.CatalogId = w.CatalogId
+	conv11, err := CatalogToSDK(w.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.Catalog", err)
+	}
+	out.Catalog = conv11
+	return out, nil
+}
+
+// CreateCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCatalogRequestFromSDK(v *sdk.CreateCatalogRequest) (*CreateCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCatalogRequest{}
+	out.CatalogId = v.CatalogId
+	conv12, err := CatalogFromSDK(v.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.Catalog", err)
+	}
+	out.Catalog = conv12
+	return out, nil
+}
+
+// CreateCdfConfigRequestToSDK converts the mirror to the sdk-go type.
+func CreateCdfConfigRequestToSDK(w *CreateCdfConfigRequest) (*sdk.CreateCdfConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCdfConfigRequest{}
+	out.Parent = w.Parent
+	conv13, err := CdfConfigToSDK(w.CdfConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCdfConfigRequest.CdfConfig", err)
+	}
+	out.CdfConfig = conv13
+	out.CdfConfigId = w.CdfConfigId
+	return out, nil
+}
+
+// CreateCdfConfigRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCdfConfigRequestFromSDK(v *sdk.CreateCdfConfigRequest) (*CreateCdfConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCdfConfigRequest{}
+	out.Parent = v.Parent
+	conv14, err := CdfConfigFromSDK(v.CdfConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCdfConfigRequest.CdfConfig", err)
+	}
+	out.CdfConfig = conv14
+	out.CdfConfigId = v.CdfConfigId
+	return out, nil
+}
+
+// CreateDataApiRequestToSDK converts the mirror to the sdk-go type.
+func CreateDataApiRequestToSDK(w *CreateDataApiRequest) (*sdk.CreateDataApiRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDataApiRequest{}
+	out.Parent = w.Parent
+	conv15, err := DataApiToSDK(w.DataApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDataApiRequest.DataApi", err)
+	}
+	out.DataApi = conv15
+	return out, nil
+}
+
+// CreateDataApiRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDataApiRequestFromSDK(v *sdk.CreateDataApiRequest) (*CreateDataApiRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDataApiRequest{}
+	out.Parent = v.Parent
+	conv16, err := DataApiFromSDK(v.DataApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDataApiRequest.DataApi", err)
+	}
+	out.DataApi = conv16
+	return out, nil
+}
+
+// CreateDatabaseRequestToSDK converts the mirror to the sdk-go type.
+func CreateDatabaseRequestToSDK(w *CreateDatabaseRequest) (*sdk.CreateDatabaseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDatabaseRequest{}
+	out.Parent = w.Parent
+	out.DatabaseId = w.DatabaseId
+	conv17, err := DatabaseToSDK(w.Database)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseRequest.Database", err)
+	}
+	out.Database = conv17
+	out.ReplaceExisting = w.ReplaceExisting
+	return out, nil
+}
+
+// CreateDatabaseRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDatabaseRequestFromSDK(v *sdk.CreateDatabaseRequest) (*CreateDatabaseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDatabaseRequest{}
+	out.Parent = v.Parent
+	out.DatabaseId = v.DatabaseId
+	conv18, err := DatabaseFromSDK(v.Database)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseRequest.Database", err)
+	}
+	out.Database = conv18
+	out.ReplaceExisting = v.ReplaceExisting
+	return out, nil
+}
+
+// CreateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateEndpointRequestToSDK(w *CreateEndpointRequest) (*sdk.CreateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateEndpointRequest{}
+	out.Parent = w.Parent
+	out.EndpointId = w.EndpointId
+	conv19, err := EndpointToSDK(w.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv19
+	out.ReplaceExisting = w.ReplaceExisting
+	return out, nil
+}
+
+// CreateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateEndpointRequest{}
+	out.Parent = v.Parent
+	out.EndpointId = v.EndpointId
+	conv20, err := EndpointFromSDK(v.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv20
+	out.ReplaceExisting = v.ReplaceExisting
+	return out, nil
+}
+
+// CreateProjectRequestToSDK converts the mirror to the sdk-go type.
+func CreateProjectRequestToSDK(w *CreateProjectRequest) (*sdk.CreateProjectRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProjectRequest{}
+	out.ProjectId = w.ProjectId
+	conv21, err := ProjectToSDK(w.Project)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProjectRequest.Project", err)
+	}
+	out.Project = conv21
+	return out, nil
+}
+
+// CreateProjectRequestFromSDK converts the sdk-go type to the mirror.
+func CreateProjectRequestFromSDK(v *sdk.CreateProjectRequest) (*CreateProjectRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProjectRequest{}
+	out.ProjectId = v.ProjectId
+	conv22, err := ProjectFromSDK(v.Project)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProjectRequest.Project", err)
+	}
+	out.Project = conv22
+	return out, nil
+}
+
+// CreateRoleRequestToSDK converts the mirror to the sdk-go type.
+func CreateRoleRequestToSDK(w *CreateRoleRequest) (*sdk.CreateRoleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRoleRequest{}
+	out.Parent = w.Parent
+	out.RoleId = w.RoleId
+	conv23, err := RoleToSDK(w.Role)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRoleRequest.Role", err)
+	}
+	out.Role = conv23
+	out.ReplaceExisting = w.ReplaceExisting
+	return out, nil
+}
+
+// CreateRoleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRoleRequestFromSDK(v *sdk.CreateRoleRequest) (*CreateRoleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRoleRequest{}
+	out.Parent = v.Parent
+	out.RoleId = v.RoleId
+	conv24, err := RoleFromSDK(v.Role)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRoleRequest.Role", err)
+	}
+	out.Role = conv24
+	out.ReplaceExisting = v.ReplaceExisting
+	return out, nil
+}
+
+// CreateSnapshotRequestToSDK converts the mirror to the sdk-go type.
+func CreateSnapshotRequestToSDK(w *CreateSnapshotRequest) (*sdk.CreateSnapshotRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSnapshotRequest{}
+	out.Parent = w.Parent
+	conv25, err := SnapshotToSDK(w.Snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSnapshotRequest.Snapshot", err)
+	}
+	out.Snapshot = conv25
+	out.SnapshotId = w.SnapshotId
+	return out, nil
+}
+
+// CreateSnapshotRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSnapshotRequestFromSDK(v *sdk.CreateSnapshotRequest) (*CreateSnapshotRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSnapshotRequest{}
+	out.Parent = v.Parent
+	conv26, err := SnapshotFromSDK(v.Snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSnapshotRequest.Snapshot", err)
+	}
+	out.Snapshot = conv26
+	out.SnapshotId = v.SnapshotId
+	return out, nil
+}
+
+// CreateSyncedTableRequestToSDK converts the mirror to the sdk-go type.
+func CreateSyncedTableRequestToSDK(w *CreateSyncedTableRequest) (*sdk.CreateSyncedTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSyncedTableRequest{}
+	out.SyncedTableId = w.SyncedTableId
+	conv27, err := SyncedTableToSDK(w.SyncedTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSyncedTableRequest.SyncedTable", err)
+	}
+	out.SyncedTable = conv27
+	return out, nil
+}
+
+// CreateSyncedTableRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSyncedTableRequestFromSDK(v *sdk.CreateSyncedTableRequest) (*CreateSyncedTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSyncedTableRequest{}
+	out.SyncedTableId = v.SyncedTableId
+	conv28, err := SyncedTableFromSDK(v.SyncedTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSyncedTableRequest.SyncedTable", err)
+	}
+	out.SyncedTable = conv28
+	return out, nil
+}
+
+// DailyScheduleToSDK converts the mirror to the sdk-go type.
+func DailyScheduleToSDK(w *DailySchedule) (*sdk.DailySchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DailySchedule{}
+	out.Hour = w.Hour
+	return out, nil
+}
+
+// DailyScheduleFromSDK converts the sdk-go type to the mirror.
+func DailyScheduleFromSDK(v *sdk.DailySchedule) (*DailySchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DailySchedule{}
+	out.Hour = v.Hour
+	return out, nil
+}
+
+// DataApiToSDK converts the mirror to the sdk-go type.
+func DataApiToSDK(w *DataApi) (*sdk.DataApi, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataApi{}
+	out.Name = w.Name
+	out.Parent = w.Parent
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv29, err := DataApi_DataApiSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataApi.Spec", err)
+	}
+	out.Spec = conv29
+	conv30, err := DataApi_DataApiStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataApi.Status", err)
+	}
+	out.Status = conv30
+	return out, nil
+}
+
+// DataApiFromSDK converts the sdk-go type to the mirror.
+func DataApiFromSDK(v *sdk.DataApi) (*DataApi, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataApi{}
+	out.Name = v.Name
+	out.Parent = v.Parent
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv31, err := DataApi_DataApiSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataApi.Spec", err)
+	}
+	out.Spec = conv31
+	conv32, err := DataApi_DataApiStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataApi.Status", err)
+	}
+	out.Status = conv32
+	return out, nil
+}
+
+// DataApiOperationMetadataToSDK converts the mirror to the sdk-go type.
+func DataApiOperationMetadataToSDK(w *DataApiOperationMetadata) (*sdk.DataApiOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataApiOperationMetadata{}
+	return out, nil
+}
+
+// DataApiOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func DataApiOperationMetadataFromSDK(v *sdk.DataApiOperationMetadata) (*DataApiOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataApiOperationMetadata{}
+	return out, nil
+}
+
+// DataApi_DataApiSpecToSDK converts the mirror to the sdk-go type.
+func DataApi_DataApiSpecToSDK(w *DataApi_DataApiSpec) (*sdk.DataApi_DataApiSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataApi_DataApiSpec{}
+	out.DbAggregatesEnabled = w.DbAggregatesEnabled
+	out.DbExtraSearchPath = w.DbExtraSearchPath
+	out.DbMaxRows = w.DbMaxRows
+	out.DbSchemas = w.DbSchemas
+	out.JwtRoleClaimKey = w.JwtRoleClaimKey
+	out.JwtCacheMaxLifetime = w.JwtCacheMaxLifetime
+	out.OpenapiMode = w.OpenapiMode
+	out.ServerCorsAllowedOrigins = w.ServerCorsAllowedOrigins
+	out.ServerTimingEnabled = w.ServerTimingEnabled
+	return out, nil
+}
+
+// DataApi_DataApiSpecFromSDK converts the sdk-go type to the mirror.
+func DataApi_DataApiSpecFromSDK(v *sdk.DataApi_DataApiSpec) (*DataApi_DataApiSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataApi_DataApiSpec{}
+	out.DbAggregatesEnabled = v.DbAggregatesEnabled
+	out.DbExtraSearchPath = v.DbExtraSearchPath
+	out.DbMaxRows = v.DbMaxRows
+	out.DbSchemas = v.DbSchemas
+	out.JwtRoleClaimKey = v.JwtRoleClaimKey
+	out.JwtCacheMaxLifetime = v.JwtCacheMaxLifetime
+	out.OpenapiMode = v.OpenapiMode
+	out.ServerCorsAllowedOrigins = v.ServerCorsAllowedOrigins
+	out.ServerTimingEnabled = v.ServerTimingEnabled
+	return out, nil
+}
+
+// DataApi_DataApiStatusToSDK converts the mirror to the sdk-go type.
+func DataApi_DataApiStatusToSDK(w *DataApi_DataApiStatus) (*sdk.DataApi_DataApiStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataApi_DataApiStatus{}
+	out.DbAggregatesEnabled = w.DbAggregatesEnabled
+	out.DbExtraSearchPath = w.DbExtraSearchPath
+	out.DbMaxRows = w.DbMaxRows
+	out.DbSchemas = w.DbSchemas
+	out.JwtRoleClaimKey = w.JwtRoleClaimKey
+	out.JwtCacheMaxLifetime = w.JwtCacheMaxLifetime
+	out.OpenapiMode = w.OpenapiMode
+	out.ServerCorsAllowedOrigins = w.ServerCorsAllowedOrigins
+	out.ServerTimingEnabled = w.ServerTimingEnabled
+	out.Url = w.Url
+	out.AvailableSchemas = w.AvailableSchemas
+	return out, nil
+}
+
+// DataApi_DataApiStatusFromSDK converts the sdk-go type to the mirror.
+func DataApi_DataApiStatusFromSDK(v *sdk.DataApi_DataApiStatus) (*DataApi_DataApiStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataApi_DataApiStatus{}
+	out.DbAggregatesEnabled = v.DbAggregatesEnabled
+	out.DbExtraSearchPath = v.DbExtraSearchPath
+	out.DbMaxRows = v.DbMaxRows
+	out.DbSchemas = v.DbSchemas
+	out.JwtRoleClaimKey = v.JwtRoleClaimKey
+	out.JwtCacheMaxLifetime = v.JwtCacheMaxLifetime
+	out.OpenapiMode = v.OpenapiMode
+	out.ServerCorsAllowedOrigins = v.ServerCorsAllowedOrigins
+	out.ServerTimingEnabled = v.ServerTimingEnabled
+	out.Url = v.Url
+	out.AvailableSchemas = v.AvailableSchemas
+	return out, nil
+}
+
+// DatabaseToSDK converts the mirror to the sdk-go type.
+func DatabaseToSDK(w *Database) (*sdk.Database, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Database{}
+	out.Name = w.Name
+	out.Parent = w.Parent
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv33, err := Database_DatabaseSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Database.Spec", err)
+	}
+	out.Spec = conv33
+	conv34, err := Database_DatabaseStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Database.Status", err)
+	}
+	out.Status = conv34
+	out.DatabaseId = w.DatabaseId
+	return out, nil
+}
+
+// DatabaseFromSDK converts the sdk-go type to the mirror.
+func DatabaseFromSDK(v *sdk.Database) (*Database, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Database{}
+	out.Name = v.Name
+	out.Parent = v.Parent
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv35, err := Database_DatabaseSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Database.Spec", err)
+	}
+	out.Spec = conv35
+	conv36, err := Database_DatabaseStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Database.Status", err)
+	}
+	out.Status = conv36
+	out.DatabaseId = v.DatabaseId
+	return out, nil
+}
+
+// DatabaseCredentialToSDK converts the mirror to the sdk-go type.
+func DatabaseCredentialToSDK(w *DatabaseCredential) (*sdk.DatabaseCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseCredential{}
+	out.Token = w.Token
+	out.ExpireTime = w.ExpireTime
+	return out, nil
+}
+
+// DatabaseCredentialFromSDK converts the sdk-go type to the mirror.
+func DatabaseCredentialFromSDK(v *sdk.DatabaseCredential) (*DatabaseCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseCredential{}
+	out.Token = v.Token
+	out.ExpireTime = v.ExpireTime
+	return out, nil
+}
+
+// DatabaseOperationMetadataToSDK converts the mirror to the sdk-go type.
+func DatabaseOperationMetadataToSDK(w *DatabaseOperationMetadata) (*sdk.DatabaseOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseOperationMetadata{}
+	return out, nil
+}
+
+// DatabaseOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func DatabaseOperationMetadataFromSDK(v *sdk.DatabaseOperationMetadata) (*DatabaseOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseOperationMetadata{}
+	return out, nil
+}
+
+// Database_DatabaseSpecToSDK converts the mirror to the sdk-go type.
+func Database_DatabaseSpecToSDK(w *Database_DatabaseSpec) (*sdk.Database_DatabaseSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Database_DatabaseSpec{}
+	out.Role = w.Role
+	out.PostgresDatabase = w.PostgresDatabase
+	return out, nil
+}
+
+// Database_DatabaseSpecFromSDK converts the sdk-go type to the mirror.
+func Database_DatabaseSpecFromSDK(v *sdk.Database_DatabaseSpec) (*Database_DatabaseSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Database_DatabaseSpec{}
+	out.Role = v.Role
+	out.PostgresDatabase = v.PostgresDatabase
+	return out, nil
+}
+
+// Database_DatabaseStatusToSDK converts the mirror to the sdk-go type.
+func Database_DatabaseStatusToSDK(w *Database_DatabaseStatus) (*sdk.Database_DatabaseStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Database_DatabaseStatus{}
+	out.Role = w.Role
+	out.PostgresDatabase = w.PostgresDatabase
+	out.DatabaseId = w.DatabaseId
+	return out, nil
+}
+
+// Database_DatabaseStatusFromSDK converts the sdk-go type to the mirror.
+func Database_DatabaseStatusFromSDK(v *sdk.Database_DatabaseStatus) (*Database_DatabaseStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Database_DatabaseStatus{}
+	out.Role = v.Role
+	out.PostgresDatabase = v.PostgresDatabase
+	out.DatabaseId = v.DatabaseId
+	return out, nil
+}
+
+// DeleteBranchRequestToSDK converts the mirror to the sdk-go type.
+func DeleteBranchRequestToSDK(w *DeleteBranchRequest) (*sdk.DeleteBranchRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteBranchRequest{}
+	out.Name = w.Name
+	out.Purge = w.Purge
+	return out, nil
+}
+
+// DeleteBranchRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteBranchRequestFromSDK(v *sdk.DeleteBranchRequest) (*DeleteBranchRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteBranchRequest{}
+	out.Name = v.Name
+	out.Purge = v.Purge
+	return out, nil
+}
+
+// DeleteCdfConfigRequestToSDK converts the mirror to the sdk-go type.
+func DeleteCdfConfigRequestToSDK(w *DeleteCdfConfigRequest) (*sdk.DeleteCdfConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteCdfConfigRequest{}
+	out.Name = w.Name
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteCdfConfigRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteCdfConfigRequestFromSDK(v *sdk.DeleteCdfConfigRequest) (*DeleteCdfConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteCdfConfigRequest{}
+	out.Name = v.Name
+	out.Force = v.Force
+	return out, nil
+}
+
+// DeleteProjectRequestToSDK converts the mirror to the sdk-go type.
+func DeleteProjectRequestToSDK(w *DeleteProjectRequest) (*sdk.DeleteProjectRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteProjectRequest{}
+	out.Name = w.Name
+	out.Purge = w.Purge
+	return out, nil
+}
+
+// DeleteProjectRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteProjectRequestFromSDK(v *sdk.DeleteProjectRequest) (*DeleteProjectRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteProjectRequest{}
+	out.Name = v.Name
+	out.Purge = v.Purge
+	return out, nil
+}
+
+// DeleteRoleRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRoleRequestToSDK(w *DeleteRoleRequest) (*sdk.DeleteRoleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRoleRequest{}
+	out.Name = w.Name
+	out.ReassignOwnedTo = w.ReassignOwnedTo
+	return out, nil
+}
+
+// DeleteRoleRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRoleRequestFromSDK(v *sdk.DeleteRoleRequest) (*DeleteRoleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRoleRequest{}
+	out.Name = v.Name
+	out.ReassignOwnedTo = v.ReassignOwnedTo
+	return out, nil
+}
+
+// DeltaTableSyncInfoToSDK converts the mirror to the sdk-go type.
+func DeltaTableSyncInfoToSDK(w *DeltaTableSyncInfo) (*sdk.DeltaTableSyncInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaTableSyncInfo{}
+	out.DeltaCommitVersion = w.DeltaCommitVersion
+	out.DeltaCommitTime = w.DeltaCommitTime
+	return out, nil
+}
+
+// DeltaTableSyncInfoFromSDK converts the sdk-go type to the mirror.
+func DeltaTableSyncInfoFromSDK(v *sdk.DeltaTableSyncInfo) (*DeltaTableSyncInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaTableSyncInfo{}
+	out.DeltaCommitVersion = v.DeltaCommitVersion
+	out.DeltaCommitTime = v.DeltaCommitTime
+	return out, nil
+}
+
+// EndpointToSDK converts the mirror to the sdk-go type.
+func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Endpoint{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	out.Parent = w.Parent
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv37, err := EndpointSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.Spec", err)
+	}
+	out.Spec = conv37
+	conv38, err := EndpointStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.Status", err)
+	}
+	out.Status = conv38
+	out.EndpointId = w.EndpointId
+	return out, nil
+}
+
+// EndpointFromSDK converts the sdk-go type to the mirror.
+func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Endpoint{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	out.Parent = v.Parent
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv39, err := EndpointSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.Spec", err)
+	}
+	out.Spec = conv39
+	conv40, err := EndpointStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Endpoint.Status", err)
+	}
+	out.Status = conv40
+	out.EndpointId = v.EndpointId
+	return out, nil
+}
+
+// EndpointGroupSpecToSDK converts the mirror to the sdk-go type.
+func EndpointGroupSpecToSDK(w *EndpointGroupSpec) (*sdk.EndpointGroupSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointGroupSpec{}
+	out.Min = w.Min
+	out.Max = w.Max
+	out.EnableReadableSecondaries = w.EnableReadableSecondaries
+	return out, nil
+}
+
+// EndpointGroupSpecFromSDK converts the sdk-go type to the mirror.
+func EndpointGroupSpecFromSDK(v *sdk.EndpointGroupSpec) (*EndpointGroupSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointGroupSpec{}
+	out.Min = v.Min
+	out.Max = v.Max
+	out.EnableReadableSecondaries = v.EnableReadableSecondaries
+	return out, nil
+}
+
+// EndpointGroupStatusToSDK converts the mirror to the sdk-go type.
+func EndpointGroupStatusToSDK(w *EndpointGroupStatus) (*sdk.EndpointGroupStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointGroupStatus{}
+	out.Min = w.Min
+	out.Max = w.Max
+	out.EnableReadableSecondaries = w.EnableReadableSecondaries
+	return out, nil
+}
+
+// EndpointGroupStatusFromSDK converts the sdk-go type to the mirror.
+func EndpointGroupStatusFromSDK(v *sdk.EndpointGroupStatus) (*EndpointGroupStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointGroupStatus{}
+	out.Min = v.Min
+	out.Max = v.Max
+	out.EnableReadableSecondaries = v.EnableReadableSecondaries
+	return out, nil
+}
+
+// EndpointHostsToSDK converts the mirror to the sdk-go type.
+func EndpointHostsToSDK(w *EndpointHosts) (*sdk.EndpointHosts, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointHosts{}
+	out.Host = w.Host
+	out.ReadOnlyHost = w.ReadOnlyHost
+	out.ReadWritePooledHost = w.ReadWritePooledHost
+	out.ReadOnlyPooledHost = w.ReadOnlyPooledHost
+	return out, nil
+}
+
+// EndpointHostsFromSDK converts the sdk-go type to the mirror.
+func EndpointHostsFromSDK(v *sdk.EndpointHosts) (*EndpointHosts, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointHosts{}
+	out.Host = v.Host
+	out.ReadOnlyHost = v.ReadOnlyHost
+	out.ReadWritePooledHost = v.ReadWritePooledHost
+	out.ReadOnlyPooledHost = v.ReadOnlyPooledHost
+	return out, nil
+}
+
+// EndpointOperationMetadataToSDK converts the mirror to the sdk-go type.
+func EndpointOperationMetadataToSDK(w *EndpointOperationMetadata) (*sdk.EndpointOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointOperationMetadata{}
+	return out, nil
+}
+
+// EndpointOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func EndpointOperationMetadataFromSDK(v *sdk.EndpointOperationMetadata) (*EndpointOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointOperationMetadata{}
+	return out, nil
+}
+
+// EndpointSettingsToSDK converts the mirror to the sdk-go type.
+func EndpointSettingsToSDK(w *EndpointSettings) (*sdk.EndpointSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointSettings{}
+	out.PgSettings = w.PgSettings
+	return out, nil
+}
+
+// EndpointSettingsFromSDK converts the sdk-go type to the mirror.
+func EndpointSettingsFromSDK(v *sdk.EndpointSettings) (*EndpointSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointSettings{}
+	out.PgSettings = v.PgSettings
+	return out, nil
+}
+
+// EndpointSpecToSDK converts the mirror to the sdk-go type.
+func EndpointSpecToSDK(w *EndpointSpec) (*sdk.EndpointSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointSpec{}
+	out.EndpointType = w.EndpointType
+	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
+	out.Disabled = w.Disabled
+	{
+		members := 0
+		if w.SuspendTimeoutDuration != nil {
+			members++
+		}
+		if w.NoSuspension != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EndpointSpec.Suspension")
+		}
+	}
+	switch {
+	case w.SuspendTimeoutDuration != nil:
+		out.Suspension = &sdk.EndpointSpec_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
+	case w.NoSuspension != nil:
+		out.Suspension = &sdk.EndpointSpec_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
+	}
+	conv41, err := EndpointSettingsToSDK(w.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Settings", err)
+	}
+	out.Settings = conv41
+	conv42, err := EndpointGroupSpecToSDK(w.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Group", err)
+	}
+	out.Group = conv42
+	return out, nil
+}
+
+// EndpointSpecFromSDK converts the sdk-go type to the mirror.
+func EndpointSpecFromSDK(v *sdk.EndpointSpec) (*EndpointSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointSpec{}
+	out.EndpointType = v.EndpointType
+	out.AutoscalingLimitMinCu = v.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = v.AutoscalingLimitMaxCu
+	out.Disabled = v.Disabled
+	switch value := v.Suspension.(type) {
+	case *sdk.EndpointSpec_Suspension_SuspendTimeoutDuration:
+		if value != nil {
+			out.SuspendTimeoutDuration = new(value.SuspendTimeoutDuration)
+		}
+	case *sdk.EndpointSpec_Suspension_NoSuspension:
+		if value != nil {
+			out.NoSuspension = new(value.NoSuspension)
+		}
+	}
+	conv43, err := EndpointSettingsFromSDK(v.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Settings", err)
+	}
+	out.Settings = conv43
+	conv44, err := EndpointGroupSpecFromSDK(v.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointSpec.Group", err)
+	}
+	out.Group = conv44
+	return out, nil
+}
+
+// EndpointStatusToSDK converts the mirror to the sdk-go type.
+func EndpointStatusToSDK(w *EndpointStatus) (*sdk.EndpointStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointStatus{}
+	out.EndpointType = w.EndpointType
+	conv45, err := EndpointHostsToSDK(w.Hosts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Hosts", err)
+	}
+	out.Hosts = conv45
+	out.LastActiveTime = w.LastActiveTime
+	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
+	out.CurrentState = w.CurrentState
+	out.PendingState = w.PendingState
+	out.Disabled = w.Disabled
+	out.SuspendTimeoutDuration = w.SuspendTimeoutDuration
+	conv46, err := EndpointSettingsToSDK(w.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Settings", err)
+	}
+	out.Settings = conv46
+	conv47, err := EndpointGroupStatusToSDK(w.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Group", err)
+	}
+	out.Group = conv47
+	out.EndpointId = w.EndpointId
+	return out, nil
+}
+
+// EndpointStatusFromSDK converts the sdk-go type to the mirror.
+func EndpointStatusFromSDK(v *sdk.EndpointStatus) (*EndpointStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointStatus{}
+	out.EndpointType = v.EndpointType
+	conv48, err := EndpointHostsFromSDK(v.Hosts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Hosts", err)
+	}
+	out.Hosts = conv48
+	out.LastActiveTime = v.LastActiveTime
+	out.AutoscalingLimitMinCu = v.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = v.AutoscalingLimitMaxCu
+	out.CurrentState = v.CurrentState
+	out.PendingState = v.PendingState
+	out.Disabled = v.Disabled
+	out.SuspendTimeoutDuration = v.SuspendTimeoutDuration
+	conv49, err := EndpointSettingsFromSDK(v.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Settings", err)
+	}
+	out.Settings = conv49
+	conv50, err := EndpointGroupStatusFromSDK(v.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointStatus.Group", err)
+	}
+	out.Group = conv50
+	out.EndpointId = v.EndpointId
+	return out, nil
+}
+
+// GenerateDatabaseCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateDatabaseCredentialRequestToSDK(w *GenerateDatabaseCredentialRequest) (*sdk.GenerateDatabaseCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateDatabaseCredentialRequest{}
+	conv51, err := convertSlice(w.Claims, RequestedClaimsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
+	}
+	out.Claims = conv51
+	out.Endpoint = w.Endpoint
+	{
+		members := 0
+		if w.Ttl != nil {
+			members++
+		}
+		if w.ExpireTime != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenerateDatabaseCredentialRequest.Expiration")
+		}
+	}
+	switch {
+	case w.Ttl != nil:
+		out.Expiration = &sdk.GenerateDatabaseCredentialRequest_Expiration_Ttl{Ttl: *w.Ttl}
+	case w.ExpireTime != nil:
+		out.Expiration = &sdk.GenerateDatabaseCredentialRequest_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
+	}
+	return out, nil
+}
+
+// GenerateDatabaseCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateDatabaseCredentialRequestFromSDK(v *sdk.GenerateDatabaseCredentialRequest) (*GenerateDatabaseCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateDatabaseCredentialRequest{}
+	conv52, err := convertSlice(v.Claims, RequestedClaimsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
+	}
+	out.Claims = conv52
+	out.Endpoint = v.Endpoint
+	switch value := v.Expiration.(type) {
+	case *sdk.GenerateDatabaseCredentialRequest_Expiration_Ttl:
+		if value != nil {
+			out.Ttl = new(value.Ttl)
+		}
+	case *sdk.GenerateDatabaseCredentialRequest_Expiration_ExpireTime:
+		if value != nil {
+			out.ExpireTime = new(value.ExpireTime)
+		}
+	}
+	return out, nil
+}
+
+// InitialBranchSpecToSDK converts the mirror to the sdk-go type.
+func InitialBranchSpecToSDK(w *InitialBranchSpec) (*sdk.InitialBranchSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitialBranchSpec{}
+	out.IsProtected = w.IsProtected
+	return out, nil
+}
+
+// InitialBranchSpecFromSDK converts the sdk-go type to the mirror.
+func InitialBranchSpecFromSDK(v *sdk.InitialBranchSpec) (*InitialBranchSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitialBranchSpec{}
+	out.IsProtected = v.IsProtected
+	return out, nil
+}
+
+// InitialEndpointSpecToSDK converts the mirror to the sdk-go type.
+func InitialEndpointSpecToSDK(w *InitialEndpointSpec) (*sdk.InitialEndpointSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitialEndpointSpec{}
+	conv53, err := EndpointGroupSpecToSDK(w.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitialEndpointSpec.Group", err)
+	}
+	out.Group = conv53
+	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
+	{
+		members := 0
+		if w.SuspendTimeoutDuration != nil {
+			members++
+		}
+		if w.NoSuspension != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "InitialEndpointSpec.Suspension")
+		}
+	}
+	switch {
+	case w.SuspendTimeoutDuration != nil:
+		out.Suspension = &sdk.InitialEndpointSpec_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
+	case w.NoSuspension != nil:
+		out.Suspension = &sdk.InitialEndpointSpec_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
+	}
+	return out, nil
+}
+
+// InitialEndpointSpecFromSDK converts the sdk-go type to the mirror.
+func InitialEndpointSpecFromSDK(v *sdk.InitialEndpointSpec) (*InitialEndpointSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitialEndpointSpec{}
+	conv54, err := EndpointGroupSpecFromSDK(v.Group)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitialEndpointSpec.Group", err)
+	}
+	out.Group = conv54
+	out.AutoscalingLimitMinCu = v.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = v.AutoscalingLimitMaxCu
+	switch value := v.Suspension.(type) {
+	case *sdk.InitialEndpointSpec_Suspension_SuspendTimeoutDuration:
+		if value != nil {
+			out.SuspendTimeoutDuration = new(value.SuspendTimeoutDuration)
+		}
+	case *sdk.InitialEndpointSpec_Suspension_NoSuspension:
+		if value != nil {
+			out.NoSuspension = new(value.NoSuspension)
+		}
+	}
+	return out, nil
+}
+
+// ListBranchesRequestToSDK converts the mirror to the sdk-go type.
+func ListBranchesRequestToSDK(w *ListBranchesRequest) (*sdk.ListBranchesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListBranchesRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.ShowDeleted = w.ShowDeleted
+	return out, nil
+}
+
+// ListBranchesRequestFromSDK converts the sdk-go type to the mirror.
+func ListBranchesRequestFromSDK(v *sdk.ListBranchesRequest) (*ListBranchesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListBranchesRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.ShowDeleted = v.ShowDeleted
+	return out, nil
+}
+
+// ListBranchesResponseToSDK converts the mirror to the sdk-go type.
+func ListBranchesResponseToSDK(w *ListBranchesResponse) (*sdk.ListBranchesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListBranchesResponse{}
+	conv55, err := convertSlice(w.Branches, BranchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListBranchesResponse.Branches", err)
+	}
+	out.Branches = conv55
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListBranchesResponseFromSDK converts the sdk-go type to the mirror.
+func ListBranchesResponseFromSDK(v *sdk.ListBranchesResponse) (*ListBranchesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListBranchesResponse{}
+	conv56, err := convertSlice(v.Branches, BranchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListBranchesResponse.Branches", err)
+	}
+	out.Branches = conv56
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCdfConfigsRequestToSDK converts the mirror to the sdk-go type.
+func ListCdfConfigsRequestToSDK(w *ListCdfConfigsRequest) (*sdk.ListCdfConfigsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCdfConfigsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCdfConfigsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCdfConfigsRequestFromSDK(v *sdk.ListCdfConfigsRequest) (*ListCdfConfigsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCdfConfigsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCdfConfigsResponseToSDK converts the mirror to the sdk-go type.
+func ListCdfConfigsResponseToSDK(w *ListCdfConfigsResponse) (*sdk.ListCdfConfigsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCdfConfigsResponse{}
+	conv57, err := convertSlice(w.CdfConfigs, CdfConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCdfConfigsResponse.CdfConfigs", err)
+	}
+	out.CdfConfigs = conv57
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCdfConfigsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCdfConfigsResponseFromSDK(v *sdk.ListCdfConfigsResponse) (*ListCdfConfigsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCdfConfigsResponse{}
+	conv58, err := convertSlice(v.CdfConfigs, CdfConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCdfConfigsResponse.CdfConfigs", err)
+	}
+	out.CdfConfigs = conv58
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCdfStatusesRequestToSDK converts the mirror to the sdk-go type.
+func ListCdfStatusesRequestToSDK(w *ListCdfStatusesRequest) (*sdk.ListCdfStatusesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCdfStatusesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCdfStatusesRequestFromSDK converts the sdk-go type to the mirror.
+func ListCdfStatusesRequestFromSDK(v *sdk.ListCdfStatusesRequest) (*ListCdfStatusesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCdfStatusesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCdfStatusesResponseToSDK converts the mirror to the sdk-go type.
+func ListCdfStatusesResponseToSDK(w *ListCdfStatusesResponse) (*sdk.ListCdfStatusesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCdfStatusesResponse{}
+	conv59, err := convertSlice(w.CdfStatuses, CdfStatusToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCdfStatusesResponse.CdfStatuses", err)
+	}
+	out.CdfStatuses = conv59
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCdfStatusesResponseFromSDK converts the sdk-go type to the mirror.
+func ListCdfStatusesResponseFromSDK(v *sdk.ListCdfStatusesResponse) (*ListCdfStatusesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCdfStatusesResponse{}
+	conv60, err := convertSlice(v.CdfStatuses, CdfStatusFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCdfStatusesResponse.CdfStatuses", err)
+	}
+	out.CdfStatuses = conv60
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListDatabasesRequestToSDK converts the mirror to the sdk-go type.
+func ListDatabasesRequestToSDK(w *ListDatabasesRequest) (*sdk.ListDatabasesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabasesRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListDatabasesRequestFromSDK converts the sdk-go type to the mirror.
+func ListDatabasesRequestFromSDK(v *sdk.ListDatabasesRequest) (*ListDatabasesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabasesRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListDatabasesResponseToSDK converts the mirror to the sdk-go type.
+func ListDatabasesResponseToSDK(w *ListDatabasesResponse) (*sdk.ListDatabasesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabasesResponse{}
+	conv61, err := convertSlice(w.Databases, DatabaseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabasesResponse.Databases", err)
+	}
+	out.Databases = conv61
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDatabasesResponseFromSDK converts the sdk-go type to the mirror.
+func ListDatabasesResponseFromSDK(v *sdk.ListDatabasesResponse) (*ListDatabasesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabasesResponse{}
+	conv62, err := convertSlice(v.Databases, DatabaseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabasesResponse.Databases", err)
+	}
+	out.Databases = conv62
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListEndpointsRequestToSDK converts the mirror to the sdk-go type.
+func ListEndpointsRequestToSDK(w *ListEndpointsRequest) (*sdk.ListEndpointsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListEndpointsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListEndpointsResponseToSDK converts the mirror to the sdk-go type.
+func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsResponse{}
+	conv63, err := convertSlice(w.Endpoints, EndpointToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv63
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListEndpointsResponseFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsResponseFromSDK(v *sdk.ListEndpointsResponse) (*ListEndpointsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsResponse{}
+	conv64, err := convertSlice(v.Endpoints, EndpointFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Endpoints", err)
+	}
+	out.Endpoints = conv64
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListProjectsRequestToSDK converts the mirror to the sdk-go type.
+func ListProjectsRequestToSDK(w *ListProjectsRequest) (*sdk.ListProjectsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProjectsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.ShowDeleted = w.ShowDeleted
+	return out, nil
+}
+
+// ListProjectsRequestFromSDK converts the sdk-go type to the mirror.
+func ListProjectsRequestFromSDK(v *sdk.ListProjectsRequest) (*ListProjectsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProjectsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.ShowDeleted = v.ShowDeleted
+	return out, nil
+}
+
+// ListProjectsResponseToSDK converts the mirror to the sdk-go type.
+func ListProjectsResponseToSDK(w *ListProjectsResponse) (*sdk.ListProjectsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProjectsResponse{}
+	conv65, err := convertSlice(w.Projects, ProjectToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProjectsResponse.Projects", err)
+	}
+	out.Projects = conv65
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListProjectsResponseFromSDK converts the sdk-go type to the mirror.
+func ListProjectsResponseFromSDK(v *sdk.ListProjectsResponse) (*ListProjectsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProjectsResponse{}
+	conv66, err := convertSlice(v.Projects, ProjectFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProjectsResponse.Projects", err)
+	}
+	out.Projects = conv66
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListRolesRequestToSDK converts the mirror to the sdk-go type.
+func ListRolesRequestToSDK(w *ListRolesRequest) (*sdk.ListRolesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRolesRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListRolesRequestFromSDK converts the sdk-go type to the mirror.
+func ListRolesRequestFromSDK(v *sdk.ListRolesRequest) (*ListRolesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRolesRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListRolesResponseToSDK converts the mirror to the sdk-go type.
+func ListRolesResponseToSDK(w *ListRolesResponse) (*sdk.ListRolesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRolesResponse{}
+	conv67, err := convertSlice(w.Roles, RoleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRolesResponse.Roles", err)
+	}
+	out.Roles = conv67
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRolesResponseFromSDK converts the sdk-go type to the mirror.
+func ListRolesResponseFromSDK(v *sdk.ListRolesResponse) (*ListRolesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRolesResponse{}
+	conv68, err := convertSlice(v.Roles, RoleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRolesResponse.Roles", err)
+	}
+	out.Roles = conv68
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSnapshotsRequestToSDK converts the mirror to the sdk-go type.
+func ListSnapshotsRequestToSDK(w *ListSnapshotsRequest) (*sdk.ListSnapshotsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSnapshotsRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListSnapshotsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSnapshotsRequestFromSDK(v *sdk.ListSnapshotsRequest) (*ListSnapshotsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSnapshotsRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListSnapshotsResponseToSDK converts the mirror to the sdk-go type.
+func ListSnapshotsResponseToSDK(w *ListSnapshotsResponse) (*sdk.ListSnapshotsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSnapshotsResponse{}
+	conv69, err := convertSlice(w.Snapshots, SnapshotToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSnapshotsResponse.Snapshots", err)
+	}
+	out.Snapshots = conv69
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSnapshotsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSnapshotsResponseFromSDK(v *sdk.ListSnapshotsResponse) (*ListSnapshotsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSnapshotsResponse{}
+	conv70, err := convertSlice(v.Snapshots, SnapshotFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSnapshotsResponse.Snapshots", err)
+	}
+	out.Snapshots = conv70
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MonthlyScheduleToSDK converts the mirror to the sdk-go type.
+func MonthlyScheduleToSDK(w *MonthlySchedule) (*sdk.MonthlySchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MonthlySchedule{}
+	out.Day = w.Day
+	out.Hour = w.Hour
+	return out, nil
+}
+
+// MonthlyScheduleFromSDK converts the sdk-go type to the mirror.
+func MonthlyScheduleFromSDK(v *sdk.MonthlySchedule) (*MonthlySchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MonthlySchedule{}
+	out.Day = v.Day
+	out.Hour = v.Hour
+	return out, nil
+}
+
+// NewPipelineSpecToSDK converts the mirror to the sdk-go type.
+func NewPipelineSpecToSDK(w *NewPipelineSpec) (*sdk.NewPipelineSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NewPipelineSpec{}
+	out.StorageCatalog = w.StorageCatalog
+	out.StorageSchema = w.StorageSchema
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.PipelineChannel = w.PipelineChannel
+	return out, nil
+}
+
+// NewPipelineSpecFromSDK converts the sdk-go type to the mirror.
+func NewPipelineSpecFromSDK(v *sdk.NewPipelineSpec) (*NewPipelineSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NewPipelineSpec{}
+	out.StorageCatalog = v.StorageCatalog
+	out.StorageSchema = v.StorageSchema
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.PipelineChannel = v.PipelineChannel
+	return out, nil
+}
+
+// OperationToSDK converts the mirror to the sdk-go type.
+func OperationToSDK(w *Operation) (*sdk.Operation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Operation{}
+	out.Name = w.Name
+	out.Metadata = w.Metadata
+	out.Done = w.Done
+	{
+		members := 0
+		if w.Error != nil {
+			members++
+		}
+		if w.Response != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		}
+	}
+	switch {
+	case w.Error != nil:
+		conv71, err := ApiErrorToSDK(w.Error)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+		}
+		out.Result = &sdk.Operation_Result_Error{Error: *conv71}
+	case w.Response != nil:
+		out.Result = &sdk.Operation_Result_Response{Response: w.Response}
+	}
+	return out, nil
+}
+
+// OperationFromSDK converts the sdk-go type to the mirror.
+func OperationFromSDK(v *sdk.Operation) (*Operation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Operation{}
+	out.Name = v.Name
+	out.Metadata = v.Metadata
+	out.Done = v.Done
+	switch value := v.Result.(type) {
+	case *sdk.Operation_Result_Error:
+		if value != nil {
+			conv72, err := ApiErrorFromSDK(&value.Error)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+			}
+			out.Error = conv72
+		}
+	case *sdk.Operation_Result_Response:
+		if value != nil {
+			out.Response = value.Response
+		}
+	}
+	return out, nil
+}
+
+// ProjectToSDK converts the mirror to the sdk-go type.
+func ProjectToSDK(w *Project) (*sdk.Project, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Project{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv73, err := ProjectSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.Spec", err)
+	}
+	out.Spec = conv73
+	conv74, err := ProjectStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.Status", err)
+	}
+	out.Status = conv74
+	conv75, err := InitialEndpointSpecToSDK(w.InitialEndpointSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.InitialEndpointSpec", err)
+	}
+	out.InitialEndpointSpec = conv75
+	out.DeleteTime = w.DeleteTime
+	out.PurgeTime = w.PurgeTime
+	conv76, err := InitialBranchSpecToSDK(w.InitialBranchSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.InitialBranchSpec", err)
+	}
+	out.InitialBranchSpec = conv76
+	out.ProjectId = w.ProjectId
+	return out, nil
+}
+
+// ProjectFromSDK converts the sdk-go type to the mirror.
+func ProjectFromSDK(v *sdk.Project) (*Project, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Project{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv77, err := ProjectSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.Spec", err)
+	}
+	out.Spec = conv77
+	conv78, err := ProjectStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.Status", err)
+	}
+	out.Status = conv78
+	conv79, err := InitialEndpointSpecFromSDK(v.InitialEndpointSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.InitialEndpointSpec", err)
+	}
+	out.InitialEndpointSpec = conv79
+	out.DeleteTime = v.DeleteTime
+	out.PurgeTime = v.PurgeTime
+	conv80, err := InitialBranchSpecFromSDK(v.InitialBranchSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Project.InitialBranchSpec", err)
+	}
+	out.InitialBranchSpec = conv80
+	out.ProjectId = v.ProjectId
+	return out, nil
+}
+
+// ProjectCustomTagToSDK converts the mirror to the sdk-go type.
+func ProjectCustomTagToSDK(w *ProjectCustomTag) (*sdk.ProjectCustomTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProjectCustomTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// ProjectCustomTagFromSDK converts the sdk-go type to the mirror.
+func ProjectCustomTagFromSDK(v *sdk.ProjectCustomTag) (*ProjectCustomTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProjectCustomTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ProjectDefaultEndpointSettingsToSDK converts the mirror to the sdk-go type.
+func ProjectDefaultEndpointSettingsToSDK(w *ProjectDefaultEndpointSettings) (*sdk.ProjectDefaultEndpointSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProjectDefaultEndpointSettings{}
+	out.AutoscalingLimitMinCu = w.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = w.AutoscalingLimitMaxCu
+	{
+		members := 0
+		if w.SuspendTimeoutDuration != nil {
+			members++
+		}
+		if w.NoSuspension != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ProjectDefaultEndpointSettings.Suspension")
+		}
+	}
+	switch {
+	case w.SuspendTimeoutDuration != nil:
+		out.Suspension = &sdk.ProjectDefaultEndpointSettings_Suspension_SuspendTimeoutDuration{SuspendTimeoutDuration: *w.SuspendTimeoutDuration}
+	case w.NoSuspension != nil:
+		out.Suspension = &sdk.ProjectDefaultEndpointSettings_Suspension_NoSuspension{NoSuspension: *w.NoSuspension}
+	}
+	out.PgSettings = w.PgSettings
+	return out, nil
+}
+
+// ProjectDefaultEndpointSettingsFromSDK converts the sdk-go type to the mirror.
+func ProjectDefaultEndpointSettingsFromSDK(v *sdk.ProjectDefaultEndpointSettings) (*ProjectDefaultEndpointSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProjectDefaultEndpointSettings{}
+	out.AutoscalingLimitMinCu = v.AutoscalingLimitMinCu
+	out.AutoscalingLimitMaxCu = v.AutoscalingLimitMaxCu
+	switch value := v.Suspension.(type) {
+	case *sdk.ProjectDefaultEndpointSettings_Suspension_SuspendTimeoutDuration:
+		if value != nil {
+			out.SuspendTimeoutDuration = new(value.SuspendTimeoutDuration)
+		}
+	case *sdk.ProjectDefaultEndpointSettings_Suspension_NoSuspension:
+		if value != nil {
+			out.NoSuspension = new(value.NoSuspension)
+		}
+	}
+	out.PgSettings = v.PgSettings
+	return out, nil
+}
+
+// ProjectOperationMetadataToSDK converts the mirror to the sdk-go type.
+func ProjectOperationMetadataToSDK(w *ProjectOperationMetadata) (*sdk.ProjectOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProjectOperationMetadata{}
+	return out, nil
+}
+
+// ProjectOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func ProjectOperationMetadataFromSDK(v *sdk.ProjectOperationMetadata) (*ProjectOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProjectOperationMetadata{}
+	return out, nil
+}
+
+// ProjectSpecToSDK converts the mirror to the sdk-go type.
+func ProjectSpecToSDK(w *ProjectSpec) (*sdk.ProjectSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProjectSpec{}
+	out.DisplayName = w.DisplayName
+	out.PgVersion = w.PgVersion
+	out.HistoryRetentionDuration = w.HistoryRetentionDuration
+	conv81, err := ProjectDefaultEndpointSettingsToSDK(w.DefaultEndpointSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectSpec.DefaultEndpointSettings", err)
+	}
+	out.DefaultEndpointSettings = conv81
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv82, err := convertSlice(w.CustomTags, ProjectCustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectSpec.CustomTags", err)
+	}
+	out.CustomTags = conv82
+	out.EnablePgNativeLogin = w.EnablePgNativeLogin
+	out.DefaultBranch = w.DefaultBranch
+	return out, nil
+}
+
+// ProjectSpecFromSDK converts the sdk-go type to the mirror.
+func ProjectSpecFromSDK(v *sdk.ProjectSpec) (*ProjectSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProjectSpec{}
+	out.DisplayName = v.DisplayName
+	out.PgVersion = v.PgVersion
+	out.HistoryRetentionDuration = v.HistoryRetentionDuration
+	conv83, err := ProjectDefaultEndpointSettingsFromSDK(v.DefaultEndpointSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectSpec.DefaultEndpointSettings", err)
+	}
+	out.DefaultEndpointSettings = conv83
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv84, err := convertSlice(v.CustomTags, ProjectCustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectSpec.CustomTags", err)
+	}
+	out.CustomTags = conv84
+	out.EnablePgNativeLogin = v.EnablePgNativeLogin
+	out.DefaultBranch = v.DefaultBranch
+	return out, nil
+}
+
+// ProjectStatusToSDK converts the mirror to the sdk-go type.
+func ProjectStatusToSDK(w *ProjectStatus) (*sdk.ProjectStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProjectStatus{}
+	out.DisplayName = w.DisplayName
+	out.PgVersion = w.PgVersion
+	out.HistoryRetentionDuration = w.HistoryRetentionDuration
+	conv85, err := ProjectDefaultEndpointSettingsToSDK(w.DefaultEndpointSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectStatus.DefaultEndpointSettings", err)
+	}
+	out.DefaultEndpointSettings = conv85
+	out.BranchLogicalSizeLimitBytes = w.BranchLogicalSizeLimitBytes
+	out.SyntheticStorageSizeBytes = w.SyntheticStorageSizeBytes
+	out.ComputeLastActiveTime = w.ComputeLastActiveTime
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv86, err := convertSlice(w.CustomTags, ProjectCustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectStatus.CustomTags", err)
+	}
+	out.CustomTags = conv86
+	out.Owner = w.Owner
+	out.EnablePgNativeLogin = w.EnablePgNativeLogin
+	out.DefaultBranch = w.DefaultBranch
+	out.ProjectId = w.ProjectId
+	return out, nil
+}
+
+// ProjectStatusFromSDK converts the sdk-go type to the mirror.
+func ProjectStatusFromSDK(v *sdk.ProjectStatus) (*ProjectStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProjectStatus{}
+	out.DisplayName = v.DisplayName
+	out.PgVersion = v.PgVersion
+	out.HistoryRetentionDuration = v.HistoryRetentionDuration
+	conv87, err := ProjectDefaultEndpointSettingsFromSDK(v.DefaultEndpointSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectStatus.DefaultEndpointSettings", err)
+	}
+	out.DefaultEndpointSettings = conv87
+	out.BranchLogicalSizeLimitBytes = v.BranchLogicalSizeLimitBytes
+	out.SyntheticStorageSizeBytes = v.SyntheticStorageSizeBytes
+	out.ComputeLastActiveTime = v.ComputeLastActiveTime
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv88, err := convertSlice(v.CustomTags, ProjectCustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProjectStatus.CustomTags", err)
+	}
+	out.CustomTags = conv88
+	out.Owner = v.Owner
+	out.EnablePgNativeLogin = v.EnablePgNativeLogin
+	out.DefaultBranch = v.DefaultBranch
+	out.ProjectId = v.ProjectId
+	return out, nil
+}
+
+// RequestedClaimsToSDK converts the mirror to the sdk-go type.
+func RequestedClaimsToSDK(w *RequestedClaims) (*sdk.RequestedClaims, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RequestedClaims{}
+	out.PermissionSet = w.PermissionSet
+	conv89, err := convertSlice(w.Resources, RequestedResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
+	}
+	out.Resources = conv89
+	return out, nil
+}
+
+// RequestedClaimsFromSDK converts the sdk-go type to the mirror.
+func RequestedClaimsFromSDK(v *sdk.RequestedClaims) (*RequestedClaims, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RequestedClaims{}
+	out.PermissionSet = v.PermissionSet
+	conv90, err := convertSlice(v.Resources, RequestedResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
+	}
+	out.Resources = conv90
+	return out, nil
+}
+
+// RequestedResourceToSDK converts the mirror to the sdk-go type.
+func RequestedResourceToSDK(w *RequestedResource) (*sdk.RequestedResource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RequestedResource{}
+	{
+		members := 0
+		if w.TableName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestedResource.ResourceName")
+		}
+	}
+	switch {
+	case w.TableName != nil:
+		out.ResourceName = &sdk.RequestedResource_ResourceName_TableName{TableName: *w.TableName}
+	}
+	return out, nil
+}
+
+// RequestedResourceFromSDK converts the sdk-go type to the mirror.
+func RequestedResourceFromSDK(v *sdk.RequestedResource) (*RequestedResource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RequestedResource{}
+	switch value := v.ResourceName.(type) {
+	case *sdk.RequestedResource_ResourceName_TableName:
+		if value != nil {
+			out.TableName = new(value.TableName)
+		}
+	}
+	return out, nil
+}
+
+// RevealRolePasswordRequestToSDK converts the mirror to the sdk-go type.
+func RevealRolePasswordRequestToSDK(w *RevealRolePasswordRequest) (*sdk.RevealRolePasswordRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RevealRolePasswordRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// RevealRolePasswordRequestFromSDK converts the sdk-go type to the mirror.
+func RevealRolePasswordRequestFromSDK(v *sdk.RevealRolePasswordRequest) (*RevealRolePasswordRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RevealRolePasswordRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// RevealRolePasswordResponseToSDK converts the mirror to the sdk-go type.
+func RevealRolePasswordResponseToSDK(w *RevealRolePasswordResponse) (*sdk.RevealRolePasswordResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RevealRolePasswordResponse{}
+	out.Password = w.Password
+	return out, nil
+}
+
+// RevealRolePasswordResponseFromSDK converts the sdk-go type to the mirror.
+func RevealRolePasswordResponseFromSDK(v *sdk.RevealRolePasswordResponse) (*RevealRolePasswordResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RevealRolePasswordResponse{}
+	out.Password = v.Password
+	return out, nil
+}
+
+// RoleToSDK converts the mirror to the sdk-go type.
+func RoleToSDK(w *Role) (*sdk.Role, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Role{}
+	out.Name = w.Name
+	out.Parent = w.Parent
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv91, err := Role_RoleSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role.Spec", err)
+	}
+	out.Spec = conv91
+	conv92, err := Role_RoleStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role.Status", err)
+	}
+	out.Status = conv92
+	out.RoleId = w.RoleId
+	return out, nil
+}
+
+// RoleFromSDK converts the sdk-go type to the mirror.
+func RoleFromSDK(v *sdk.Role) (*Role, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Role{}
+	out.Name = v.Name
+	out.Parent = v.Parent
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv93, err := Role_RoleSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role.Spec", err)
+	}
+	out.Spec = conv93
+	conv94, err := Role_RoleStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role.Status", err)
+	}
+	out.Status = conv94
+	out.RoleId = v.RoleId
+	return out, nil
+}
+
+// RoleOperationMetadataToSDK converts the mirror to the sdk-go type.
+func RoleOperationMetadataToSDK(w *RoleOperationMetadata) (*sdk.RoleOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RoleOperationMetadata{}
+	return out, nil
+}
+
+// RoleOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func RoleOperationMetadataFromSDK(v *sdk.RoleOperationMetadata) (*RoleOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RoleOperationMetadata{}
+	return out, nil
+}
+
+// Role_AttributesToSDK converts the mirror to the sdk-go type.
+func Role_AttributesToSDK(w *Role_Attributes) (*sdk.Role_Attributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Role_Attributes{}
+	out.Createdb = w.Createdb
+	out.Createrole = w.Createrole
+	out.Bypassrls = w.Bypassrls
+	return out, nil
+}
+
+// Role_AttributesFromSDK converts the sdk-go type to the mirror.
+func Role_AttributesFromSDK(v *sdk.Role_Attributes) (*Role_Attributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Role_Attributes{}
+	out.Createdb = v.Createdb
+	out.Createrole = v.Createrole
+	out.Bypassrls = v.Bypassrls
+	return out, nil
+}
+
+// Role_RoleSpecToSDK converts the mirror to the sdk-go type.
+func Role_RoleSpecToSDK(w *Role_RoleSpec) (*sdk.Role_RoleSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Role_RoleSpec{}
+	out.MembershipRoles = w.MembershipRoles
+	out.IdentityType = w.IdentityType
+	conv95, err := Role_AttributesToSDK(w.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role_RoleSpec.Attributes", err)
+	}
+	out.Attributes = conv95
+	out.AuthMethod = w.AuthMethod
+	out.PostgresRole = w.PostgresRole
+	return out, nil
+}
+
+// Role_RoleSpecFromSDK converts the sdk-go type to the mirror.
+func Role_RoleSpecFromSDK(v *sdk.Role_RoleSpec) (*Role_RoleSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Role_RoleSpec{}
+	out.MembershipRoles = v.MembershipRoles
+	out.IdentityType = v.IdentityType
+	conv96, err := Role_AttributesFromSDK(v.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role_RoleSpec.Attributes", err)
+	}
+	out.Attributes = conv96
+	out.AuthMethod = v.AuthMethod
+	out.PostgresRole = v.PostgresRole
+	return out, nil
+}
+
+// Role_RoleStatusToSDK converts the mirror to the sdk-go type.
+func Role_RoleStatusToSDK(w *Role_RoleStatus) (*sdk.Role_RoleStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Role_RoleStatus{}
+	out.MembershipRoles = w.MembershipRoles
+	out.IdentityType = w.IdentityType
+	conv97, err := Role_AttributesToSDK(w.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role_RoleStatus.Attributes", err)
+	}
+	out.Attributes = conv97
+	out.AuthMethod = w.AuthMethod
+	out.PostgresRole = w.PostgresRole
+	out.RoleId = w.RoleId
+	return out, nil
+}
+
+// Role_RoleStatusFromSDK converts the sdk-go type to the mirror.
+func Role_RoleStatusFromSDK(v *sdk.Role_RoleStatus) (*Role_RoleStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Role_RoleStatus{}
+	out.MembershipRoles = v.MembershipRoles
+	out.IdentityType = v.IdentityType
+	conv98, err := Role_AttributesFromSDK(v.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Role_RoleStatus.Attributes", err)
+	}
+	out.Attributes = conv98
+	out.AuthMethod = v.AuthMethod
+	out.PostgresRole = v.PostgresRole
+	out.RoleId = v.RoleId
+	return out, nil
+}
+
+// ScheduleCadenceToSDK converts the mirror to the sdk-go type.
+func ScheduleCadenceToSDK(w *ScheduleCadence) (*sdk.ScheduleCadence, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScheduleCadence{}
+	{
+		members := 0
+		if w.DailySchedule != nil {
+			members++
+		}
+		if w.WeeklySchedule != nil {
+			members++
+		}
+		if w.MonthlySchedule != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ScheduleCadence.Schedule")
+		}
+	}
+	switch {
+	case w.DailySchedule != nil:
+		conv99, err := DailyScheduleToSDK(w.DailySchedule)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+		}
+		out.Schedule = &sdk.ScheduleCadence_Schedule_DailySchedule{DailySchedule: *conv99}
+	case w.WeeklySchedule != nil:
+		conv100, err := WeeklyScheduleToSDK(w.WeeklySchedule)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+		}
+		out.Schedule = &sdk.ScheduleCadence_Schedule_WeeklySchedule{WeeklySchedule: *conv100}
+	case w.MonthlySchedule != nil:
+		conv101, err := MonthlyScheduleToSDK(w.MonthlySchedule)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+		}
+		out.Schedule = &sdk.ScheduleCadence_Schedule_MonthlySchedule{MonthlySchedule: *conv101}
+	}
+	out.Retention = w.Retention
+	return out, nil
+}
+
+// ScheduleCadenceFromSDK converts the sdk-go type to the mirror.
+func ScheduleCadenceFromSDK(v *sdk.ScheduleCadence) (*ScheduleCadence, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScheduleCadence{}
+	switch value := v.Schedule.(type) {
+	case *sdk.ScheduleCadence_Schedule_DailySchedule:
+		if value != nil {
+			conv102, err := DailyScheduleFromSDK(&value.DailySchedule)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+			}
+			out.DailySchedule = conv102
+		}
+	case *sdk.ScheduleCadence_Schedule_WeeklySchedule:
+		if value != nil {
+			conv103, err := WeeklyScheduleFromSDK(&value.WeeklySchedule)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+			}
+			out.WeeklySchedule = conv103
+		}
+	case *sdk.ScheduleCadence_Schedule_MonthlySchedule:
+		if value != nil {
+			conv104, err := MonthlyScheduleFromSDK(&value.MonthlySchedule)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ScheduleCadence.Schedule", err)
+			}
+			out.MonthlySchedule = conv104
+		}
+	}
+	out.Retention = v.Retention
+	return out, nil
+}
+
+// SnapshotToSDK converts the mirror to the sdk-go type.
+func SnapshotToSDK(w *Snapshot) (*sdk.Snapshot, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Snapshot{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	out.CreateTime = w.CreateTime
+	conv105, err := SnapshotSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Snapshot.Spec", err)
+	}
+	out.Spec = conv105
+	conv106, err := SnapshotStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Snapshot.Status", err)
+	}
+	out.Status = conv106
+	out.SnapshotId = w.SnapshotId
+	return out, nil
+}
+
+// SnapshotFromSDK converts the sdk-go type to the mirror.
+func SnapshotFromSDK(v *sdk.Snapshot) (*Snapshot, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Snapshot{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	out.CreateTime = v.CreateTime
+	conv107, err := SnapshotSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Snapshot.Spec", err)
+	}
+	out.Spec = conv107
+	conv108, err := SnapshotStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Snapshot.Status", err)
+	}
+	out.Status = conv108
+	out.SnapshotId = v.SnapshotId
+	return out, nil
+}
+
+// SnapshotOperationMetadataToSDK converts the mirror to the sdk-go type.
+func SnapshotOperationMetadataToSDK(w *SnapshotOperationMetadata) (*sdk.SnapshotOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotOperationMetadata{}
+	return out, nil
+}
+
+// SnapshotOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func SnapshotOperationMetadataFromSDK(v *sdk.SnapshotOperationMetadata) (*SnapshotOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotOperationMetadata{}
+	return out, nil
+}
+
+// SnapshotScheduleToSDK converts the mirror to the sdk-go type.
+func SnapshotScheduleToSDK(w *SnapshotSchedule) (*sdk.SnapshotSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotSchedule{}
+	out.Name = w.Name
+	conv109, err := convertSlice(w.Schedule, ScheduleCadenceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SnapshotSchedule.Schedule", err)
+	}
+	out.Schedule = conv109
+	return out, nil
+}
+
+// SnapshotScheduleFromSDK converts the sdk-go type to the mirror.
+func SnapshotScheduleFromSDK(v *sdk.SnapshotSchedule) (*SnapshotSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotSchedule{}
+	out.Name = v.Name
+	conv110, err := convertSlice(v.Schedule, ScheduleCadenceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SnapshotSchedule.Schedule", err)
+	}
+	out.Schedule = conv110
+	return out, nil
+}
+
+// SnapshotScheduleOperationMetadataToSDK converts the mirror to the sdk-go type.
+func SnapshotScheduleOperationMetadataToSDK(w *SnapshotScheduleOperationMetadata) (*sdk.SnapshotScheduleOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotScheduleOperationMetadata{}
+	return out, nil
+}
+
+// SnapshotScheduleOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func SnapshotScheduleOperationMetadataFromSDK(v *sdk.SnapshotScheduleOperationMetadata) (*SnapshotScheduleOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotScheduleOperationMetadata{}
+	return out, nil
+}
+
+// SnapshotSpecToSDK converts the mirror to the sdk-go type.
+func SnapshotSpecToSDK(w *SnapshotSpec) (*sdk.SnapshotSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotSpec{}
+	out.SourceBranch = w.SourceBranch
+	{
+		members := 0
+		if w.SourceBranchLsn != nil {
+			members++
+		}
+		if w.SourceBranchTime != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.PointInTime")
+		}
+	}
+	switch {
+	case w.SourceBranchLsn != nil:
+		out.PointInTime = &sdk.SnapshotSpec_PointInTime_SourceBranchLsn{SourceBranchLsn: *w.SourceBranchLsn}
+	case w.SourceBranchTime != nil:
+		out.PointInTime = &sdk.SnapshotSpec_PointInTime_SourceBranchTime{SourceBranchTime: *w.SourceBranchTime}
+	}
+	{
+		members := 0
+		if w.ExpireTime != nil {
+			members++
+		}
+		if w.Ttl != nil {
+			members++
+		}
+		if w.NoExpiry != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotSpec.Expiration")
+		}
+	}
+	switch {
+	case w.ExpireTime != nil:
+		out.Expiration = &sdk.SnapshotSpec_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
+	case w.Ttl != nil:
+		out.Expiration = &sdk.SnapshotSpec_Expiration_Ttl{Ttl: *w.Ttl}
+	case w.NoExpiry != nil:
+		out.Expiration = &sdk.SnapshotSpec_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
+	}
+	return out, nil
+}
+
+// SnapshotSpecFromSDK converts the sdk-go type to the mirror.
+func SnapshotSpecFromSDK(v *sdk.SnapshotSpec) (*SnapshotSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotSpec{}
+	out.SourceBranch = v.SourceBranch
+	switch value := v.PointInTime.(type) {
+	case *sdk.SnapshotSpec_PointInTime_SourceBranchLsn:
+		if value != nil {
+			out.SourceBranchLsn = new(value.SourceBranchLsn)
+		}
+	case *sdk.SnapshotSpec_PointInTime_SourceBranchTime:
+		if value != nil {
+			out.SourceBranchTime = new(value.SourceBranchTime)
+		}
+	}
+	switch value := v.Expiration.(type) {
+	case *sdk.SnapshotSpec_Expiration_ExpireTime:
+		if value != nil {
+			out.ExpireTime = new(value.ExpireTime)
+		}
+	case *sdk.SnapshotSpec_Expiration_Ttl:
+		if value != nil {
+			out.Ttl = new(value.Ttl)
+		}
+	case *sdk.SnapshotSpec_Expiration_NoExpiry:
+		if value != nil {
+			out.NoExpiry = new(value.NoExpiry)
+		}
+	}
+	return out, nil
+}
+
+// SnapshotStatusToSDK converts the mirror to the sdk-go type.
+func SnapshotStatusToSDK(w *SnapshotStatus) (*sdk.SnapshotStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotStatus{}
+	out.SourceBranch = w.SourceBranch
+	{
+		members := 0
+		if w.ExpireTime != nil {
+			members++
+		}
+		if w.NoExpiry != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SnapshotStatus.Expiration")
+		}
+	}
+	switch {
+	case w.ExpireTime != nil:
+		out.Expiration = &sdk.SnapshotStatus_Expiration_ExpireTime{ExpireTime: *w.ExpireTime}
+	case w.NoExpiry != nil:
+		out.Expiration = &sdk.SnapshotStatus_Expiration_NoExpiry{NoExpiry: *w.NoExpiry}
+	}
+	out.FullSizeBytes = w.FullSizeBytes
+	out.DiffSizeBytes = w.DiffSizeBytes
+	return out, nil
+}
+
+// SnapshotStatusFromSDK converts the sdk-go type to the mirror.
+func SnapshotStatusFromSDK(v *sdk.SnapshotStatus) (*SnapshotStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotStatus{}
+	out.SourceBranch = v.SourceBranch
+	switch value := v.Expiration.(type) {
+	case *sdk.SnapshotStatus_Expiration_ExpireTime:
+		if value != nil {
+			out.ExpireTime = new(value.ExpireTime)
+		}
+	case *sdk.SnapshotStatus_Expiration_NoExpiry:
+		if value != nil {
+			out.NoExpiry = new(value.NoExpiry)
+		}
+	}
+	out.FullSizeBytes = v.FullSizeBytes
+	out.DiffSizeBytes = v.DiffSizeBytes
+	return out, nil
+}
+
+// SyncedTableToSDK converts the mirror to the sdk-go type.
+func SyncedTableToSDK(w *SyncedTable) (*sdk.SyncedTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTable{}
+	out.Name = w.Name
+	out.Uid = w.Uid
+	conv111, err := SyncedTable_SyncedTableSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable.Spec", err)
+	}
+	out.Spec = conv111
+	conv112, err := SyncedTable_SyncedTableStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable.Status", err)
+	}
+	out.Status = conv112
+	out.CreateTime = w.CreateTime
+	out.SyncedTableId = w.SyncedTableId
+	return out, nil
+}
+
+// SyncedTableFromSDK converts the sdk-go type to the mirror.
+func SyncedTableFromSDK(v *sdk.SyncedTable) (*SyncedTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTable{}
+	out.Name = v.Name
+	out.Uid = v.Uid
+	conv113, err := SyncedTable_SyncedTableSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable.Spec", err)
+	}
+	out.Spec = conv113
+	conv114, err := SyncedTable_SyncedTableStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable.Status", err)
+	}
+	out.Status = conv114
+	out.CreateTime = v.CreateTime
+	out.SyncedTableId = v.SyncedTableId
+	return out, nil
+}
+
+// SyncedTableOperationMetadataToSDK converts the mirror to the sdk-go type.
+func SyncedTableOperationMetadataToSDK(w *SyncedTableOperationMetadata) (*sdk.SyncedTableOperationMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableOperationMetadata{}
+	return out, nil
+}
+
+// SyncedTableOperationMetadataFromSDK converts the sdk-go type to the mirror.
+func SyncedTableOperationMetadataFromSDK(v *sdk.SyncedTableOperationMetadata) (*SyncedTableOperationMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableOperationMetadata{}
+	return out, nil
+}
+
+// SyncedTablePipelineProgressToSDK converts the mirror to the sdk-go type.
+func SyncedTablePipelineProgressToSDK(w *SyncedTablePipelineProgress) (*sdk.SyncedTablePipelineProgress, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTablePipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = w.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = w.SyncedRowCount
+	out.TotalRowCount = w.TotalRowCount
+	out.SyncProgressCompletion = w.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = w.EstimatedCompletionTimeSeconds
+	return out, nil
+}
+
+// SyncedTablePipelineProgressFromSDK converts the sdk-go type to the mirror.
+func SyncedTablePipelineProgressFromSDK(v *sdk.SyncedTablePipelineProgress) (*SyncedTablePipelineProgress, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTablePipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = v.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = v.SyncedRowCount
+	out.TotalRowCount = v.TotalRowCount
+	out.SyncProgressCompletion = v.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = v.EstimatedCompletionTimeSeconds
+	return out, nil
+}
+
+// SyncedTablePositionToSDK converts the mirror to the sdk-go type.
+func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTablePosition{}
+	out.SyncStartTime = w.SyncStartTime
+	out.SyncEndTime = w.SyncEndTime
+	{
+		members := 0
+		if w.DeltaTableSyncInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
+		}
+	}
+	switch {
+	case w.DeltaTableSyncInfo != nil:
+		conv115, err := DeltaTableSyncInfoToSDK(w.DeltaTableSyncInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo", err)
+		}
+		out.SourceSyncInfo = &sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo{DeltaTableSyncInfo: *conv115}
+	}
+	return out, nil
+}
+
+// SyncedTablePositionFromSDK converts the sdk-go type to the mirror.
+func SyncedTablePositionFromSDK(v *sdk.SyncedTablePosition) (*SyncedTablePosition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTablePosition{}
+	out.SyncStartTime = v.SyncStartTime
+	out.SyncEndTime = v.SyncEndTime
+	switch value := v.SourceSyncInfo.(type) {
+	case *sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo:
+		if value != nil {
+			conv116, err := DeltaTableSyncInfoFromSDK(&value.DeltaTableSyncInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo", err)
+			}
+			out.DeltaTableSyncInfo = conv116
+		}
+	}
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpecToSDK converts the mirror to the sdk-go type.
+func SyncedTable_SyncedTableSpecToSDK(w *SyncedTable_SyncedTableSpec) (*sdk.SyncedTable_SyncedTableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTable_SyncedTableSpec{}
+	out.PostgresDatabase = w.PostgresDatabase
+	out.Branch = w.Branch
+	out.SchedulingPolicy = w.SchedulingPolicy
+	out.SourceTableFullName = w.SourceTableFullName
+	out.PrimaryKeyColumns = w.PrimaryKeyColumns
+	out.TimeseriesKey = w.TimeseriesKey
+	out.ExistingPipelineId = w.ExistingPipelineId
+	out.CreateDatabaseObjectsIfMissing = w.CreateDatabaseObjectsIfMissing
+	conv117, err := NewPipelineSpecToSDK(w.NewPipelineSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.NewPipelineSpec", err)
+	}
+	out.NewPipelineSpec = conv117
+	out.AcceleratedSync = w.AcceleratedSync
+	conv118, err := convertSlice(w.TypeOverrides, SyncedTable_SyncedTableSpec_TypeOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.TypeOverrides", err)
+	}
+	out.TypeOverrides = conv118
+	conv119, err := convertSlice(w.ExtraColumns, SyncedTable_SyncedTableSpec_ExtraColumnToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.ExtraColumns", err)
+	}
+	out.ExtraColumns = conv119
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpecFromSDK converts the sdk-go type to the mirror.
+func SyncedTable_SyncedTableSpecFromSDK(v *sdk.SyncedTable_SyncedTableSpec) (*SyncedTable_SyncedTableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTable_SyncedTableSpec{}
+	out.PostgresDatabase = v.PostgresDatabase
+	out.Branch = v.Branch
+	out.SchedulingPolicy = v.SchedulingPolicy
+	out.SourceTableFullName = v.SourceTableFullName
+	out.PrimaryKeyColumns = v.PrimaryKeyColumns
+	out.TimeseriesKey = v.TimeseriesKey
+	out.ExistingPipelineId = v.ExistingPipelineId
+	out.CreateDatabaseObjectsIfMissing = v.CreateDatabaseObjectsIfMissing
+	conv120, err := NewPipelineSpecFromSDK(v.NewPipelineSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.NewPipelineSpec", err)
+	}
+	out.NewPipelineSpec = conv120
+	out.AcceleratedSync = v.AcceleratedSync
+	conv121, err := convertSlice(v.TypeOverrides, SyncedTable_SyncedTableSpec_TypeOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.TypeOverrides", err)
+	}
+	out.TypeOverrides = conv121
+	conv122, err := convertSlice(v.ExtraColumns, SyncedTable_SyncedTableSpec_ExtraColumnFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableSpec.ExtraColumns", err)
+	}
+	out.ExtraColumns = conv122
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpec_ExtraColumnToSDK converts the mirror to the sdk-go type.
+func SyncedTable_SyncedTableSpec_ExtraColumnToSDK(w *SyncedTable_SyncedTableSpec_ExtraColumn) (*sdk.SyncedTable_SyncedTableSpec_ExtraColumn, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTable_SyncedTableSpec_ExtraColumn{}
+	out.ColumnName = w.ColumnName
+	out.ColumnType = w.ColumnType
+	out.Maintenance = w.Maintenance
+	out.Compute = w.Compute
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpec_ExtraColumnFromSDK converts the sdk-go type to the mirror.
+func SyncedTable_SyncedTableSpec_ExtraColumnFromSDK(v *sdk.SyncedTable_SyncedTableSpec_ExtraColumn) (*SyncedTable_SyncedTableSpec_ExtraColumn, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTable_SyncedTableSpec_ExtraColumn{}
+	out.ColumnName = v.ColumnName
+	out.ColumnType = v.ColumnType
+	out.Maintenance = v.Maintenance
+	out.Compute = v.Compute
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpec_TypeOverrideToSDK converts the mirror to the sdk-go type.
+func SyncedTable_SyncedTableSpec_TypeOverrideToSDK(w *SyncedTable_SyncedTableSpec_TypeOverride) (*sdk.SyncedTable_SyncedTableSpec_TypeOverride, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTable_SyncedTableSpec_TypeOverride{}
+	out.ColumnName = w.ColumnName
+	out.PgType = w.PgType
+	out.Size = w.Size
+	return out, nil
+}
+
+// SyncedTable_SyncedTableSpec_TypeOverrideFromSDK converts the sdk-go type to the mirror.
+func SyncedTable_SyncedTableSpec_TypeOverrideFromSDK(v *sdk.SyncedTable_SyncedTableSpec_TypeOverride) (*SyncedTable_SyncedTableSpec_TypeOverride, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTable_SyncedTableSpec_TypeOverride{}
+	out.ColumnName = v.ColumnName
+	out.PgType = v.PgType
+	out.Size = v.Size
+	return out, nil
+}
+
+// SyncedTable_SyncedTableStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTable_SyncedTableStatusToSDK(w *SyncedTable_SyncedTableStatus) (*sdk.SyncedTable_SyncedTableStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTable_SyncedTableStatus{}
+	out.Message = w.Message
+	out.DetailedState = w.DetailedState
+	conv123, err := SyncedTablePositionToSDK(w.LastSync)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastSync", err)
+	}
+	out.LastSync = conv123
+	conv124, err := SyncedTablePipelineProgressToSDK(w.OngoingSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.OngoingSyncProgress", err)
+	}
+	out.OngoingSyncProgress = conv124
+	out.ProvisioningPhase = w.ProvisioningPhase
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.LastSyncTime = w.LastSyncTime
+	out.PipelineId = w.PipelineId
+	out.UnityCatalogProvisioningState = w.UnityCatalogProvisioningState
+	out.Project = w.Project
+	return out, nil
+}
+
+// SyncedTable_SyncedTableStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTable_SyncedTableStatusFromSDK(v *sdk.SyncedTable_SyncedTableStatus) (*SyncedTable_SyncedTableStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTable_SyncedTableStatus{}
+	out.Message = v.Message
+	out.DetailedState = v.DetailedState
+	conv125, err := SyncedTablePositionFromSDK(v.LastSync)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.LastSync", err)
+	}
+	out.LastSync = conv125
+	conv126, err := SyncedTablePipelineProgressFromSDK(v.OngoingSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTable_SyncedTableStatus.OngoingSyncProgress", err)
+	}
+	out.OngoingSyncProgress = conv126
+	out.ProvisioningPhase = v.ProvisioningPhase
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.LastSyncTime = v.LastSyncTime
+	out.PipelineId = v.PipelineId
+	out.UnityCatalogProvisioningState = v.UnityCatalogProvisioningState
+	out.Project = v.Project
+	return out, nil
+}
+
+// UndeleteBranchRequestToSDK converts the mirror to the sdk-go type.
+func UndeleteBranchRequestToSDK(w *UndeleteBranchRequest) (*sdk.UndeleteBranchRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UndeleteBranchRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// UndeleteBranchRequestFromSDK converts the sdk-go type to the mirror.
+func UndeleteBranchRequestFromSDK(v *sdk.UndeleteBranchRequest) (*UndeleteBranchRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UndeleteBranchRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UndeleteProjectRequestToSDK converts the mirror to the sdk-go type.
+func UndeleteProjectRequestToSDK(w *UndeleteProjectRequest) (*sdk.UndeleteProjectRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UndeleteProjectRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// UndeleteProjectRequestFromSDK converts the sdk-go type to the mirror.
+func UndeleteProjectRequestFromSDK(v *sdk.UndeleteProjectRequest) (*UndeleteProjectRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UndeleteProjectRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateBranchRequestToSDK converts the mirror to the sdk-go type.
+func UpdateBranchRequestToSDK(w *UpdateBranchRequest) (*sdk.UpdateBranchRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateBranchRequest{}
+	conv127, err := BranchToSDK(w.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBranchRequest.Branch", err)
+	}
+	out.Branch = conv127
+	mask128, err := fieldMaskFromString[sdk.Branch](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBranchRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask128
+	return out, nil
+}
+
+// UpdateBranchRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateBranchRequestFromSDK(v *sdk.UpdateBranchRequest) (*UpdateBranchRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateBranchRequest{}
+	conv129, err := BranchFromSDK(v.Branch)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBranchRequest.Branch", err)
+	}
+	out.Branch = conv129
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateDataApiRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDataApiRequestToSDK(w *UpdateDataApiRequest) (*sdk.UpdateDataApiRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDataApiRequest{}
+	conv130, err := DataApiToSDK(w.DataApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDataApiRequest.DataApi", err)
+	}
+	out.DataApi = conv130
+	mask131, err := fieldMaskFromString[sdk.DataApi](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDataApiRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask131
+	return out, nil
+}
+
+// UpdateDataApiRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDataApiRequestFromSDK(v *sdk.UpdateDataApiRequest) (*UpdateDataApiRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDataApiRequest{}
+	conv132, err := DataApiFromSDK(v.DataApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDataApiRequest.DataApi", err)
+	}
+	out.DataApi = conv132
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateDatabaseRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDatabaseRequestToSDK(w *UpdateDatabaseRequest) (*sdk.UpdateDatabaseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDatabaseRequest{}
+	conv133, err := DatabaseToSDK(w.Database)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseRequest.Database", err)
+	}
+	out.Database = conv133
+	mask134, err := fieldMaskFromString[sdk.Database](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask134
+	return out, nil
+}
+
+// UpdateDatabaseRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDatabaseRequestFromSDK(v *sdk.UpdateDatabaseRequest) (*UpdateDatabaseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDatabaseRequest{}
+	conv135, err := DatabaseFromSDK(v.Database)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseRequest.Database", err)
+	}
+	out.Database = conv135
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func UpdateEndpointRequestToSDK(w *UpdateEndpointRequest) (*sdk.UpdateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateEndpointRequest{}
+	conv136, err := EndpointToSDK(w.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv136
+	mask137, err := fieldMaskFromString[sdk.Endpoint](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask137
+	return out, nil
+}
+
+// UpdateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateEndpointRequestFromSDK(v *sdk.UpdateEndpointRequest) (*UpdateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateEndpointRequest{}
+	conv138, err := EndpointFromSDK(v.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv138
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateProjectRequestToSDK converts the mirror to the sdk-go type.
+func UpdateProjectRequestToSDK(w *UpdateProjectRequest) (*sdk.UpdateProjectRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateProjectRequest{}
+	conv139, err := ProjectToSDK(w.Project)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProjectRequest.Project", err)
+	}
+	out.Project = conv139
+	mask140, err := fieldMaskFromString[sdk.Project](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProjectRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask140
+	return out, nil
+}
+
+// UpdateProjectRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateProjectRequestFromSDK(v *sdk.UpdateProjectRequest) (*UpdateProjectRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProjectRequest{}
+	conv141, err := ProjectFromSDK(v.Project)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProjectRequest.Project", err)
+	}
+	out.Project = conv141
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateRoleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRoleRequestToSDK(w *UpdateRoleRequest) (*sdk.UpdateRoleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRoleRequest{}
+	conv142, err := RoleToSDK(w.Role)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRoleRequest.Role", err)
+	}
+	out.Role = conv142
+	mask143, err := fieldMaskFromString[sdk.Role](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRoleRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask143
+	return out, nil
+}
+
+// UpdateRoleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRoleRequestFromSDK(v *sdk.UpdateRoleRequest) (*UpdateRoleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRoleRequest{}
+	conv144, err := RoleFromSDK(v.Role)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRoleRequest.Role", err)
+	}
+	out.Role = conv144
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateSnapshotScheduleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSnapshotScheduleRequestToSDK(w *UpdateSnapshotScheduleRequest) (*sdk.UpdateSnapshotScheduleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSnapshotScheduleRequest{}
+	conv145, err := SnapshotScheduleToSDK(w.SnapshotSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSnapshotScheduleRequest.SnapshotSchedule", err)
+	}
+	out.SnapshotSchedule = conv145
+	mask146, err := fieldMaskFromString[sdk.SnapshotSchedule](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSnapshotScheduleRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask146
+	return out, nil
+}
+
+// UpdateSnapshotScheduleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateSnapshotScheduleRequestFromSDK(v *sdk.UpdateSnapshotScheduleRequest) (*UpdateSnapshotScheduleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateSnapshotScheduleRequest{}
+	conv147, err := SnapshotScheduleFromSDK(v.SnapshotSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSnapshotScheduleRequest.SnapshotSchedule", err)
+	}
+	out.SnapshotSchedule = conv147
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// WeeklyScheduleToSDK converts the mirror to the sdk-go type.
 func WeeklyScheduleToSDK(w *WeeklySchedule) (*sdk.WeeklySchedule, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WeeklySchedule{
-		DayOfWeek: w.DayOfWeek,
-		Hour:      w.Hour,
-	}, nil
+	out := &sdk.WeeklySchedule{}
+	out.DayOfWeek = w.DayOfWeek
+	out.Hour = w.Hour
+	return out, nil
+}
+
+// WeeklyScheduleFromSDK converts the sdk-go type to the mirror.
+func WeeklyScheduleFromSDK(v *sdk.WeeklySchedule) (*WeeklySchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WeeklySchedule{}
+	out.DayOfWeek = v.DayOfWeek
+	out.Hour = v.Hour
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -4471,4 +5285,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

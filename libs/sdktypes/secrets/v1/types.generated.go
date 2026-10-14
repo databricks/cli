@@ -23,22 +23,6 @@ const (
 	ScopeBackendType_AzureKeyvault = sdk.ScopeBackendType_AzureKeyvault
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // An item representing an ACL rule applied to the given principal (user or
 // group) on the associated scope point..
 type AclItem struct {
@@ -46,16 +30,6 @@ type AclItem struct {
 	Principal *string `json:"principal,omitempty"`
 	// The permission level applied to the principal.
 	Permission AclPermission `json:"permission,omitempty"`
-}
-
-func AclItemToSDK(w *AclItem) (*sdk.AclItem, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AclItem{
-		Principal:  w.Principal,
-		Permission: w.Permission,
-	}, nil
 }
 
 // The metadata of the Azure KeyVault for a secret scope of type
@@ -66,26 +40,6 @@ type AzureKeyVaultSecretScopeMetadata struct {
 	ResourceId *string `json:"resource_id,omitempty"`
 	// The DNS of the KeyVault
 	DnsName *string `json:"dns_name,omitempty"`
-}
-
-func AzureKeyVaultSecretScopeMetadataFromSDK(v *sdk.AzureKeyVaultSecretScopeMetadata) (*AzureKeyVaultSecretScopeMetadata, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureKeyVaultSecretScopeMetadata{
-		ResourceId: v.ResourceId,
-		DnsName:    v.DnsName,
-	}, nil
-}
-
-func AzureKeyVaultSecretScopeMetadataToSDK(w *AzureKeyVaultSecretScopeMetadata) (*sdk.AzureKeyVaultSecretScopeMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureKeyVaultSecretScopeMetadata{
-		ResourceId: w.ResourceId,
-		DnsName:    w.DnsName,
-	}, nil
 }
 
 type CreateScopeRequest struct {
@@ -101,22 +55,6 @@ type CreateScopeRequest struct {
 	BackendAzureKeyvault *AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
 }
 
-func CreateScopeRequestFromSDK(v *sdk.CreateScopeRequest) (*CreateScopeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	backendAzureKeyvaultWireValue, err := AzureKeyVaultSecretScopeMetadataFromSDK(v.BackendAzureKeyvault)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateScopeRequest.BackendAzureKeyvault", err)
-	}
-	return &CreateScopeRequest{
-		Scope:                  v.Scope,
-		InitialManagePrincipal: v.InitialManagePrincipal,
-		ScopeBackendType:       v.ScopeBackendType,
-		BackendAzureKeyvault:   backendAzureKeyvaultWireValue,
-	}, nil
-}
-
 type DeleteAclRequest struct {
 	// The name of the scope to remove permissions from.
 	Scope *string `json:"scope,omitempty"`
@@ -124,28 +62,9 @@ type DeleteAclRequest struct {
 	Principal *string `json:"principal,omitempty"`
 }
 
-func DeleteAclRequestFromSDK(v *sdk.DeleteAclRequest) (*DeleteAclRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteAclRequest{
-		Scope:     v.Scope,
-		Principal: v.Principal,
-	}, nil
-}
-
 type DeleteScopeRequest struct {
 	// Name of the scope to delete.
 	Scope *string `json:"scope,omitempty"`
-}
-
-func DeleteScopeRequestFromSDK(v *sdk.DeleteScopeRequest) (*DeleteScopeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteScopeRequest{
-		Scope: v.Scope,
-	}, nil
 }
 
 type DeleteSecretRequest struct {
@@ -155,31 +74,11 @@ type DeleteSecretRequest struct {
 	Key *string `json:"key,omitempty"`
 }
 
-func DeleteSecretRequestFromSDK(v *sdk.DeleteSecretRequest) (*DeleteSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteSecretRequest{
-		Scope: v.Scope,
-		Key:   v.Key,
-	}, nil
-}
-
 type GetAclRequest struct {
 	// The name of the scope to fetch ACL information from.
 	Scope *string `json:"scope,omitempty"`
 	// The principal to fetch ACL information for.
 	Principal *string `json:"principal,omitempty"`
-}
-
-func GetAclRequestFromSDK(v *sdk.GetAclRequest) (*GetAclRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetAclRequest{
-		Scope:     v.Scope,
-		Principal: v.Principal,
-	}, nil
 }
 
 type GetSecretRequest struct {
@@ -189,16 +88,6 @@ type GetSecretRequest struct {
 	Key *string `json:"key,omitempty"`
 }
 
-func GetSecretRequestFromSDK(v *sdk.GetSecretRequest) (*GetSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetSecretRequest{
-		Scope: v.Scope,
-		Key:   v.Key,
-	}, nil
-}
-
 type GetSecretResponse struct {
 	// A unique name to identify the secret.
 	Key *string `json:"key,omitempty"`
@@ -206,28 +95,9 @@ type GetSecretResponse struct {
 	Value []byte `json:"value,omitempty"`
 }
 
-func GetSecretResponseToSDK(w *GetSecretResponse) (*sdk.GetSecretResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetSecretResponse{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 type ListAclsRequest struct {
 	// The name of the scope to fetch ACL information from.
 	Scope *string `json:"scope,omitempty"`
-}
-
-func ListAclsRequestFromSDK(v *sdk.ListAclsRequest) (*ListAclsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAclsRequest{
-		Scope: v.Scope,
-	}, nil
 }
 
 type ListAclsResponse struct {
@@ -235,35 +105,9 @@ type ListAclsResponse struct {
 	Items []AclItem `json:"items,omitempty"`
 }
 
-func ListAclsResponseToSDK(w *ListAclsResponse) (*sdk.ListAclsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemsPublicValue, err := convertSlice(w.Items, AclItemToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAclsResponse.Items", err)
-	}
-	return &sdk.ListAclsResponse{
-		Items: itemsPublicValue,
-	}, nil
-}
-
 type ListScopesResponse struct {
 	// The available secret scopes.
 	Scopes []SecretScope `json:"scopes,omitempty"`
-}
-
-func ListScopesResponseToSDK(w *ListScopesResponse) (*sdk.ListScopesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	scopesPublicValue, err := convertSlice(w.Scopes, SecretScopeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListScopesResponse.Scopes", err)
-	}
-	return &sdk.ListScopesResponse{
-		Scopes: scopesPublicValue,
-	}, nil
 }
 
 type ListSecretsRequest struct {
@@ -271,31 +115,9 @@ type ListSecretsRequest struct {
 	Scope *string `json:"scope,omitempty"`
 }
 
-func ListSecretsRequestFromSDK(v *sdk.ListSecretsRequest) (*ListSecretsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSecretsRequest{
-		Scope: v.Scope,
-	}, nil
-}
-
 type ListSecretsResponse struct {
 	// Metadata information of all secrets contained within the given scope.
 	Secrets []SecretMetadata `json:"secrets,omitempty"`
-}
-
-func ListSecretsResponseToSDK(w *ListSecretsResponse) (*sdk.ListSecretsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	secretsPublicValue, err := convertSlice(w.Secrets, SecretMetadataToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
-	}
-	return &sdk.ListSecretsResponse{
-		Secrets: secretsPublicValue,
-	}, nil
 }
 
 type PutAclRequest struct {
@@ -307,17 +129,6 @@ type PutAclRequest struct {
 	Permission AclPermission `json:"permission,omitempty"`
 }
 
-func PutAclRequestFromSDK(v *sdk.PutAclRequest) (*PutAclRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PutAclRequest{
-		Scope:      v.Scope,
-		Principal:  v.Principal,
-		Permission: v.Permission,
-	}, nil
-}
-
 type PutSecretRequest struct {
 	// The name of the scope to which the secret will be associated with.
 	Scope *string `json:"scope,omitempty"`
@@ -327,33 +138,6 @@ type PutSecretRequest struct {
 	BytesValue  []byte  `json:"bytes_value,omitempty"`
 }
 
-func PutSecretRequestFromSDK(v *sdk.PutSecretRequest) (*PutSecretRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueStringValueWire *string
-	var valueBytesValueWire []byte
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.PutSecretRequest_Value_StringValue:
-		if value != nil {
-			valueStringValueWire = new(value.StringValue)
-		}
-	case *sdk.PutSecretRequest_Value_BytesValue:
-		if value != nil {
-			valueBytesValueWire = value.BytesValue
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PutSecretRequest.Value", value)
-	}
-	return &PutSecretRequest{
-		Scope:       v.Scope,
-		Key:         v.Key,
-		StringValue: valueStringValueWire,
-		BytesValue:  valueBytesValueWire,
-	}, nil
-}
-
 // The metadata about a secret. Returned when listing secrets. Does not contain
 // the actual secret value..
 type SecretMetadata struct {
@@ -361,20 +145,6 @@ type SecretMetadata struct {
 	Key *string `json:"key,omitempty"`
 	// The last updated timestamp (in milliseconds) for the secret.
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
-}
-
-func SecretMetadataToSDK(w *SecretMetadata) (*sdk.SecretMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SecretMetadata.LastUpdatedTimestamp", err)
-	}
-	return &sdk.SecretMetadata{
-		Key:                  w.Key,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-	}, nil
 }
 
 // An organizational resource for storing secrets. Secret scopes can be
@@ -389,19 +159,464 @@ type SecretScope struct {
 	KeyvaultMetadata *AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
 }
 
+// AclItemToSDK converts the mirror to the sdk-go type.
+func AclItemToSDK(w *AclItem) (*sdk.AclItem, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AclItem{}
+	out.Principal = w.Principal
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AclItemFromSDK converts the sdk-go type to the mirror.
+func AclItemFromSDK(v *sdk.AclItem) (*AclItem, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AclItem{}
+	out.Principal = v.Principal
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AzureKeyVaultSecretScopeMetadataToSDK converts the mirror to the sdk-go type.
+func AzureKeyVaultSecretScopeMetadataToSDK(w *AzureKeyVaultSecretScopeMetadata) (*sdk.AzureKeyVaultSecretScopeMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureKeyVaultSecretScopeMetadata{}
+	out.ResourceId = w.ResourceId
+	out.DnsName = w.DnsName
+	return out, nil
+}
+
+// AzureKeyVaultSecretScopeMetadataFromSDK converts the sdk-go type to the mirror.
+func AzureKeyVaultSecretScopeMetadataFromSDK(v *sdk.AzureKeyVaultSecretScopeMetadata) (*AzureKeyVaultSecretScopeMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureKeyVaultSecretScopeMetadata{}
+	out.ResourceId = v.ResourceId
+	out.DnsName = v.DnsName
+	return out, nil
+}
+
+// CreateScopeRequestToSDK converts the mirror to the sdk-go type.
+func CreateScopeRequestToSDK(w *CreateScopeRequest) (*sdk.CreateScopeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateScopeRequest{}
+	out.Scope = w.Scope
+	out.InitialManagePrincipal = w.InitialManagePrincipal
+	out.ScopeBackendType = w.ScopeBackendType
+	conv1, err := AzureKeyVaultSecretScopeMetadataToSDK(w.BackendAzureKeyvault)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateScopeRequest.BackendAzureKeyvault", err)
+	}
+	out.BackendAzureKeyvault = conv1
+	return out, nil
+}
+
+// CreateScopeRequestFromSDK converts the sdk-go type to the mirror.
+func CreateScopeRequestFromSDK(v *sdk.CreateScopeRequest) (*CreateScopeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateScopeRequest{}
+	out.Scope = v.Scope
+	out.InitialManagePrincipal = v.InitialManagePrincipal
+	out.ScopeBackendType = v.ScopeBackendType
+	conv2, err := AzureKeyVaultSecretScopeMetadataFromSDK(v.BackendAzureKeyvault)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateScopeRequest.BackendAzureKeyvault", err)
+	}
+	out.BackendAzureKeyvault = conv2
+	return out, nil
+}
+
+// DeleteAclRequestToSDK converts the mirror to the sdk-go type.
+func DeleteAclRequestToSDK(w *DeleteAclRequest) (*sdk.DeleteAclRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteAclRequest{}
+	out.Scope = w.Scope
+	out.Principal = w.Principal
+	return out, nil
+}
+
+// DeleteAclRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteAclRequestFromSDK(v *sdk.DeleteAclRequest) (*DeleteAclRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteAclRequest{}
+	out.Scope = v.Scope
+	out.Principal = v.Principal
+	return out, nil
+}
+
+// DeleteScopeRequestToSDK converts the mirror to the sdk-go type.
+func DeleteScopeRequestToSDK(w *DeleteScopeRequest) (*sdk.DeleteScopeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteScopeRequest{}
+	out.Scope = w.Scope
+	return out, nil
+}
+
+// DeleteScopeRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteScopeRequestFromSDK(v *sdk.DeleteScopeRequest) (*DeleteScopeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteScopeRequest{}
+	out.Scope = v.Scope
+	return out, nil
+}
+
+// DeleteSecretRequestToSDK converts the mirror to the sdk-go type.
+func DeleteSecretRequestToSDK(w *DeleteSecretRequest) (*sdk.DeleteSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteSecretRequest{}
+	out.Scope = w.Scope
+	out.Key = w.Key
+	return out, nil
+}
+
+// DeleteSecretRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteSecretRequestFromSDK(v *sdk.DeleteSecretRequest) (*DeleteSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteSecretRequest{}
+	out.Scope = v.Scope
+	out.Key = v.Key
+	return out, nil
+}
+
+// GetAclRequestToSDK converts the mirror to the sdk-go type.
+func GetAclRequestToSDK(w *GetAclRequest) (*sdk.GetAclRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetAclRequest{}
+	out.Scope = w.Scope
+	out.Principal = w.Principal
+	return out, nil
+}
+
+// GetAclRequestFromSDK converts the sdk-go type to the mirror.
+func GetAclRequestFromSDK(v *sdk.GetAclRequest) (*GetAclRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetAclRequest{}
+	out.Scope = v.Scope
+	out.Principal = v.Principal
+	return out, nil
+}
+
+// GetSecretRequestToSDK converts the mirror to the sdk-go type.
+func GetSecretRequestToSDK(w *GetSecretRequest) (*sdk.GetSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSecretRequest{}
+	out.Scope = w.Scope
+	out.Key = w.Key
+	return out, nil
+}
+
+// GetSecretRequestFromSDK converts the sdk-go type to the mirror.
+func GetSecretRequestFromSDK(v *sdk.GetSecretRequest) (*GetSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSecretRequest{}
+	out.Scope = v.Scope
+	out.Key = v.Key
+	return out, nil
+}
+
+// GetSecretResponseToSDK converts the mirror to the sdk-go type.
+func GetSecretResponseToSDK(w *GetSecretResponse) (*sdk.GetSecretResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSecretResponse{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// GetSecretResponseFromSDK converts the sdk-go type to the mirror.
+func GetSecretResponseFromSDK(v *sdk.GetSecretResponse) (*GetSecretResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSecretResponse{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ListAclsRequestToSDK converts the mirror to the sdk-go type.
+func ListAclsRequestToSDK(w *ListAclsRequest) (*sdk.ListAclsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAclsRequest{}
+	out.Scope = w.Scope
+	return out, nil
+}
+
+// ListAclsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAclsRequestFromSDK(v *sdk.ListAclsRequest) (*ListAclsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAclsRequest{}
+	out.Scope = v.Scope
+	return out, nil
+}
+
+// ListAclsResponseToSDK converts the mirror to the sdk-go type.
+func ListAclsResponseToSDK(w *ListAclsResponse) (*sdk.ListAclsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAclsResponse{}
+	conv3, err := convertSlice(w.Items, AclItemToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAclsResponse.Items", err)
+	}
+	out.Items = conv3
+	return out, nil
+}
+
+// ListAclsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAclsResponseFromSDK(v *sdk.ListAclsResponse) (*ListAclsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAclsResponse{}
+	conv4, err := convertSlice(v.Items, AclItemFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAclsResponse.Items", err)
+	}
+	out.Items = conv4
+	return out, nil
+}
+
+// ListScopesResponseToSDK converts the mirror to the sdk-go type.
+func ListScopesResponseToSDK(w *ListScopesResponse) (*sdk.ListScopesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListScopesResponse{}
+	conv5, err := convertSlice(w.Scopes, SecretScopeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListScopesResponse.Scopes", err)
+	}
+	out.Scopes = conv5
+	return out, nil
+}
+
+// ListScopesResponseFromSDK converts the sdk-go type to the mirror.
+func ListScopesResponseFromSDK(v *sdk.ListScopesResponse) (*ListScopesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListScopesResponse{}
+	conv6, err := convertSlice(v.Scopes, SecretScopeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListScopesResponse.Scopes", err)
+	}
+	out.Scopes = conv6
+	return out, nil
+}
+
+// ListSecretsRequestToSDK converts the mirror to the sdk-go type.
+func ListSecretsRequestToSDK(w *ListSecretsRequest) (*sdk.ListSecretsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSecretsRequest{}
+	out.Scope = w.Scope
+	return out, nil
+}
+
+// ListSecretsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSecretsRequestFromSDK(v *sdk.ListSecretsRequest) (*ListSecretsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSecretsRequest{}
+	out.Scope = v.Scope
+	return out, nil
+}
+
+// ListSecretsResponseToSDK converts the mirror to the sdk-go type.
+func ListSecretsResponseToSDK(w *ListSecretsResponse) (*sdk.ListSecretsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSecretsResponse{}
+	conv7, err := convertSlice(w.Secrets, SecretMetadataToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv7
+	return out, nil
+}
+
+// ListSecretsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSecretsResponseFromSDK(v *sdk.ListSecretsResponse) (*ListSecretsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSecretsResponse{}
+	conv8, err := convertSlice(v.Secrets, SecretMetadataFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSecretsResponse.Secrets", err)
+	}
+	out.Secrets = conv8
+	return out, nil
+}
+
+// PutAclRequestToSDK converts the mirror to the sdk-go type.
+func PutAclRequestToSDK(w *PutAclRequest) (*sdk.PutAclRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutAclRequest{}
+	out.Scope = w.Scope
+	out.Principal = w.Principal
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// PutAclRequestFromSDK converts the sdk-go type to the mirror.
+func PutAclRequestFromSDK(v *sdk.PutAclRequest) (*PutAclRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutAclRequest{}
+	out.Scope = v.Scope
+	out.Principal = v.Principal
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// PutSecretRequestToSDK converts the mirror to the sdk-go type.
+func PutSecretRequestToSDK(w *PutSecretRequest) (*sdk.PutSecretRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PutSecretRequest{}
+	out.Scope = w.Scope
+	out.Key = w.Key
+	{
+		members := 0
+		if w.StringValue != nil {
+			members++
+		}
+		if w.BytesValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PutSecretRequest.Value")
+		}
+	}
+	switch {
+	case w.StringValue != nil:
+		out.Value = &sdk.PutSecretRequest_Value_StringValue{StringValue: *w.StringValue}
+	case w.BytesValue != nil:
+		out.Value = &sdk.PutSecretRequest_Value_BytesValue{BytesValue: w.BytesValue}
+	}
+	return out, nil
+}
+
+// PutSecretRequestFromSDK converts the sdk-go type to the mirror.
+func PutSecretRequestFromSDK(v *sdk.PutSecretRequest) (*PutSecretRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PutSecretRequest{}
+	out.Scope = v.Scope
+	out.Key = v.Key
+	switch value := v.Value.(type) {
+	case *sdk.PutSecretRequest_Value_StringValue:
+		if value != nil {
+			out.StringValue = new(value.StringValue)
+		}
+	case *sdk.PutSecretRequest_Value_BytesValue:
+		if value != nil {
+			out.BytesValue = value.BytesValue
+		}
+	}
+	return out, nil
+}
+
+// SecretMetadataToSDK converts the mirror to the sdk-go type.
+func SecretMetadataToSDK(w *SecretMetadata) (*sdk.SecretMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SecretMetadata{}
+	out.Key = w.Key
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	return out, nil
+}
+
+// SecretMetadataFromSDK converts the sdk-go type to the mirror.
+func SecretMetadataFromSDK(v *sdk.SecretMetadata) (*SecretMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SecretMetadata{}
+	out.Key = v.Key
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	return out, nil
+}
+
+// SecretScopeToSDK converts the mirror to the sdk-go type.
 func SecretScopeToSDK(w *SecretScope) (*sdk.SecretScope, error) {
 	if w == nil {
 		return nil, nil
 	}
-	keyvaultMetadataPublicValue, err := AzureKeyVaultSecretScopeMetadataToSDK(w.KeyvaultMetadata)
+	out := &sdk.SecretScope{}
+	out.Name = w.Name
+	out.BackendType = w.BackendType
+	conv9, err := AzureKeyVaultSecretScopeMetadataToSDK(w.KeyvaultMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "SecretScope.KeyvaultMetadata", err)
 	}
-	return &sdk.SecretScope{
-		Name:             w.Name,
-		BackendType:      w.BackendType,
-		KeyvaultMetadata: keyvaultMetadataPublicValue,
-	}, nil
+	out.KeyvaultMetadata = conv9
+	return out, nil
+}
+
+// SecretScopeFromSDK converts the sdk-go type to the mirror.
+func SecretScopeFromSDK(v *sdk.SecretScope) (*SecretScope, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SecretScope{}
+	out.Name = v.Name
+	out.BackendType = v.BackendType
+	conv10, err := AzureKeyVaultSecretScopeMetadataFromSDK(v.KeyvaultMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SecretScope.KeyvaultMetadata", err)
+	}
+	out.KeyvaultMetadata = conv10
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

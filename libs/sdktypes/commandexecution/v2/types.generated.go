@@ -46,59 +46,19 @@ type CancelCommandRequest struct {
 	ContextId *string `json:"contextId,omitempty"`
 }
 
-func CancelCommandRequestFromSDK(v *sdk.CancelCommandRequest) (*CancelCommandRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CancelCommandRequest{
-		ClusterId: v.ClusterId,
-		CommandId: v.CommandId,
-		ContextId: v.ContextId,
-	}, nil
-}
-
 type CreateContextRequest struct {
 	// Running cluster id
 	ClusterId *string  `json:"clusterId,omitempty"`
 	Language  Language `json:"language,omitempty"`
 }
 
-func CreateContextRequestFromSDK(v *sdk.CreateContextRequest) (*CreateContextRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateContextRequest{
-		ClusterId: v.ClusterId,
-		Language:  v.Language,
-	}, nil
-}
-
 type CreateResponse struct {
 	Id *string `json:"id,omitempty"`
-}
-
-func CreateResponseToSDK(w *CreateResponse) (*sdk.CreateResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateResponse{
-		Id: w.Id,
-	}, nil
 }
 
 type DestroyContextRequest struct {
 	ClusterId *string `json:"clusterId,omitempty"`
 	ContextId *string `json:"contextId,omitempty"`
-}
-
-func DestroyContextRequestFromSDK(v *sdk.DestroyContextRequest) (*DestroyContextRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DestroyContextRequest{
-		ClusterId: v.ClusterId,
-		ContextId: v.ContextId,
-	}, nil
 }
 
 type ExecuteCommandRequest struct {
@@ -111,34 +71,11 @@ type ExecuteCommandRequest struct {
 	Command *string `json:"command,omitempty"`
 }
 
-func ExecuteCommandRequestFromSDK(v *sdk.ExecuteCommandRequest) (*ExecuteCommandRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExecuteCommandRequest{
-		ClusterId: v.ClusterId,
-		ContextId: v.ContextId,
-		Language:  v.Language,
-		Command:   v.Command,
-	}, nil
-}
-
 // Request to get the status of a previously submitted command..
 type GetCommandStatusRequest struct {
 	ClusterId *string `json:"clusterId,omitempty"`
 	ContextId *string `json:"contextId,omitempty"`
 	CommandId *string `json:"commandId,omitempty"`
-}
-
-func GetCommandStatusRequestFromSDK(v *sdk.GetCommandStatusRequest) (*GetCommandStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetCommandStatusRequest{
-		ClusterId: v.ClusterId,
-		ContextId: v.ContextId,
-		CommandId: v.CommandId,
-	}, nil
 }
 
 type GetCommandStatusResponse struct {
@@ -147,50 +84,15 @@ type GetCommandStatusResponse struct {
 	Results *Results      `json:"results,omitempty"`
 }
 
-func GetCommandStatusResponseToSDK(w *GetCommandStatusResponse) (*sdk.GetCommandStatusResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultsPublicValue, err := ResultsToSDK(w.Results)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetCommandStatusResponse.Results", err)
-	}
-	return &sdk.GetCommandStatusResponse{
-		Id:      w.Id,
-		Status:  w.Status,
-		Results: resultsPublicValue,
-	}, nil
-}
-
 // Request to retrieve the status of an execution context..
 type GetContextStatusRequest struct {
 	ClusterId *string `json:"clusterId,omitempty"`
 	ContextId *string `json:"contextId,omitempty"`
 }
 
-func GetContextStatusRequestFromSDK(v *sdk.GetContextStatusRequest) (*GetContextStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetContextStatusRequest{
-		ClusterId: v.ClusterId,
-		ContextId: v.ContextId,
-	}, nil
-}
-
 type GetContextStatusResponse struct {
 	Id     *string       `json:"id,omitempty"`
 	Status ContextStatus `json:"status,omitempty"`
-}
-
-func GetContextStatusResponseToSDK(w *GetContextStatusResponse) (*sdk.GetContextStatusResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetContextStatusResponse{
-		Id:     w.Id,
-		Status: w.Status,
-	}, nil
 }
 
 type Results struct {
@@ -223,20 +125,254 @@ type Results struct {
 	Truncated *bool `json:"truncated,omitempty"`
 }
 
+// CancelCommandRequestToSDK converts the mirror to the sdk-go type.
+func CancelCommandRequestToSDK(w *CancelCommandRequest) (*sdk.CancelCommandRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelCommandRequest{}
+	out.ClusterId = w.ClusterId
+	out.CommandId = w.CommandId
+	out.ContextId = w.ContextId
+	return out, nil
+}
+
+// CancelCommandRequestFromSDK converts the sdk-go type to the mirror.
+func CancelCommandRequestFromSDK(v *sdk.CancelCommandRequest) (*CancelCommandRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelCommandRequest{}
+	out.ClusterId = v.ClusterId
+	out.CommandId = v.CommandId
+	out.ContextId = v.ContextId
+	return out, nil
+}
+
+// CreateContextRequestToSDK converts the mirror to the sdk-go type.
+func CreateContextRequestToSDK(w *CreateContextRequest) (*sdk.CreateContextRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateContextRequest{}
+	out.ClusterId = w.ClusterId
+	out.Language = w.Language
+	return out, nil
+}
+
+// CreateContextRequestFromSDK converts the sdk-go type to the mirror.
+func CreateContextRequestFromSDK(v *sdk.CreateContextRequest) (*CreateContextRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateContextRequest{}
+	out.ClusterId = v.ClusterId
+	out.Language = v.Language
+	return out, nil
+}
+
+// CreateResponseToSDK converts the mirror to the sdk-go type.
+func CreateResponseToSDK(w *CreateResponse) (*sdk.CreateResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateResponse{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreateResponseFromSDK converts the sdk-go type to the mirror.
+func CreateResponseFromSDK(v *sdk.CreateResponse) (*CreateResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateResponse{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// DestroyContextRequestToSDK converts the mirror to the sdk-go type.
+func DestroyContextRequestToSDK(w *DestroyContextRequest) (*sdk.DestroyContextRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DestroyContextRequest{}
+	out.ClusterId = w.ClusterId
+	out.ContextId = w.ContextId
+	return out, nil
+}
+
+// DestroyContextRequestFromSDK converts the sdk-go type to the mirror.
+func DestroyContextRequestFromSDK(v *sdk.DestroyContextRequest) (*DestroyContextRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DestroyContextRequest{}
+	out.ClusterId = v.ClusterId
+	out.ContextId = v.ContextId
+	return out, nil
+}
+
+// ExecuteCommandRequestToSDK converts the mirror to the sdk-go type.
+func ExecuteCommandRequestToSDK(w *ExecuteCommandRequest) (*sdk.ExecuteCommandRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExecuteCommandRequest{}
+	out.ClusterId = w.ClusterId
+	out.ContextId = w.ContextId
+	out.Language = w.Language
+	out.Command = w.Command
+	return out, nil
+}
+
+// ExecuteCommandRequestFromSDK converts the sdk-go type to the mirror.
+func ExecuteCommandRequestFromSDK(v *sdk.ExecuteCommandRequest) (*ExecuteCommandRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExecuteCommandRequest{}
+	out.ClusterId = v.ClusterId
+	out.ContextId = v.ContextId
+	out.Language = v.Language
+	out.Command = v.Command
+	return out, nil
+}
+
+// GetCommandStatusRequestToSDK converts the mirror to the sdk-go type.
+func GetCommandStatusRequestToSDK(w *GetCommandStatusRequest) (*sdk.GetCommandStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCommandStatusRequest{}
+	out.ClusterId = w.ClusterId
+	out.ContextId = w.ContextId
+	out.CommandId = w.CommandId
+	return out, nil
+}
+
+// GetCommandStatusRequestFromSDK converts the sdk-go type to the mirror.
+func GetCommandStatusRequestFromSDK(v *sdk.GetCommandStatusRequest) (*GetCommandStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetCommandStatusRequest{}
+	out.ClusterId = v.ClusterId
+	out.ContextId = v.ContextId
+	out.CommandId = v.CommandId
+	return out, nil
+}
+
+// GetCommandStatusResponseToSDK converts the mirror to the sdk-go type.
+func GetCommandStatusResponseToSDK(w *GetCommandStatusResponse) (*sdk.GetCommandStatusResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCommandStatusResponse{}
+	out.Id = w.Id
+	out.Status = w.Status
+	conv1, err := ResultsToSDK(w.Results)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetCommandStatusResponse.Results", err)
+	}
+	out.Results = conv1
+	return out, nil
+}
+
+// GetCommandStatusResponseFromSDK converts the sdk-go type to the mirror.
+func GetCommandStatusResponseFromSDK(v *sdk.GetCommandStatusResponse) (*GetCommandStatusResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetCommandStatusResponse{}
+	out.Id = v.Id
+	out.Status = v.Status
+	conv2, err := ResultsFromSDK(v.Results)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetCommandStatusResponse.Results", err)
+	}
+	out.Results = conv2
+	return out, nil
+}
+
+// GetContextStatusRequestToSDK converts the mirror to the sdk-go type.
+func GetContextStatusRequestToSDK(w *GetContextStatusRequest) (*sdk.GetContextStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetContextStatusRequest{}
+	out.ClusterId = w.ClusterId
+	out.ContextId = w.ContextId
+	return out, nil
+}
+
+// GetContextStatusRequestFromSDK converts the sdk-go type to the mirror.
+func GetContextStatusRequestFromSDK(v *sdk.GetContextStatusRequest) (*GetContextStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetContextStatusRequest{}
+	out.ClusterId = v.ClusterId
+	out.ContextId = v.ContextId
+	return out, nil
+}
+
+// GetContextStatusResponseToSDK converts the mirror to the sdk-go type.
+func GetContextStatusResponseToSDK(w *GetContextStatusResponse) (*sdk.GetContextStatusResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetContextStatusResponse{}
+	out.Id = w.Id
+	out.Status = w.Status
+	return out, nil
+}
+
+// GetContextStatusResponseFromSDK converts the sdk-go type to the mirror.
+func GetContextStatusResponseFromSDK(v *sdk.GetContextStatusResponse) (*GetContextStatusResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetContextStatusResponse{}
+	out.Id = v.Id
+	out.Status = v.Status
+	return out, nil
+}
+
+// ResultsToSDK converts the mirror to the sdk-go type.
 func ResultsToSDK(w *Results) (*sdk.Results, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.Results{
-		Cause:        w.Cause,
-		Data:         w.Data,
-		FileName:     w.FileName,
-		FileNames:    w.FileNames,
-		IsJsonSchema: w.IsJsonSchema,
-		Pos:          w.Pos,
-		ResultType:   w.ResultType,
-		Schema:       w.Schema,
-		Summary:      w.Summary,
-		Truncated:    w.Truncated,
-	}, nil
+	out := &sdk.Results{}
+	out.Cause = w.Cause
+	out.Data = w.Data
+	out.FileName = w.FileName
+	out.FileNames = w.FileNames
+	out.IsJsonSchema = w.IsJsonSchema
+	out.Pos = w.Pos
+	out.ResultType = w.ResultType
+	out.Schema = w.Schema
+	out.Summary = w.Summary
+	out.Truncated = w.Truncated
+	return out, nil
+}
+
+// ResultsFromSDK converts the sdk-go type to the mirror.
+func ResultsFromSDK(v *sdk.Results) (*Results, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Results{}
+	out.Cause = v.Cause
+	out.Data = v.Data
+	out.FileName = v.FileName
+	out.FileNames = v.FileNames
+	out.IsJsonSchema = v.IsJsonSchema
+	out.Pos = v.Pos
+	out.ResultType = v.ResultType
+	out.Schema = v.Schema
+	out.Summary = v.Summary
+	out.Truncated = v.Truncated
+	return out, nil
 }

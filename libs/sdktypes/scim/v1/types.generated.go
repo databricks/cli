@@ -62,54 +62,12 @@ const (
 	PasswordPermission_Level_CanUse                                       = sdk.PasswordPermission_Level_CanUse
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AccountComplexValue struct {
 	Display *string `json:"display,omitempty"`
 	Primary *bool   `json:"primary,omitempty"`
 	Ref     *string `json:"$ref,omitempty"`
 	Type    *string `json:"type,omitempty"`
 	Value   *string `json:"value,omitempty"`
-}
-
-func AccountComplexValueFromSDK(v *sdk.AccountComplexValue) (*AccountComplexValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountComplexValue{
-		Display: v.Display,
-		Primary: v.Primary,
-		Ref:     v.Ref,
-		Type:    v.Type,
-		Value:   v.Value,
-	}, nil
-}
-
-func AccountComplexValueToSDK(w *AccountComplexValue) (*sdk.AccountComplexValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AccountComplexValue{
-		Display: w.Display,
-		Primary: w.Primary,
-		Ref:     w.Ref,
-		Type:    w.Type,
-		Value:   w.Value,
-	}, nil
 }
 
 type AccountGroup struct {
@@ -128,58 +86,11 @@ type AccountGroup struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func AccountGroupToSDK(w *AccountGroup) (*sdk.AccountGroup, error) {
-	if w == nil {
-		return nil, nil
-	}
-	membersPublicValue, err := convertSlice(w.Members, AccountComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountGroup.Members", err)
-	}
-	metaPublicValue, err := AccountResourceMetaToSDK(w.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountGroup.Meta", err)
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, AccountComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountGroup.Roles", err)
-	}
-	return &sdk.AccountGroup{
-		DisplayName: w.DisplayName,
-		ExternalId:  w.ExternalId,
-		Id:          w.Id,
-		Members:     membersPublicValue,
-		Meta:        metaPublicValue,
-		Roles:       rolesPublicValue,
-		AccountId:   w.AccountId,
-	}, nil
-}
-
 type AccountName struct {
 	// Family name of the <Databricks> user.
 	FamilyName *string `json:"familyName,omitempty"`
 	// Given name of the <Databricks> user.
 	GivenName *string `json:"givenName,omitempty"`
-}
-
-func AccountNameFromSDK(v *sdk.AccountName) (*AccountName, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountName{
-		FamilyName: v.FamilyName,
-		GivenName:  v.GivenName,
-	}, nil
-}
-
-func AccountNameToSDK(w *AccountName) (*sdk.AccountName, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AccountName{
-		FamilyName: w.FamilyName,
-		GivenName:  w.GivenName,
-	}, nil
 }
 
 type AccountPatch struct {
@@ -191,39 +102,10 @@ type AccountPatch struct {
 	Value json.RawMessage `json:"value,omitempty"`
 }
 
-func AccountPatchFromSDK(v *sdk.AccountPatch) (*AccountPatch, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountPatch{
-		Op:    v.Op,
-		Path:  v.Path,
-		Value: v.Value,
-	}, nil
-}
-
 type AccountResourceMeta struct {
 	// Identifier for group type. Can be local workspace group (`WorkspaceGroup`) or
 	// account group (`Group`).
 	ResourceType *string `json:"resourceType,omitempty"`
-}
-
-func AccountResourceMetaFromSDK(v *sdk.AccountResourceMeta) (*AccountResourceMeta, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AccountResourceMeta{
-		ResourceType: v.ResourceType,
-	}, nil
-}
-
-func AccountResourceMetaToSDK(w *AccountResourceMeta) (*sdk.AccountResourceMeta, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AccountResourceMeta{
-		ResourceType: w.ResourceType,
-	}, nil
 }
 
 type AccountServicePrincipal struct {
@@ -240,25 +122,6 @@ type AccountServicePrincipal struct {
 	Roles []AccountComplexValue `json:"roles,omitempty"`
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func AccountServicePrincipalToSDK(w *AccountServicePrincipal) (*sdk.AccountServicePrincipal, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, AccountComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountServicePrincipal.Roles", err)
-	}
-	return &sdk.AccountServicePrincipal{
-		Active:        w.Active,
-		ApplicationId: w.ApplicationId,
-		DisplayName:   w.DisplayName,
-		ExternalId:    w.ExternalId,
-		Id:            w.Id,
-		Roles:         rolesPublicValue,
-		AccountId:     w.AccountId,
-	}, nil
 }
 
 type AccountUser struct {
@@ -285,67 +148,12 @@ type AccountUser struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func AccountUserToSDK(w *AccountUser) (*sdk.AccountUser, error) {
-	if w == nil {
-		return nil, nil
-	}
-	emailsPublicValue, err := convertSlice(w.Emails, AccountComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountUser.Emails", err)
-	}
-	namePublicValue, err := AccountNameToSDK(w.Name)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountUser.Name", err)
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, AccountComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountUser.Roles", err)
-	}
-	return &sdk.AccountUser{
-		Active:      w.Active,
-		DisplayName: w.DisplayName,
-		Emails:      emailsPublicValue,
-		ExternalId:  w.ExternalId,
-		Id:          w.Id,
-		Name:        namePublicValue,
-		Roles:       rolesPublicValue,
-		UserName:    w.UserName,
-		AccountId:   w.AccountId,
-	}, nil
-}
-
 type ComplexValue struct {
 	Display *string `json:"display,omitempty"`
 	Primary *bool   `json:"primary,omitempty"`
 	Ref     *string `json:"$ref,omitempty"`
 	Type    *string `json:"type,omitempty"`
 	Value   *string `json:"value,omitempty"`
-}
-
-func ComplexValueFromSDK(v *sdk.ComplexValue) (*ComplexValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComplexValue{
-		Display: v.Display,
-		Primary: v.Primary,
-		Ref:     v.Ref,
-		Type:    v.Type,
-		Value:   v.Value,
-	}, nil
-}
-
-func ComplexValueToSDK(w *ComplexValue) (*sdk.ComplexValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComplexValue{
-		Display: w.Display,
-		Primary: w.Primary,
-		Ref:     w.Ref,
-		Type:    w.Type,
-		Value:   w.Value,
-	}, nil
 }
 
 type CreateAccountGroupRequest struct {
@@ -363,33 +171,6 @@ type CreateAccountGroupRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func CreateAccountGroupRequestFromSDK(v *sdk.CreateAccountGroupRequest) (*CreateAccountGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	membersWireValue, err := convertSlice(v.Members, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Members", err)
-	}
-	metaWireValue, err := AccountResourceMetaFromSDK(v.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Meta", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Roles", err)
-	}
-	return &CreateAccountGroupRequest{
-		DisplayName: v.DisplayName,
-		ExternalId:  v.ExternalId,
-		Id:          v.Id,
-		Members:     membersWireValue,
-		Meta:        metaWireValue,
-		Roles:       rolesWireValue,
-		AccountId:   v.AccountId,
-	}, nil
-}
-
 type CreateAccountServicePrincipalRequest struct {
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
@@ -404,25 +185,6 @@ type CreateAccountServicePrincipalRequest struct {
 	Roles []AccountComplexValue `json:"roles,omitempty"`
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func CreateAccountServicePrincipalRequestFromSDK(v *sdk.CreateAccountServicePrincipalRequest) (*CreateAccountServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountServicePrincipalRequest.Roles", err)
-	}
-	return &CreateAccountServicePrincipalRequest{
-		Active:        v.Active,
-		ApplicationId: v.ApplicationId,
-		DisplayName:   v.DisplayName,
-		ExternalId:    v.ExternalId,
-		Id:            v.Id,
-		Roles:         rolesWireValue,
-		AccountId:     v.AccountId,
-	}, nil
 }
 
 type CreateAccountUserRequest struct {
@@ -446,35 +208,6 @@ type CreateAccountUserRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func CreateAccountUserRequestFromSDK(v *sdk.CreateAccountUserRequest) (*CreateAccountUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailsWireValue, err := convertSlice(v.Emails, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Emails", err)
-	}
-	nameWireValue, err := AccountNameFromSDK(v.Name)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Name", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Roles", err)
-	}
-	return &CreateAccountUserRequest{
-		Active:      v.Active,
-		DisplayName: v.DisplayName,
-		Emails:      emailsWireValue,
-		ExternalId:  v.ExternalId,
-		Id:          v.Id,
-		Name:        nameWireValue,
-		Roles:       rolesWireValue,
-		UserName:    v.UserName,
-		AccountId:   v.AccountId,
-	}, nil
-}
-
 type CreateGroupRequest struct {
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
@@ -494,43 +227,6 @@ type CreateGroupRequest struct {
 	Roles []ComplexValue `json:"roles,omitempty"`
 	// The schema of the group.
 	Schemas []GroupSchema `json:"schemas,omitempty"`
-}
-
-func CreateGroupRequestFromSDK(v *sdk.CreateGroupRequest) (*CreateGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Groups", err)
-	}
-	membersWireValue, err := convertSlice(v.Members, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Members", err)
-	}
-	metaWireValue, err := ResourceMetaFromSDK(v.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Meta", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Roles", err)
-	}
-	return &CreateGroupRequest{
-		DisplayName:  v.DisplayName,
-		Entitlements: entitlementsWireValue,
-		ExternalId:   v.ExternalId,
-		Groups:       groupsWireValue,
-		Id:           v.Id,
-		Members:      membersWireValue,
-		Meta:         metaWireValue,
-		Roles:        rolesWireValue,
-		Schemas:      v.Schemas,
-	}, nil
 }
 
 type CreateServicePrincipalRequest struct {
@@ -553,35 +249,6 @@ type CreateServicePrincipalRequest struct {
 	Roles []ComplexValue `json:"roles,omitempty"`
 	// The schema of the List response.
 	Schemas []ServicePrincipalSchema `json:"schemas,omitempty"`
-}
-
-func CreateServicePrincipalRequestFromSDK(v *sdk.CreateServicePrincipalRequest) (*CreateServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Groups", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Roles", err)
-	}
-	return &CreateServicePrincipalRequest{
-		Active:        v.Active,
-		ApplicationId: v.ApplicationId,
-		DisplayName:   v.DisplayName,
-		Entitlements:  entitlementsWireValue,
-		ExternalId:    v.ExternalId,
-		Groups:        groupsWireValue,
-		Id:            v.Id,
-		Roles:         rolesWireValue,
-		Schemas:       v.Schemas,
-	}, nil
 }
 
 type CreateUserRequest struct {
@@ -615,45 +282,6 @@ type CreateUserRequest struct {
 	UserName *string `json:"userName,omitempty"`
 }
 
-func CreateUserRequestFromSDK(v *sdk.CreateUserRequest) (*CreateUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailsWireValue, err := convertSlice(v.Emails, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Emails", err)
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Groups", err)
-	}
-	nameWireValue, err := NameFromSDK(v.Name)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Name", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Roles", err)
-	}
-	return &CreateUserRequest{
-		Active:       v.Active,
-		DisplayName:  v.DisplayName,
-		Emails:       emailsWireValue,
-		Entitlements: entitlementsWireValue,
-		ExternalId:   v.ExternalId,
-		Groups:       groupsWireValue,
-		Id:           v.Id,
-		Name:         nameWireValue,
-		Roles:        rolesWireValue,
-		Schemas:      v.Schemas,
-		UserName:     v.UserName,
-	}, nil
-}
-
 // Get user details.
 type GetAccountUserRequest struct {
 	// Comma-separated list of attributes to return in response.
@@ -683,39 +311,9 @@ type GetAccountUserRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func GetAccountUserRequestFromSDK(v *sdk.GetAccountUserRequest) (*GetAccountUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetAccountUserRequest{
-		Attributes:         v.Attributes,
-		Count:              v.Count,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		Id:                 v.Id,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         v.StartIndex,
-		AccountId:          v.AccountId,
-	}, nil
-}
-
 type GetPasswordPermissionLevelsResponse struct {
 	// Specific permission levels
 	PermissionLevels []PasswordPermissionsDescription `json:"permission_levels,omitempty"`
-}
-
-func GetPasswordPermissionLevelsResponseToSDK(w *GetPasswordPermissionLevelsResponse) (*sdk.GetPasswordPermissionLevelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	permissionLevelsPublicValue, err := convertSlice(w.PermissionLevels, PasswordPermissionsDescriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPasswordPermissionLevelsResponse.PermissionLevels", err)
-	}
-	return &sdk.GetPasswordPermissionLevelsResponse{
-		PermissionLevels: permissionLevelsPublicValue,
-	}, nil
 }
 
 // Get user details.
@@ -745,22 +343,6 @@ type GetUserRequest struct {
 	StartIndex *int `json:"startIndex,omitempty"`
 }
 
-func GetUserRequestFromSDK(v *sdk.GetUserRequest) (*GetUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetUserRequest{
-		Attributes:         v.Attributes,
-		Count:              v.Count,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		Id:                 v.Id,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         v.StartIndex,
-	}, nil
-}
-
 type Group struct {
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
@@ -781,43 +363,6 @@ type Group struct {
 	Roles []ComplexValue `json:"roles,omitempty"`
 	// The schema of the group.
 	Schemas []GroupSchema `json:"schemas,omitempty"`
-}
-
-func GroupToSDK(w *Group) (*sdk.Group, error) {
-	if w == nil {
-		return nil, nil
-	}
-	entitlementsPublicValue, err := convertSlice(w.Entitlements, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Group.Entitlements", err)
-	}
-	groupsPublicValue, err := convertSlice(w.Groups, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Group.Groups", err)
-	}
-	membersPublicValue, err := convertSlice(w.Members, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Group.Members", err)
-	}
-	metaPublicValue, err := ResourceMetaToSDK(w.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Group.Meta", err)
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Group.Roles", err)
-	}
-	return &sdk.Group{
-		DisplayName:  w.DisplayName,
-		Entitlements: entitlementsPublicValue,
-		ExternalId:   w.ExternalId,
-		Groups:       groupsPublicValue,
-		Id:           w.Id,
-		Members:      membersPublicValue,
-		Meta:         metaPublicValue,
-		Roles:        rolesPublicValue,
-		Schemas:      w.Schemas,
-	}, nil
 }
 
 // List group details.
@@ -846,30 +391,6 @@ type ListAccountGroupsRequest struct {
 	SortOrder AccountListSort_Order `json:"sortOrder,omitempty"`
 }
 
-func ListAccountGroupsRequestFromSDK(v *sdk.ListAccountGroupsRequest) (*ListAccountGroupsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsRequest.StartIndex", err)
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsRequest.Count", err)
-	}
-	return &ListAccountGroupsRequest{
-		AccountId:          v.AccountId,
-		Filter:             v.Filter,
-		Attributes:         v.Attributes,
-		ExcludedAttributes: v.ExcludedAttributes,
-		StartIndex:         startIndexWireValue,
-		Count:              countWireValue,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-	}, nil
-}
-
 type ListAccountGroupsResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -880,26 +401,6 @@ type ListAccountGroupsResponse struct {
 	StartIndex *int64 `json:"startIndex,omitempty"`
 	// Total results that match the request filters.
 	TotalResults *int `json:"totalResults,omitempty"`
-}
-
-func ListAccountGroupsResponseToSDK(w *ListAccountGroupsResponse) (*sdk.ListAccountGroupsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AccountGroupToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsResponse.StartIndex", err)
-	}
-	return &sdk.ListAccountGroupsResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
 }
 
 // List service principals.
@@ -928,30 +429,6 @@ type ListAccountServicePrincipalsRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func ListAccountServicePrincipalsRequestFromSDK(v *sdk.ListAccountServicePrincipalsRequest) (*ListAccountServicePrincipalsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsRequest.Count", err)
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsRequest.StartIndex", err)
-	}
-	return &ListAccountServicePrincipalsRequest{
-		Attributes:         v.Attributes,
-		Count:              countWireValue,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         startIndexWireValue,
-		AccountId:          v.AccountId,
-	}, nil
-}
-
 type ListAccountServicePrincipalsResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -962,26 +439,6 @@ type ListAccountServicePrincipalsResponse struct {
 	StartIndex *int64 `json:"startIndex,omitempty"`
 	// Total results that match the request filters.
 	TotalResults *int `json:"totalResults,omitempty"`
-}
-
-func ListAccountServicePrincipalsResponseToSDK(w *ListAccountServicePrincipalsResponse) (*sdk.ListAccountServicePrincipalsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AccountServicePrincipalToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsResponse.StartIndex", err)
-	}
-	return &sdk.ListAccountServicePrincipalsResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
 }
 
 // List users.
@@ -1011,30 +468,6 @@ type ListAccountUsersRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func ListAccountUsersRequestFromSDK(v *sdk.ListAccountUsersRequest) (*ListAccountUsersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountUsersRequest.Count", err)
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountUsersRequest.StartIndex", err)
-	}
-	return &ListAccountUsersRequest{
-		Attributes:         v.Attributes,
-		Count:              countWireValue,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         startIndexWireValue,
-		AccountId:          v.AccountId,
-	}, nil
-}
-
 type ListAccountUsersResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -1045,26 +478,6 @@ type ListAccountUsersResponse struct {
 	StartIndex *int64 `json:"startIndex,omitempty"`
 	// Total results that match the request filters.
 	TotalResults *int `json:"totalResults,omitempty"`
-}
-
-func ListAccountUsersResponseToSDK(w *ListAccountUsersResponse) (*sdk.ListAccountUsersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AccountUserToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountUsersResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountUsersResponse.StartIndex", err)
-	}
-	return &sdk.ListAccountUsersResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
 }
 
 // List group details.
@@ -1091,29 +504,6 @@ type ListGroupsRequest struct {
 	SortOrder ListSort_Order `json:"sortOrder,omitempty"`
 }
 
-func ListGroupsRequestFromSDK(v *sdk.ListGroupsRequest) (*ListGroupsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListGroupsRequest.StartIndex", err)
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListGroupsRequest.Count", err)
-	}
-	return &ListGroupsRequest{
-		Filter:             v.Filter,
-		Attributes:         v.Attributes,
-		ExcludedAttributes: v.ExcludedAttributes,
-		StartIndex:         startIndexWireValue,
-		Count:              countWireValue,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-	}, nil
-}
-
 type ListGroupsResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -1128,27 +518,6 @@ type ListGroupsResponse struct {
 	TotalResults *int `json:"totalResults,omitempty"`
 }
 
-func ListGroupsResponseToSDK(w *ListGroupsResponse) (*sdk.ListGroupsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, GroupToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListGroupsResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListGroupsResponse.StartIndex", err)
-	}
-	return &sdk.ListGroupsResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		Schemas:      w.Schemas,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
-}
-
 type ListServicePrincipalResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -1161,27 +530,6 @@ type ListServicePrincipalResponse struct {
 	StartIndex *int64 `json:"startIndex,omitempty"`
 	// Total results that match the request filters.
 	TotalResults *int `json:"totalResults,omitempty"`
-}
-
-func ListServicePrincipalResponseToSDK(w *ListServicePrincipalResponse) (*sdk.ListServicePrincipalResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, ServicePrincipalToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalResponse.StartIndex", err)
-	}
-	return &sdk.ListServicePrincipalResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		Schemas:      w.Schemas,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
 }
 
 // List service principals.
@@ -1206,29 +554,6 @@ type ListServicePrincipalsRequest struct {
 	SortOrder ListSort_Order `json:"sortOrder,omitempty"`
 	// Specifies the index of the first result. First item is number 1.
 	StartIndex *int64 `json:"startIndex,omitempty"`
-}
-
-func ListServicePrincipalsRequestFromSDK(v *sdk.ListServicePrincipalsRequest) (*ListServicePrincipalsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalsRequest.Count", err)
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalsRequest.StartIndex", err)
-	}
-	return &ListServicePrincipalsRequest{
-		Attributes:         v.Attributes,
-		Count:              countWireValue,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         startIndexWireValue,
-	}, nil
 }
 
 // List users.
@@ -1256,29 +581,6 @@ type ListUsersRequest struct {
 	StartIndex *int64 `json:"startIndex,omitempty"`
 }
 
-func ListUsersRequestFromSDK(v *sdk.ListUsersRequest) (*ListUsersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	countWireValue, err := int64ToWire(v.Count)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListUsersRequest.Count", err)
-	}
-	startIndexWireValue, err := int64ToWire(v.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListUsersRequest.StartIndex", err)
-	}
-	return &ListUsersRequest{
-		Attributes:         v.Attributes,
-		Count:              countWireValue,
-		ExcludedAttributes: v.ExcludedAttributes,
-		Filter:             v.Filter,
-		SortBy:             v.SortBy,
-		SortOrder:          v.SortOrder,
-		StartIndex:         startIndexWireValue,
-	}, nil
-}
-
 type ListUsersResponse struct {
 	// Total results returned in the response.
 	ItemsPerPage *int `json:"itemsPerPage,omitempty"`
@@ -1293,27 +595,6 @@ type ListUsersResponse struct {
 	TotalResults *int `json:"totalResults,omitempty"`
 }
 
-func ListUsersResponseToSDK(w *ListUsersResponse) (*sdk.ListUsersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, UserToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListUsersResponse.Resources", err)
-	}
-	startIndexPublicValue, err := int64FromWire(w.StartIndex)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListUsersResponse.StartIndex", err)
-	}
-	return &sdk.ListUsersResponse{
-		ItemsPerPage: w.ItemsPerPage,
-		Resources:    resourcesPublicValue,
-		Schemas:      w.Schemas,
-		StartIndex:   startIndexPublicValue,
-		TotalResults: w.TotalResults,
-	}, nil
-}
-
 type MeRequest struct {
 	// Comma-separated list of attributes to return in response.
 	Attributes *string `json:"attributes,omitempty"`
@@ -1321,41 +602,11 @@ type MeRequest struct {
 	ExcludedAttributes *string `json:"excludedAttributes,omitempty"`
 }
 
-func MeRequestFromSDK(v *sdk.MeRequest) (*MeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MeRequest{
-		Attributes:         v.Attributes,
-		ExcludedAttributes: v.ExcludedAttributes,
-	}, nil
-}
-
 type Name struct {
 	// Family name of the <Databricks> user.
 	FamilyName *string `json:"familyName,omitempty"`
 	// Given name of the <Databricks> user.
 	GivenName *string `json:"givenName,omitempty"`
-}
-
-func NameFromSDK(v *sdk.Name) (*Name, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Name{
-		FamilyName: v.FamilyName,
-		GivenName:  v.GivenName,
-	}, nil
-}
-
-func NameToSDK(w *Name) (*sdk.Name, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Name{
-		FamilyName: w.FamilyName,
-		GivenName:  w.GivenName,
-	}, nil
 }
 
 type PasswordAccessControlRequest struct {
@@ -1367,18 +618,6 @@ type PasswordAccessControlRequest struct {
 	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
 	// name of the user
 	UserName *string `json:"user_name,omitempty"`
-}
-
-func PasswordAccessControlRequestFromSDK(v *sdk.PasswordAccessControlRequest) (*PasswordAccessControlRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PasswordAccessControlRequest{
-		GroupName:            v.GroupName,
-		PermissionLevel:      v.PermissionLevel,
-		ServicePrincipalName: v.ServicePrincipalName,
-		UserName:             v.UserName,
-	}, nil
 }
 
 type PasswordAccessControlResponse struct {
@@ -1394,39 +633,11 @@ type PasswordAccessControlResponse struct {
 	UserName *string `json:"user_name,omitempty"`
 }
 
-func PasswordAccessControlResponseToSDK(w *PasswordAccessControlResponse) (*sdk.PasswordAccessControlResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	allPermissionsPublicValue, err := convertSlice(w.AllPermissions, PasswordPermissionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PasswordAccessControlResponse.AllPermissions", err)
-	}
-	return &sdk.PasswordAccessControlResponse{
-		AllPermissions:       allPermissionsPublicValue,
-		DisplayName:          w.DisplayName,
-		GroupName:            w.GroupName,
-		ServicePrincipalName: w.ServicePrincipalName,
-		UserName:             w.UserName,
-	}, nil
-}
-
 type PasswordPermission struct {
 	Inherited           *bool    `json:"inherited,omitempty"`
 	InheritedFromObject []string `json:"inherited_from_object,omitempty"`
 	// Permission level
 	PermissionLevel PasswordPermission_Level `json:"permission_level,omitempty"`
-}
-
-func PasswordPermissionToSDK(w *PasswordPermission) (*sdk.PasswordPermission, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PasswordPermission{
-		Inherited:           w.Inherited,
-		InheritedFromObject: w.InheritedFromObject,
-		PermissionLevel:     w.PermissionLevel,
-	}, nil
 }
 
 type PasswordPermissions struct {
@@ -1435,52 +646,14 @@ type PasswordPermissions struct {
 	ObjectType        *string                         `json:"object_type,omitempty"`
 }
 
-func PasswordPermissionsToSDK(w *PasswordPermissions) (*sdk.PasswordPermissions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	accessControlListPublicValue, err := convertSlice(w.AccessControlList, PasswordAccessControlResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PasswordPermissions.AccessControlList", err)
-	}
-	return &sdk.PasswordPermissions{
-		AccessControlList: accessControlListPublicValue,
-		ObjectId:          w.ObjectId,
-		ObjectType:        w.ObjectType,
-	}, nil
-}
-
 type PasswordPermissionsDescription struct {
 	Description *string `json:"description,omitempty"`
 	// Permission level
 	PermissionLevel PasswordPermission_Level `json:"permission_level,omitempty"`
 }
 
-func PasswordPermissionsDescriptionToSDK(w *PasswordPermissionsDescription) (*sdk.PasswordPermissionsDescription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PasswordPermissionsDescription{
-		Description:     w.Description,
-		PermissionLevel: w.PermissionLevel,
-	}, nil
-}
-
 type PasswordPermissionsRequest struct {
 	AccessControlList []PasswordAccessControlRequest `json:"access_control_list,omitempty"`
-}
-
-func PasswordPermissionsRequestFromSDK(v *sdk.PasswordPermissionsRequest) (*PasswordPermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accessControlListWireValue, err := convertSlice(v.AccessControlList, PasswordAccessControlRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PasswordPermissionsRequest.AccessControlList", err)
-	}
-	return &PasswordPermissionsRequest{
-		AccessControlList: accessControlListWireValue,
-	}, nil
 }
 
 type Patch struct {
@@ -1490,17 +663,6 @@ type Patch struct {
 	Path *string `json:"path,omitempty"`
 	// Value to modify
 	Value json.RawMessage `json:"value,omitempty"`
-}
-
-func PatchFromSDK(v *sdk.Patch) (*Patch, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Patch{
-		Op:    v.Op,
-		Path:  v.Path,
-		Value: v.Value,
-	}, nil
 }
 
 type PatchAccountGroupRequest struct {
@@ -1514,22 +676,6 @@ type PatchAccountGroupRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func PatchAccountGroupRequestFromSDK(v *sdk.PatchAccountGroupRequest) (*PatchAccountGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, AccountPatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchAccountGroupRequest.Operations", err)
-	}
-	return &PatchAccountGroupRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-		AccountId:  v.AccountId,
-	}, nil
-}
-
 type PatchAccountServicePrincipalRequest struct {
 	// Unique ID in the <Databricks> workspace.
 	Id         *string        `json:"id,omitempty"`
@@ -1539,22 +685,6 @@ type PatchAccountServicePrincipalRequest struct {
 	Schemas []AccountPatchSchema_PatchSchema `json:"schemas,omitempty"`
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func PatchAccountServicePrincipalRequestFromSDK(v *sdk.PatchAccountServicePrincipalRequest) (*PatchAccountServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, AccountPatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchAccountServicePrincipalRequest.Operations", err)
-	}
-	return &PatchAccountServicePrincipalRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-		AccountId:  v.AccountId,
-	}, nil
 }
 
 type PatchAccountUserRequest struct {
@@ -1568,22 +698,6 @@ type PatchAccountUserRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func PatchAccountUserRequestFromSDK(v *sdk.PatchAccountUserRequest) (*PatchAccountUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, AccountPatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchAccountUserRequest.Operations", err)
-	}
-	return &PatchAccountUserRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-		AccountId:  v.AccountId,
-	}, nil
-}
-
 type PatchGroupRequest struct {
 	// Unique ID in the <Databricks> workspace.
 	Id         *string `json:"id,omitempty"`
@@ -1591,21 +705,6 @@ type PatchGroupRequest struct {
 	// The schema of the patch request. Must be
 	// ["urn:ietf:params:scim:api:messages:2.0:PatchOp"].
 	Schemas []PatchSchema `json:"schemas,omitempty"`
-}
-
-func PatchGroupRequestFromSDK(v *sdk.PatchGroupRequest) (*PatchGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, PatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchGroupRequest.Operations", err)
-	}
-	return &PatchGroupRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-	}, nil
 }
 
 type PatchServicePrincipalRequest struct {
@@ -1617,21 +716,6 @@ type PatchServicePrincipalRequest struct {
 	Schemas []PatchSchema `json:"schemas,omitempty"`
 }
 
-func PatchServicePrincipalRequestFromSDK(v *sdk.PatchServicePrincipalRequest) (*PatchServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, PatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchServicePrincipalRequest.Operations", err)
-	}
-	return &PatchServicePrincipalRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-	}, nil
-}
-
 type PatchUserRequest struct {
 	// Unique ID in the <Databricks> workspace.
 	Id         *string `json:"id,omitempty"`
@@ -1641,43 +725,10 @@ type PatchUserRequest struct {
 	Schemas []PatchSchema `json:"schemas,omitempty"`
 }
 
-func PatchUserRequestFromSDK(v *sdk.PatchUserRequest) (*PatchUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	operationsWireValue, err := convertSlice(v.Operations, PatchFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PatchUserRequest.Operations", err)
-	}
-	return &PatchUserRequest{
-		Id:         v.Id,
-		Operations: operationsWireValue,
-		Schemas:    v.Schemas,
-	}, nil
-}
-
 type ResourceMeta struct {
 	// Identifier for group type. Can be local workspace group (`WorkspaceGroup`) or
 	// account group (`Group`).
 	ResourceType *string `json:"resourceType,omitempty"`
-}
-
-func ResourceMetaFromSDK(v *sdk.ResourceMeta) (*ResourceMeta, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ResourceMeta{
-		ResourceType: v.ResourceType,
-	}, nil
-}
-
-func ResourceMetaToSDK(w *ResourceMeta) (*sdk.ResourceMeta, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResourceMeta{
-		ResourceType: w.ResourceType,
-	}, nil
 }
 
 type ServicePrincipal struct {
@@ -1702,35 +753,6 @@ type ServicePrincipal struct {
 	Schemas []ServicePrincipalSchema `json:"schemas,omitempty"`
 }
 
-func ServicePrincipalToSDK(w *ServicePrincipal) (*sdk.ServicePrincipal, error) {
-	if w == nil {
-		return nil, nil
-	}
-	entitlementsPublicValue, err := convertSlice(w.Entitlements, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Entitlements", err)
-	}
-	groupsPublicValue, err := convertSlice(w.Groups, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Groups", err)
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, ComplexValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Roles", err)
-	}
-	return &sdk.ServicePrincipal{
-		Active:        w.Active,
-		ApplicationId: w.ApplicationId,
-		DisplayName:   w.DisplayName,
-		Entitlements:  entitlementsPublicValue,
-		ExternalId:    w.ExternalId,
-		Groups:        groupsPublicValue,
-		Id:            w.Id,
-		Roles:         rolesPublicValue,
-		Schemas:       w.Schemas,
-	}, nil
-}
-
 type UpdateAccountGroupRequest struct {
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
@@ -1744,33 +766,6 @@ type UpdateAccountGroupRequest struct {
 	Roles []AccountComplexValue `json:"roles,omitempty"`
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func UpdateAccountGroupRequestFromSDK(v *sdk.UpdateAccountGroupRequest) (*UpdateAccountGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	membersWireValue, err := convertSlice(v.Members, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Members", err)
-	}
-	metaWireValue, err := AccountResourceMetaFromSDK(v.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Meta", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Roles", err)
-	}
-	return &UpdateAccountGroupRequest{
-		DisplayName: v.DisplayName,
-		ExternalId:  v.ExternalId,
-		Id:          v.Id,
-		Members:     membersWireValue,
-		Meta:        metaWireValue,
-		Roles:       rolesWireValue,
-		AccountId:   v.AccountId,
-	}, nil
 }
 
 type UpdateAccountServicePrincipalRequest struct {
@@ -1787,25 +782,6 @@ type UpdateAccountServicePrincipalRequest struct {
 	Roles []AccountComplexValue `json:"roles,omitempty"`
 	// <Databricks> account ID
 	AccountId *string `json:"account_id,omitempty"`
-}
-
-func UpdateAccountServicePrincipalRequestFromSDK(v *sdk.UpdateAccountServicePrincipalRequest) (*UpdateAccountServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountServicePrincipalRequest.Roles", err)
-	}
-	return &UpdateAccountServicePrincipalRequest{
-		Active:        v.Active,
-		ApplicationId: v.ApplicationId,
-		DisplayName:   v.DisplayName,
-		ExternalId:    v.ExternalId,
-		Id:            v.Id,
-		Roles:         rolesWireValue,
-		AccountId:     v.AccountId,
-	}, nil
 }
 
 type UpdateAccountUserRequest struct {
@@ -1832,35 +808,6 @@ type UpdateAccountUserRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 }
 
-func UpdateAccountUserRequestFromSDK(v *sdk.UpdateAccountUserRequest) (*UpdateAccountUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailsWireValue, err := convertSlice(v.Emails, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Emails", err)
-	}
-	nameWireValue, err := AccountNameFromSDK(v.Name)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Name", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Roles", err)
-	}
-	return &UpdateAccountUserRequest{
-		Active:      v.Active,
-		DisplayName: v.DisplayName,
-		Emails:      emailsWireValue,
-		ExternalId:  v.ExternalId,
-		Id:          v.Id,
-		Name:        nameWireValue,
-		Roles:       rolesWireValue,
-		UserName:    v.UserName,
-		AccountId:   v.AccountId,
-	}, nil
-}
-
 type UpdateGroupRequest struct {
 	// String that represents a human-readable group name
 	DisplayName *string `json:"displayName,omitempty"`
@@ -1880,43 +827,6 @@ type UpdateGroupRequest struct {
 	Roles []ComplexValue `json:"roles,omitempty"`
 	// The schema of the group.
 	Schemas []GroupSchema `json:"schemas,omitempty"`
-}
-
-func UpdateGroupRequestFromSDK(v *sdk.UpdateGroupRequest) (*UpdateGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Groups", err)
-	}
-	membersWireValue, err := convertSlice(v.Members, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Members", err)
-	}
-	metaWireValue, err := ResourceMetaFromSDK(v.Meta)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Meta", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Roles", err)
-	}
-	return &UpdateGroupRequest{
-		DisplayName:  v.DisplayName,
-		Entitlements: entitlementsWireValue,
-		ExternalId:   v.ExternalId,
-		Groups:       groupsWireValue,
-		Id:           v.Id,
-		Members:      membersWireValue,
-		Meta:         metaWireValue,
-		Roles:        rolesWireValue,
-		Schemas:      v.Schemas,
-	}, nil
 }
 
 type UpdateServicePrincipalRequest struct {
@@ -1939,35 +849,6 @@ type UpdateServicePrincipalRequest struct {
 	Roles []ComplexValue `json:"roles,omitempty"`
 	// The schema of the List response.
 	Schemas []ServicePrincipalSchema `json:"schemas,omitempty"`
-}
-
-func UpdateServicePrincipalRequestFromSDK(v *sdk.UpdateServicePrincipalRequest) (*UpdateServicePrincipalRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Groups", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Roles", err)
-	}
-	return &UpdateServicePrincipalRequest{
-		Active:        v.Active,
-		ApplicationId: v.ApplicationId,
-		DisplayName:   v.DisplayName,
-		Entitlements:  entitlementsWireValue,
-		ExternalId:    v.ExternalId,
-		Groups:        groupsWireValue,
-		Id:            v.Id,
-		Roles:         rolesWireValue,
-		Schemas:       v.Schemas,
-	}, nil
 }
 
 type UpdateUserRequest struct {
@@ -2004,45 +885,6 @@ type UpdateUserRequest struct {
 	UserName *string `json:"userName,omitempty"`
 }
 
-func UpdateUserRequestFromSDK(v *sdk.UpdateUserRequest) (*UpdateUserRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailsWireValue, err := convertSlice(v.Emails, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Emails", err)
-	}
-	entitlementsWireValue, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Entitlements", err)
-	}
-	groupsWireValue, err := convertSlice(v.Groups, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Groups", err)
-	}
-	nameWireValue, err := NameFromSDK(v.Name)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Name", err)
-	}
-	rolesWireValue, err := convertSlice(v.Roles, ComplexValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Roles", err)
-	}
-	return &UpdateUserRequest{
-		Active:       v.Active,
-		DisplayName:  v.DisplayName,
-		Emails:       emailsWireValue,
-		Entitlements: entitlementsWireValue,
-		ExternalId:   v.ExternalId,
-		Groups:       groupsWireValue,
-		Id:           v.Id,
-		Name:         nameWireValue,
-		Roles:        rolesWireValue,
-		Schemas:      v.Schemas,
-		UserName:     v.UserName,
-	}, nil
-}
-
 type User struct {
 	// If this user is active
 	Active *bool `json:"active,omitempty"`
@@ -2077,43 +919,2202 @@ type User struct {
 	UserName *string `json:"userName,omitempty"`
 }
 
+// AccountComplexValueToSDK converts the mirror to the sdk-go type.
+func AccountComplexValueToSDK(w *AccountComplexValue) (*sdk.AccountComplexValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountComplexValue{}
+	out.Display = w.Display
+	out.Primary = w.Primary
+	out.Ref = w.Ref
+	out.Type = w.Type
+	out.Value = w.Value
+	return out, nil
+}
+
+// AccountComplexValueFromSDK converts the sdk-go type to the mirror.
+func AccountComplexValueFromSDK(v *sdk.AccountComplexValue) (*AccountComplexValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountComplexValue{}
+	out.Display = v.Display
+	out.Primary = v.Primary
+	out.Ref = v.Ref
+	out.Type = v.Type
+	out.Value = v.Value
+	return out, nil
+}
+
+// AccountGroupToSDK converts the mirror to the sdk-go type.
+func AccountGroupToSDK(w *AccountGroup) (*sdk.AccountGroup, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountGroup{}
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv1, err := convertSlice(w.Members, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Members", err)
+	}
+	out.Members = conv1
+	conv2, err := AccountResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Meta", err)
+	}
+	out.Meta = conv2
+	conv3, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Roles", err)
+	}
+	out.Roles = conv3
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// AccountGroupFromSDK converts the sdk-go type to the mirror.
+func AccountGroupFromSDK(v *sdk.AccountGroup) (*AccountGroup, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountGroup{}
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv4, err := convertSlice(v.Members, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Members", err)
+	}
+	out.Members = conv4
+	conv5, err := AccountResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Meta", err)
+	}
+	out.Meta = conv5
+	conv6, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountGroup.Roles", err)
+	}
+	out.Roles = conv6
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// AccountNameToSDK converts the mirror to the sdk-go type.
+func AccountNameToSDK(w *AccountName) (*sdk.AccountName, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountName{}
+	out.FamilyName = w.FamilyName
+	out.GivenName = w.GivenName
+	return out, nil
+}
+
+// AccountNameFromSDK converts the sdk-go type to the mirror.
+func AccountNameFromSDK(v *sdk.AccountName) (*AccountName, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountName{}
+	out.FamilyName = v.FamilyName
+	out.GivenName = v.GivenName
+	return out, nil
+}
+
+// AccountPatchToSDK converts the mirror to the sdk-go type.
+func AccountPatchToSDK(w *AccountPatch) (*sdk.AccountPatch, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountPatch{}
+	out.Op = w.Op
+	out.Path = w.Path
+	out.Value = w.Value
+	return out, nil
+}
+
+// AccountPatchFromSDK converts the sdk-go type to the mirror.
+func AccountPatchFromSDK(v *sdk.AccountPatch) (*AccountPatch, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountPatch{}
+	out.Op = v.Op
+	out.Path = v.Path
+	out.Value = v.Value
+	return out, nil
+}
+
+// AccountResourceMetaToSDK converts the mirror to the sdk-go type.
+func AccountResourceMetaToSDK(w *AccountResourceMeta) (*sdk.AccountResourceMeta, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountResourceMeta{}
+	out.ResourceType = w.ResourceType
+	return out, nil
+}
+
+// AccountResourceMetaFromSDK converts the sdk-go type to the mirror.
+func AccountResourceMetaFromSDK(v *sdk.AccountResourceMeta) (*AccountResourceMeta, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountResourceMeta{}
+	out.ResourceType = v.ResourceType
+	return out, nil
+}
+
+// AccountServicePrincipalToSDK converts the mirror to the sdk-go type.
+func AccountServicePrincipalToSDK(w *AccountServicePrincipal) (*sdk.AccountServicePrincipal, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountServicePrincipal{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv7, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountServicePrincipal.Roles", err)
+	}
+	out.Roles = conv7
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// AccountServicePrincipalFromSDK converts the sdk-go type to the mirror.
+func AccountServicePrincipalFromSDK(v *sdk.AccountServicePrincipal) (*AccountServicePrincipal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountServicePrincipal{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv8, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountServicePrincipal.Roles", err)
+	}
+	out.Roles = conv8
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// AccountUserToSDK converts the mirror to the sdk-go type.
+func AccountUserToSDK(w *AccountUser) (*sdk.AccountUser, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountUser{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv9, err := convertSlice(w.Emails, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Emails", err)
+	}
+	out.Emails = conv9
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv10, err := AccountNameToSDK(w.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Name", err)
+	}
+	out.Name = conv10
+	conv11, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Roles", err)
+	}
+	out.Roles = conv11
+	out.UserName = w.UserName
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// AccountUserFromSDK converts the sdk-go type to the mirror.
+func AccountUserFromSDK(v *sdk.AccountUser) (*AccountUser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountUser{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv12, err := convertSlice(v.Emails, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Emails", err)
+	}
+	out.Emails = conv12
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv13, err := AccountNameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Name", err)
+	}
+	out.Name = conv13
+	conv14, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountUser.Roles", err)
+	}
+	out.Roles = conv14
+	out.UserName = v.UserName
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// ComplexValueToSDK converts the mirror to the sdk-go type.
+func ComplexValueToSDK(w *ComplexValue) (*sdk.ComplexValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComplexValue{}
+	out.Display = w.Display
+	out.Primary = w.Primary
+	out.Ref = w.Ref
+	out.Type = w.Type
+	out.Value = w.Value
+	return out, nil
+}
+
+// ComplexValueFromSDK converts the sdk-go type to the mirror.
+func ComplexValueFromSDK(v *sdk.ComplexValue) (*ComplexValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComplexValue{}
+	out.Display = v.Display
+	out.Primary = v.Primary
+	out.Ref = v.Ref
+	out.Type = v.Type
+	out.Value = v.Value
+	return out, nil
+}
+
+// CreateAccountGroupRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccountGroupRequestToSDK(w *CreateAccountGroupRequest) (*sdk.CreateAccountGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountGroupRequest{}
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv15, err := convertSlice(w.Members, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Members", err)
+	}
+	out.Members = conv15
+	conv16, err := AccountResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Meta", err)
+	}
+	out.Meta = conv16
+	conv17, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Roles", err)
+	}
+	out.Roles = conv17
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// CreateAccountGroupRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccountGroupRequestFromSDK(v *sdk.CreateAccountGroupRequest) (*CreateAccountGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountGroupRequest{}
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv18, err := convertSlice(v.Members, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Members", err)
+	}
+	out.Members = conv18
+	conv19, err := AccountResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Meta", err)
+	}
+	out.Meta = conv19
+	conv20, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountGroupRequest.Roles", err)
+	}
+	out.Roles = conv20
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// CreateAccountServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccountServicePrincipalRequestToSDK(w *CreateAccountServicePrincipalRequest) (*sdk.CreateAccountServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountServicePrincipalRequest{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv21, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv21
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// CreateAccountServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccountServicePrincipalRequestFromSDK(v *sdk.CreateAccountServicePrincipalRequest) (*CreateAccountServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountServicePrincipalRequest{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv22, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv22
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// CreateAccountUserRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccountUserRequestToSDK(w *CreateAccountUserRequest) (*sdk.CreateAccountUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountUserRequest{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv23, err := convertSlice(w.Emails, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Emails", err)
+	}
+	out.Emails = conv23
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv24, err := AccountNameToSDK(w.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Name", err)
+	}
+	out.Name = conv24
+	conv25, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Roles", err)
+	}
+	out.Roles = conv25
+	out.UserName = w.UserName
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// CreateAccountUserRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccountUserRequestFromSDK(v *sdk.CreateAccountUserRequest) (*CreateAccountUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountUserRequest{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv26, err := convertSlice(v.Emails, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Emails", err)
+	}
+	out.Emails = conv26
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv27, err := AccountNameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Name", err)
+	}
+	out.Name = conv27
+	conv28, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountUserRequest.Roles", err)
+	}
+	out.Roles = conv28
+	out.UserName = v.UserName
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// CreateGroupRequestToSDK converts the mirror to the sdk-go type.
+func CreateGroupRequestToSDK(w *CreateGroupRequest) (*sdk.CreateGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateGroupRequest{}
+	out.DisplayName = w.DisplayName
+	conv29, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Entitlements", err)
+	}
+	out.Entitlements = conv29
+	out.ExternalId = w.ExternalId
+	conv30, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Groups", err)
+	}
+	out.Groups = conv30
+	out.Id = w.Id
+	conv31, err := convertSlice(w.Members, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Members", err)
+	}
+	out.Members = conv31
+	conv32, err := ResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Meta", err)
+	}
+	out.Meta = conv32
+	conv33, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Roles", err)
+	}
+	out.Roles = conv33
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// CreateGroupRequestFromSDK converts the sdk-go type to the mirror.
+func CreateGroupRequestFromSDK(v *sdk.CreateGroupRequest) (*CreateGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateGroupRequest{}
+	out.DisplayName = v.DisplayName
+	conv34, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Entitlements", err)
+	}
+	out.Entitlements = conv34
+	out.ExternalId = v.ExternalId
+	conv35, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Groups", err)
+	}
+	out.Groups = conv35
+	out.Id = v.Id
+	conv36, err := convertSlice(v.Members, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Members", err)
+	}
+	out.Members = conv36
+	conv37, err := ResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Meta", err)
+	}
+	out.Meta = conv37
+	conv38, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGroupRequest.Roles", err)
+	}
+	out.Roles = conv38
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// CreateServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func CreateServicePrincipalRequestToSDK(w *CreateServicePrincipalRequest) (*sdk.CreateServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateServicePrincipalRequest{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	conv39, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Entitlements", err)
+	}
+	out.Entitlements = conv39
+	out.ExternalId = w.ExternalId
+	conv40, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Groups", err)
+	}
+	out.Groups = conv40
+	out.Id = w.Id
+	conv41, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv41
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// CreateServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func CreateServicePrincipalRequestFromSDK(v *sdk.CreateServicePrincipalRequest) (*CreateServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateServicePrincipalRequest{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	conv42, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Entitlements", err)
+	}
+	out.Entitlements = conv42
+	out.ExternalId = v.ExternalId
+	conv43, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Groups", err)
+	}
+	out.Groups = conv43
+	out.Id = v.Id
+	conv44, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv44
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// CreateUserRequestToSDK converts the mirror to the sdk-go type.
+func CreateUserRequestToSDK(w *CreateUserRequest) (*sdk.CreateUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateUserRequest{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv45, err := convertSlice(w.Emails, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Emails", err)
+	}
+	out.Emails = conv45
+	conv46, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Entitlements", err)
+	}
+	out.Entitlements = conv46
+	out.ExternalId = w.ExternalId
+	conv47, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Groups", err)
+	}
+	out.Groups = conv47
+	out.Id = w.Id
+	conv48, err := NameToSDK(w.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Name", err)
+	}
+	out.Name = conv48
+	conv49, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Roles", err)
+	}
+	out.Roles = conv49
+	out.Schemas = w.Schemas
+	out.UserName = w.UserName
+	return out, nil
+}
+
+// CreateUserRequestFromSDK converts the sdk-go type to the mirror.
+func CreateUserRequestFromSDK(v *sdk.CreateUserRequest) (*CreateUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateUserRequest{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv50, err := convertSlice(v.Emails, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Emails", err)
+	}
+	out.Emails = conv50
+	conv51, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Entitlements", err)
+	}
+	out.Entitlements = conv51
+	out.ExternalId = v.ExternalId
+	conv52, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Groups", err)
+	}
+	out.Groups = conv52
+	out.Id = v.Id
+	conv53, err := NameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Name", err)
+	}
+	out.Name = conv53
+	conv54, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateUserRequest.Roles", err)
+	}
+	out.Roles = conv54
+	out.Schemas = v.Schemas
+	out.UserName = v.UserName
+	return out, nil
+}
+
+// GetAccountUserRequestToSDK converts the mirror to the sdk-go type.
+func GetAccountUserRequestToSDK(w *GetAccountUserRequest) (*sdk.GetAccountUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetAccountUserRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.Id = w.Id
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// GetAccountUserRequestFromSDK converts the sdk-go type to the mirror.
+func GetAccountUserRequestFromSDK(v *sdk.GetAccountUserRequest) (*GetAccountUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetAccountUserRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.Id = v.Id
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// GetPasswordPermissionLevelsResponseToSDK converts the mirror to the sdk-go type.
+func GetPasswordPermissionLevelsResponseToSDK(w *GetPasswordPermissionLevelsResponse) (*sdk.GetPasswordPermissionLevelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPasswordPermissionLevelsResponse{}
+	conv55, err := convertSlice(w.PermissionLevels, PasswordPermissionsDescriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPasswordPermissionLevelsResponse.PermissionLevels", err)
+	}
+	out.PermissionLevels = conv55
+	return out, nil
+}
+
+// GetPasswordPermissionLevelsResponseFromSDK converts the sdk-go type to the mirror.
+func GetPasswordPermissionLevelsResponseFromSDK(v *sdk.GetPasswordPermissionLevelsResponse) (*GetPasswordPermissionLevelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPasswordPermissionLevelsResponse{}
+	conv56, err := convertSlice(v.PermissionLevels, PasswordPermissionsDescriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPasswordPermissionLevelsResponse.PermissionLevels", err)
+	}
+	out.PermissionLevels = conv56
+	return out, nil
+}
+
+// GetUserRequestToSDK converts the mirror to the sdk-go type.
+func GetUserRequestToSDK(w *GetUserRequest) (*sdk.GetUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetUserRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.Id = w.Id
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	return out, nil
+}
+
+// GetUserRequestFromSDK converts the sdk-go type to the mirror.
+func GetUserRequestFromSDK(v *sdk.GetUserRequest) (*GetUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetUserRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.Id = v.Id
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	return out, nil
+}
+
+// GroupToSDK converts the mirror to the sdk-go type.
+func GroupToSDK(w *Group) (*sdk.Group, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Group{}
+	out.DisplayName = w.DisplayName
+	conv57, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Entitlements", err)
+	}
+	out.Entitlements = conv57
+	out.ExternalId = w.ExternalId
+	conv58, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Groups", err)
+	}
+	out.Groups = conv58
+	out.Id = w.Id
+	conv59, err := convertSlice(w.Members, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Members", err)
+	}
+	out.Members = conv59
+	conv60, err := ResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Meta", err)
+	}
+	out.Meta = conv60
+	conv61, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Roles", err)
+	}
+	out.Roles = conv61
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// GroupFromSDK converts the sdk-go type to the mirror.
+func GroupFromSDK(v *sdk.Group) (*Group, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Group{}
+	out.DisplayName = v.DisplayName
+	conv62, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Entitlements", err)
+	}
+	out.Entitlements = conv62
+	out.ExternalId = v.ExternalId
+	conv63, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Groups", err)
+	}
+	out.Groups = conv63
+	out.Id = v.Id
+	conv64, err := convertSlice(v.Members, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Members", err)
+	}
+	out.Members = conv64
+	conv65, err := ResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Meta", err)
+	}
+	out.Meta = conv65
+	conv66, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Group.Roles", err)
+	}
+	out.Roles = conv66
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// ListAccountGroupsRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountGroupsRequestToSDK(w *ListAccountGroupsRequest) (*sdk.ListAccountGroupsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountGroupsRequest{}
+	out.AccountId = w.AccountId
+	out.Filter = w.Filter
+	out.Attributes = w.Attributes
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.StartIndex = w.StartIndex
+	out.Count = w.Count
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	return out, nil
+}
+
+// ListAccountGroupsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountGroupsRequestFromSDK(v *sdk.ListAccountGroupsRequest) (*ListAccountGroupsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountGroupsRequest{}
+	out.AccountId = v.AccountId
+	out.Filter = v.Filter
+	out.Attributes = v.Attributes
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.StartIndex = v.StartIndex
+	out.Count = v.Count
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	return out, nil
+}
+
+// ListAccountGroupsResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountGroupsResponseToSDK(w *ListAccountGroupsResponse) (*sdk.ListAccountGroupsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountGroupsResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv67, err := convertSlice(w.Resources, AccountGroupToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsResponse.Resources", err)
+	}
+	out.Resources = conv67
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListAccountGroupsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountGroupsResponseFromSDK(v *sdk.ListAccountGroupsResponse) (*ListAccountGroupsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountGroupsResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv68, err := convertSlice(v.Resources, AccountGroupFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountGroupsResponse.Resources", err)
+	}
+	out.Resources = conv68
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// ListAccountServicePrincipalsRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountServicePrincipalsRequestToSDK(w *ListAccountServicePrincipalsRequest) (*sdk.ListAccountServicePrincipalsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountServicePrincipalsRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// ListAccountServicePrincipalsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountServicePrincipalsRequestFromSDK(v *sdk.ListAccountServicePrincipalsRequest) (*ListAccountServicePrincipalsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountServicePrincipalsRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// ListAccountServicePrincipalsResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountServicePrincipalsResponseToSDK(w *ListAccountServicePrincipalsResponse) (*sdk.ListAccountServicePrincipalsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountServicePrincipalsResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv69, err := convertSlice(w.Resources, AccountServicePrincipalToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsResponse.Resources", err)
+	}
+	out.Resources = conv69
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListAccountServicePrincipalsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountServicePrincipalsResponseFromSDK(v *sdk.ListAccountServicePrincipalsResponse) (*ListAccountServicePrincipalsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountServicePrincipalsResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv70, err := convertSlice(v.Resources, AccountServicePrincipalFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountServicePrincipalsResponse.Resources", err)
+	}
+	out.Resources = conv70
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// ListAccountUsersRequestToSDK converts the mirror to the sdk-go type.
+func ListAccountUsersRequestToSDK(w *ListAccountUsersRequest) (*sdk.ListAccountUsersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountUsersRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// ListAccountUsersRequestFromSDK converts the sdk-go type to the mirror.
+func ListAccountUsersRequestFromSDK(v *sdk.ListAccountUsersRequest) (*ListAccountUsersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountUsersRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// ListAccountUsersResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountUsersResponseToSDK(w *ListAccountUsersResponse) (*sdk.ListAccountUsersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountUsersResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv71, err := convertSlice(w.Resources, AccountUserToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountUsersResponse.Resources", err)
+	}
+	out.Resources = conv71
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListAccountUsersResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountUsersResponseFromSDK(v *sdk.ListAccountUsersResponse) (*ListAccountUsersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountUsersResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv72, err := convertSlice(v.Resources, AccountUserFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountUsersResponse.Resources", err)
+	}
+	out.Resources = conv72
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// ListGroupsRequestToSDK converts the mirror to the sdk-go type.
+func ListGroupsRequestToSDK(w *ListGroupsRequest) (*sdk.ListGroupsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListGroupsRequest{}
+	out.Filter = w.Filter
+	out.Attributes = w.Attributes
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.StartIndex = w.StartIndex
+	out.Count = w.Count
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	return out, nil
+}
+
+// ListGroupsRequestFromSDK converts the sdk-go type to the mirror.
+func ListGroupsRequestFromSDK(v *sdk.ListGroupsRequest) (*ListGroupsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListGroupsRequest{}
+	out.Filter = v.Filter
+	out.Attributes = v.Attributes
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.StartIndex = v.StartIndex
+	out.Count = v.Count
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	return out, nil
+}
+
+// ListGroupsResponseToSDK converts the mirror to the sdk-go type.
+func ListGroupsResponseToSDK(w *ListGroupsResponse) (*sdk.ListGroupsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListGroupsResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv73, err := convertSlice(w.Resources, GroupToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListGroupsResponse.Resources", err)
+	}
+	out.Resources = conv73
+	out.Schemas = w.Schemas
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListGroupsResponseFromSDK converts the sdk-go type to the mirror.
+func ListGroupsResponseFromSDK(v *sdk.ListGroupsResponse) (*ListGroupsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListGroupsResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv74, err := convertSlice(v.Resources, GroupFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListGroupsResponse.Resources", err)
+	}
+	out.Resources = conv74
+	out.Schemas = v.Schemas
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// ListServicePrincipalResponseToSDK converts the mirror to the sdk-go type.
+func ListServicePrincipalResponseToSDK(w *ListServicePrincipalResponse) (*sdk.ListServicePrincipalResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListServicePrincipalResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv75, err := convertSlice(w.Resources, ServicePrincipalToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalResponse.Resources", err)
+	}
+	out.Resources = conv75
+	out.Schemas = w.Schemas
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListServicePrincipalResponseFromSDK converts the sdk-go type to the mirror.
+func ListServicePrincipalResponseFromSDK(v *sdk.ListServicePrincipalResponse) (*ListServicePrincipalResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListServicePrincipalResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv76, err := convertSlice(v.Resources, ServicePrincipalFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListServicePrincipalResponse.Resources", err)
+	}
+	out.Resources = conv76
+	out.Schemas = v.Schemas
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// ListServicePrincipalsRequestToSDK converts the mirror to the sdk-go type.
+func ListServicePrincipalsRequestToSDK(w *ListServicePrincipalsRequest) (*sdk.ListServicePrincipalsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListServicePrincipalsRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	return out, nil
+}
+
+// ListServicePrincipalsRequestFromSDK converts the sdk-go type to the mirror.
+func ListServicePrincipalsRequestFromSDK(v *sdk.ListServicePrincipalsRequest) (*ListServicePrincipalsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListServicePrincipalsRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	return out, nil
+}
+
+// ListUsersRequestToSDK converts the mirror to the sdk-go type.
+func ListUsersRequestToSDK(w *ListUsersRequest) (*sdk.ListUsersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListUsersRequest{}
+	out.Attributes = w.Attributes
+	out.Count = w.Count
+	out.ExcludedAttributes = w.ExcludedAttributes
+	out.Filter = w.Filter
+	out.SortBy = w.SortBy
+	out.SortOrder = w.SortOrder
+	out.StartIndex = w.StartIndex
+	return out, nil
+}
+
+// ListUsersRequestFromSDK converts the sdk-go type to the mirror.
+func ListUsersRequestFromSDK(v *sdk.ListUsersRequest) (*ListUsersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListUsersRequest{}
+	out.Attributes = v.Attributes
+	out.Count = v.Count
+	out.ExcludedAttributes = v.ExcludedAttributes
+	out.Filter = v.Filter
+	out.SortBy = v.SortBy
+	out.SortOrder = v.SortOrder
+	out.StartIndex = v.StartIndex
+	return out, nil
+}
+
+// ListUsersResponseToSDK converts the mirror to the sdk-go type.
+func ListUsersResponseToSDK(w *ListUsersResponse) (*sdk.ListUsersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListUsersResponse{}
+	out.ItemsPerPage = w.ItemsPerPage
+	conv77, err := convertSlice(w.Resources, UserToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListUsersResponse.Resources", err)
+	}
+	out.Resources = conv77
+	out.Schemas = w.Schemas
+	out.StartIndex = w.StartIndex
+	out.TotalResults = w.TotalResults
+	return out, nil
+}
+
+// ListUsersResponseFromSDK converts the sdk-go type to the mirror.
+func ListUsersResponseFromSDK(v *sdk.ListUsersResponse) (*ListUsersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListUsersResponse{}
+	out.ItemsPerPage = v.ItemsPerPage
+	conv78, err := convertSlice(v.Resources, UserFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListUsersResponse.Resources", err)
+	}
+	out.Resources = conv78
+	out.Schemas = v.Schemas
+	out.StartIndex = v.StartIndex
+	out.TotalResults = v.TotalResults
+	return out, nil
+}
+
+// MeRequestToSDK converts the mirror to the sdk-go type.
+func MeRequestToSDK(w *MeRequest) (*sdk.MeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MeRequest{}
+	out.Attributes = w.Attributes
+	out.ExcludedAttributes = w.ExcludedAttributes
+	return out, nil
+}
+
+// MeRequestFromSDK converts the sdk-go type to the mirror.
+func MeRequestFromSDK(v *sdk.MeRequest) (*MeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MeRequest{}
+	out.Attributes = v.Attributes
+	out.ExcludedAttributes = v.ExcludedAttributes
+	return out, nil
+}
+
+// NameToSDK converts the mirror to the sdk-go type.
+func NameToSDK(w *Name) (*sdk.Name, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Name{}
+	out.FamilyName = w.FamilyName
+	out.GivenName = w.GivenName
+	return out, nil
+}
+
+// NameFromSDK converts the sdk-go type to the mirror.
+func NameFromSDK(v *sdk.Name) (*Name, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Name{}
+	out.FamilyName = v.FamilyName
+	out.GivenName = v.GivenName
+	return out, nil
+}
+
+// PasswordAccessControlRequestToSDK converts the mirror to the sdk-go type.
+func PasswordAccessControlRequestToSDK(w *PasswordAccessControlRequest) (*sdk.PasswordAccessControlRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordAccessControlRequest{}
+	out.GroupName = w.GroupName
+	out.PermissionLevel = w.PermissionLevel
+	out.ServicePrincipalName = w.ServicePrincipalName
+	out.UserName = w.UserName
+	return out, nil
+}
+
+// PasswordAccessControlRequestFromSDK converts the sdk-go type to the mirror.
+func PasswordAccessControlRequestFromSDK(v *sdk.PasswordAccessControlRequest) (*PasswordAccessControlRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordAccessControlRequest{}
+	out.GroupName = v.GroupName
+	out.PermissionLevel = v.PermissionLevel
+	out.ServicePrincipalName = v.ServicePrincipalName
+	out.UserName = v.UserName
+	return out, nil
+}
+
+// PasswordAccessControlResponseToSDK converts the mirror to the sdk-go type.
+func PasswordAccessControlResponseToSDK(w *PasswordAccessControlResponse) (*sdk.PasswordAccessControlResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordAccessControlResponse{}
+	conv79, err := convertSlice(w.AllPermissions, PasswordPermissionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordAccessControlResponse.AllPermissions", err)
+	}
+	out.AllPermissions = conv79
+	out.DisplayName = w.DisplayName
+	out.GroupName = w.GroupName
+	out.ServicePrincipalName = w.ServicePrincipalName
+	out.UserName = w.UserName
+	return out, nil
+}
+
+// PasswordAccessControlResponseFromSDK converts the sdk-go type to the mirror.
+func PasswordAccessControlResponseFromSDK(v *sdk.PasswordAccessControlResponse) (*PasswordAccessControlResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordAccessControlResponse{}
+	conv80, err := convertSlice(v.AllPermissions, PasswordPermissionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordAccessControlResponse.AllPermissions", err)
+	}
+	out.AllPermissions = conv80
+	out.DisplayName = v.DisplayName
+	out.GroupName = v.GroupName
+	out.ServicePrincipalName = v.ServicePrincipalName
+	out.UserName = v.UserName
+	return out, nil
+}
+
+// PasswordPermissionToSDK converts the mirror to the sdk-go type.
+func PasswordPermissionToSDK(w *PasswordPermission) (*sdk.PasswordPermission, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordPermission{}
+	out.Inherited = w.Inherited
+	out.InheritedFromObject = w.InheritedFromObject
+	out.PermissionLevel = w.PermissionLevel
+	return out, nil
+}
+
+// PasswordPermissionFromSDK converts the sdk-go type to the mirror.
+func PasswordPermissionFromSDK(v *sdk.PasswordPermission) (*PasswordPermission, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordPermission{}
+	out.Inherited = v.Inherited
+	out.InheritedFromObject = v.InheritedFromObject
+	out.PermissionLevel = v.PermissionLevel
+	return out, nil
+}
+
+// PasswordPermissionsToSDK converts the mirror to the sdk-go type.
+func PasswordPermissionsToSDK(w *PasswordPermissions) (*sdk.PasswordPermissions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordPermissions{}
+	conv81, err := convertSlice(w.AccessControlList, PasswordAccessControlResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordPermissions.AccessControlList", err)
+	}
+	out.AccessControlList = conv81
+	out.ObjectId = w.ObjectId
+	out.ObjectType = w.ObjectType
+	return out, nil
+}
+
+// PasswordPermissionsFromSDK converts the sdk-go type to the mirror.
+func PasswordPermissionsFromSDK(v *sdk.PasswordPermissions) (*PasswordPermissions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordPermissions{}
+	conv82, err := convertSlice(v.AccessControlList, PasswordAccessControlResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordPermissions.AccessControlList", err)
+	}
+	out.AccessControlList = conv82
+	out.ObjectId = v.ObjectId
+	out.ObjectType = v.ObjectType
+	return out, nil
+}
+
+// PasswordPermissionsDescriptionToSDK converts the mirror to the sdk-go type.
+func PasswordPermissionsDescriptionToSDK(w *PasswordPermissionsDescription) (*sdk.PasswordPermissionsDescription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordPermissionsDescription{}
+	out.Description = w.Description
+	out.PermissionLevel = w.PermissionLevel
+	return out, nil
+}
+
+// PasswordPermissionsDescriptionFromSDK converts the sdk-go type to the mirror.
+func PasswordPermissionsDescriptionFromSDK(v *sdk.PasswordPermissionsDescription) (*PasswordPermissionsDescription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordPermissionsDescription{}
+	out.Description = v.Description
+	out.PermissionLevel = v.PermissionLevel
+	return out, nil
+}
+
+// PasswordPermissionsRequestToSDK converts the mirror to the sdk-go type.
+func PasswordPermissionsRequestToSDK(w *PasswordPermissionsRequest) (*sdk.PasswordPermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PasswordPermissionsRequest{}
+	conv83, err := convertSlice(w.AccessControlList, PasswordAccessControlRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv83
+	return out, nil
+}
+
+// PasswordPermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func PasswordPermissionsRequestFromSDK(v *sdk.PasswordPermissionsRequest) (*PasswordPermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PasswordPermissionsRequest{}
+	conv84, err := convertSlice(v.AccessControlList, PasswordAccessControlRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PasswordPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv84
+	return out, nil
+}
+
+// PatchToSDK converts the mirror to the sdk-go type.
+func PatchToSDK(w *Patch) (*sdk.Patch, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Patch{}
+	out.Op = w.Op
+	out.Path = w.Path
+	out.Value = w.Value
+	return out, nil
+}
+
+// PatchFromSDK converts the sdk-go type to the mirror.
+func PatchFromSDK(v *sdk.Patch) (*Patch, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Patch{}
+	out.Op = v.Op
+	out.Path = v.Path
+	out.Value = v.Value
+	return out, nil
+}
+
+// PatchAccountGroupRequestToSDK converts the mirror to the sdk-go type.
+func PatchAccountGroupRequestToSDK(w *PatchAccountGroupRequest) (*sdk.PatchAccountGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchAccountGroupRequest{}
+	out.Id = w.Id
+	conv85, err := convertSlice(w.Operations, AccountPatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountGroupRequest.Operations", err)
+	}
+	out.Operations = conv85
+	out.Schemas = w.Schemas
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// PatchAccountGroupRequestFromSDK converts the sdk-go type to the mirror.
+func PatchAccountGroupRequestFromSDK(v *sdk.PatchAccountGroupRequest) (*PatchAccountGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchAccountGroupRequest{}
+	out.Id = v.Id
+	conv86, err := convertSlice(v.Operations, AccountPatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountGroupRequest.Operations", err)
+	}
+	out.Operations = conv86
+	out.Schemas = v.Schemas
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// PatchAccountServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func PatchAccountServicePrincipalRequestToSDK(w *PatchAccountServicePrincipalRequest) (*sdk.PatchAccountServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchAccountServicePrincipalRequest{}
+	out.Id = w.Id
+	conv87, err := convertSlice(w.Operations, AccountPatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountServicePrincipalRequest.Operations", err)
+	}
+	out.Operations = conv87
+	out.Schemas = w.Schemas
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// PatchAccountServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func PatchAccountServicePrincipalRequestFromSDK(v *sdk.PatchAccountServicePrincipalRequest) (*PatchAccountServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchAccountServicePrincipalRequest{}
+	out.Id = v.Id
+	conv88, err := convertSlice(v.Operations, AccountPatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountServicePrincipalRequest.Operations", err)
+	}
+	out.Operations = conv88
+	out.Schemas = v.Schemas
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// PatchAccountUserRequestToSDK converts the mirror to the sdk-go type.
+func PatchAccountUserRequestToSDK(w *PatchAccountUserRequest) (*sdk.PatchAccountUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchAccountUserRequest{}
+	out.Id = w.Id
+	conv89, err := convertSlice(w.Operations, AccountPatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountUserRequest.Operations", err)
+	}
+	out.Operations = conv89
+	out.Schemas = w.Schemas
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// PatchAccountUserRequestFromSDK converts the sdk-go type to the mirror.
+func PatchAccountUserRequestFromSDK(v *sdk.PatchAccountUserRequest) (*PatchAccountUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchAccountUserRequest{}
+	out.Id = v.Id
+	conv90, err := convertSlice(v.Operations, AccountPatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchAccountUserRequest.Operations", err)
+	}
+	out.Operations = conv90
+	out.Schemas = v.Schemas
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// PatchGroupRequestToSDK converts the mirror to the sdk-go type.
+func PatchGroupRequestToSDK(w *PatchGroupRequest) (*sdk.PatchGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchGroupRequest{}
+	out.Id = w.Id
+	conv91, err := convertSlice(w.Operations, PatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchGroupRequest.Operations", err)
+	}
+	out.Operations = conv91
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// PatchGroupRequestFromSDK converts the sdk-go type to the mirror.
+func PatchGroupRequestFromSDK(v *sdk.PatchGroupRequest) (*PatchGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchGroupRequest{}
+	out.Id = v.Id
+	conv92, err := convertSlice(v.Operations, PatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchGroupRequest.Operations", err)
+	}
+	out.Operations = conv92
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// PatchServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func PatchServicePrincipalRequestToSDK(w *PatchServicePrincipalRequest) (*sdk.PatchServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchServicePrincipalRequest{}
+	out.Id = w.Id
+	conv93, err := convertSlice(w.Operations, PatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchServicePrincipalRequest.Operations", err)
+	}
+	out.Operations = conv93
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// PatchServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func PatchServicePrincipalRequestFromSDK(v *sdk.PatchServicePrincipalRequest) (*PatchServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchServicePrincipalRequest{}
+	out.Id = v.Id
+	conv94, err := convertSlice(v.Operations, PatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchServicePrincipalRequest.Operations", err)
+	}
+	out.Operations = conv94
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// PatchUserRequestToSDK converts the mirror to the sdk-go type.
+func PatchUserRequestToSDK(w *PatchUserRequest) (*sdk.PatchUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PatchUserRequest{}
+	out.Id = w.Id
+	conv95, err := convertSlice(w.Operations, PatchToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchUserRequest.Operations", err)
+	}
+	out.Operations = conv95
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// PatchUserRequestFromSDK converts the sdk-go type to the mirror.
+func PatchUserRequestFromSDK(v *sdk.PatchUserRequest) (*PatchUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PatchUserRequest{}
+	out.Id = v.Id
+	conv96, err := convertSlice(v.Operations, PatchFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PatchUserRequest.Operations", err)
+	}
+	out.Operations = conv96
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// ResourceMetaToSDK converts the mirror to the sdk-go type.
+func ResourceMetaToSDK(w *ResourceMeta) (*sdk.ResourceMeta, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResourceMeta{}
+	out.ResourceType = w.ResourceType
+	return out, nil
+}
+
+// ResourceMetaFromSDK converts the sdk-go type to the mirror.
+func ResourceMetaFromSDK(v *sdk.ResourceMeta) (*ResourceMeta, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResourceMeta{}
+	out.ResourceType = v.ResourceType
+	return out, nil
+}
+
+// ServicePrincipalToSDK converts the mirror to the sdk-go type.
+func ServicePrincipalToSDK(w *ServicePrincipal) (*sdk.ServicePrincipal, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServicePrincipal{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	conv97, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Entitlements", err)
+	}
+	out.Entitlements = conv97
+	out.ExternalId = w.ExternalId
+	conv98, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Groups", err)
+	}
+	out.Groups = conv98
+	out.Id = w.Id
+	conv99, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Roles", err)
+	}
+	out.Roles = conv99
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// ServicePrincipalFromSDK converts the sdk-go type to the mirror.
+func ServicePrincipalFromSDK(v *sdk.ServicePrincipal) (*ServicePrincipal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServicePrincipal{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	conv100, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Entitlements", err)
+	}
+	out.Entitlements = conv100
+	out.ExternalId = v.ExternalId
+	conv101, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Groups", err)
+	}
+	out.Groups = conv101
+	out.Id = v.Id
+	conv102, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ServicePrincipal.Roles", err)
+	}
+	out.Roles = conv102
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// UpdateAccountGroupRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccountGroupRequestToSDK(w *UpdateAccountGroupRequest) (*sdk.UpdateAccountGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountGroupRequest{}
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv103, err := convertSlice(w.Members, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Members", err)
+	}
+	out.Members = conv103
+	conv104, err := AccountResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Meta", err)
+	}
+	out.Meta = conv104
+	conv105, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Roles", err)
+	}
+	out.Roles = conv105
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// UpdateAccountGroupRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountGroupRequestFromSDK(v *sdk.UpdateAccountGroupRequest) (*UpdateAccountGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountGroupRequest{}
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv106, err := convertSlice(v.Members, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Members", err)
+	}
+	out.Members = conv106
+	conv107, err := AccountResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Meta", err)
+	}
+	out.Meta = conv107
+	conv108, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountGroupRequest.Roles", err)
+	}
+	out.Roles = conv108
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// UpdateAccountServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccountServicePrincipalRequestToSDK(w *UpdateAccountServicePrincipalRequest) (*sdk.UpdateAccountServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountServicePrincipalRequest{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv109, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv109
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// UpdateAccountServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountServicePrincipalRequestFromSDK(v *sdk.UpdateAccountServicePrincipalRequest) (*UpdateAccountServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountServicePrincipalRequest{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv110, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv110
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// UpdateAccountUserRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccountUserRequestToSDK(w *UpdateAccountUserRequest) (*sdk.UpdateAccountUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountUserRequest{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv111, err := convertSlice(w.Emails, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Emails", err)
+	}
+	out.Emails = conv111
+	out.ExternalId = w.ExternalId
+	out.Id = w.Id
+	conv112, err := AccountNameToSDK(w.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Name", err)
+	}
+	out.Name = conv112
+	conv113, err := convertSlice(w.Roles, AccountComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Roles", err)
+	}
+	out.Roles = conv113
+	out.UserName = w.UserName
+	out.AccountId = w.AccountId
+	return out, nil
+}
+
+// UpdateAccountUserRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountUserRequestFromSDK(v *sdk.UpdateAccountUserRequest) (*UpdateAccountUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountUserRequest{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv114, err := convertSlice(v.Emails, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Emails", err)
+	}
+	out.Emails = conv114
+	out.ExternalId = v.ExternalId
+	out.Id = v.Id
+	conv115, err := AccountNameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Name", err)
+	}
+	out.Name = conv115
+	conv116, err := convertSlice(v.Roles, AccountComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountUserRequest.Roles", err)
+	}
+	out.Roles = conv116
+	out.UserName = v.UserName
+	out.AccountId = v.AccountId
+	return out, nil
+}
+
+// UpdateGroupRequestToSDK converts the mirror to the sdk-go type.
+func UpdateGroupRequestToSDK(w *UpdateGroupRequest) (*sdk.UpdateGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateGroupRequest{}
+	out.DisplayName = w.DisplayName
+	conv117, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Entitlements", err)
+	}
+	out.Entitlements = conv117
+	out.ExternalId = w.ExternalId
+	conv118, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Groups", err)
+	}
+	out.Groups = conv118
+	out.Id = w.Id
+	conv119, err := convertSlice(w.Members, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Members", err)
+	}
+	out.Members = conv119
+	conv120, err := ResourceMetaToSDK(w.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Meta", err)
+	}
+	out.Meta = conv120
+	conv121, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Roles", err)
+	}
+	out.Roles = conv121
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// UpdateGroupRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateGroupRequestFromSDK(v *sdk.UpdateGroupRequest) (*UpdateGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateGroupRequest{}
+	out.DisplayName = v.DisplayName
+	conv122, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Entitlements", err)
+	}
+	out.Entitlements = conv122
+	out.ExternalId = v.ExternalId
+	conv123, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Groups", err)
+	}
+	out.Groups = conv123
+	out.Id = v.Id
+	conv124, err := convertSlice(v.Members, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Members", err)
+	}
+	out.Members = conv124
+	conv125, err := ResourceMetaFromSDK(v.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Meta", err)
+	}
+	out.Meta = conv125
+	conv126, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateGroupRequest.Roles", err)
+	}
+	out.Roles = conv126
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// UpdateServicePrincipalRequestToSDK converts the mirror to the sdk-go type.
+func UpdateServicePrincipalRequestToSDK(w *UpdateServicePrincipalRequest) (*sdk.UpdateServicePrincipalRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateServicePrincipalRequest{}
+	out.Active = w.Active
+	out.ApplicationId = w.ApplicationId
+	out.DisplayName = w.DisplayName
+	conv127, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Entitlements", err)
+	}
+	out.Entitlements = conv127
+	out.ExternalId = w.ExternalId
+	conv128, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Groups", err)
+	}
+	out.Groups = conv128
+	out.Id = w.Id
+	conv129, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv129
+	out.Schemas = w.Schemas
+	return out, nil
+}
+
+// UpdateServicePrincipalRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateServicePrincipalRequestFromSDK(v *sdk.UpdateServicePrincipalRequest) (*UpdateServicePrincipalRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateServicePrincipalRequest{}
+	out.Active = v.Active
+	out.ApplicationId = v.ApplicationId
+	out.DisplayName = v.DisplayName
+	conv130, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Entitlements", err)
+	}
+	out.Entitlements = conv130
+	out.ExternalId = v.ExternalId
+	conv131, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Groups", err)
+	}
+	out.Groups = conv131
+	out.Id = v.Id
+	conv132, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateServicePrincipalRequest.Roles", err)
+	}
+	out.Roles = conv132
+	out.Schemas = v.Schemas
+	return out, nil
+}
+
+// UpdateUserRequestToSDK converts the mirror to the sdk-go type.
+func UpdateUserRequestToSDK(w *UpdateUserRequest) (*sdk.UpdateUserRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateUserRequest{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv133, err := convertSlice(w.Emails, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Emails", err)
+	}
+	out.Emails = conv133
+	conv134, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Entitlements", err)
+	}
+	out.Entitlements = conv134
+	out.ExternalId = w.ExternalId
+	conv135, err := convertSlice(w.Groups, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Groups", err)
+	}
+	out.Groups = conv135
+	out.Id = w.Id
+	conv136, err := NameToSDK(w.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Name", err)
+	}
+	out.Name = conv136
+	conv137, err := convertSlice(w.Roles, ComplexValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Roles", err)
+	}
+	out.Roles = conv137
+	out.Schemas = w.Schemas
+	out.UserName = w.UserName
+	return out, nil
+}
+
+// UpdateUserRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateUserRequestFromSDK(v *sdk.UpdateUserRequest) (*UpdateUserRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateUserRequest{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv138, err := convertSlice(v.Emails, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Emails", err)
+	}
+	out.Emails = conv138
+	conv139, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Entitlements", err)
+	}
+	out.Entitlements = conv139
+	out.ExternalId = v.ExternalId
+	conv140, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Groups", err)
+	}
+	out.Groups = conv140
+	out.Id = v.Id
+	conv141, err := NameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Name", err)
+	}
+	out.Name = conv141
+	conv142, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateUserRequest.Roles", err)
+	}
+	out.Roles = conv142
+	out.Schemas = v.Schemas
+	out.UserName = v.UserName
+	return out, nil
+}
+
+// UserToSDK converts the mirror to the sdk-go type.
 func UserToSDK(w *User) (*sdk.User, error) {
 	if w == nil {
 		return nil, nil
 	}
-	emailsPublicValue, err := convertSlice(w.Emails, ComplexValueToSDK)
+	out := &sdk.User{}
+	out.Active = w.Active
+	out.DisplayName = w.DisplayName
+	conv143, err := convertSlice(w.Emails, ComplexValueToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "User.Emails", err)
 	}
-	entitlementsPublicValue, err := convertSlice(w.Entitlements, ComplexValueToSDK)
+	out.Emails = conv143
+	conv144, err := convertSlice(w.Entitlements, ComplexValueToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "User.Entitlements", err)
 	}
-	groupsPublicValue, err := convertSlice(w.Groups, ComplexValueToSDK)
+	out.Entitlements = conv144
+	out.ExternalId = w.ExternalId
+	conv145, err := convertSlice(w.Groups, ComplexValueToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "User.Groups", err)
 	}
-	namePublicValue, err := NameToSDK(w.Name)
+	out.Groups = conv145
+	out.Id = w.Id
+	conv146, err := NameToSDK(w.Name)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "User.Name", err)
 	}
-	rolesPublicValue, err := convertSlice(w.Roles, ComplexValueToSDK)
+	out.Name = conv146
+	conv147, err := convertSlice(w.Roles, ComplexValueToSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "User.Roles", err)
 	}
-	return &sdk.User{
-		Active:       w.Active,
-		DisplayName:  w.DisplayName,
-		Emails:       emailsPublicValue,
-		Entitlements: entitlementsPublicValue,
-		ExternalId:   w.ExternalId,
-		Groups:       groupsPublicValue,
-		Id:           w.Id,
-		Name:         namePublicValue,
-		Roles:        rolesPublicValue,
-		Schemas:      w.Schemas,
-		UserName:     w.UserName,
-	}, nil
+	out.Roles = conv147
+	out.Schemas = w.Schemas
+	out.UserName = w.UserName
+	return out, nil
+}
+
+// UserFromSDK converts the sdk-go type to the mirror.
+func UserFromSDK(v *sdk.User) (*User, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &User{}
+	out.Active = v.Active
+	out.DisplayName = v.DisplayName
+	conv148, err := convertSlice(v.Emails, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "User.Emails", err)
+	}
+	out.Emails = conv148
+	conv149, err := convertSlice(v.Entitlements, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "User.Entitlements", err)
+	}
+	out.Entitlements = conv149
+	out.ExternalId = v.ExternalId
+	conv150, err := convertSlice(v.Groups, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "User.Groups", err)
+	}
+	out.Groups = conv150
+	out.Id = v.Id
+	conv151, err := NameFromSDK(v.Name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "User.Name", err)
+	}
+	out.Name = conv151
+	conv152, err := convertSlice(v.Roles, ComplexValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "User.Roles", err)
+	}
+	out.Roles = conv152
+	out.Schemas = v.Schemas
+	out.UserName = v.UserName
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

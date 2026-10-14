@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/uc/externalmetadata/v1"
+	strings "strings"
 )
 
 type (
@@ -39,29 +40,8 @@ const (
 	SystemType_StreamNative       = sdk.SystemType_StreamNative
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateExternalMetadataRequest struct {
 	ExternalMetadata *ExternalMetadata `json:"external_metadata,omitempty"`
-}
-
-func CreateExternalMetadataRequestFromSDK(v *sdk.CreateExternalMetadataRequest) (*CreateExternalMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	externalMetadataWireValue, err := ExternalMetadataFromSDK(v.ExternalMetadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExternalMetadataRequest.ExternalMetadata", err)
-	}
-	return &CreateExternalMetadataRequest{
-		ExternalMetadata: externalMetadataWireValue,
-	}, nil
 }
 
 type ExternalMetadata struct {
@@ -95,50 +75,6 @@ type ExternalMetadata struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func ExternalMetadataFromSDK(v *sdk.ExternalMetadata) (*ExternalMetadata, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExternalMetadata{
-		Name:        v.Name,
-		SystemType:  v.SystemType,
-		EntityType:  v.EntityType,
-		Url:         v.Url,
-		Description: v.Description,
-		Columns:     v.Columns,
-		Properties:  v.Properties,
-		Owner:       v.Owner,
-		MetastoreId: v.MetastoreId,
-		CreateTime:  v.CreateTime,
-		CreatedBy:   v.CreatedBy,
-		UpdateTime:  v.UpdateTime,
-		UpdatedBy:   v.UpdatedBy,
-		Id:          v.Id,
-	}, nil
-}
-
-func ExternalMetadataToSDK(w *ExternalMetadata) (*sdk.ExternalMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalMetadata{
-		Name:        w.Name,
-		SystemType:  w.SystemType,
-		EntityType:  w.EntityType,
-		Url:         w.Url,
-		Description: w.Description,
-		Columns:     w.Columns,
-		Properties:  w.Properties,
-		Owner:       w.Owner,
-		MetastoreId: w.MetastoreId,
-		CreateTime:  w.CreateTime,
-		CreatedBy:   w.CreatedBy,
-		UpdateTime:  w.UpdateTime,
-		UpdatedBy:   w.UpdatedBy,
-		Id:          w.Id,
-	}, nil
-}
-
 type ListExternalMetadataRequest struct {
 	// Specifies the maximum number of external metadata objects to return in a
 	// single response. The value must be less than or equal to 1000.
@@ -147,33 +83,9 @@ type ListExternalMetadataRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListExternalMetadataRequestFromSDK(v *sdk.ListExternalMetadataRequest) (*ListExternalMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExternalMetadataRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListExternalMetadataResponseV2 struct {
 	ExternalMetadata []ExternalMetadata `json:"external_metadata,omitempty"`
 	NextPageToken    *string            `json:"next_page_token,omitempty"`
-}
-
-func ListExternalMetadataResponseV2ToSDK(w *ListExternalMetadataResponseV2) (*sdk.ListExternalMetadataResponseV2, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalMetadataPublicValue, err := convertSlice(w.ExternalMetadata, ExternalMetadataToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExternalMetadataResponseV2.ExternalMetadata", err)
-	}
-	return &sdk.ListExternalMetadataResponseV2{
-		ExternalMetadata: externalMetadataPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type UpdateExternalMetadataRequest struct {
@@ -181,18 +93,164 @@ type UpdateExternalMetadataRequest struct {
 	UpdateMask       *string           `json:"update_mask,omitempty"`
 }
 
+// CreateExternalMetadataRequestToSDK converts the mirror to the sdk-go type.
+func CreateExternalMetadataRequestToSDK(w *CreateExternalMetadataRequest) (*sdk.CreateExternalMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExternalMetadataRequest{}
+	conv1, err := ExternalMetadataToSDK(w.ExternalMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalMetadataRequest.ExternalMetadata", err)
+	}
+	out.ExternalMetadata = conv1
+	return out, nil
+}
+
+// CreateExternalMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExternalMetadataRequestFromSDK(v *sdk.CreateExternalMetadataRequest) (*CreateExternalMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExternalMetadataRequest{}
+	conv2, err := ExternalMetadataFromSDK(v.ExternalMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExternalMetadataRequest.ExternalMetadata", err)
+	}
+	out.ExternalMetadata = conv2
+	return out, nil
+}
+
+// ExternalMetadataToSDK converts the mirror to the sdk-go type.
+func ExternalMetadataToSDK(w *ExternalMetadata) (*sdk.ExternalMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalMetadata{}
+	out.Name = w.Name
+	out.SystemType = w.SystemType
+	out.EntityType = w.EntityType
+	out.Url = w.Url
+	out.Description = w.Description
+	out.Columns = w.Columns
+	out.Properties = w.Properties
+	out.Owner = w.Owner
+	out.MetastoreId = w.MetastoreId
+	out.CreateTime = w.CreateTime
+	out.CreatedBy = w.CreatedBy
+	out.UpdateTime = w.UpdateTime
+	out.UpdatedBy = w.UpdatedBy
+	out.Id = w.Id
+	return out, nil
+}
+
+// ExternalMetadataFromSDK converts the sdk-go type to the mirror.
+func ExternalMetadataFromSDK(v *sdk.ExternalMetadata) (*ExternalMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalMetadata{}
+	out.Name = v.Name
+	out.SystemType = v.SystemType
+	out.EntityType = v.EntityType
+	out.Url = v.Url
+	out.Description = v.Description
+	out.Columns = v.Columns
+	out.Properties = v.Properties
+	out.Owner = v.Owner
+	out.MetastoreId = v.MetastoreId
+	out.CreateTime = v.CreateTime
+	out.CreatedBy = v.CreatedBy
+	out.UpdateTime = v.UpdateTime
+	out.UpdatedBy = v.UpdatedBy
+	out.Id = v.Id
+	return out, nil
+}
+
+// ListExternalMetadataRequestToSDK converts the mirror to the sdk-go type.
+func ListExternalMetadataRequestToSDK(w *ListExternalMetadataRequest) (*sdk.ListExternalMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalMetadataRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListExternalMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func ListExternalMetadataRequestFromSDK(v *sdk.ListExternalMetadataRequest) (*ListExternalMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalMetadataRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListExternalMetadataResponseV2ToSDK converts the mirror to the sdk-go type.
+func ListExternalMetadataResponseV2ToSDK(w *ListExternalMetadataResponseV2) (*sdk.ListExternalMetadataResponseV2, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExternalMetadataResponseV2{}
+	conv3, err := convertSlice(w.ExternalMetadata, ExternalMetadataToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalMetadataResponseV2.ExternalMetadata", err)
+	}
+	out.ExternalMetadata = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExternalMetadataResponseV2FromSDK converts the sdk-go type to the mirror.
+func ListExternalMetadataResponseV2FromSDK(v *sdk.ListExternalMetadataResponseV2) (*ListExternalMetadataResponseV2, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExternalMetadataResponseV2{}
+	conv4, err := convertSlice(v.ExternalMetadata, ExternalMetadataFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExternalMetadataResponseV2.ExternalMetadata", err)
+	}
+	out.ExternalMetadata = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// UpdateExternalMetadataRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExternalMetadataRequestToSDK(w *UpdateExternalMetadataRequest) (*sdk.UpdateExternalMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExternalMetadataRequest{}
+	conv5, err := ExternalMetadataToSDK(w.ExternalMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalMetadataRequest.ExternalMetadata", err)
+	}
+	out.ExternalMetadata = conv5
+	mask6, err := fieldMaskFromString[sdk.ExternalMetadata](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExternalMetadataRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask6
+	return out, nil
+}
+
+// UpdateExternalMetadataRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateExternalMetadataRequestFromSDK(v *sdk.UpdateExternalMetadataRequest) (*UpdateExternalMetadataRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	externalMetadataWireValue, err := ExternalMetadataFromSDK(v.ExternalMetadata)
+	out := &UpdateExternalMetadataRequest{}
+	conv7, err := ExternalMetadataFromSDK(v.ExternalMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateExternalMetadataRequest.ExternalMetadata", err)
 	}
-	return &UpdateExternalMetadataRequest{
-		ExternalMetadata: externalMetadataWireValue,
-		UpdateMask:       fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.ExternalMetadata = conv7
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -208,4 +266,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

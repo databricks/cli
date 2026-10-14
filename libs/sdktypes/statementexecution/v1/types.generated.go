@@ -72,22 +72,6 @@ const (
 	StatementStatus_State_Closed                     = sdk.StatementStatus_State_Closed
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CancelStatementRequest struct {
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
@@ -95,16 +79,6 @@ type CancelStatementRequest struct {
 	// For warehouse statement URLs, this field contains the warehouse_id path
 	// parameter.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func CancelStatementRequestFromSDK(v *sdk.CancelStatementRequest) (*CancelStatementRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CancelStatementRequest{
-		StatementId: v.StatementId,
-		WarehouseId: v.WarehouseId,
-	}, nil
 }
 
 type ChunkInfo struct {
@@ -128,32 +102,6 @@ type ChunkInfo struct {
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
 }
 
-func ChunkInfoToSDK(w *ChunkInfo) (*sdk.ChunkInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.ByteCount", err)
-	}
-	return &sdk.ChunkInfo{
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
-}
-
 type ColumnInfo struct {
 	// The name of the column.
 	Name *string `json:"name,omitempty"`
@@ -171,21 +119,6 @@ type ColumnInfo struct {
 	TypeScale *int `json:"type_scale,omitempty"`
 	// The format of the interval type.
 	TypeIntervalType *string `json:"type_interval_type,omitempty"`
-}
-
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ColumnInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeName:         w.TypeName,
-		Position:         w.Position,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-	}, nil
 }
 
 type ExecuteStatementRequest struct {
@@ -347,42 +280,6 @@ type ExecuteStatementRequest struct {
 	QueryTags []QueryTag `json:"query_tags,omitempty"`
 }
 
-func ExecuteStatementRequestFromSDK(v *sdk.ExecuteStatementRequest) (*ExecuteStatementRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rowLimitWireValue, err := int64ToWire(v.RowLimit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.RowLimit", err)
-	}
-	byteLimitWireValue, err := int64ToWire(v.ByteLimit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.ByteLimit", err)
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, StatementParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.Parameters", err)
-	}
-	queryTagsWireValue, err := convertSlice(v.QueryTags, QueryTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.QueryTags", err)
-	}
-	return &ExecuteStatementRequest{
-		Statement:     v.Statement,
-		WarehouseId:   v.WarehouseId,
-		Catalog:       v.Catalog,
-		Schema:        v.Schema,
-		RowLimit:      rowLimitWireValue,
-		ByteLimit:     byteLimitWireValue,
-		Format:        v.Format,
-		Disposition:   v.Disposition,
-		WaitTimeout:   v.WaitTimeout,
-		OnWaitTimeout: v.OnWaitTimeout,
-		Parameters:    parametersWireValue,
-		QueryTags:     queryTagsWireValue,
-	}, nil
-}
-
 type ExternalLink struct {
 	// A short-lived cloud-storage URL pointing to a chunk of result data, hosted by
 	// an external service, with a short expiration time (<= 15 minutes). As this
@@ -418,35 +315,6 @@ type ExternalLink struct {
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
 }
 
-func ExternalLinkToSDK(w *ExternalLink) (*sdk.ExternalLink, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.ByteCount", err)
-	}
-	return &sdk.ExternalLink{
-		ExternalLink:          w.ExternalLink,
-		Expiration:            w.Expiration,
-		HttpHeaders:           w.HttpHeaders,
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
-}
-
 type GetResultDataRequest struct {
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
@@ -455,17 +323,6 @@ type GetResultDataRequest struct {
 	// For warehouse statement URLs, this field contains the warehouse_id path
 	// parameter.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func GetResultDataRequestFromSDK(v *sdk.GetResultDataRequest) (*GetResultDataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetResultDataRequest{
-		StatementId: v.StatementId,
-		ChunkIndex:  v.ChunkIndex,
-		WarehouseId: v.WarehouseId,
-	}, nil
 }
 
 type GetStatementResultRequest struct {
@@ -477,32 +334,12 @@ type GetStatementResultRequest struct {
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
-func GetStatementResultRequestFromSDK(v *sdk.GetStatementResultRequest) (*GetStatementResultRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetStatementResultRequest{
-		StatementId: v.StatementId,
-		WarehouseId: v.WarehouseId,
-	}, nil
-}
-
 // * A query execution can be annotated with an optional key-value pair to allow
 // users to attribute the executions by key and optional value to filter by.
 // QueryTag is the user-facing representation..
 type QueryTag struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
-}
-
-func QueryTagFromSDK(v *sdk.QueryTag) (*QueryTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &QueryTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
 }
 
 // Contains the result data of a single chunk when using `INLINE` disposition.
@@ -536,38 +373,6 @@ type ResultData struct {
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
 }
 
-func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalLinksPublicValue, err := convertSlice(w.ExternalLinks, ExternalLinkToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.ByteCount", err)
-	}
-	return &sdk.ResultData{
-		ExternalLinks:         externalLinksPublicValue,
-		DataArray:             w.DataArray,
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
-}
-
 // The result manifest provides schema and metadata for the result set..
 type ResultManifest struct {
 	Format Format  `json:"format,omitempty"`
@@ -585,71 +390,16 @@ type ResultManifest struct {
 	Truncated *bool `json:"truncated,omitempty"`
 }
 
-func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaPublicValue, err := SchemaToSDK(w.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
-	}
-	chunksPublicValue, err := convertSlice(w.Chunks, ChunkInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
-	}
-	totalRowCountPublicValue, err := int64FromWire(w.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.TotalRowCount", err)
-	}
-	totalByteCountPublicValue, err := int64FromWire(w.TotalByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.TotalByteCount", err)
-	}
-	return &sdk.ResultManifest{
-		Format:          w.Format,
-		Schema:          schemaPublicValue,
-		TotalChunkCount: w.TotalChunkCount,
-		Chunks:          chunksPublicValue,
-		TotalRowCount:   totalRowCountPublicValue,
-		TotalByteCount:  totalByteCountPublicValue,
-		Truncated:       w.Truncated,
-	}, nil
-}
-
 // The schema is an ordered list of column descriptions..
 type Schema struct {
 	ColumnCount *int         `json:"column_count,omitempty"`
 	Columns     []ColumnInfo `json:"columns,omitempty"`
 }
 
-func SchemaToSDK(w *Schema) (*sdk.Schema, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
-	}
-	return &sdk.Schema{
-		ColumnCount: w.ColumnCount,
-		Columns:     columnsPublicValue,
-	}, nil
-}
-
 type ServiceError struct {
 	ErrorCode ServiceErrorCode `json:"error_code,omitempty"`
 	// A brief summary of the error condition.
 	Message *string `json:"message,omitempty"`
-}
-
-func ServiceErrorToSDK(w *ServiceError) (*sdk.ServiceError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ServiceError{
-		ErrorCode: w.ErrorCode,
-		Message:   w.Message,
-	}, nil
 }
 
 type StatementParameter struct {
@@ -667,17 +417,6 @@ type StatementParameter struct {
 	Type *string `json:"type,omitempty"`
 }
 
-func StatementParameterFromSDK(v *sdk.StatementParameter) (*StatementParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StatementParameter{
-		Name:  v.Name,
-		Value: v.Value,
-		Type:  v.Type,
-	}, nil
-}
-
 type StatementResponse struct {
 	// The statement ID is returned upon successfully submitting a SQL statement,
 	// and is a required reference for all subsequent calls.
@@ -685,30 +424,6 @@ type StatementResponse struct {
 	Status      *StatementStatus `json:"status,omitempty"`
 	Manifest    *ResultManifest  `json:"manifest,omitempty"`
 	Result      *ResultData      `json:"result,omitempty"`
-}
-
-func StatementResponseToSDK(w *StatementResponse) (*sdk.StatementResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusPublicValue, err := StatementStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
-	}
-	manifestPublicValue, err := ResultManifestToSDK(w.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
-	}
-	resultPublicValue, err := ResultDataToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
-	}
-	return &sdk.StatementResponse{
-		StatementId: w.StatementId,
-		Status:      statusPublicValue,
-		Manifest:    manifestPublicValue,
-		Result:      resultPublicValue,
-	}, nil
 }
 
 // The status response includes execution state and if relevant, error
@@ -728,19 +443,498 @@ type StatementStatus struct {
 	SqlState *string `json:"sql_state,omitempty"`
 }
 
+// CancelStatementRequestToSDK converts the mirror to the sdk-go type.
+func CancelStatementRequestToSDK(w *CancelStatementRequest) (*sdk.CancelStatementRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelStatementRequest{}
+	out.StatementId = w.StatementId
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// CancelStatementRequestFromSDK converts the sdk-go type to the mirror.
+func CancelStatementRequestFromSDK(v *sdk.CancelStatementRequest) (*CancelStatementRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelStatementRequest{}
+	out.StatementId = v.StatementId
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// ChunkInfoToSDK converts the mirror to the sdk-go type.
+func ChunkInfoToSDK(w *ChunkInfo) (*sdk.ChunkInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ChunkInfo{}
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ChunkInfoFromSDK converts the sdk-go type to the mirror.
+func ChunkInfoFromSDK(v *sdk.ChunkInfo) (*ChunkInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ChunkInfo{}
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeName = w.TypeName
+	out.Position = w.Position
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeName = v.TypeName
+	out.Position = v.Position
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	return out, nil
+}
+
+// ExecuteStatementRequestToSDK converts the mirror to the sdk-go type.
+func ExecuteStatementRequestToSDK(w *ExecuteStatementRequest) (*sdk.ExecuteStatementRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExecuteStatementRequest{}
+	out.Statement = w.Statement
+	out.WarehouseId = w.WarehouseId
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	out.RowLimit = w.RowLimit
+	out.ByteLimit = w.ByteLimit
+	out.Format = w.Format
+	out.Disposition = w.Disposition
+	out.WaitTimeout = w.WaitTimeout
+	out.OnWaitTimeout = w.OnWaitTimeout
+	conv1, err := convertSlice(w.Parameters, StatementParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.Parameters", err)
+	}
+	out.Parameters = conv1
+	conv2, err := convertSlice(w.QueryTags, QueryTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.QueryTags", err)
+	}
+	out.QueryTags = conv2
+	return out, nil
+}
+
+// ExecuteStatementRequestFromSDK converts the sdk-go type to the mirror.
+func ExecuteStatementRequestFromSDK(v *sdk.ExecuteStatementRequest) (*ExecuteStatementRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExecuteStatementRequest{}
+	out.Statement = v.Statement
+	out.WarehouseId = v.WarehouseId
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	out.RowLimit = v.RowLimit
+	out.ByteLimit = v.ByteLimit
+	out.Format = v.Format
+	out.Disposition = v.Disposition
+	out.WaitTimeout = v.WaitTimeout
+	out.OnWaitTimeout = v.OnWaitTimeout
+	conv3, err := convertSlice(v.Parameters, StatementParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.Parameters", err)
+	}
+	out.Parameters = conv3
+	conv4, err := convertSlice(v.QueryTags, QueryTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExecuteStatementRequest.QueryTags", err)
+	}
+	out.QueryTags = conv4
+	return out, nil
+}
+
+// ExternalLinkToSDK converts the mirror to the sdk-go type.
+func ExternalLinkToSDK(w *ExternalLink) (*sdk.ExternalLink, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLink{}
+	out.ExternalLink = w.ExternalLink
+	out.Expiration = w.Expiration
+	out.HttpHeaders = w.HttpHeaders
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ExternalLinkFromSDK converts the sdk-go type to the mirror.
+func ExternalLinkFromSDK(v *sdk.ExternalLink) (*ExternalLink, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLink{}
+	out.ExternalLink = v.ExternalLink
+	out.Expiration = v.Expiration
+	out.HttpHeaders = v.HttpHeaders
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// GetResultDataRequestToSDK converts the mirror to the sdk-go type.
+func GetResultDataRequestToSDK(w *GetResultDataRequest) (*sdk.GetResultDataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetResultDataRequest{}
+	out.StatementId = w.StatementId
+	out.ChunkIndex = w.ChunkIndex
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// GetResultDataRequestFromSDK converts the sdk-go type to the mirror.
+func GetResultDataRequestFromSDK(v *sdk.GetResultDataRequest) (*GetResultDataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetResultDataRequest{}
+	out.StatementId = v.StatementId
+	out.ChunkIndex = v.ChunkIndex
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// GetStatementResultRequestToSDK converts the mirror to the sdk-go type.
+func GetStatementResultRequestToSDK(w *GetStatementResultRequest) (*sdk.GetStatementResultRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetStatementResultRequest{}
+	out.StatementId = w.StatementId
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// GetStatementResultRequestFromSDK converts the sdk-go type to the mirror.
+func GetStatementResultRequestFromSDK(v *sdk.GetStatementResultRequest) (*GetStatementResultRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetStatementResultRequest{}
+	out.StatementId = v.StatementId
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// QueryTagToSDK converts the mirror to the sdk-go type.
+func QueryTagToSDK(w *QueryTag) (*sdk.QueryTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// QueryTagFromSDK converts the sdk-go type to the mirror.
+func QueryTagFromSDK(v *sdk.QueryTag) (*QueryTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// ResultDataToSDK converts the mirror to the sdk-go type.
+func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultData{}
+	conv5, err := convertSlice(w.ExternalLinks, ExternalLinkToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
+	}
+	out.ExternalLinks = conv5
+	out.DataArray = w.DataArray
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ResultDataFromSDK converts the sdk-go type to the mirror.
+func ResultDataFromSDK(v *sdk.ResultData) (*ResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultData{}
+	conv6, err := convertSlice(v.ExternalLinks, ExternalLinkFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
+	}
+	out.ExternalLinks = conv6
+	out.DataArray = v.DataArray
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// ResultManifestToSDK converts the mirror to the sdk-go type.
+func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultManifest{}
+	out.Format = w.Format
+	conv7, err := SchemaToSDK(w.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
+	}
+	out.Schema = conv7
+	out.TotalChunkCount = w.TotalChunkCount
+	conv8, err := convertSlice(w.Chunks, ChunkInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
+	}
+	out.Chunks = conv8
+	out.TotalRowCount = w.TotalRowCount
+	out.TotalByteCount = w.TotalByteCount
+	out.Truncated = w.Truncated
+	return out, nil
+}
+
+// ResultManifestFromSDK converts the sdk-go type to the mirror.
+func ResultManifestFromSDK(v *sdk.ResultManifest) (*ResultManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultManifest{}
+	out.Format = v.Format
+	conv9, err := SchemaFromSDK(v.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
+	}
+	out.Schema = conv9
+	out.TotalChunkCount = v.TotalChunkCount
+	conv10, err := convertSlice(v.Chunks, ChunkInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
+	}
+	out.Chunks = conv10
+	out.TotalRowCount = v.TotalRowCount
+	out.TotalByteCount = v.TotalByteCount
+	out.Truncated = v.Truncated
+	return out, nil
+}
+
+// SchemaToSDK converts the mirror to the sdk-go type.
+func SchemaToSDK(w *Schema) (*sdk.Schema, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Schema{}
+	out.ColumnCount = w.ColumnCount
+	conv11, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
+	}
+	out.Columns = conv11
+	return out, nil
+}
+
+// SchemaFromSDK converts the sdk-go type to the mirror.
+func SchemaFromSDK(v *sdk.Schema) (*Schema, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Schema{}
+	out.ColumnCount = v.ColumnCount
+	conv12, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
+	}
+	out.Columns = conv12
+	return out, nil
+}
+
+// ServiceErrorToSDK converts the mirror to the sdk-go type.
+func ServiceErrorToSDK(w *ServiceError) (*sdk.ServiceError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ServiceError{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	return out, nil
+}
+
+// ServiceErrorFromSDK converts the sdk-go type to the mirror.
+func ServiceErrorFromSDK(v *sdk.ServiceError) (*ServiceError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ServiceError{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	return out, nil
+}
+
+// StatementParameterToSDK converts the mirror to the sdk-go type.
+func StatementParameterToSDK(w *StatementParameter) (*sdk.StatementParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StatementParameter{}
+	out.Name = w.Name
+	out.Value = w.Value
+	out.Type = w.Type
+	return out, nil
+}
+
+// StatementParameterFromSDK converts the sdk-go type to the mirror.
+func StatementParameterFromSDK(v *sdk.StatementParameter) (*StatementParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StatementParameter{}
+	out.Name = v.Name
+	out.Value = v.Value
+	out.Type = v.Type
+	return out, nil
+}
+
+// StatementResponseToSDK converts the mirror to the sdk-go type.
+func StatementResponseToSDK(w *StatementResponse) (*sdk.StatementResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StatementResponse{}
+	out.StatementId = w.StatementId
+	conv13, err := StatementStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
+	}
+	out.Status = conv13
+	conv14, err := ResultManifestToSDK(w.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
+	}
+	out.Manifest = conv14
+	conv15, err := ResultDataToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
+	}
+	out.Result = conv15
+	return out, nil
+}
+
+// StatementResponseFromSDK converts the sdk-go type to the mirror.
+func StatementResponseFromSDK(v *sdk.StatementResponse) (*StatementResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StatementResponse{}
+	out.StatementId = v.StatementId
+	conv16, err := StatementStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
+	}
+	out.Status = conv16
+	conv17, err := ResultManifestFromSDK(v.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
+	}
+	out.Manifest = conv17
+	conv18, err := ResultDataFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
+	}
+	out.Result = conv18
+	return out, nil
+}
+
+// StatementStatusToSDK converts the mirror to the sdk-go type.
 func StatementStatusToSDK(w *StatementStatus) (*sdk.StatementStatus, error) {
 	if w == nil {
 		return nil, nil
 	}
-	errorPublicValue, err := ServiceErrorToSDK(w.Error)
+	out := &sdk.StatementStatus{}
+	out.State = w.State
+	conv19, err := ServiceErrorToSDK(w.Error)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "StatementStatus.Error", err)
 	}
-	return &sdk.StatementStatus{
-		State:    w.State,
-		Error:    errorPublicValue,
-		SqlState: w.SqlState,
-	}, nil
+	out.Error = conv19
+	out.SqlState = w.SqlState
+	return out, nil
+}
+
+// StatementStatusFromSDK converts the sdk-go type to the mirror.
+func StatementStatusFromSDK(v *sdk.StatementStatus) (*StatementStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StatementStatus{}
+	out.State = v.State
+	conv20, err := ServiceErrorFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementStatus.Error", err)
+	}
+	out.Error = conv20
+	out.SqlState = v.SqlState
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

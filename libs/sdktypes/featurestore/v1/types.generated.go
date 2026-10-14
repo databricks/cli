@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/featurestore/v1"
+	strings "strings"
 )
 
 type (
@@ -27,30 +28,9 @@ const (
 	PublishSpec_PublishMode_Snapshot    = sdk.PublishSpec_PublishMode_Snapshot
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateOnlineStoreRequest struct {
 	// Online store to create.
 	OnlineStore *OnlineStore `json:"online_store,omitempty"`
-}
-
-func CreateOnlineStoreRequestFromSDK(v *sdk.CreateOnlineStoreRequest) (*CreateOnlineStoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	onlineStoreWireValue, err := OnlineStoreFromSDK(v.OnlineStore)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateOnlineStoreRequest.OnlineStore", err)
-	}
-	return &CreateOnlineStoreRequest{
-		OnlineStore: onlineStoreWireValue,
-	}, nil
 }
 
 type ListOnlineStoresRequest struct {
@@ -60,35 +40,11 @@ type ListOnlineStoresRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListOnlineStoresRequestFromSDK(v *sdk.ListOnlineStoresRequest) (*ListOnlineStoresRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListOnlineStoresRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListOnlineStoresResponse struct {
 	// List of online stores.
 	OnlineStores []OnlineStore `json:"online_stores,omitempty"`
 	// Pagination token to request the next page of results for this query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListOnlineStoresResponseToSDK(w *ListOnlineStoresResponse) (*sdk.ListOnlineStoresResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	onlineStoresPublicValue, err := convertSlice(w.OnlineStores, OnlineStoreToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListOnlineStoresResponse.OnlineStores", err)
-	}
-	return &sdk.ListOnlineStoresResponse{
-		OnlineStores:  onlineStoresPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // An OnlineStore is a logical database instance that stores and serves features
@@ -110,36 +66,6 @@ type OnlineStore struct {
 	ReadReplicaCount *int `json:"read_replica_count,omitempty"`
 	// The usage policy applied to the online store to track billing.
 	UsagePolicyId *string `json:"usage_policy_id,omitempty"`
-}
-
-func OnlineStoreFromSDK(v *sdk.OnlineStore) (*OnlineStore, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OnlineStore{
-		Name:             v.Name,
-		Creator:          v.Creator,
-		CreationTime:     v.CreationTime,
-		State:            v.State,
-		Capacity:         v.Capacity,
-		ReadReplicaCount: v.ReadReplicaCount,
-		UsagePolicyId:    v.UsagePolicyId,
-	}, nil
-}
-
-func OnlineStoreToSDK(w *OnlineStore) (*sdk.OnlineStore, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OnlineStore{
-		Name:             w.Name,
-		Creator:          w.Creator,
-		CreationTime:     w.CreationTime,
-		State:            w.State,
-		Capacity:         w.Capacity,
-		ReadReplicaCount: w.ReadReplicaCount,
-		UsagePolicyId:    w.UsagePolicyId,
-	}, nil
 }
 
 type PublishSpec struct {
@@ -168,39 +94,11 @@ type PublishSpec struct {
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
-func PublishSpecFromSDK(v *sdk.PublishSpec) (*PublishSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PublishSpec{
-		OnlineStore:     v.OnlineStore,
-		OnlineTableName: v.OnlineTableName,
-		PublishMode:     v.PublishMode,
-		FullFeatureName: v.FullFeatureName,
-		Tags:            v.Tags,
-		BudgetPolicyId:  v.BudgetPolicyId,
-	}, nil
-}
-
 type PublishTableRequest struct {
 	// The full three-part (catalog, schema, table) name of the source table.
 	SourceTableName *string `json:"source_table_name,omitempty"`
 	// The specification for publishing the online table from the source table.
 	PublishSpec *PublishSpec `json:"publish_spec,omitempty"`
-}
-
-func PublishTableRequestFromSDK(v *sdk.PublishTableRequest) (*PublishTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	publishSpecWireValue, err := PublishSpecFromSDK(v.PublishSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublishTableRequest.PublishSpec", err)
-	}
-	return &PublishTableRequest{
-		SourceTableName: v.SourceTableName,
-		PublishSpec:     publishSpecWireValue,
-	}, nil
 }
 
 type PublishTableResponse struct {
@@ -210,16 +108,6 @@ type PublishTableResponse struct {
 	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
-func PublishTableResponseToSDK(w *PublishTableResponse) (*sdk.PublishTableResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PublishTableResponse{
-		OnlineTableName: w.OnlineTableName,
-		PipelineId:      w.PipelineId,
-	}, nil
-}
-
 type UpdateOnlineStoreRequest struct {
 	// Online store to update.
 	OnlineStore *OnlineStore `json:"online_store,omitempty"`
@@ -227,18 +115,232 @@ type UpdateOnlineStoreRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateOnlineStoreRequestToSDK converts the mirror to the sdk-go type.
+func CreateOnlineStoreRequestToSDK(w *CreateOnlineStoreRequest) (*sdk.CreateOnlineStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateOnlineStoreRequest{}
+	conv1, err := OnlineStoreToSDK(w.OnlineStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateOnlineStoreRequest.OnlineStore", err)
+	}
+	out.OnlineStore = conv1
+	return out, nil
+}
+
+// CreateOnlineStoreRequestFromSDK converts the sdk-go type to the mirror.
+func CreateOnlineStoreRequestFromSDK(v *sdk.CreateOnlineStoreRequest) (*CreateOnlineStoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateOnlineStoreRequest{}
+	conv2, err := OnlineStoreFromSDK(v.OnlineStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateOnlineStoreRequest.OnlineStore", err)
+	}
+	out.OnlineStore = conv2
+	return out, nil
+}
+
+// ListOnlineStoresRequestToSDK converts the mirror to the sdk-go type.
+func ListOnlineStoresRequestToSDK(w *ListOnlineStoresRequest) (*sdk.ListOnlineStoresRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListOnlineStoresRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListOnlineStoresRequestFromSDK converts the sdk-go type to the mirror.
+func ListOnlineStoresRequestFromSDK(v *sdk.ListOnlineStoresRequest) (*ListOnlineStoresRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListOnlineStoresRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListOnlineStoresResponseToSDK converts the mirror to the sdk-go type.
+func ListOnlineStoresResponseToSDK(w *ListOnlineStoresResponse) (*sdk.ListOnlineStoresResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListOnlineStoresResponse{}
+	conv3, err := convertSlice(w.OnlineStores, OnlineStoreToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListOnlineStoresResponse.OnlineStores", err)
+	}
+	out.OnlineStores = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListOnlineStoresResponseFromSDK converts the sdk-go type to the mirror.
+func ListOnlineStoresResponseFromSDK(v *sdk.ListOnlineStoresResponse) (*ListOnlineStoresResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListOnlineStoresResponse{}
+	conv4, err := convertSlice(v.OnlineStores, OnlineStoreFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListOnlineStoresResponse.OnlineStores", err)
+	}
+	out.OnlineStores = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OnlineStoreToSDK converts the mirror to the sdk-go type.
+func OnlineStoreToSDK(w *OnlineStore) (*sdk.OnlineStore, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineStore{}
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.CreationTime = w.CreationTime
+	out.State = w.State
+	out.Capacity = w.Capacity
+	out.ReadReplicaCount = w.ReadReplicaCount
+	out.UsagePolicyId = w.UsagePolicyId
+	return out, nil
+}
+
+// OnlineStoreFromSDK converts the sdk-go type to the mirror.
+func OnlineStoreFromSDK(v *sdk.OnlineStore) (*OnlineStore, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineStore{}
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.CreationTime = v.CreationTime
+	out.State = v.State
+	out.Capacity = v.Capacity
+	out.ReadReplicaCount = v.ReadReplicaCount
+	out.UsagePolicyId = v.UsagePolicyId
+	return out, nil
+}
+
+// PublishSpecToSDK converts the mirror to the sdk-go type.
+func PublishSpecToSDK(w *PublishSpec) (*sdk.PublishSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishSpec{}
+	out.OnlineStore = w.OnlineStore
+	out.OnlineTableName = w.OnlineTableName
+	out.PublishMode = w.PublishMode
+	out.FullFeatureName = w.FullFeatureName
+	out.Tags = w.Tags
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// PublishSpecFromSDK converts the sdk-go type to the mirror.
+func PublishSpecFromSDK(v *sdk.PublishSpec) (*PublishSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishSpec{}
+	out.OnlineStore = v.OnlineStore
+	out.OnlineTableName = v.OnlineTableName
+	out.PublishMode = v.PublishMode
+	out.FullFeatureName = v.FullFeatureName
+	out.Tags = v.Tags
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// PublishTableRequestToSDK converts the mirror to the sdk-go type.
+func PublishTableRequestToSDK(w *PublishTableRequest) (*sdk.PublishTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishTableRequest{}
+	out.SourceTableName = w.SourceTableName
+	conv5, err := PublishSpecToSDK(w.PublishSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PublishTableRequest.PublishSpec", err)
+	}
+	out.PublishSpec = conv5
+	return out, nil
+}
+
+// PublishTableRequestFromSDK converts the sdk-go type to the mirror.
+func PublishTableRequestFromSDK(v *sdk.PublishTableRequest) (*PublishTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishTableRequest{}
+	out.SourceTableName = v.SourceTableName
+	conv6, err := PublishSpecFromSDK(v.PublishSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PublishTableRequest.PublishSpec", err)
+	}
+	out.PublishSpec = conv6
+	return out, nil
+}
+
+// PublishTableResponseToSDK converts the mirror to the sdk-go type.
+func PublishTableResponseToSDK(w *PublishTableResponse) (*sdk.PublishTableResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishTableResponse{}
+	out.OnlineTableName = w.OnlineTableName
+	out.PipelineId = w.PipelineId
+	return out, nil
+}
+
+// PublishTableResponseFromSDK converts the sdk-go type to the mirror.
+func PublishTableResponseFromSDK(v *sdk.PublishTableResponse) (*PublishTableResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishTableResponse{}
+	out.OnlineTableName = v.OnlineTableName
+	out.PipelineId = v.PipelineId
+	return out, nil
+}
+
+// UpdateOnlineStoreRequestToSDK converts the mirror to the sdk-go type.
+func UpdateOnlineStoreRequestToSDK(w *UpdateOnlineStoreRequest) (*sdk.UpdateOnlineStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateOnlineStoreRequest{}
+	conv7, err := OnlineStoreToSDK(w.OnlineStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateOnlineStoreRequest.OnlineStore", err)
+	}
+	out.OnlineStore = conv7
+	mask8, err := fieldMaskFromString[sdk.OnlineStore](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateOnlineStoreRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask8
+	return out, nil
+}
+
+// UpdateOnlineStoreRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateOnlineStoreRequestFromSDK(v *sdk.UpdateOnlineStoreRequest) (*UpdateOnlineStoreRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	onlineStoreWireValue, err := OnlineStoreFromSDK(v.OnlineStore)
+	out := &UpdateOnlineStoreRequest{}
+	conv9, err := OnlineStoreFromSDK(v.OnlineStore)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateOnlineStoreRequest.OnlineStore", err)
 	}
-	return &UpdateOnlineStoreRequest{
-		OnlineStore: onlineStoreWireValue,
-		UpdateMask:  fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.OnlineStore = conv9
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -254,4 +356,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

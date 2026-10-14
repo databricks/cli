@@ -39,38 +39,9 @@ const (
 	SecurableType_Skill                = sdk.SecurableType_Skill
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type GetQuotaResponse struct {
 	// The returned QuotaInfo.
 	QuotaInfo *QuotaInfo `json:"quota_info,omitempty"`
-}
-
-func GetQuotaResponseToSDK(w *GetQuotaResponse) (*sdk.GetQuotaResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	quotaInfoPublicValue, err := QuotaInfoToSDK(w.QuotaInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetQuotaResponse.QuotaInfo", err)
-	}
-	return &sdk.GetQuotaResponse{
-		QuotaInfo: quotaInfoPublicValue,
-	}, nil
 }
 
 type ListQuotasRequest struct {
@@ -80,36 +51,12 @@ type ListQuotasRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListQuotasRequestFromSDK(v *sdk.ListQuotasRequest) (*ListQuotasRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListQuotasRequest{
-		MaxResults: v.MaxResults,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListQuotasResponse struct {
 	// An array of returned QuotaInfos.
 	Quotas []QuotaInfo `json:"quotas,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListQuotasResponseToSDK(w *ListQuotasResponse) (*sdk.ListQuotasResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	quotasPublicValue, err := convertSlice(w.Quotas, QuotaInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListQuotasResponse.Quotas", err)
-	}
-	return &sdk.ListQuotasResponse{
-		Quotas:        quotasPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type QuotaInfo struct {
@@ -128,22 +75,114 @@ type QuotaInfo struct {
 	LastRefreshedAt *int64 `json:"last_refreshed_at,omitempty"`
 }
 
+// GetQuotaResponseToSDK converts the mirror to the sdk-go type.
+func GetQuotaResponseToSDK(w *GetQuotaResponse) (*sdk.GetQuotaResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetQuotaResponse{}
+	conv1, err := QuotaInfoToSDK(w.QuotaInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetQuotaResponse.QuotaInfo", err)
+	}
+	out.QuotaInfo = conv1
+	return out, nil
+}
+
+// GetQuotaResponseFromSDK converts the sdk-go type to the mirror.
+func GetQuotaResponseFromSDK(v *sdk.GetQuotaResponse) (*GetQuotaResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetQuotaResponse{}
+	conv2, err := QuotaInfoFromSDK(v.QuotaInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetQuotaResponse.QuotaInfo", err)
+	}
+	out.QuotaInfo = conv2
+	return out, nil
+}
+
+// ListQuotasRequestToSDK converts the mirror to the sdk-go type.
+func ListQuotasRequestToSDK(w *ListQuotasRequest) (*sdk.ListQuotasRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQuotasRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListQuotasRequestFromSDK converts the sdk-go type to the mirror.
+func ListQuotasRequestFromSDK(v *sdk.ListQuotasRequest) (*ListQuotasRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQuotasRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListQuotasResponseToSDK converts the mirror to the sdk-go type.
+func ListQuotasResponseToSDK(w *ListQuotasResponse) (*sdk.ListQuotasResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListQuotasResponse{}
+	conv3, err := convertSlice(w.Quotas, QuotaInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQuotasResponse.Quotas", err)
+	}
+	out.Quotas = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListQuotasResponseFromSDK converts the sdk-go type to the mirror.
+func ListQuotasResponseFromSDK(v *sdk.ListQuotasResponse) (*ListQuotasResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListQuotasResponse{}
+	conv4, err := convertSlice(v.Quotas, QuotaInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListQuotasResponse.Quotas", err)
+	}
+	out.Quotas = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// QuotaInfoToSDK converts the mirror to the sdk-go type.
 func QuotaInfoToSDK(w *QuotaInfo) (*sdk.QuotaInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	lastRefreshedAtPublicValue, err := int64FromWire(w.LastRefreshedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QuotaInfo.LastRefreshedAt", err)
+	out := &sdk.QuotaInfo{}
+	out.ParentSecurableType = w.ParentSecurableType
+	out.ParentFullName = w.ParentFullName
+	out.QuotaName = w.QuotaName
+	out.QuotaCount = w.QuotaCount
+	out.QuotaLimit = w.QuotaLimit
+	out.LastRefreshedAt = w.LastRefreshedAt
+	return out, nil
+}
+
+// QuotaInfoFromSDK converts the sdk-go type to the mirror.
+func QuotaInfoFromSDK(v *sdk.QuotaInfo) (*QuotaInfo, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return &sdk.QuotaInfo{
-		ParentSecurableType: w.ParentSecurableType,
-		ParentFullName:      w.ParentFullName,
-		QuotaName:           w.QuotaName,
-		QuotaCount:          w.QuotaCount,
-		QuotaLimit:          w.QuotaLimit,
-		LastRefreshedAt:     lastRefreshedAtPublicValue,
-	}, nil
+	out := &QuotaInfo{}
+	out.ParentSecurableType = v.ParentSecurableType
+	out.ParentFullName = v.ParentFullName
+	out.QuotaName = v.QuotaName
+	out.QuotaCount = v.QuotaCount
+	out.QuotaLimit = v.QuotaLimit
+	out.LastRefreshedAt = v.LastRefreshedAt
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

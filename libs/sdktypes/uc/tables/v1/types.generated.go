@@ -192,22 +192,6 @@ const (
 	OptionSpec_OptionType_OptionMultilineString                        = sdk.OptionSpec_OptionType_OptionMultilineString
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ColumnInfo struct {
 	// Name of Column.
 	Name *string `json:"name,omitempty"`
@@ -233,54 +217,6 @@ type ColumnInfo struct {
 	Mask           *ColumnMask `json:"mask,omitempty"`
 }
 
-func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maskWireValue, err := ColumnMaskFromSDK(v.Mask)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
-	}
-	return &ColumnInfo{
-		Name:             v.Name,
-		TypeText:         v.TypeText,
-		TypeName:         v.TypeName,
-		Position:         v.Position,
-		TypePrecision:    v.TypePrecision,
-		TypeScale:        v.TypeScale,
-		TypeIntervalType: v.TypeIntervalType,
-		TypeJson:         v.TypeJson,
-		Comment:          v.Comment,
-		Nullable:         v.Nullable,
-		PartitionIndex:   v.PartitionIndex,
-		Mask:             maskWireValue,
-	}, nil
-}
-
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maskPublicValue, err := ColumnMaskToSDK(w.Mask)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
-	}
-	return &sdk.ColumnInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeName:         w.TypeName,
-		Position:         w.Position,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-		TypeJson:         w.TypeJson,
-		Comment:          w.Comment,
-		Nullable:         w.Nullable,
-		PartitionIndex:   w.PartitionIndex,
-		Mask:             maskPublicValue,
-	}, nil
-}
-
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
@@ -295,78 +231,16 @@ type ColumnMask struct {
 	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
-func ColumnMaskFromSDK(v *sdk.ColumnMask) (*ColumnMask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usingArgumentsWireValue, err := convertSlice(v.UsingArguments, PolicyFunctionArgumentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
-	}
-	return &ColumnMask{
-		FunctionName:     v.FunctionName,
-		UsingColumnNames: v.UsingColumnNames,
-		UsingArguments:   usingArgumentsWireValue,
-	}, nil
-}
-
-func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usingArgumentsPublicValue, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
-	}
-	return &sdk.ColumnMask{
-		FunctionName:     w.FunctionName,
-		UsingColumnNames: w.UsingColumnNames,
-		UsingArguments:   usingArgumentsPublicValue,
-	}, nil
-}
-
 // A connection that is dependent on a SQL object..
 type ConnectionDependency struct {
 	// Full name of the dependent connection, in the form of __connection_name__.
 	ConnectionName *string `json:"connection_name,omitempty"`
 }
 
-func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConnectionDependency{
-		ConnectionName: v.ConnectionName,
-	}, nil
-}
-
-func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConnectionDependency{
-		ConnectionName: w.ConnectionName,
-	}, nil
-}
-
 type CreateTableConstraintRequest struct {
 	// The full name of the table referenced by the constraint.
 	FullNameArg *string          `json:"full_name_arg,omitempty"`
 	Constraint  *TableConstraint `json:"constraint,omitempty"`
-}
-
-func CreateTableConstraintRequestFromSDK(v *sdk.CreateTableConstraintRequest) (*CreateTableConstraintRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	constraintWireValue, err := TableConstraintFromSDK(v.Constraint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableConstraintRequest.Constraint", err)
-	}
-	return &CreateTableConstraintRequest{
-		FullNameArg: v.FullNameArg,
-		Constraint:  constraintWireValue,
-	}, nil
 }
 
 type CreateTableRequest struct {
@@ -445,113 +319,10 @@ type CreateTableRequest struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
-func CreateTableRequestFromSDK(v *sdk.CreateTableRequest) (*CreateTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	viewDependenciesWireValue, err := DependencyListFromSDK(v.ViewDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.ViewDependencies", err)
-	}
-	tableConstraintsWireValue, err := convertSlice(v.TableConstraints, TableConstraintFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.TableConstraints", err)
-	}
-	rowFilterWireValue, err := RowFilterFromSDK(v.RowFilter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.RowFilter", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.UpdatedAt", err)
-	}
-	deltaRuntimePropertiesKvpairsWireValue, err := DeltaRuntimePropertiesKvPairsFromSDK(v.DeltaRuntimePropertiesKvpairs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.DeltaRuntimePropertiesKvpairs", err)
-	}
-	deletedAtWireValue, err := int64ToWire(v.DeletedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.DeletedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EffectivePredictiveOptimizationFlag", err)
-	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EncryptionDetails", err)
-	}
-	securableKindManifestWireValue, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.SecurableKindManifest", err)
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.Columns", err)
-	}
-	return &CreateTableRequest{
-		Name:                                v.Name,
-		CatalogName:                         v.CatalogName,
-		SchemaName:                          v.SchemaName,
-		TableType:                           v.TableType,
-		DataSourceFormat:                    v.DataSourceFormat,
-		StorageLocation:                     v.StorageLocation,
-		ViewDefinition:                      v.ViewDefinition,
-		ViewDependencies:                    viewDependenciesWireValue,
-		SqlPath:                             v.SqlPath,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageCredentialName:               v.StorageCredentialName,
-		TableConstraints:                    tableConstraintsWireValue,
-		RowFilter:                           rowFilterWireValue,
-		PipelineId:                          v.PipelineId,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		MetastoreId:                         v.MetastoreId,
-		FullName:                            v.FullName,
-		DataAccessConfigurationId:           v.DataAccessConfigurationId,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		TableId:                             v.TableId,
-		DeltaRuntimePropertiesKvpairs:       deltaRuntimePropertiesKvpairsWireValue,
-		DeletedAt:                           deletedAtWireValue,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		AccessPoint:                         v.AccessPoint,
-		BrowseOnly:                          v.BrowseOnly,
-		EncryptionDetails:                   encryptionDetailsWireValue,
-		SecurableKindManifest:               securableKindManifestWireValue,
-		Columns:                             columnsWireValue,
-		Properties:                          v.Properties,
-	}, nil
-}
-
 // A credential that is dependent on a SQL object..
 type CredentialDependency struct {
 	// Full name of the dependent credential, in the form of __credential_name__.
 	CredentialName *string `json:"credential_name,omitempty"`
-}
-
-func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CredentialDependency{
-		CredentialName: v.CredentialName,
-	}, nil
-}
-
-func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CredentialDependency{
-		CredentialName: w.CredentialName,
-	}, nil
 }
 
 type DeleteTableConstraintRequest struct {
@@ -565,41 +336,12 @@ type DeleteTableConstraintRequest struct {
 	Cascade *bool `json:"cascade,omitempty"`
 }
 
-func DeleteTableConstraintRequestFromSDK(v *sdk.DeleteTableConstraintRequest) (*DeleteTableConstraintRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteTableConstraintRequest{
-		FullNameArg:    v.FullNameArg,
-		ConstraintName: v.ConstraintName,
-		Cascade:        v.Cascade,
-	}, nil
-}
-
 // Properties pertaining to the current state of the delta table as given by the
 // commit server. This does not contain **delta.*** (input) properties in
 // __TableInfo.properties__..
 type DeltaRuntimePropertiesKvPairs struct {
 	// A map of key-value properties attached to the securable.
 	DeltaRuntimeProperties map[string]string `json:"delta_runtime_properties,omitempty"`
-}
-
-func DeltaRuntimePropertiesKvPairsFromSDK(v *sdk.DeltaRuntimePropertiesKvPairs) (*DeltaRuntimePropertiesKvPairs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeltaRuntimePropertiesKvPairs{
-		DeltaRuntimeProperties: v.DeltaRuntimeProperties,
-	}, nil
-}
-
-func DeltaRuntimePropertiesKvPairsToSDK(w *DeltaRuntimePropertiesKvPairs) (*sdk.DeltaRuntimePropertiesKvPairs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DeltaRuntimePropertiesKvPairs{
-		DeltaRuntimeProperties: w.DeltaRuntimeProperties,
-	}, nil
 }
 
 // A dependency of a SQL object. One of the following fields must be defined:
@@ -612,141 +354,10 @@ type Dependency struct {
 	Credential *CredentialDependency `json:"credential,omitempty"`
 }
 
-func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var valueTableWire *TableDependency
-	var valueFunctionWire *FunctionDependency
-	var valueConnectionWire *ConnectionDependency
-	var valueCredentialWire *CredentialDependency
-	switch value := v.Value.(type) {
-	case nil:
-	case *sdk.Dependency_Value_Table:
-		if value != nil {
-			valueTableConverted, err := TableDependencyFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-			}
-			valueTableWire = valueTableConverted
-		}
-	case *sdk.Dependency_Value_Function:
-		if value != nil {
-			valueFunctionConverted, err := FunctionDependencyFromSDK(&value.Function)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-			}
-			valueFunctionWire = valueFunctionConverted
-		}
-	case *sdk.Dependency_Value_Connection:
-		if value != nil {
-			valueConnectionConverted, err := ConnectionDependencyFromSDK(&value.Connection)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-			}
-			valueConnectionWire = valueConnectionConverted
-		}
-	case *sdk.Dependency_Value_Credential:
-		if value != nil {
-			valueCredentialConverted, err := CredentialDependencyFromSDK(&value.Credential)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-			}
-			valueCredentialWire = valueCredentialConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Dependency.Value", value)
-	}
-	return &Dependency{
-		Table:      valueTableWire,
-		Function:   valueFunctionWire,
-		Connection: valueConnectionWire,
-		Credential: valueCredentialWire,
-	}, nil
-}
-
-func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valueMembers := 0
-	if w.Table != nil {
-		valueMembers++
-	}
-	if w.Function != nil {
-		valueMembers++
-	}
-	if w.Connection != nil {
-		valueMembers++
-	}
-	if w.Credential != nil {
-		valueMembers++
-	}
-	if valueMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
-	}
-	valueSelection := (&sdk.Dependency{}).Value
-	switch {
-	case w.Table != nil:
-		valueTableConverted, err := TableDependencyToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Table", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Table{Table: *valueTableConverted}
-	case w.Function != nil:
-		valueFunctionConverted, err := FunctionDependencyToSDK(w.Function)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Function", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Function{Function: *valueFunctionConverted}
-	case w.Connection != nil:
-		valueConnectionConverted, err := ConnectionDependencyToSDK(w.Connection)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Connection", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Connection{Connection: *valueConnectionConverted}
-	case w.Credential != nil:
-		valueCredentialConverted, err := CredentialDependencyToSDK(w.Credential)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Dependency.Value.Credential", err)
-		}
-		valueSelection = &sdk.Dependency_Value_Credential{Credential: *valueCredentialConverted}
-	}
-	return &sdk.Dependency{
-		Value: valueSelection,
-	}, nil
-}
-
 // A list of dependencies..
 type DependencyList struct {
 	// Array of dependencies.
 	Dependencies []Dependency `json:"dependencies,omitempty"`
-}
-
-func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dependenciesWireValue, err := convertSlice(v.Dependencies, DependencyFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &DependencyList{
-		Dependencies: dependenciesWireValue,
-	}, nil
-}
-
-func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dependenciesPublicValue, err := convertSlice(w.Dependencies, DependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
-	}
-	return &sdk.DependencyList{
-		Dependencies: dependenciesPublicValue,
-	}, nil
 }
 
 type EffectivePredictiveOptimizationFlag struct {
@@ -761,79 +372,9 @@ type EffectivePredictiveOptimizationFlag struct {
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
 }
 
-func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EffectivePredictiveOptimizationFlag{
-		Value:             v.Value,
-		InheritedFromType: v.InheritedFromType,
-		InheritedFromName: v.InheritedFromName,
-	}, nil
-}
-
-func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EffectivePredictiveOptimizationFlag{
-		Value:             w.Value,
-		InheritedFromType: w.InheritedFromType,
-		InheritedFromName: w.InheritedFromName,
-	}, nil
-}
-
 // Encryption options that apply to clients connecting to cloud storage..
 type EncryptionDetails struct {
 	SseEncryptionDetails *SseEncryptionDetails `json:"sse_encryption_details,omitempty"`
-}
-
-func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var encryptionDetailsTypeSseEncryptionDetailsWire *SseEncryptionDetails
-	switch value := v.EncryptionDetailsType.(type) {
-	case nil:
-	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
-		if value != nil {
-			encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-			}
-			encryptionDetailsTypeSseEncryptionDetailsWire = encryptionDetailsTypeSseEncryptionDetailsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EncryptionDetails.EncryptionDetailsType", value)
-	}
-	return &EncryptionDetails{
-		SseEncryptionDetails: encryptionDetailsTypeSseEncryptionDetailsWire,
-	}, nil
-}
-
-func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	encryptionDetailsTypeMembers := 0
-	if w.SseEncryptionDetails != nil {
-		encryptionDetailsTypeMembers++
-	}
-	if encryptionDetailsTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
-	}
-	encryptionDetailsTypeSelection := (&sdk.EncryptionDetails{}).EncryptionDetailsType
-	switch {
-	case w.SseEncryptionDetails != nil:
-		encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-		}
-		encryptionDetailsTypeSelection = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *encryptionDetailsTypeSseEncryptionDetailsConverted}
-	}
-	return &sdk.EncryptionDetails{
-		EncryptionDetailsType: encryptionDetailsTypeSelection,
-	}, nil
 }
 
 type ForeignKeyConstraint struct {
@@ -849,55 +390,11 @@ type ForeignKeyConstraint struct {
 	Rely *bool `json:"rely,omitempty"`
 }
 
-func ForeignKeyConstraintFromSDK(v *sdk.ForeignKeyConstraint) (*ForeignKeyConstraint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ForeignKeyConstraint{
-		Name:          v.Name,
-		ChildColumns:  v.ChildColumns,
-		ParentTable:   v.ParentTable,
-		ParentColumns: v.ParentColumns,
-		Rely:          v.Rely,
-	}, nil
-}
-
-func ForeignKeyConstraintToSDK(w *ForeignKeyConstraint) (*sdk.ForeignKeyConstraint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ForeignKeyConstraint{
-		Name:          w.Name,
-		ChildColumns:  w.ChildColumns,
-		ParentTable:   w.ParentTable,
-		ParentColumns: w.ParentColumns,
-		Rely:          w.Rely,
-	}, nil
-}
-
 // A function that is dependent on a SQL object..
 type FunctionDependency struct {
 	// Full name of the dependent function, in the form of
 	// __catalog_name__.__schema_name__.__function_name__.
 	FunctionFullName *string `json:"function_full_name,omitempty"`
-}
-
-func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FunctionDependency{
-		FunctionFullName: v.FunctionFullName,
-	}, nil
-}
-
-func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FunctionDependency{
-		FunctionFullName: w.FunctionFullName,
-	}, nil
 }
 
 type GetTableRequest struct {
@@ -910,18 +407,6 @@ type GetTableRequest struct {
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
 	// Whether to include a manifest containing table capabilities in the response.
 	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
-}
-
-func GetTableRequestFromSDK(v *sdk.GetTableRequest) (*GetTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetTableRequest{
-		FullNameArg:                 v.FullNameArg,
-		IncludeDeltaMetadata:        v.IncludeDeltaMetadata,
-		IncludeBrowse:               v.IncludeBrowse,
-		IncludeManifestCapabilities: v.IncludeManifestCapabilities,
-	}, nil
 }
 
 type ListTableSummariesRequest struct {
@@ -947,20 +432,6 @@ type ListTableSummariesRequest struct {
 	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
 }
 
-func ListTableSummariesRequestFromSDK(v *sdk.ListTableSummariesRequest) (*ListTableSummariesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListTableSummariesRequest{
-		CatalogName:                 v.CatalogName,
-		SchemaNamePattern:           v.SchemaNamePattern,
-		TableNamePattern:            v.TableNamePattern,
-		MaxResults:                  v.MaxResults,
-		PageToken:                   v.PageToken,
-		IncludeManifestCapabilities: v.IncludeManifestCapabilities,
-	}, nil
-}
-
 type ListTableSummariesResponse struct {
 	// List of table summaries.
 	Tables []TableSummary `json:"tables,omitempty"`
@@ -968,20 +439,6 @@ type ListTableSummariesResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListTableSummariesResponseToSDK(w *ListTableSummariesResponse) (*sdk.ListTableSummariesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tablesPublicValue, err := convertSlice(w.Tables, TableSummaryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTableSummariesResponse.Tables", err)
-	}
-	return &sdk.ListTableSummariesResponse{
-		Tables:        tablesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListTablesRequest struct {
@@ -1011,23 +468,6 @@ type ListTablesRequest struct {
 	IncludeManifestCapabilities *bool `json:"include_manifest_capabilities,omitempty"`
 }
 
-func ListTablesRequestFromSDK(v *sdk.ListTablesRequest) (*ListTablesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListTablesRequest{
-		CatalogName:                 v.CatalogName,
-		SchemaName:                  v.SchemaName,
-		MaxResults:                  v.MaxResults,
-		PageToken:                   v.PageToken,
-		OmitColumns:                 v.OmitColumns,
-		OmitProperties:              v.OmitProperties,
-		OmitUsername:                v.OmitUsername,
-		IncludeBrowse:               v.IncludeBrowse,
-		IncludeManifestCapabilities: v.IncludeManifestCapabilities,
-	}, nil
-}
-
 type ListTablesResponse struct {
 	// An array of table information objects.
 	Tables []TableInfo `json:"tables,omitempty"`
@@ -1037,41 +477,9 @@ type ListTablesResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListTablesResponseToSDK(w *ListTablesResponse) (*sdk.ListTablesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tablesPublicValue, err := convertSlice(w.Tables, TableInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTablesResponse.Tables", err)
-	}
-	return &sdk.ListTablesResponse{
-		Tables:        tablesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type NamedTableConstraint struct {
 	// The name of the constraint.
 	Name *string `json:"name,omitempty"`
-}
-
-func NamedTableConstraintFromSDK(v *sdk.NamedTableConstraint) (*NamedTableConstraint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NamedTableConstraint{
-		Name: v.Name,
-	}, nil
-}
-
-func NamedTableConstraintToSDK(w *NamedTableConstraint) (*sdk.NamedTableConstraint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NamedTableConstraint{
-		Name: w.Name,
-	}, nil
 }
 
 // Spec of an allowed option on a securable kind and its attributes. This is
@@ -1114,106 +522,11 @@ type OptionSpec struct {
 	IsCopiable *bool `json:"is_copiable,omitempty"`
 }
 
-func OptionSpecFromSDK(v *sdk.OptionSpec) (*OptionSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OptionSpec{
-		Name:          v.Name,
-		Type:          v.Type,
-		DefaultValue:  v.DefaultValue,
-		AllowedValues: v.AllowedValues,
-		Hint:          v.Hint,
-		Description:   v.Description,
-		IsRequired:    v.IsRequired,
-		IsSecret:      v.IsSecret,
-		IsHidden:      v.IsHidden,
-		IsUpdatable:   v.IsUpdatable,
-		OauthStage:    v.OauthStage,
-		IsLoggable:    v.IsLoggable,
-		IsCreatable:   v.IsCreatable,
-		IsCopiable:    v.IsCopiable,
-	}, nil
-}
-
-func OptionSpecToSDK(w *OptionSpec) (*sdk.OptionSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OptionSpec{
-		Name:          w.Name,
-		Type:          w.Type,
-		DefaultValue:  w.DefaultValue,
-		AllowedValues: w.AllowedValues,
-		Hint:          w.Hint,
-		Description:   w.Description,
-		IsRequired:    w.IsRequired,
-		IsSecret:      w.IsSecret,
-		IsHidden:      w.IsHidden,
-		IsUpdatable:   w.IsUpdatable,
-		OauthStage:    w.OauthStage,
-		IsLoggable:    w.IsLoggable,
-		IsCreatable:   w.IsCreatable,
-		IsCopiable:    w.IsCopiable,
-	}, nil
-}
-
 // A positional argument passed to a row filter or column mask function.
 // Distinguishes between column references and literals..
 type PolicyFunctionArgument struct {
 	Column   *string `json:"column,omitempty"`
 	Constant *string `json:"constant,omitempty"`
-}
-
-func PolicyFunctionArgumentFromSDK(v *sdk.PolicyFunctionArgument) (*PolicyFunctionArgument, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var argColumnWire *string
-	var argConstantWire *string
-	switch value := v.Arg.(type) {
-	case nil:
-	case *sdk.PolicyFunctionArgument_Arg_Column:
-		if value != nil {
-			argColumnWire = new(value.Column)
-		}
-	case *sdk.PolicyFunctionArgument_Arg_Constant:
-		if value != nil {
-			argConstantWire = new(value.Constant)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PolicyFunctionArgument.Arg", value)
-	}
-	return &PolicyFunctionArgument{
-		Column:   argColumnWire,
-		Constant: argConstantWire,
-	}, nil
-}
-
-func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
-	if w == nil {
-		return nil, nil
-	}
-	argMembers := 0
-	if w.Column != nil {
-		argMembers++
-	}
-	if w.Constant != nil {
-		argMembers++
-	}
-	if argMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
-	}
-	argSelection := (&sdk.PolicyFunctionArgument{}).Arg
-	switch {
-	case w.Column != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
-	case w.Constant != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
-	}
-	return &sdk.PolicyFunctionArgument{
-		Arg: argSelection,
-	}, nil
 }
 
 type PrimaryKeyConstraint struct {
@@ -1227,30 +540,6 @@ type PrimaryKeyConstraint struct {
 	Rely *bool `json:"rely,omitempty"`
 }
 
-func PrimaryKeyConstraintFromSDK(v *sdk.PrimaryKeyConstraint) (*PrimaryKeyConstraint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PrimaryKeyConstraint{
-		Name:              v.Name,
-		ChildColumns:      v.ChildColumns,
-		TimeseriesColumns: v.TimeseriesColumns,
-		Rely:              v.Rely,
-	}, nil
-}
-
-func PrimaryKeyConstraintToSDK(w *PrimaryKeyConstraint) (*sdk.PrimaryKeyConstraint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PrimaryKeyConstraint{
-		Name:              w.Name,
-		ChildColumns:      w.ChildColumns,
-		TimeseriesColumns: w.TimeseriesColumns,
-		Rely:              w.Rely,
-	}, nil
-}
-
 type RowFilter struct {
 	// The full name of the row filter SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
@@ -1261,36 +550,6 @@ type RowFilter struct {
 	// a row filter function, carrying the type (column reference vs constant
 	// literal) of each argument. Deprecated: use input_column_names instead.
 	InputArguments []PolicyFunctionArgument `json:"input_arguments,omitempty"`
-}
-
-func RowFilterFromSDK(v *sdk.RowFilter) (*RowFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inputArgumentsWireValue, err := convertSlice(v.InputArguments, PolicyFunctionArgumentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RowFilter.InputArguments", err)
-	}
-	return &RowFilter{
-		FunctionName:     v.FunctionName,
-		InputColumnNames: v.InputColumnNames,
-		InputArguments:   inputArgumentsWireValue,
-	}, nil
-}
-
-func RowFilterToSDK(w *RowFilter) (*sdk.RowFilter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	inputArgumentsPublicValue, err := convertSlice(w.InputArguments, PolicyFunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RowFilter.InputArguments", err)
-	}
-	return &sdk.RowFilter{
-		FunctionName:     w.FunctionName,
-		InputColumnNames: w.InputColumnNames,
-		InputArguments:   inputArgumentsPublicValue,
-	}, nil
 }
 
 // Manifest of a specific securable kind..
@@ -1307,40 +566,6 @@ type SecurableKindManifest struct {
 	Capabilities []string `json:"capabilities,omitempty"`
 }
 
-func SecurableKindManifestFromSDK(v *sdk.SecurableKindManifest) (*SecurableKindManifest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	optionsWireValue, err := convertSlice(v.Options, OptionSpecFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SecurableKindManifest.Options", err)
-	}
-	return &SecurableKindManifest{
-		SecurableType:        v.SecurableType,
-		SecurableKind:        v.SecurableKind,
-		AssignablePrivileges: v.AssignablePrivileges,
-		Options:              optionsWireValue,
-		Capabilities:         v.Capabilities,
-	}, nil
-}
-
-func SecurableKindManifestToSDK(w *SecurableKindManifest) (*sdk.SecurableKindManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	optionsPublicValue, err := convertSlice(w.Options, OptionSpecToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SecurableKindManifest.Options", err)
-	}
-	return &sdk.SecurableKindManifest{
-		SecurableType:        w.SecurableType,
-		SecurableKind:        w.SecurableKind,
-		AssignablePrivileges: w.AssignablePrivileges,
-		Options:              optionsPublicValue,
-		Capabilities:         w.Capabilities,
-	}, nil
-}
-
 // Server-Side Encryption properties for clients communicating with AWS s3..
 type SseEncryptionDetails struct {
 	// Sets the value of the 'x-amz-server-side-encryption' header in S3 request.
@@ -1349,26 +574,6 @@ type SseEncryptionDetails struct {
 	// algorithm = "SSE-KMS". Sets the value of the
 	// 'x-amz-server-side-encryption-aws-kms-key-id' header.
 	AwsKmsKeyArn *string `json:"aws_kms_key_arn,omitempty"`
-}
-
-func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SseEncryptionDetails{
-		Algorithm:    v.Algorithm,
-		AwsKmsKeyArn: v.AwsKmsKeyArn,
-	}, nil
-}
-
-func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SseEncryptionDetails{
-		Algorithm:    w.Algorithm,
-		AwsKmsKeyArn: w.AwsKmsKeyArn,
-	}, nil
 }
 
 // A table constraint, as defined by *one* of the following fields being set:
@@ -1380,92 +585,6 @@ type TableConstraint struct {
 	NamedTableConstraint *NamedTableConstraint `json:"named_table_constraint,omitempty"`
 }
 
-func TableConstraintFromSDK(v *sdk.TableConstraint) (*TableConstraint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var constraintPrimaryKeyConstraintWire *PrimaryKeyConstraint
-	var constraintForeignKeyConstraintWire *ForeignKeyConstraint
-	var constraintNamedTableConstraintWire *NamedTableConstraint
-	switch value := v.Constraint.(type) {
-	case nil:
-	case *sdk.TableConstraint_Constraint_PrimaryKeyConstraint:
-		if value != nil {
-			constraintPrimaryKeyConstraintConverted, err := PrimaryKeyConstraintFromSDK(&value.PrimaryKeyConstraint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.PrimaryKeyConstraint", err)
-			}
-			constraintPrimaryKeyConstraintWire = constraintPrimaryKeyConstraintConverted
-		}
-	case *sdk.TableConstraint_Constraint_ForeignKeyConstraint:
-		if value != nil {
-			constraintForeignKeyConstraintConverted, err := ForeignKeyConstraintFromSDK(&value.ForeignKeyConstraint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.ForeignKeyConstraint", err)
-			}
-			constraintForeignKeyConstraintWire = constraintForeignKeyConstraintConverted
-		}
-	case *sdk.TableConstraint_Constraint_NamedTableConstraint:
-		if value != nil {
-			constraintNamedTableConstraintConverted, err := NamedTableConstraintFromSDK(&value.NamedTableConstraint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.NamedTableConstraint", err)
-			}
-			constraintNamedTableConstraintWire = constraintNamedTableConstraintConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TableConstraint.Constraint", value)
-	}
-	return &TableConstraint{
-		PrimaryKeyConstraint: constraintPrimaryKeyConstraintWire,
-		ForeignKeyConstraint: constraintForeignKeyConstraintWire,
-		NamedTableConstraint: constraintNamedTableConstraintWire,
-	}, nil
-}
-
-func TableConstraintToSDK(w *TableConstraint) (*sdk.TableConstraint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	constraintMembers := 0
-	if w.PrimaryKeyConstraint != nil {
-		constraintMembers++
-	}
-	if w.ForeignKeyConstraint != nil {
-		constraintMembers++
-	}
-	if w.NamedTableConstraint != nil {
-		constraintMembers++
-	}
-	if constraintMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TableConstraint.Constraint")
-	}
-	constraintSelection := (&sdk.TableConstraint{}).Constraint
-	switch {
-	case w.PrimaryKeyConstraint != nil:
-		constraintPrimaryKeyConstraintConverted, err := PrimaryKeyConstraintToSDK(w.PrimaryKeyConstraint)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.PrimaryKeyConstraint", err)
-		}
-		constraintSelection = &sdk.TableConstraint_Constraint_PrimaryKeyConstraint{PrimaryKeyConstraint: *constraintPrimaryKeyConstraintConverted}
-	case w.ForeignKeyConstraint != nil:
-		constraintForeignKeyConstraintConverted, err := ForeignKeyConstraintToSDK(w.ForeignKeyConstraint)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.ForeignKeyConstraint", err)
-		}
-		constraintSelection = &sdk.TableConstraint_Constraint_ForeignKeyConstraint{ForeignKeyConstraint: *constraintForeignKeyConstraintConverted}
-	case w.NamedTableConstraint != nil:
-		constraintNamedTableConstraintConverted, err := NamedTableConstraintToSDK(w.NamedTableConstraint)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint.NamedTableConstraint", err)
-		}
-		constraintSelection = &sdk.TableConstraint_Constraint_NamedTableConstraint{NamedTableConstraint: *constraintNamedTableConstraintConverted}
-	}
-	return &sdk.TableConstraint{
-		Constraint: constraintSelection,
-	}, nil
-}
-
 // A table that is dependent on a SQL object..
 type TableDependency struct {
 	// Full name of the dependent table, in the form of
@@ -1473,36 +592,9 @@ type TableDependency struct {
 	TableFullName *string `json:"table_full_name,omitempty"`
 }
 
-func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TableDependency{
-		TableFullName: v.TableFullName,
-	}, nil
-}
-
-func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableDependency{
-		TableFullName: w.TableFullName,
-	}, nil
-}
-
 type TableExistsResponse struct {
 	// Whether the table exists or not.
 	TableExists *bool `json:"table_exists,omitempty"`
-}
-
-func TableExistsResponseToSDK(w *TableExistsResponse) (*sdk.TableExistsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableExistsResponse{
-		TableExists: w.TableExists,
-	}, nil
 }
 
 type TableInfo struct {
@@ -1581,112 +673,12 @@ type TableInfo struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
-func TableInfoToSDK(w *TableInfo) (*sdk.TableInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	viewDependenciesPublicValue, err := DependencyListToSDK(w.ViewDependencies)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.ViewDependencies", err)
-	}
-	tableConstraintsPublicValue, err := convertSlice(w.TableConstraints, TableConstraintToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.TableConstraints", err)
-	}
-	rowFilterPublicValue, err := RowFilterToSDK(w.RowFilter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.RowFilter", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.UpdatedAt", err)
-	}
-	deltaRuntimePropertiesKvpairsPublicValue, err := DeltaRuntimePropertiesKvPairsToSDK(w.DeltaRuntimePropertiesKvpairs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.DeltaRuntimePropertiesKvpairs", err)
-	}
-	deletedAtPublicValue, err := int64FromWire(w.DeletedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.DeletedAt", err)
-	}
-	effectivePredictiveOptimizationFlagPublicValue, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.EffectivePredictiveOptimizationFlag", err)
-	}
-	encryptionDetailsPublicValue, err := EncryptionDetailsToSDK(w.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.EncryptionDetails", err)
-	}
-	securableKindManifestPublicValue, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.SecurableKindManifest", err)
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableInfo.Columns", err)
-	}
-	return &sdk.TableInfo{
-		Name:                                w.Name,
-		CatalogName:                         w.CatalogName,
-		SchemaName:                          w.SchemaName,
-		TableType:                           w.TableType,
-		DataSourceFormat:                    w.DataSourceFormat,
-		StorageLocation:                     w.StorageLocation,
-		ViewDefinition:                      w.ViewDefinition,
-		ViewDependencies:                    viewDependenciesPublicValue,
-		SqlPath:                             w.SqlPath,
-		Owner:                               w.Owner,
-		Comment:                             w.Comment,
-		StorageCredentialName:               w.StorageCredentialName,
-		TableConstraints:                    tableConstraintsPublicValue,
-		RowFilter:                           rowFilterPublicValue,
-		PipelineId:                          w.PipelineId,
-		EnablePredictiveOptimization:        w.EnablePredictiveOptimization,
-		MetastoreId:                         w.MetastoreId,
-		FullName:                            w.FullName,
-		DataAccessConfigurationId:           w.DataAccessConfigurationId,
-		CreatedAt:                           createdAtPublicValue,
-		CreatedBy:                           w.CreatedBy,
-		UpdatedAt:                           updatedAtPublicValue,
-		UpdatedBy:                           w.UpdatedBy,
-		TableId:                             w.TableId,
-		DeltaRuntimePropertiesKvpairs:       deltaRuntimePropertiesKvpairsPublicValue,
-		DeletedAt:                           deletedAtPublicValue,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagPublicValue,
-		AccessPoint:                         w.AccessPoint,
-		BrowseOnly:                          w.BrowseOnly,
-		EncryptionDetails:                   encryptionDetailsPublicValue,
-		SecurableKindManifest:               securableKindManifestPublicValue,
-		Columns:                             columnsPublicValue,
-		Properties:                          w.Properties,
-	}, nil
-}
-
 type TableSummary struct {
 	// The full name of the table.
 	FullName  *string   `json:"full_name,omitempty"`
 	TableType TableType `json:"table_type,omitempty"`
 	// SecurableKindManifest of table, including capabilities the table has.
 	SecurableKindManifest *SecurableKindManifest `json:"securable_kind_manifest,omitempty"`
-}
-
-func TableSummaryToSDK(w *TableSummary) (*sdk.TableSummary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	securableKindManifestPublicValue, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableSummary.SecurableKindManifest", err)
-	}
-	return &sdk.TableSummary{
-		FullName:              w.FullName,
-		TableType:             w.TableType,
-		SecurableKindManifest: securableKindManifestPublicValue,
-	}, nil
 }
 
 type UpdateTableRequest struct {
@@ -1767,90 +759,1418 @@ type UpdateTableRequest struct {
 	Properties map[string]string `json:"properties,omitempty"`
 }
 
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeName = w.TypeName
+	out.Position = w.Position
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	out.TypeJson = w.TypeJson
+	out.Comment = w.Comment
+	out.Nullable = w.Nullable
+	out.PartitionIndex = w.PartitionIndex
+	conv1, err := ColumnMaskToSDK(w.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv1
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeName = v.TypeName
+	out.Position = v.Position
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	out.TypeJson = v.TypeJson
+	out.Comment = v.Comment
+	out.Nullable = v.Nullable
+	out.PartitionIndex = v.PartitionIndex
+	conv2, err := ColumnMaskFromSDK(v.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv2
+	return out, nil
+}
+
+// ColumnMaskToSDK converts the mirror to the sdk-go type.
+func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnMask{}
+	out.FunctionName = w.FunctionName
+	out.UsingColumnNames = w.UsingColumnNames
+	conv3, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv3
+	return out, nil
+}
+
+// ColumnMaskFromSDK converts the sdk-go type to the mirror.
+func ColumnMaskFromSDK(v *sdk.ColumnMask) (*ColumnMask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnMask{}
+	out.FunctionName = v.FunctionName
+	out.UsingColumnNames = v.UsingColumnNames
+	conv4, err := convertSlice(v.UsingArguments, PolicyFunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv4
+	return out, nil
+}
+
+// ConnectionDependencyToSDK converts the mirror to the sdk-go type.
+func ConnectionDependencyToSDK(w *ConnectionDependency) (*sdk.ConnectionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectionDependency{}
+	out.ConnectionName = w.ConnectionName
+	return out, nil
+}
+
+// ConnectionDependencyFromSDK converts the sdk-go type to the mirror.
+func ConnectionDependencyFromSDK(v *sdk.ConnectionDependency) (*ConnectionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectionDependency{}
+	out.ConnectionName = v.ConnectionName
+	return out, nil
+}
+
+// CreateTableConstraintRequestToSDK converts the mirror to the sdk-go type.
+func CreateTableConstraintRequestToSDK(w *CreateTableConstraintRequest) (*sdk.CreateTableConstraintRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTableConstraintRequest{}
+	out.FullNameArg = w.FullNameArg
+	conv5, err := TableConstraintToSDK(w.Constraint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableConstraintRequest.Constraint", err)
+	}
+	out.Constraint = conv5
+	return out, nil
+}
+
+// CreateTableConstraintRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTableConstraintRequestFromSDK(v *sdk.CreateTableConstraintRequest) (*CreateTableConstraintRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTableConstraintRequest{}
+	out.FullNameArg = v.FullNameArg
+	conv6, err := TableConstraintFromSDK(v.Constraint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableConstraintRequest.Constraint", err)
+	}
+	out.Constraint = conv6
+	return out, nil
+}
+
+// CreateTableRequestToSDK converts the mirror to the sdk-go type.
+func CreateTableRequestToSDK(w *CreateTableRequest) (*sdk.CreateTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTableRequest{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableType = w.TableType
+	out.DataSourceFormat = w.DataSourceFormat
+	out.StorageLocation = w.StorageLocation
+	out.ViewDefinition = w.ViewDefinition
+	conv7, err := DependencyListToSDK(w.ViewDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.ViewDependencies", err)
+	}
+	out.ViewDependencies = conv7
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageCredentialName = w.StorageCredentialName
+	conv8, err := convertSlice(w.TableConstraints, TableConstraintToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.TableConstraints", err)
+	}
+	out.TableConstraints = conv8
+	conv9, err := RowFilterToSDK(w.RowFilter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.RowFilter", err)
+	}
+	out.RowFilter = conv9
+	out.PipelineId = w.PipelineId
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.DataAccessConfigurationId = w.DataAccessConfigurationId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.TableId = w.TableId
+	conv10, err := DeltaRuntimePropertiesKvPairsToSDK(w.DeltaRuntimePropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.DeltaRuntimePropertiesKvpairs", err)
+	}
+	out.DeltaRuntimePropertiesKvpairs = conv10
+	out.DeletedAt = w.DeletedAt
+	conv11, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv11
+	out.AccessPoint = w.AccessPoint
+	out.BrowseOnly = w.BrowseOnly
+	conv12, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv12
+	conv13, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv13
+	conv14, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.Columns", err)
+	}
+	out.Columns = conv14
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// CreateTableRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTableRequestFromSDK(v *sdk.CreateTableRequest) (*CreateTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTableRequest{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableType = v.TableType
+	out.DataSourceFormat = v.DataSourceFormat
+	out.StorageLocation = v.StorageLocation
+	out.ViewDefinition = v.ViewDefinition
+	conv15, err := DependencyListFromSDK(v.ViewDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.ViewDependencies", err)
+	}
+	out.ViewDependencies = conv15
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageCredentialName = v.StorageCredentialName
+	conv16, err := convertSlice(v.TableConstraints, TableConstraintFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.TableConstraints", err)
+	}
+	out.TableConstraints = conv16
+	conv17, err := RowFilterFromSDK(v.RowFilter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.RowFilter", err)
+	}
+	out.RowFilter = conv17
+	out.PipelineId = v.PipelineId
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.DataAccessConfigurationId = v.DataAccessConfigurationId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.TableId = v.TableId
+	conv18, err := DeltaRuntimePropertiesKvPairsFromSDK(v.DeltaRuntimePropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.DeltaRuntimePropertiesKvpairs", err)
+	}
+	out.DeltaRuntimePropertiesKvpairs = conv18
+	out.DeletedAt = v.DeletedAt
+	conv19, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv19
+	out.AccessPoint = v.AccessPoint
+	out.BrowseOnly = v.BrowseOnly
+	conv20, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv20
+	conv21, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv21
+	conv22, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTableRequest.Columns", err)
+	}
+	out.Columns = conv22
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// CredentialDependencyToSDK converts the mirror to the sdk-go type.
+func CredentialDependencyToSDK(w *CredentialDependency) (*sdk.CredentialDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CredentialDependency{}
+	out.CredentialName = w.CredentialName
+	return out, nil
+}
+
+// CredentialDependencyFromSDK converts the sdk-go type to the mirror.
+func CredentialDependencyFromSDK(v *sdk.CredentialDependency) (*CredentialDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CredentialDependency{}
+	out.CredentialName = v.CredentialName
+	return out, nil
+}
+
+// DeleteTableConstraintRequestToSDK converts the mirror to the sdk-go type.
+func DeleteTableConstraintRequestToSDK(w *DeleteTableConstraintRequest) (*sdk.DeleteTableConstraintRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteTableConstraintRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.ConstraintName = w.ConstraintName
+	out.Cascade = w.Cascade
+	return out, nil
+}
+
+// DeleteTableConstraintRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteTableConstraintRequestFromSDK(v *sdk.DeleteTableConstraintRequest) (*DeleteTableConstraintRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteTableConstraintRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.ConstraintName = v.ConstraintName
+	out.Cascade = v.Cascade
+	return out, nil
+}
+
+// DeltaRuntimePropertiesKvPairsToSDK converts the mirror to the sdk-go type.
+func DeltaRuntimePropertiesKvPairsToSDK(w *DeltaRuntimePropertiesKvPairs) (*sdk.DeltaRuntimePropertiesKvPairs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaRuntimePropertiesKvPairs{}
+	out.DeltaRuntimeProperties = w.DeltaRuntimeProperties
+	return out, nil
+}
+
+// DeltaRuntimePropertiesKvPairsFromSDK converts the sdk-go type to the mirror.
+func DeltaRuntimePropertiesKvPairsFromSDK(v *sdk.DeltaRuntimePropertiesKvPairs) (*DeltaRuntimePropertiesKvPairs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaRuntimePropertiesKvPairs{}
+	out.DeltaRuntimeProperties = v.DeltaRuntimeProperties
+	return out, nil
+}
+
+// DependencyToSDK converts the mirror to the sdk-go type.
+func DependencyToSDK(w *Dependency) (*sdk.Dependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dependency{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Function != nil {
+			members++
+		}
+		if w.Connection != nil {
+			members++
+		}
+		if w.Credential != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Dependency.Value")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv23, err := TableDependencyToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Table{Table: *conv23}
+	case w.Function != nil:
+		conv24, err := FunctionDependencyToSDK(w.Function)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Function{Function: *conv24}
+	case w.Connection != nil:
+		conv25, err := ConnectionDependencyToSDK(w.Connection)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Connection{Connection: *conv25}
+	case w.Credential != nil:
+		conv26, err := CredentialDependencyToSDK(w.Credential)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+		}
+		out.Value = &sdk.Dependency_Value_Credential{Credential: *conv26}
+	}
+	return out, nil
+}
+
+// DependencyFromSDK converts the sdk-go type to the mirror.
+func DependencyFromSDK(v *sdk.Dependency) (*Dependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dependency{}
+	switch value := v.Value.(type) {
+	case *sdk.Dependency_Value_Table:
+		if value != nil {
+			conv27, err := TableDependencyFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Table = conv27
+		}
+	case *sdk.Dependency_Value_Function:
+		if value != nil {
+			conv28, err := FunctionDependencyFromSDK(&value.Function)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Function = conv28
+		}
+	case *sdk.Dependency_Value_Connection:
+		if value != nil {
+			conv29, err := ConnectionDependencyFromSDK(&value.Connection)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Connection = conv29
+		}
+	case *sdk.Dependency_Value_Credential:
+		if value != nil {
+			conv30, err := CredentialDependencyFromSDK(&value.Credential)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Dependency.Value", err)
+			}
+			out.Credential = conv30
+		}
+	}
+	return out, nil
+}
+
+// DependencyListToSDK converts the mirror to the sdk-go type.
+func DependencyListToSDK(w *DependencyList) (*sdk.DependencyList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DependencyList{}
+	conv31, err := convertSlice(w.Dependencies, DependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv31
+	return out, nil
+}
+
+// DependencyListFromSDK converts the sdk-go type to the mirror.
+func DependencyListFromSDK(v *sdk.DependencyList) (*DependencyList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DependencyList{}
+	conv32, err := convertSlice(v.Dependencies, DependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DependencyList.Dependencies", err)
+	}
+	out.Dependencies = conv32
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagToSDK converts the mirror to the sdk-go type.
+func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EffectivePredictiveOptimizationFlag{}
+	out.Value = w.Value
+	out.InheritedFromType = w.InheritedFromType
+	out.InheritedFromName = w.InheritedFromName
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagFromSDK converts the sdk-go type to the mirror.
+func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EffectivePredictiveOptimizationFlag{}
+	out.Value = v.Value
+	out.InheritedFromType = v.InheritedFromType
+	out.InheritedFromName = v.InheritedFromName
+	return out, nil
+}
+
+// EncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EncryptionDetails{}
+	{
+		members := 0
+		if w.SseEncryptionDetails != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
+		}
+	}
+	switch {
+	case w.SseEncryptionDetails != nil:
+		conv33, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+		}
+		out.EncryptionDetailsType = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *conv33}
+	}
+	return out, nil
+}
+
+// EncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EncryptionDetails{}
+	switch value := v.EncryptionDetailsType.(type) {
+	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
+		if value != nil {
+			conv34, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+			}
+			out.SseEncryptionDetails = conv34
+		}
+	}
+	return out, nil
+}
+
+// ForeignKeyConstraintToSDK converts the mirror to the sdk-go type.
+func ForeignKeyConstraintToSDK(w *ForeignKeyConstraint) (*sdk.ForeignKeyConstraint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ForeignKeyConstraint{}
+	out.Name = w.Name
+	out.ChildColumns = w.ChildColumns
+	out.ParentTable = w.ParentTable
+	out.ParentColumns = w.ParentColumns
+	out.Rely = w.Rely
+	return out, nil
+}
+
+// ForeignKeyConstraintFromSDK converts the sdk-go type to the mirror.
+func ForeignKeyConstraintFromSDK(v *sdk.ForeignKeyConstraint) (*ForeignKeyConstraint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ForeignKeyConstraint{}
+	out.Name = v.Name
+	out.ChildColumns = v.ChildColumns
+	out.ParentTable = v.ParentTable
+	out.ParentColumns = v.ParentColumns
+	out.Rely = v.Rely
+	return out, nil
+}
+
+// FunctionDependencyToSDK converts the mirror to the sdk-go type.
+func FunctionDependencyToSDK(w *FunctionDependency) (*sdk.FunctionDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FunctionDependency{}
+	out.FunctionFullName = w.FunctionFullName
+	return out, nil
+}
+
+// FunctionDependencyFromSDK converts the sdk-go type to the mirror.
+func FunctionDependencyFromSDK(v *sdk.FunctionDependency) (*FunctionDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FunctionDependency{}
+	out.FunctionFullName = v.FunctionFullName
+	return out, nil
+}
+
+// GetTableRequestToSDK converts the mirror to the sdk-go type.
+func GetTableRequestToSDK(w *GetTableRequest) (*sdk.GetTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetTableRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.IncludeDeltaMetadata = w.IncludeDeltaMetadata
+	out.IncludeBrowse = w.IncludeBrowse
+	out.IncludeManifestCapabilities = w.IncludeManifestCapabilities
+	return out, nil
+}
+
+// GetTableRequestFromSDK converts the sdk-go type to the mirror.
+func GetTableRequestFromSDK(v *sdk.GetTableRequest) (*GetTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetTableRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.IncludeDeltaMetadata = v.IncludeDeltaMetadata
+	out.IncludeBrowse = v.IncludeBrowse
+	out.IncludeManifestCapabilities = v.IncludeManifestCapabilities
+	return out, nil
+}
+
+// ListTableSummariesRequestToSDK converts the mirror to the sdk-go type.
+func ListTableSummariesRequestToSDK(w *ListTableSummariesRequest) (*sdk.ListTableSummariesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTableSummariesRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaNamePattern = w.SchemaNamePattern
+	out.TableNamePattern = w.TableNamePattern
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeManifestCapabilities = w.IncludeManifestCapabilities
+	return out, nil
+}
+
+// ListTableSummariesRequestFromSDK converts the sdk-go type to the mirror.
+func ListTableSummariesRequestFromSDK(v *sdk.ListTableSummariesRequest) (*ListTableSummariesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTableSummariesRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaNamePattern = v.SchemaNamePattern
+	out.TableNamePattern = v.TableNamePattern
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeManifestCapabilities = v.IncludeManifestCapabilities
+	return out, nil
+}
+
+// ListTableSummariesResponseToSDK converts the mirror to the sdk-go type.
+func ListTableSummariesResponseToSDK(w *ListTableSummariesResponse) (*sdk.ListTableSummariesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTableSummariesResponse{}
+	conv35, err := convertSlice(w.Tables, TableSummaryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTableSummariesResponse.Tables", err)
+	}
+	out.Tables = conv35
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListTableSummariesResponseFromSDK converts the sdk-go type to the mirror.
+func ListTableSummariesResponseFromSDK(v *sdk.ListTableSummariesResponse) (*ListTableSummariesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTableSummariesResponse{}
+	conv36, err := convertSlice(v.Tables, TableSummaryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTableSummariesResponse.Tables", err)
+	}
+	out.Tables = conv36
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListTablesRequestToSDK converts the mirror to the sdk-go type.
+func ListTablesRequestToSDK(w *ListTablesRequest) (*sdk.ListTablesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTablesRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.OmitColumns = w.OmitColumns
+	out.OmitProperties = w.OmitProperties
+	out.OmitUsername = w.OmitUsername
+	out.IncludeBrowse = w.IncludeBrowse
+	out.IncludeManifestCapabilities = w.IncludeManifestCapabilities
+	return out, nil
+}
+
+// ListTablesRequestFromSDK converts the sdk-go type to the mirror.
+func ListTablesRequestFromSDK(v *sdk.ListTablesRequest) (*ListTablesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTablesRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.OmitColumns = v.OmitColumns
+	out.OmitProperties = v.OmitProperties
+	out.OmitUsername = v.OmitUsername
+	out.IncludeBrowse = v.IncludeBrowse
+	out.IncludeManifestCapabilities = v.IncludeManifestCapabilities
+	return out, nil
+}
+
+// ListTablesResponseToSDK converts the mirror to the sdk-go type.
+func ListTablesResponseToSDK(w *ListTablesResponse) (*sdk.ListTablesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTablesResponse{}
+	conv37, err := convertSlice(w.Tables, TableInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTablesResponse.Tables", err)
+	}
+	out.Tables = conv37
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListTablesResponseFromSDK converts the sdk-go type to the mirror.
+func ListTablesResponseFromSDK(v *sdk.ListTablesResponse) (*ListTablesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTablesResponse{}
+	conv38, err := convertSlice(v.Tables, TableInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTablesResponse.Tables", err)
+	}
+	out.Tables = conv38
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// NamedTableConstraintToSDK converts the mirror to the sdk-go type.
+func NamedTableConstraintToSDK(w *NamedTableConstraint) (*sdk.NamedTableConstraint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NamedTableConstraint{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// NamedTableConstraintFromSDK converts the sdk-go type to the mirror.
+func NamedTableConstraintFromSDK(v *sdk.NamedTableConstraint) (*NamedTableConstraint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NamedTableConstraint{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// OptionSpecToSDK converts the mirror to the sdk-go type.
+func OptionSpecToSDK(w *OptionSpec) (*sdk.OptionSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OptionSpec{}
+	out.Name = w.Name
+	out.Type = w.Type
+	out.DefaultValue = w.DefaultValue
+	out.AllowedValues = w.AllowedValues
+	out.Hint = w.Hint
+	out.Description = w.Description
+	out.IsRequired = w.IsRequired
+	out.IsSecret = w.IsSecret
+	out.IsHidden = w.IsHidden
+	out.IsUpdatable = w.IsUpdatable
+	out.OauthStage = w.OauthStage
+	out.IsLoggable = w.IsLoggable
+	out.IsCreatable = w.IsCreatable
+	out.IsCopiable = w.IsCopiable
+	return out, nil
+}
+
+// OptionSpecFromSDK converts the sdk-go type to the mirror.
+func OptionSpecFromSDK(v *sdk.OptionSpec) (*OptionSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OptionSpec{}
+	out.Name = v.Name
+	out.Type = v.Type
+	out.DefaultValue = v.DefaultValue
+	out.AllowedValues = v.AllowedValues
+	out.Hint = v.Hint
+	out.Description = v.Description
+	out.IsRequired = v.IsRequired
+	out.IsSecret = v.IsSecret
+	out.IsHidden = v.IsHidden
+	out.IsUpdatable = v.IsUpdatable
+	out.OauthStage = v.OauthStage
+	out.IsLoggable = v.IsLoggable
+	out.IsCreatable = v.IsCreatable
+	out.IsCopiable = v.IsCopiable
+	return out, nil
+}
+
+// PolicyFunctionArgumentToSDK converts the mirror to the sdk-go type.
+func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PolicyFunctionArgument{}
+	{
+		members := 0
+		if w.Column != nil {
+			members++
+		}
+		if w.Constant != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		}
+	}
+	switch {
+	case w.Column != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
+	case w.Constant != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
+	}
+	return out, nil
+}
+
+// PolicyFunctionArgumentFromSDK converts the sdk-go type to the mirror.
+func PolicyFunctionArgumentFromSDK(v *sdk.PolicyFunctionArgument) (*PolicyFunctionArgument, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PolicyFunctionArgument{}
+	switch value := v.Arg.(type) {
+	case *sdk.PolicyFunctionArgument_Arg_Column:
+		if value != nil {
+			out.Column = new(value.Column)
+		}
+	case *sdk.PolicyFunctionArgument_Arg_Constant:
+		if value != nil {
+			out.Constant = new(value.Constant)
+		}
+	}
+	return out, nil
+}
+
+// PrimaryKeyConstraintToSDK converts the mirror to the sdk-go type.
+func PrimaryKeyConstraintToSDK(w *PrimaryKeyConstraint) (*sdk.PrimaryKeyConstraint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrimaryKeyConstraint{}
+	out.Name = w.Name
+	out.ChildColumns = w.ChildColumns
+	out.TimeseriesColumns = w.TimeseriesColumns
+	out.Rely = w.Rely
+	return out, nil
+}
+
+// PrimaryKeyConstraintFromSDK converts the sdk-go type to the mirror.
+func PrimaryKeyConstraintFromSDK(v *sdk.PrimaryKeyConstraint) (*PrimaryKeyConstraint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrimaryKeyConstraint{}
+	out.Name = v.Name
+	out.ChildColumns = v.ChildColumns
+	out.TimeseriesColumns = v.TimeseriesColumns
+	out.Rely = v.Rely
+	return out, nil
+}
+
+// RowFilterToSDK converts the mirror to the sdk-go type.
+func RowFilterToSDK(w *RowFilter) (*sdk.RowFilter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RowFilter{}
+	out.FunctionName = w.FunctionName
+	out.InputColumnNames = w.InputColumnNames
+	conv39, err := convertSlice(w.InputArguments, PolicyFunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RowFilter.InputArguments", err)
+	}
+	out.InputArguments = conv39
+	return out, nil
+}
+
+// RowFilterFromSDK converts the sdk-go type to the mirror.
+func RowFilterFromSDK(v *sdk.RowFilter) (*RowFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RowFilter{}
+	out.FunctionName = v.FunctionName
+	out.InputColumnNames = v.InputColumnNames
+	conv40, err := convertSlice(v.InputArguments, PolicyFunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RowFilter.InputArguments", err)
+	}
+	out.InputArguments = conv40
+	return out, nil
+}
+
+// SecurableKindManifestToSDK converts the mirror to the sdk-go type.
+func SecurableKindManifestToSDK(w *SecurableKindManifest) (*sdk.SecurableKindManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SecurableKindManifest{}
+	out.SecurableType = w.SecurableType
+	out.SecurableKind = w.SecurableKind
+	out.AssignablePrivileges = w.AssignablePrivileges
+	conv41, err := convertSlice(w.Options, OptionSpecToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SecurableKindManifest.Options", err)
+	}
+	out.Options = conv41
+	out.Capabilities = w.Capabilities
+	return out, nil
+}
+
+// SecurableKindManifestFromSDK converts the sdk-go type to the mirror.
+func SecurableKindManifestFromSDK(v *sdk.SecurableKindManifest) (*SecurableKindManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SecurableKindManifest{}
+	out.SecurableType = v.SecurableType
+	out.SecurableKind = v.SecurableKind
+	out.AssignablePrivileges = v.AssignablePrivileges
+	conv42, err := convertSlice(v.Options, OptionSpecFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SecurableKindManifest.Options", err)
+	}
+	out.Options = conv42
+	out.Capabilities = v.Capabilities
+	return out, nil
+}
+
+// SseEncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SseEncryptionDetails{}
+	out.Algorithm = w.Algorithm
+	out.AwsKmsKeyArn = w.AwsKmsKeyArn
+	return out, nil
+}
+
+// SseEncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SseEncryptionDetails{}
+	out.Algorithm = v.Algorithm
+	out.AwsKmsKeyArn = v.AwsKmsKeyArn
+	return out, nil
+}
+
+// TableConstraintToSDK converts the mirror to the sdk-go type.
+func TableConstraintToSDK(w *TableConstraint) (*sdk.TableConstraint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableConstraint{}
+	{
+		members := 0
+		if w.PrimaryKeyConstraint != nil {
+			members++
+		}
+		if w.ForeignKeyConstraint != nil {
+			members++
+		}
+		if w.NamedTableConstraint != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TableConstraint.Constraint")
+		}
+	}
+	switch {
+	case w.PrimaryKeyConstraint != nil:
+		conv43, err := PrimaryKeyConstraintToSDK(w.PrimaryKeyConstraint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+		}
+		out.Constraint = &sdk.TableConstraint_Constraint_PrimaryKeyConstraint{PrimaryKeyConstraint: *conv43}
+	case w.ForeignKeyConstraint != nil:
+		conv44, err := ForeignKeyConstraintToSDK(w.ForeignKeyConstraint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+		}
+		out.Constraint = &sdk.TableConstraint_Constraint_ForeignKeyConstraint{ForeignKeyConstraint: *conv44}
+	case w.NamedTableConstraint != nil:
+		conv45, err := NamedTableConstraintToSDK(w.NamedTableConstraint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+		}
+		out.Constraint = &sdk.TableConstraint_Constraint_NamedTableConstraint{NamedTableConstraint: *conv45}
+	}
+	return out, nil
+}
+
+// TableConstraintFromSDK converts the sdk-go type to the mirror.
+func TableConstraintFromSDK(v *sdk.TableConstraint) (*TableConstraint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableConstraint{}
+	switch value := v.Constraint.(type) {
+	case *sdk.TableConstraint_Constraint_PrimaryKeyConstraint:
+		if value != nil {
+			conv46, err := PrimaryKeyConstraintFromSDK(&value.PrimaryKeyConstraint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+			}
+			out.PrimaryKeyConstraint = conv46
+		}
+	case *sdk.TableConstraint_Constraint_ForeignKeyConstraint:
+		if value != nil {
+			conv47, err := ForeignKeyConstraintFromSDK(&value.ForeignKeyConstraint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+			}
+			out.ForeignKeyConstraint = conv47
+		}
+	case *sdk.TableConstraint_Constraint_NamedTableConstraint:
+		if value != nil {
+			conv48, err := NamedTableConstraintFromSDK(&value.NamedTableConstraint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TableConstraint.Constraint", err)
+			}
+			out.NamedTableConstraint = conv48
+		}
+	}
+	return out, nil
+}
+
+// TableDependencyToSDK converts the mirror to the sdk-go type.
+func TableDependencyToSDK(w *TableDependency) (*sdk.TableDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableDependency{}
+	out.TableFullName = w.TableFullName
+	return out, nil
+}
+
+// TableDependencyFromSDK converts the sdk-go type to the mirror.
+func TableDependencyFromSDK(v *sdk.TableDependency) (*TableDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableDependency{}
+	out.TableFullName = v.TableFullName
+	return out, nil
+}
+
+// TableExistsResponseToSDK converts the mirror to the sdk-go type.
+func TableExistsResponseToSDK(w *TableExistsResponse) (*sdk.TableExistsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableExistsResponse{}
+	out.TableExists = w.TableExists
+	return out, nil
+}
+
+// TableExistsResponseFromSDK converts the sdk-go type to the mirror.
+func TableExistsResponseFromSDK(v *sdk.TableExistsResponse) (*TableExistsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableExistsResponse{}
+	out.TableExists = v.TableExists
+	return out, nil
+}
+
+// TableInfoToSDK converts the mirror to the sdk-go type.
+func TableInfoToSDK(w *TableInfo) (*sdk.TableInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableType = w.TableType
+	out.DataSourceFormat = w.DataSourceFormat
+	out.StorageLocation = w.StorageLocation
+	out.ViewDefinition = w.ViewDefinition
+	conv49, err := DependencyListToSDK(w.ViewDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.ViewDependencies", err)
+	}
+	out.ViewDependencies = conv49
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageCredentialName = w.StorageCredentialName
+	conv50, err := convertSlice(w.TableConstraints, TableConstraintToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.TableConstraints", err)
+	}
+	out.TableConstraints = conv50
+	conv51, err := RowFilterToSDK(w.RowFilter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.RowFilter", err)
+	}
+	out.RowFilter = conv51
+	out.PipelineId = w.PipelineId
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.DataAccessConfigurationId = w.DataAccessConfigurationId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.TableId = w.TableId
+	conv52, err := DeltaRuntimePropertiesKvPairsToSDK(w.DeltaRuntimePropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.DeltaRuntimePropertiesKvpairs", err)
+	}
+	out.DeltaRuntimePropertiesKvpairs = conv52
+	out.DeletedAt = w.DeletedAt
+	conv53, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv53
+	out.AccessPoint = w.AccessPoint
+	out.BrowseOnly = w.BrowseOnly
+	conv54, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv54
+	conv55, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv55
+	conv56, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.Columns", err)
+	}
+	out.Columns = conv56
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// TableInfoFromSDK converts the sdk-go type to the mirror.
+func TableInfoFromSDK(v *sdk.TableInfo) (*TableInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableType = v.TableType
+	out.DataSourceFormat = v.DataSourceFormat
+	out.StorageLocation = v.StorageLocation
+	out.ViewDefinition = v.ViewDefinition
+	conv57, err := DependencyListFromSDK(v.ViewDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.ViewDependencies", err)
+	}
+	out.ViewDependencies = conv57
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageCredentialName = v.StorageCredentialName
+	conv58, err := convertSlice(v.TableConstraints, TableConstraintFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.TableConstraints", err)
+	}
+	out.TableConstraints = conv58
+	conv59, err := RowFilterFromSDK(v.RowFilter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.RowFilter", err)
+	}
+	out.RowFilter = conv59
+	out.PipelineId = v.PipelineId
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.DataAccessConfigurationId = v.DataAccessConfigurationId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.TableId = v.TableId
+	conv60, err := DeltaRuntimePropertiesKvPairsFromSDK(v.DeltaRuntimePropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.DeltaRuntimePropertiesKvpairs", err)
+	}
+	out.DeltaRuntimePropertiesKvpairs = conv60
+	out.DeletedAt = v.DeletedAt
+	conv61, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv61
+	out.AccessPoint = v.AccessPoint
+	out.BrowseOnly = v.BrowseOnly
+	conv62, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv62
+	conv63, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv63
+	conv64, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableInfo.Columns", err)
+	}
+	out.Columns = conv64
+	out.Properties = v.Properties
+	return out, nil
+}
+
+// TableSummaryToSDK converts the mirror to the sdk-go type.
+func TableSummaryToSDK(w *TableSummary) (*sdk.TableSummary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableSummary{}
+	out.FullName = w.FullName
+	out.TableType = w.TableType
+	conv65, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableSummary.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv65
+	return out, nil
+}
+
+// TableSummaryFromSDK converts the sdk-go type to the mirror.
+func TableSummaryFromSDK(v *sdk.TableSummary) (*TableSummary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableSummary{}
+	out.FullName = v.FullName
+	out.TableType = v.TableType
+	conv66, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableSummary.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv66
+	return out, nil
+}
+
+// UpdateTableRequestToSDK converts the mirror to the sdk-go type.
+func UpdateTableRequestToSDK(w *UpdateTableRequest) (*sdk.UpdateTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateTableRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.TableType = w.TableType
+	out.DataSourceFormat = w.DataSourceFormat
+	out.StorageLocation = w.StorageLocation
+	out.ViewDefinition = w.ViewDefinition
+	conv67, err := DependencyListToSDK(w.ViewDependencies)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.ViewDependencies", err)
+	}
+	out.ViewDependencies = conv67
+	out.SqlPath = w.SqlPath
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageCredentialName = w.StorageCredentialName
+	conv68, err := convertSlice(w.TableConstraints, TableConstraintToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.TableConstraints", err)
+	}
+	out.TableConstraints = conv68
+	conv69, err := RowFilterToSDK(w.RowFilter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.RowFilter", err)
+	}
+	out.RowFilter = conv69
+	out.PipelineId = w.PipelineId
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.MetastoreId = w.MetastoreId
+	out.FullName = w.FullName
+	out.DataAccessConfigurationId = w.DataAccessConfigurationId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.TableId = w.TableId
+	conv70, err := DeltaRuntimePropertiesKvPairsToSDK(w.DeltaRuntimePropertiesKvpairs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.DeltaRuntimePropertiesKvpairs", err)
+	}
+	out.DeltaRuntimePropertiesKvpairs = conv70
+	out.DeletedAt = w.DeletedAt
+	conv71, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv71
+	out.AccessPoint = w.AccessPoint
+	out.BrowseOnly = w.BrowseOnly
+	conv72, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv72
+	conv73, err := SecurableKindManifestToSDK(w.SecurableKindManifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.SecurableKindManifest", err)
+	}
+	out.SecurableKindManifest = conv73
+	conv74, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.Columns", err)
+	}
+	out.Columns = conv74
+	out.Properties = w.Properties
+	return out, nil
+}
+
+// UpdateTableRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateTableRequestFromSDK(v *sdk.UpdateTableRequest) (*UpdateTableRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	viewDependenciesWireValue, err := DependencyListFromSDK(v.ViewDependencies)
+	out := &UpdateTableRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.TableType = v.TableType
+	out.DataSourceFormat = v.DataSourceFormat
+	out.StorageLocation = v.StorageLocation
+	out.ViewDefinition = v.ViewDefinition
+	conv75, err := DependencyListFromSDK(v.ViewDependencies)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.ViewDependencies", err)
 	}
-	tableConstraintsWireValue, err := convertSlice(v.TableConstraints, TableConstraintFromSDK)
+	out.ViewDependencies = conv75
+	out.SqlPath = v.SqlPath
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageCredentialName = v.StorageCredentialName
+	conv76, err := convertSlice(v.TableConstraints, TableConstraintFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.TableConstraints", err)
 	}
-	rowFilterWireValue, err := RowFilterFromSDK(v.RowFilter)
+	out.TableConstraints = conv76
+	conv77, err := RowFilterFromSDK(v.RowFilter)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.RowFilter", err)
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.UpdatedAt", err)
-	}
-	deltaRuntimePropertiesKvpairsWireValue, err := DeltaRuntimePropertiesKvPairsFromSDK(v.DeltaRuntimePropertiesKvpairs)
+	out.RowFilter = conv77
+	out.PipelineId = v.PipelineId
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.MetastoreId = v.MetastoreId
+	out.FullName = v.FullName
+	out.DataAccessConfigurationId = v.DataAccessConfigurationId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.TableId = v.TableId
+	conv78, err := DeltaRuntimePropertiesKvPairsFromSDK(v.DeltaRuntimePropertiesKvpairs)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.DeltaRuntimePropertiesKvpairs", err)
 	}
-	deletedAtWireValue, err := int64ToWire(v.DeletedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.DeletedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	out.DeltaRuntimePropertiesKvpairs = conv78
+	out.DeletedAt = v.DeletedAt
+	conv79, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.EffectivePredictiveOptimizationFlag", err)
 	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	out.EffectivePredictiveOptimizationFlag = conv79
+	out.AccessPoint = v.AccessPoint
+	out.BrowseOnly = v.BrowseOnly
+	conv80, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.EncryptionDetails", err)
 	}
-	securableKindManifestWireValue, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
+	out.EncryptionDetails = conv80
+	conv81, err := SecurableKindManifestFromSDK(v.SecurableKindManifest)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.SecurableKindManifest", err)
 	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	out.SecurableKindManifest = conv81
+	conv82, err := convertSlice(v.Columns, ColumnInfoFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTableRequest.Columns", err)
 	}
-	return &UpdateTableRequest{
-		FullNameArg:                         v.FullNameArg,
-		Name:                                v.Name,
-		CatalogName:                         v.CatalogName,
-		SchemaName:                          v.SchemaName,
-		TableType:                           v.TableType,
-		DataSourceFormat:                    v.DataSourceFormat,
-		StorageLocation:                     v.StorageLocation,
-		ViewDefinition:                      v.ViewDefinition,
-		ViewDependencies:                    viewDependenciesWireValue,
-		SqlPath:                             v.SqlPath,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageCredentialName:               v.StorageCredentialName,
-		TableConstraints:                    tableConstraintsWireValue,
-		RowFilter:                           rowFilterWireValue,
-		PipelineId:                          v.PipelineId,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		MetastoreId:                         v.MetastoreId,
-		FullName:                            v.FullName,
-		DataAccessConfigurationId:           v.DataAccessConfigurationId,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		TableId:                             v.TableId,
-		DeltaRuntimePropertiesKvpairs:       deltaRuntimePropertiesKvpairsWireValue,
-		DeletedAt:                           deletedAtWireValue,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		AccessPoint:                         v.AccessPoint,
-		BrowseOnly:                          v.BrowseOnly,
-		EncryptionDetails:                   encryptionDetailsWireValue,
-		SecurableKindManifest:               securableKindManifestWireValue,
-		Columns:                             columnsWireValue,
-		Properties:                          v.Properties,
-	}, nil
+	out.Columns = conv82
+	out.Properties = v.Properties
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

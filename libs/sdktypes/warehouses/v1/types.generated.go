@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/warehouses/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -247,55 +248,11 @@ const (
 	EndpointHealth_Status_Failed                                        = sdk.EndpointHealth_Status_Failed
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Configures the channel name and DBSQL version of the warehouse.
 // CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified..
 type Channel struct {
 	Name         ChannelName `json:"name,omitempty"`
 	DbsqlVersion *string     `json:"dbsql_version,omitempty"`
-}
-
-func ChannelFromSDK(v *sdk.Channel) (*Channel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Channel{
-		Name:         v.Name,
-		DbsqlVersion: v.DbsqlVersion,
-	}, nil
-}
-
-func ChannelToSDK(w *Channel) (*sdk.Channel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Channel{
-		Name:         w.Name,
-		DbsqlVersion: w.DbsqlVersion,
-	}, nil
 }
 
 // Request message for CreateDefaultWarehouseOverride..
@@ -306,20 +263,6 @@ type CreateDefaultWarehouseOverrideRequest struct {
 	DefaultWarehouseOverrideId *string `json:"default_warehouse_override_id,omitempty"`
 	// Required. The default warehouse override to create.
 	DefaultWarehouseOverride *DefaultWarehouseOverride `json:"default_warehouse_override,omitempty"`
-}
-
-func CreateDefaultWarehouseOverrideRequestFromSDK(v *sdk.CreateDefaultWarehouseOverrideRequest) (*CreateDefaultWarehouseOverrideRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultWarehouseOverrideWireValue, err := DefaultWarehouseOverrideFromSDK(v.DefaultWarehouseOverride)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
-	}
-	return &CreateDefaultWarehouseOverrideRequest{
-		DefaultWarehouseOverrideId: v.DefaultWarehouseOverrideId,
-		DefaultWarehouseOverride:   defaultWarehouseOverrideWireValue,
-	}, nil
 }
 
 // Creates a new SQL warehouse..
@@ -386,48 +329,9 @@ type CreateWarehouseRequest struct {
 	StatementTimeout *int `json:"statement_timeout,omitempty"`
 }
 
-func CreateWarehouseRequestFromSDK(v *sdk.CreateWarehouseRequest) (*CreateWarehouseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := EndpointTagsFromSDK(v.Tags)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Tags", err)
-	}
-	channelWireValue, err := ChannelFromSDK(v.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Channel", err)
-	}
-	return &CreateWarehouseRequest{
-		Name:                    v.Name,
-		ClusterSize:             v.ClusterSize,
-		MinNumClusters:          v.MinNumClusters,
-		MaxNumClusters:          v.MaxNumClusters,
-		AutoStopMins:            v.AutoStopMins,
-		CreatorName:             v.CreatorName,
-		InstanceProfileArn:      v.InstanceProfileArn,
-		Tags:                    tagsWireValue,
-		SpotInstancePolicy:      v.SpotInstancePolicy,
-		EnablePhoton:            v.EnablePhoton,
-		Channel:                 channelWireValue,
-		EnableServerlessCompute: v.EnableServerlessCompute,
-		WarehouseType:           v.WarehouseType,
-		StatementTimeout:        v.StatementTimeout,
-	}, nil
-}
-
 type CreateWarehouseResponse struct {
 	// Id for the SQL warehouse. This value is unique across all SQL warehouses.
 	Id *string `json:"id,omitempty"`
-}
-
-func CreateWarehouseResponseToSDK(w *CreateWarehouseResponse) (*sdk.CreateWarehouseResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateWarehouseResponse{
-		Id: w.Id,
-	}, nil
 }
 
 // Represents a per-user default warehouse override configuration. This resource
@@ -445,30 +349,6 @@ type DefaultWarehouseOverride struct {
 	// The specific warehouse ID when type is CUSTOM. Not set for LAST_SELECTED
 	// type.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func DefaultWarehouseOverrideFromSDK(v *sdk.DefaultWarehouseOverride) (*DefaultWarehouseOverride, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DefaultWarehouseOverride{
-		Name:                       v.Name,
-		DefaultWarehouseOverrideId: v.DefaultWarehouseOverrideId,
-		Type:                       v.Type,
-		WarehouseId:                v.WarehouseId,
-	}, nil
-}
-
-func DefaultWarehouseOverrideToSDK(w *DefaultWarehouseOverride) (*sdk.DefaultWarehouseOverride, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DefaultWarehouseOverride{
-		Name:                       w.Name,
-		DefaultWarehouseOverrideId: w.DefaultWarehouseOverrideId,
-		Type:                       w.Type,
-		WarehouseId:                w.WarehouseId,
-	}, nil
 }
 
 // This is an incremental edit functionality, so all fields except id are
@@ -540,60 +420,9 @@ type EditWarehouseRequest struct {
 	StatementTimeout *int `json:"statement_timeout,omitempty"`
 }
 
-func EditWarehouseRequestFromSDK(v *sdk.EditWarehouseRequest) (*EditWarehouseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := EndpointTagsFromSDK(v.Tags)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Tags", err)
-	}
-	channelWireValue, err := ChannelFromSDK(v.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Channel", err)
-	}
-	return &EditWarehouseRequest{
-		Id:                      v.Id,
-		Name:                    v.Name,
-		ClusterSize:             v.ClusterSize,
-		MinNumClusters:          v.MinNumClusters,
-		MaxNumClusters:          v.MaxNumClusters,
-		AutoStopMins:            v.AutoStopMins,
-		CreatorName:             v.CreatorName,
-		InstanceProfileArn:      v.InstanceProfileArn,
-		Tags:                    tagsWireValue,
-		SpotInstancePolicy:      v.SpotInstancePolicy,
-		EnablePhoton:            v.EnablePhoton,
-		Channel:                 channelWireValue,
-		EnableServerlessCompute: v.EnableServerlessCompute,
-		WarehouseType:           v.WarehouseType,
-		StatementTimeout:        v.StatementTimeout,
-	}, nil
-}
-
 type EndpointConfPair struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
-}
-
-func EndpointConfPairFromSDK(v *sdk.EndpointConfPair) (*EndpointConfPair, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointConfPair{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func EndpointConfPairToSDK(w *EndpointConfPair) (*sdk.EndpointConfPair, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointConfPair{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type EndpointHealth struct {
@@ -608,23 +437,6 @@ type EndpointHealth struct {
 	Summary *string `json:"summary,omitempty"`
 	// Details about errors that are causing current degraded/failed status.
 	Details *string `json:"details,omitempty"`
-}
-
-func EndpointHealthToSDK(w *EndpointHealth) (*sdk.EndpointHealth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	failureReasonPublicValue, err := TerminationReasonToSDK(w.FailureReason)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointHealth.FailureReason", err)
-	}
-	return &sdk.EndpointHealth{
-		Status:        w.Status,
-		Message:       w.Message,
-		FailureReason: failureReasonPublicValue,
-		Summary:       w.Summary,
-		Details:       w.Details,
-	}, nil
 }
 
 type EndpointInfo struct {
@@ -705,108 +517,13 @@ type EndpointInfo struct {
 	Health *EndpointHealth `json:"health,omitempty"`
 }
 
-func EndpointInfoToSDK(w *EndpointInfo) (*sdk.EndpointInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := EndpointTagsToSDK(w.Tags)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Tags", err)
-	}
-	channelPublicValue, err := ChannelToSDK(w.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Channel", err)
-	}
-	numActiveSessionsPublicValue, err := int64FromWire(w.NumActiveSessions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointInfo.NumActiveSessions", err)
-	}
-	odbcParamsPublicValue, err := OdbcParamsToSDK(w.OdbcParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointInfo.OdbcParams", err)
-	}
-	healthPublicValue, err := EndpointHealthToSDK(w.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Health", err)
-	}
-	return &sdk.EndpointInfo{
-		Id:                      w.Id,
-		Name:                    w.Name,
-		ClusterSize:             w.ClusterSize,
-		MinNumClusters:          w.MinNumClusters,
-		MaxNumClusters:          w.MaxNumClusters,
-		AutoStopMins:            w.AutoStopMins,
-		CreatorName:             w.CreatorName,
-		InstanceProfileArn:      w.InstanceProfileArn,
-		Tags:                    tagsPublicValue,
-		SpotInstancePolicy:      w.SpotInstancePolicy,
-		EnablePhoton:            w.EnablePhoton,
-		Channel:                 channelPublicValue,
-		EnableServerlessCompute: w.EnableServerlessCompute,
-		WarehouseType:           w.WarehouseType,
-		StatementTimeout:        w.StatementTimeout,
-		NumClusters:             w.NumClusters,
-		NumActiveSessions:       numActiveSessionsPublicValue,
-		State:                   w.State,
-		JdbcUrl:                 w.JdbcUrl,
-		OdbcParams:              odbcParamsPublicValue,
-		Health:                  healthPublicValue,
-	}, nil
-}
-
 type EndpointTagPair struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
 }
 
-func EndpointTagPairFromSDK(v *sdk.EndpointTagPair) (*EndpointTagPair, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EndpointTagPair{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func EndpointTagPairToSDK(w *EndpointTagPair) (*sdk.EndpointTagPair, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EndpointTagPair{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 type EndpointTags struct {
 	CustomTags []EndpointTagPair `json:"custom_tags,omitempty"`
-}
-
-func EndpointTagsFromSDK(v *sdk.EndpointTags) (*EndpointTags, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, EndpointTagPairFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointTags.CustomTags", err)
-	}
-	return &EndpointTags{
-		CustomTags: customTagsWireValue,
-	}, nil
-}
-
-func EndpointTagsToSDK(w *EndpointTags) (*sdk.EndpointTags, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, EndpointTagPairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EndpointTags.CustomTags", err)
-	}
-	return &sdk.EndpointTags{
-		CustomTags: customTagsPublicValue,
-	}, nil
 }
 
 type GetWarehouseResponse struct {
@@ -887,55 +604,6 @@ type GetWarehouseResponse struct {
 	Health *EndpointHealth `json:"health,omitempty"`
 }
 
-func GetWarehouseResponseToSDK(w *GetWarehouseResponse) (*sdk.GetWarehouseResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagsPublicValue, err := EndpointTagsToSDK(w.Tags)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Tags", err)
-	}
-	channelPublicValue, err := ChannelToSDK(w.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Channel", err)
-	}
-	numActiveSessionsPublicValue, err := int64FromWire(w.NumActiveSessions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.NumActiveSessions", err)
-	}
-	odbcParamsPublicValue, err := OdbcParamsToSDK(w.OdbcParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.OdbcParams", err)
-	}
-	healthPublicValue, err := EndpointHealthToSDK(w.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Health", err)
-	}
-	return &sdk.GetWarehouseResponse{
-		Id:                      w.Id,
-		Name:                    w.Name,
-		ClusterSize:             w.ClusterSize,
-		MinNumClusters:          w.MinNumClusters,
-		MaxNumClusters:          w.MaxNumClusters,
-		AutoStopMins:            w.AutoStopMins,
-		CreatorName:             w.CreatorName,
-		InstanceProfileArn:      w.InstanceProfileArn,
-		Tags:                    tagsPublicValue,
-		SpotInstancePolicy:      w.SpotInstancePolicy,
-		EnablePhoton:            w.EnablePhoton,
-		Channel:                 channelPublicValue,
-		EnableServerlessCompute: w.EnableServerlessCompute,
-		WarehouseType:           w.WarehouseType,
-		StatementTimeout:        w.StatementTimeout,
-		NumClusters:             w.NumClusters,
-		NumActiveSessions:       numActiveSessionsPublicValue,
-		State:                   w.State,
-		JdbcUrl:                 w.JdbcUrl,
-		OdbcParams:              odbcParamsPublicValue,
-		Health:                  healthPublicValue,
-	}, nil
-}
-
 type GetWorkspaceWarehouseConfigResponse struct {
 	// Security policy for warehouses
 	SecurityPolicy EndpointSecurityPolicy `json:"security_policy,omitempty"`
@@ -968,48 +636,6 @@ type GetWorkspaceWarehouseConfigResponse struct {
 	EnabledWarehouseTypes []WarehouseTypePair `json:"enabled_warehouse_types,omitempty"`
 }
 
-func GetWorkspaceWarehouseConfigResponseToSDK(w *GetWorkspaceWarehouseConfigResponse) (*sdk.GetWorkspaceWarehouseConfigResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dataAccessConfigPublicValue, err := convertSlice(w.DataAccessConfig, EndpointConfPairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.DataAccessConfig", err)
-	}
-	channelPublicValue, err := ChannelToSDK(w.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.Channel", err)
-	}
-	globalParamPublicValue, err := RepeatedEndpointConfPairsToSDK(w.GlobalParam)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.GlobalParam", err)
-	}
-	configParamPublicValue, err := RepeatedEndpointConfPairsToSDK(w.ConfigParam)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.ConfigParam", err)
-	}
-	sqlConfigurationParametersPublicValue, err := RepeatedEndpointConfPairsToSDK(w.SqlConfigurationParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.SqlConfigurationParameters", err)
-	}
-	enabledWarehouseTypesPublicValue, err := convertSlice(w.EnabledWarehouseTypes, WarehouseTypePairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.EnabledWarehouseTypes", err)
-	}
-	return &sdk.GetWorkspaceWarehouseConfigResponse{
-		SecurityPolicy:             w.SecurityPolicy,
-		DataAccessConfig:           dataAccessConfigPublicValue,
-		InstanceProfileArn:         w.InstanceProfileArn,
-		Channel:                    channelPublicValue,
-		EnableServerlessCompute:    w.EnableServerlessCompute,
-		GlobalParam:                globalParamPublicValue,
-		ConfigParam:                configParamPublicValue,
-		SqlConfigurationParameters: sqlConfigurationParametersPublicValue,
-		GoogleServiceAccount:       w.GoogleServiceAccount,
-		EnabledWarehouseTypes:      enabledWarehouseTypesPublicValue,
-	}, nil
-}
-
 // Request message for ListDefaultWarehouseOverrides..
 type ListDefaultWarehouseOverridesRequest struct {
 	// The maximum number of overrides to return. The service may return fewer than
@@ -1025,16 +651,6 @@ type ListDefaultWarehouseOverridesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListDefaultWarehouseOverridesRequestFromSDK(v *sdk.ListDefaultWarehouseOverridesRequest) (*ListDefaultWarehouseOverridesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDefaultWarehouseOverridesRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response message for ListDefaultWarehouseOverrides..
 type ListDefaultWarehouseOverridesResponse struct {
 	// The default warehouse overrides in the workspace.
@@ -1042,20 +658,6 @@ type ListDefaultWarehouseOverridesResponse struct {
 	// A token, which can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDefaultWarehouseOverridesResponseToSDK(w *ListDefaultWarehouseOverridesResponse) (*sdk.ListDefaultWarehouseOverridesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	defaultWarehouseOverridesPublicValue, err := convertSlice(w.DefaultWarehouseOverrides, DefaultWarehouseOverrideToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDefaultWarehouseOverridesResponse.DefaultWarehouseOverrides", err)
-	}
-	return &sdk.ListDefaultWarehouseOverridesResponse{
-		DefaultWarehouseOverrides: defaultWarehouseOverridesPublicValue,
-		NextPageToken:             w.NextPageToken,
-	}, nil
 }
 
 type ListWarehousesResponse struct {
@@ -1066,20 +668,6 @@ type ListWarehousesResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListWarehousesResponseToSDK(w *ListWarehousesResponse) (*sdk.ListWarehousesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	warehousesPublicValue, err := convertSlice(w.Warehouses, EndpointInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWarehousesResponse.Warehouses", err)
-	}
-	return &sdk.ListWarehousesResponse{
-		Warehouses:    warehousesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type OdbcParams struct {
 	Hostname *string `json:"hostname,omitempty"`
 	Path     *string `json:"path,omitempty"`
@@ -1087,58 +675,10 @@ type OdbcParams struct {
 	Port     *int    `json:"port,omitempty"`
 }
 
-func OdbcParamsToSDK(w *OdbcParams) (*sdk.OdbcParams, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OdbcParams{
-		Hostname: w.Hostname,
-		Path:     w.Path,
-		Protocol: w.Protocol,
-		Port:     w.Port,
-	}, nil
-}
-
 type RepeatedEndpointConfPairs struct {
 	// Deprecated: Use configuration_pairs
 	ConfigPair         []EndpointConfPair `json:"config_pair,omitempty"`
 	ConfigurationPairs []EndpointConfPair `json:"configuration_pairs,omitempty"`
-}
-
-func RepeatedEndpointConfPairsFromSDK(v *sdk.RepeatedEndpointConfPairs) (*RepeatedEndpointConfPairs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configPairWireValue, err := convertSlice(v.ConfigPair, EndpointConfPairFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigPair", err)
-	}
-	configurationPairsWireValue, err := convertSlice(v.ConfigurationPairs, EndpointConfPairFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigurationPairs", err)
-	}
-	return &RepeatedEndpointConfPairs{
-		ConfigPair:         configPairWireValue,
-		ConfigurationPairs: configurationPairsWireValue,
-	}, nil
-}
-
-func RepeatedEndpointConfPairsToSDK(w *RepeatedEndpointConfPairs) (*sdk.RepeatedEndpointConfPairs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPairPublicValue, err := convertSlice(w.ConfigPair, EndpointConfPairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigPair", err)
-	}
-	configurationPairsPublicValue, err := convertSlice(w.ConfigurationPairs, EndpointConfPairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigurationPairs", err)
-	}
-	return &sdk.RepeatedEndpointConfPairs{
-		ConfigPair:         configPairPublicValue,
-		ConfigurationPairs: configurationPairsPublicValue,
-	}, nil
 }
 
 // Sets the workspace level warehouse configuration that is shared by all SQL
@@ -1177,48 +717,6 @@ type SetWorkspaceWarehouseConfigRequest struct {
 	EnabledWarehouseTypes []WarehouseTypePair `json:"enabled_warehouse_types,omitempty"`
 }
 
-func SetWorkspaceWarehouseConfigRequestFromSDK(v *sdk.SetWorkspaceWarehouseConfigRequest) (*SetWorkspaceWarehouseConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dataAccessConfigWireValue, err := convertSlice(v.DataAccessConfig, EndpointConfPairFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.DataAccessConfig", err)
-	}
-	channelWireValue, err := ChannelFromSDK(v.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.Channel", err)
-	}
-	globalParamWireValue, err := RepeatedEndpointConfPairsFromSDK(v.GlobalParam)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.GlobalParam", err)
-	}
-	configParamWireValue, err := RepeatedEndpointConfPairsFromSDK(v.ConfigParam)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.ConfigParam", err)
-	}
-	sqlConfigurationParametersWireValue, err := RepeatedEndpointConfPairsFromSDK(v.SqlConfigurationParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.SqlConfigurationParameters", err)
-	}
-	enabledWarehouseTypesWireValue, err := convertSlice(v.EnabledWarehouseTypes, WarehouseTypePairFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.EnabledWarehouseTypes", err)
-	}
-	return &SetWorkspaceWarehouseConfigRequest{
-		SecurityPolicy:             v.SecurityPolicy,
-		DataAccessConfig:           dataAccessConfigWireValue,
-		InstanceProfileArn:         v.InstanceProfileArn,
-		Channel:                    channelWireValue,
-		EnableServerlessCompute:    v.EnableServerlessCompute,
-		GlobalParam:                globalParamWireValue,
-		ConfigParam:                configParamWireValue,
-		SqlConfigurationParameters: sqlConfigurationParametersWireValue,
-		GoogleServiceAccount:       v.GoogleServiceAccount,
-		EnabledWarehouseTypes:      enabledWarehouseTypesWireValue,
-	}, nil
-}
-
 type TerminationReason struct {
 	// status code indicating why the cluster was terminated
 	Code TerminationCode `json:"code,omitempty"`
@@ -1227,17 +725,6 @@ type TerminationReason struct {
 	// list of parameters that provide additional information about why the cluster
 	// was terminated
 	Parameters map[string]string `json:"parameters,omitempty"`
-}
-
-func TerminationReasonToSDK(w *TerminationReason) (*sdk.TerminationReason, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TerminationReason{
-		Code:       w.Code,
-		Type:       w.Type,
-		Parameters: w.Parameters,
-	}, nil
 }
 
 // Request message for UpdateDefaultWarehouseOverride..
@@ -1258,21 +745,6 @@ type UpdateDefaultWarehouseOverrideRequest struct {
 	AllowMissing *bool `json:"allow_missing,omitempty"`
 }
 
-func UpdateDefaultWarehouseOverrideRequestFromSDK(v *sdk.UpdateDefaultWarehouseOverrideRequest) (*UpdateDefaultWarehouseOverrideRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultWarehouseOverrideWireValue, err := DefaultWarehouseOverrideFromSDK(v.DefaultWarehouseOverride)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
-	}
-	return &UpdateDefaultWarehouseOverrideRequest{
-		DefaultWarehouseOverride: defaultWarehouseOverrideWireValue,
-		UpdateMask:               fieldMaskToWire(v.UpdateMask),
-		AllowMissing:             v.AllowMissing,
-	}, nil
-}
-
 // * Configuration values to enable or disable the access to specific warehouse
 // types in the workspace..
 type WarehouseTypePair struct {
@@ -1280,26 +752,6 @@ type WarehouseTypePair struct {
 	// If set to false the specific warehouse type will not be allowed as a value
 	// for warehouse_type in CreateWarehouse and EditWarehouse
 	Enabled *bool `json:"enabled,omitempty"`
-}
-
-func WarehouseTypePairFromSDK(v *sdk.WarehouseTypePair) (*WarehouseTypePair, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &WarehouseTypePair{
-		WarehouseType: v.WarehouseType,
-		Enabled:       v.Enabled,
-	}, nil
-}
-
-func WarehouseTypePairToSDK(w *WarehouseTypePair) (*sdk.WarehouseTypePair, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.WarehouseTypePair{
-		WarehouseType: w.WarehouseType,
-		Enabled:       w.Enabled,
-	}, nil
 }
 
 // Lists all of the SQL warehouses. TODO: consider paginating to limit the
@@ -1319,34 +771,10 @@ type ListWarehousesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListWarehousesRequestFromSDK(v *sdk.ListWarehousesRequest) (*ListWarehousesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runAsUserIdWireValue, err := int64ToWire(v.RunAsUserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWarehousesRequest.RunAsUserId", err)
-	}
-	return &ListWarehousesRequest{
-		RunAsUserId: runAsUserIdWireValue,
-		PageSize:    v.PageSize,
-		PageToken:   v.PageToken,
-	}, nil
-}
-
 // Starts a SQL warehouse. This API is idempotent..
 type StartRequest struct {
 	// Required. Id of the SQL warehouse.
 	Id *string `json:"id,omitempty"`
-}
-
-func StartRequestFromSDK(v *sdk.StartRequest) (*StartRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StartRequest{
-		Id: v.Id,
-	}, nil
 }
 
 // Stops a SQL warehouse. This API is idempotent..
@@ -1355,13 +783,984 @@ type StopRequest struct {
 	Id *string `json:"id,omitempty"`
 }
 
+// ChannelToSDK converts the mirror to the sdk-go type.
+func ChannelToSDK(w *Channel) (*sdk.Channel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Channel{}
+	out.Name = w.Name
+	out.DbsqlVersion = w.DbsqlVersion
+	return out, nil
+}
+
+// ChannelFromSDK converts the sdk-go type to the mirror.
+func ChannelFromSDK(v *sdk.Channel) (*Channel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Channel{}
+	out.Name = v.Name
+	out.DbsqlVersion = v.DbsqlVersion
+	return out, nil
+}
+
+// CreateDefaultWarehouseOverrideRequestToSDK converts the mirror to the sdk-go type.
+func CreateDefaultWarehouseOverrideRequestToSDK(w *CreateDefaultWarehouseOverrideRequest) (*sdk.CreateDefaultWarehouseOverrideRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDefaultWarehouseOverrideRequest{}
+	out.DefaultWarehouseOverrideId = w.DefaultWarehouseOverrideId
+	conv1, err := DefaultWarehouseOverrideToSDK(w.DefaultWarehouseOverride)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
+	}
+	out.DefaultWarehouseOverride = conv1
+	return out, nil
+}
+
+// CreateDefaultWarehouseOverrideRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDefaultWarehouseOverrideRequestFromSDK(v *sdk.CreateDefaultWarehouseOverrideRequest) (*CreateDefaultWarehouseOverrideRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDefaultWarehouseOverrideRequest{}
+	out.DefaultWarehouseOverrideId = v.DefaultWarehouseOverrideId
+	conv2, err := DefaultWarehouseOverrideFromSDK(v.DefaultWarehouseOverride)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
+	}
+	out.DefaultWarehouseOverride = conv2
+	return out, nil
+}
+
+// CreateWarehouseRequestToSDK converts the mirror to the sdk-go type.
+func CreateWarehouseRequestToSDK(w *CreateWarehouseRequest) (*sdk.CreateWarehouseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateWarehouseRequest{}
+	out.Name = w.Name
+	out.ClusterSize = w.ClusterSize
+	out.MinNumClusters = w.MinNumClusters
+	out.MaxNumClusters = w.MaxNumClusters
+	out.AutoStopMins = w.AutoStopMins
+	out.CreatorName = w.CreatorName
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv3, err := EndpointTagsToSDK(w.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Tags", err)
+	}
+	out.Tags = conv3
+	out.SpotInstancePolicy = w.SpotInstancePolicy
+	out.EnablePhoton = w.EnablePhoton
+	conv4, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Channel", err)
+	}
+	out.Channel = conv4
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	out.WarehouseType = w.WarehouseType
+	out.StatementTimeout = w.StatementTimeout
+	return out, nil
+}
+
+// CreateWarehouseRequestFromSDK converts the sdk-go type to the mirror.
+func CreateWarehouseRequestFromSDK(v *sdk.CreateWarehouseRequest) (*CreateWarehouseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateWarehouseRequest{}
+	out.Name = v.Name
+	out.ClusterSize = v.ClusterSize
+	out.MinNumClusters = v.MinNumClusters
+	out.MaxNumClusters = v.MaxNumClusters
+	out.AutoStopMins = v.AutoStopMins
+	out.CreatorName = v.CreatorName
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv5, err := EndpointTagsFromSDK(v.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Tags", err)
+	}
+	out.Tags = conv5
+	out.SpotInstancePolicy = v.SpotInstancePolicy
+	out.EnablePhoton = v.EnablePhoton
+	conv6, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWarehouseRequest.Channel", err)
+	}
+	out.Channel = conv6
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	out.WarehouseType = v.WarehouseType
+	out.StatementTimeout = v.StatementTimeout
+	return out, nil
+}
+
+// CreateWarehouseResponseToSDK converts the mirror to the sdk-go type.
+func CreateWarehouseResponseToSDK(w *CreateWarehouseResponse) (*sdk.CreateWarehouseResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateWarehouseResponse{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreateWarehouseResponseFromSDK converts the sdk-go type to the mirror.
+func CreateWarehouseResponseFromSDK(v *sdk.CreateWarehouseResponse) (*CreateWarehouseResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateWarehouseResponse{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// DefaultWarehouseOverrideToSDK converts the mirror to the sdk-go type.
+func DefaultWarehouseOverrideToSDK(w *DefaultWarehouseOverride) (*sdk.DefaultWarehouseOverride, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DefaultWarehouseOverride{}
+	out.Name = w.Name
+	out.DefaultWarehouseOverrideId = w.DefaultWarehouseOverrideId
+	out.Type = w.Type
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// DefaultWarehouseOverrideFromSDK converts the sdk-go type to the mirror.
+func DefaultWarehouseOverrideFromSDK(v *sdk.DefaultWarehouseOverride) (*DefaultWarehouseOverride, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DefaultWarehouseOverride{}
+	out.Name = v.Name
+	out.DefaultWarehouseOverrideId = v.DefaultWarehouseOverrideId
+	out.Type = v.Type
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// EditWarehouseRequestToSDK converts the mirror to the sdk-go type.
+func EditWarehouseRequestToSDK(w *EditWarehouseRequest) (*sdk.EditWarehouseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditWarehouseRequest{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.ClusterSize = w.ClusterSize
+	out.MinNumClusters = w.MinNumClusters
+	out.MaxNumClusters = w.MaxNumClusters
+	out.AutoStopMins = w.AutoStopMins
+	out.CreatorName = w.CreatorName
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv7, err := EndpointTagsToSDK(w.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Tags", err)
+	}
+	out.Tags = conv7
+	out.SpotInstancePolicy = w.SpotInstancePolicy
+	out.EnablePhoton = w.EnablePhoton
+	conv8, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Channel", err)
+	}
+	out.Channel = conv8
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	out.WarehouseType = w.WarehouseType
+	out.StatementTimeout = w.StatementTimeout
+	return out, nil
+}
+
+// EditWarehouseRequestFromSDK converts the sdk-go type to the mirror.
+func EditWarehouseRequestFromSDK(v *sdk.EditWarehouseRequest) (*EditWarehouseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditWarehouseRequest{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.ClusterSize = v.ClusterSize
+	out.MinNumClusters = v.MinNumClusters
+	out.MaxNumClusters = v.MaxNumClusters
+	out.AutoStopMins = v.AutoStopMins
+	out.CreatorName = v.CreatorName
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv9, err := EndpointTagsFromSDK(v.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Tags", err)
+	}
+	out.Tags = conv9
+	out.SpotInstancePolicy = v.SpotInstancePolicy
+	out.EnablePhoton = v.EnablePhoton
+	conv10, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditWarehouseRequest.Channel", err)
+	}
+	out.Channel = conv10
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	out.WarehouseType = v.WarehouseType
+	out.StatementTimeout = v.StatementTimeout
+	return out, nil
+}
+
+// EndpointConfPairToSDK converts the mirror to the sdk-go type.
+func EndpointConfPairToSDK(w *EndpointConfPair) (*sdk.EndpointConfPair, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointConfPair{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// EndpointConfPairFromSDK converts the sdk-go type to the mirror.
+func EndpointConfPairFromSDK(v *sdk.EndpointConfPair) (*EndpointConfPair, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointConfPair{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// EndpointHealthToSDK converts the mirror to the sdk-go type.
+func EndpointHealthToSDK(w *EndpointHealth) (*sdk.EndpointHealth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointHealth{}
+	out.Status = w.Status
+	out.Message = w.Message
+	conv11, err := TerminationReasonToSDK(w.FailureReason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointHealth.FailureReason", err)
+	}
+	out.FailureReason = conv11
+	out.Summary = w.Summary
+	out.Details = w.Details
+	return out, nil
+}
+
+// EndpointHealthFromSDK converts the sdk-go type to the mirror.
+func EndpointHealthFromSDK(v *sdk.EndpointHealth) (*EndpointHealth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointHealth{}
+	out.Status = v.Status
+	out.Message = v.Message
+	conv12, err := TerminationReasonFromSDK(v.FailureReason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointHealth.FailureReason", err)
+	}
+	out.FailureReason = conv12
+	out.Summary = v.Summary
+	out.Details = v.Details
+	return out, nil
+}
+
+// EndpointInfoToSDK converts the mirror to the sdk-go type.
+func EndpointInfoToSDK(w *EndpointInfo) (*sdk.EndpointInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointInfo{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.ClusterSize = w.ClusterSize
+	out.MinNumClusters = w.MinNumClusters
+	out.MaxNumClusters = w.MaxNumClusters
+	out.AutoStopMins = w.AutoStopMins
+	out.CreatorName = w.CreatorName
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv13, err := EndpointTagsToSDK(w.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Tags", err)
+	}
+	out.Tags = conv13
+	out.SpotInstancePolicy = w.SpotInstancePolicy
+	out.EnablePhoton = w.EnablePhoton
+	conv14, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Channel", err)
+	}
+	out.Channel = conv14
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	out.WarehouseType = w.WarehouseType
+	out.StatementTimeout = w.StatementTimeout
+	out.NumClusters = w.NumClusters
+	out.NumActiveSessions = w.NumActiveSessions
+	out.State = w.State
+	out.JdbcUrl = w.JdbcUrl
+	conv15, err := OdbcParamsToSDK(w.OdbcParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.OdbcParams", err)
+	}
+	out.OdbcParams = conv15
+	conv16, err := EndpointHealthToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Health", err)
+	}
+	out.Health = conv16
+	return out, nil
+}
+
+// EndpointInfoFromSDK converts the sdk-go type to the mirror.
+func EndpointInfoFromSDK(v *sdk.EndpointInfo) (*EndpointInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointInfo{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.ClusterSize = v.ClusterSize
+	out.MinNumClusters = v.MinNumClusters
+	out.MaxNumClusters = v.MaxNumClusters
+	out.AutoStopMins = v.AutoStopMins
+	out.CreatorName = v.CreatorName
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv17, err := EndpointTagsFromSDK(v.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Tags", err)
+	}
+	out.Tags = conv17
+	out.SpotInstancePolicy = v.SpotInstancePolicy
+	out.EnablePhoton = v.EnablePhoton
+	conv18, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Channel", err)
+	}
+	out.Channel = conv18
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	out.WarehouseType = v.WarehouseType
+	out.StatementTimeout = v.StatementTimeout
+	out.NumClusters = v.NumClusters
+	out.NumActiveSessions = v.NumActiveSessions
+	out.State = v.State
+	out.JdbcUrl = v.JdbcUrl
+	conv19, err := OdbcParamsFromSDK(v.OdbcParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.OdbcParams", err)
+	}
+	out.OdbcParams = conv19
+	conv20, err := EndpointHealthFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointInfo.Health", err)
+	}
+	out.Health = conv20
+	return out, nil
+}
+
+// EndpointTagPairToSDK converts the mirror to the sdk-go type.
+func EndpointTagPairToSDK(w *EndpointTagPair) (*sdk.EndpointTagPair, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointTagPair{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// EndpointTagPairFromSDK converts the sdk-go type to the mirror.
+func EndpointTagPairFromSDK(v *sdk.EndpointTagPair) (*EndpointTagPair, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointTagPair{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// EndpointTagsToSDK converts the mirror to the sdk-go type.
+func EndpointTagsToSDK(w *EndpointTags) (*sdk.EndpointTags, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EndpointTags{}
+	conv21, err := convertSlice(w.CustomTags, EndpointTagPairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointTags.CustomTags", err)
+	}
+	out.CustomTags = conv21
+	return out, nil
+}
+
+// EndpointTagsFromSDK converts the sdk-go type to the mirror.
+func EndpointTagsFromSDK(v *sdk.EndpointTags) (*EndpointTags, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EndpointTags{}
+	conv22, err := convertSlice(v.CustomTags, EndpointTagPairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EndpointTags.CustomTags", err)
+	}
+	out.CustomTags = conv22
+	return out, nil
+}
+
+// GetWarehouseResponseToSDK converts the mirror to the sdk-go type.
+func GetWarehouseResponseToSDK(w *GetWarehouseResponse) (*sdk.GetWarehouseResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetWarehouseResponse{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.ClusterSize = w.ClusterSize
+	out.MinNumClusters = w.MinNumClusters
+	out.MaxNumClusters = w.MaxNumClusters
+	out.AutoStopMins = w.AutoStopMins
+	out.CreatorName = w.CreatorName
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv23, err := EndpointTagsToSDK(w.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Tags", err)
+	}
+	out.Tags = conv23
+	out.SpotInstancePolicy = w.SpotInstancePolicy
+	out.EnablePhoton = w.EnablePhoton
+	conv24, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Channel", err)
+	}
+	out.Channel = conv24
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	out.WarehouseType = w.WarehouseType
+	out.StatementTimeout = w.StatementTimeout
+	out.NumClusters = w.NumClusters
+	out.NumActiveSessions = w.NumActiveSessions
+	out.State = w.State
+	out.JdbcUrl = w.JdbcUrl
+	conv25, err := OdbcParamsToSDK(w.OdbcParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.OdbcParams", err)
+	}
+	out.OdbcParams = conv25
+	conv26, err := EndpointHealthToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Health", err)
+	}
+	out.Health = conv26
+	return out, nil
+}
+
+// GetWarehouseResponseFromSDK converts the sdk-go type to the mirror.
+func GetWarehouseResponseFromSDK(v *sdk.GetWarehouseResponse) (*GetWarehouseResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetWarehouseResponse{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.ClusterSize = v.ClusterSize
+	out.MinNumClusters = v.MinNumClusters
+	out.MaxNumClusters = v.MaxNumClusters
+	out.AutoStopMins = v.AutoStopMins
+	out.CreatorName = v.CreatorName
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv27, err := EndpointTagsFromSDK(v.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Tags", err)
+	}
+	out.Tags = conv27
+	out.SpotInstancePolicy = v.SpotInstancePolicy
+	out.EnablePhoton = v.EnablePhoton
+	conv28, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Channel", err)
+	}
+	out.Channel = conv28
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	out.WarehouseType = v.WarehouseType
+	out.StatementTimeout = v.StatementTimeout
+	out.NumClusters = v.NumClusters
+	out.NumActiveSessions = v.NumActiveSessions
+	out.State = v.State
+	out.JdbcUrl = v.JdbcUrl
+	conv29, err := OdbcParamsFromSDK(v.OdbcParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.OdbcParams", err)
+	}
+	out.OdbcParams = conv29
+	conv30, err := EndpointHealthFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWarehouseResponse.Health", err)
+	}
+	out.Health = conv30
+	return out, nil
+}
+
+// GetWorkspaceWarehouseConfigResponseToSDK converts the mirror to the sdk-go type.
+func GetWorkspaceWarehouseConfigResponseToSDK(w *GetWorkspaceWarehouseConfigResponse) (*sdk.GetWorkspaceWarehouseConfigResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetWorkspaceWarehouseConfigResponse{}
+	out.SecurityPolicy = w.SecurityPolicy
+	conv31, err := convertSlice(w.DataAccessConfig, EndpointConfPairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.DataAccessConfig", err)
+	}
+	out.DataAccessConfig = conv31
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv32, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.Channel", err)
+	}
+	out.Channel = conv32
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	conv33, err := RepeatedEndpointConfPairsToSDK(w.GlobalParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.GlobalParam", err)
+	}
+	out.GlobalParam = conv33
+	conv34, err := RepeatedEndpointConfPairsToSDK(w.ConfigParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.ConfigParam", err)
+	}
+	out.ConfigParam = conv34
+	conv35, err := RepeatedEndpointConfPairsToSDK(w.SqlConfigurationParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.SqlConfigurationParameters", err)
+	}
+	out.SqlConfigurationParameters = conv35
+	out.GoogleServiceAccount = w.GoogleServiceAccount
+	conv36, err := convertSlice(w.EnabledWarehouseTypes, WarehouseTypePairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.EnabledWarehouseTypes", err)
+	}
+	out.EnabledWarehouseTypes = conv36
+	return out, nil
+}
+
+// GetWorkspaceWarehouseConfigResponseFromSDK converts the sdk-go type to the mirror.
+func GetWorkspaceWarehouseConfigResponseFromSDK(v *sdk.GetWorkspaceWarehouseConfigResponse) (*GetWorkspaceWarehouseConfigResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetWorkspaceWarehouseConfigResponse{}
+	out.SecurityPolicy = v.SecurityPolicy
+	conv37, err := convertSlice(v.DataAccessConfig, EndpointConfPairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.DataAccessConfig", err)
+	}
+	out.DataAccessConfig = conv37
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv38, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.Channel", err)
+	}
+	out.Channel = conv38
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	conv39, err := RepeatedEndpointConfPairsFromSDK(v.GlobalParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.GlobalParam", err)
+	}
+	out.GlobalParam = conv39
+	conv40, err := RepeatedEndpointConfPairsFromSDK(v.ConfigParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.ConfigParam", err)
+	}
+	out.ConfigParam = conv40
+	conv41, err := RepeatedEndpointConfPairsFromSDK(v.SqlConfigurationParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.SqlConfigurationParameters", err)
+	}
+	out.SqlConfigurationParameters = conv41
+	out.GoogleServiceAccount = v.GoogleServiceAccount
+	conv42, err := convertSlice(v.EnabledWarehouseTypes, WarehouseTypePairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetWorkspaceWarehouseConfigResponse.EnabledWarehouseTypes", err)
+	}
+	out.EnabledWarehouseTypes = conv42
+	return out, nil
+}
+
+// ListDefaultWarehouseOverridesRequestToSDK converts the mirror to the sdk-go type.
+func ListDefaultWarehouseOverridesRequestToSDK(w *ListDefaultWarehouseOverridesRequest) (*sdk.ListDefaultWarehouseOverridesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDefaultWarehouseOverridesRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListDefaultWarehouseOverridesRequestFromSDK converts the sdk-go type to the mirror.
+func ListDefaultWarehouseOverridesRequestFromSDK(v *sdk.ListDefaultWarehouseOverridesRequest) (*ListDefaultWarehouseOverridesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDefaultWarehouseOverridesRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListDefaultWarehouseOverridesResponseToSDK converts the mirror to the sdk-go type.
+func ListDefaultWarehouseOverridesResponseToSDK(w *ListDefaultWarehouseOverridesResponse) (*sdk.ListDefaultWarehouseOverridesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDefaultWarehouseOverridesResponse{}
+	conv43, err := convertSlice(w.DefaultWarehouseOverrides, DefaultWarehouseOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDefaultWarehouseOverridesResponse.DefaultWarehouseOverrides", err)
+	}
+	out.DefaultWarehouseOverrides = conv43
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDefaultWarehouseOverridesResponseFromSDK converts the sdk-go type to the mirror.
+func ListDefaultWarehouseOverridesResponseFromSDK(v *sdk.ListDefaultWarehouseOverridesResponse) (*ListDefaultWarehouseOverridesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDefaultWarehouseOverridesResponse{}
+	conv44, err := convertSlice(v.DefaultWarehouseOverrides, DefaultWarehouseOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDefaultWarehouseOverridesResponse.DefaultWarehouseOverrides", err)
+	}
+	out.DefaultWarehouseOverrides = conv44
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListWarehousesRequestToSDK converts the mirror to the sdk-go type.
+func ListWarehousesRequestToSDK(w *ListWarehousesRequest) (*sdk.ListWarehousesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWarehousesRequest{}
+	out.RunAsUserId = w.RunAsUserId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListWarehousesRequestFromSDK converts the sdk-go type to the mirror.
+func ListWarehousesRequestFromSDK(v *sdk.ListWarehousesRequest) (*ListWarehousesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWarehousesRequest{}
+	out.RunAsUserId = v.RunAsUserId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListWarehousesResponseToSDK converts the mirror to the sdk-go type.
+func ListWarehousesResponseToSDK(w *ListWarehousesResponse) (*sdk.ListWarehousesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWarehousesResponse{}
+	conv45, err := convertSlice(w.Warehouses, EndpointInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWarehousesResponse.Warehouses", err)
+	}
+	out.Warehouses = conv45
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListWarehousesResponseFromSDK converts the sdk-go type to the mirror.
+func ListWarehousesResponseFromSDK(v *sdk.ListWarehousesResponse) (*ListWarehousesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWarehousesResponse{}
+	conv46, err := convertSlice(v.Warehouses, EndpointInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWarehousesResponse.Warehouses", err)
+	}
+	out.Warehouses = conv46
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OdbcParamsToSDK converts the mirror to the sdk-go type.
+func OdbcParamsToSDK(w *OdbcParams) (*sdk.OdbcParams, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OdbcParams{}
+	out.Hostname = w.Hostname
+	out.Path = w.Path
+	out.Protocol = w.Protocol
+	out.Port = w.Port
+	return out, nil
+}
+
+// OdbcParamsFromSDK converts the sdk-go type to the mirror.
+func OdbcParamsFromSDK(v *sdk.OdbcParams) (*OdbcParams, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OdbcParams{}
+	out.Hostname = v.Hostname
+	out.Path = v.Path
+	out.Protocol = v.Protocol
+	out.Port = v.Port
+	return out, nil
+}
+
+// RepeatedEndpointConfPairsToSDK converts the mirror to the sdk-go type.
+func RepeatedEndpointConfPairsToSDK(w *RepeatedEndpointConfPairs) (*sdk.RepeatedEndpointConfPairs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepeatedEndpointConfPairs{}
+	conv47, err := convertSlice(w.ConfigPair, EndpointConfPairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigPair", err)
+	}
+	out.ConfigPair = conv47
+	conv48, err := convertSlice(w.ConfigurationPairs, EndpointConfPairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigurationPairs", err)
+	}
+	out.ConfigurationPairs = conv48
+	return out, nil
+}
+
+// RepeatedEndpointConfPairsFromSDK converts the sdk-go type to the mirror.
+func RepeatedEndpointConfPairsFromSDK(v *sdk.RepeatedEndpointConfPairs) (*RepeatedEndpointConfPairs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepeatedEndpointConfPairs{}
+	conv49, err := convertSlice(v.ConfigPair, EndpointConfPairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigPair", err)
+	}
+	out.ConfigPair = conv49
+	conv50, err := convertSlice(v.ConfigurationPairs, EndpointConfPairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepeatedEndpointConfPairs.ConfigurationPairs", err)
+	}
+	out.ConfigurationPairs = conv50
+	return out, nil
+}
+
+// SetWorkspaceWarehouseConfigRequestToSDK converts the mirror to the sdk-go type.
+func SetWorkspaceWarehouseConfigRequestToSDK(w *SetWorkspaceWarehouseConfigRequest) (*sdk.SetWorkspaceWarehouseConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetWorkspaceWarehouseConfigRequest{}
+	out.SecurityPolicy = w.SecurityPolicy
+	conv51, err := convertSlice(w.DataAccessConfig, EndpointConfPairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.DataAccessConfig", err)
+	}
+	out.DataAccessConfig = conv51
+	out.InstanceProfileArn = w.InstanceProfileArn
+	conv52, err := ChannelToSDK(w.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.Channel", err)
+	}
+	out.Channel = conv52
+	out.EnableServerlessCompute = w.EnableServerlessCompute
+	conv53, err := RepeatedEndpointConfPairsToSDK(w.GlobalParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.GlobalParam", err)
+	}
+	out.GlobalParam = conv53
+	conv54, err := RepeatedEndpointConfPairsToSDK(w.ConfigParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.ConfigParam", err)
+	}
+	out.ConfigParam = conv54
+	conv55, err := RepeatedEndpointConfPairsToSDK(w.SqlConfigurationParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.SqlConfigurationParameters", err)
+	}
+	out.SqlConfigurationParameters = conv55
+	out.GoogleServiceAccount = w.GoogleServiceAccount
+	conv56, err := convertSlice(w.EnabledWarehouseTypes, WarehouseTypePairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.EnabledWarehouseTypes", err)
+	}
+	out.EnabledWarehouseTypes = conv56
+	return out, nil
+}
+
+// SetWorkspaceWarehouseConfigRequestFromSDK converts the sdk-go type to the mirror.
+func SetWorkspaceWarehouseConfigRequestFromSDK(v *sdk.SetWorkspaceWarehouseConfigRequest) (*SetWorkspaceWarehouseConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetWorkspaceWarehouseConfigRequest{}
+	out.SecurityPolicy = v.SecurityPolicy
+	conv57, err := convertSlice(v.DataAccessConfig, EndpointConfPairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.DataAccessConfig", err)
+	}
+	out.DataAccessConfig = conv57
+	out.InstanceProfileArn = v.InstanceProfileArn
+	conv58, err := ChannelFromSDK(v.Channel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.Channel", err)
+	}
+	out.Channel = conv58
+	out.EnableServerlessCompute = v.EnableServerlessCompute
+	conv59, err := RepeatedEndpointConfPairsFromSDK(v.GlobalParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.GlobalParam", err)
+	}
+	out.GlobalParam = conv59
+	conv60, err := RepeatedEndpointConfPairsFromSDK(v.ConfigParam)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.ConfigParam", err)
+	}
+	out.ConfigParam = conv60
+	conv61, err := RepeatedEndpointConfPairsFromSDK(v.SqlConfigurationParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.SqlConfigurationParameters", err)
+	}
+	out.SqlConfigurationParameters = conv61
+	out.GoogleServiceAccount = v.GoogleServiceAccount
+	conv62, err := convertSlice(v.EnabledWarehouseTypes, WarehouseTypePairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetWorkspaceWarehouseConfigRequest.EnabledWarehouseTypes", err)
+	}
+	out.EnabledWarehouseTypes = conv62
+	return out, nil
+}
+
+// StartRequestToSDK converts the mirror to the sdk-go type.
+func StartRequestToSDK(w *StartRequest) (*sdk.StartRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// StartRequestFromSDK converts the sdk-go type to the mirror.
+func StartRequestFromSDK(v *sdk.StartRequest) (*StartRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// StopRequestToSDK converts the mirror to the sdk-go type.
+func StopRequestToSDK(w *StopRequest) (*sdk.StopRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StopRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// StopRequestFromSDK converts the sdk-go type to the mirror.
 func StopRequestFromSDK(v *sdk.StopRequest) (*StopRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &StopRequest{
-		Id: v.Id,
-	}, nil
+	out := &StopRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// TerminationReasonToSDK converts the mirror to the sdk-go type.
+func TerminationReasonToSDK(w *TerminationReason) (*sdk.TerminationReason, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TerminationReason{}
+	out.Code = w.Code
+	out.Type = w.Type
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// TerminationReasonFromSDK converts the sdk-go type to the mirror.
+func TerminationReasonFromSDK(v *sdk.TerminationReason) (*TerminationReason, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TerminationReason{}
+	out.Code = v.Code
+	out.Type = v.Type
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// UpdateDefaultWarehouseOverrideRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDefaultWarehouseOverrideRequestToSDK(w *UpdateDefaultWarehouseOverrideRequest) (*sdk.UpdateDefaultWarehouseOverrideRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDefaultWarehouseOverrideRequest{}
+	conv63, err := DefaultWarehouseOverrideToSDK(w.DefaultWarehouseOverride)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
+	}
+	out.DefaultWarehouseOverride = conv63
+	mask64, err := fieldMaskFromString[sdk.DefaultWarehouseOverride](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWarehouseOverrideRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask64
+	out.AllowMissing = w.AllowMissing
+	return out, nil
+}
+
+// UpdateDefaultWarehouseOverrideRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDefaultWarehouseOverrideRequestFromSDK(v *sdk.UpdateDefaultWarehouseOverrideRequest) (*UpdateDefaultWarehouseOverrideRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDefaultWarehouseOverrideRequest{}
+	conv65, err := DefaultWarehouseOverrideFromSDK(v.DefaultWarehouseOverride)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDefaultWarehouseOverrideRequest.DefaultWarehouseOverride", err)
+	}
+	out.DefaultWarehouseOverride = conv65
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.AllowMissing = v.AllowMissing
+	return out, nil
+}
+
+// WarehouseTypePairToSDK converts the mirror to the sdk-go type.
+func WarehouseTypePairToSDK(w *WarehouseTypePair) (*sdk.WarehouseTypePair, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WarehouseTypePair{}
+	out.WarehouseType = w.WarehouseType
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// WarehouseTypePairFromSDK converts the sdk-go type to the mirror.
+func WarehouseTypePairFromSDK(v *sdk.WarehouseTypePair) (*WarehouseTypePair, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WarehouseTypePair{}
+	out.WarehouseType = v.WarehouseType
+	out.Enabled = v.Enabled
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -1377,4 +1776,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

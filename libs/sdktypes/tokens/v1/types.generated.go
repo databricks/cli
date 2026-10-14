@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/tokens/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -24,30 +25,6 @@ const (
 	AutoscopeState_AutoscopeStateApiNotCovered = sdk.AutoscopeState_AutoscopeStateApiNotCovered
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateTokenRequest struct {
 	// The lifetime of the token, in seconds.
 	//
@@ -62,22 +39,6 @@ type CreateTokenRequest struct {
 	AutoscopeEnabled *bool `json:"autoscope_enabled,omitempty"`
 }
 
-func CreateTokenRequestFromSDK(v *sdk.CreateTokenRequest) (*CreateTokenRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lifetimeSecondsWireValue, err := int64ToWire(v.LifetimeSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTokenRequest.LifetimeSeconds", err)
-	}
-	return &CreateTokenRequest{
-		LifetimeSeconds:  lifetimeSecondsWireValue,
-		Comment:          v.Comment,
-		Scopes:           v.Scopes,
-		AutoscopeEnabled: v.AutoscopeEnabled,
-	}, nil
-}
-
 type CreateTokenResponse struct {
 	// The value of the new token.
 	TokenValue *string `json:"token_value,omitempty"`
@@ -85,36 +46,9 @@ type CreateTokenResponse struct {
 	TokenInfo *PublicTokenInfo `json:"token_info,omitempty"`
 }
 
-func CreateTokenResponseToSDK(w *CreateTokenResponse) (*sdk.CreateTokenResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tokenInfoPublicValue, err := PublicTokenInfoToSDK(w.TokenInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTokenResponse.TokenInfo", err)
-	}
-	return &sdk.CreateTokenResponse{
-		TokenValue: w.TokenValue,
-		TokenInfo:  tokenInfoPublicValue,
-	}, nil
-}
-
 type ListTokensResponse struct {
 	// The information for each token.
 	TokenInfos []PublicTokenInfo `json:"token_infos,omitempty"`
-}
-
-func ListTokensResponseToSDK(w *ListTokensResponse) (*sdk.ListTokensResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tokenInfosPublicValue, err := convertSlice(w.TokenInfos, PublicTokenInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTokensResponse.TokenInfos", err)
-	}
-	return &sdk.ListTokensResponse{
-		TokenInfos: tokenInfosPublicValue,
-	}, nil
 }
 
 type PublicTokenInfo struct {
@@ -138,66 +72,9 @@ type PublicTokenInfo struct {
 	BackfillScopes []string `json:"backfill_scopes,omitempty"`
 }
 
-func PublicTokenInfoFromSDK(v *sdk.PublicTokenInfo) (*PublicTokenInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublicTokenInfo.CreationTime", err)
-	}
-	expiryTimeWireValue, err := int64ToWire(v.ExpiryTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublicTokenInfo.ExpiryTime", err)
-	}
-	return &PublicTokenInfo{
-		TokenId:        v.TokenId,
-		CreationTime:   creationTimeWireValue,
-		ExpiryTime:     expiryTimeWireValue,
-		Comment:        v.Comment,
-		Scopes:         v.Scopes,
-		AutoscopeState: v.AutoscopeState,
-		InferredScopes: v.InferredScopes,
-		BackfillScopes: v.BackfillScopes,
-	}, nil
-}
-
-func PublicTokenInfoToSDK(w *PublicTokenInfo) (*sdk.PublicTokenInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublicTokenInfo.CreationTime", err)
-	}
-	expiryTimePublicValue, err := int64FromWire(w.ExpiryTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublicTokenInfo.ExpiryTime", err)
-	}
-	return &sdk.PublicTokenInfo{
-		TokenId:        w.TokenId,
-		CreationTime:   creationTimePublicValue,
-		ExpiryTime:     expiryTimePublicValue,
-		Comment:        w.Comment,
-		Scopes:         w.Scopes,
-		AutoscopeState: w.AutoscopeState,
-		InferredScopes: w.InferredScopes,
-		BackfillScopes: w.BackfillScopes,
-	}, nil
-}
-
 type RevokeTokenRequest struct {
 	// The ID of the token to be revoked.
 	TokenId *string `json:"token_id,omitempty"`
-}
-
-func RevokeTokenRequestFromSDK(v *sdk.RevokeTokenRequest) (*RevokeTokenRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RevokeTokenRequest{
-		TokenId: v.TokenId,
-	}, nil
 }
 
 // For the list of supported token scopes, see
@@ -211,19 +88,178 @@ type UpdateTokenRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateTokenRequestToSDK converts the mirror to the sdk-go type.
+func CreateTokenRequestToSDK(w *CreateTokenRequest) (*sdk.CreateTokenRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTokenRequest{}
+	out.LifetimeSeconds = w.LifetimeSeconds
+	out.Comment = w.Comment
+	out.Scopes = w.Scopes
+	out.AutoscopeEnabled = w.AutoscopeEnabled
+	return out, nil
+}
+
+// CreateTokenRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTokenRequestFromSDK(v *sdk.CreateTokenRequest) (*CreateTokenRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTokenRequest{}
+	out.LifetimeSeconds = v.LifetimeSeconds
+	out.Comment = v.Comment
+	out.Scopes = v.Scopes
+	out.AutoscopeEnabled = v.AutoscopeEnabled
+	return out, nil
+}
+
+// CreateTokenResponseToSDK converts the mirror to the sdk-go type.
+func CreateTokenResponseToSDK(w *CreateTokenResponse) (*sdk.CreateTokenResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTokenResponse{}
+	out.TokenValue = w.TokenValue
+	conv1, err := PublicTokenInfoToSDK(w.TokenInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTokenResponse.TokenInfo", err)
+	}
+	out.TokenInfo = conv1
+	return out, nil
+}
+
+// CreateTokenResponseFromSDK converts the sdk-go type to the mirror.
+func CreateTokenResponseFromSDK(v *sdk.CreateTokenResponse) (*CreateTokenResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTokenResponse{}
+	out.TokenValue = v.TokenValue
+	conv2, err := PublicTokenInfoFromSDK(v.TokenInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTokenResponse.TokenInfo", err)
+	}
+	out.TokenInfo = conv2
+	return out, nil
+}
+
+// ListTokensResponseToSDK converts the mirror to the sdk-go type.
+func ListTokensResponseToSDK(w *ListTokensResponse) (*sdk.ListTokensResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTokensResponse{}
+	conv3, err := convertSlice(w.TokenInfos, PublicTokenInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTokensResponse.TokenInfos", err)
+	}
+	out.TokenInfos = conv3
+	return out, nil
+}
+
+// ListTokensResponseFromSDK converts the sdk-go type to the mirror.
+func ListTokensResponseFromSDK(v *sdk.ListTokensResponse) (*ListTokensResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTokensResponse{}
+	conv4, err := convertSlice(v.TokenInfos, PublicTokenInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTokensResponse.TokenInfos", err)
+	}
+	out.TokenInfos = conv4
+	return out, nil
+}
+
+// PublicTokenInfoToSDK converts the mirror to the sdk-go type.
+func PublicTokenInfoToSDK(w *PublicTokenInfo) (*sdk.PublicTokenInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublicTokenInfo{}
+	out.TokenId = w.TokenId
+	out.CreationTime = w.CreationTime
+	out.ExpiryTime = w.ExpiryTime
+	out.Comment = w.Comment
+	out.Scopes = w.Scopes
+	out.AutoscopeState = w.AutoscopeState
+	out.InferredScopes = w.InferredScopes
+	out.BackfillScopes = w.BackfillScopes
+	return out, nil
+}
+
+// PublicTokenInfoFromSDK converts the sdk-go type to the mirror.
+func PublicTokenInfoFromSDK(v *sdk.PublicTokenInfo) (*PublicTokenInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublicTokenInfo{}
+	out.TokenId = v.TokenId
+	out.CreationTime = v.CreationTime
+	out.ExpiryTime = v.ExpiryTime
+	out.Comment = v.Comment
+	out.Scopes = v.Scopes
+	out.AutoscopeState = v.AutoscopeState
+	out.InferredScopes = v.InferredScopes
+	out.BackfillScopes = v.BackfillScopes
+	return out, nil
+}
+
+// RevokeTokenRequestToSDK converts the mirror to the sdk-go type.
+func RevokeTokenRequestToSDK(w *RevokeTokenRequest) (*sdk.RevokeTokenRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RevokeTokenRequest{}
+	out.TokenId = w.TokenId
+	return out, nil
+}
+
+// RevokeTokenRequestFromSDK converts the sdk-go type to the mirror.
+func RevokeTokenRequestFromSDK(v *sdk.RevokeTokenRequest) (*RevokeTokenRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RevokeTokenRequest{}
+	out.TokenId = v.TokenId
+	return out, nil
+}
+
+// UpdateTokenRequestToSDK converts the mirror to the sdk-go type.
+func UpdateTokenRequestToSDK(w *UpdateTokenRequest) (*sdk.UpdateTokenRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateTokenRequest{}
+	out.TokenId = w.TokenId
+	conv5, err := PublicTokenInfoToSDK(w.Token)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTokenRequest.Token", err)
+	}
+	out.Token = conv5
+	mask6, err := fieldMaskFromString[sdk.PublicTokenInfo](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTokenRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask6
+	return out, nil
+}
+
+// UpdateTokenRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateTokenRequestFromSDK(v *sdk.UpdateTokenRequest) (*UpdateTokenRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	tokenWireValue, err := PublicTokenInfoFromSDK(v.Token)
+	out := &UpdateTokenRequest{}
+	out.TokenId = v.TokenId
+	conv7, err := PublicTokenInfoFromSDK(v.Token)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTokenRequest.Token", err)
 	}
-	return &UpdateTokenRequest{
-		TokenId:    v.TokenId,
-		Token:      tokenWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Token = conv7
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -239,4 +275,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

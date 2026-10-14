@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/clusters/v2"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -346,53 +347,11 @@ const (
 	ResizeCause_ResizeCause_DbrAutoscale                                    = sdk.ResizeCause_ResizeCause_DbrAutoscale
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // A storage location in Adls Gen2.
 type Adlsgen2Info struct {
 	// abfss destination, e.g.
 	// `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
 	Destination *string `json:"destination,omitempty"`
-}
-
-func Adlsgen2InfoFromSDK(v *sdk.Adlsgen2Info) (*Adlsgen2Info, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Adlsgen2Info{
-		Destination: v.Destination,
-	}, nil
-}
-
-func Adlsgen2InfoToSDK(w *Adlsgen2Info) (*sdk.Adlsgen2Info, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Adlsgen2Info{
-		Destination: w.Destination,
-	}, nil
 }
 
 type AutoScale struct {
@@ -404,26 +363,6 @@ type AutoScale struct {
 	// overloaded. Note that `max_workers` must be strictly greater than
 	// `min_workers`.
 	MaxWorkers *int `json:"max_workers,omitempty"`
-}
-
-func AutoScaleFromSDK(v *sdk.AutoScale) (*AutoScale, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AutoScale{
-		MinWorkers: v.MinWorkers,
-		MaxWorkers: v.MaxWorkers,
-	}, nil
-}
-
-func AutoScaleToSDK(w *AutoScale) (*sdk.AutoScale, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AutoScale{
-		MinWorkers: w.MinWorkers,
-		MaxWorkers: w.MaxWorkers,
-	}, nil
 }
 
 // Attributes set during cluster creation which are related to Amazon Web
@@ -500,42 +439,6 @@ type AwsAttributes struct {
 	EbsVolumeThroughput *int `json:"ebs_volume_throughput,omitempty"`
 }
 
-func AwsAttributesFromSDK(v *sdk.AwsAttributes) (*AwsAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsAttributes{
-		FirstOnDemand:       v.FirstOnDemand,
-		Availability:        v.Availability,
-		ZoneId:              v.ZoneId,
-		InstanceProfileArn:  v.InstanceProfileArn,
-		SpotBidPricePercent: v.SpotBidPricePercent,
-		EbsVolumeType:       v.EbsVolumeType,
-		EbsVolumeCount:      v.EbsVolumeCount,
-		EbsVolumeSize:       v.EbsVolumeSize,
-		EbsVolumeIops:       v.EbsVolumeIops,
-		EbsVolumeThroughput: v.EbsVolumeThroughput,
-	}, nil
-}
-
-func AwsAttributesToSDK(w *AwsAttributes) (*sdk.AwsAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsAttributes{
-		FirstOnDemand:       w.FirstOnDemand,
-		Availability:        w.Availability,
-		ZoneId:              w.ZoneId,
-		InstanceProfileArn:  w.InstanceProfileArn,
-		SpotBidPricePercent: w.SpotBidPricePercent,
-		EbsVolumeType:       w.EbsVolumeType,
-		EbsVolumeCount:      w.EbsVolumeCount,
-		EbsVolumeSize:       w.EbsVolumeSize,
-		EbsVolumeIops:       w.EbsVolumeIops,
-		EbsVolumeThroughput: w.EbsVolumeThroughput,
-	}, nil
-}
-
 // Attributes set during cluster creation which are related to Microsoft Azure..
 type AzureAttributes struct {
 	// Defines values necessary to configure and run Azure Log Analytics agent
@@ -576,40 +479,6 @@ type AzureAttributes struct {
 	CapacityReservationGroup *string `json:"capacity_reservation_group,omitempty"`
 }
 
-func AzureAttributesFromSDK(v *sdk.AzureAttributes) (*AzureAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	logAnalyticsInfoWireValue, err := LogAnalyticsInfoFromSDK(v.LogAnalyticsInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
-	}
-	return &AzureAttributes{
-		LogAnalyticsInfo:         logAnalyticsInfoWireValue,
-		FirstOnDemand:            v.FirstOnDemand,
-		Availability:             v.Availability,
-		SpotBidMaxPrice:          v.SpotBidMaxPrice,
-		CapacityReservationGroup: v.CapacityReservationGroup,
-	}, nil
-}
-
-func AzureAttributesToSDK(w *AzureAttributes) (*sdk.AzureAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logAnalyticsInfoPublicValue, err := LogAnalyticsInfoToSDK(w.LogAnalyticsInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
-	}
-	return &sdk.AzureAttributes{
-		LogAnalyticsInfo:         logAnalyticsInfoPublicValue,
-		FirstOnDemand:            w.FirstOnDemand,
-		Availability:             w.Availability,
-		SpotBidMaxPrice:          w.SpotBidMaxPrice,
-		CapacityReservationGroup: w.CapacityReservationGroup,
-	}, nil
-}
-
 // Request to cancel the pending enforcement for a cluster..
 type CancelPendingClusterEnforcementRequest struct {
 	// The ID of the cluster to cancel the pending enforcement for.
@@ -619,30 +488,10 @@ type CancelPendingClusterEnforcementRequest struct {
 	AllowMissing *bool `json:"allow_missing,omitempty"`
 }
 
-func CancelPendingClusterEnforcementRequestFromSDK(v *sdk.CancelPendingClusterEnforcementRequest) (*CancelPendingClusterEnforcementRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CancelPendingClusterEnforcementRequest{
-		ClusterId:    v.ClusterId,
-		AllowMissing: v.AllowMissing,
-	}, nil
-}
-
 type ChangeClusterOwnerRequest struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
 	// New owner of the cluster_id after this RPC.
 	OwnerUsername *string `json:"owner_username,omitempty"`
-}
-
-func ChangeClusterOwnerRequestFromSDK(v *sdk.ChangeClusterOwnerRequest) (*ChangeClusterOwnerRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ChangeClusterOwnerRequest{
-		ClusterId:     v.ClusterId,
-		OwnerUsername: v.OwnerUsername,
-	}, nil
 }
 
 type CloneCluster struct {
@@ -650,27 +499,9 @@ type CloneCluster struct {
 	SourceClusterId *string `json:"source_cluster_id,omitempty"`
 }
 
-func CloneClusterFromSDK(v *sdk.CloneCluster) (*CloneCluster, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CloneCluster{
-		SourceClusterId: v.SourceClusterId,
-	}, nil
-}
-
 type CloudProviderNodeInfo struct {
 	// Status as reported by the cloud provider
 	Status []CloudProviderNodeStatus `json:"status,omitempty"`
-}
-
-func CloudProviderNodeInfoToSDK(w *CloudProviderNodeInfo) (*sdk.CloudProviderNodeInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CloudProviderNodeInfo{
-		Status: w.Status,
-	}, nil
 }
 
 // Common set of attributes set during cluster creation. These attributes cannot
@@ -815,82 +646,6 @@ type ClusterAttributes struct {
 	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
 }
 
-func ClusterAttributesToSDK(w *ClusterAttributes) (*sdk.ClusterAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	awsAttributesPublicValue, err := AwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := AzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := GcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfPublicValue, err := ClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.InitScripts", err)
-	}
-	dockerImagePublicValue, err := DockerImageToSDK(w.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DockerImage", err)
-	}
-	workloadTypePublicValue, err := WorkloadTypeToSDK(w.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkloadType", err)
-	}
-	return &sdk.ClusterAttributes{
-		ClusterName:                w.ClusterName,
-		SparkVersion:               w.SparkVersion,
-		SparkConf:                  w.SparkConf,
-		AwsAttributes:              awsAttributesPublicValue,
-		AzureAttributes:            azureAttributesPublicValue,
-		GcpAttributes:              gcpAttributesPublicValue,
-		NodeTypeId:                 w.NodeTypeId,
-		DriverNodeTypeId:           w.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityPublicValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityPublicValue,
-		SshPublicKeys:              w.SshPublicKeys,
-		CustomTags:                 w.CustomTags,
-		ClusterLogConf:             clusterLogConfPublicValue,
-		SparkEnvVars:               w.SparkEnvVars,
-		AutoterminationMinutes:     w.AutoterminationMinutes,
-		EnableElasticDisk:          w.EnableElasticDisk,
-		InitScripts:                initScriptsPublicValue,
-		DockerImage:                dockerImagePublicValue,
-		InstancePoolId:             w.InstancePoolId,
-		SingleUserName:             w.SingleUserName,
-		PolicyId:                   w.PolicyId,
-		EnableLocalDiskEncryption:  w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       w.DriverInstancePoolId,
-		WorkloadType:               workloadTypePublicValue,
-		DataSecurityMode:           w.DataSecurityMode,
-		RuntimeEngine:              w.RuntimeEngine,
-		Kind:                       w.Kind,
-		UseMlRuntime:               w.UseMlRuntime,
-		IsSingleNode:               w.IsSingleNode,
-		RemoteDiskThroughput:       w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: w.TotalInitialRemoteDiskSize,
-		DependencyMode:             w.DependencyMode,
-	}, nil
-}
-
 type ClusterCompliance struct {
 	// Canonical unique identifier for a cluster.
 	ClusterId *string `json:"cluster_id,omitempty"`
@@ -906,22 +661,6 @@ type ClusterCompliance struct {
 	PendingEnforcement *PendingEnforcement `json:"pending_enforcement,omitempty"`
 }
 
-func ClusterComplianceToSDK(w *ClusterCompliance) (*sdk.ClusterCompliance, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pendingEnforcementPublicValue, err := PendingEnforcementToSDK(w.PendingEnforcement)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterCompliance.PendingEnforcement", err)
-	}
-	return &sdk.ClusterCompliance{
-		ClusterId:          w.ClusterId,
-		IsCompliant:        w.IsCompliant,
-		Violations:         w.Violations,
-		PendingEnforcement: pendingEnforcementPublicValue,
-	}, nil
-}
-
 type ClusterEvent struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
 	// The timestamp when the event occurred, stored as the number of milliseconds
@@ -931,31 +670,6 @@ type ClusterEvent struct {
 	Type                  ClusterEventType_ClusterEventType `json:"type,omitempty"`
 	Details               *EventDetails                     `json:"details,omitempty"`
 	DataPlaneEventDetails *DataPlaneEventDetails            `json:"data_plane_event_details,omitempty"`
-}
-
-func ClusterEventToSDK(w *ClusterEvent) (*sdk.ClusterEvent, error) {
-	if w == nil {
-		return nil, nil
-	}
-	timestampPublicValue, err := int64FromWire(w.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterEvent.Timestamp", err)
-	}
-	detailsPublicValue, err := EventDetailsToSDK(w.Details)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterEvent.Details", err)
-	}
-	dataPlaneEventDetailsPublicValue, err := DataPlaneEventDetailsToSDK(w.DataPlaneEventDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterEvent.DataPlaneEventDetails", err)
-	}
-	return &sdk.ClusterEvent{
-		ClusterId:             w.ClusterId,
-		Timestamp:             timestampPublicValue,
-		Type:                  w.Type,
-		Details:               detailsPublicValue,
-		DataPlaneEventDetails: dataPlaneEventDetailsPublicValue,
-	}, nil
 }
 
 // Describes all of the metadata about a single Spark cluster in <Databricks>..
@@ -1163,166 +877,6 @@ type ClusterInfo struct {
 	Autoscale         *AutoScale `json:"autoscale,omitempty"`
 }
 
-func ClusterInfoToSDK(w *ClusterInfo) (*sdk.ClusterInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo.Size")
-	}
-	clusterMemoryMbPublicValue, err := int64FromWire(w.ClusterMemoryMb)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterMemoryMb", err)
-	}
-	clusterLogStatusPublicValue, err := LogSyncStatusToSDK(w.ClusterLogStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogStatus", err)
-	}
-	terminationReasonPublicValue, err := TerminationReasonToSDK(w.TerminationReason)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.TerminationReason", err)
-	}
-	specPublicValue, err := ClusterInfo_ComputeSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Spec", err)
-	}
-	driverPublicValue, err := SparkInfo_SparkNodeToSDK(w.Driver)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Driver", err)
-	}
-	executorsPublicValue, err := convertSlice(w.Executors, SparkInfo_SparkNodeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Executors", err)
-	}
-	sparkContextIdPublicValue, err := int64FromWire(w.SparkContextId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.SparkContextId", err)
-	}
-	awsAttributesPublicValue, err := AwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := AzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := GcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfPublicValue, err := ClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.InitScripts", err)
-	}
-	dockerImagePublicValue, err := DockerImageToSDK(w.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DockerImage", err)
-	}
-	workloadTypePublicValue, err := WorkloadTypeToSDK(w.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkloadType", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.StartTime", err)
-	}
-	terminatedTimePublicValue, err := int64FromWire(w.TerminatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.TerminatedTime", err)
-	}
-	lastStateLossTimePublicValue, err := int64FromWire(w.LastStateLossTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.LastStateLossTime", err)
-	}
-	lastRestartedTimePublicValue, err := int64FromWire(w.LastRestartedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo.LastRestartedTime", err)
-	}
-	sizeSelection := (&sdk.ClusterInfo{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.ClusterInfo_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := AutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterInfo.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.ClusterInfo_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.ClusterInfo{
-		ClusterId:                  w.ClusterId,
-		CreatorUserName:            w.CreatorUserName,
-		State:                      w.State,
-		StateMessage:               w.StateMessage,
-		ClusterMemoryMb:            clusterMemoryMbPublicValue,
-		ClusterCores:               w.ClusterCores,
-		DefaultTags:                w.DefaultTags,
-		ClusterLogStatus:           clusterLogStatusPublicValue,
-		TerminationReason:          terminationReasonPublicValue,
-		Spec:                       specPublicValue,
-		Driver:                     driverPublicValue,
-		Executors:                  executorsPublicValue,
-		SparkContextId:             sparkContextIdPublicValue,
-		JdbcPort:                   w.JdbcPort,
-		ClusterName:                w.ClusterName,
-		SparkVersion:               w.SparkVersion,
-		SparkConf:                  w.SparkConf,
-		AwsAttributes:              awsAttributesPublicValue,
-		AzureAttributes:            azureAttributesPublicValue,
-		GcpAttributes:              gcpAttributesPublicValue,
-		NodeTypeId:                 w.NodeTypeId,
-		DriverNodeTypeId:           w.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityPublicValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityPublicValue,
-		SshPublicKeys:              w.SshPublicKeys,
-		CustomTags:                 w.CustomTags,
-		ClusterLogConf:             clusterLogConfPublicValue,
-		SparkEnvVars:               w.SparkEnvVars,
-		AutoterminationMinutes:     w.AutoterminationMinutes,
-		EnableElasticDisk:          w.EnableElasticDisk,
-		InitScripts:                initScriptsPublicValue,
-		DockerImage:                dockerImagePublicValue,
-		InstancePoolId:             w.InstancePoolId,
-		SingleUserName:             w.SingleUserName,
-		PolicyId:                   w.PolicyId,
-		EnableLocalDiskEncryption:  w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       w.DriverInstancePoolId,
-		WorkloadType:               workloadTypePublicValue,
-		DataSecurityMode:           w.DataSecurityMode,
-		RuntimeEngine:              w.RuntimeEngine,
-		Kind:                       w.Kind,
-		UseMlRuntime:               w.UseMlRuntime,
-		IsSingleNode:               w.IsSingleNode,
-		RemoteDiskThroughput:       w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: w.TotalInitialRemoteDiskSize,
-		DependencyMode:             w.DependencyMode,
-		StartTime:                  startTimePublicValue,
-		TerminatedTime:             terminatedTimePublicValue,
-		LastStateLossTime:          lastStateLossTimePublicValue,
-		LastRestartedTime:          lastRestartedTimePublicValue,
-		Size:                       sizeSelection,
-	}, nil
-}
-
 // Contains a snapshot of the latest user specified settings that were used to
 // create/edit the cluster..
 type ClusterInfo_ComputeSpec struct {
@@ -1471,105 +1025,6 @@ type ClusterInfo_ComputeSpec struct {
 	Autoscale      *AutoScale     `json:"autoscale,omitempty"`
 }
 
-func ClusterInfo_ComputeSpecToSDK(w *ClusterInfo_ComputeSpec) (*sdk.ClusterInfo_ComputeSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo_ComputeSpec.Size")
-	}
-	awsAttributesPublicValue, err := AwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := AzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := GcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfPublicValue, err := ClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.InitScripts", err)
-	}
-	dockerImagePublicValue, err := DockerImageToSDK(w.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DockerImage", err)
-	}
-	workloadTypePublicValue, err := WorkloadTypeToSDK(w.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkloadType", err)
-	}
-	sizeSelection := (&sdk.ClusterInfo_ComputeSpec{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.ClusterInfo_ComputeSpec_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := AutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.ClusterInfo_ComputeSpec_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.ClusterInfo_ComputeSpec{
-		ApplyPolicyDefaultValues:   w.ApplyPolicyDefaultValues,
-		ClusterName:                w.ClusterName,
-		SparkVersion:               w.SparkVersion,
-		SparkConf:                  w.SparkConf,
-		AwsAttributes:              awsAttributesPublicValue,
-		AzureAttributes:            azureAttributesPublicValue,
-		GcpAttributes:              gcpAttributesPublicValue,
-		NodeTypeId:                 w.NodeTypeId,
-		DriverNodeTypeId:           w.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityPublicValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityPublicValue,
-		SshPublicKeys:              w.SshPublicKeys,
-		CustomTags:                 w.CustomTags,
-		ClusterLogConf:             clusterLogConfPublicValue,
-		SparkEnvVars:               w.SparkEnvVars,
-		AutoterminationMinutes:     w.AutoterminationMinutes,
-		EnableElasticDisk:          w.EnableElasticDisk,
-		InitScripts:                initScriptsPublicValue,
-		DockerImage:                dockerImagePublicValue,
-		InstancePoolId:             w.InstancePoolId,
-		SingleUserName:             w.SingleUserName,
-		PolicyId:                   w.PolicyId,
-		EnableLocalDiskEncryption:  w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       w.DriverInstancePoolId,
-		WorkloadType:               workloadTypePublicValue,
-		DataSecurityMode:           w.DataSecurityMode,
-		RuntimeEngine:              w.RuntimeEngine,
-		Kind:                       w.Kind,
-		UseMlRuntime:               w.UseMlRuntime,
-		IsSingleNode:               w.IsSingleNode,
-		RemoteDiskThroughput:       w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: w.TotalInitialRemoteDiskSize,
-		DependencyMode:             w.DependencyMode,
-		Size:                       sizeSelection,
-	}, nil
-}
-
 // Cluster log delivery config.
 type ClusterLogConf struct {
 	Dbfs    *DbfsStorageInfo    `json:"dbfs,omitempty"`
@@ -1577,125 +1032,9 @@ type ClusterLogConf struct {
 	Volumes *VolumesStorageInfo `json:"volumes,omitempty"`
 }
 
-func ClusterLogConfFromSDK(v *sdk.ClusterLogConf) (*ClusterLogConf, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *DbfsStorageInfo
-	var storageInfoS3Wire *S3StorageInfo
-	var storageInfoVolumesWire *VolumesStorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.ClusterLogConf_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := DbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	case *sdk.ClusterLogConf_StorageInfo_S3:
-		if value != nil {
-			storageInfoS3Converted, err := S3StorageInfoFromSDK(&value.S3)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.S3", err)
-			}
-			storageInfoS3Wire = storageInfoS3Converted
-		}
-	case *sdk.ClusterLogConf_StorageInfo_Volumes:
-		if value != nil {
-			storageInfoVolumesConverted, err := VolumesStorageInfoFromSDK(&value.Volumes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Volumes", err)
-			}
-			storageInfoVolumesWire = storageInfoVolumesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ClusterLogConf.StorageInfo", value)
-	}
-	return &ClusterLogConf{
-		Dbfs:    storageInfoDbfsWire,
-		S3:      storageInfoS3Wire,
-		Volumes: storageInfoVolumesWire,
-	}, nil
-}
-
-func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if w.Volumes != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.ClusterLogConf{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := DbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := S3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_S3{S3: *storageInfoS3Converted}
-	case w.Volumes != nil:
-		storageInfoVolumesConverted, err := VolumesStorageInfoToSDK(w.Volumes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Volumes", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_Volumes{Volumes: *storageInfoVolumesConverted}
-	}
-	return &sdk.ClusterLogConf{
-		StorageInfo: storageInfoSelection,
-	}, nil
-}
-
 type ClusterSize struct {
 	NumWorkers *int       `json:"num_workers,omitempty"`
 	Autoscale  *AutoScale `json:"autoscale,omitempty"`
-}
-
-func ClusterSizeToSDK(w *ClusterSize) (*sdk.ClusterSize, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSize.Size")
-	}
-	sizeSelection := (&sdk.ClusterSize{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.ClusterSize_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := AutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterSize.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.ClusterSize_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.ClusterSize{
-		Size: sizeSelection,
-	}, nil
 }
 
 type CreateClusterRequest struct {
@@ -1847,120 +1186,8 @@ type CreateClusterRequest struct {
 	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
 }
 
-func CreateClusterRequestFromSDK(v *sdk.CreateClusterRequest) (*CreateClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cloneFromWireValue, err := CloneClusterFromSDK(v.CloneFrom)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.CloneFrom", err)
-	}
-	awsAttributesWireValue, err := AwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AwsAttributes", err)
-	}
-	azureAttributesWireValue, err := AzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := GcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfWireValue, err := ClusterLogConfFromSDK(v.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.ClusterLogConf", err)
-	}
-	initScriptsWireValue, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.InitScripts", err)
-	}
-	dockerImageWireValue, err := DockerImageFromSDK(v.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DockerImage", err)
-	}
-	workloadTypeWireValue, err := WorkloadTypeFromSDK(v.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkloadType", err)
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *AutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.CreateClusterRequest_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.CreateClusterRequest_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := AutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateClusterRequest.Size", value)
-	}
-	return &CreateClusterRequest{
-		ApplyPolicyDefaultValues:   v.ApplyPolicyDefaultValues,
-		CloneFrom:                  cloneFromWireValue,
-		NumWorkers:                 sizeNumWorkersWire,
-		Autoscale:                  sizeAutoscaleWire,
-		ClusterName:                v.ClusterName,
-		SparkVersion:               v.SparkVersion,
-		SparkConf:                  v.SparkConf,
-		AwsAttributes:              awsAttributesWireValue,
-		AzureAttributes:            azureAttributesWireValue,
-		GcpAttributes:              gcpAttributesWireValue,
-		NodeTypeId:                 v.NodeTypeId,
-		DriverNodeTypeId:           v.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityWireValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityWireValue,
-		SshPublicKeys:              v.SshPublicKeys,
-		CustomTags:                 v.CustomTags,
-		ClusterLogConf:             clusterLogConfWireValue,
-		SparkEnvVars:               v.SparkEnvVars,
-		AutoterminationMinutes:     v.AutoterminationMinutes,
-		EnableElasticDisk:          v.EnableElasticDisk,
-		InitScripts:                initScriptsWireValue,
-		DockerImage:                dockerImageWireValue,
-		InstancePoolId:             v.InstancePoolId,
-		SingleUserName:             v.SingleUserName,
-		PolicyId:                   v.PolicyId,
-		EnableLocalDiskEncryption:  v.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       v.DriverInstancePoolId,
-		WorkloadType:               workloadTypeWireValue,
-		DataSecurityMode:           v.DataSecurityMode,
-		RuntimeEngine:              v.RuntimeEngine,
-		Kind:                       v.Kind,
-		UseMlRuntime:               v.UseMlRuntime,
-		IsSingleNode:               v.IsSingleNode,
-		RemoteDiskThroughput:       v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: v.TotalInitialRemoteDiskSize,
-		DependencyMode:             v.DependencyMode,
-	}, nil
-}
-
 type CreateClusterResponse struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func CreateClusterResponseToSDK(w *CreateClusterResponse) (*sdk.CreateClusterResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateClusterResponse{
-		ClusterId: w.ClusterId,
-	}, nil
 }
 
 type DataPlaneEventDetails struct {
@@ -1970,58 +1197,15 @@ type DataPlaneEventDetails struct {
 	ExecutorFailures *int                      `json:"executor_failures,omitempty"`
 }
 
-func DataPlaneEventDetailsToSDK(w *DataPlaneEventDetails) (*sdk.DataPlaneEventDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	timestampPublicValue, err := int64FromWire(w.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataPlaneEventDetails.Timestamp", err)
-	}
-	return &sdk.DataPlaneEventDetails{
-		EventType:        w.EventType,
-		Timestamp:        timestampPublicValue,
-		HostId:           w.HostId,
-		ExecutorFailures: w.ExecutorFailures,
-	}, nil
-}
-
 // A storage location in DBFS.
 type DbfsStorageInfo struct {
 	// dbfs destination, e.g. `dbfs:/my/path`
 	Destination *string `json:"destination,omitempty"`
 }
 
-func DbfsStorageInfoFromSDK(v *sdk.DbfsStorageInfo) (*DbfsStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DbfsStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func DbfsStorageInfoToSDK(w *DbfsStorageInfo) (*sdk.DbfsStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbfsStorageInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 type DeleteClusterRequest struct {
 	// The cluster to be terminated.
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func DeleteClusterRequestFromSDK(v *sdk.DeleteClusterRequest) (*DeleteClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type DockerBasicAuth struct {
@@ -2031,80 +1215,10 @@ type DockerBasicAuth struct {
 	Password *string `json:"password,omitempty"`
 }
 
-func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DockerBasicAuth{
-		Username: v.Username,
-		Password: v.Password,
-	}, nil
-}
-
-func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DockerBasicAuth{
-		Username: w.Username,
-		Password: w.Password,
-	}, nil
-}
-
 type DockerImage struct {
 	// URL of the docker image.
 	Url       *string          `json:"url,omitempty"`
 	BasicAuth *DockerBasicAuth `json:"basic_auth,omitempty"`
-}
-
-func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credsOneofBasicAuthWire *DockerBasicAuth
-	switch value := v.CredsOneof.(type) {
-	case nil:
-	case *sdk.DockerImage_CredsOneof_BasicAuth:
-		if value != nil {
-			credsOneofBasicAuthConverted, err := DockerBasicAuthFromSDK(&value.BasicAuth)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-			}
-			credsOneofBasicAuthWire = credsOneofBasicAuthConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DockerImage.CredsOneof", value)
-	}
-	return &DockerImage{
-		Url:       v.Url,
-		BasicAuth: credsOneofBasicAuthWire,
-	}, nil
-}
-
-func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credsOneofMembers := 0
-	if w.BasicAuth != nil {
-		credsOneofMembers++
-	}
-	if credsOneofMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
-	}
-	credsOneofSelection := (&sdk.DockerImage{}).CredsOneof
-	switch {
-	case w.BasicAuth != nil:
-		credsOneofBasicAuthConverted, err := DockerBasicAuthToSDK(w.BasicAuth)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-		}
-		credsOneofSelection = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *credsOneofBasicAuthConverted}
-	}
-	return &sdk.DockerImage{
-		Url:        w.Url,
-		CredsOneof: credsOneofSelection,
-	}, nil
 }
 
 type EditClusterRequest struct {
@@ -2255,105 +1369,6 @@ type EditClusterRequest struct {
 	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
 }
 
-func EditClusterRequestFromSDK(v *sdk.EditClusterRequest) (*EditClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := AwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AwsAttributes", err)
-	}
-	azureAttributesWireValue, err := AzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := GcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfWireValue, err := ClusterLogConfFromSDK(v.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.ClusterLogConf", err)
-	}
-	initScriptsWireValue, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.InitScripts", err)
-	}
-	dockerImageWireValue, err := DockerImageFromSDK(v.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DockerImage", err)
-	}
-	workloadTypeWireValue, err := WorkloadTypeFromSDK(v.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkloadType", err)
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *AutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.EditClusterRequest_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.EditClusterRequest_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := AutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "EditClusterRequest.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EditClusterRequest.Size", value)
-	}
-	return &EditClusterRequest{
-		ClusterId:                  v.ClusterId,
-		ApplyPolicyDefaultValues:   v.ApplyPolicyDefaultValues,
-		NumWorkers:                 sizeNumWorkersWire,
-		Autoscale:                  sizeAutoscaleWire,
-		ClusterName:                v.ClusterName,
-		SparkVersion:               v.SparkVersion,
-		SparkConf:                  v.SparkConf,
-		AwsAttributes:              awsAttributesWireValue,
-		AzureAttributes:            azureAttributesWireValue,
-		GcpAttributes:              gcpAttributesWireValue,
-		NodeTypeId:                 v.NodeTypeId,
-		DriverNodeTypeId:           v.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityWireValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityWireValue,
-		SshPublicKeys:              v.SshPublicKeys,
-		CustomTags:                 v.CustomTags,
-		ClusterLogConf:             clusterLogConfWireValue,
-		SparkEnvVars:               v.SparkEnvVars,
-		AutoterminationMinutes:     v.AutoterminationMinutes,
-		EnableElasticDisk:          v.EnableElasticDisk,
-		InitScripts:                initScriptsWireValue,
-		DockerImage:                dockerImageWireValue,
-		InstancePoolId:             v.InstancePoolId,
-		SingleUserName:             v.SingleUserName,
-		PolicyId:                   v.PolicyId,
-		EnableLocalDiskEncryption:  v.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       v.DriverInstancePoolId,
-		WorkloadType:               workloadTypeWireValue,
-		DataSecurityMode:           v.DataSecurityMode,
-		RuntimeEngine:              v.RuntimeEngine,
-		Kind:                       v.Kind,
-		UseMlRuntime:               v.UseMlRuntime,
-		IsSingleNode:               v.IsSingleNode,
-		RemoteDiskThroughput:       v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: v.TotalInitialRemoteDiskSize,
-		DependencyMode:             v.DependencyMode,
-	}, nil
-}
-
 type EnforcePolicyComplianceForClusterRequest struct {
 	// The ID of the cluster you want to enforce policy compliance on.
 	ClusterId *string `json:"cluster_id,omitempty"`
@@ -2376,17 +1391,6 @@ type EnforcePolicyComplianceForClusterRequest struct {
 	EnforceMode EnforcePolicyComplianceForClusterRequest_EnforceMode `json:"enforce_mode,omitempty"`
 }
 
-func EnforcePolicyComplianceForClusterRequestFromSDK(v *sdk.EnforcePolicyComplianceForClusterRequest) (*EnforcePolicyComplianceForClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EnforcePolicyComplianceForClusterRequest{
-		ClusterId:    v.ClusterId,
-		ValidateOnly: v.ValidateOnly,
-		EnforceMode:  v.EnforceMode,
-	}, nil
-}
-
 type EnforcePolicyComplianceForClusterResponse struct {
 	// Whether any changes have been made to the cluster settings for the cluster to
 	// become compliant with its policy.
@@ -2396,21 +1400,6 @@ type EnforcePolicyComplianceForClusterResponse struct {
 	Changes []EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange `json:"changes,omitempty"`
 	// Describes whether changes have been applied to the cluster.
 	EnforceResult EnforcePolicyComplianceForClusterResponse_EnforceResult `json:"enforce_result,omitempty"`
-}
-
-func EnforcePolicyComplianceForClusterResponseToSDK(w *EnforcePolicyComplianceForClusterResponse) (*sdk.EnforcePolicyComplianceForClusterResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	changesPublicValue, err := convertSlice(w.Changes, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse.Changes", err)
-	}
-	return &sdk.EnforcePolicyComplianceForClusterResponse{
-		HasChanges:    w.HasChanges,
-		Changes:       changesPublicValue,
-		EnforceResult: w.EnforceResult,
-	}, nil
 }
 
 type EnforcePolicyComplianceForClusterResponse_ClusterSettings struct {
@@ -2555,104 +1544,6 @@ type EnforcePolicyComplianceForClusterResponse_ClusterSettings struct {
 	Autoscale      *AutoScale     `json:"autoscale,omitempty"`
 }
 
-func EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK(w *EnforcePolicyComplianceForClusterResponse_ClusterSettings) (*sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size")
-	}
-	awsAttributesPublicValue, err := AwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := AzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := GcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfPublicValue, err := ClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.InitScripts", err)
-	}
-	dockerImagePublicValue, err := DockerImageToSDK(w.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DockerImage", err)
-	}
-	workloadTypePublicValue, err := WorkloadTypeToSDK(w.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkloadType", err)
-	}
-	sizeSelection := (&sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := AutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings{
-		ClusterName:                w.ClusterName,
-		SparkVersion:               w.SparkVersion,
-		SparkConf:                  w.SparkConf,
-		AwsAttributes:              awsAttributesPublicValue,
-		AzureAttributes:            azureAttributesPublicValue,
-		GcpAttributes:              gcpAttributesPublicValue,
-		NodeTypeId:                 w.NodeTypeId,
-		DriverNodeTypeId:           w.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityPublicValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityPublicValue,
-		SshPublicKeys:              w.SshPublicKeys,
-		CustomTags:                 w.CustomTags,
-		ClusterLogConf:             clusterLogConfPublicValue,
-		SparkEnvVars:               w.SparkEnvVars,
-		AutoterminationMinutes:     w.AutoterminationMinutes,
-		EnableElasticDisk:          w.EnableElasticDisk,
-		InitScripts:                initScriptsPublicValue,
-		DockerImage:                dockerImagePublicValue,
-		InstancePoolId:             w.InstancePoolId,
-		SingleUserName:             w.SingleUserName,
-		PolicyId:                   w.PolicyId,
-		EnableLocalDiskEncryption:  w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       w.DriverInstancePoolId,
-		WorkloadType:               workloadTypePublicValue,
-		DataSecurityMode:           w.DataSecurityMode,
-		RuntimeEngine:              w.RuntimeEngine,
-		Kind:                       w.Kind,
-		UseMlRuntime:               w.UseMlRuntime,
-		IsSingleNode:               w.IsSingleNode,
-		RemoteDiskThroughput:       w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: w.TotalInitialRemoteDiskSize,
-		DependencyMode:             w.DependencyMode,
-		Size:                       sizeSelection,
-	}, nil
-}
-
 // Represents a change to the cluster settings required for the cluster to
 // become compliant with its policy..
 type EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange struct {
@@ -2668,17 +1559,6 @@ type EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange struct {
 	// read by a human. The typed new value of this field can be retrieved by
 	// reading the settings field in the API response.
 	NewValue *string `json:"new_value,omitempty"`
-}
-
-func EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK(w *EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange) (*sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange{
-		Field:         w.Field,
-		PreviousValue: w.PreviousValue,
-		NewValue:      w.NewValue,
-	}, nil
 }
 
 type EventDetails struct {
@@ -2728,70 +1608,6 @@ type EventDetails struct {
 	TargetNumVcpus *int `json:"target_num_vcpus,omitempty"`
 }
 
-func EventDetailsToSDK(w *EventDetails) (*sdk.EventDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	previousAttributesPublicValue, err := ClusterAttributesToSDK(w.PreviousAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousAttributes", err)
-	}
-	attributesPublicValue, err := ClusterAttributesToSDK(w.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.Attributes", err)
-	}
-	previousClusterSizePublicValue, err := ClusterSizeToSDK(w.PreviousClusterSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousClusterSize", err)
-	}
-	clusterSizePublicValue, err := ClusterSizeToSDK(w.ClusterSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.ClusterSize", err)
-	}
-	reasonPublicValue, err := TerminationReasonToSDK(w.Reason)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.Reason", err)
-	}
-	previousDiskSizePublicValue, err := int64FromWire(w.PreviousDiskSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousDiskSize", err)
-	}
-	diskSizePublicValue, err := int64FromWire(w.DiskSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.DiskSize", err)
-	}
-	freeSpacePublicValue, err := int64FromWire(w.FreeSpace)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.FreeSpace", err)
-	}
-	initScriptsPublicValue, err := InitScriptEventDetailsToSDK(w.InitScripts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EventDetails.InitScripts", err)
-	}
-	return &sdk.EventDetails{
-		CurrentNumWorkers:                   w.CurrentNumWorkers,
-		TargetNumWorkers:                    w.TargetNumWorkers,
-		PreviousAttributes:                  previousAttributesPublicValue,
-		Attributes:                          attributesPublicValue,
-		PreviousClusterSize:                 previousClusterSizePublicValue,
-		ClusterSize:                         clusterSizePublicValue,
-		Cause:                               w.Cause,
-		Reason:                              reasonPublicValue,
-		User:                                w.User,
-		PreviousDiskSize:                    previousDiskSizePublicValue,
-		DiskSize:                            diskSizePublicValue,
-		FreeSpace:                           freeSpacePublicValue,
-		InstanceId:                          w.InstanceId,
-		DidNotExpandReason:                  w.DidNotExpandReason,
-		DriverStateMessage:                  w.DriverStateMessage,
-		JobRunName:                          w.JobRunName,
-		InitScripts:                         initScriptsPublicValue,
-		EnableTerminationForNodeBlocklisted: w.EnableTerminationForNodeBlocklisted,
-		CurrentNumVcpus:                     w.CurrentNumVcpus,
-		TargetNumVcpus:                      w.TargetNumVcpus,
-	}, nil
-}
-
 // Attributes set during cluster creation which are related to GCP..
 type GcpAttributes struct {
 	// This field determines whether the spark executors will be scheduled to run on
@@ -2839,74 +1655,15 @@ type GcpAttributes struct {
 	ConfidentialComputeType ConfidentialComputeType `json:"confidential_compute_type,omitempty"`
 }
 
-func GcpAttributesFromSDK(v *sdk.GcpAttributes) (*GcpAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpAttributes{
-		UsePreemptibleExecutors: v.UsePreemptibleExecutors,
-		GoogleServiceAccount:    v.GoogleServiceAccount,
-		BootDiskSize:            v.BootDiskSize,
-		Availability:            v.Availability,
-		ZoneId:                  v.ZoneId,
-		LocalSsdCount:           v.LocalSsdCount,
-		FirstOnDemand:           v.FirstOnDemand,
-		ConfidentialComputeType: v.ConfidentialComputeType,
-	}, nil
-}
-
-func GcpAttributesToSDK(w *GcpAttributes) (*sdk.GcpAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpAttributes{
-		UsePreemptibleExecutors: w.UsePreemptibleExecutors,
-		GoogleServiceAccount:    w.GoogleServiceAccount,
-		BootDiskSize:            w.BootDiskSize,
-		Availability:            w.Availability,
-		ZoneId:                  w.ZoneId,
-		LocalSsdCount:           w.LocalSsdCount,
-		FirstOnDemand:           w.FirstOnDemand,
-		ConfidentialComputeType: w.ConfidentialComputeType,
-	}, nil
-}
-
 // A storage location in Google Cloud Platform's GCS.
 type GcsStorageInfo struct {
 	// GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
 	Destination *string `json:"destination,omitempty"`
 }
 
-func GcsStorageInfoFromSDK(v *sdk.GcsStorageInfo) (*GcsStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcsStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func GcsStorageInfoToSDK(w *GcsStorageInfo) (*sdk.GcsStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcsStorageInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 type GetClusterRequest struct {
 	// The cluster about which to retrieve information.
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func GetClusterRequestFromSDK(v *sdk.GetClusterRequest) (*GetClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type GetEventsResponse struct {
@@ -2930,43 +1687,9 @@ type GetEventsResponse struct {
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
 }
 
-func GetEventsResponseToSDK(w *GetEventsResponse) (*sdk.GetEventsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	eventsPublicValue, err := convertSlice(w.Events, ClusterEventToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.Events", err)
-	}
-	nextPagePublicValue, err := ListEventsRequestToSDK(w.NextPage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.NextPage", err)
-	}
-	totalCountPublicValue, err := int64FromWire(w.TotalCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.TotalCount", err)
-	}
-	return &sdk.GetEventsResponse{
-		Events:        eventsPublicValue,
-		NextPage:      nextPagePublicValue,
-		TotalCount:    totalCountPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
-}
-
 type GetPolicyComplianceForClusterRequest struct {
 	// The ID of the cluster to get the compliance status
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func GetPolicyComplianceForClusterRequestFromSDK(v *sdk.GetPolicyComplianceForClusterRequest) (*GetPolicyComplianceForClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetPolicyComplianceForClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type GetPolicyComplianceForClusterResponse struct {
@@ -2984,37 +1707,9 @@ type GetPolicyComplianceForClusterResponse struct {
 	PendingEnforcement *PendingEnforcement `json:"pending_enforcement,omitempty"`
 }
 
-func GetPolicyComplianceForClusterResponseToSDK(w *GetPolicyComplianceForClusterResponse) (*sdk.GetPolicyComplianceForClusterResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pendingEnforcementPublicValue, err := PendingEnforcementToSDK(w.PendingEnforcement)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPolicyComplianceForClusterResponse.PendingEnforcement", err)
-	}
-	return &sdk.GetPolicyComplianceForClusterResponse{
-		IsCompliant:        w.IsCompliant,
-		Violations:         w.Violations,
-		PendingEnforcement: pendingEnforcementPublicValue,
-	}, nil
-}
-
 type GetSparkVersionsResponse struct {
 	// All the available Spark versions.
 	Versions []SparkVersion `json:"versions,omitempty"`
-}
-
-func GetSparkVersionsResponseToSDK(w *GetSparkVersionsResponse) (*sdk.GetSparkVersionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionsPublicValue, err := convertSlice(w.Versions, SparkVersionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetSparkVersionsResponse.Versions", err)
-	}
-	return &sdk.GetSparkVersionsResponse{
-		Versions: versionsPublicValue,
-	}, nil
 }
 
 type InitScriptEventDetails struct {
@@ -3029,25 +1724,6 @@ type InitScriptEventDetails struct {
 	Global []InitScriptEventDetails_InitScriptInfoAndExecutionDetails `json:"global,omitempty"`
 	// The cluster scoped init scripts associated with this cluster event.
 	Cluster []InitScriptEventDetails_InitScriptInfoAndExecutionDetails `json:"cluster,omitempty"`
-}
-
-func InitScriptEventDetailsToSDK(w *InitScriptEventDetails) (*sdk.InitScriptEventDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	globalPublicValue, err := convertSlice(w.Global, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Global", err)
-	}
-	clusterPublicValue, err := convertSlice(w.Cluster, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Cluster", err)
-	}
-	return &sdk.InitScriptEventDetails{
-		ReportedForNode: w.ReportedForNode,
-		Global:          globalPublicValue,
-		Cluster:         clusterPublicValue,
-	}, nil
 }
 
 type InitScriptEventDetails_InitScriptInfoAndExecutionDetails struct {
@@ -3071,89 +1747,6 @@ type InitScriptEventDetails_InitScriptInfoAndExecutionDetails struct {
 	Stderr *string `json:"stderr,omitempty"`
 }
 
-func InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK(w *InitScriptEventDetails_InitScriptInfoAndExecutionDetails) (*sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if w.File != nil {
-		storageInfoMembers++
-	}
-	if w.Gcs != nil {
-		storageInfoMembers++
-	}
-	if w.Abfss != nil {
-		storageInfoMembers++
-	}
-	if w.Workspace != nil {
-		storageInfoMembers++
-	}
-	if w.Volumes != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := DbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := S3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_S3{S3: *storageInfoS3Converted}
-	case w.File != nil:
-		storageInfoFileConverted, err := LocalFileInfoToSDK(w.File)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.File", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_File{File: *storageInfoFileConverted}
-	case w.Gcs != nil:
-		storageInfoGcsConverted, err := GcsStorageInfoToSDK(w.Gcs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.Gcs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Gcs{Gcs: *storageInfoGcsConverted}
-	case w.Abfss != nil:
-		storageInfoAbfssConverted, err := Adlsgen2InfoToSDK(w.Abfss)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.Abfss", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Abfss{Abfss: *storageInfoAbfssConverted}
-	case w.Workspace != nil:
-		storageInfoWorkspaceConverted, err := WorkspaceStorageInfoToSDK(w.Workspace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.Workspace", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Workspace{Workspace: *storageInfoWorkspaceConverted}
-	case w.Volumes != nil:
-		storageInfoVolumesConverted, err := VolumesStorageInfoToSDK(w.Volumes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo.Volumes", err)
-		}
-		storageInfoSelection = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Volumes{Volumes: *storageInfoVolumesConverted}
-	}
-	return &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails{
-		Status:                   w.Status,
-		ExecutionDurationSeconds: w.ExecutionDurationSeconds,
-		ErrorMessage:             w.ErrorMessage,
-		Stderr:                   w.Stderr,
-		StorageInfo:              storageInfoSelection,
-	}, nil
-}
-
 // Config for an individual init script.
 type InitScriptInfo struct {
 	Dbfs      *DbfsStorageInfo      `json:"dbfs,omitempty"`
@@ -3165,184 +1758,12 @@ type InitScriptInfo struct {
 	Volumes   *VolumesStorageInfo   `json:"volumes,omitempty"`
 }
 
-func InitScriptInfoFromSDK(v *sdk.InitScriptInfo) (*InitScriptInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *DbfsStorageInfo
-	var storageInfoS3Wire *S3StorageInfo
-	var storageInfoFileWire *LocalFileInfo
-	var storageInfoGcsWire *GcsStorageInfo
-	var storageInfoAbfssWire *Adlsgen2Info
-	var storageInfoWorkspaceWire *WorkspaceStorageInfo
-	var storageInfoVolumesWire *VolumesStorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.InitScriptInfo_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := DbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_S3:
-		if value != nil {
-			storageInfoS3Converted, err := S3StorageInfoFromSDK(&value.S3)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.S3", err)
-			}
-			storageInfoS3Wire = storageInfoS3Converted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_File:
-		if value != nil {
-			storageInfoFileConverted, err := LocalFileInfoFromSDK(&value.File)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.File", err)
-			}
-			storageInfoFileWire = storageInfoFileConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Gcs:
-		if value != nil {
-			storageInfoGcsConverted, err := GcsStorageInfoFromSDK(&value.Gcs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Gcs", err)
-			}
-			storageInfoGcsWire = storageInfoGcsConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Abfss:
-		if value != nil {
-			storageInfoAbfssConverted, err := Adlsgen2InfoFromSDK(&value.Abfss)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Abfss", err)
-			}
-			storageInfoAbfssWire = storageInfoAbfssConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Workspace:
-		if value != nil {
-			storageInfoWorkspaceConverted, err := WorkspaceStorageInfoFromSDK(&value.Workspace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Workspace", err)
-			}
-			storageInfoWorkspaceWire = storageInfoWorkspaceConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Volumes:
-		if value != nil {
-			storageInfoVolumesConverted, err := VolumesStorageInfoFromSDK(&value.Volumes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Volumes", err)
-			}
-			storageInfoVolumesWire = storageInfoVolumesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "InitScriptInfo.StorageInfo", value)
-	}
-	return &InitScriptInfo{
-		Dbfs:      storageInfoDbfsWire,
-		S3:        storageInfoS3Wire,
-		File:      storageInfoFileWire,
-		Gcs:       storageInfoGcsWire,
-		Abfss:     storageInfoAbfssWire,
-		Workspace: storageInfoWorkspaceWire,
-		Volumes:   storageInfoVolumesWire,
-	}, nil
-}
-
-func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if w.File != nil {
-		storageInfoMembers++
-	}
-	if w.Gcs != nil {
-		storageInfoMembers++
-	}
-	if w.Abfss != nil {
-		storageInfoMembers++
-	}
-	if w.Workspace != nil {
-		storageInfoMembers++
-	}
-	if w.Volumes != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.InitScriptInfo{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := DbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := S3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_S3{S3: *storageInfoS3Converted}
-	case w.File != nil:
-		storageInfoFileConverted, err := LocalFileInfoToSDK(w.File)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.File", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_File{File: *storageInfoFileConverted}
-	case w.Gcs != nil:
-		storageInfoGcsConverted, err := GcsStorageInfoToSDK(w.Gcs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Gcs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Gcs{Gcs: *storageInfoGcsConverted}
-	case w.Abfss != nil:
-		storageInfoAbfssConverted, err := Adlsgen2InfoToSDK(w.Abfss)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Abfss", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Abfss{Abfss: *storageInfoAbfssConverted}
-	case w.Workspace != nil:
-		storageInfoWorkspaceConverted, err := WorkspaceStorageInfoToSDK(w.Workspace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Workspace", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Workspace{Workspace: *storageInfoWorkspaceConverted}
-	case w.Volumes != nil:
-		storageInfoVolumesConverted, err := VolumesStorageInfoToSDK(w.Volumes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Volumes", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Volumes{Volumes: *storageInfoVolumesConverted}
-	}
-	return &sdk.InitScriptInfo{
-		StorageInfo: storageInfoSelection,
-	}, nil
-}
-
 type ListAvailableZonesResponse struct {
 	// The list of available zones (e.g., ['us-west-2c', 'us-east-2']).
 	Zones []string `json:"zones,omitempty"`
 	// The availability zone if no ``zone_id`` is provided in the cluster creation
 	// request.
 	DefaultZone *string `json:"default_zone,omitempty"`
-}
-
-func ListAvailableZonesResponseToSDK(w *ListAvailableZonesResponse) (*sdk.ListAvailableZonesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ListAvailableZonesResponse{
-		Zones:       w.Zones,
-		DefaultZone: w.DefaultZone,
-	}, nil
 }
 
 type ListClusterComplianceForPolicyRequest struct {
@@ -3357,17 +1778,6 @@ type ListClusterComplianceForPolicyRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListClusterComplianceForPolicyRequestFromSDK(v *sdk.ListClusterComplianceForPolicyRequest) (*ListClusterComplianceForPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListClusterComplianceForPolicyRequest{
-		PolicyId:  v.PolicyId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListClusterComplianceForPolicyResponse struct {
 	// A list of clusters and their policy compliance statuses.
 	Clusters []ClusterCompliance `json:"clusters,omitempty"`
@@ -3377,21 +1787,6 @@ type ListClusterComplianceForPolicyResponse struct {
 	// This field represents the pagination token to retrieve the previous page of
 	// results. If the value is "", it means no further results for the request.
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
-}
-
-func ListClusterComplianceForPolicyResponseToSDK(w *ListClusterComplianceForPolicyResponse) (*sdk.ListClusterComplianceForPolicyResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	clustersPublicValue, err := convertSlice(w.Clusters, ClusterComplianceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListClusterComplianceForPolicyResponse.Clusters", err)
-	}
-	return &sdk.ListClusterComplianceForPolicyResponse{
-		Clusters:      clustersPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
 }
 
 type ListClustersRequest struct {
@@ -3404,16 +1799,6 @@ type ListClustersRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListClustersRequestFromSDK(v *sdk.ListClustersRequest) (*ListClustersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListClustersRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListClustersResponse struct {
 	Clusters []ClusterInfo `json:"clusters,omitempty"`
 	// This field represents the pagination token to retrieve the next page of
@@ -3422,21 +1807,6 @@ type ListClustersResponse struct {
 	// This field represents the pagination token to retrieve the previous page of
 	// results. If the value is "", it means no further results for the request.
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
-}
-
-func ListClustersResponseToSDK(w *ListClustersResponse) (*sdk.ListClustersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	clustersPublicValue, err := convertSlice(w.Clusters, ClusterInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListClustersResponse.Clusters", err)
-	}
-	return &sdk.ListClustersResponse{
-		Clusters:      clustersPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
 }
 
 type ListEventsRequest struct {
@@ -3476,88 +1846,9 @@ type ListEventsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListEventsRequestFromSDK(v *sdk.ListEventsRequest) (*ListEventsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	startTimeWireValue, err := int64ToWire(v.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.StartTime", err)
-	}
-	endTimeWireValue, err := int64ToWire(v.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.EndTime", err)
-	}
-	offsetWireValue, err := int64ToWire(v.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.Offset", err)
-	}
-	limitWireValue, err := int64ToWire(v.Limit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.Limit", err)
-	}
-	return &ListEventsRequest{
-		ClusterId:  v.ClusterId,
-		StartTime:  startTimeWireValue,
-		EndTime:    endTimeWireValue,
-		Order:      v.Order,
-		EventTypes: v.EventTypes,
-		Offset:     offsetWireValue,
-		Limit:      limitWireValue,
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-	}, nil
-}
-
-func ListEventsRequestToSDK(w *ListEventsRequest) (*sdk.ListEventsRequest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.StartTime", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.EndTime", err)
-	}
-	offsetPublicValue, err := int64FromWire(w.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.Offset", err)
-	}
-	limitPublicValue, err := int64FromWire(w.Limit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEventsRequest.Limit", err)
-	}
-	return &sdk.ListEventsRequest{
-		ClusterId:  w.ClusterId,
-		StartTime:  startTimePublicValue,
-		EndTime:    endTimePublicValue,
-		Order:      w.Order,
-		EventTypes: w.EventTypes,
-		Offset:     offsetPublicValue,
-		Limit:      limitPublicValue,
-		PageToken:  w.PageToken,
-		PageSize:   w.PageSize,
-	}, nil
-}
-
 type ListNodeTypesResponse struct {
 	// The list of available Spark node types.
 	NodeTypes []NodeType `json:"node_types,omitempty"`
-}
-
-func ListNodeTypesResponseToSDK(w *ListNodeTypesResponse) (*sdk.ListNodeTypesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nodeTypesPublicValue, err := convertSlice(w.NodeTypes, NodeTypeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNodeTypesResponse.NodeTypes", err)
-	}
-	return &sdk.ListNodeTypesResponse{
-		NodeTypes: nodeTypesPublicValue,
-	}, nil
 }
 
 type LocalFileInfo struct {
@@ -3565,47 +1856,9 @@ type LocalFileInfo struct {
 	Destination *string `json:"destination,omitempty"`
 }
 
-func LocalFileInfoFromSDK(v *sdk.LocalFileInfo) (*LocalFileInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LocalFileInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func LocalFileInfoToSDK(w *LocalFileInfo) (*sdk.LocalFileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LocalFileInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 type LogAnalyticsInfo struct {
 	LogAnalyticsWorkspaceId *string `json:"log_analytics_workspace_id,omitempty"`
 	LogAnalyticsPrimaryKey  *string `json:"log_analytics_primary_key,omitempty"`
-}
-
-func LogAnalyticsInfoFromSDK(v *sdk.LogAnalyticsInfo) (*LogAnalyticsInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LogAnalyticsInfo{
-		LogAnalyticsWorkspaceId: v.LogAnalyticsWorkspaceId,
-		LogAnalyticsPrimaryKey:  v.LogAnalyticsPrimaryKey,
-	}, nil
-}
-
-func LogAnalyticsInfoToSDK(w *LogAnalyticsInfo) (*sdk.LogAnalyticsInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LogAnalyticsInfo{
-		LogAnalyticsWorkspaceId: w.LogAnalyticsWorkspaceId,
-		LogAnalyticsPrimaryKey:  w.LogAnalyticsPrimaryKey,
-	}, nil
 }
 
 // The log delivery status.
@@ -3616,20 +1869,6 @@ type LogSyncStatus struct {
 	// The exception thrown in the last attempt, it would be null (omitted in the
 	// response) if there is no exception in last attempted.
 	LastException *string `json:"last_exception,omitempty"`
-}
-
-func LogSyncStatusToSDK(w *LogSyncStatus) (*sdk.LogSyncStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastAttemptedPublicValue, err := int64FromWire(w.LastAttempted)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LogSyncStatus.LastAttempted", err)
-	}
-	return &sdk.LogSyncStatus{
-		LastAttempted: lastAttemptedPublicValue,
-		LastException: w.LastException,
-	}, nil
 }
 
 // This structure embodies the machine type that hosts spark containers Note:
@@ -3648,19 +1887,6 @@ type NodeInstanceType struct {
 	LocalNvmeDiskSizeGb *int `json:"local_nvme_disk_size_gb,omitempty"`
 	// Number of local nvme disks that are present on this instance.
 	LocalNvmeDisks *int `json:"local_nvme_disks,omitempty"`
-}
-
-func NodeInstanceTypeToSDK(w *NodeInstanceType) (*sdk.NodeInstanceType, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NodeInstanceType{
-		InstanceTypeId:      w.InstanceTypeId,
-		LocalDisks:          w.LocalDisks,
-		LocalDiskSizeGb:     w.LocalDiskSizeGb,
-		LocalNvmeDiskSizeGb: w.LocalNvmeDiskSizeGb,
-		LocalNvmeDisks:      w.LocalNvmeDisks,
-	}, nil
 }
 
 // A description of a Spark node type including both the dimensions of the node
@@ -3715,42 +1941,6 @@ type NodeType struct {
 	IsGraviton *bool `json:"is_graviton,omitempty"`
 }
 
-func NodeTypeToSDK(w *NodeType) (*sdk.NodeType, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nodeInstanceTypePublicValue, err := NodeInstanceTypeToSDK(w.NodeInstanceType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInstanceType", err)
-	}
-	nodeInfoPublicValue, err := CloudProviderNodeInfoToSDK(w.NodeInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInfo", err)
-	}
-	return &sdk.NodeType{
-		NodeTypeId:            w.NodeTypeId,
-		MemoryMb:              w.MemoryMb,
-		NumCores:              w.NumCores,
-		Description:           w.Description,
-		InstanceTypeId:        w.InstanceTypeId,
-		IsDeprecated:          w.IsDeprecated,
-		Category:              w.Category,
-		SupportEbsVolumes:     w.SupportEbsVolumes,
-		SupportClusterTags:    w.SupportClusterTags,
-		NumGpus:               w.NumGpus,
-		NodeInstanceType:      nodeInstanceTypePublicValue,
-		IsHidden:              w.IsHidden,
-		SupportPortForwarding: w.SupportPortForwarding,
-		DisplayOrder:          w.DisplayOrder,
-		IsIoCacheEnabled:      w.IsIoCacheEnabled,
-		NodeInfo:              nodeInfoPublicValue,
-		PhotonWorkerCapable:   w.PhotonWorkerCapable,
-		PhotonDriverCapable:   w.PhotonDriverCapable,
-		IsEncryptedInTransit:  w.IsEncryptedInTransit,
-		IsGraviton:            w.IsGraviton,
-	}, nil
-}
-
 // Configuration for flexible node types, allowing fallback to alternate node
 // types during cluster launch and upscale..
 type NodeTypeFlexibility struct {
@@ -3760,26 +1950,6 @@ type NodeTypeFlexibility struct {
 	// The AWS Context ID for EC2 Fleet. When set (non-empty), the value is passed
 	// to AWS CreateFleet API to create the EC2 Fleet.
 	AwsContextId *string `json:"aws_context_id,omitempty"`
-}
-
-func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NodeTypeFlexibility{
-		AlternateNodeTypeIds: v.AlternateNodeTypeIds,
-		AwsContextId:         v.AwsContextId,
-	}, nil
-}
-
-func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NodeTypeFlexibility{
-		AlternateNodeTypeIds: w.AlternateNodeTypeIds,
-		AwsContextId:         w.AwsContextId,
-	}, nil
 }
 
 // Represents a pending enforcement on a cluster, which contains the changes to
@@ -3802,52 +1972,13 @@ type PendingEnforcement struct {
 	InitiatorUser *string `json:"initiator_user,omitempty"`
 }
 
-func PendingEnforcementToSDK(w *PendingEnforcement) (*sdk.PendingEnforcement, error) {
-	if w == nil {
-		return nil, nil
-	}
-	targetSpecPublicValue, err := EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK(w.TargetSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetSpec", err)
-	}
-	targetChangesPublicValue, err := convertSlice(w.TargetChanges, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetChanges", err)
-	}
-	return &sdk.PendingEnforcement{
-		TargetSpec:        targetSpecPublicValue,
-		InitiateTime:      w.InitiateTime,
-		EnforcementStatus: w.EnforcementStatus,
-		TargetChanges:     targetChangesPublicValue,
-		InitiatorUser:     w.InitiatorUser,
-	}, nil
-}
-
 type PermanentDeleteClusterRequest struct {
 	// The cluster to be deleted.
 	ClusterId *string `json:"cluster_id,omitempty"`
 }
 
-func PermanentDeleteClusterRequestFromSDK(v *sdk.PermanentDeleteClusterRequest) (*PermanentDeleteClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PermanentDeleteClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
-}
-
 type PinClusterRequest struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func PinClusterRequestFromSDK(v *sdk.PinClusterRequest) (*PinClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PinClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type ResizeClusterRequest struct {
@@ -3857,50 +1988,10 @@ type ResizeClusterRequest struct {
 	Autoscale  *AutoScale `json:"autoscale,omitempty"`
 }
 
-func ResizeClusterRequestFromSDK(v *sdk.ResizeClusterRequest) (*ResizeClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *AutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.ResizeClusterRequest_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.ResizeClusterRequest_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := AutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ResizeClusterRequest.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ResizeClusterRequest.Size", value)
-	}
-	return &ResizeClusterRequest{
-		ClusterId:  v.ClusterId,
-		NumWorkers: sizeNumWorkersWire,
-		Autoscale:  sizeAutoscaleWire,
-	}, nil
-}
-
 type RestartClusterRequest struct {
 	// The cluster to be started.
 	ClusterId   *string `json:"cluster_id,omitempty"`
 	RestartUser *string `json:"restart_user,omitempty"`
-}
-
-func RestartClusterRequestFromSDK(v *sdk.RestartClusterRequest) (*RestartClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RestartClusterRequest{
-		ClusterId:   v.ClusterId,
-		RestartUser: v.RestartUser,
-	}, nil
 }
 
 // A storage location in Amazon S3.
@@ -3935,36 +2026,6 @@ type S3StorageInfo struct {
 	CannedAcl *string `json:"canned_acl,omitempty"`
 }
 
-func S3StorageInfoFromSDK(v *sdk.S3StorageInfo) (*S3StorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &S3StorageInfo{
-		Destination:      v.Destination,
-		Region:           v.Region,
-		Endpoint:         v.Endpoint,
-		EnableEncryption: v.EnableEncryption,
-		EncryptionType:   v.EncryptionType,
-		KmsKey:           v.KmsKey,
-		CannedAcl:        v.CannedAcl,
-	}, nil
-}
-
-func S3StorageInfoToSDK(w *S3StorageInfo) (*sdk.S3StorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.S3StorageInfo{
-		Destination:      w.Destination,
-		Region:           w.Region,
-		Endpoint:         w.Endpoint,
-		EnableEncryption: w.EnableEncryption,
-		EncryptionType:   w.EncryptionType,
-		KmsKey:           w.KmsKey,
-		CannedAcl:        w.CannedAcl,
-	}, nil
-}
-
 // Describes a specific Spark driver or executor..
 type SparkInfo_SparkNode struct {
 	// Private IP address (typically a 10.x.x.x address) of the Spark node. Note
@@ -3987,42 +2048,10 @@ type SparkInfo_SparkNode struct {
 	HostPrivateIp *string `json:"host_private_ip,omitempty"`
 }
 
-func SparkInfo_SparkNodeToSDK(w *SparkInfo_SparkNode) (*sdk.SparkInfo_SparkNode, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimestampPublicValue, err := int64FromWire(w.StartTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SparkInfo_SparkNode.StartTimestamp", err)
-	}
-	nodeAwsAttributesPublicValue, err := SparkInfo_SparkNode_SparkNodeAwsAttributesToSDK(w.NodeAwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SparkInfo_SparkNode.NodeAwsAttributes", err)
-	}
-	return &sdk.SparkInfo_SparkNode{
-		PrivateIp:         w.PrivateIp,
-		PublicDns:         w.PublicDns,
-		NodeId:            w.NodeId,
-		InstanceId:        w.InstanceId,
-		StartTimestamp:    startTimestampPublicValue,
-		NodeAwsAttributes: nodeAwsAttributesPublicValue,
-		HostPrivateIp:     w.HostPrivateIp,
-	}, nil
-}
-
 // Attributes specific to AWS for a Spark node..
 type SparkInfo_SparkNode_SparkNodeAwsAttributes struct {
 	// Whether this node is on an Amazon spot instance.
 	IsSpot *bool `json:"is_spot,omitempty"`
-}
-
-func SparkInfo_SparkNode_SparkNodeAwsAttributesToSDK(w *SparkInfo_SparkNode_SparkNodeAwsAttributes) (*sdk.SparkInfo_SparkNode_SparkNodeAwsAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparkInfo_SparkNode_SparkNodeAwsAttributes{
-		IsSpot: w.IsSpot,
-	}, nil
 }
 
 type SparkVersion struct {
@@ -4035,28 +2064,9 @@ type SparkVersion struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func SparkVersionToSDK(w *SparkVersion) (*sdk.SparkVersion, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparkVersion{
-		Key:  w.Key,
-		Name: w.Name,
-	}, nil
-}
-
 type StartClusterRequest struct {
 	// The cluster to be started.
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func StartClusterRequestFromSDK(v *sdk.StartClusterRequest) (*StartClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StartClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type TerminationReason struct {
@@ -4069,28 +2079,8 @@ type TerminationReason struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
 }
 
-func TerminationReasonToSDK(w *TerminationReason) (*sdk.TerminationReason, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TerminationReason{
-		Code:       w.Code,
-		Type:       w.Type,
-		Parameters: w.Parameters,
-	}, nil
-}
-
 type UnpinClusterRequest struct {
 	ClusterId *string `json:"cluster_id,omitempty"`
-}
-
-func UnpinClusterRequestFromSDK(v *sdk.UnpinClusterRequest) (*UnpinClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UnpinClusterRequest{
-		ClusterId: v.ClusterId,
-	}, nil
 }
 
 type UpdateClusterRequest struct {
@@ -4101,21 +2091,6 @@ type UpdateClusterRequest struct {
 	// Used to specify which cluster attributes and size fields to update. See
 	// https://google.aip.dev/161 for more details.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateClusterRequestFromSDK(v *sdk.UpdateClusterRequest) (*UpdateClusterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	clusterWireValue, err := UpdateClusterRequest_UpdateClusterResourceFromSDK(v.Cluster)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest.Cluster", err)
-	}
-	return &UpdateClusterRequest{
-		ClusterId:  v.ClusterId,
-		Cluster:    clusterWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateClusterRequest_UpdateClusterResource struct {
@@ -4260,103 +2235,6 @@ type UpdateClusterRequest_UpdateClusterResource struct {
 	DependencyMode DependencyMode `json:"dependency_mode,omitempty"`
 }
 
-func UpdateClusterRequest_UpdateClusterResourceFromSDK(v *sdk.UpdateClusterRequest_UpdateClusterResource) (*UpdateClusterRequest_UpdateClusterResource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := AwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AwsAttributes", err)
-	}
-	azureAttributesWireValue, err := AzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := GcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfWireValue, err := ClusterLogConfFromSDK(v.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.ClusterLogConf", err)
-	}
-	initScriptsWireValue, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.InitScripts", err)
-	}
-	dockerImageWireValue, err := DockerImageFromSDK(v.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DockerImage", err)
-	}
-	workloadTypeWireValue, err := WorkloadTypeFromSDK(v.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkloadType", err)
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *AutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.UpdateClusterRequest_UpdateClusterResource_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.UpdateClusterRequest_UpdateClusterResource_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := AutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UpdateClusterRequest_UpdateClusterResource.Size", value)
-	}
-	return &UpdateClusterRequest_UpdateClusterResource{
-		NumWorkers:                 sizeNumWorkersWire,
-		Autoscale:                  sizeAutoscaleWire,
-		ClusterName:                v.ClusterName,
-		SparkVersion:               v.SparkVersion,
-		SparkConf:                  v.SparkConf,
-		AwsAttributes:              awsAttributesWireValue,
-		AzureAttributes:            azureAttributesWireValue,
-		GcpAttributes:              gcpAttributesWireValue,
-		NodeTypeId:                 v.NodeTypeId,
-		DriverNodeTypeId:           v.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityWireValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityWireValue,
-		SshPublicKeys:              v.SshPublicKeys,
-		CustomTags:                 v.CustomTags,
-		ClusterLogConf:             clusterLogConfWireValue,
-		SparkEnvVars:               v.SparkEnvVars,
-		AutoterminationMinutes:     v.AutoterminationMinutes,
-		EnableElasticDisk:          v.EnableElasticDisk,
-		InitScripts:                initScriptsWireValue,
-		DockerImage:                dockerImageWireValue,
-		InstancePoolId:             v.InstancePoolId,
-		SingleUserName:             v.SingleUserName,
-		PolicyId:                   v.PolicyId,
-		EnableLocalDiskEncryption:  v.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       v.DriverInstancePoolId,
-		WorkloadType:               workloadTypeWireValue,
-		DataSecurityMode:           v.DataSecurityMode,
-		RuntimeEngine:              v.RuntimeEngine,
-		Kind:                       v.Kind,
-		UseMlRuntime:               v.UseMlRuntime,
-		IsSingleNode:               v.IsSingleNode,
-		RemoteDiskThroughput:       v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: v.TotalInitialRemoteDiskSize,
-		DependencyMode:             v.DependencyMode,
-	}, nil
-}
-
 // A storage location back by UC Volumes..
 type VolumesStorageInfo struct {
 	// UC Volumes destination, e.g.
@@ -4365,54 +2243,10 @@ type VolumesStorageInfo struct {
 	Destination *string `json:"destination,omitempty"`
 }
 
-func VolumesStorageInfoFromSDK(v *sdk.VolumesStorageInfo) (*VolumesStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &VolumesStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func VolumesStorageInfoToSDK(w *VolumesStorageInfo) (*sdk.VolumesStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.VolumesStorageInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 // Cluster Attributes showing for clusters workload types..
 type WorkloadType struct {
 	// defined what type of clients can use the cluster. E.g. Notebooks, Jobs
 	Clients *WorkloadType_ClientsTypes `json:"clients,omitempty"`
-}
-
-func WorkloadTypeFromSDK(v *sdk.WorkloadType) (*WorkloadType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	clientsWireValue, err := WorkloadType_ClientsTypesFromSDK(v.Clients)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
-	}
-	return &WorkloadType{
-		Clients: clientsWireValue,
-	}, nil
-}
-
-func WorkloadTypeToSDK(w *WorkloadType) (*sdk.WorkloadType, error) {
-	if w == nil {
-		return nil, nil
-	}
-	clientsPublicValue, err := WorkloadType_ClientsTypesToSDK(w.Clients)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
-	}
-	return &sdk.WorkloadType{
-		Clients: clientsPublicValue,
-	}, nil
 }
 
 type WorkloadType_ClientsTypes struct {
@@ -4422,48 +2256,3540 @@ type WorkloadType_ClientsTypes struct {
 	Jobs *bool `json:"jobs,omitempty"`
 }
 
-func WorkloadType_ClientsTypesFromSDK(v *sdk.WorkloadType_ClientsTypes) (*WorkloadType_ClientsTypes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &WorkloadType_ClientsTypes{
-		Notebooks: v.Notebooks,
-		Jobs:      v.Jobs,
-	}, nil
-}
-
-func WorkloadType_ClientsTypesToSDK(w *WorkloadType_ClientsTypes) (*sdk.WorkloadType_ClientsTypes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.WorkloadType_ClientsTypes{
-		Notebooks: w.Notebooks,
-		Jobs:      w.Jobs,
-	}, nil
-}
-
 // A storage location in Workspace Filesystem (WSFS).
 type WorkspaceStorageInfo struct {
 	// wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
 	Destination *string `json:"destination,omitempty"`
 }
 
-func WorkspaceStorageInfoFromSDK(v *sdk.WorkspaceStorageInfo) (*WorkspaceStorageInfo, error) {
+// Adlsgen2InfoToSDK converts the mirror to the sdk-go type.
+func Adlsgen2InfoToSDK(w *Adlsgen2Info) (*sdk.Adlsgen2Info, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Adlsgen2Info{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// Adlsgen2InfoFromSDK converts the sdk-go type to the mirror.
+func Adlsgen2InfoFromSDK(v *sdk.Adlsgen2Info) (*Adlsgen2Info, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &WorkspaceStorageInfo{
-		Destination: v.Destination,
-	}, nil
+	out := &Adlsgen2Info{}
+	out.Destination = v.Destination
+	return out, nil
 }
 
+// AutoScaleToSDK converts the mirror to the sdk-go type.
+func AutoScaleToSDK(w *AutoScale) (*sdk.AutoScale, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoScale{}
+	out.MinWorkers = w.MinWorkers
+	out.MaxWorkers = w.MaxWorkers
+	return out, nil
+}
+
+// AutoScaleFromSDK converts the sdk-go type to the mirror.
+func AutoScaleFromSDK(v *sdk.AutoScale) (*AutoScale, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoScale{}
+	out.MinWorkers = v.MinWorkers
+	out.MaxWorkers = v.MaxWorkers
+	return out, nil
+}
+
+// AwsAttributesToSDK converts the mirror to the sdk-go type.
+func AwsAttributesToSDK(w *AwsAttributes) (*sdk.AwsAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsAttributes{}
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.SpotBidPricePercent = w.SpotBidPricePercent
+	out.EbsVolumeType = w.EbsVolumeType
+	out.EbsVolumeCount = w.EbsVolumeCount
+	out.EbsVolumeSize = w.EbsVolumeSize
+	out.EbsVolumeIops = w.EbsVolumeIops
+	out.EbsVolumeThroughput = w.EbsVolumeThroughput
+	return out, nil
+}
+
+// AwsAttributesFromSDK converts the sdk-go type to the mirror.
+func AwsAttributesFromSDK(v *sdk.AwsAttributes) (*AwsAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsAttributes{}
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.SpotBidPricePercent = v.SpotBidPricePercent
+	out.EbsVolumeType = v.EbsVolumeType
+	out.EbsVolumeCount = v.EbsVolumeCount
+	out.EbsVolumeSize = v.EbsVolumeSize
+	out.EbsVolumeIops = v.EbsVolumeIops
+	out.EbsVolumeThroughput = v.EbsVolumeThroughput
+	return out, nil
+}
+
+// AzureAttributesToSDK converts the mirror to the sdk-go type.
+func AzureAttributesToSDK(w *AzureAttributes) (*sdk.AzureAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureAttributes{}
+	conv1, err := LogAnalyticsInfoToSDK(w.LogAnalyticsInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
+	}
+	out.LogAnalyticsInfo = conv1
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.SpotBidMaxPrice = w.SpotBidMaxPrice
+	out.CapacityReservationGroup = w.CapacityReservationGroup
+	return out, nil
+}
+
+// AzureAttributesFromSDK converts the sdk-go type to the mirror.
+func AzureAttributesFromSDK(v *sdk.AzureAttributes) (*AzureAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureAttributes{}
+	conv2, err := LogAnalyticsInfoFromSDK(v.LogAnalyticsInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
+	}
+	out.LogAnalyticsInfo = conv2
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.SpotBidMaxPrice = v.SpotBidMaxPrice
+	out.CapacityReservationGroup = v.CapacityReservationGroup
+	return out, nil
+}
+
+// CancelPendingClusterEnforcementRequestToSDK converts the mirror to the sdk-go type.
+func CancelPendingClusterEnforcementRequestToSDK(w *CancelPendingClusterEnforcementRequest) (*sdk.CancelPendingClusterEnforcementRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelPendingClusterEnforcementRequest{}
+	out.ClusterId = w.ClusterId
+	out.AllowMissing = w.AllowMissing
+	return out, nil
+}
+
+// CancelPendingClusterEnforcementRequestFromSDK converts the sdk-go type to the mirror.
+func CancelPendingClusterEnforcementRequestFromSDK(v *sdk.CancelPendingClusterEnforcementRequest) (*CancelPendingClusterEnforcementRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelPendingClusterEnforcementRequest{}
+	out.ClusterId = v.ClusterId
+	out.AllowMissing = v.AllowMissing
+	return out, nil
+}
+
+// ChangeClusterOwnerRequestToSDK converts the mirror to the sdk-go type.
+func ChangeClusterOwnerRequestToSDK(w *ChangeClusterOwnerRequest) (*sdk.ChangeClusterOwnerRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ChangeClusterOwnerRequest{}
+	out.ClusterId = w.ClusterId
+	out.OwnerUsername = w.OwnerUsername
+	return out, nil
+}
+
+// ChangeClusterOwnerRequestFromSDK converts the sdk-go type to the mirror.
+func ChangeClusterOwnerRequestFromSDK(v *sdk.ChangeClusterOwnerRequest) (*ChangeClusterOwnerRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ChangeClusterOwnerRequest{}
+	out.ClusterId = v.ClusterId
+	out.OwnerUsername = v.OwnerUsername
+	return out, nil
+}
+
+// CloneClusterToSDK converts the mirror to the sdk-go type.
+func CloneClusterToSDK(w *CloneCluster) (*sdk.CloneCluster, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CloneCluster{}
+	out.SourceClusterId = w.SourceClusterId
+	return out, nil
+}
+
+// CloneClusterFromSDK converts the sdk-go type to the mirror.
+func CloneClusterFromSDK(v *sdk.CloneCluster) (*CloneCluster, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CloneCluster{}
+	out.SourceClusterId = v.SourceClusterId
+	return out, nil
+}
+
+// CloudProviderNodeInfoToSDK converts the mirror to the sdk-go type.
+func CloudProviderNodeInfoToSDK(w *CloudProviderNodeInfo) (*sdk.CloudProviderNodeInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CloudProviderNodeInfo{}
+	out.Status = w.Status
+	return out, nil
+}
+
+// CloudProviderNodeInfoFromSDK converts the sdk-go type to the mirror.
+func CloudProviderNodeInfoFromSDK(v *sdk.CloudProviderNodeInfo) (*CloudProviderNodeInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CloudProviderNodeInfo{}
+	out.Status = v.Status
+	return out, nil
+}
+
+// ClusterAttributesToSDK converts the mirror to the sdk-go type.
+func ClusterAttributesToSDK(w *ClusterAttributes) (*sdk.ClusterAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterAttributes{}
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv3, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv3
+	conv4, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv4
+	conv5, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv5
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv6, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv6
+	conv7, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv7
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv8, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv8
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv9, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.InitScripts", err)
+	}
+	out.InitScripts = conv9
+	conv10, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DockerImage", err)
+	}
+	out.DockerImage = conv10
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv11, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkloadType", err)
+	}
+	out.WorkloadType = conv11
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	return out, nil
+}
+
+// ClusterAttributesFromSDK converts the sdk-go type to the mirror.
+func ClusterAttributesFromSDK(v *sdk.ClusterAttributes) (*ClusterAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterAttributes{}
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv12, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv12
+	conv13, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv13
+	conv14, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv14
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv15, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv15
+	conv16, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv16
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv17, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv17
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv18, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.InitScripts", err)
+	}
+	out.InitScripts = conv18
+	conv19, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.DockerImage", err)
+	}
+	out.DockerImage = conv19
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv20, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterAttributes.WorkloadType", err)
+	}
+	out.WorkloadType = conv20
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	return out, nil
+}
+
+// ClusterComplianceToSDK converts the mirror to the sdk-go type.
+func ClusterComplianceToSDK(w *ClusterCompliance) (*sdk.ClusterCompliance, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterCompliance{}
+	out.ClusterId = w.ClusterId
+	out.IsCompliant = w.IsCompliant
+	out.Violations = w.Violations
+	conv21, err := PendingEnforcementToSDK(w.PendingEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterCompliance.PendingEnforcement", err)
+	}
+	out.PendingEnforcement = conv21
+	return out, nil
+}
+
+// ClusterComplianceFromSDK converts the sdk-go type to the mirror.
+func ClusterComplianceFromSDK(v *sdk.ClusterCompliance) (*ClusterCompliance, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterCompliance{}
+	out.ClusterId = v.ClusterId
+	out.IsCompliant = v.IsCompliant
+	out.Violations = v.Violations
+	conv22, err := PendingEnforcementFromSDK(v.PendingEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterCompliance.PendingEnforcement", err)
+	}
+	out.PendingEnforcement = conv22
+	return out, nil
+}
+
+// ClusterEventToSDK converts the mirror to the sdk-go type.
+func ClusterEventToSDK(w *ClusterEvent) (*sdk.ClusterEvent, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterEvent{}
+	out.ClusterId = w.ClusterId
+	out.Timestamp = w.Timestamp
+	out.Type = w.Type
+	conv23, err := EventDetailsToSDK(w.Details)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterEvent.Details", err)
+	}
+	out.Details = conv23
+	conv24, err := DataPlaneEventDetailsToSDK(w.DataPlaneEventDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterEvent.DataPlaneEventDetails", err)
+	}
+	out.DataPlaneEventDetails = conv24
+	return out, nil
+}
+
+// ClusterEventFromSDK converts the sdk-go type to the mirror.
+func ClusterEventFromSDK(v *sdk.ClusterEvent) (*ClusterEvent, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterEvent{}
+	out.ClusterId = v.ClusterId
+	out.Timestamp = v.Timestamp
+	out.Type = v.Type
+	conv25, err := EventDetailsFromSDK(v.Details)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterEvent.Details", err)
+	}
+	out.Details = conv25
+	conv26, err := DataPlaneEventDetailsFromSDK(v.DataPlaneEventDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterEvent.DataPlaneEventDetails", err)
+	}
+	out.DataPlaneEventDetails = conv26
+	return out, nil
+}
+
+// ClusterInfoToSDK converts the mirror to the sdk-go type.
+func ClusterInfoToSDK(w *ClusterInfo) (*sdk.ClusterInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterInfo{}
+	out.ClusterId = w.ClusterId
+	out.CreatorUserName = w.CreatorUserName
+	out.State = w.State
+	out.StateMessage = w.StateMessage
+	out.ClusterMemoryMb = w.ClusterMemoryMb
+	out.ClusterCores = w.ClusterCores
+	out.DefaultTags = w.DefaultTags
+	conv27, err := LogSyncStatusToSDK(w.ClusterLogStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogStatus", err)
+	}
+	out.ClusterLogStatus = conv27
+	conv28, err := TerminationReasonToSDK(w.TerminationReason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.TerminationReason", err)
+	}
+	out.TerminationReason = conv28
+	conv29, err := ClusterInfo_ComputeSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Spec", err)
+	}
+	out.Spec = conv29
+	conv30, err := SparkInfo_SparkNodeToSDK(w.Driver)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Driver", err)
+	}
+	out.Driver = conv30
+	conv31, err := convertSlice(w.Executors, SparkInfo_SparkNodeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Executors", err)
+	}
+	out.Executors = conv31
+	out.SparkContextId = w.SparkContextId
+	out.JdbcPort = w.JdbcPort
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv32, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv32
+	conv33, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv33
+	conv34, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv34
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv35, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv35
+	conv36, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv36
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv37, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv37
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv38, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.InitScripts", err)
+	}
+	out.InitScripts = conv38
+	conv39, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DockerImage", err)
+	}
+	out.DockerImage = conv39
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv40, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkloadType", err)
+	}
+	out.WorkloadType = conv40
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	out.StartTime = w.StartTime
+	out.TerminatedTime = w.TerminatedTime
+	out.LastStateLossTime = w.LastStateLossTime
+	out.LastRestartedTime = w.LastRestartedTime
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.ClusterInfo_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv41, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterInfo.Size", err)
+		}
+		out.Size = &sdk.ClusterInfo_Size_Autoscale{Autoscale: *conv41}
+	}
+	return out, nil
+}
+
+// ClusterInfoFromSDK converts the sdk-go type to the mirror.
+func ClusterInfoFromSDK(v *sdk.ClusterInfo) (*ClusterInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterInfo{}
+	out.ClusterId = v.ClusterId
+	out.CreatorUserName = v.CreatorUserName
+	out.State = v.State
+	out.StateMessage = v.StateMessage
+	out.ClusterMemoryMb = v.ClusterMemoryMb
+	out.ClusterCores = v.ClusterCores
+	out.DefaultTags = v.DefaultTags
+	conv42, err := LogSyncStatusFromSDK(v.ClusterLogStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogStatus", err)
+	}
+	out.ClusterLogStatus = conv42
+	conv43, err := TerminationReasonFromSDK(v.TerminationReason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.TerminationReason", err)
+	}
+	out.TerminationReason = conv43
+	conv44, err := ClusterInfo_ComputeSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Spec", err)
+	}
+	out.Spec = conv44
+	conv45, err := SparkInfo_SparkNodeFromSDK(v.Driver)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Driver", err)
+	}
+	out.Driver = conv45
+	conv46, err := convertSlice(v.Executors, SparkInfo_SparkNodeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.Executors", err)
+	}
+	out.Executors = conv46
+	out.SparkContextId = v.SparkContextId
+	out.JdbcPort = v.JdbcPort
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv47, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv47
+	conv48, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv48
+	conv49, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv49
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv50, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv50
+	conv51, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv51
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv52, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv52
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv53, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.InitScripts", err)
+	}
+	out.InitScripts = conv53
+	conv54, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.DockerImage", err)
+	}
+	out.DockerImage = conv54
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv55, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo.WorkloadType", err)
+	}
+	out.WorkloadType = conv55
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	out.StartTime = v.StartTime
+	out.TerminatedTime = v.TerminatedTime
+	out.LastStateLossTime = v.LastStateLossTime
+	out.LastRestartedTime = v.LastRestartedTime
+	switch value := v.Size.(type) {
+	case *sdk.ClusterInfo_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.ClusterInfo_Size_Autoscale:
+		if value != nil {
+			conv56, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterInfo.Size", err)
+			}
+			out.Autoscale = conv56
+		}
+	}
+	return out, nil
+}
+
+// ClusterInfo_ComputeSpecToSDK converts the mirror to the sdk-go type.
+func ClusterInfo_ComputeSpecToSDK(w *ClusterInfo_ComputeSpec) (*sdk.ClusterInfo_ComputeSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterInfo_ComputeSpec{}
+	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv57, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv57
+	conv58, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv58
+	conv59, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv59
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv60, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv60
+	conv61, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv61
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv62, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv62
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv63, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.InitScripts", err)
+	}
+	out.InitScripts = conv63
+	conv64, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DockerImage", err)
+	}
+	out.DockerImage = conv64
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv65, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkloadType", err)
+	}
+	out.WorkloadType = conv65
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterInfo_ComputeSpec.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.ClusterInfo_ComputeSpec_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv66, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.Size", err)
+		}
+		out.Size = &sdk.ClusterInfo_ComputeSpec_Size_Autoscale{Autoscale: *conv66}
+	}
+	return out, nil
+}
+
+// ClusterInfo_ComputeSpecFromSDK converts the sdk-go type to the mirror.
+func ClusterInfo_ComputeSpecFromSDK(v *sdk.ClusterInfo_ComputeSpec) (*ClusterInfo_ComputeSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterInfo_ComputeSpec{}
+	out.ApplyPolicyDefaultValues = v.ApplyPolicyDefaultValues
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv67, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv67
+	conv68, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv68
+	conv69, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv69
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv70, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv70
+	conv71, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv71
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv72, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv72
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv73, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.InitScripts", err)
+	}
+	out.InitScripts = conv73
+	conv74, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.DockerImage", err)
+	}
+	out.DockerImage = conv74
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv75, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.WorkloadType", err)
+	}
+	out.WorkloadType = conv75
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	switch value := v.Size.(type) {
+	case *sdk.ClusterInfo_ComputeSpec_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.ClusterInfo_ComputeSpec_Size_Autoscale:
+		if value != nil {
+			conv76, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterInfo_ComputeSpec.Size", err)
+			}
+			out.Autoscale = conv76
+		}
+	}
+	return out, nil
+}
+
+// ClusterLogConfToSDK converts the mirror to the sdk-go type.
+func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterLogConf{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if w.Volumes != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv77, err := DbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_Dbfs{Dbfs: *conv77}
+	case w.S3 != nil:
+		conv78, err := S3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_S3{S3: *conv78}
+	case w.Volumes != nil:
+		conv79, err := VolumesStorageInfoToSDK(w.Volumes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_Volumes{Volumes: *conv79}
+	}
+	return out, nil
+}
+
+// ClusterLogConfFromSDK converts the sdk-go type to the mirror.
+func ClusterLogConfFromSDK(v *sdk.ClusterLogConf) (*ClusterLogConf, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterLogConf{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.ClusterLogConf_StorageInfo_Dbfs:
+		if value != nil {
+			conv80, err := DbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.Dbfs = conv80
+		}
+	case *sdk.ClusterLogConf_StorageInfo_S3:
+		if value != nil {
+			conv81, err := S3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.S3 = conv81
+		}
+	case *sdk.ClusterLogConf_StorageInfo_Volumes:
+		if value != nil {
+			conv82, err := VolumesStorageInfoFromSDK(&value.Volumes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.Volumes = conv82
+		}
+	}
+	return out, nil
+}
+
+// ClusterSizeToSDK converts the mirror to the sdk-go type.
+func ClusterSizeToSDK(w *ClusterSize) (*sdk.ClusterSize, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterSize{}
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSize.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.ClusterSize_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv83, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterSize.Size", err)
+		}
+		out.Size = &sdk.ClusterSize_Size_Autoscale{Autoscale: *conv83}
+	}
+	return out, nil
+}
+
+// ClusterSizeFromSDK converts the sdk-go type to the mirror.
+func ClusterSizeFromSDK(v *sdk.ClusterSize) (*ClusterSize, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterSize{}
+	switch value := v.Size.(type) {
+	case *sdk.ClusterSize_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.ClusterSize_Size_Autoscale:
+		if value != nil {
+			conv84, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterSize.Size", err)
+			}
+			out.Autoscale = conv84
+		}
+	}
+	return out, nil
+}
+
+// CreateClusterRequestToSDK converts the mirror to the sdk-go type.
+func CreateClusterRequestToSDK(w *CreateClusterRequest) (*sdk.CreateClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateClusterRequest{}
+	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
+	conv85, err := CloneClusterToSDK(w.CloneFrom)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.CloneFrom", err)
+	}
+	out.CloneFrom = conv85
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateClusterRequest.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.CreateClusterRequest_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv86, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.Size", err)
+		}
+		out.Size = &sdk.CreateClusterRequest_Size_Autoscale{Autoscale: *conv86}
+	}
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv87, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv87
+	conv88, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv88
+	conv89, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv89
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv90, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv90
+	conv91, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv91
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv92, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv92
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv93, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.InitScripts", err)
+	}
+	out.InitScripts = conv93
+	conv94, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DockerImage", err)
+	}
+	out.DockerImage = conv94
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv95, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkloadType", err)
+	}
+	out.WorkloadType = conv95
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	return out, nil
+}
+
+// CreateClusterRequestFromSDK converts the sdk-go type to the mirror.
+func CreateClusterRequestFromSDK(v *sdk.CreateClusterRequest) (*CreateClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateClusterRequest{}
+	out.ApplyPolicyDefaultValues = v.ApplyPolicyDefaultValues
+	conv96, err := CloneClusterFromSDK(v.CloneFrom)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.CloneFrom", err)
+	}
+	out.CloneFrom = conv96
+	switch value := v.Size.(type) {
+	case *sdk.CreateClusterRequest_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.CreateClusterRequest_Size_Autoscale:
+		if value != nil {
+			conv97, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.Size", err)
+			}
+			out.Autoscale = conv97
+		}
+	}
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv98, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv98
+	conv99, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv99
+	conv100, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv100
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv101, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv101
+	conv102, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv102
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv103, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv103
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv104, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.InitScripts", err)
+	}
+	out.InitScripts = conv104
+	conv105, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.DockerImage", err)
+	}
+	out.DockerImage = conv105
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv106, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateClusterRequest.WorkloadType", err)
+	}
+	out.WorkloadType = conv106
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	return out, nil
+}
+
+// CreateClusterResponseToSDK converts the mirror to the sdk-go type.
+func CreateClusterResponseToSDK(w *CreateClusterResponse) (*sdk.CreateClusterResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateClusterResponse{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// CreateClusterResponseFromSDK converts the sdk-go type to the mirror.
+func CreateClusterResponseFromSDK(v *sdk.CreateClusterResponse) (*CreateClusterResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateClusterResponse{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// DataPlaneEventDetailsToSDK converts the mirror to the sdk-go type.
+func DataPlaneEventDetailsToSDK(w *DataPlaneEventDetails) (*sdk.DataPlaneEventDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataPlaneEventDetails{}
+	out.EventType = w.EventType
+	out.Timestamp = w.Timestamp
+	out.HostId = w.HostId
+	out.ExecutorFailures = w.ExecutorFailures
+	return out, nil
+}
+
+// DataPlaneEventDetailsFromSDK converts the sdk-go type to the mirror.
+func DataPlaneEventDetailsFromSDK(v *sdk.DataPlaneEventDetails) (*DataPlaneEventDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataPlaneEventDetails{}
+	out.EventType = v.EventType
+	out.Timestamp = v.Timestamp
+	out.HostId = v.HostId
+	out.ExecutorFailures = v.ExecutorFailures
+	return out, nil
+}
+
+// DbfsStorageInfoToSDK converts the mirror to the sdk-go type.
+func DbfsStorageInfoToSDK(w *DbfsStorageInfo) (*sdk.DbfsStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbfsStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// DbfsStorageInfoFromSDK converts the sdk-go type to the mirror.
+func DbfsStorageInfoFromSDK(v *sdk.DbfsStorageInfo) (*DbfsStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbfsStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// DeleteClusterRequestToSDK converts the mirror to the sdk-go type.
+func DeleteClusterRequestToSDK(w *DeleteClusterRequest) (*sdk.DeleteClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// DeleteClusterRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteClusterRequestFromSDK(v *sdk.DeleteClusterRequest) (*DeleteClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// DockerBasicAuthToSDK converts the mirror to the sdk-go type.
+func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerBasicAuth{}
+	out.Username = w.Username
+	out.Password = w.Password
+	return out, nil
+}
+
+// DockerBasicAuthFromSDK converts the sdk-go type to the mirror.
+func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerBasicAuth{}
+	out.Username = v.Username
+	out.Password = v.Password
+	return out, nil
+}
+
+// DockerImageToSDK converts the mirror to the sdk-go type.
+func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerImage{}
+	out.Url = w.Url
+	{
+		members := 0
+		if w.BasicAuth != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		}
+	}
+	switch {
+	case w.BasicAuth != nil:
+		conv107, err := DockerBasicAuthToSDK(w.BasicAuth)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+		}
+		out.CredsOneof = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *conv107}
+	}
+	return out, nil
+}
+
+// DockerImageFromSDK converts the sdk-go type to the mirror.
+func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerImage{}
+	out.Url = v.Url
+	switch value := v.CredsOneof.(type) {
+	case *sdk.DockerImage_CredsOneof_BasicAuth:
+		if value != nil {
+			conv108, err := DockerBasicAuthFromSDK(&value.BasicAuth)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+			}
+			out.BasicAuth = conv108
+		}
+	}
+	return out, nil
+}
+
+// EditClusterRequestToSDK converts the mirror to the sdk-go type.
+func EditClusterRequestToSDK(w *EditClusterRequest) (*sdk.EditClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditClusterRequest{}
+	out.ClusterId = w.ClusterId
+	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EditClusterRequest.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.EditClusterRequest_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv109, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "EditClusterRequest.Size", err)
+		}
+		out.Size = &sdk.EditClusterRequest_Size_Autoscale{Autoscale: *conv109}
+	}
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv110, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv110
+	conv111, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv111
+	conv112, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv112
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv113, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv113
+	conv114, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv114
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv115, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv115
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv116, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.InitScripts", err)
+	}
+	out.InitScripts = conv116
+	conv117, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DockerImage", err)
+	}
+	out.DockerImage = conv117
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv118, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkloadType", err)
+	}
+	out.WorkloadType = conv118
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	return out, nil
+}
+
+// EditClusterRequestFromSDK converts the sdk-go type to the mirror.
+func EditClusterRequestFromSDK(v *sdk.EditClusterRequest) (*EditClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditClusterRequest{}
+	out.ClusterId = v.ClusterId
+	out.ApplyPolicyDefaultValues = v.ApplyPolicyDefaultValues
+	switch value := v.Size.(type) {
+	case *sdk.EditClusterRequest_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.EditClusterRequest_Size_Autoscale:
+		if value != nil {
+			conv119, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "EditClusterRequest.Size", err)
+			}
+			out.Autoscale = conv119
+		}
+	}
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv120, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv120
+	conv121, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv121
+	conv122, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv122
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv123, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv123
+	conv124, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv124
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv125, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv125
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv126, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.InitScripts", err)
+	}
+	out.InitScripts = conv126
+	conv127, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.DockerImage", err)
+	}
+	out.DockerImage = conv127
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv128, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditClusterRequest.WorkloadType", err)
+	}
+	out.WorkloadType = conv128
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterRequestToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceForClusterRequestToSDK(w *EnforcePolicyComplianceForClusterRequest) (*sdk.EnforcePolicyComplianceForClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceForClusterRequest{}
+	out.ClusterId = w.ClusterId
+	out.ValidateOnly = w.ValidateOnly
+	out.EnforceMode = w.EnforceMode
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterRequestFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceForClusterRequestFromSDK(v *sdk.EnforcePolicyComplianceForClusterRequest) (*EnforcePolicyComplianceForClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceForClusterRequest{}
+	out.ClusterId = v.ClusterId
+	out.ValidateOnly = v.ValidateOnly
+	out.EnforceMode = v.EnforceMode
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponseToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceForClusterResponseToSDK(w *EnforcePolicyComplianceForClusterResponse) (*sdk.EnforcePolicyComplianceForClusterResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceForClusterResponse{}
+	out.HasChanges = w.HasChanges
+	conv129, err := convertSlice(w.Changes, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse.Changes", err)
+	}
+	out.Changes = conv129
+	out.EnforceResult = w.EnforceResult
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponseFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceForClusterResponseFromSDK(v *sdk.EnforcePolicyComplianceForClusterResponse) (*EnforcePolicyComplianceForClusterResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceForClusterResponse{}
+	out.HasChanges = v.HasChanges
+	conv130, err := convertSlice(v.Changes, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse.Changes", err)
+	}
+	out.Changes = conv130
+	out.EnforceResult = v.EnforceResult
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK(w *EnforcePolicyComplianceForClusterResponse_ClusterSettings) (*sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings{}
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv131, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv131
+	conv132, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv132
+	conv133, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv133
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv134, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv134
+	conv135, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv135
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv136, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv136
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv137, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.InitScripts", err)
+	}
+	out.InitScripts = conv137
+	conv138, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DockerImage", err)
+	}
+	out.DockerImage = conv138
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv139, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkloadType", err)
+	}
+	out.WorkloadType = conv139
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv140, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size", err)
+		}
+		out.Size = &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_Autoscale{Autoscale: *conv140}
+	}
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponse_ClusterSettingsFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceForClusterResponse_ClusterSettingsFromSDK(v *sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings) (*EnforcePolicyComplianceForClusterResponse_ClusterSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceForClusterResponse_ClusterSettings{}
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv141, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv141
+	conv142, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv142
+	conv143, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv143
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv144, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv144
+	conv145, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv145
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv146, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv146
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv147, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.InitScripts", err)
+	}
+	out.InitScripts = conv147
+	conv148, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.DockerImage", err)
+	}
+	out.DockerImage = conv148
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv149, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.WorkloadType", err)
+	}
+	out.WorkloadType = conv149
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	switch value := v.Size.(type) {
+	case *sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettings_Size_Autoscale:
+		if value != nil {
+			conv150, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForClusterResponse_ClusterSettings.Size", err)
+			}
+			out.Autoscale = conv150
+		}
+	}
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK(w *EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange) (*sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange{}
+	out.Field = w.Field
+	out.PreviousValue = w.PreviousValue
+	out.NewValue = w.NewValue
+	return out, nil
+}
+
+// EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeFromSDK(v *sdk.EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange) (*EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceForClusterResponse_ClusterSettingsChange{}
+	out.Field = v.Field
+	out.PreviousValue = v.PreviousValue
+	out.NewValue = v.NewValue
+	return out, nil
+}
+
+// EventDetailsToSDK converts the mirror to the sdk-go type.
+func EventDetailsToSDK(w *EventDetails) (*sdk.EventDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EventDetails{}
+	out.CurrentNumWorkers = w.CurrentNumWorkers
+	out.TargetNumWorkers = w.TargetNumWorkers
+	conv151, err := ClusterAttributesToSDK(w.PreviousAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousAttributes", err)
+	}
+	out.PreviousAttributes = conv151
+	conv152, err := ClusterAttributesToSDK(w.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.Attributes", err)
+	}
+	out.Attributes = conv152
+	conv153, err := ClusterSizeToSDK(w.PreviousClusterSize)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousClusterSize", err)
+	}
+	out.PreviousClusterSize = conv153
+	conv154, err := ClusterSizeToSDK(w.ClusterSize)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.ClusterSize", err)
+	}
+	out.ClusterSize = conv154
+	out.Cause = w.Cause
+	conv155, err := TerminationReasonToSDK(w.Reason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.Reason", err)
+	}
+	out.Reason = conv155
+	out.User = w.User
+	out.PreviousDiskSize = w.PreviousDiskSize
+	out.DiskSize = w.DiskSize
+	out.FreeSpace = w.FreeSpace
+	out.InstanceId = w.InstanceId
+	out.DidNotExpandReason = w.DidNotExpandReason
+	out.DriverStateMessage = w.DriverStateMessage
+	out.JobRunName = w.JobRunName
+	conv156, err := InitScriptEventDetailsToSDK(w.InitScripts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.InitScripts", err)
+	}
+	out.InitScripts = conv156
+	out.EnableTerminationForNodeBlocklisted = w.EnableTerminationForNodeBlocklisted
+	out.CurrentNumVcpus = w.CurrentNumVcpus
+	out.TargetNumVcpus = w.TargetNumVcpus
+	return out, nil
+}
+
+// EventDetailsFromSDK converts the sdk-go type to the mirror.
+func EventDetailsFromSDK(v *sdk.EventDetails) (*EventDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EventDetails{}
+	out.CurrentNumWorkers = v.CurrentNumWorkers
+	out.TargetNumWorkers = v.TargetNumWorkers
+	conv157, err := ClusterAttributesFromSDK(v.PreviousAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousAttributes", err)
+	}
+	out.PreviousAttributes = conv157
+	conv158, err := ClusterAttributesFromSDK(v.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.Attributes", err)
+	}
+	out.Attributes = conv158
+	conv159, err := ClusterSizeFromSDK(v.PreviousClusterSize)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.PreviousClusterSize", err)
+	}
+	out.PreviousClusterSize = conv159
+	conv160, err := ClusterSizeFromSDK(v.ClusterSize)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.ClusterSize", err)
+	}
+	out.ClusterSize = conv160
+	out.Cause = v.Cause
+	conv161, err := TerminationReasonFromSDK(v.Reason)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.Reason", err)
+	}
+	out.Reason = conv161
+	out.User = v.User
+	out.PreviousDiskSize = v.PreviousDiskSize
+	out.DiskSize = v.DiskSize
+	out.FreeSpace = v.FreeSpace
+	out.InstanceId = v.InstanceId
+	out.DidNotExpandReason = v.DidNotExpandReason
+	out.DriverStateMessage = v.DriverStateMessage
+	out.JobRunName = v.JobRunName
+	conv162, err := InitScriptEventDetailsFromSDK(v.InitScripts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EventDetails.InitScripts", err)
+	}
+	out.InitScripts = conv162
+	out.EnableTerminationForNodeBlocklisted = v.EnableTerminationForNodeBlocklisted
+	out.CurrentNumVcpus = v.CurrentNumVcpus
+	out.TargetNumVcpus = v.TargetNumVcpus
+	return out, nil
+}
+
+// GcpAttributesToSDK converts the mirror to the sdk-go type.
+func GcpAttributesToSDK(w *GcpAttributes) (*sdk.GcpAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpAttributes{}
+	out.UsePreemptibleExecutors = w.UsePreemptibleExecutors
+	out.GoogleServiceAccount = w.GoogleServiceAccount
+	out.BootDiskSize = w.BootDiskSize
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.LocalSsdCount = w.LocalSsdCount
+	out.FirstOnDemand = w.FirstOnDemand
+	out.ConfidentialComputeType = w.ConfidentialComputeType
+	return out, nil
+}
+
+// GcpAttributesFromSDK converts the sdk-go type to the mirror.
+func GcpAttributesFromSDK(v *sdk.GcpAttributes) (*GcpAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpAttributes{}
+	out.UsePreemptibleExecutors = v.UsePreemptibleExecutors
+	out.GoogleServiceAccount = v.GoogleServiceAccount
+	out.BootDiskSize = v.BootDiskSize
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.LocalSsdCount = v.LocalSsdCount
+	out.FirstOnDemand = v.FirstOnDemand
+	out.ConfidentialComputeType = v.ConfidentialComputeType
+	return out, nil
+}
+
+// GcsStorageInfoToSDK converts the mirror to the sdk-go type.
+func GcsStorageInfoToSDK(w *GcsStorageInfo) (*sdk.GcsStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcsStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// GcsStorageInfoFromSDK converts the sdk-go type to the mirror.
+func GcsStorageInfoFromSDK(v *sdk.GcsStorageInfo) (*GcsStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcsStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// GetClusterRequestToSDK converts the mirror to the sdk-go type.
+func GetClusterRequestToSDK(w *GetClusterRequest) (*sdk.GetClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// GetClusterRequestFromSDK converts the sdk-go type to the mirror.
+func GetClusterRequestFromSDK(v *sdk.GetClusterRequest) (*GetClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// GetEventsResponseToSDK converts the mirror to the sdk-go type.
+func GetEventsResponseToSDK(w *GetEventsResponse) (*sdk.GetEventsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetEventsResponse{}
+	conv163, err := convertSlice(w.Events, ClusterEventToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.Events", err)
+	}
+	out.Events = conv163
+	conv164, err := ListEventsRequestToSDK(w.NextPage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.NextPage", err)
+	}
+	out.NextPage = conv164
+	out.TotalCount = w.TotalCount
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// GetEventsResponseFromSDK converts the sdk-go type to the mirror.
+func GetEventsResponseFromSDK(v *sdk.GetEventsResponse) (*GetEventsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetEventsResponse{}
+	conv165, err := convertSlice(v.Events, ClusterEventFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.Events", err)
+	}
+	out.Events = conv165
+	conv166, err := ListEventsRequestFromSDK(v.NextPage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetEventsResponse.NextPage", err)
+	}
+	out.NextPage = conv166
+	out.TotalCount = v.TotalCount
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// GetPolicyComplianceForClusterRequestToSDK converts the mirror to the sdk-go type.
+func GetPolicyComplianceForClusterRequestToSDK(w *GetPolicyComplianceForClusterRequest) (*sdk.GetPolicyComplianceForClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyComplianceForClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// GetPolicyComplianceForClusterRequestFromSDK converts the sdk-go type to the mirror.
+func GetPolicyComplianceForClusterRequestFromSDK(v *sdk.GetPolicyComplianceForClusterRequest) (*GetPolicyComplianceForClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyComplianceForClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// GetPolicyComplianceForClusterResponseToSDK converts the mirror to the sdk-go type.
+func GetPolicyComplianceForClusterResponseToSDK(w *GetPolicyComplianceForClusterResponse) (*sdk.GetPolicyComplianceForClusterResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyComplianceForClusterResponse{}
+	out.IsCompliant = w.IsCompliant
+	out.Violations = w.Violations
+	conv167, err := PendingEnforcementToSDK(w.PendingEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPolicyComplianceForClusterResponse.PendingEnforcement", err)
+	}
+	out.PendingEnforcement = conv167
+	return out, nil
+}
+
+// GetPolicyComplianceForClusterResponseFromSDK converts the sdk-go type to the mirror.
+func GetPolicyComplianceForClusterResponseFromSDK(v *sdk.GetPolicyComplianceForClusterResponse) (*GetPolicyComplianceForClusterResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyComplianceForClusterResponse{}
+	out.IsCompliant = v.IsCompliant
+	out.Violations = v.Violations
+	conv168, err := PendingEnforcementFromSDK(v.PendingEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPolicyComplianceForClusterResponse.PendingEnforcement", err)
+	}
+	out.PendingEnforcement = conv168
+	return out, nil
+}
+
+// GetSparkVersionsResponseToSDK converts the mirror to the sdk-go type.
+func GetSparkVersionsResponseToSDK(w *GetSparkVersionsResponse) (*sdk.GetSparkVersionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetSparkVersionsResponse{}
+	conv169, err := convertSlice(w.Versions, SparkVersionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetSparkVersionsResponse.Versions", err)
+	}
+	out.Versions = conv169
+	return out, nil
+}
+
+// GetSparkVersionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetSparkVersionsResponseFromSDK(v *sdk.GetSparkVersionsResponse) (*GetSparkVersionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetSparkVersionsResponse{}
+	conv170, err := convertSlice(v.Versions, SparkVersionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetSparkVersionsResponse.Versions", err)
+	}
+	out.Versions = conv170
+	return out, nil
+}
+
+// InitScriptEventDetailsToSDK converts the mirror to the sdk-go type.
+func InitScriptEventDetailsToSDK(w *InitScriptEventDetails) (*sdk.InitScriptEventDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitScriptEventDetails{}
+	out.ReportedForNode = w.ReportedForNode
+	conv171, err := convertSlice(w.Global, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Global", err)
+	}
+	out.Global = conv171
+	conv172, err := convertSlice(w.Cluster, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Cluster", err)
+	}
+	out.Cluster = conv172
+	return out, nil
+}
+
+// InitScriptEventDetailsFromSDK converts the sdk-go type to the mirror.
+func InitScriptEventDetailsFromSDK(v *sdk.InitScriptEventDetails) (*InitScriptEventDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitScriptEventDetails{}
+	out.ReportedForNode = v.ReportedForNode
+	conv173, err := convertSlice(v.Global, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Global", err)
+	}
+	out.Global = conv173
+	conv174, err := convertSlice(v.Cluster, InitScriptEventDetails_InitScriptInfoAndExecutionDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails.Cluster", err)
+	}
+	out.Cluster = conv174
+	return out, nil
+}
+
+// InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK converts the mirror to the sdk-go type.
+func InitScriptEventDetails_InitScriptInfoAndExecutionDetailsToSDK(w *InitScriptEventDetails_InitScriptInfoAndExecutionDetails) (*sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if w.File != nil {
+			members++
+		}
+		if w.Gcs != nil {
+			members++
+		}
+		if w.Abfss != nil {
+			members++
+		}
+		if w.Workspace != nil {
+			members++
+		}
+		if w.Volumes != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv175, err := DbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Dbfs{Dbfs: *conv175}
+	case w.S3 != nil:
+		conv176, err := S3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_S3{S3: *conv176}
+	case w.File != nil:
+		conv177, err := LocalFileInfoToSDK(w.File)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_File{File: *conv177}
+	case w.Gcs != nil:
+		conv178, err := GcsStorageInfoToSDK(w.Gcs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Gcs{Gcs: *conv178}
+	case w.Abfss != nil:
+		conv179, err := Adlsgen2InfoToSDK(w.Abfss)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Abfss{Abfss: *conv179}
+	case w.Workspace != nil:
+		conv180, err := WorkspaceStorageInfoToSDK(w.Workspace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Workspace{Workspace: *conv180}
+	case w.Volumes != nil:
+		conv181, err := VolumesStorageInfoToSDK(w.Volumes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Volumes{Volumes: *conv181}
+	}
+	out.Status = w.Status
+	out.ExecutionDurationSeconds = w.ExecutionDurationSeconds
+	out.ErrorMessage = w.ErrorMessage
+	out.Stderr = w.Stderr
+	return out, nil
+}
+
+// InitScriptEventDetails_InitScriptInfoAndExecutionDetailsFromSDK converts the sdk-go type to the mirror.
+func InitScriptEventDetails_InitScriptInfoAndExecutionDetailsFromSDK(v *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails) (*InitScriptEventDetails_InitScriptInfoAndExecutionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitScriptEventDetails_InitScriptInfoAndExecutionDetails{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Dbfs:
+		if value != nil {
+			conv182, err := DbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.Dbfs = conv182
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_S3:
+		if value != nil {
+			conv183, err := S3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.S3 = conv183
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_File:
+		if value != nil {
+			conv184, err := LocalFileInfoFromSDK(&value.File)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.File = conv184
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Gcs:
+		if value != nil {
+			conv185, err := GcsStorageInfoFromSDK(&value.Gcs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.Gcs = conv185
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Abfss:
+		if value != nil {
+			conv186, err := Adlsgen2InfoFromSDK(&value.Abfss)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.Abfss = conv186
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Workspace:
+		if value != nil {
+			conv187, err := WorkspaceStorageInfoFromSDK(&value.Workspace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.Workspace = conv187
+		}
+	case *sdk.InitScriptEventDetails_InitScriptInfoAndExecutionDetails_StorageInfo_Volumes:
+		if value != nil {
+			conv188, err := VolumesStorageInfoFromSDK(&value.Volumes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptEventDetails_InitScriptInfoAndExecutionDetails.StorageInfo", err)
+			}
+			out.Volumes = conv188
+		}
+	}
+	out.Status = v.Status
+	out.ExecutionDurationSeconds = v.ExecutionDurationSeconds
+	out.ErrorMessage = v.ErrorMessage
+	out.Stderr = v.Stderr
+	return out, nil
+}
+
+// InitScriptInfoToSDK converts the mirror to the sdk-go type.
+func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitScriptInfo{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if w.File != nil {
+			members++
+		}
+		if w.Gcs != nil {
+			members++
+		}
+		if w.Abfss != nil {
+			members++
+		}
+		if w.Workspace != nil {
+			members++
+		}
+		if w.Volumes != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv189, err := DbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Dbfs{Dbfs: *conv189}
+	case w.S3 != nil:
+		conv190, err := S3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_S3{S3: *conv190}
+	case w.File != nil:
+		conv191, err := LocalFileInfoToSDK(w.File)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_File{File: *conv191}
+	case w.Gcs != nil:
+		conv192, err := GcsStorageInfoToSDK(w.Gcs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Gcs{Gcs: *conv192}
+	case w.Abfss != nil:
+		conv193, err := Adlsgen2InfoToSDK(w.Abfss)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Abfss{Abfss: *conv193}
+	case w.Workspace != nil:
+		conv194, err := WorkspaceStorageInfoToSDK(w.Workspace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Workspace{Workspace: *conv194}
+	case w.Volumes != nil:
+		conv195, err := VolumesStorageInfoToSDK(w.Volumes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Volumes{Volumes: *conv195}
+	}
+	return out, nil
+}
+
+// InitScriptInfoFromSDK converts the sdk-go type to the mirror.
+func InitScriptInfoFromSDK(v *sdk.InitScriptInfo) (*InitScriptInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitScriptInfo{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.InitScriptInfo_StorageInfo_Dbfs:
+		if value != nil {
+			conv196, err := DbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Dbfs = conv196
+		}
+	case *sdk.InitScriptInfo_StorageInfo_S3:
+		if value != nil {
+			conv197, err := S3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.S3 = conv197
+		}
+	case *sdk.InitScriptInfo_StorageInfo_File:
+		if value != nil {
+			conv198, err := LocalFileInfoFromSDK(&value.File)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.File = conv198
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Gcs:
+		if value != nil {
+			conv199, err := GcsStorageInfoFromSDK(&value.Gcs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Gcs = conv199
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Abfss:
+		if value != nil {
+			conv200, err := Adlsgen2InfoFromSDK(&value.Abfss)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Abfss = conv200
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Workspace:
+		if value != nil {
+			conv201, err := WorkspaceStorageInfoFromSDK(&value.Workspace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Workspace = conv201
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Volumes:
+		if value != nil {
+			conv202, err := VolumesStorageInfoFromSDK(&value.Volumes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Volumes = conv202
+		}
+	}
+	return out, nil
+}
+
+// ListAvailableZonesResponseToSDK converts the mirror to the sdk-go type.
+func ListAvailableZonesResponseToSDK(w *ListAvailableZonesResponse) (*sdk.ListAvailableZonesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAvailableZonesResponse{}
+	out.Zones = w.Zones
+	out.DefaultZone = w.DefaultZone
+	return out, nil
+}
+
+// ListAvailableZonesResponseFromSDK converts the sdk-go type to the mirror.
+func ListAvailableZonesResponseFromSDK(v *sdk.ListAvailableZonesResponse) (*ListAvailableZonesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAvailableZonesResponse{}
+	out.Zones = v.Zones
+	out.DefaultZone = v.DefaultZone
+	return out, nil
+}
+
+// ListClusterComplianceForPolicyRequestToSDK converts the mirror to the sdk-go type.
+func ListClusterComplianceForPolicyRequestToSDK(w *ListClusterComplianceForPolicyRequest) (*sdk.ListClusterComplianceForPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListClusterComplianceForPolicyRequest{}
+	out.PolicyId = w.PolicyId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListClusterComplianceForPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func ListClusterComplianceForPolicyRequestFromSDK(v *sdk.ListClusterComplianceForPolicyRequest) (*ListClusterComplianceForPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListClusterComplianceForPolicyRequest{}
+	out.PolicyId = v.PolicyId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListClusterComplianceForPolicyResponseToSDK converts the mirror to the sdk-go type.
+func ListClusterComplianceForPolicyResponseToSDK(w *ListClusterComplianceForPolicyResponse) (*sdk.ListClusterComplianceForPolicyResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListClusterComplianceForPolicyResponse{}
+	conv203, err := convertSlice(w.Clusters, ClusterComplianceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListClusterComplianceForPolicyResponse.Clusters", err)
+	}
+	out.Clusters = conv203
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListClusterComplianceForPolicyResponseFromSDK converts the sdk-go type to the mirror.
+func ListClusterComplianceForPolicyResponseFromSDK(v *sdk.ListClusterComplianceForPolicyResponse) (*ListClusterComplianceForPolicyResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListClusterComplianceForPolicyResponse{}
+	conv204, err := convertSlice(v.Clusters, ClusterComplianceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListClusterComplianceForPolicyResponse.Clusters", err)
+	}
+	out.Clusters = conv204
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ListClustersRequestToSDK converts the mirror to the sdk-go type.
+func ListClustersRequestToSDK(w *ListClustersRequest) (*sdk.ListClustersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListClustersRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListClustersRequestFromSDK converts the sdk-go type to the mirror.
+func ListClustersRequestFromSDK(v *sdk.ListClustersRequest) (*ListClustersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListClustersRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListClustersResponseToSDK converts the mirror to the sdk-go type.
+func ListClustersResponseToSDK(w *ListClustersResponse) (*sdk.ListClustersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListClustersResponse{}
+	conv205, err := convertSlice(w.Clusters, ClusterInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListClustersResponse.Clusters", err)
+	}
+	out.Clusters = conv205
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListClustersResponseFromSDK converts the sdk-go type to the mirror.
+func ListClustersResponseFromSDK(v *sdk.ListClustersResponse) (*ListClustersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListClustersResponse{}
+	conv206, err := convertSlice(v.Clusters, ClusterInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListClustersResponse.Clusters", err)
+	}
+	out.Clusters = conv206
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ListEventsRequestToSDK converts the mirror to the sdk-go type.
+func ListEventsRequestToSDK(w *ListEventsRequest) (*sdk.ListEventsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEventsRequest{}
+	out.ClusterId = w.ClusterId
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	out.Order = w.Order
+	out.EventTypes = w.EventTypes
+	out.Offset = w.Offset
+	out.Limit = w.Limit
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListEventsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEventsRequestFromSDK(v *sdk.ListEventsRequest) (*ListEventsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEventsRequest{}
+	out.ClusterId = v.ClusterId
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	out.Order = v.Order
+	out.EventTypes = v.EventTypes
+	out.Offset = v.Offset
+	out.Limit = v.Limit
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListNodeTypesResponseToSDK converts the mirror to the sdk-go type.
+func ListNodeTypesResponseToSDK(w *ListNodeTypesResponse) (*sdk.ListNodeTypesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNodeTypesResponse{}
+	conv207, err := convertSlice(w.NodeTypes, NodeTypeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNodeTypesResponse.NodeTypes", err)
+	}
+	out.NodeTypes = conv207
+	return out, nil
+}
+
+// ListNodeTypesResponseFromSDK converts the sdk-go type to the mirror.
+func ListNodeTypesResponseFromSDK(v *sdk.ListNodeTypesResponse) (*ListNodeTypesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNodeTypesResponse{}
+	conv208, err := convertSlice(v.NodeTypes, NodeTypeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNodeTypesResponse.NodeTypes", err)
+	}
+	out.NodeTypes = conv208
+	return out, nil
+}
+
+// LocalFileInfoToSDK converts the mirror to the sdk-go type.
+func LocalFileInfoToSDK(w *LocalFileInfo) (*sdk.LocalFileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LocalFileInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// LocalFileInfoFromSDK converts the sdk-go type to the mirror.
+func LocalFileInfoFromSDK(v *sdk.LocalFileInfo) (*LocalFileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LocalFileInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// LogAnalyticsInfoToSDK converts the mirror to the sdk-go type.
+func LogAnalyticsInfoToSDK(w *LogAnalyticsInfo) (*sdk.LogAnalyticsInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogAnalyticsInfo{}
+	out.LogAnalyticsWorkspaceId = w.LogAnalyticsWorkspaceId
+	out.LogAnalyticsPrimaryKey = w.LogAnalyticsPrimaryKey
+	return out, nil
+}
+
+// LogAnalyticsInfoFromSDK converts the sdk-go type to the mirror.
+func LogAnalyticsInfoFromSDK(v *sdk.LogAnalyticsInfo) (*LogAnalyticsInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogAnalyticsInfo{}
+	out.LogAnalyticsWorkspaceId = v.LogAnalyticsWorkspaceId
+	out.LogAnalyticsPrimaryKey = v.LogAnalyticsPrimaryKey
+	return out, nil
+}
+
+// LogSyncStatusToSDK converts the mirror to the sdk-go type.
+func LogSyncStatusToSDK(w *LogSyncStatus) (*sdk.LogSyncStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogSyncStatus{}
+	out.LastAttempted = w.LastAttempted
+	out.LastException = w.LastException
+	return out, nil
+}
+
+// LogSyncStatusFromSDK converts the sdk-go type to the mirror.
+func LogSyncStatusFromSDK(v *sdk.LogSyncStatus) (*LogSyncStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogSyncStatus{}
+	out.LastAttempted = v.LastAttempted
+	out.LastException = v.LastException
+	return out, nil
+}
+
+// NodeInstanceTypeToSDK converts the mirror to the sdk-go type.
+func NodeInstanceTypeToSDK(w *NodeInstanceType) (*sdk.NodeInstanceType, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NodeInstanceType{}
+	out.InstanceTypeId = w.InstanceTypeId
+	out.LocalDisks = w.LocalDisks
+	out.LocalDiskSizeGb = w.LocalDiskSizeGb
+	out.LocalNvmeDiskSizeGb = w.LocalNvmeDiskSizeGb
+	out.LocalNvmeDisks = w.LocalNvmeDisks
+	return out, nil
+}
+
+// NodeInstanceTypeFromSDK converts the sdk-go type to the mirror.
+func NodeInstanceTypeFromSDK(v *sdk.NodeInstanceType) (*NodeInstanceType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NodeInstanceType{}
+	out.InstanceTypeId = v.InstanceTypeId
+	out.LocalDisks = v.LocalDisks
+	out.LocalDiskSizeGb = v.LocalDiskSizeGb
+	out.LocalNvmeDiskSizeGb = v.LocalNvmeDiskSizeGb
+	out.LocalNvmeDisks = v.LocalNvmeDisks
+	return out, nil
+}
+
+// NodeTypeToSDK converts the mirror to the sdk-go type.
+func NodeTypeToSDK(w *NodeType) (*sdk.NodeType, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NodeType{}
+	out.NodeTypeId = w.NodeTypeId
+	out.MemoryMb = w.MemoryMb
+	out.NumCores = w.NumCores
+	out.Description = w.Description
+	out.InstanceTypeId = w.InstanceTypeId
+	out.IsDeprecated = w.IsDeprecated
+	out.Category = w.Category
+	out.SupportEbsVolumes = w.SupportEbsVolumes
+	out.SupportClusterTags = w.SupportClusterTags
+	out.NumGpus = w.NumGpus
+	conv209, err := NodeInstanceTypeToSDK(w.NodeInstanceType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInstanceType", err)
+	}
+	out.NodeInstanceType = conv209
+	out.IsHidden = w.IsHidden
+	out.SupportPortForwarding = w.SupportPortForwarding
+	out.DisplayOrder = w.DisplayOrder
+	out.IsIoCacheEnabled = w.IsIoCacheEnabled
+	conv210, err := CloudProviderNodeInfoToSDK(w.NodeInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInfo", err)
+	}
+	out.NodeInfo = conv210
+	out.PhotonWorkerCapable = w.PhotonWorkerCapable
+	out.PhotonDriverCapable = w.PhotonDriverCapable
+	out.IsEncryptedInTransit = w.IsEncryptedInTransit
+	out.IsGraviton = w.IsGraviton
+	return out, nil
+}
+
+// NodeTypeFromSDK converts the sdk-go type to the mirror.
+func NodeTypeFromSDK(v *sdk.NodeType) (*NodeType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NodeType{}
+	out.NodeTypeId = v.NodeTypeId
+	out.MemoryMb = v.MemoryMb
+	out.NumCores = v.NumCores
+	out.Description = v.Description
+	out.InstanceTypeId = v.InstanceTypeId
+	out.IsDeprecated = v.IsDeprecated
+	out.Category = v.Category
+	out.SupportEbsVolumes = v.SupportEbsVolumes
+	out.SupportClusterTags = v.SupportClusterTags
+	out.NumGpus = v.NumGpus
+	conv211, err := NodeInstanceTypeFromSDK(v.NodeInstanceType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInstanceType", err)
+	}
+	out.NodeInstanceType = conv211
+	out.IsHidden = v.IsHidden
+	out.SupportPortForwarding = v.SupportPortForwarding
+	out.DisplayOrder = v.DisplayOrder
+	out.IsIoCacheEnabled = v.IsIoCacheEnabled
+	conv212, err := CloudProviderNodeInfoFromSDK(v.NodeInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NodeType.NodeInfo", err)
+	}
+	out.NodeInfo = conv212
+	out.PhotonWorkerCapable = v.PhotonWorkerCapable
+	out.PhotonDriverCapable = v.PhotonDriverCapable
+	out.IsEncryptedInTransit = v.IsEncryptedInTransit
+	out.IsGraviton = v.IsGraviton
+	return out, nil
+}
+
+// NodeTypeFlexibilityToSDK converts the mirror to the sdk-go type.
+func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = w.AlternateNodeTypeIds
+	out.AwsContextId = w.AwsContextId
+	return out, nil
+}
+
+// NodeTypeFlexibilityFromSDK converts the sdk-go type to the mirror.
+func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = v.AlternateNodeTypeIds
+	out.AwsContextId = v.AwsContextId
+	return out, nil
+}
+
+// PendingEnforcementToSDK converts the mirror to the sdk-go type.
+func PendingEnforcementToSDK(w *PendingEnforcement) (*sdk.PendingEnforcement, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PendingEnforcement{}
+	conv213, err := EnforcePolicyComplianceForClusterResponse_ClusterSettingsToSDK(w.TargetSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetSpec", err)
+	}
+	out.TargetSpec = conv213
+	out.InitiateTime = w.InitiateTime
+	out.EnforcementStatus = w.EnforcementStatus
+	conv214, err := convertSlice(w.TargetChanges, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetChanges", err)
+	}
+	out.TargetChanges = conv214
+	out.InitiatorUser = w.InitiatorUser
+	return out, nil
+}
+
+// PendingEnforcementFromSDK converts the sdk-go type to the mirror.
+func PendingEnforcementFromSDK(v *sdk.PendingEnforcement) (*PendingEnforcement, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PendingEnforcement{}
+	conv215, err := EnforcePolicyComplianceForClusterResponse_ClusterSettingsFromSDK(v.TargetSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetSpec", err)
+	}
+	out.TargetSpec = conv215
+	out.InitiateTime = v.InitiateTime
+	out.EnforcementStatus = v.EnforcementStatus
+	conv216, err := convertSlice(v.TargetChanges, EnforcePolicyComplianceForClusterResponse_ClusterSettingsChangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PendingEnforcement.TargetChanges", err)
+	}
+	out.TargetChanges = conv216
+	out.InitiatorUser = v.InitiatorUser
+	return out, nil
+}
+
+// PermanentDeleteClusterRequestToSDK converts the mirror to the sdk-go type.
+func PermanentDeleteClusterRequestToSDK(w *PermanentDeleteClusterRequest) (*sdk.PermanentDeleteClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermanentDeleteClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// PermanentDeleteClusterRequestFromSDK converts the sdk-go type to the mirror.
+func PermanentDeleteClusterRequestFromSDK(v *sdk.PermanentDeleteClusterRequest) (*PermanentDeleteClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermanentDeleteClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// PinClusterRequestToSDK converts the mirror to the sdk-go type.
+func PinClusterRequestToSDK(w *PinClusterRequest) (*sdk.PinClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PinClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// PinClusterRequestFromSDK converts the sdk-go type to the mirror.
+func PinClusterRequestFromSDK(v *sdk.PinClusterRequest) (*PinClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PinClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// ResizeClusterRequestToSDK converts the mirror to the sdk-go type.
+func ResizeClusterRequestToSDK(w *ResizeClusterRequest) (*sdk.ResizeClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResizeClusterRequest{}
+	out.ClusterId = w.ClusterId
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ResizeClusterRequest.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.ResizeClusterRequest_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv217, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResizeClusterRequest.Size", err)
+		}
+		out.Size = &sdk.ResizeClusterRequest_Size_Autoscale{Autoscale: *conv217}
+	}
+	return out, nil
+}
+
+// ResizeClusterRequestFromSDK converts the sdk-go type to the mirror.
+func ResizeClusterRequestFromSDK(v *sdk.ResizeClusterRequest) (*ResizeClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResizeClusterRequest{}
+	out.ClusterId = v.ClusterId
+	switch value := v.Size.(type) {
+	case *sdk.ResizeClusterRequest_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.ResizeClusterRequest_Size_Autoscale:
+		if value != nil {
+			conv218, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResizeClusterRequest.Size", err)
+			}
+			out.Autoscale = conv218
+		}
+	}
+	return out, nil
+}
+
+// RestartClusterRequestToSDK converts the mirror to the sdk-go type.
+func RestartClusterRequestToSDK(w *RestartClusterRequest) (*sdk.RestartClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestartClusterRequest{}
+	out.ClusterId = w.ClusterId
+	out.RestartUser = w.RestartUser
+	return out, nil
+}
+
+// RestartClusterRequestFromSDK converts the sdk-go type to the mirror.
+func RestartClusterRequestFromSDK(v *sdk.RestartClusterRequest) (*RestartClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestartClusterRequest{}
+	out.ClusterId = v.ClusterId
+	out.RestartUser = v.RestartUser
+	return out, nil
+}
+
+// S3StorageInfoToSDK converts the mirror to the sdk-go type.
+func S3StorageInfoToSDK(w *S3StorageInfo) (*sdk.S3StorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.S3StorageInfo{}
+	out.Destination = w.Destination
+	out.Region = w.Region
+	out.Endpoint = w.Endpoint
+	out.EnableEncryption = w.EnableEncryption
+	out.EncryptionType = w.EncryptionType
+	out.KmsKey = w.KmsKey
+	out.CannedAcl = w.CannedAcl
+	return out, nil
+}
+
+// S3StorageInfoFromSDK converts the sdk-go type to the mirror.
+func S3StorageInfoFromSDK(v *sdk.S3StorageInfo) (*S3StorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &S3StorageInfo{}
+	out.Destination = v.Destination
+	out.Region = v.Region
+	out.Endpoint = v.Endpoint
+	out.EnableEncryption = v.EnableEncryption
+	out.EncryptionType = v.EncryptionType
+	out.KmsKey = v.KmsKey
+	out.CannedAcl = v.CannedAcl
+	return out, nil
+}
+
+// SparkInfo_SparkNodeToSDK converts the mirror to the sdk-go type.
+func SparkInfo_SparkNodeToSDK(w *SparkInfo_SparkNode) (*sdk.SparkInfo_SparkNode, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkInfo_SparkNode{}
+	out.PrivateIp = w.PrivateIp
+	out.PublicDns = w.PublicDns
+	out.NodeId = w.NodeId
+	out.InstanceId = w.InstanceId
+	out.StartTimestamp = w.StartTimestamp
+	conv219, err := SparkInfo_SparkNode_SparkNodeAwsAttributesToSDK(w.NodeAwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SparkInfo_SparkNode.NodeAwsAttributes", err)
+	}
+	out.NodeAwsAttributes = conv219
+	out.HostPrivateIp = w.HostPrivateIp
+	return out, nil
+}
+
+// SparkInfo_SparkNodeFromSDK converts the sdk-go type to the mirror.
+func SparkInfo_SparkNodeFromSDK(v *sdk.SparkInfo_SparkNode) (*SparkInfo_SparkNode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkInfo_SparkNode{}
+	out.PrivateIp = v.PrivateIp
+	out.PublicDns = v.PublicDns
+	out.NodeId = v.NodeId
+	out.InstanceId = v.InstanceId
+	out.StartTimestamp = v.StartTimestamp
+	conv220, err := SparkInfo_SparkNode_SparkNodeAwsAttributesFromSDK(v.NodeAwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SparkInfo_SparkNode.NodeAwsAttributes", err)
+	}
+	out.NodeAwsAttributes = conv220
+	out.HostPrivateIp = v.HostPrivateIp
+	return out, nil
+}
+
+// SparkInfo_SparkNode_SparkNodeAwsAttributesToSDK converts the mirror to the sdk-go type.
+func SparkInfo_SparkNode_SparkNodeAwsAttributesToSDK(w *SparkInfo_SparkNode_SparkNodeAwsAttributes) (*sdk.SparkInfo_SparkNode_SparkNodeAwsAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkInfo_SparkNode_SparkNodeAwsAttributes{}
+	out.IsSpot = w.IsSpot
+	return out, nil
+}
+
+// SparkInfo_SparkNode_SparkNodeAwsAttributesFromSDK converts the sdk-go type to the mirror.
+func SparkInfo_SparkNode_SparkNodeAwsAttributesFromSDK(v *sdk.SparkInfo_SparkNode_SparkNodeAwsAttributes) (*SparkInfo_SparkNode_SparkNodeAwsAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkInfo_SparkNode_SparkNodeAwsAttributes{}
+	out.IsSpot = v.IsSpot
+	return out, nil
+}
+
+// SparkVersionToSDK converts the mirror to the sdk-go type.
+func SparkVersionToSDK(w *SparkVersion) (*sdk.SparkVersion, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkVersion{}
+	out.Key = w.Key
+	out.Name = w.Name
+	return out, nil
+}
+
+// SparkVersionFromSDK converts the sdk-go type to the mirror.
+func SparkVersionFromSDK(v *sdk.SparkVersion) (*SparkVersion, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkVersion{}
+	out.Key = v.Key
+	out.Name = v.Name
+	return out, nil
+}
+
+// StartClusterRequestToSDK converts the mirror to the sdk-go type.
+func StartClusterRequestToSDK(w *StartClusterRequest) (*sdk.StartClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// StartClusterRequestFromSDK converts the sdk-go type to the mirror.
+func StartClusterRequestFromSDK(v *sdk.StartClusterRequest) (*StartClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// TerminationReasonToSDK converts the mirror to the sdk-go type.
+func TerminationReasonToSDK(w *TerminationReason) (*sdk.TerminationReason, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TerminationReason{}
+	out.Code = w.Code
+	out.Type = w.Type
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// TerminationReasonFromSDK converts the sdk-go type to the mirror.
+func TerminationReasonFromSDK(v *sdk.TerminationReason) (*TerminationReason, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TerminationReason{}
+	out.Code = v.Code
+	out.Type = v.Type
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// UnpinClusterRequestToSDK converts the mirror to the sdk-go type.
+func UnpinClusterRequestToSDK(w *UnpinClusterRequest) (*sdk.UnpinClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UnpinClusterRequest{}
+	out.ClusterId = w.ClusterId
+	return out, nil
+}
+
+// UnpinClusterRequestFromSDK converts the sdk-go type to the mirror.
+func UnpinClusterRequestFromSDK(v *sdk.UnpinClusterRequest) (*UnpinClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UnpinClusterRequest{}
+	out.ClusterId = v.ClusterId
+	return out, nil
+}
+
+// UpdateClusterRequestToSDK converts the mirror to the sdk-go type.
+func UpdateClusterRequestToSDK(w *UpdateClusterRequest) (*sdk.UpdateClusterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateClusterRequest{}
+	out.ClusterId = w.ClusterId
+	conv221, err := UpdateClusterRequest_UpdateClusterResourceToSDK(w.Cluster)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest.Cluster", err)
+	}
+	out.Cluster = conv221
+	mask222, err := fieldMaskFromString[sdk.UpdateClusterRequest_UpdateClusterResource](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask222
+	return out, nil
+}
+
+// UpdateClusterRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateClusterRequestFromSDK(v *sdk.UpdateClusterRequest) (*UpdateClusterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateClusterRequest{}
+	out.ClusterId = v.ClusterId
+	conv223, err := UpdateClusterRequest_UpdateClusterResourceFromSDK(v.Cluster)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest.Cluster", err)
+	}
+	out.Cluster = conv223
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateClusterRequest_UpdateClusterResourceToSDK converts the mirror to the sdk-go type.
+func UpdateClusterRequest_UpdateClusterResourceToSDK(w *UpdateClusterRequest_UpdateClusterResource) (*sdk.UpdateClusterRequest_UpdateClusterResource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateClusterRequest_UpdateClusterResource{}
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdateClusterRequest_UpdateClusterResource.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.UpdateClusterRequest_UpdateClusterResource_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv224, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.Size", err)
+		}
+		out.Size = &sdk.UpdateClusterRequest_UpdateClusterResource_Size_Autoscale{Autoscale: *conv224}
+	}
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv225, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv225
+	conv226, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv226
+	conv227, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv227
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv228, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv228
+	conv229, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv229
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv230, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv230
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv231, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.InitScripts", err)
+	}
+	out.InitScripts = conv231
+	conv232, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DockerImage", err)
+	}
+	out.DockerImage = conv232
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv233, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkloadType", err)
+	}
+	out.WorkloadType = conv233
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	return out, nil
+}
+
+// UpdateClusterRequest_UpdateClusterResourceFromSDK converts the sdk-go type to the mirror.
+func UpdateClusterRequest_UpdateClusterResourceFromSDK(v *sdk.UpdateClusterRequest_UpdateClusterResource) (*UpdateClusterRequest_UpdateClusterResource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateClusterRequest_UpdateClusterResource{}
+	switch value := v.Size.(type) {
+	case *sdk.UpdateClusterRequest_UpdateClusterResource_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.UpdateClusterRequest_UpdateClusterResource_Size_Autoscale:
+		if value != nil {
+			conv234, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.Size", err)
+			}
+			out.Autoscale = conv234
+		}
+	}
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv235, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv235
+	conv236, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv236
+	conv237, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv237
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv238, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv238
+	conv239, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv239
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv240, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv240
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv241, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.InitScripts", err)
+	}
+	out.InitScripts = conv241
+	conv242, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.DockerImage", err)
+	}
+	out.DockerImage = conv242
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv243, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateClusterRequest_UpdateClusterResource.WorkloadType", err)
+	}
+	out.WorkloadType = conv243
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	return out, nil
+}
+
+// VolumesStorageInfoToSDK converts the mirror to the sdk-go type.
+func VolumesStorageInfoToSDK(w *VolumesStorageInfo) (*sdk.VolumesStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.VolumesStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// VolumesStorageInfoFromSDK converts the sdk-go type to the mirror.
+func VolumesStorageInfoFromSDK(v *sdk.VolumesStorageInfo) (*VolumesStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VolumesStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// WorkloadTypeToSDK converts the mirror to the sdk-go type.
+func WorkloadTypeToSDK(w *WorkloadType) (*sdk.WorkloadType, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WorkloadType{}
+	conv244, err := WorkloadType_ClientsTypesToSDK(w.Clients)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
+	}
+	out.Clients = conv244
+	return out, nil
+}
+
+// WorkloadTypeFromSDK converts the sdk-go type to the mirror.
+func WorkloadTypeFromSDK(v *sdk.WorkloadType) (*WorkloadType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkloadType{}
+	conv245, err := WorkloadType_ClientsTypesFromSDK(v.Clients)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
+	}
+	out.Clients = conv245
+	return out, nil
+}
+
+// WorkloadType_ClientsTypesToSDK converts the mirror to the sdk-go type.
+func WorkloadType_ClientsTypesToSDK(w *WorkloadType_ClientsTypes) (*sdk.WorkloadType_ClientsTypes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WorkloadType_ClientsTypes{}
+	out.Notebooks = w.Notebooks
+	out.Jobs = w.Jobs
+	return out, nil
+}
+
+// WorkloadType_ClientsTypesFromSDK converts the sdk-go type to the mirror.
+func WorkloadType_ClientsTypesFromSDK(v *sdk.WorkloadType_ClientsTypes) (*WorkloadType_ClientsTypes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkloadType_ClientsTypes{}
+	out.Notebooks = v.Notebooks
+	out.Jobs = v.Jobs
+	return out, nil
+}
+
+// WorkspaceStorageInfoToSDK converts the mirror to the sdk-go type.
 func WorkspaceStorageInfoToSDK(w *WorkspaceStorageInfo) (*sdk.WorkspaceStorageInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WorkspaceStorageInfo{
-		Destination: w.Destination,
-	}, nil
+	out := &sdk.WorkspaceStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// WorkspaceStorageInfoFromSDK converts the sdk-go type to the mirror.
+func WorkspaceStorageInfoFromSDK(v *sdk.WorkspaceStorageInfo) (*WorkspaceStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -4479,4 +5805,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

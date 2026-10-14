@@ -37,22 +37,6 @@ const (
 	ProvisioningInfo_State_Degraded                  = sdk.ProvisioningInfo_State_Degraded
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // Detailed status of an online table. Shown if the online table is in the
 // ONLINE_CONTINUOUS_UPDATE or the ONLINE_UPDATING_PIPELINE_RESOURCES state..
 type ContinuousUpdateStatus struct {
@@ -66,61 +50,10 @@ type ContinuousUpdateStatus struct {
 	InitialPipelineSyncProgress *PipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
 }
 
-func ContinuousUpdateStatusFromSDK(v *sdk.ContinuousUpdateStatus) (*ContinuousUpdateStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	initialPipelineSyncProgressWireValue, err := PipelineProgressFromSDK(v.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.InitialPipelineSyncProgress", err)
-	}
-	return &ContinuousUpdateStatus{
-		LastProcessedCommitVersion:  lastProcessedCommitVersionWireValue,
-		Timestamp:                   v.Timestamp,
-		InitialPipelineSyncProgress: initialPipelineSyncProgressWireValue,
-	}, nil
-}
-
-func ContinuousUpdateStatusToSDK(w *ContinuousUpdateStatus) (*sdk.ContinuousUpdateStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	initialPipelineSyncProgressPublicValue, err := PipelineProgressToSDK(w.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.InitialPipelineSyncProgress", err)
-	}
-	return &sdk.ContinuousUpdateStatus{
-		LastProcessedCommitVersion:  lastProcessedCommitVersionPublicValue,
-		Timestamp:                   w.Timestamp,
-		InitialPipelineSyncProgress: initialPipelineSyncProgressPublicValue,
-	}, nil
-}
-
 // Create an online table.
 type CreateOnlineTableRequest struct {
 	// Specification of the online table to be created.
 	Table *OnlineTable `json:"table,omitempty"`
-}
-
-func CreateOnlineTableRequestFromSDK(v *sdk.CreateOnlineTableRequest) (*CreateOnlineTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableWireValue, err := OnlineTableFromSDK(v.Table)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateOnlineTableRequest.Table", err)
-	}
-	return &CreateOnlineTableRequest{
-		Table: tableWireValue,
-	}, nil
 }
 
 // Detailed status of an online table. Shown if the online table is in the
@@ -134,34 +67,6 @@ type FailedStatus struct {
 	// table to the online table. Only populated if the table is still online and
 	// available for serving.
 	Timestamp *types.Time `json:"timestamp,omitempty"`
-}
-
-func FailedStatusFromSDK(v *sdk.FailedStatus) (*FailedStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailedStatus.LastProcessedCommitVersion", err)
-	}
-	return &FailedStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionWireValue,
-		Timestamp:                  v.Timestamp,
-	}, nil
-}
-
-func FailedStatusToSDK(w *FailedStatus) (*sdk.FailedStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailedStatus.LastProcessedCommitVersion", err)
-	}
-	return &sdk.FailedStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionPublicValue,
-		Timestamp:                  w.Timestamp,
-	}, nil
 }
 
 // Online Table information..
@@ -179,48 +84,6 @@ type OnlineTable struct {
 	// may be in "ACTIVE" but the pipeline may be in "PROVISIONING" as it runs
 	// asynchronously).
 	UnityCatalogProvisioningState ProvisioningInfo_State `json:"unity_catalog_provisioning_state,omitempty"`
-}
-
-func OnlineTableFromSDK(v *sdk.OnlineTable) (*OnlineTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := OnlineTableSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "OnlineTable.Spec", err)
-	}
-	statusWireValue, err := OnlineTableStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "OnlineTable.Status", err)
-	}
-	return &OnlineTable{
-		Name:                          v.Name,
-		Spec:                          specWireValue,
-		Status:                        statusWireValue,
-		TableServingUrl:               v.TableServingUrl,
-		UnityCatalogProvisioningState: v.UnityCatalogProvisioningState,
-	}, nil
-}
-
-func OnlineTableToSDK(w *OnlineTable) (*sdk.OnlineTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := OnlineTableSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "OnlineTable.Spec", err)
-	}
-	statusPublicValue, err := OnlineTableStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "OnlineTable.Status", err)
-	}
-	return &sdk.OnlineTable{
-		Name:                          w.Name,
-		Spec:                          specPublicValue,
-		Status:                        statusPublicValue,
-		TableServingUrl:               w.TableServingUrl,
-		UnityCatalogProvisioningState: w.UnityCatalogProvisioningState,
-	}, nil
 }
 
 // Specification of an online table..
@@ -246,115 +109,10 @@ type OnlineTableSpec struct {
 	PipelineId *string `json:"pipeline_id,omitempty"`
 }
 
-func OnlineTableSpecFromSDK(v *sdk.OnlineTableSpec) (*OnlineTableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var schedulingPolicyRunContinuouslyWire *OnlineTableSpec_ContinuousSchedulingPolicy
-	var schedulingPolicyRunTriggeredWire *OnlineTableSpec_TriggeredSchedulingPolicy
-	switch value := v.SchedulingPolicy.(type) {
-	case nil:
-	case *sdk.OnlineTableSpec_SchedulingPolicy_RunContinuously:
-		if value != nil {
-			schedulingPolicyRunContinuouslyConverted, err := OnlineTableSpec_ContinuousSchedulingPolicyFromSDK(&value.RunContinuously)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy.RunContinuously", err)
-			}
-			schedulingPolicyRunContinuouslyWire = schedulingPolicyRunContinuouslyConverted
-		}
-	case *sdk.OnlineTableSpec_SchedulingPolicy_RunTriggered:
-		if value != nil {
-			schedulingPolicyRunTriggeredConverted, err := OnlineTableSpec_TriggeredSchedulingPolicyFromSDK(&value.RunTriggered)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy.RunTriggered", err)
-			}
-			schedulingPolicyRunTriggeredWire = schedulingPolicyRunTriggeredConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "OnlineTableSpec.SchedulingPolicy", value)
-	}
-	return &OnlineTableSpec{
-		RunContinuously:     schedulingPolicyRunContinuouslyWire,
-		RunTriggered:        schedulingPolicyRunTriggeredWire,
-		SourceTableFullName: v.SourceTableFullName,
-		PrimaryKeyColumns:   v.PrimaryKeyColumns,
-		TimeseriesKey:       v.TimeseriesKey,
-		PerformFullCopy:     v.PerformFullCopy,
-		PipelineId:          v.PipelineId,
-	}, nil
-}
-
-func OnlineTableSpecToSDK(w *OnlineTableSpec) (*sdk.OnlineTableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schedulingPolicyMembers := 0
-	if w.RunContinuously != nil {
-		schedulingPolicyMembers++
-	}
-	if w.RunTriggered != nil {
-		schedulingPolicyMembers++
-	}
-	if schedulingPolicyMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableSpec.SchedulingPolicy")
-	}
-	schedulingPolicySelection := (&sdk.OnlineTableSpec{}).SchedulingPolicy
-	switch {
-	case w.RunContinuously != nil:
-		schedulingPolicyRunContinuouslyConverted, err := OnlineTableSpec_ContinuousSchedulingPolicyToSDK(w.RunContinuously)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy.RunContinuously", err)
-		}
-		schedulingPolicySelection = &sdk.OnlineTableSpec_SchedulingPolicy_RunContinuously{RunContinuously: *schedulingPolicyRunContinuouslyConverted}
-	case w.RunTriggered != nil:
-		schedulingPolicyRunTriggeredConverted, err := OnlineTableSpec_TriggeredSchedulingPolicyToSDK(w.RunTriggered)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy.RunTriggered", err)
-		}
-		schedulingPolicySelection = &sdk.OnlineTableSpec_SchedulingPolicy_RunTriggered{RunTriggered: *schedulingPolicyRunTriggeredConverted}
-	}
-	return &sdk.OnlineTableSpec{
-		SourceTableFullName: w.SourceTableFullName,
-		PrimaryKeyColumns:   w.PrimaryKeyColumns,
-		TimeseriesKey:       w.TimeseriesKey,
-		PerformFullCopy:     w.PerformFullCopy,
-		PipelineId:          w.PipelineId,
-		SchedulingPolicy:    schedulingPolicySelection,
-	}, nil
-}
-
 type OnlineTableSpec_ContinuousSchedulingPolicy struct {
 }
 
-func OnlineTableSpec_ContinuousSchedulingPolicyFromSDK(v *sdk.OnlineTableSpec_ContinuousSchedulingPolicy) (*OnlineTableSpec_ContinuousSchedulingPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OnlineTableSpec_ContinuousSchedulingPolicy{}, nil
-}
-
-func OnlineTableSpec_ContinuousSchedulingPolicyToSDK(w *OnlineTableSpec_ContinuousSchedulingPolicy) (*sdk.OnlineTableSpec_ContinuousSchedulingPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OnlineTableSpec_ContinuousSchedulingPolicy{}, nil
-}
-
 type OnlineTableSpec_TriggeredSchedulingPolicy struct {
-}
-
-func OnlineTableSpec_TriggeredSchedulingPolicyFromSDK(v *sdk.OnlineTableSpec_TriggeredSchedulingPolicy) (*OnlineTableSpec_TriggeredSchedulingPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OnlineTableSpec_TriggeredSchedulingPolicy{}, nil
-}
-
-func OnlineTableSpec_TriggeredSchedulingPolicyToSDK(w *OnlineTableSpec_TriggeredSchedulingPolicy) (*sdk.OnlineTableSpec_TriggeredSchedulingPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OnlineTableSpec_TriggeredSchedulingPolicy{}, nil
 }
 
 // Status of an online table..
@@ -367,115 +125,6 @@ type OnlineTableStatus struct {
 	ContinuousUpdateStatus *ContinuousUpdateStatus `json:"continuous_update_status,omitempty"`
 	TriggeredUpdateStatus  *TriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
 	FailedStatus           *FailedStatus           `json:"failed_status,omitempty"`
-}
-
-func OnlineTableStatusFromSDK(v *sdk.OnlineTableStatus) (*OnlineTableStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var detailedStatusProvisioningStatusWire *ProvisioningStatus
-	var detailedStatusContinuousUpdateStatusWire *ContinuousUpdateStatus
-	var detailedStatusTriggeredUpdateStatusWire *TriggeredUpdateStatus
-	var detailedStatusFailedStatusWire *FailedStatus
-	switch value := v.DetailedStatus.(type) {
-	case nil:
-	case *sdk.OnlineTableStatus_DetailedStatus_ProvisioningStatus:
-		if value != nil {
-			detailedStatusProvisioningStatusConverted, err := ProvisioningStatusFromSDK(&value.ProvisioningStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.ProvisioningStatus", err)
-			}
-			detailedStatusProvisioningStatusWire = detailedStatusProvisioningStatusConverted
-		}
-	case *sdk.OnlineTableStatus_DetailedStatus_ContinuousUpdateStatus:
-		if value != nil {
-			detailedStatusContinuousUpdateStatusConverted, err := ContinuousUpdateStatusFromSDK(&value.ContinuousUpdateStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.ContinuousUpdateStatus", err)
-			}
-			detailedStatusContinuousUpdateStatusWire = detailedStatusContinuousUpdateStatusConverted
-		}
-	case *sdk.OnlineTableStatus_DetailedStatus_TriggeredUpdateStatus:
-		if value != nil {
-			detailedStatusTriggeredUpdateStatusConverted, err := TriggeredUpdateStatusFromSDK(&value.TriggeredUpdateStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.TriggeredUpdateStatus", err)
-			}
-			detailedStatusTriggeredUpdateStatusWire = detailedStatusTriggeredUpdateStatusConverted
-		}
-	case *sdk.OnlineTableStatus_DetailedStatus_FailedStatus:
-		if value != nil {
-			detailedStatusFailedStatusConverted, err := FailedStatusFromSDK(&value.FailedStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.FailedStatus", err)
-			}
-			detailedStatusFailedStatusWire = detailedStatusFailedStatusConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "OnlineTableStatus.DetailedStatus", value)
-	}
-	return &OnlineTableStatus{
-		DetailedState:          v.DetailedState,
-		Message:                v.Message,
-		ProvisioningStatus:     detailedStatusProvisioningStatusWire,
-		ContinuousUpdateStatus: detailedStatusContinuousUpdateStatusWire,
-		TriggeredUpdateStatus:  detailedStatusTriggeredUpdateStatusWire,
-		FailedStatus:           detailedStatusFailedStatusWire,
-	}, nil
-}
-
-func OnlineTableStatusToSDK(w *OnlineTableStatus) (*sdk.OnlineTableStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	detailedStatusMembers := 0
-	if w.ProvisioningStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.ContinuousUpdateStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.TriggeredUpdateStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.FailedStatus != nil {
-		detailedStatusMembers++
-	}
-	if detailedStatusMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableStatus.DetailedStatus")
-	}
-	detailedStatusSelection := (&sdk.OnlineTableStatus{}).DetailedStatus
-	switch {
-	case w.ProvisioningStatus != nil:
-		detailedStatusProvisioningStatusConverted, err := ProvisioningStatusToSDK(w.ProvisioningStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.ProvisioningStatus", err)
-		}
-		detailedStatusSelection = &sdk.OnlineTableStatus_DetailedStatus_ProvisioningStatus{ProvisioningStatus: *detailedStatusProvisioningStatusConverted}
-	case w.ContinuousUpdateStatus != nil:
-		detailedStatusContinuousUpdateStatusConverted, err := ContinuousUpdateStatusToSDK(w.ContinuousUpdateStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.ContinuousUpdateStatus", err)
-		}
-		detailedStatusSelection = &sdk.OnlineTableStatus_DetailedStatus_ContinuousUpdateStatus{ContinuousUpdateStatus: *detailedStatusContinuousUpdateStatusConverted}
-	case w.TriggeredUpdateStatus != nil:
-		detailedStatusTriggeredUpdateStatusConverted, err := TriggeredUpdateStatusToSDK(w.TriggeredUpdateStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.TriggeredUpdateStatus", err)
-		}
-		detailedStatusSelection = &sdk.OnlineTableStatus_DetailedStatus_TriggeredUpdateStatus{TriggeredUpdateStatus: *detailedStatusTriggeredUpdateStatusConverted}
-	case w.FailedStatus != nil:
-		detailedStatusFailedStatusConverted, err := FailedStatusToSDK(w.FailedStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus.FailedStatus", err)
-		}
-		detailedStatusSelection = &sdk.OnlineTableStatus_DetailedStatus_FailedStatus{FailedStatus: *detailedStatusFailedStatusConverted}
-	}
-	return &sdk.OnlineTableStatus{
-		DetailedState:  w.DetailedState,
-		Message:        w.Message,
-		DetailedStatus: detailedStatusSelection,
-	}, nil
 }
 
 // Progress information of the Online Table data synchronization pipeline..
@@ -494,88 +143,12 @@ type PipelineProgress struct {
 	EstimatedCompletionTimeSeconds *float64 `json:"estimated_completion_time_seconds,omitempty"`
 }
 
-func PipelineProgressFromSDK(v *sdk.PipelineProgress) (*PipelineProgress, error) {
-	if v == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingWireValue, err := int64ToWire(v.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountWireValue, err := int64ToWire(v.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountWireValue, err := int64ToWire(v.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.TotalRowCount", err)
-	}
-	return &PipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingWireValue,
-		SyncedRowCount:                   syncedRowCountWireValue,
-		TotalRowCount:                    totalRowCountWireValue,
-		SyncProgressCompletion:           v.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   v.EstimatedCompletionTimeSeconds,
-	}, nil
-}
-
-func PipelineProgressToSDK(w *PipelineProgress) (*sdk.PipelineProgress, error) {
-	if w == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingPublicValue, err := int64FromWire(w.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountPublicValue, err := int64FromWire(w.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountPublicValue, err := int64FromWire(w.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineProgress.TotalRowCount", err)
-	}
-	return &sdk.PipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingPublicValue,
-		SyncedRowCount:                   syncedRowCountPublicValue,
-		TotalRowCount:                    totalRowCountPublicValue,
-		SyncProgressCompletion:           w.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   w.EstimatedCompletionTimeSeconds,
-	}, nil
-}
-
 // Detailed status of an online table. Shown if the online table is in the
 // PROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state..
 type ProvisioningStatus struct {
 	// Details about initial data synchronization. Only populated when in the
 	// PROVISIONING_INITIAL_SNAPSHOT state.
 	InitialPipelineSyncProgress *PipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
-}
-
-func ProvisioningStatusFromSDK(v *sdk.ProvisioningStatus) (*ProvisioningStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	initialPipelineSyncProgressWireValue, err := PipelineProgressFromSDK(v.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProvisioningStatus.InitialPipelineSyncProgress", err)
-	}
-	return &ProvisioningStatus{
-		InitialPipelineSyncProgress: initialPipelineSyncProgressWireValue,
-	}, nil
-}
-
-func ProvisioningStatusToSDK(w *ProvisioningStatus) (*sdk.ProvisioningStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	initialPipelineSyncProgressPublicValue, err := PipelineProgressToSDK(w.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProvisioningStatus.InitialPipelineSyncProgress", err)
-	}
-	return &sdk.ProvisioningStatus{
-		InitialPipelineSyncProgress: initialPipelineSyncProgressPublicValue,
-	}, nil
 }
 
 // Detailed status of an online table. Shown if the online table is in the
@@ -591,40 +164,424 @@ type TriggeredUpdateStatus struct {
 	TriggeredUpdateProgress *PipelineProgress `json:"triggered_update_progress,omitempty"`
 }
 
-func TriggeredUpdateStatusFromSDK(v *sdk.TriggeredUpdateStatus) (*TriggeredUpdateStatus, error) {
+// ContinuousUpdateStatusToSDK converts the mirror to the sdk-go type.
+func ContinuousUpdateStatusToSDK(w *ContinuousUpdateStatus) (*sdk.ContinuousUpdateStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContinuousUpdateStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	conv1, err := PipelineProgressToSDK(w.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv1
+	return out, nil
+}
+
+// ContinuousUpdateStatusFromSDK converts the sdk-go type to the mirror.
+func ContinuousUpdateStatusFromSDK(v *sdk.ContinuousUpdateStatus) (*ContinuousUpdateStatus, error) {
 	if v == nil {
 		return nil, nil
 	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
+	out := &ContinuousUpdateStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	conv2, err := PipelineProgressFromSDK(v.InitialPipelineSyncProgress)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggeredUpdateStatus.LastProcessedCommitVersion", err)
+		return nil, fmt.Errorf("%s: %w", "ContinuousUpdateStatus.InitialPipelineSyncProgress", err)
 	}
-	triggeredUpdateProgressWireValue, err := PipelineProgressFromSDK(v.TriggeredUpdateProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggeredUpdateStatus.TriggeredUpdateProgress", err)
-	}
-	return &TriggeredUpdateStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionWireValue,
-		Timestamp:                  v.Timestamp,
-		TriggeredUpdateProgress:    triggeredUpdateProgressWireValue,
-	}, nil
+	out.InitialPipelineSyncProgress = conv2
+	return out, nil
 }
 
+// CreateOnlineTableRequestToSDK converts the mirror to the sdk-go type.
+func CreateOnlineTableRequestToSDK(w *CreateOnlineTableRequest) (*sdk.CreateOnlineTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateOnlineTableRequest{}
+	conv3, err := OnlineTableToSDK(w.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateOnlineTableRequest.Table", err)
+	}
+	out.Table = conv3
+	return out, nil
+}
+
+// CreateOnlineTableRequestFromSDK converts the sdk-go type to the mirror.
+func CreateOnlineTableRequestFromSDK(v *sdk.CreateOnlineTableRequest) (*CreateOnlineTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateOnlineTableRequest{}
+	conv4, err := OnlineTableFromSDK(v.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateOnlineTableRequest.Table", err)
+	}
+	out.Table = conv4
+	return out, nil
+}
+
+// FailedStatusToSDK converts the mirror to the sdk-go type.
+func FailedStatusToSDK(w *FailedStatus) (*sdk.FailedStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FailedStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	return out, nil
+}
+
+// FailedStatusFromSDK converts the sdk-go type to the mirror.
+func FailedStatusFromSDK(v *sdk.FailedStatus) (*FailedStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FailedStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	return out, nil
+}
+
+// OnlineTableToSDK converts the mirror to the sdk-go type.
+func OnlineTableToSDK(w *OnlineTable) (*sdk.OnlineTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineTable{}
+	out.Name = w.Name
+	conv5, err := OnlineTableSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "OnlineTable.Spec", err)
+	}
+	out.Spec = conv5
+	conv6, err := OnlineTableStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "OnlineTable.Status", err)
+	}
+	out.Status = conv6
+	out.TableServingUrl = w.TableServingUrl
+	out.UnityCatalogProvisioningState = w.UnityCatalogProvisioningState
+	return out, nil
+}
+
+// OnlineTableFromSDK converts the sdk-go type to the mirror.
+func OnlineTableFromSDK(v *sdk.OnlineTable) (*OnlineTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineTable{}
+	out.Name = v.Name
+	conv7, err := OnlineTableSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "OnlineTable.Spec", err)
+	}
+	out.Spec = conv7
+	conv8, err := OnlineTableStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "OnlineTable.Status", err)
+	}
+	out.Status = conv8
+	out.TableServingUrl = v.TableServingUrl
+	out.UnityCatalogProvisioningState = v.UnityCatalogProvisioningState
+	return out, nil
+}
+
+// OnlineTableSpecToSDK converts the mirror to the sdk-go type.
+func OnlineTableSpecToSDK(w *OnlineTableSpec) (*sdk.OnlineTableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineTableSpec{}
+	{
+		members := 0
+		if w.RunContinuously != nil {
+			members++
+		}
+		if w.RunTriggered != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableSpec.SchedulingPolicy")
+		}
+	}
+	switch {
+	case w.RunContinuously != nil:
+		conv9, err := OnlineTableSpec_ContinuousSchedulingPolicyToSDK(w.RunContinuously)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy", err)
+		}
+		out.SchedulingPolicy = &sdk.OnlineTableSpec_SchedulingPolicy_RunContinuously{RunContinuously: *conv9}
+	case w.RunTriggered != nil:
+		conv10, err := OnlineTableSpec_TriggeredSchedulingPolicyToSDK(w.RunTriggered)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy", err)
+		}
+		out.SchedulingPolicy = &sdk.OnlineTableSpec_SchedulingPolicy_RunTriggered{RunTriggered: *conv10}
+	}
+	out.SourceTableFullName = w.SourceTableFullName
+	out.PrimaryKeyColumns = w.PrimaryKeyColumns
+	out.TimeseriesKey = w.TimeseriesKey
+	out.PerformFullCopy = w.PerformFullCopy
+	out.PipelineId = w.PipelineId
+	return out, nil
+}
+
+// OnlineTableSpecFromSDK converts the sdk-go type to the mirror.
+func OnlineTableSpecFromSDK(v *sdk.OnlineTableSpec) (*OnlineTableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineTableSpec{}
+	switch value := v.SchedulingPolicy.(type) {
+	case *sdk.OnlineTableSpec_SchedulingPolicy_RunContinuously:
+		if value != nil {
+			conv11, err := OnlineTableSpec_ContinuousSchedulingPolicyFromSDK(&value.RunContinuously)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy", err)
+			}
+			out.RunContinuously = conv11
+		}
+	case *sdk.OnlineTableSpec_SchedulingPolicy_RunTriggered:
+		if value != nil {
+			conv12, err := OnlineTableSpec_TriggeredSchedulingPolicyFromSDK(&value.RunTriggered)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableSpec.SchedulingPolicy", err)
+			}
+			out.RunTriggered = conv12
+		}
+	}
+	out.SourceTableFullName = v.SourceTableFullName
+	out.PrimaryKeyColumns = v.PrimaryKeyColumns
+	out.TimeseriesKey = v.TimeseriesKey
+	out.PerformFullCopy = v.PerformFullCopy
+	out.PipelineId = v.PipelineId
+	return out, nil
+}
+
+// OnlineTableSpec_ContinuousSchedulingPolicyToSDK converts the mirror to the sdk-go type.
+func OnlineTableSpec_ContinuousSchedulingPolicyToSDK(w *OnlineTableSpec_ContinuousSchedulingPolicy) (*sdk.OnlineTableSpec_ContinuousSchedulingPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineTableSpec_ContinuousSchedulingPolicy{}
+	return out, nil
+}
+
+// OnlineTableSpec_ContinuousSchedulingPolicyFromSDK converts the sdk-go type to the mirror.
+func OnlineTableSpec_ContinuousSchedulingPolicyFromSDK(v *sdk.OnlineTableSpec_ContinuousSchedulingPolicy) (*OnlineTableSpec_ContinuousSchedulingPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineTableSpec_ContinuousSchedulingPolicy{}
+	return out, nil
+}
+
+// OnlineTableSpec_TriggeredSchedulingPolicyToSDK converts the mirror to the sdk-go type.
+func OnlineTableSpec_TriggeredSchedulingPolicyToSDK(w *OnlineTableSpec_TriggeredSchedulingPolicy) (*sdk.OnlineTableSpec_TriggeredSchedulingPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineTableSpec_TriggeredSchedulingPolicy{}
+	return out, nil
+}
+
+// OnlineTableSpec_TriggeredSchedulingPolicyFromSDK converts the sdk-go type to the mirror.
+func OnlineTableSpec_TriggeredSchedulingPolicyFromSDK(v *sdk.OnlineTableSpec_TriggeredSchedulingPolicy) (*OnlineTableSpec_TriggeredSchedulingPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineTableSpec_TriggeredSchedulingPolicy{}
+	return out, nil
+}
+
+// OnlineTableStatusToSDK converts the mirror to the sdk-go type.
+func OnlineTableStatusToSDK(w *OnlineTableStatus) (*sdk.OnlineTableStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OnlineTableStatus{}
+	out.DetailedState = w.DetailedState
+	out.Message = w.Message
+	{
+		members := 0
+		if w.ProvisioningStatus != nil {
+			members++
+		}
+		if w.ContinuousUpdateStatus != nil {
+			members++
+		}
+		if w.TriggeredUpdateStatus != nil {
+			members++
+		}
+		if w.FailedStatus != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "OnlineTableStatus.DetailedStatus")
+		}
+	}
+	switch {
+	case w.ProvisioningStatus != nil:
+		conv13, err := ProvisioningStatusToSDK(w.ProvisioningStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.OnlineTableStatus_DetailedStatus_ProvisioningStatus{ProvisioningStatus: *conv13}
+	case w.ContinuousUpdateStatus != nil:
+		conv14, err := ContinuousUpdateStatusToSDK(w.ContinuousUpdateStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.OnlineTableStatus_DetailedStatus_ContinuousUpdateStatus{ContinuousUpdateStatus: *conv14}
+	case w.TriggeredUpdateStatus != nil:
+		conv15, err := TriggeredUpdateStatusToSDK(w.TriggeredUpdateStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.OnlineTableStatus_DetailedStatus_TriggeredUpdateStatus{TriggeredUpdateStatus: *conv15}
+	case w.FailedStatus != nil:
+		conv16, err := FailedStatusToSDK(w.FailedStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.OnlineTableStatus_DetailedStatus_FailedStatus{FailedStatus: *conv16}
+	}
+	return out, nil
+}
+
+// OnlineTableStatusFromSDK converts the sdk-go type to the mirror.
+func OnlineTableStatusFromSDK(v *sdk.OnlineTableStatus) (*OnlineTableStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OnlineTableStatus{}
+	out.DetailedState = v.DetailedState
+	out.Message = v.Message
+	switch value := v.DetailedStatus.(type) {
+	case *sdk.OnlineTableStatus_DetailedStatus_ProvisioningStatus:
+		if value != nil {
+			conv17, err := ProvisioningStatusFromSDK(&value.ProvisioningStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+			}
+			out.ProvisioningStatus = conv17
+		}
+	case *sdk.OnlineTableStatus_DetailedStatus_ContinuousUpdateStatus:
+		if value != nil {
+			conv18, err := ContinuousUpdateStatusFromSDK(&value.ContinuousUpdateStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+			}
+			out.ContinuousUpdateStatus = conv18
+		}
+	case *sdk.OnlineTableStatus_DetailedStatus_TriggeredUpdateStatus:
+		if value != nil {
+			conv19, err := TriggeredUpdateStatusFromSDK(&value.TriggeredUpdateStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+			}
+			out.TriggeredUpdateStatus = conv19
+		}
+	case *sdk.OnlineTableStatus_DetailedStatus_FailedStatus:
+		if value != nil {
+			conv20, err := FailedStatusFromSDK(&value.FailedStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "OnlineTableStatus.DetailedStatus", err)
+			}
+			out.FailedStatus = conv20
+		}
+	}
+	return out, nil
+}
+
+// PipelineProgressToSDK converts the mirror to the sdk-go type.
+func PipelineProgressToSDK(w *PipelineProgress) (*sdk.PipelineProgress, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = w.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = w.SyncedRowCount
+	out.TotalRowCount = w.TotalRowCount
+	out.SyncProgressCompletion = w.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = w.EstimatedCompletionTimeSeconds
+	return out, nil
+}
+
+// PipelineProgressFromSDK converts the sdk-go type to the mirror.
+func PipelineProgressFromSDK(v *sdk.PipelineProgress) (*PipelineProgress, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = v.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = v.SyncedRowCount
+	out.TotalRowCount = v.TotalRowCount
+	out.SyncProgressCompletion = v.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = v.EstimatedCompletionTimeSeconds
+	return out, nil
+}
+
+// ProvisioningStatusToSDK converts the mirror to the sdk-go type.
+func ProvisioningStatusToSDK(w *ProvisioningStatus) (*sdk.ProvisioningStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProvisioningStatus{}
+	conv21, err := PipelineProgressToSDK(w.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProvisioningStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv21
+	return out, nil
+}
+
+// ProvisioningStatusFromSDK converts the sdk-go type to the mirror.
+func ProvisioningStatusFromSDK(v *sdk.ProvisioningStatus) (*ProvisioningStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProvisioningStatus{}
+	conv22, err := PipelineProgressFromSDK(v.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProvisioningStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv22
+	return out, nil
+}
+
+// TriggeredUpdateStatusToSDK converts the mirror to the sdk-go type.
 func TriggeredUpdateStatusToSDK(w *TriggeredUpdateStatus) (*sdk.TriggeredUpdateStatus, error) {
 	if w == nil {
 		return nil, nil
 	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggeredUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	triggeredUpdateProgressPublicValue, err := PipelineProgressToSDK(w.TriggeredUpdateProgress)
+	out := &sdk.TriggeredUpdateStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	conv23, err := PipelineProgressToSDK(w.TriggeredUpdateProgress)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "TriggeredUpdateStatus.TriggeredUpdateProgress", err)
 	}
-	return &sdk.TriggeredUpdateStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionPublicValue,
-		Timestamp:                  w.Timestamp,
-		TriggeredUpdateProgress:    triggeredUpdateProgressPublicValue,
-	}, nil
+	out.TriggeredUpdateProgress = conv23
+	return out, nil
+}
+
+// TriggeredUpdateStatusFromSDK converts the sdk-go type to the mirror.
+func TriggeredUpdateStatusFromSDK(v *sdk.TriggeredUpdateStatus) (*TriggeredUpdateStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggeredUpdateStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	conv24, err := PipelineProgressFromSDK(v.TriggeredUpdateProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggeredUpdateStatus.TriggeredUpdateProgress", err)
+	}
+	out.TriggeredUpdateProgress = conv24
+	return out, nil
 }

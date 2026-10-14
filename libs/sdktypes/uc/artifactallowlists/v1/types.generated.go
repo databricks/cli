@@ -22,22 +22,6 @@ const (
 	ArtifactMatcher_MatchType_PrefixMatch = sdk.ArtifactMatcher_MatchType_PrefixMatch
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ArtifactAllowlistInfo struct {
 	// A list of allowed artifact match patterns.
 	ArtifactMatchers []ArtifactMatcher `json:"artifact_matchers,omitempty"`
@@ -49,51 +33,11 @@ type ArtifactAllowlistInfo struct {
 	CreatedAt *int64 `json:"created_at,omitempty"`
 }
 
-func ArtifactAllowlistInfoToSDK(w *ArtifactAllowlistInfo) (*sdk.ArtifactAllowlistInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	artifactMatchersPublicValue, err := convertSlice(w.ArtifactMatchers, ArtifactMatcherToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ArtifactAllowlistInfo.ArtifactMatchers", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ArtifactAllowlistInfo.CreatedAt", err)
-	}
-	return &sdk.ArtifactAllowlistInfo{
-		ArtifactMatchers: artifactMatchersPublicValue,
-		MetastoreId:      w.MetastoreId,
-		CreatedBy:        w.CreatedBy,
-		CreatedAt:        createdAtPublicValue,
-	}, nil
-}
-
 type ArtifactMatcher struct {
 	// The artifact path or maven coordinate
 	Artifact *string `json:"artifact,omitempty"`
 	// The pattern matching type of the artifact
 	MatchType ArtifactMatcher_MatchType `json:"match_type,omitempty"`
-}
-
-func ArtifactMatcherFromSDK(v *sdk.ArtifactMatcher) (*ArtifactMatcher, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ArtifactMatcher{
-		Artifact:  v.Artifact,
-		MatchType: v.MatchType,
-	}, nil
-}
-
-func ArtifactMatcherToSDK(w *ArtifactMatcher) (*sdk.ArtifactMatcher, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ArtifactMatcher{
-		Artifact:  w.Artifact,
-		MatchType: w.MatchType,
-	}, nil
 }
 
 type SetArtifactAllowlistRequest struct {
@@ -109,25 +53,96 @@ type SetArtifactAllowlistRequest struct {
 	CreatedAt *int64 `json:"created_at,omitempty"`
 }
 
+// ArtifactAllowlistInfoToSDK converts the mirror to the sdk-go type.
+func ArtifactAllowlistInfoToSDK(w *ArtifactAllowlistInfo) (*sdk.ArtifactAllowlistInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ArtifactAllowlistInfo{}
+	conv1, err := convertSlice(w.ArtifactMatchers, ArtifactMatcherToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ArtifactAllowlistInfo.ArtifactMatchers", err)
+	}
+	out.ArtifactMatchers = conv1
+	out.MetastoreId = w.MetastoreId
+	out.CreatedBy = w.CreatedBy
+	out.CreatedAt = w.CreatedAt
+	return out, nil
+}
+
+// ArtifactAllowlistInfoFromSDK converts the sdk-go type to the mirror.
+func ArtifactAllowlistInfoFromSDK(v *sdk.ArtifactAllowlistInfo) (*ArtifactAllowlistInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ArtifactAllowlistInfo{}
+	conv2, err := convertSlice(v.ArtifactMatchers, ArtifactMatcherFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ArtifactAllowlistInfo.ArtifactMatchers", err)
+	}
+	out.ArtifactMatchers = conv2
+	out.MetastoreId = v.MetastoreId
+	out.CreatedBy = v.CreatedBy
+	out.CreatedAt = v.CreatedAt
+	return out, nil
+}
+
+// ArtifactMatcherToSDK converts the mirror to the sdk-go type.
+func ArtifactMatcherToSDK(w *ArtifactMatcher) (*sdk.ArtifactMatcher, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ArtifactMatcher{}
+	out.Artifact = w.Artifact
+	out.MatchType = w.MatchType
+	return out, nil
+}
+
+// ArtifactMatcherFromSDK converts the sdk-go type to the mirror.
+func ArtifactMatcherFromSDK(v *sdk.ArtifactMatcher) (*ArtifactMatcher, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ArtifactMatcher{}
+	out.Artifact = v.Artifact
+	out.MatchType = v.MatchType
+	return out, nil
+}
+
+// SetArtifactAllowlistRequestToSDK converts the mirror to the sdk-go type.
+func SetArtifactAllowlistRequestToSDK(w *SetArtifactAllowlistRequest) (*sdk.SetArtifactAllowlistRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetArtifactAllowlistRequest{}
+	out.ArtifactType = w.ArtifactType
+	conv3, err := convertSlice(w.ArtifactMatchers, ArtifactMatcherToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetArtifactAllowlistRequest.ArtifactMatchers", err)
+	}
+	out.ArtifactMatchers = conv3
+	out.MetastoreId = w.MetastoreId
+	out.CreatedBy = w.CreatedBy
+	out.CreatedAt = w.CreatedAt
+	return out, nil
+}
+
+// SetArtifactAllowlistRequestFromSDK converts the sdk-go type to the mirror.
 func SetArtifactAllowlistRequestFromSDK(v *sdk.SetArtifactAllowlistRequest) (*SetArtifactAllowlistRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	artifactMatchersWireValue, err := convertSlice(v.ArtifactMatchers, ArtifactMatcherFromSDK)
+	out := &SetArtifactAllowlistRequest{}
+	out.ArtifactType = v.ArtifactType
+	conv4, err := convertSlice(v.ArtifactMatchers, ArtifactMatcherFromSDK)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "SetArtifactAllowlistRequest.ArtifactMatchers", err)
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetArtifactAllowlistRequest.CreatedAt", err)
-	}
-	return &SetArtifactAllowlistRequest{
-		ArtifactType:     v.ArtifactType,
-		ArtifactMatchers: artifactMatchersWireValue,
-		MetastoreId:      v.MetastoreId,
-		CreatedBy:        v.CreatedBy,
-		CreatedAt:        createdAtWireValue,
-	}, nil
+	out.ArtifactMatchers = conv4
+	out.MetastoreId = v.MetastoreId
+	out.CreatedBy = v.CreatedBy
+	out.CreatedAt = v.CreatedAt
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -162,22 +162,6 @@ const (
 	PartitionSpecification_Partition_PartitionValue_PartitionValueOp_Like                                         = sdk.PartitionSpecification_Partition_PartitionValue_PartitionValueOp_Like
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CleanRoom struct {
 	// The name of the clean room. It should follow [UC securable naming
 	// requirements].
@@ -211,76 +195,6 @@ type CleanRoom struct {
 	// task runs triggered by the current collaborator can write to the run-scoped
 	// shared output schema which is accessible by all collaborators.
 	EnableSharedOutput *bool `json:"enable_shared_output,omitempty"`
-}
-
-func CleanRoomFromSDK(v *sdk.CleanRoom) (*CleanRoom, error) {
-	if v == nil {
-		return nil, nil
-	}
-	remoteDetailedInfoWireValue, err := CleanRoomRemoteDetailFromSDK(v.RemoteDetailedInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.RemoteDetailedInfo", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.UpdatedAt", err)
-	}
-	outputCatalogWireValue, err := CleanRoomOutputCatalogFromSDK(v.OutputCatalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.OutputCatalog", err)
-	}
-	return &CleanRoom{
-		Name:                   v.Name,
-		RemoteDetailedInfo:     remoteDetailedInfoWireValue,
-		Owner:                  v.Owner,
-		Comment:                v.Comment,
-		CreatedAt:              createdAtWireValue,
-		UpdatedAt:              updatedAtWireValue,
-		Status:                 v.Status,
-		LocalCollaboratorAlias: v.LocalCollaboratorAlias,
-		OutputCatalog:          outputCatalogWireValue,
-		AccessRestricted:       v.AccessRestricted,
-		EnableSharedOutput:     v.EnableSharedOutput,
-	}, nil
-}
-
-func CleanRoomToSDK(w *CleanRoom) (*sdk.CleanRoom, error) {
-	if w == nil {
-		return nil, nil
-	}
-	remoteDetailedInfoPublicValue, err := CleanRoomRemoteDetailToSDK(w.RemoteDetailedInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.RemoteDetailedInfo", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.UpdatedAt", err)
-	}
-	outputCatalogPublicValue, err := CleanRoomOutputCatalogToSDK(w.OutputCatalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoom.OutputCatalog", err)
-	}
-	return &sdk.CleanRoom{
-		Name:                   w.Name,
-		RemoteDetailedInfo:     remoteDetailedInfoPublicValue,
-		Owner:                  w.Owner,
-		Comment:                w.Comment,
-		CreatedAt:              createdAtPublicValue,
-		UpdatedAt:              updatedAtPublicValue,
-		Status:                 w.Status,
-		LocalCollaboratorAlias: w.LocalCollaboratorAlias,
-		OutputCatalog:          outputCatalogPublicValue,
-		AccessRestricted:       w.AccessRestricted,
-		EnableSharedOutput:     w.EnableSharedOutput,
-	}, nil
 }
 
 // Metadata of the clean room asset.
@@ -317,292 +231,15 @@ type CleanRoomAsset struct {
 	JarAnalysis              *CleanRoomAsset_JarAnalysis              `json:"jar_analysis,omitempty"`
 }
 
-func CleanRoomAssetFromSDK(v *sdk.CleanRoomAsset) (*CleanRoomAsset, error) {
-	if v == nil {
-		return nil, nil
-	}
-	addedAtWireValue, err := int64ToWire(v.AddedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.AddedAt", err)
-	}
-	var localDetailsTableLocalDetailsWire *CleanRoomAsset_TableLocalDetails
-	var localDetailsVolumeLocalDetailsWire *CleanRoomAsset_VolumeLocalDetails
-	var localDetailsViewLocalDetailsWire *CleanRoomAsset_ViewLocalDetails
-	var localDetailsForeignTableLocalDetailsWire *CleanRoomAsset_ForeignTableLocalDetails
-	switch value := v.LocalDetails.(type) {
-	case nil:
-	case *sdk.CleanRoomAsset_LocalDetails_TableLocalDetails:
-		if value != nil {
-			localDetailsTableLocalDetailsConverted, err := CleanRoomAsset_TableLocalDetailsFromSDK(&value.TableLocalDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.TableLocalDetails", err)
-			}
-			localDetailsTableLocalDetailsWire = localDetailsTableLocalDetailsConverted
-		}
-	case *sdk.CleanRoomAsset_LocalDetails_VolumeLocalDetails:
-		if value != nil {
-			localDetailsVolumeLocalDetailsConverted, err := CleanRoomAsset_VolumeLocalDetailsFromSDK(&value.VolumeLocalDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.VolumeLocalDetails", err)
-			}
-			localDetailsVolumeLocalDetailsWire = localDetailsVolumeLocalDetailsConverted
-		}
-	case *sdk.CleanRoomAsset_LocalDetails_ViewLocalDetails:
-		if value != nil {
-			localDetailsViewLocalDetailsConverted, err := CleanRoomAsset_ViewLocalDetailsFromSDK(&value.ViewLocalDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.ViewLocalDetails", err)
-			}
-			localDetailsViewLocalDetailsWire = localDetailsViewLocalDetailsConverted
-		}
-	case *sdk.CleanRoomAsset_LocalDetails_ForeignTableLocalDetails:
-		if value != nil {
-			localDetailsForeignTableLocalDetailsConverted, err := CleanRoomAsset_ForeignTableLocalDetailsFromSDK(&value.ForeignTableLocalDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.ForeignTableLocalDetails", err)
-			}
-			localDetailsForeignTableLocalDetailsWire = localDetailsForeignTableLocalDetailsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CleanRoomAsset.LocalDetails", value)
-	}
-	var detailsTableWire *CleanRoomAsset_Table
-	var detailsNotebookWire *CleanRoomAsset_Notebook
-	var detailsViewWire *CleanRoomAsset_View
-	var detailsForeignTableWire *CleanRoomAsset_ForeignTable
-	var detailsJarAnalysisWire *CleanRoomAsset_JarAnalysis
-	switch value := v.Details.(type) {
-	case nil:
-	case *sdk.CleanRoomAsset_Details_Table:
-		if value != nil {
-			detailsTableConverted, err := CleanRoomAsset_TableFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.Table", err)
-			}
-			detailsTableWire = detailsTableConverted
-		}
-	case *sdk.CleanRoomAsset_Details_Notebook:
-		if value != nil {
-			detailsNotebookConverted, err := CleanRoomAsset_NotebookFromSDK(&value.Notebook)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.Notebook", err)
-			}
-			detailsNotebookWire = detailsNotebookConverted
-		}
-	case *sdk.CleanRoomAsset_Details_View:
-		if value != nil {
-			detailsViewConverted, err := CleanRoomAsset_ViewFromSDK(&value.View)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.View", err)
-			}
-			detailsViewWire = detailsViewConverted
-		}
-	case *sdk.CleanRoomAsset_Details_ForeignTable:
-		if value != nil {
-			detailsForeignTableConverted, err := CleanRoomAsset_ForeignTableFromSDK(&value.ForeignTable)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.ForeignTable", err)
-			}
-			detailsForeignTableWire = detailsForeignTableConverted
-		}
-	case *sdk.CleanRoomAsset_Details_JarAnalysis:
-		if value != nil {
-			detailsJarAnalysisConverted, err := CleanRoomAsset_JarAnalysisFromSDK(&value.JarAnalysis)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.JarAnalysis", err)
-			}
-			detailsJarAnalysisWire = detailsJarAnalysisConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CleanRoomAsset.Details", value)
-	}
-	return &CleanRoomAsset{
-		CleanRoomName:            v.CleanRoomName,
-		Name:                     v.Name,
-		AssetType:                v.AssetType,
-		AddedAt:                  addedAtWireValue,
-		Status:                   v.Status,
-		OwnerCollaboratorAlias:   v.OwnerCollaboratorAlias,
-		TableLocalDetails:        localDetailsTableLocalDetailsWire,
-		VolumeLocalDetails:       localDetailsVolumeLocalDetailsWire,
-		ViewLocalDetails:         localDetailsViewLocalDetailsWire,
-		ForeignTableLocalDetails: localDetailsForeignTableLocalDetailsWire,
-		Table:                    detailsTableWire,
-		Notebook:                 detailsNotebookWire,
-		View:                     detailsViewWire,
-		ForeignTable:             detailsForeignTableWire,
-		JarAnalysis:              detailsJarAnalysisWire,
-	}, nil
-}
-
-func CleanRoomAssetToSDK(w *CleanRoomAsset) (*sdk.CleanRoomAsset, error) {
-	if w == nil {
-		return nil, nil
-	}
-	localDetailsMembers := 0
-	if w.TableLocalDetails != nil {
-		localDetailsMembers++
-	}
-	if w.VolumeLocalDetails != nil {
-		localDetailsMembers++
-	}
-	if w.ViewLocalDetails != nil {
-		localDetailsMembers++
-	}
-	if w.ForeignTableLocalDetails != nil {
-		localDetailsMembers++
-	}
-	if localDetailsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.LocalDetails")
-	}
-	detailsMembers := 0
-	if w.Table != nil {
-		detailsMembers++
-	}
-	if w.Notebook != nil {
-		detailsMembers++
-	}
-	if w.View != nil {
-		detailsMembers++
-	}
-	if w.ForeignTable != nil {
-		detailsMembers++
-	}
-	if w.JarAnalysis != nil {
-		detailsMembers++
-	}
-	if detailsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.Details")
-	}
-	addedAtPublicValue, err := int64FromWire(w.AddedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.AddedAt", err)
-	}
-	localDetailsSelection := (&sdk.CleanRoomAsset{}).LocalDetails
-	switch {
-	case w.TableLocalDetails != nil:
-		localDetailsTableLocalDetailsConverted, err := CleanRoomAsset_TableLocalDetailsToSDK(w.TableLocalDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.TableLocalDetails", err)
-		}
-		localDetailsSelection = &sdk.CleanRoomAsset_LocalDetails_TableLocalDetails{TableLocalDetails: *localDetailsTableLocalDetailsConverted}
-	case w.VolumeLocalDetails != nil:
-		localDetailsVolumeLocalDetailsConverted, err := CleanRoomAsset_VolumeLocalDetailsToSDK(w.VolumeLocalDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.VolumeLocalDetails", err)
-		}
-		localDetailsSelection = &sdk.CleanRoomAsset_LocalDetails_VolumeLocalDetails{VolumeLocalDetails: *localDetailsVolumeLocalDetailsConverted}
-	case w.ViewLocalDetails != nil:
-		localDetailsViewLocalDetailsConverted, err := CleanRoomAsset_ViewLocalDetailsToSDK(w.ViewLocalDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.ViewLocalDetails", err)
-		}
-		localDetailsSelection = &sdk.CleanRoomAsset_LocalDetails_ViewLocalDetails{ViewLocalDetails: *localDetailsViewLocalDetailsConverted}
-	case w.ForeignTableLocalDetails != nil:
-		localDetailsForeignTableLocalDetailsConverted, err := CleanRoomAsset_ForeignTableLocalDetailsToSDK(w.ForeignTableLocalDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails.ForeignTableLocalDetails", err)
-		}
-		localDetailsSelection = &sdk.CleanRoomAsset_LocalDetails_ForeignTableLocalDetails{ForeignTableLocalDetails: *localDetailsForeignTableLocalDetailsConverted}
-	}
-	detailsSelection := (&sdk.CleanRoomAsset{}).Details
-	switch {
-	case w.Table != nil:
-		detailsTableConverted, err := CleanRoomAsset_TableToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.Table", err)
-		}
-		detailsSelection = &sdk.CleanRoomAsset_Details_Table{Table: *detailsTableConverted}
-	case w.Notebook != nil:
-		detailsNotebookConverted, err := CleanRoomAsset_NotebookToSDK(w.Notebook)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.Notebook", err)
-		}
-		detailsSelection = &sdk.CleanRoomAsset_Details_Notebook{Notebook: *detailsNotebookConverted}
-	case w.View != nil:
-		detailsViewConverted, err := CleanRoomAsset_ViewToSDK(w.View)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.View", err)
-		}
-		detailsSelection = &sdk.CleanRoomAsset_Details_View{View: *detailsViewConverted}
-	case w.ForeignTable != nil:
-		detailsForeignTableConverted, err := CleanRoomAsset_ForeignTableToSDK(w.ForeignTable)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.ForeignTable", err)
-		}
-		detailsSelection = &sdk.CleanRoomAsset_Details_ForeignTable{ForeignTable: *detailsForeignTableConverted}
-	case w.JarAnalysis != nil:
-		detailsJarAnalysisConverted, err := CleanRoomAsset_JarAnalysisToSDK(w.JarAnalysis)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details.JarAnalysis", err)
-		}
-		detailsSelection = &sdk.CleanRoomAsset_Details_JarAnalysis{JarAnalysis: *detailsJarAnalysisConverted}
-	}
-	return &sdk.CleanRoomAsset{
-		CleanRoomName:          w.CleanRoomName,
-		Name:                   w.Name,
-		AssetType:              w.AssetType,
-		AddedAt:                addedAtPublicValue,
-		Status:                 w.Status,
-		OwnerCollaboratorAlias: w.OwnerCollaboratorAlias,
-		LocalDetails:           localDetailsSelection,
-		Details:                detailsSelection,
-	}, nil
-}
-
 type CleanRoomAsset_ForeignTable struct {
 	// The metadata information of the columns in the foreign table
 	Columns []ColumnInfo `json:"columns,omitempty"`
-}
-
-func CleanRoomAsset_ForeignTableFromSDK(v *sdk.CleanRoomAsset_ForeignTable) (*CleanRoomAsset_ForeignTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_ForeignTable.Columns", err)
-	}
-	return &CleanRoomAsset_ForeignTable{
-		Columns: columnsWireValue,
-	}, nil
-}
-
-func CleanRoomAsset_ForeignTableToSDK(w *CleanRoomAsset_ForeignTable) (*sdk.CleanRoomAsset_ForeignTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_ForeignTable.Columns", err)
-	}
-	return &sdk.CleanRoomAsset_ForeignTable{
-		Columns: columnsPublicValue,
-	}, nil
 }
 
 type CleanRoomAsset_ForeignTableLocalDetails struct {
 	// The fully qualified name of the foreign table in its owner's local metastore,
 	// in the format of *catalog*.*schema*.*foreign_table_name*
 	LocalName *string `json:"local_name,omitempty"`
-}
-
-func CleanRoomAsset_ForeignTableLocalDetailsFromSDK(v *sdk.CleanRoomAsset_ForeignTableLocalDetails) (*CleanRoomAsset_ForeignTableLocalDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CleanRoomAsset_ForeignTableLocalDetails{
-		LocalName: v.LocalName,
-	}, nil
-}
-
-func CleanRoomAsset_ForeignTableLocalDetailsToSDK(w *CleanRoomAsset_ForeignTableLocalDetails) (*sdk.CleanRoomAsset_ForeignTableLocalDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomAsset_ForeignTableLocalDetails{
-		LocalName: w.LocalName,
-	}, nil
 }
 
 type CleanRoomAsset_JarAnalysis struct {
@@ -630,46 +267,6 @@ type CleanRoomAsset_JarAnalysis struct {
 	EnvironmentVersion *string `json:"environment_version,omitempty"`
 }
 
-func CleanRoomAsset_JarAnalysisFromSDK(v *sdk.CleanRoomAsset_JarAnalysis) (*CleanRoomAsset_JarAnalysis, error) {
-	if v == nil {
-		return nil, nil
-	}
-	reviewsWireValue, err := convertSlice(v.Reviews, CleanRoomJarAnalysisReviewFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_JarAnalysis.Reviews", err)
-	}
-	return &CleanRoomAsset_JarAnalysis{
-		Etag:                      v.Etag,
-		Description:               v.Description,
-		RunnerCollaboratorAliases: v.RunnerCollaboratorAliases,
-		Reviews:                   reviewsWireValue,
-		ReviewState:               v.ReviewState,
-		MainClassName:             v.MainClassName,
-		CentralJarFilePaths:       v.CentralJarFilePaths,
-		EnvironmentVersion:        v.EnvironmentVersion,
-	}, nil
-}
-
-func CleanRoomAsset_JarAnalysisToSDK(w *CleanRoomAsset_JarAnalysis) (*sdk.CleanRoomAsset_JarAnalysis, error) {
-	if w == nil {
-		return nil, nil
-	}
-	reviewsPublicValue, err := convertSlice(w.Reviews, CleanRoomJarAnalysisReviewToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_JarAnalysis.Reviews", err)
-	}
-	return &sdk.CleanRoomAsset_JarAnalysis{
-		Etag:                      w.Etag,
-		Description:               w.Description,
-		RunnerCollaboratorAliases: w.RunnerCollaboratorAliases,
-		Reviews:                   reviewsPublicValue,
-		ReviewState:               w.ReviewState,
-		MainClassName:             w.MainClassName,
-		CentralJarFilePaths:       w.CentralJarFilePaths,
-		EnvironmentVersion:        w.EnvironmentVersion,
-	}, nil
-}
-
 type CleanRoomAsset_Notebook struct {
 	// Base 64 representation of the notebook contents. This is the same format as
 	// returned by [workspace/export] with the format of **HTML**.
@@ -691,73 +288,9 @@ type CleanRoomAsset_Notebook struct {
 	EnvironmentVersion *string `json:"environment_version,omitempty"`
 }
 
-func CleanRoomAsset_NotebookFromSDK(v *sdk.CleanRoomAsset_Notebook) (*CleanRoomAsset_Notebook, error) {
-	if v == nil {
-		return nil, nil
-	}
-	reviewsWireValue, err := convertSlice(v.Reviews, CleanRoomNotebookReviewFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Notebook.Reviews", err)
-	}
-	return &CleanRoomAsset_Notebook{
-		NotebookContent:           v.NotebookContent,
-		Etag:                      v.Etag,
-		RunnerCollaboratorAliases: v.RunnerCollaboratorAliases,
-		Reviews:                   reviewsWireValue,
-		ReviewState:               v.ReviewState,
-		Description:               v.Description,
-		EnvironmentVersion:        v.EnvironmentVersion,
-	}, nil
-}
-
-func CleanRoomAsset_NotebookToSDK(w *CleanRoomAsset_Notebook) (*sdk.CleanRoomAsset_Notebook, error) {
-	if w == nil {
-		return nil, nil
-	}
-	reviewsPublicValue, err := convertSlice(w.Reviews, CleanRoomNotebookReviewToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Notebook.Reviews", err)
-	}
-	return &sdk.CleanRoomAsset_Notebook{
-		NotebookContent:           w.NotebookContent,
-		Etag:                      w.Etag,
-		RunnerCollaboratorAliases: w.RunnerCollaboratorAliases,
-		Reviews:                   reviewsPublicValue,
-		ReviewState:               w.ReviewState,
-		Description:               w.Description,
-		EnvironmentVersion:        w.EnvironmentVersion,
-	}, nil
-}
-
 type CleanRoomAsset_Table struct {
 	// The metadata information of the columns in the table
 	Columns []ColumnInfo `json:"columns,omitempty"`
-}
-
-func CleanRoomAsset_TableFromSDK(v *sdk.CleanRoomAsset_Table) (*CleanRoomAsset_Table, error) {
-	if v == nil {
-		return nil, nil
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Table.Columns", err)
-	}
-	return &CleanRoomAsset_Table{
-		Columns: columnsWireValue,
-	}, nil
-}
-
-func CleanRoomAsset_TableToSDK(w *CleanRoomAsset_Table) (*sdk.CleanRoomAsset_Table, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Table.Columns", err)
-	}
-	return &sdk.CleanRoomAsset_Table{
-		Columns: columnsPublicValue,
-	}, nil
 }
 
 type CleanRoomAsset_TableLocalDetails struct {
@@ -768,63 +301,9 @@ type CleanRoomAsset_TableLocalDetails struct {
 	Partitions []PartitionSpecification_Partition `json:"partitions,omitempty"`
 }
 
-func CleanRoomAsset_TableLocalDetailsFromSDK(v *sdk.CleanRoomAsset_TableLocalDetails) (*CleanRoomAsset_TableLocalDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	partitionsWireValue, err := convertSlice(v.Partitions, PartitionSpecification_PartitionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_TableLocalDetails.Partitions", err)
-	}
-	return &CleanRoomAsset_TableLocalDetails{
-		LocalName:  v.LocalName,
-		Partitions: partitionsWireValue,
-	}, nil
-}
-
-func CleanRoomAsset_TableLocalDetailsToSDK(w *CleanRoomAsset_TableLocalDetails) (*sdk.CleanRoomAsset_TableLocalDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	partitionsPublicValue, err := convertSlice(w.Partitions, PartitionSpecification_PartitionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_TableLocalDetails.Partitions", err)
-	}
-	return &sdk.CleanRoomAsset_TableLocalDetails{
-		LocalName:  w.LocalName,
-		Partitions: partitionsPublicValue,
-	}, nil
-}
-
 type CleanRoomAsset_View struct {
 	// The metadata information of the columns in the view
 	Columns []ColumnInfo `json:"columns,omitempty"`
-}
-
-func CleanRoomAsset_ViewFromSDK(v *sdk.CleanRoomAsset_View) (*CleanRoomAsset_View, error) {
-	if v == nil {
-		return nil, nil
-	}
-	columnsWireValue, err := convertSlice(v.Columns, ColumnInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_View.Columns", err)
-	}
-	return &CleanRoomAsset_View{
-		Columns: columnsWireValue,
-	}, nil
-}
-
-func CleanRoomAsset_ViewToSDK(w *CleanRoomAsset_View) (*sdk.CleanRoomAsset_View, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_View.Columns", err)
-	}
-	return &sdk.CleanRoomAsset_View{
-		Columns: columnsPublicValue,
-	}, nil
 }
 
 type CleanRoomAsset_ViewLocalDetails struct {
@@ -833,46 +312,10 @@ type CleanRoomAsset_ViewLocalDetails struct {
 	LocalName *string `json:"local_name,omitempty"`
 }
 
-func CleanRoomAsset_ViewLocalDetailsFromSDK(v *sdk.CleanRoomAsset_ViewLocalDetails) (*CleanRoomAsset_ViewLocalDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CleanRoomAsset_ViewLocalDetails{
-		LocalName: v.LocalName,
-	}, nil
-}
-
-func CleanRoomAsset_ViewLocalDetailsToSDK(w *CleanRoomAsset_ViewLocalDetails) (*sdk.CleanRoomAsset_ViewLocalDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomAsset_ViewLocalDetails{
-		LocalName: w.LocalName,
-	}, nil
-}
-
 type CleanRoomAsset_VolumeLocalDetails struct {
 	// The fully qualified name of the volume in its owner's local metastore, in the
 	// format of *catalog*.*schema*.*volume_name*
 	LocalName *string `json:"local_name,omitempty"`
-}
-
-func CleanRoomAsset_VolumeLocalDetailsFromSDK(v *sdk.CleanRoomAsset_VolumeLocalDetails) (*CleanRoomAsset_VolumeLocalDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CleanRoomAsset_VolumeLocalDetails{
-		LocalName: v.LocalName,
-	}, nil
-}
-
-func CleanRoomAsset_VolumeLocalDetailsToSDK(w *CleanRoomAsset_VolumeLocalDetails) (*sdk.CleanRoomAsset_VolumeLocalDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomAsset_VolumeLocalDetails{
-		LocalName: w.LocalName,
-	}, nil
 }
 
 type CleanRoomAutoApprovalRule struct {
@@ -887,97 +330,6 @@ type CleanRoomAutoApprovalRule struct {
 	RunnerCollaboratorAlias    *string                               `json:"runner_collaborator_alias,omitempty"`
 	// Timestamp of when the rule was created, in epoch milliseconds.
 	CreatedAt *int64 `json:"created_at,omitempty"`
-}
-
-func CleanRoomAutoApprovalRuleFromSDK(v *sdk.CleanRoomAutoApprovalRule) (*CleanRoomAutoApprovalRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAutoApprovalRule.CreatedAt", err)
-	}
-	var authorsAuthorCollaboratorAliasWire *string
-	var authorsAuthorScopeWire sdk.CleanRoomAutoApprovalRule_AuthorScope
-	switch value := v.Authors.(type) {
-	case nil:
-	case *sdk.CleanRoomAutoApprovalRule_Authors_AuthorCollaboratorAlias:
-		if value != nil {
-			authorsAuthorCollaboratorAliasWire = new(value.AuthorCollaboratorAlias)
-		}
-	case *sdk.CleanRoomAutoApprovalRule_Authors_AuthorScope:
-		if value != nil {
-			authorsAuthorScopeWire = value.AuthorScope
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CleanRoomAutoApprovalRule.Authors", value)
-	}
-	var runnersRunnerCollaboratorAliasWire *string
-	switch value := v.Runners.(type) {
-	case nil:
-	case *sdk.CleanRoomAutoApprovalRule_Runners_RunnerCollaboratorAlias:
-		if value != nil {
-			runnersRunnerCollaboratorAliasWire = new(value.RunnerCollaboratorAlias)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CleanRoomAutoApprovalRule.Runners", value)
-	}
-	return &CleanRoomAutoApprovalRule{
-		CleanRoomName:              v.CleanRoomName,
-		RuleId:                     v.RuleId,
-		RuleOwnerCollaboratorAlias: v.RuleOwnerCollaboratorAlias,
-		AuthorCollaboratorAlias:    authorsAuthorCollaboratorAliasWire,
-		AuthorScope:                authorsAuthorScopeWire,
-		RunnerCollaboratorAlias:    runnersRunnerCollaboratorAliasWire,
-		CreatedAt:                  createdAtWireValue,
-	}, nil
-}
-
-func CleanRoomAutoApprovalRuleToSDK(w *CleanRoomAutoApprovalRule) (*sdk.CleanRoomAutoApprovalRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authorsMembers := 0
-	if w.AuthorCollaboratorAlias != nil {
-		authorsMembers++
-	}
-	if w.AuthorScope != "" {
-		authorsMembers++
-	}
-	if authorsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Authors")
-	}
-	runnersMembers := 0
-	if w.RunnerCollaboratorAlias != nil {
-		runnersMembers++
-	}
-	if runnersMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Runners")
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomAutoApprovalRule.CreatedAt", err)
-	}
-	authorsSelection := (&sdk.CleanRoomAutoApprovalRule{}).Authors
-	switch {
-	case w.AuthorCollaboratorAlias != nil:
-		authorsSelection = &sdk.CleanRoomAutoApprovalRule_Authors_AuthorCollaboratorAlias{AuthorCollaboratorAlias: *w.AuthorCollaboratorAlias}
-	case w.AuthorScope != "":
-		authorsSelection = &sdk.CleanRoomAutoApprovalRule_Authors_AuthorScope{AuthorScope: w.AuthorScope}
-	}
-	runnersSelection := (&sdk.CleanRoomAutoApprovalRule{}).Runners
-	switch {
-	case w.RunnerCollaboratorAlias != nil:
-		runnersSelection = &sdk.CleanRoomAutoApprovalRule_Runners_RunnerCollaboratorAlias{RunnerCollaboratorAlias: *w.RunnerCollaboratorAlias}
-	}
-	return &sdk.CleanRoomAutoApprovalRule{
-		CleanRoomName:              w.CleanRoomName,
-		RuleId:                     w.RuleId,
-		RuleOwnerCollaboratorAlias: w.RuleOwnerCollaboratorAlias,
-		CreatedAt:                  createdAtPublicValue,
-		Authors:                    authorsSelection,
-		Runners:                    runnersSelection,
-	}, nil
 }
 
 // Publicly visible clean room collaborator..
@@ -1012,42 +364,6 @@ type CleanRoomCollaborator struct {
 	DisplayName *string `json:"display_name,omitempty"`
 }
 
-func CleanRoomCollaboratorFromSDK(v *sdk.CleanRoomCollaborator) (*CleanRoomCollaborator, error) {
-	if v == nil {
-		return nil, nil
-	}
-	inviteRecipientWorkspaceIdWireValue, err := int64ToWire(v.InviteRecipientWorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomCollaborator.InviteRecipientWorkspaceId", err)
-	}
-	return &CleanRoomCollaborator{
-		GlobalMetastoreId:          v.GlobalMetastoreId,
-		OrganizationName:           v.OrganizationName,
-		InviteRecipientWorkspaceId: inviteRecipientWorkspaceIdWireValue,
-		InviteRecipientEmail:       v.InviteRecipientEmail,
-		CollaboratorAlias:          v.CollaboratorAlias,
-		DisplayName:                v.DisplayName,
-	}, nil
-}
-
-func CleanRoomCollaboratorToSDK(w *CleanRoomCollaborator) (*sdk.CleanRoomCollaborator, error) {
-	if w == nil {
-		return nil, nil
-	}
-	inviteRecipientWorkspaceIdPublicValue, err := int64FromWire(w.InviteRecipientWorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomCollaborator.InviteRecipientWorkspaceId", err)
-	}
-	return &sdk.CleanRoomCollaborator{
-		GlobalMetastoreId:          w.GlobalMetastoreId,
-		OrganizationName:           w.OrganizationName,
-		InviteRecipientWorkspaceId: inviteRecipientWorkspaceIdPublicValue,
-		InviteRecipientEmail:       w.InviteRecipientEmail,
-		CollaboratorAlias:          w.CollaboratorAlias,
-		DisplayName:                w.DisplayName,
-	}, nil
-}
-
 // This only applies to a JAR Analysis as a first-class asset in the Clean Room,
 // and not to Volumes.
 type CleanRoomJarAnalysisReview struct {
@@ -1063,40 +379,6 @@ type CleanRoomJarAnalysisReview struct {
 	ReviewSubReason CleanRoomJarAnalysisReview_JarAnalysisReviewSubReason `json:"review_sub_reason,omitempty"`
 }
 
-func CleanRoomJarAnalysisReviewFromSDK(v *sdk.CleanRoomJarAnalysisReview) (*CleanRoomJarAnalysisReview, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtMillisWireValue, err := int64ToWire(v.CreatedAtMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomJarAnalysisReview.CreatedAtMillis", err)
-	}
-	return &CleanRoomJarAnalysisReview{
-		ReviewerCollaboratorAlias: v.ReviewerCollaboratorAlias,
-		CreatedAtMillis:           createdAtMillisWireValue,
-		ReviewState:               v.ReviewState,
-		Comment:                   v.Comment,
-		ReviewSubReason:           v.ReviewSubReason,
-	}, nil
-}
-
-func CleanRoomJarAnalysisReviewToSDK(w *CleanRoomJarAnalysisReview) (*sdk.CleanRoomJarAnalysisReview, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtMillisPublicValue, err := int64FromWire(w.CreatedAtMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomJarAnalysisReview.CreatedAtMillis", err)
-	}
-	return &sdk.CleanRoomJarAnalysisReview{
-		ReviewerCollaboratorAlias: w.ReviewerCollaboratorAlias,
-		CreatedAtMillis:           createdAtMillisPublicValue,
-		ReviewState:               w.ReviewState,
-		Comment:                   w.Comment,
-		ReviewSubReason:           w.ReviewSubReason,
-	}, nil
-}
-
 type CleanRoomNotebookReview struct {
 	// Collaborator alias of the reviewer
 	ReviewerCollaboratorAlias *string `json:"reviewer_collaborator_alias,omitempty"`
@@ -1108,40 +390,6 @@ type CleanRoomNotebookReview struct {
 	Comment *string `json:"comment,omitempty"`
 	// Specified when the review was not explicitly made by a user
 	ReviewSubReason CleanRoomNotebookReview_NotebookReviewSubReason `json:"review_sub_reason,omitempty"`
-}
-
-func CleanRoomNotebookReviewFromSDK(v *sdk.CleanRoomNotebookReview) (*CleanRoomNotebookReview, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtMillisWireValue, err := int64ToWire(v.CreatedAtMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookReview.CreatedAtMillis", err)
-	}
-	return &CleanRoomNotebookReview{
-		ReviewerCollaboratorAlias: v.ReviewerCollaboratorAlias,
-		CreatedAtMillis:           createdAtMillisWireValue,
-		ReviewState:               v.ReviewState,
-		Comment:                   v.Comment,
-		ReviewSubReason:           v.ReviewSubReason,
-	}, nil
-}
-
-func CleanRoomNotebookReviewToSDK(w *CleanRoomNotebookReview) (*sdk.CleanRoomNotebookReview, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtMillisPublicValue, err := int64FromWire(w.CreatedAtMillis)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookReview.CreatedAtMillis", err)
-	}
-	return &sdk.CleanRoomNotebookReview{
-		ReviewerCollaboratorAlias: w.ReviewerCollaboratorAlias,
-		CreatedAtMillis:           createdAtMillisPublicValue,
-		ReviewState:               w.ReviewState,
-		Comment:                   w.Comment,
-		ReviewSubReason:           w.ReviewSubReason,
-	}, nil
 }
 
 // Stores information about a single task run..
@@ -1178,53 +426,6 @@ type CleanRoomNotebookTaskRun struct {
 	SharedOutputSchemaExpirationTime *int64 `json:"shared_output_schema_expiration_time,omitempty"`
 }
 
-func CleanRoomNotebookTaskRunToSDK(w *CleanRoomNotebookTaskRun) (*sdk.CleanRoomNotebookTaskRun, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.StartTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.RunDuration", err)
-	}
-	notebookJobRunStatePublicValue, err := CleanRoomTaskRunStateToSDK(w.NotebookJobRunState)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.NotebookJobRunState", err)
-	}
-	collaboratorJobRunInfoPublicValue, err := CollaboratorJobRunInfoToSDK(w.CollaboratorJobRunInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.CollaboratorJobRunInfo", err)
-	}
-	outputSchemaExpirationTimePublicValue, err := int64FromWire(w.OutputSchemaExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.OutputSchemaExpirationTime", err)
-	}
-	notebookUpdatedAtPublicValue, err := int64FromWire(w.NotebookUpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.NotebookUpdatedAt", err)
-	}
-	sharedOutputSchemaExpirationTimePublicValue, err := int64FromWire(w.SharedOutputSchemaExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.SharedOutputSchemaExpirationTime", err)
-	}
-	return &sdk.CleanRoomNotebookTaskRun{
-		NotebookName:                     w.NotebookName,
-		StartTime:                        startTimePublicValue,
-		RunDuration:                      runDurationPublicValue,
-		NotebookJobRunState:              notebookJobRunStatePublicValue,
-		CollaboratorJobRunInfo:           collaboratorJobRunInfoPublicValue,
-		OutputSchemaName:                 w.OutputSchemaName,
-		OutputSchemaExpirationTime:       outputSchemaExpirationTimePublicValue,
-		NotebookEtag:                     w.NotebookEtag,
-		NotebookUpdatedAt:                notebookUpdatedAtPublicValue,
-		SharedOutputSchemaName:           w.SharedOutputSchemaName,
-		SharedOutputSchemaExpirationTime: sharedOutputSchemaExpirationTimePublicValue,
-	}, nil
-}
-
 type CleanRoomOutputCatalog struct {
 	Status CleanRoomOutputCatalog_OutputCatalogStatus `json:"status,omitempty"`
 	// The name of the output catalog in UC. It should follow [UC securable naming
@@ -1232,26 +433,6 @@ type CleanRoomOutputCatalog struct {
 	//
 	// [UC securable naming requirements]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#securable-object-naming-requirements
 	CatalogName *string `json:"catalog_name,omitempty"`
-}
-
-func CleanRoomOutputCatalogFromSDK(v *sdk.CleanRoomOutputCatalog) (*CleanRoomOutputCatalog, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CleanRoomOutputCatalog{
-		Status:      v.Status,
-		CatalogName: v.CatalogName,
-	}, nil
-}
-
-func CleanRoomOutputCatalogToSDK(w *CleanRoomOutputCatalog) (*sdk.CleanRoomOutputCatalog, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomOutputCatalog{
-		Status:      w.Status,
-		CatalogName: w.CatalogName,
-	}, nil
 }
 
 // Publicly visible central clean room details..
@@ -1286,72 +467,6 @@ type CleanRoomRemoteDetail struct {
 	PackageProviderCollaboratorAlias *string `json:"package_provider_collaborator_alias,omitempty"`
 }
 
-func CleanRoomRemoteDetailFromSDK(v *sdk.CleanRoomRemoteDetail) (*CleanRoomRemoteDetail, error) {
-	if v == nil {
-		return nil, nil
-	}
-	collaboratorsWireValue, err := convertSlice(v.Collaborators, CleanRoomCollaboratorFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Collaborators", err)
-	}
-	creatorWireValue, err := CleanRoomCollaboratorFromSDK(v.Creator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Creator", err)
-	}
-	egressNetworkPolicyWireValue, err := EgressNetworkPolicyFromSDK(v.EgressNetworkPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.EgressNetworkPolicy", err)
-	}
-	complianceSecurityProfileWireValue, err := ComplianceSecurityProfileFromSDK(v.ComplianceSecurityProfile)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.ComplianceSecurityProfile", err)
-	}
-	return &CleanRoomRemoteDetail{
-		CentralCleanRoomId:               v.CentralCleanRoomId,
-		CloudVendor:                      v.CloudVendor,
-		Region:                           v.Region,
-		Collaborators:                    collaboratorsWireValue,
-		Creator:                          creatorWireValue,
-		EgressNetworkPolicy:              egressNetworkPolicyWireValue,
-		ComplianceSecurityProfile:        complianceSecurityProfileWireValue,
-		EnableSharedOutput:               v.EnableSharedOutput,
-		PackageProviderCollaboratorAlias: v.PackageProviderCollaboratorAlias,
-	}, nil
-}
-
-func CleanRoomRemoteDetailToSDK(w *CleanRoomRemoteDetail) (*sdk.CleanRoomRemoteDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	collaboratorsPublicValue, err := convertSlice(w.Collaborators, CleanRoomCollaboratorToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Collaborators", err)
-	}
-	creatorPublicValue, err := CleanRoomCollaboratorToSDK(w.Creator)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Creator", err)
-	}
-	egressNetworkPolicyPublicValue, err := EgressNetworkPolicyToSDK(w.EgressNetworkPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.EgressNetworkPolicy", err)
-	}
-	complianceSecurityProfilePublicValue, err := ComplianceSecurityProfileToSDK(w.ComplianceSecurityProfile)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.ComplianceSecurityProfile", err)
-	}
-	return &sdk.CleanRoomRemoteDetail{
-		CentralCleanRoomId:               w.CentralCleanRoomId,
-		CloudVendor:                      w.CloudVendor,
-		Region:                           w.Region,
-		Collaborators:                    collaboratorsPublicValue,
-		Creator:                          creatorPublicValue,
-		EgressNetworkPolicy:              egressNetworkPolicyPublicValue,
-		ComplianceSecurityProfile:        complianceSecurityProfilePublicValue,
-		EnableSharedOutput:               w.EnableSharedOutput,
-		PackageProviderCollaboratorAlias: w.PackageProviderCollaboratorAlias,
-	}, nil
-}
-
 // Stores information about a single task run..
 type CleanRoomTaskRun struct {
 	// Name of the executable.
@@ -1378,51 +493,6 @@ type CleanRoomTaskRun struct {
 	SharedOutputInfo *CleanRoomTaskRun_OutputInfo `json:"shared_output_info,omitempty"`
 }
 
-func CleanRoomTaskRunToSDK(w *CleanRoomTaskRun) (*sdk.CleanRoomTaskRun, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.StartTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.RunDuration", err)
-	}
-	taskRunStatePublicValue, err := CleanRoomTaskRunStateToSDK(w.TaskRunState)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.TaskRunState", err)
-	}
-	collaboratorJobRunInfoPublicValue, err := CollaboratorJobRunInfoToSDK(w.CollaboratorJobRunInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.CollaboratorJobRunInfo", err)
-	}
-	outputInfoPublicValue, err := CleanRoomTaskRun_OutputInfoToSDK(w.OutputInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.OutputInfo", err)
-	}
-	analysisDetailsPublicValue, err := CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsToSDK(w.AnalysisDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.AnalysisDetails", err)
-	}
-	sharedOutputInfoPublicValue, err := CleanRoomTaskRun_OutputInfoToSDK(w.SharedOutputInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.SharedOutputInfo", err)
-	}
-	return &sdk.CleanRoomTaskRun{
-		Name:                   w.Name,
-		TaskType:               w.TaskType,
-		StartTime:              startTimePublicValue,
-		RunDuration:            runDurationPublicValue,
-		TaskRunState:           taskRunStatePublicValue,
-		CollaboratorJobRunInfo: collaboratorJobRunInfoPublicValue,
-		OutputInfo:             outputInfoPublicValue,
-		AnalysisDetails:        analysisDetailsPublicValue,
-		SharedOutputInfo:       sharedOutputInfoPublicValue,
-	}, nil
-}
-
 type CleanRoomTaskRun_CleanRoomTaskAnalysisDetails struct {
 	// Etag of the asset executed in this task run, used to identify the asset
 	// version.
@@ -1431,40 +501,12 @@ type CleanRoomTaskRun_CleanRoomTaskAnalysisDetails struct {
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
-func CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsToSDK(w *CleanRoomTaskRun_CleanRoomTaskAnalysisDetails) (*sdk.CleanRoomTaskRun_CleanRoomTaskAnalysisDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun_CleanRoomTaskAnalysisDetails.UpdatedAt", err)
-	}
-	return &sdk.CleanRoomTaskRun_CleanRoomTaskAnalysisDetails{
-		Etag:      w.Etag,
-		UpdatedAt: updatedAtPublicValue,
-	}, nil
-}
-
 type CleanRoomTaskRun_OutputInfo struct {
 	// Name of the output schema associated with the clean room task run.
 	OutputSchemaName *string `json:"output_schema_name,omitempty"`
 	// Expiration time of the output schema of the task run (if any), in epoch
 	// milliseconds.
 	OutputSchemaExpirationTime *int64 `json:"output_schema_expiration_time,omitempty"`
-}
-
-func CleanRoomTaskRun_OutputInfoToSDK(w *CleanRoomTaskRun_OutputInfo) (*sdk.CleanRoomTaskRun_OutputInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	outputSchemaExpirationTimePublicValue, err := int64FromWire(w.OutputSchemaExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun_OutputInfo.OutputSchemaExpirationTime", err)
-	}
-	return &sdk.CleanRoomTaskRun_OutputInfo{
-		OutputSchemaName:           w.OutputSchemaName,
-		OutputSchemaExpirationTime: outputSchemaExpirationTimePublicValue,
-	}, nil
 }
 
 // Stores the run state of the clean rooms notebook task..
@@ -1479,16 +521,6 @@ type CleanRoomTaskRunState struct {
 	ResultState CleanRoomTaskRunResultState `json:"result_state,omitempty"`
 }
 
-func CleanRoomTaskRunStateToSDK(w *CleanRoomTaskRunState) (*sdk.CleanRoomTaskRunState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomTaskRunState{
-		LifeCycleState: w.LifeCycleState,
-		ResultState:    w.ResultState,
-	}, nil
-}
-
 type CollaboratorJobRunInfo struct {
 	// Job ID of the task run in the collaborator's workspace.
 	CollaboratorJobId *int64 `json:"collaborator_job_id,omitempty"`
@@ -1500,35 +532,6 @@ type CollaboratorJobRunInfo struct {
 	CollaboratorWorkspaceId *int64 `json:"collaborator_workspace_id,omitempty"`
 	// Alias of the collaborator that triggered the task run.
 	CollaboratorAlias *string `json:"collaborator_alias,omitempty"`
-}
-
-func CollaboratorJobRunInfoToSDK(w *CollaboratorJobRunInfo) (*sdk.CollaboratorJobRunInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	collaboratorJobIdPublicValue, err := int64FromWire(w.CollaboratorJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CollaboratorJobRunInfo.CollaboratorJobId", err)
-	}
-	collaboratorJobRunIdPublicValue, err := int64FromWire(w.CollaboratorJobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CollaboratorJobRunInfo.CollaboratorJobRunId", err)
-	}
-	collaboratorTaskRunIdPublicValue, err := int64FromWire(w.CollaboratorTaskRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CollaboratorJobRunInfo.CollaboratorTaskRunId", err)
-	}
-	collaboratorWorkspaceIdPublicValue, err := int64FromWire(w.CollaboratorWorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CollaboratorJobRunInfo.CollaboratorWorkspaceId", err)
-	}
-	return &sdk.CollaboratorJobRunInfo{
-		CollaboratorJobId:       collaboratorJobIdPublicValue,
-		CollaboratorJobRunId:    collaboratorJobRunIdPublicValue,
-		CollaboratorTaskRunId:   collaboratorTaskRunIdPublicValue,
-		CollaboratorWorkspaceId: collaboratorWorkspaceIdPublicValue,
-		CollaboratorAlias:       w.CollaboratorAlias,
-	}, nil
 }
 
 type ColumnInfo struct {
@@ -1556,54 +559,6 @@ type ColumnInfo struct {
 	Mask           *ColumnMask `json:"mask,omitempty"`
 }
 
-func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maskWireValue, err := ColumnMaskFromSDK(v.Mask)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
-	}
-	return &ColumnInfo{
-		Name:             v.Name,
-		TypeText:         v.TypeText,
-		TypeName:         v.TypeName,
-		Position:         v.Position,
-		TypePrecision:    v.TypePrecision,
-		TypeScale:        v.TypeScale,
-		TypeIntervalType: v.TypeIntervalType,
-		TypeJson:         v.TypeJson,
-		Comment:          v.Comment,
-		Nullable:         v.Nullable,
-		PartitionIndex:   v.PartitionIndex,
-		Mask:             maskWireValue,
-	}, nil
-}
-
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maskPublicValue, err := ColumnMaskToSDK(w.Mask)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
-	}
-	return &sdk.ColumnInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeName:         w.TypeName,
-		Position:         w.Position,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-		TypeJson:         w.TypeJson,
-		Comment:          w.Comment,
-		Nullable:         w.Nullable,
-		PartitionIndex:   w.PartitionIndex,
-		Mask:             maskPublicValue,
-	}, nil
-}
-
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
@@ -1618,36 +573,6 @@ type ColumnMask struct {
 	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
-func ColumnMaskFromSDK(v *sdk.ColumnMask) (*ColumnMask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	usingArgumentsWireValue, err := convertSlice(v.UsingArguments, PolicyFunctionArgumentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
-	}
-	return &ColumnMask{
-		FunctionName:     v.FunctionName,
-		UsingColumnNames: v.UsingColumnNames,
-		UsingArguments:   usingArgumentsWireValue,
-	}, nil
-}
-
-func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usingArgumentsPublicValue, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
-	}
-	return &sdk.ColumnMask{
-		FunctionName:     w.FunctionName,
-		UsingColumnNames: w.UsingColumnNames,
-		UsingArguments:   usingArgumentsPublicValue,
-	}, nil
-}
-
 // The compliance security profile used to process regulated data following
 // compliance standards..
 type ComplianceSecurityProfile struct {
@@ -1658,41 +583,8 @@ type ComplianceSecurityProfile struct {
 	ComplianceStandards []ComplianceStandard `json:"compliance_standards,omitempty"`
 }
 
-func ComplianceSecurityProfileFromSDK(v *sdk.ComplianceSecurityProfile) (*ComplianceSecurityProfile, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComplianceSecurityProfile{
-		IsEnabled:           v.IsEnabled,
-		ComplianceStandards: v.ComplianceStandards,
-	}, nil
-}
-
-func ComplianceSecurityProfileToSDK(w *ComplianceSecurityProfile) (*sdk.ComplianceSecurityProfile, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComplianceSecurityProfile{
-		IsEnabled:           w.IsEnabled,
-		ComplianceStandards: w.ComplianceStandards,
-	}, nil
-}
-
 type CreateCleanRoomAssetRequest struct {
 	Asset *CleanRoomAsset `json:"asset,omitempty"`
-}
-
-func CreateCleanRoomAssetRequestFromSDK(v *sdk.CreateCleanRoomAssetRequest) (*CreateCleanRoomAssetRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	assetWireValue, err := CleanRoomAssetFromSDK(v.Asset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetRequest.Asset", err)
-	}
-	return &CreateCleanRoomAssetRequest{
-		Asset: assetWireValue,
-	}, nil
 }
 
 type CreateCleanRoomAssetReviewRequest struct {
@@ -1706,42 +598,6 @@ type CreateCleanRoomAssetReviewRequest struct {
 	JarAnalysisReview *JarAnalysisVersionReview `json:"jar_analysis_review,omitempty"`
 }
 
-func CreateCleanRoomAssetReviewRequestFromSDK(v *sdk.CreateCleanRoomAssetReviewRequest) (*CreateCleanRoomAssetReviewRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var reviewNotebookReviewWire *NotebookVersionReview
-	var reviewJarAnalysisReviewWire *JarAnalysisVersionReview
-	switch value := v.Review.(type) {
-	case nil:
-	case *sdk.CreateCleanRoomAssetReviewRequest_Review_NotebookReview:
-		if value != nil {
-			reviewNotebookReviewConverted, err := NotebookVersionReviewFromSDK(&value.NotebookReview)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review.NotebookReview", err)
-			}
-			reviewNotebookReviewWire = reviewNotebookReviewConverted
-		}
-	case *sdk.CreateCleanRoomAssetReviewRequest_Review_JarAnalysisReview:
-		if value != nil {
-			reviewJarAnalysisReviewConverted, err := JarAnalysisVersionReviewFromSDK(&value.JarAnalysisReview)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review.JarAnalysisReview", err)
-			}
-			reviewJarAnalysisReviewWire = reviewJarAnalysisReviewConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateCleanRoomAssetReviewRequest.Review", value)
-	}
-	return &CreateCleanRoomAssetReviewRequest{
-		CleanRoomName:     v.CleanRoomName,
-		Name:              v.Name,
-		AssetType:         v.AssetType,
-		NotebookReview:    reviewNotebookReviewWire,
-		JarAnalysisReview: reviewJarAnalysisReviewWire,
-	}, nil
-}
-
 type CreateCleanRoomAssetReviewResponse struct {
 	// All existing notebook approvals or rejections
 	NotebookReviews []CleanRoomNotebookReview `json:"notebook_reviews,omitempty"`
@@ -1751,57 +607,8 @@ type CreateCleanRoomAssetReviewResponse struct {
 	JarAnalysisReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"jar_analysis_review_state,omitempty"`
 }
 
-func CreateCleanRoomAssetReviewResponseToSDK(w *CreateCleanRoomAssetReviewResponse) (*sdk.CreateCleanRoomAssetReviewResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	reviewStateMembers := 0
-	if w.NotebookReviewState != "" {
-		reviewStateMembers++
-	}
-	if w.JarAnalysisReviewState != "" {
-		reviewStateMembers++
-	}
-	if reviewStateMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCleanRoomAssetReviewResponse.ReviewState")
-	}
-	notebookReviewsPublicValue, err := convertSlice(w.NotebookReviews, CleanRoomNotebookReviewToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.NotebookReviews", err)
-	}
-	jarAnalysisReviewsPublicValue, err := convertSlice(w.JarAnalysisReviews, CleanRoomJarAnalysisReviewToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.JarAnalysisReviews", err)
-	}
-	reviewStateSelection := (&sdk.CreateCleanRoomAssetReviewResponse{}).ReviewState
-	switch {
-	case w.NotebookReviewState != "":
-		reviewStateSelection = &sdk.CreateCleanRoomAssetReviewResponse_ReviewState_NotebookReviewState{NotebookReviewState: w.NotebookReviewState}
-	case w.JarAnalysisReviewState != "":
-		reviewStateSelection = &sdk.CreateCleanRoomAssetReviewResponse_ReviewState_JarAnalysisReviewState{JarAnalysisReviewState: w.JarAnalysisReviewState}
-	}
-	return &sdk.CreateCleanRoomAssetReviewResponse{
-		NotebookReviews:    notebookReviewsPublicValue,
-		JarAnalysisReviews: jarAnalysisReviewsPublicValue,
-		ReviewState:        reviewStateSelection,
-	}, nil
-}
-
 type CreateCleanRoomAutoApprovalRuleRequest struct {
 	AutoApprovalRule *CleanRoomAutoApprovalRule `json:"auto_approval_rule,omitempty"`
-}
-
-func CreateCleanRoomAutoApprovalRuleRequestFromSDK(v *sdk.CreateCleanRoomAutoApprovalRuleRequest) (*CreateCleanRoomAutoApprovalRuleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	autoApprovalRuleWireValue, err := CleanRoomAutoApprovalRuleFromSDK(v.AutoApprovalRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
-	}
-	return &CreateCleanRoomAutoApprovalRuleRequest{
-		AutoApprovalRule: autoApprovalRuleWireValue,
-	}, nil
 }
 
 type CreateCleanRoomOutputCatalogRequest struct {
@@ -1810,52 +617,12 @@ type CreateCleanRoomOutputCatalogRequest struct {
 	OutputCatalog *CleanRoomOutputCatalog `json:"output_catalog,omitempty"`
 }
 
-func CreateCleanRoomOutputCatalogRequestFromSDK(v *sdk.CreateCleanRoomOutputCatalogRequest) (*CreateCleanRoomOutputCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	outputCatalogWireValue, err := CleanRoomOutputCatalogFromSDK(v.OutputCatalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogRequest.OutputCatalog", err)
-	}
-	return &CreateCleanRoomOutputCatalogRequest{
-		CleanRoomName: v.CleanRoomName,
-		OutputCatalog: outputCatalogWireValue,
-	}, nil
-}
-
 type CreateCleanRoomOutputCatalogResponse struct {
 	OutputCatalog *CleanRoomOutputCatalog `json:"output_catalog,omitempty"`
 }
 
-func CreateCleanRoomOutputCatalogResponseToSDK(w *CreateCleanRoomOutputCatalogResponse) (*sdk.CreateCleanRoomOutputCatalogResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	outputCatalogPublicValue, err := CleanRoomOutputCatalogToSDK(w.OutputCatalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogResponse.OutputCatalog", err)
-	}
-	return &sdk.CreateCleanRoomOutputCatalogResponse{
-		OutputCatalog: outputCatalogPublicValue,
-	}, nil
-}
-
 type CreateCleanRoomRequest struct {
 	CleanRoom *CleanRoom `json:"clean_room,omitempty"`
-}
-
-func CreateCleanRoomRequestFromSDK(v *sdk.CreateCleanRoomRequest) (*CreateCleanRoomRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cleanRoomWireValue, err := CleanRoomFromSDK(v.CleanRoom)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomRequest.CleanRoom", err)
-	}
-	return &CreateCleanRoomRequest{
-		CleanRoom: cleanRoomWireValue,
-	}, nil
 }
 
 // The network policies applying for egress traffic. This message is used by the
@@ -1867,86 +634,12 @@ type EgressNetworkPolicy struct {
 	InternetAccess *EgressNetworkPolicy_InternetAccessPolicy `json:"internet_access,omitempty"`
 }
 
-func EgressNetworkPolicyFromSDK(v *sdk.EgressNetworkPolicy) (*EgressNetworkPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	internetAccessWireValue, err := EgressNetworkPolicy_InternetAccessPolicyFromSDK(v.InternetAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.InternetAccess", err)
-	}
-	return &EgressNetworkPolicy{
-		InternetAccess: internetAccessWireValue,
-	}, nil
-}
-
-func EgressNetworkPolicyToSDK(w *EgressNetworkPolicy) (*sdk.EgressNetworkPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	internetAccessPublicValue, err := EgressNetworkPolicy_InternetAccessPolicyToSDK(w.InternetAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.InternetAccess", err)
-	}
-	return &sdk.EgressNetworkPolicy{
-		InternetAccess: internetAccessPublicValue,
-	}, nil
-}
-
 type EgressNetworkPolicy_InternetAccessPolicy struct {
 	RestrictionMode             EgressNetworkPolicy_InternetAccessPolicy_RestrictionMode       `json:"restriction_mode,omitempty"`
 	AllowedInternetDestinations []EgressNetworkPolicy_InternetAccessPolicy_InternetDestination `json:"allowed_internet_destinations,omitempty"`
 	AllowedStorageDestinations  []EgressNetworkPolicy_InternetAccessPolicy_StorageDestination  `json:"allowed_storage_destinations,omitempty"`
 	// Optional. If not specified, assume the policy is enforced for all workloads.
 	LogOnlyMode *EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode `json:"log_only_mode,omitempty"`
-}
-
-func EgressNetworkPolicy_InternetAccessPolicyFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy) (*EgressNetworkPolicy_InternetAccessPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	allowedInternetDestinationsWireValue, err := convertSlice(v.AllowedInternetDestinations, EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedInternetDestinations", err)
-	}
-	allowedStorageDestinationsWireValue, err := convertSlice(v.AllowedStorageDestinations, EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedStorageDestinations", err)
-	}
-	logOnlyModeWireValue, err := EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeFromSDK(v.LogOnlyMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.LogOnlyMode", err)
-	}
-	return &EgressNetworkPolicy_InternetAccessPolicy{
-		RestrictionMode:             v.RestrictionMode,
-		AllowedInternetDestinations: allowedInternetDestinationsWireValue,
-		AllowedStorageDestinations:  allowedStorageDestinationsWireValue,
-		LogOnlyMode:                 logOnlyModeWireValue,
-	}, nil
-}
-
-func EgressNetworkPolicy_InternetAccessPolicyToSDK(w *EgressNetworkPolicy_InternetAccessPolicy) (*sdk.EgressNetworkPolicy_InternetAccessPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	allowedInternetDestinationsPublicValue, err := convertSlice(w.AllowedInternetDestinations, EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedInternetDestinations", err)
-	}
-	allowedStorageDestinationsPublicValue, err := convertSlice(w.AllowedStorageDestinations, EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedStorageDestinations", err)
-	}
-	logOnlyModePublicValue, err := EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeToSDK(w.LogOnlyMode)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.LogOnlyMode", err)
-	}
-	return &sdk.EgressNetworkPolicy_InternetAccessPolicy{
-		RestrictionMode:             w.RestrictionMode,
-		AllowedInternetDestinations: allowedInternetDestinationsPublicValue,
-		AllowedStorageDestinations:  allowedStorageDestinationsPublicValue,
-		LogOnlyMode:                 logOnlyModePublicValue,
-	}, nil
 }
 
 // Users can specify accessible internet destinations when outbound access is
@@ -1958,51 +651,9 @@ type EgressNetworkPolicy_InternetAccessPolicy_InternetDestination struct {
 	Protocol    EgressNetworkPolicy_InternetAccessPolicy_InternetDestination_InternetDestinationFilteringProtocol `json:"protocol,omitempty"`
 }
 
-func EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination) (*EgressNetworkPolicy_InternetAccessPolicy_InternetDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_InternetAccessPolicy_InternetDestination{
-		Destination: v.Destination,
-		Type:        v.Type,
-		Protocol:    v.Protocol,
-	}, nil
-}
-
-func EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_InternetDestination) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination{
-		Destination: w.Destination,
-		Type:        w.Type,
-		Protocol:    w.Protocol,
-	}, nil
-}
-
 type EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode struct {
 	LogOnlyModeType EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode_LogOnlyModeType `json:"log_only_mode_type,omitempty"`
 	Workloads       []EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode_WorkloadType  `json:"workloads,omitempty"`
-}
-
-func EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode) (*EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode{
-		LogOnlyModeType: v.LogOnlyModeType,
-		Workloads:       v.Workloads,
-	}, nil
-}
-
-func EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode{
-		LogOnlyModeType: w.LogOnlyModeType,
-		Workloads:       w.Workloads,
-	}, nil
 }
 
 // Users can specify accessible storage destinations..
@@ -2017,38 +668,6 @@ type EgressNetworkPolicy_InternetAccessPolicy_StorageDestination struct {
 	AzureContainer      *string                                                                            `json:"azure_container,omitempty"`
 }
 
-func EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination) (*EgressNetworkPolicy_InternetAccessPolicy_StorageDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_InternetAccessPolicy_StorageDestination{
-		BucketName:          v.BucketName,
-		Region:              v.Region,
-		Type:                v.Type,
-		AzureStorageAccount: v.AzureStorageAccount,
-		AllowedPaths:        v.AllowedPaths,
-		AzureStorageService: v.AzureStorageService,
-		AzureDnsZone:        v.AzureDnsZone,
-		AzureContainer:      v.AzureContainer,
-	}, nil
-}
-
-func EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_StorageDestination) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination{
-		BucketName:          w.BucketName,
-		Region:              w.Region,
-		Type:                w.Type,
-		AzureStorageAccount: w.AzureStorageAccount,
-		AllowedPaths:        w.AllowedPaths,
-		AzureStorageService: w.AzureStorageService,
-		AzureDnsZone:        w.AzureDnsZone,
-		AzureContainer:      w.AzureContainer,
-	}, nil
-}
-
 type JarAnalysisVersionReview struct {
 	// Etag identifying the jar analysis version, with its value being a hash of an
 	// internally-generated UUID
@@ -2057,17 +676,6 @@ type JarAnalysisVersionReview struct {
 	ReviewState CleanRoomJarAnalysisReview_JarAnalysisReviewState `json:"review_state,omitempty"`
 	// Review comment
 	Comment *string `json:"comment,omitempty"`
-}
-
-func JarAnalysisVersionReviewFromSDK(v *sdk.JarAnalysisVersionReview) (*JarAnalysisVersionReview, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JarAnalysisVersionReview{
-		Etag:        v.Etag,
-		ReviewState: v.ReviewState,
-		Comment:     v.Comment,
-	}, nil
 }
 
 type ListCleanRoomAssetRevisionsRequest struct {
@@ -2083,36 +691,9 @@ type ListCleanRoomAssetRevisionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCleanRoomAssetRevisionsRequestFromSDK(v *sdk.ListCleanRoomAssetRevisionsRequest) (*ListCleanRoomAssetRevisionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomAssetRevisionsRequest{
-		CleanRoomName: v.CleanRoomName,
-		Name:          v.Name,
-		AssetType:     v.AssetType,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListCleanRoomAssetRevisionsResponse struct {
 	Revisions     []CleanRoomAsset `json:"revisions,omitempty"`
 	NextPageToken *string          `json:"next_page_token,omitempty"`
-}
-
-func ListCleanRoomAssetRevisionsResponseToSDK(w *ListCleanRoomAssetRevisionsResponse) (*sdk.ListCleanRoomAssetRevisionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	revisionsPublicValue, err := convertSlice(w.Revisions, CleanRoomAssetToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetRevisionsResponse.Revisions", err)
-	}
-	return &sdk.ListCleanRoomAssetRevisionsResponse{
-		Revisions:     revisionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListCleanRoomAssetsRequest struct {
@@ -2120,16 +701,6 @@ type ListCleanRoomAssetsRequest struct {
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
 	// Opaque pagination token to go to next page based on previous query.
 	PageToken *string `json:"page_token,omitempty"`
-}
-
-func ListCleanRoomAssetsRequestFromSDK(v *sdk.ListCleanRoomAssetsRequest) (*ListCleanRoomAssetsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomAssetsRequest{
-		CleanRoomName: v.CleanRoomName,
-		PageToken:     v.PageToken,
-	}, nil
 }
 
 type ListCleanRoomAssetsResponse struct {
@@ -2141,20 +712,6 @@ type ListCleanRoomAssetsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListCleanRoomAssetsResponseToSDK(w *ListCleanRoomAssetsResponse) (*sdk.ListCleanRoomAssetsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	assetsPublicValue, err := convertSlice(w.Assets, CleanRoomAssetToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetsResponse.Assets", err)
-	}
-	return &sdk.ListCleanRoomAssetsResponse{
-		Assets:        assetsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ListCleanRoomAutoApprovalRulesRequest struct {
 	CleanRoomName *string `json:"clean_room_name,omitempty"`
 	// Maximum number of auto-approval rules to return. Defaults to 100.
@@ -2163,37 +720,12 @@ type ListCleanRoomAutoApprovalRulesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCleanRoomAutoApprovalRulesRequestFromSDK(v *sdk.ListCleanRoomAutoApprovalRulesRequest) (*ListCleanRoomAutoApprovalRulesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomAutoApprovalRulesRequest{
-		CleanRoomName: v.CleanRoomName,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListCleanRoomAutoApprovalRulesResponse struct {
 	Rules []CleanRoomAutoApprovalRule `json:"rules,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCleanRoomAutoApprovalRulesResponseToSDK(w *ListCleanRoomAutoApprovalRulesResponse) (*sdk.ListCleanRoomAutoApprovalRulesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rulesPublicValue, err := convertSlice(w.Rules, CleanRoomAutoApprovalRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAutoApprovalRulesResponse.Rules", err)
-	}
-	return &sdk.ListCleanRoomAutoApprovalRulesResponse{
-		Rules:         rulesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListCleanRoomNotebookTaskRunsRequest struct {
@@ -2208,18 +740,6 @@ type ListCleanRoomNotebookTaskRunsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCleanRoomNotebookTaskRunsRequestFromSDK(v *sdk.ListCleanRoomNotebookTaskRunsRequest) (*ListCleanRoomNotebookTaskRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomNotebookTaskRunsRequest{
-		CleanRoomName: v.CleanRoomName,
-		NotebookName:  v.NotebookName,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListCleanRoomNotebookTaskRunsResponse struct {
 	// Name of the clean room.
 	Runs []CleanRoomNotebookTaskRun `json:"runs,omitempty"`
@@ -2227,20 +747,6 @@ type ListCleanRoomNotebookTaskRunsResponse struct {
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCleanRoomNotebookTaskRunsResponseToSDK(w *ListCleanRoomNotebookTaskRunsResponse) (*sdk.ListCleanRoomNotebookTaskRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runsPublicValue, err := convertSlice(w.Runs, CleanRoomNotebookTaskRunToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomNotebookTaskRunsResponse.Runs", err)
-	}
-	return &sdk.ListCleanRoomNotebookTaskRunsResponse{
-		Runs:          runsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListCleanRoomTaskRunsRequest struct {
@@ -2256,19 +762,6 @@ type ListCleanRoomTaskRunsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCleanRoomTaskRunsRequestFromSDK(v *sdk.ListCleanRoomTaskRunsRequest) (*ListCleanRoomTaskRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomTaskRunsRequest{
-		CleanRoomName: v.CleanRoomName,
-		Name:          v.Name,
-		TaskType:      v.TaskType,
-		PageSize:      v.PageSize,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListCleanRoomTaskRunsResponse struct {
 	// Task runs in the clean room.
 	Runs []CleanRoomTaskRun `json:"runs,omitempty"`
@@ -2276,20 +769,6 @@ type ListCleanRoomTaskRunsResponse struct {
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCleanRoomTaskRunsResponseToSDK(w *ListCleanRoomTaskRunsResponse) (*sdk.ListCleanRoomTaskRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runsPublicValue, err := convertSlice(w.Runs, CleanRoomTaskRunToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomTaskRunsResponse.Runs", err)
-	}
-	return &sdk.ListCleanRoomTaskRunsResponse{
-		Runs:          runsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListCleanRoomsRequest struct {
@@ -2300,36 +779,12 @@ type ListCleanRoomsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListCleanRoomsRequestFromSDK(v *sdk.ListCleanRoomsRequest) (*ListCleanRoomsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCleanRoomsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListCleanRoomsResponse struct {
 	CleanRooms []CleanRoom `json:"clean_rooms,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. page_token should be set to this value for the next request (for
 	// the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCleanRoomsResponseToSDK(w *ListCleanRoomsResponse) (*sdk.ListCleanRoomsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cleanRoomsPublicValue, err := convertSlice(w.CleanRooms, CleanRoomToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCleanRoomsResponse.CleanRooms", err)
-	}
-	return &sdk.ListCleanRoomsResponse{
-		CleanRooms:    cleanRoomsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type NotebookVersionReview struct {
@@ -2341,46 +796,9 @@ type NotebookVersionReview struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func NotebookVersionReviewFromSDK(v *sdk.NotebookVersionReview) (*NotebookVersionReview, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotebookVersionReview{
-		Etag:        v.Etag,
-		ReviewState: v.ReviewState,
-		Comment:     v.Comment,
-	}, nil
-}
-
 type PartitionSpecification_Partition struct {
 	// An array of partition values.
 	Values []PartitionSpecification_Partition_PartitionValue `json:"values,omitempty"`
-}
-
-func PartitionSpecification_PartitionFromSDK(v *sdk.PartitionSpecification_Partition) (*PartitionSpecification_Partition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valuesWireValue, err := convertSlice(v.Values, PartitionSpecification_Partition_PartitionValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
-	}
-	return &PartitionSpecification_Partition{
-		Values: valuesWireValue,
-	}, nil
-}
-
-func PartitionSpecification_PartitionToSDK(w *PartitionSpecification_Partition) (*sdk.PartitionSpecification_Partition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, PartitionSpecification_Partition_PartitionValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
-	}
-	return &sdk.PartitionSpecification_Partition{
-		Values: valuesPublicValue,
-	}, nil
 }
 
 type PartitionSpecification_Partition_PartitionValue struct {
@@ -2398,86 +816,11 @@ type PartitionSpecification_Partition_PartitionValue struct {
 	Op PartitionSpecification_Partition_PartitionValue_PartitionValueOp `json:"op,omitempty"`
 }
 
-func PartitionSpecification_Partition_PartitionValueFromSDK(v *sdk.PartitionSpecification_Partition_PartitionValue) (*PartitionSpecification_Partition_PartitionValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PartitionSpecification_Partition_PartitionValue{
-		Name:                 v.Name,
-		Value:                v.Value,
-		RecipientPropertyKey: v.RecipientPropertyKey,
-		Op:                   v.Op,
-	}, nil
-}
-
-func PartitionSpecification_Partition_PartitionValueToSDK(w *PartitionSpecification_Partition_PartitionValue) (*sdk.PartitionSpecification_Partition_PartitionValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PartitionSpecification_Partition_PartitionValue{
-		Name:                 w.Name,
-		Value:                w.Value,
-		RecipientPropertyKey: w.RecipientPropertyKey,
-		Op:                   w.Op,
-	}, nil
-}
-
 // A positional argument passed to a row filter or column mask function.
 // Distinguishes between column references and literals..
 type PolicyFunctionArgument struct {
 	Column   *string `json:"column,omitempty"`
 	Constant *string `json:"constant,omitempty"`
-}
-
-func PolicyFunctionArgumentFromSDK(v *sdk.PolicyFunctionArgument) (*PolicyFunctionArgument, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var argColumnWire *string
-	var argConstantWire *string
-	switch value := v.Arg.(type) {
-	case nil:
-	case *sdk.PolicyFunctionArgument_Arg_Column:
-		if value != nil {
-			argColumnWire = new(value.Column)
-		}
-	case *sdk.PolicyFunctionArgument_Arg_Constant:
-		if value != nil {
-			argConstantWire = new(value.Constant)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PolicyFunctionArgument.Arg", value)
-	}
-	return &PolicyFunctionArgument{
-		Column:   argColumnWire,
-		Constant: argConstantWire,
-	}, nil
-}
-
-func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
-	if w == nil {
-		return nil, nil
-	}
-	argMembers := 0
-	if w.Column != nil {
-		argMembers++
-	}
-	if w.Constant != nil {
-		argMembers++
-	}
-	if argMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
-	}
-	argSelection := (&sdk.PolicyFunctionArgument{}).Arg
-	switch {
-	case w.Column != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
-	case w.Constant != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
-	}
-	return &sdk.PolicyFunctionArgument{
-		Arg: argSelection,
-	}, nil
 }
 
 type UpdateCleanRoomAssetRequest struct {
@@ -2488,37 +831,10 @@ type UpdateCleanRoomAssetRequest struct {
 	Asset *CleanRoomAsset `json:"asset,omitempty"`
 }
 
-func UpdateCleanRoomAssetRequestFromSDK(v *sdk.UpdateCleanRoomAssetRequest) (*UpdateCleanRoomAssetRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	assetWireValue, err := CleanRoomAssetFromSDK(v.Asset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAssetRequest.Asset", err)
-	}
-	return &UpdateCleanRoomAssetRequest{
-		CleanRoomName: v.CleanRoomName,
-		Asset:         assetWireValue,
-	}, nil
-}
-
 type UpdateCleanRoomAutoApprovalRuleRequest struct {
 	// The auto-approval rule to update. The rule_id field is used to identify the
 	// rule to update.
 	AutoApprovalRule *CleanRoomAutoApprovalRule `json:"auto_approval_rule,omitempty"`
-}
-
-func UpdateCleanRoomAutoApprovalRuleRequestFromSDK(v *sdk.UpdateCleanRoomAutoApprovalRuleRequest) (*UpdateCleanRoomAutoApprovalRuleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	autoApprovalRuleWireValue, err := CleanRoomAutoApprovalRuleFromSDK(v.AutoApprovalRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
-	}
-	return &UpdateCleanRoomAutoApprovalRuleRequest{
-		AutoApprovalRule: autoApprovalRuleWireValue,
-	}, nil
 }
 
 type UpdateCleanRoomRequest struct {
@@ -2527,18 +843,2098 @@ type UpdateCleanRoomRequest struct {
 	CleanRoom *CleanRoom `json:"clean_room,omitempty"`
 }
 
+// CleanRoomToSDK converts the mirror to the sdk-go type.
+func CleanRoomToSDK(w *CleanRoom) (*sdk.CleanRoom, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoom{}
+	out.Name = w.Name
+	conv1, err := CleanRoomRemoteDetailToSDK(w.RemoteDetailedInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoom.RemoteDetailedInfo", err)
+	}
+	out.RemoteDetailedInfo = conv1
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.CreatedAt = w.CreatedAt
+	out.UpdatedAt = w.UpdatedAt
+	out.Status = w.Status
+	out.LocalCollaboratorAlias = w.LocalCollaboratorAlias
+	conv2, err := CleanRoomOutputCatalogToSDK(w.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoom.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv2
+	out.AccessRestricted = w.AccessRestricted
+	out.EnableSharedOutput = w.EnableSharedOutput
+	return out, nil
+}
+
+// CleanRoomFromSDK converts the sdk-go type to the mirror.
+func CleanRoomFromSDK(v *sdk.CleanRoom) (*CleanRoom, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoom{}
+	out.Name = v.Name
+	conv3, err := CleanRoomRemoteDetailFromSDK(v.RemoteDetailedInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoom.RemoteDetailedInfo", err)
+	}
+	out.RemoteDetailedInfo = conv3
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.CreatedAt = v.CreatedAt
+	out.UpdatedAt = v.UpdatedAt
+	out.Status = v.Status
+	out.LocalCollaboratorAlias = v.LocalCollaboratorAlias
+	conv4, err := CleanRoomOutputCatalogFromSDK(v.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoom.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv4
+	out.AccessRestricted = v.AccessRestricted
+	out.EnableSharedOutput = v.EnableSharedOutput
+	return out, nil
+}
+
+// CleanRoomAssetToSDK converts the mirror to the sdk-go type.
+func CleanRoomAssetToSDK(w *CleanRoomAsset) (*sdk.CleanRoomAsset, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset{}
+	out.CleanRoomName = w.CleanRoomName
+	out.Name = w.Name
+	out.AssetType = w.AssetType
+	out.AddedAt = w.AddedAt
+	out.Status = w.Status
+	out.OwnerCollaboratorAlias = w.OwnerCollaboratorAlias
+	{
+		members := 0
+		if w.TableLocalDetails != nil {
+			members++
+		}
+		if w.VolumeLocalDetails != nil {
+			members++
+		}
+		if w.ViewLocalDetails != nil {
+			members++
+		}
+		if w.ForeignTableLocalDetails != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.LocalDetails")
+		}
+	}
+	switch {
+	case w.TableLocalDetails != nil:
+		conv5, err := CleanRoomAsset_TableLocalDetailsToSDK(w.TableLocalDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+		}
+		out.LocalDetails = &sdk.CleanRoomAsset_LocalDetails_TableLocalDetails{TableLocalDetails: *conv5}
+	case w.VolumeLocalDetails != nil:
+		conv6, err := CleanRoomAsset_VolumeLocalDetailsToSDK(w.VolumeLocalDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+		}
+		out.LocalDetails = &sdk.CleanRoomAsset_LocalDetails_VolumeLocalDetails{VolumeLocalDetails: *conv6}
+	case w.ViewLocalDetails != nil:
+		conv7, err := CleanRoomAsset_ViewLocalDetailsToSDK(w.ViewLocalDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+		}
+		out.LocalDetails = &sdk.CleanRoomAsset_LocalDetails_ViewLocalDetails{ViewLocalDetails: *conv7}
+	case w.ForeignTableLocalDetails != nil:
+		conv8, err := CleanRoomAsset_ForeignTableLocalDetailsToSDK(w.ForeignTableLocalDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+		}
+		out.LocalDetails = &sdk.CleanRoomAsset_LocalDetails_ForeignTableLocalDetails{ForeignTableLocalDetails: *conv8}
+	}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.Notebook != nil {
+			members++
+		}
+		if w.View != nil {
+			members++
+		}
+		if w.ForeignTable != nil {
+			members++
+		}
+		if w.JarAnalysis != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAsset.Details")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv9, err := CleanRoomAsset_TableToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+		}
+		out.Details = &sdk.CleanRoomAsset_Details_Table{Table: *conv9}
+	case w.Notebook != nil:
+		conv10, err := CleanRoomAsset_NotebookToSDK(w.Notebook)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+		}
+		out.Details = &sdk.CleanRoomAsset_Details_Notebook{Notebook: *conv10}
+	case w.View != nil:
+		conv11, err := CleanRoomAsset_ViewToSDK(w.View)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+		}
+		out.Details = &sdk.CleanRoomAsset_Details_View{View: *conv11}
+	case w.ForeignTable != nil:
+		conv12, err := CleanRoomAsset_ForeignTableToSDK(w.ForeignTable)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+		}
+		out.Details = &sdk.CleanRoomAsset_Details_ForeignTable{ForeignTable: *conv12}
+	case w.JarAnalysis != nil:
+		conv13, err := CleanRoomAsset_JarAnalysisToSDK(w.JarAnalysis)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+		}
+		out.Details = &sdk.CleanRoomAsset_Details_JarAnalysis{JarAnalysis: *conv13}
+	}
+	return out, nil
+}
+
+// CleanRoomAssetFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAssetFromSDK(v *sdk.CleanRoomAsset) (*CleanRoomAsset, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset{}
+	out.CleanRoomName = v.CleanRoomName
+	out.Name = v.Name
+	out.AssetType = v.AssetType
+	out.AddedAt = v.AddedAt
+	out.Status = v.Status
+	out.OwnerCollaboratorAlias = v.OwnerCollaboratorAlias
+	switch value := v.LocalDetails.(type) {
+	case *sdk.CleanRoomAsset_LocalDetails_TableLocalDetails:
+		if value != nil {
+			conv14, err := CleanRoomAsset_TableLocalDetailsFromSDK(&value.TableLocalDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+			}
+			out.TableLocalDetails = conv14
+		}
+	case *sdk.CleanRoomAsset_LocalDetails_VolumeLocalDetails:
+		if value != nil {
+			conv15, err := CleanRoomAsset_VolumeLocalDetailsFromSDK(&value.VolumeLocalDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+			}
+			out.VolumeLocalDetails = conv15
+		}
+	case *sdk.CleanRoomAsset_LocalDetails_ViewLocalDetails:
+		if value != nil {
+			conv16, err := CleanRoomAsset_ViewLocalDetailsFromSDK(&value.ViewLocalDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+			}
+			out.ViewLocalDetails = conv16
+		}
+	case *sdk.CleanRoomAsset_LocalDetails_ForeignTableLocalDetails:
+		if value != nil {
+			conv17, err := CleanRoomAsset_ForeignTableLocalDetailsFromSDK(&value.ForeignTableLocalDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.LocalDetails", err)
+			}
+			out.ForeignTableLocalDetails = conv17
+		}
+	}
+	switch value := v.Details.(type) {
+	case *sdk.CleanRoomAsset_Details_Table:
+		if value != nil {
+			conv18, err := CleanRoomAsset_TableFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+			}
+			out.Table = conv18
+		}
+	case *sdk.CleanRoomAsset_Details_Notebook:
+		if value != nil {
+			conv19, err := CleanRoomAsset_NotebookFromSDK(&value.Notebook)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+			}
+			out.Notebook = conv19
+		}
+	case *sdk.CleanRoomAsset_Details_View:
+		if value != nil {
+			conv20, err := CleanRoomAsset_ViewFromSDK(&value.View)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+			}
+			out.View = conv20
+		}
+	case *sdk.CleanRoomAsset_Details_ForeignTable:
+		if value != nil {
+			conv21, err := CleanRoomAsset_ForeignTableFromSDK(&value.ForeignTable)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+			}
+			out.ForeignTable = conv21
+		}
+	case *sdk.CleanRoomAsset_Details_JarAnalysis:
+		if value != nil {
+			conv22, err := CleanRoomAsset_JarAnalysisFromSDK(&value.JarAnalysis)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CleanRoomAsset.Details", err)
+			}
+			out.JarAnalysis = conv22
+		}
+	}
+	return out, nil
+}
+
+// CleanRoomAsset_ForeignTableToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_ForeignTableToSDK(w *CleanRoomAsset_ForeignTable) (*sdk.CleanRoomAsset_ForeignTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_ForeignTable{}
+	conv23, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_ForeignTable.Columns", err)
+	}
+	out.Columns = conv23
+	return out, nil
+}
+
+// CleanRoomAsset_ForeignTableFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_ForeignTableFromSDK(v *sdk.CleanRoomAsset_ForeignTable) (*CleanRoomAsset_ForeignTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_ForeignTable{}
+	conv24, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_ForeignTable.Columns", err)
+	}
+	out.Columns = conv24
+	return out, nil
+}
+
+// CleanRoomAsset_ForeignTableLocalDetailsToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_ForeignTableLocalDetailsToSDK(w *CleanRoomAsset_ForeignTableLocalDetails) (*sdk.CleanRoomAsset_ForeignTableLocalDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_ForeignTableLocalDetails{}
+	out.LocalName = w.LocalName
+	return out, nil
+}
+
+// CleanRoomAsset_ForeignTableLocalDetailsFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_ForeignTableLocalDetailsFromSDK(v *sdk.CleanRoomAsset_ForeignTableLocalDetails) (*CleanRoomAsset_ForeignTableLocalDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_ForeignTableLocalDetails{}
+	out.LocalName = v.LocalName
+	return out, nil
+}
+
+// CleanRoomAsset_JarAnalysisToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_JarAnalysisToSDK(w *CleanRoomAsset_JarAnalysis) (*sdk.CleanRoomAsset_JarAnalysis, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_JarAnalysis{}
+	out.Etag = w.Etag
+	out.Description = w.Description
+	out.RunnerCollaboratorAliases = w.RunnerCollaboratorAliases
+	conv25, err := convertSlice(w.Reviews, CleanRoomJarAnalysisReviewToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_JarAnalysis.Reviews", err)
+	}
+	out.Reviews = conv25
+	out.ReviewState = w.ReviewState
+	out.MainClassName = w.MainClassName
+	out.CentralJarFilePaths = w.CentralJarFilePaths
+	out.EnvironmentVersion = w.EnvironmentVersion
+	return out, nil
+}
+
+// CleanRoomAsset_JarAnalysisFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_JarAnalysisFromSDK(v *sdk.CleanRoomAsset_JarAnalysis) (*CleanRoomAsset_JarAnalysis, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_JarAnalysis{}
+	out.Etag = v.Etag
+	out.Description = v.Description
+	out.RunnerCollaboratorAliases = v.RunnerCollaboratorAliases
+	conv26, err := convertSlice(v.Reviews, CleanRoomJarAnalysisReviewFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_JarAnalysis.Reviews", err)
+	}
+	out.Reviews = conv26
+	out.ReviewState = v.ReviewState
+	out.MainClassName = v.MainClassName
+	out.CentralJarFilePaths = v.CentralJarFilePaths
+	out.EnvironmentVersion = v.EnvironmentVersion
+	return out, nil
+}
+
+// CleanRoomAsset_NotebookToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_NotebookToSDK(w *CleanRoomAsset_Notebook) (*sdk.CleanRoomAsset_Notebook, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_Notebook{}
+	out.NotebookContent = w.NotebookContent
+	out.Etag = w.Etag
+	out.RunnerCollaboratorAliases = w.RunnerCollaboratorAliases
+	conv27, err := convertSlice(w.Reviews, CleanRoomNotebookReviewToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Notebook.Reviews", err)
+	}
+	out.Reviews = conv27
+	out.ReviewState = w.ReviewState
+	out.Description = w.Description
+	out.EnvironmentVersion = w.EnvironmentVersion
+	return out, nil
+}
+
+// CleanRoomAsset_NotebookFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_NotebookFromSDK(v *sdk.CleanRoomAsset_Notebook) (*CleanRoomAsset_Notebook, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_Notebook{}
+	out.NotebookContent = v.NotebookContent
+	out.Etag = v.Etag
+	out.RunnerCollaboratorAliases = v.RunnerCollaboratorAliases
+	conv28, err := convertSlice(v.Reviews, CleanRoomNotebookReviewFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Notebook.Reviews", err)
+	}
+	out.Reviews = conv28
+	out.ReviewState = v.ReviewState
+	out.Description = v.Description
+	out.EnvironmentVersion = v.EnvironmentVersion
+	return out, nil
+}
+
+// CleanRoomAsset_TableToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_TableToSDK(w *CleanRoomAsset_Table) (*sdk.CleanRoomAsset_Table, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_Table{}
+	conv29, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Table.Columns", err)
+	}
+	out.Columns = conv29
+	return out, nil
+}
+
+// CleanRoomAsset_TableFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_TableFromSDK(v *sdk.CleanRoomAsset_Table) (*CleanRoomAsset_Table, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_Table{}
+	conv30, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_Table.Columns", err)
+	}
+	out.Columns = conv30
+	return out, nil
+}
+
+// CleanRoomAsset_TableLocalDetailsToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_TableLocalDetailsToSDK(w *CleanRoomAsset_TableLocalDetails) (*sdk.CleanRoomAsset_TableLocalDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_TableLocalDetails{}
+	out.LocalName = w.LocalName
+	conv31, err := convertSlice(w.Partitions, PartitionSpecification_PartitionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_TableLocalDetails.Partitions", err)
+	}
+	out.Partitions = conv31
+	return out, nil
+}
+
+// CleanRoomAsset_TableLocalDetailsFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_TableLocalDetailsFromSDK(v *sdk.CleanRoomAsset_TableLocalDetails) (*CleanRoomAsset_TableLocalDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_TableLocalDetails{}
+	out.LocalName = v.LocalName
+	conv32, err := convertSlice(v.Partitions, PartitionSpecification_PartitionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_TableLocalDetails.Partitions", err)
+	}
+	out.Partitions = conv32
+	return out, nil
+}
+
+// CleanRoomAsset_ViewToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_ViewToSDK(w *CleanRoomAsset_View) (*sdk.CleanRoomAsset_View, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_View{}
+	conv33, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_View.Columns", err)
+	}
+	out.Columns = conv33
+	return out, nil
+}
+
+// CleanRoomAsset_ViewFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_ViewFromSDK(v *sdk.CleanRoomAsset_View) (*CleanRoomAsset_View, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_View{}
+	conv34, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomAsset_View.Columns", err)
+	}
+	out.Columns = conv34
+	return out, nil
+}
+
+// CleanRoomAsset_ViewLocalDetailsToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_ViewLocalDetailsToSDK(w *CleanRoomAsset_ViewLocalDetails) (*sdk.CleanRoomAsset_ViewLocalDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_ViewLocalDetails{}
+	out.LocalName = w.LocalName
+	return out, nil
+}
+
+// CleanRoomAsset_ViewLocalDetailsFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_ViewLocalDetailsFromSDK(v *sdk.CleanRoomAsset_ViewLocalDetails) (*CleanRoomAsset_ViewLocalDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_ViewLocalDetails{}
+	out.LocalName = v.LocalName
+	return out, nil
+}
+
+// CleanRoomAsset_VolumeLocalDetailsToSDK converts the mirror to the sdk-go type.
+func CleanRoomAsset_VolumeLocalDetailsToSDK(w *CleanRoomAsset_VolumeLocalDetails) (*sdk.CleanRoomAsset_VolumeLocalDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAsset_VolumeLocalDetails{}
+	out.LocalName = w.LocalName
+	return out, nil
+}
+
+// CleanRoomAsset_VolumeLocalDetailsFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAsset_VolumeLocalDetailsFromSDK(v *sdk.CleanRoomAsset_VolumeLocalDetails) (*CleanRoomAsset_VolumeLocalDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAsset_VolumeLocalDetails{}
+	out.LocalName = v.LocalName
+	return out, nil
+}
+
+// CleanRoomAutoApprovalRuleToSDK converts the mirror to the sdk-go type.
+func CleanRoomAutoApprovalRuleToSDK(w *CleanRoomAutoApprovalRule) (*sdk.CleanRoomAutoApprovalRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomAutoApprovalRule{}
+	out.CleanRoomName = w.CleanRoomName
+	out.RuleId = w.RuleId
+	out.RuleOwnerCollaboratorAlias = w.RuleOwnerCollaboratorAlias
+	{
+		members := 0
+		if w.AuthorCollaboratorAlias != nil {
+			members++
+		}
+		if w.AuthorScope != "" {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Authors")
+		}
+	}
+	switch {
+	case w.AuthorCollaboratorAlias != nil:
+		out.Authors = &sdk.CleanRoomAutoApprovalRule_Authors_AuthorCollaboratorAlias{AuthorCollaboratorAlias: *w.AuthorCollaboratorAlias}
+	case w.AuthorScope != "":
+		out.Authors = &sdk.CleanRoomAutoApprovalRule_Authors_AuthorScope{AuthorScope: w.AuthorScope}
+	}
+	{
+		members := 0
+		if w.RunnerCollaboratorAlias != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CleanRoomAutoApprovalRule.Runners")
+		}
+	}
+	switch {
+	case w.RunnerCollaboratorAlias != nil:
+		out.Runners = &sdk.CleanRoomAutoApprovalRule_Runners_RunnerCollaboratorAlias{RunnerCollaboratorAlias: *w.RunnerCollaboratorAlias}
+	}
+	out.CreatedAt = w.CreatedAt
+	return out, nil
+}
+
+// CleanRoomAutoApprovalRuleFromSDK converts the sdk-go type to the mirror.
+func CleanRoomAutoApprovalRuleFromSDK(v *sdk.CleanRoomAutoApprovalRule) (*CleanRoomAutoApprovalRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomAutoApprovalRule{}
+	out.CleanRoomName = v.CleanRoomName
+	out.RuleId = v.RuleId
+	out.RuleOwnerCollaboratorAlias = v.RuleOwnerCollaboratorAlias
+	switch value := v.Authors.(type) {
+	case *sdk.CleanRoomAutoApprovalRule_Authors_AuthorCollaboratorAlias:
+		if value != nil {
+			out.AuthorCollaboratorAlias = new(value.AuthorCollaboratorAlias)
+		}
+	case *sdk.CleanRoomAutoApprovalRule_Authors_AuthorScope:
+		if value != nil {
+			out.AuthorScope = value.AuthorScope
+		}
+	}
+	switch value := v.Runners.(type) {
+	case *sdk.CleanRoomAutoApprovalRule_Runners_RunnerCollaboratorAlias:
+		if value != nil {
+			out.RunnerCollaboratorAlias = new(value.RunnerCollaboratorAlias)
+		}
+	}
+	out.CreatedAt = v.CreatedAt
+	return out, nil
+}
+
+// CleanRoomCollaboratorToSDK converts the mirror to the sdk-go type.
+func CleanRoomCollaboratorToSDK(w *CleanRoomCollaborator) (*sdk.CleanRoomCollaborator, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomCollaborator{}
+	out.GlobalMetastoreId = w.GlobalMetastoreId
+	out.OrganizationName = w.OrganizationName
+	out.InviteRecipientWorkspaceId = w.InviteRecipientWorkspaceId
+	out.InviteRecipientEmail = w.InviteRecipientEmail
+	out.CollaboratorAlias = w.CollaboratorAlias
+	out.DisplayName = w.DisplayName
+	return out, nil
+}
+
+// CleanRoomCollaboratorFromSDK converts the sdk-go type to the mirror.
+func CleanRoomCollaboratorFromSDK(v *sdk.CleanRoomCollaborator) (*CleanRoomCollaborator, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomCollaborator{}
+	out.GlobalMetastoreId = v.GlobalMetastoreId
+	out.OrganizationName = v.OrganizationName
+	out.InviteRecipientWorkspaceId = v.InviteRecipientWorkspaceId
+	out.InviteRecipientEmail = v.InviteRecipientEmail
+	out.CollaboratorAlias = v.CollaboratorAlias
+	out.DisplayName = v.DisplayName
+	return out, nil
+}
+
+// CleanRoomJarAnalysisReviewToSDK converts the mirror to the sdk-go type.
+func CleanRoomJarAnalysisReviewToSDK(w *CleanRoomJarAnalysisReview) (*sdk.CleanRoomJarAnalysisReview, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomJarAnalysisReview{}
+	out.ReviewerCollaboratorAlias = w.ReviewerCollaboratorAlias
+	out.CreatedAtMillis = w.CreatedAtMillis
+	out.ReviewState = w.ReviewState
+	out.Comment = w.Comment
+	out.ReviewSubReason = w.ReviewSubReason
+	return out, nil
+}
+
+// CleanRoomJarAnalysisReviewFromSDK converts the sdk-go type to the mirror.
+func CleanRoomJarAnalysisReviewFromSDK(v *sdk.CleanRoomJarAnalysisReview) (*CleanRoomJarAnalysisReview, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomJarAnalysisReview{}
+	out.ReviewerCollaboratorAlias = v.ReviewerCollaboratorAlias
+	out.CreatedAtMillis = v.CreatedAtMillis
+	out.ReviewState = v.ReviewState
+	out.Comment = v.Comment
+	out.ReviewSubReason = v.ReviewSubReason
+	return out, nil
+}
+
+// CleanRoomNotebookReviewToSDK converts the mirror to the sdk-go type.
+func CleanRoomNotebookReviewToSDK(w *CleanRoomNotebookReview) (*sdk.CleanRoomNotebookReview, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomNotebookReview{}
+	out.ReviewerCollaboratorAlias = w.ReviewerCollaboratorAlias
+	out.CreatedAtMillis = w.CreatedAtMillis
+	out.ReviewState = w.ReviewState
+	out.Comment = w.Comment
+	out.ReviewSubReason = w.ReviewSubReason
+	return out, nil
+}
+
+// CleanRoomNotebookReviewFromSDK converts the sdk-go type to the mirror.
+func CleanRoomNotebookReviewFromSDK(v *sdk.CleanRoomNotebookReview) (*CleanRoomNotebookReview, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomNotebookReview{}
+	out.ReviewerCollaboratorAlias = v.ReviewerCollaboratorAlias
+	out.CreatedAtMillis = v.CreatedAtMillis
+	out.ReviewState = v.ReviewState
+	out.Comment = v.Comment
+	out.ReviewSubReason = v.ReviewSubReason
+	return out, nil
+}
+
+// CleanRoomNotebookTaskRunToSDK converts the mirror to the sdk-go type.
+func CleanRoomNotebookTaskRunToSDK(w *CleanRoomNotebookTaskRun) (*sdk.CleanRoomNotebookTaskRun, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomNotebookTaskRun{}
+	out.NotebookName = w.NotebookName
+	out.StartTime = w.StartTime
+	out.RunDuration = w.RunDuration
+	conv35, err := CleanRoomTaskRunStateToSDK(w.NotebookJobRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.NotebookJobRunState", err)
+	}
+	out.NotebookJobRunState = conv35
+	conv36, err := CollaboratorJobRunInfoToSDK(w.CollaboratorJobRunInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.CollaboratorJobRunInfo", err)
+	}
+	out.CollaboratorJobRunInfo = conv36
+	out.OutputSchemaName = w.OutputSchemaName
+	out.OutputSchemaExpirationTime = w.OutputSchemaExpirationTime
+	out.NotebookEtag = w.NotebookEtag
+	out.NotebookUpdatedAt = w.NotebookUpdatedAt
+	out.SharedOutputSchemaName = w.SharedOutputSchemaName
+	out.SharedOutputSchemaExpirationTime = w.SharedOutputSchemaExpirationTime
+	return out, nil
+}
+
+// CleanRoomNotebookTaskRunFromSDK converts the sdk-go type to the mirror.
+func CleanRoomNotebookTaskRunFromSDK(v *sdk.CleanRoomNotebookTaskRun) (*CleanRoomNotebookTaskRun, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomNotebookTaskRun{}
+	out.NotebookName = v.NotebookName
+	out.StartTime = v.StartTime
+	out.RunDuration = v.RunDuration
+	conv37, err := CleanRoomTaskRunStateFromSDK(v.NotebookJobRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.NotebookJobRunState", err)
+	}
+	out.NotebookJobRunState = conv37
+	conv38, err := CollaboratorJobRunInfoFromSDK(v.CollaboratorJobRunInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomNotebookTaskRun.CollaboratorJobRunInfo", err)
+	}
+	out.CollaboratorJobRunInfo = conv38
+	out.OutputSchemaName = v.OutputSchemaName
+	out.OutputSchemaExpirationTime = v.OutputSchemaExpirationTime
+	out.NotebookEtag = v.NotebookEtag
+	out.NotebookUpdatedAt = v.NotebookUpdatedAt
+	out.SharedOutputSchemaName = v.SharedOutputSchemaName
+	out.SharedOutputSchemaExpirationTime = v.SharedOutputSchemaExpirationTime
+	return out, nil
+}
+
+// CleanRoomOutputCatalogToSDK converts the mirror to the sdk-go type.
+func CleanRoomOutputCatalogToSDK(w *CleanRoomOutputCatalog) (*sdk.CleanRoomOutputCatalog, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomOutputCatalog{}
+	out.Status = w.Status
+	out.CatalogName = w.CatalogName
+	return out, nil
+}
+
+// CleanRoomOutputCatalogFromSDK converts the sdk-go type to the mirror.
+func CleanRoomOutputCatalogFromSDK(v *sdk.CleanRoomOutputCatalog) (*CleanRoomOutputCatalog, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomOutputCatalog{}
+	out.Status = v.Status
+	out.CatalogName = v.CatalogName
+	return out, nil
+}
+
+// CleanRoomRemoteDetailToSDK converts the mirror to the sdk-go type.
+func CleanRoomRemoteDetailToSDK(w *CleanRoomRemoteDetail) (*sdk.CleanRoomRemoteDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomRemoteDetail{}
+	out.CentralCleanRoomId = w.CentralCleanRoomId
+	out.CloudVendor = w.CloudVendor
+	out.Region = w.Region
+	conv39, err := convertSlice(w.Collaborators, CleanRoomCollaboratorToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Collaborators", err)
+	}
+	out.Collaborators = conv39
+	conv40, err := CleanRoomCollaboratorToSDK(w.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Creator", err)
+	}
+	out.Creator = conv40
+	conv41, err := EgressNetworkPolicyToSDK(w.EgressNetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.EgressNetworkPolicy", err)
+	}
+	out.EgressNetworkPolicy = conv41
+	conv42, err := ComplianceSecurityProfileToSDK(w.ComplianceSecurityProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.ComplianceSecurityProfile", err)
+	}
+	out.ComplianceSecurityProfile = conv42
+	out.EnableSharedOutput = w.EnableSharedOutput
+	out.PackageProviderCollaboratorAlias = w.PackageProviderCollaboratorAlias
+	return out, nil
+}
+
+// CleanRoomRemoteDetailFromSDK converts the sdk-go type to the mirror.
+func CleanRoomRemoteDetailFromSDK(v *sdk.CleanRoomRemoteDetail) (*CleanRoomRemoteDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomRemoteDetail{}
+	out.CentralCleanRoomId = v.CentralCleanRoomId
+	out.CloudVendor = v.CloudVendor
+	out.Region = v.Region
+	conv43, err := convertSlice(v.Collaborators, CleanRoomCollaboratorFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Collaborators", err)
+	}
+	out.Collaborators = conv43
+	conv44, err := CleanRoomCollaboratorFromSDK(v.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.Creator", err)
+	}
+	out.Creator = conv44
+	conv45, err := EgressNetworkPolicyFromSDK(v.EgressNetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.EgressNetworkPolicy", err)
+	}
+	out.EgressNetworkPolicy = conv45
+	conv46, err := ComplianceSecurityProfileFromSDK(v.ComplianceSecurityProfile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomRemoteDetail.ComplianceSecurityProfile", err)
+	}
+	out.ComplianceSecurityProfile = conv46
+	out.EnableSharedOutput = v.EnableSharedOutput
+	out.PackageProviderCollaboratorAlias = v.PackageProviderCollaboratorAlias
+	return out, nil
+}
+
+// CleanRoomTaskRunToSDK converts the mirror to the sdk-go type.
+func CleanRoomTaskRunToSDK(w *CleanRoomTaskRun) (*sdk.CleanRoomTaskRun, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomTaskRun{}
+	out.Name = w.Name
+	out.TaskType = w.TaskType
+	out.StartTime = w.StartTime
+	out.RunDuration = w.RunDuration
+	conv47, err := CleanRoomTaskRunStateToSDK(w.TaskRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.TaskRunState", err)
+	}
+	out.TaskRunState = conv47
+	conv48, err := CollaboratorJobRunInfoToSDK(w.CollaboratorJobRunInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.CollaboratorJobRunInfo", err)
+	}
+	out.CollaboratorJobRunInfo = conv48
+	conv49, err := CleanRoomTaskRun_OutputInfoToSDK(w.OutputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.OutputInfo", err)
+	}
+	out.OutputInfo = conv49
+	conv50, err := CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsToSDK(w.AnalysisDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.AnalysisDetails", err)
+	}
+	out.AnalysisDetails = conv50
+	conv51, err := CleanRoomTaskRun_OutputInfoToSDK(w.SharedOutputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.SharedOutputInfo", err)
+	}
+	out.SharedOutputInfo = conv51
+	return out, nil
+}
+
+// CleanRoomTaskRunFromSDK converts the sdk-go type to the mirror.
+func CleanRoomTaskRunFromSDK(v *sdk.CleanRoomTaskRun) (*CleanRoomTaskRun, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomTaskRun{}
+	out.Name = v.Name
+	out.TaskType = v.TaskType
+	out.StartTime = v.StartTime
+	out.RunDuration = v.RunDuration
+	conv52, err := CleanRoomTaskRunStateFromSDK(v.TaskRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.TaskRunState", err)
+	}
+	out.TaskRunState = conv52
+	conv53, err := CollaboratorJobRunInfoFromSDK(v.CollaboratorJobRunInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.CollaboratorJobRunInfo", err)
+	}
+	out.CollaboratorJobRunInfo = conv53
+	conv54, err := CleanRoomTaskRun_OutputInfoFromSDK(v.OutputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.OutputInfo", err)
+	}
+	out.OutputInfo = conv54
+	conv55, err := CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsFromSDK(v.AnalysisDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.AnalysisDetails", err)
+	}
+	out.AnalysisDetails = conv55
+	conv56, err := CleanRoomTaskRun_OutputInfoFromSDK(v.SharedOutputInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomTaskRun.SharedOutputInfo", err)
+	}
+	out.SharedOutputInfo = conv56
+	return out, nil
+}
+
+// CleanRoomTaskRunStateToSDK converts the mirror to the sdk-go type.
+func CleanRoomTaskRunStateToSDK(w *CleanRoomTaskRunState) (*sdk.CleanRoomTaskRunState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomTaskRunState{}
+	out.LifeCycleState = w.LifeCycleState
+	out.ResultState = w.ResultState
+	return out, nil
+}
+
+// CleanRoomTaskRunStateFromSDK converts the sdk-go type to the mirror.
+func CleanRoomTaskRunStateFromSDK(v *sdk.CleanRoomTaskRunState) (*CleanRoomTaskRunState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomTaskRunState{}
+	out.LifeCycleState = v.LifeCycleState
+	out.ResultState = v.ResultState
+	return out, nil
+}
+
+// CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsToSDK converts the mirror to the sdk-go type.
+func CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsToSDK(w *CleanRoomTaskRun_CleanRoomTaskAnalysisDetails) (*sdk.CleanRoomTaskRun_CleanRoomTaskAnalysisDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomTaskRun_CleanRoomTaskAnalysisDetails{}
+	out.Etag = w.Etag
+	out.UpdatedAt = w.UpdatedAt
+	return out, nil
+}
+
+// CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsFromSDK converts the sdk-go type to the mirror.
+func CleanRoomTaskRun_CleanRoomTaskAnalysisDetailsFromSDK(v *sdk.CleanRoomTaskRun_CleanRoomTaskAnalysisDetails) (*CleanRoomTaskRun_CleanRoomTaskAnalysisDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomTaskRun_CleanRoomTaskAnalysisDetails{}
+	out.Etag = v.Etag
+	out.UpdatedAt = v.UpdatedAt
+	return out, nil
+}
+
+// CleanRoomTaskRun_OutputInfoToSDK converts the mirror to the sdk-go type.
+func CleanRoomTaskRun_OutputInfoToSDK(w *CleanRoomTaskRun_OutputInfo) (*sdk.CleanRoomTaskRun_OutputInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomTaskRun_OutputInfo{}
+	out.OutputSchemaName = w.OutputSchemaName
+	out.OutputSchemaExpirationTime = w.OutputSchemaExpirationTime
+	return out, nil
+}
+
+// CleanRoomTaskRun_OutputInfoFromSDK converts the sdk-go type to the mirror.
+func CleanRoomTaskRun_OutputInfoFromSDK(v *sdk.CleanRoomTaskRun_OutputInfo) (*CleanRoomTaskRun_OutputInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomTaskRun_OutputInfo{}
+	out.OutputSchemaName = v.OutputSchemaName
+	out.OutputSchemaExpirationTime = v.OutputSchemaExpirationTime
+	return out, nil
+}
+
+// CollaboratorJobRunInfoToSDK converts the mirror to the sdk-go type.
+func CollaboratorJobRunInfoToSDK(w *CollaboratorJobRunInfo) (*sdk.CollaboratorJobRunInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CollaboratorJobRunInfo{}
+	out.CollaboratorJobId = w.CollaboratorJobId
+	out.CollaboratorJobRunId = w.CollaboratorJobRunId
+	out.CollaboratorTaskRunId = w.CollaboratorTaskRunId
+	out.CollaboratorWorkspaceId = w.CollaboratorWorkspaceId
+	out.CollaboratorAlias = w.CollaboratorAlias
+	return out, nil
+}
+
+// CollaboratorJobRunInfoFromSDK converts the sdk-go type to the mirror.
+func CollaboratorJobRunInfoFromSDK(v *sdk.CollaboratorJobRunInfo) (*CollaboratorJobRunInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CollaboratorJobRunInfo{}
+	out.CollaboratorJobId = v.CollaboratorJobId
+	out.CollaboratorJobRunId = v.CollaboratorJobRunId
+	out.CollaboratorTaskRunId = v.CollaboratorTaskRunId
+	out.CollaboratorWorkspaceId = v.CollaboratorWorkspaceId
+	out.CollaboratorAlias = v.CollaboratorAlias
+	return out, nil
+}
+
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeName = w.TypeName
+	out.Position = w.Position
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	out.TypeJson = w.TypeJson
+	out.Comment = w.Comment
+	out.Nullable = w.Nullable
+	out.PartitionIndex = w.PartitionIndex
+	conv57, err := ColumnMaskToSDK(w.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv57
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeName = v.TypeName
+	out.Position = v.Position
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	out.TypeJson = v.TypeJson
+	out.Comment = v.Comment
+	out.Nullable = v.Nullable
+	out.PartitionIndex = v.PartitionIndex
+	conv58, err := ColumnMaskFromSDK(v.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv58
+	return out, nil
+}
+
+// ColumnMaskToSDK converts the mirror to the sdk-go type.
+func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnMask{}
+	out.FunctionName = w.FunctionName
+	out.UsingColumnNames = w.UsingColumnNames
+	conv59, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv59
+	return out, nil
+}
+
+// ColumnMaskFromSDK converts the sdk-go type to the mirror.
+func ColumnMaskFromSDK(v *sdk.ColumnMask) (*ColumnMask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnMask{}
+	out.FunctionName = v.FunctionName
+	out.UsingColumnNames = v.UsingColumnNames
+	conv60, err := convertSlice(v.UsingArguments, PolicyFunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv60
+	return out, nil
+}
+
+// ComplianceSecurityProfileToSDK converts the mirror to the sdk-go type.
+func ComplianceSecurityProfileToSDK(w *ComplianceSecurityProfile) (*sdk.ComplianceSecurityProfile, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComplianceSecurityProfile{}
+	out.IsEnabled = w.IsEnabled
+	out.ComplianceStandards = w.ComplianceStandards
+	return out, nil
+}
+
+// ComplianceSecurityProfileFromSDK converts the sdk-go type to the mirror.
+func ComplianceSecurityProfileFromSDK(v *sdk.ComplianceSecurityProfile) (*ComplianceSecurityProfile, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComplianceSecurityProfile{}
+	out.IsEnabled = v.IsEnabled
+	out.ComplianceStandards = v.ComplianceStandards
+	return out, nil
+}
+
+// CreateCleanRoomAssetRequestToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomAssetRequestToSDK(w *CreateCleanRoomAssetRequest) (*sdk.CreateCleanRoomAssetRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomAssetRequest{}
+	conv61, err := CleanRoomAssetToSDK(w.Asset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetRequest.Asset", err)
+	}
+	out.Asset = conv61
+	return out, nil
+}
+
+// CreateCleanRoomAssetRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomAssetRequestFromSDK(v *sdk.CreateCleanRoomAssetRequest) (*CreateCleanRoomAssetRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomAssetRequest{}
+	conv62, err := CleanRoomAssetFromSDK(v.Asset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetRequest.Asset", err)
+	}
+	out.Asset = conv62
+	return out, nil
+}
+
+// CreateCleanRoomAssetReviewRequestToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomAssetReviewRequestToSDK(w *CreateCleanRoomAssetReviewRequest) (*sdk.CreateCleanRoomAssetReviewRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomAssetReviewRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.Name = w.Name
+	out.AssetType = w.AssetType
+	{
+		members := 0
+		if w.NotebookReview != nil {
+			members++
+		}
+		if w.JarAnalysisReview != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCleanRoomAssetReviewRequest.Review")
+		}
+	}
+	switch {
+	case w.NotebookReview != nil:
+		conv63, err := NotebookVersionReviewToSDK(w.NotebookReview)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review", err)
+		}
+		out.Review = &sdk.CreateCleanRoomAssetReviewRequest_Review_NotebookReview{NotebookReview: *conv63}
+	case w.JarAnalysisReview != nil:
+		conv64, err := JarAnalysisVersionReviewToSDK(w.JarAnalysisReview)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review", err)
+		}
+		out.Review = &sdk.CreateCleanRoomAssetReviewRequest_Review_JarAnalysisReview{JarAnalysisReview: *conv64}
+	}
+	return out, nil
+}
+
+// CreateCleanRoomAssetReviewRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomAssetReviewRequestFromSDK(v *sdk.CreateCleanRoomAssetReviewRequest) (*CreateCleanRoomAssetReviewRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomAssetReviewRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.Name = v.Name
+	out.AssetType = v.AssetType
+	switch value := v.Review.(type) {
+	case *sdk.CreateCleanRoomAssetReviewRequest_Review_NotebookReview:
+		if value != nil {
+			conv65, err := NotebookVersionReviewFromSDK(&value.NotebookReview)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review", err)
+			}
+			out.NotebookReview = conv65
+		}
+	case *sdk.CreateCleanRoomAssetReviewRequest_Review_JarAnalysisReview:
+		if value != nil {
+			conv66, err := JarAnalysisVersionReviewFromSDK(&value.JarAnalysisReview)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewRequest.Review", err)
+			}
+			out.JarAnalysisReview = conv66
+		}
+	}
+	return out, nil
+}
+
+// CreateCleanRoomAssetReviewResponseToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomAssetReviewResponseToSDK(w *CreateCleanRoomAssetReviewResponse) (*sdk.CreateCleanRoomAssetReviewResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomAssetReviewResponse{}
+	conv67, err := convertSlice(w.NotebookReviews, CleanRoomNotebookReviewToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.NotebookReviews", err)
+	}
+	out.NotebookReviews = conv67
+	conv68, err := convertSlice(w.JarAnalysisReviews, CleanRoomJarAnalysisReviewToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.JarAnalysisReviews", err)
+	}
+	out.JarAnalysisReviews = conv68
+	{
+		members := 0
+		if w.NotebookReviewState != "" {
+			members++
+		}
+		if w.JarAnalysisReviewState != "" {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCleanRoomAssetReviewResponse.ReviewState")
+		}
+	}
+	switch {
+	case w.NotebookReviewState != "":
+		out.ReviewState = &sdk.CreateCleanRoomAssetReviewResponse_ReviewState_NotebookReviewState{NotebookReviewState: w.NotebookReviewState}
+	case w.JarAnalysisReviewState != "":
+		out.ReviewState = &sdk.CreateCleanRoomAssetReviewResponse_ReviewState_JarAnalysisReviewState{JarAnalysisReviewState: w.JarAnalysisReviewState}
+	}
+	return out, nil
+}
+
+// CreateCleanRoomAssetReviewResponseFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomAssetReviewResponseFromSDK(v *sdk.CreateCleanRoomAssetReviewResponse) (*CreateCleanRoomAssetReviewResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomAssetReviewResponse{}
+	conv69, err := convertSlice(v.NotebookReviews, CleanRoomNotebookReviewFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.NotebookReviews", err)
+	}
+	out.NotebookReviews = conv69
+	conv70, err := convertSlice(v.JarAnalysisReviews, CleanRoomJarAnalysisReviewFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAssetReviewResponse.JarAnalysisReviews", err)
+	}
+	out.JarAnalysisReviews = conv70
+	switch value := v.ReviewState.(type) {
+	case *sdk.CreateCleanRoomAssetReviewResponse_ReviewState_NotebookReviewState:
+		if value != nil {
+			out.NotebookReviewState = value.NotebookReviewState
+		}
+	case *sdk.CreateCleanRoomAssetReviewResponse_ReviewState_JarAnalysisReviewState:
+		if value != nil {
+			out.JarAnalysisReviewState = value.JarAnalysisReviewState
+		}
+	}
+	return out, nil
+}
+
+// CreateCleanRoomAutoApprovalRuleRequestToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomAutoApprovalRuleRequestToSDK(w *CreateCleanRoomAutoApprovalRuleRequest) (*sdk.CreateCleanRoomAutoApprovalRuleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomAutoApprovalRuleRequest{}
+	conv71, err := CleanRoomAutoApprovalRuleToSDK(w.AutoApprovalRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
+	}
+	out.AutoApprovalRule = conv71
+	return out, nil
+}
+
+// CreateCleanRoomAutoApprovalRuleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomAutoApprovalRuleRequestFromSDK(v *sdk.CreateCleanRoomAutoApprovalRuleRequest) (*CreateCleanRoomAutoApprovalRuleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomAutoApprovalRuleRequest{}
+	conv72, err := CleanRoomAutoApprovalRuleFromSDK(v.AutoApprovalRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
+	}
+	out.AutoApprovalRule = conv72
+	return out, nil
+}
+
+// CreateCleanRoomOutputCatalogRequestToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomOutputCatalogRequestToSDK(w *CreateCleanRoomOutputCatalogRequest) (*sdk.CreateCleanRoomOutputCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomOutputCatalogRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	conv73, err := CleanRoomOutputCatalogToSDK(w.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogRequest.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv73
+	return out, nil
+}
+
+// CreateCleanRoomOutputCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomOutputCatalogRequestFromSDK(v *sdk.CreateCleanRoomOutputCatalogRequest) (*CreateCleanRoomOutputCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomOutputCatalogRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	conv74, err := CleanRoomOutputCatalogFromSDK(v.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogRequest.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv74
+	return out, nil
+}
+
+// CreateCleanRoomOutputCatalogResponseToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomOutputCatalogResponseToSDK(w *CreateCleanRoomOutputCatalogResponse) (*sdk.CreateCleanRoomOutputCatalogResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomOutputCatalogResponse{}
+	conv75, err := CleanRoomOutputCatalogToSDK(w.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogResponse.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv75
+	return out, nil
+}
+
+// CreateCleanRoomOutputCatalogResponseFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomOutputCatalogResponseFromSDK(v *sdk.CreateCleanRoomOutputCatalogResponse) (*CreateCleanRoomOutputCatalogResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomOutputCatalogResponse{}
+	conv76, err := CleanRoomOutputCatalogFromSDK(v.OutputCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomOutputCatalogResponse.OutputCatalog", err)
+	}
+	out.OutputCatalog = conv76
+	return out, nil
+}
+
+// CreateCleanRoomRequestToSDK converts the mirror to the sdk-go type.
+func CreateCleanRoomRequestToSDK(w *CreateCleanRoomRequest) (*sdk.CreateCleanRoomRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCleanRoomRequest{}
+	conv77, err := CleanRoomToSDK(w.CleanRoom)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomRequest.CleanRoom", err)
+	}
+	out.CleanRoom = conv77
+	return out, nil
+}
+
+// CreateCleanRoomRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCleanRoomRequestFromSDK(v *sdk.CreateCleanRoomRequest) (*CreateCleanRoomRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCleanRoomRequest{}
+	conv78, err := CleanRoomFromSDK(v.CleanRoom)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCleanRoomRequest.CleanRoom", err)
+	}
+	out.CleanRoom = conv78
+	return out, nil
+}
+
+// EgressNetworkPolicyToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicyToSDK(w *EgressNetworkPolicy) (*sdk.EgressNetworkPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy{}
+	conv79, err := EgressNetworkPolicy_InternetAccessPolicyToSDK(w.InternetAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.InternetAccess", err)
+	}
+	out.InternetAccess = conv79
+	return out, nil
+}
+
+// EgressNetworkPolicyFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicyFromSDK(v *sdk.EgressNetworkPolicy) (*EgressNetworkPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy{}
+	conv80, err := EgressNetworkPolicy_InternetAccessPolicyFromSDK(v.InternetAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.InternetAccess", err)
+	}
+	out.InternetAccess = conv80
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicyToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_InternetAccessPolicyToSDK(w *EgressNetworkPolicy_InternetAccessPolicy) (*sdk.EgressNetworkPolicy_InternetAccessPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_InternetAccessPolicy{}
+	out.RestrictionMode = w.RestrictionMode
+	conv81, err := convertSlice(w.AllowedInternetDestinations, EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedInternetDestinations", err)
+	}
+	out.AllowedInternetDestinations = conv81
+	conv82, err := convertSlice(w.AllowedStorageDestinations, EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedStorageDestinations", err)
+	}
+	out.AllowedStorageDestinations = conv82
+	conv83, err := EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeToSDK(w.LogOnlyMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.LogOnlyMode", err)
+	}
+	out.LogOnlyMode = conv83
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicyFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_InternetAccessPolicyFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy) (*EgressNetworkPolicy_InternetAccessPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_InternetAccessPolicy{}
+	out.RestrictionMode = v.RestrictionMode
+	conv84, err := convertSlice(v.AllowedInternetDestinations, EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedInternetDestinations", err)
+	}
+	out.AllowedInternetDestinations = conv84
+	conv85, err := convertSlice(v.AllowedStorageDestinations, EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.AllowedStorageDestinations", err)
+	}
+	out.AllowedStorageDestinations = conv85
+	conv86, err := EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeFromSDK(v.LogOnlyMode)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_InternetAccessPolicy.LogOnlyMode", err)
+	}
+	out.LogOnlyMode = conv86
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_InternetDestination) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination{}
+	out.Destination = w.Destination
+	out.Type = w.Type
+	out.Protocol = w.Protocol
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_InternetAccessPolicy_InternetDestinationFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_InternetDestination) (*EgressNetworkPolicy_InternetAccessPolicy_InternetDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_InternetAccessPolicy_InternetDestination{}
+	out.Destination = v.Destination
+	out.Type = v.Type
+	out.Protocol = v.Protocol
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode{}
+	out.LogOnlyModeType = w.LogOnlyModeType
+	out.Workloads = w.Workloads
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_InternetAccessPolicy_LogOnlyModeFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode) (*EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_InternetAccessPolicy_LogOnlyMode{}
+	out.LogOnlyModeType = v.LogOnlyModeType
+	out.Workloads = v.Workloads
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationToSDK(w *EgressNetworkPolicy_InternetAccessPolicy_StorageDestination) (*sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination{}
+	out.BucketName = w.BucketName
+	out.Region = w.Region
+	out.Type = w.Type
+	out.AzureStorageAccount = w.AzureStorageAccount
+	out.AllowedPaths = w.AllowedPaths
+	out.AzureStorageService = w.AzureStorageService
+	out.AzureDnsZone = w.AzureDnsZone
+	out.AzureContainer = w.AzureContainer
+	return out, nil
+}
+
+// EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_InternetAccessPolicy_StorageDestinationFromSDK(v *sdk.EgressNetworkPolicy_InternetAccessPolicy_StorageDestination) (*EgressNetworkPolicy_InternetAccessPolicy_StorageDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_InternetAccessPolicy_StorageDestination{}
+	out.BucketName = v.BucketName
+	out.Region = v.Region
+	out.Type = v.Type
+	out.AzureStorageAccount = v.AzureStorageAccount
+	out.AllowedPaths = v.AllowedPaths
+	out.AzureStorageService = v.AzureStorageService
+	out.AzureDnsZone = v.AzureDnsZone
+	out.AzureContainer = v.AzureContainer
+	return out, nil
+}
+
+// JarAnalysisVersionReviewToSDK converts the mirror to the sdk-go type.
+func JarAnalysisVersionReviewToSDK(w *JarAnalysisVersionReview) (*sdk.JarAnalysisVersionReview, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JarAnalysisVersionReview{}
+	out.Etag = w.Etag
+	out.ReviewState = w.ReviewState
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// JarAnalysisVersionReviewFromSDK converts the sdk-go type to the mirror.
+func JarAnalysisVersionReviewFromSDK(v *sdk.JarAnalysisVersionReview) (*JarAnalysisVersionReview, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JarAnalysisVersionReview{}
+	out.Etag = v.Etag
+	out.ReviewState = v.ReviewState
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// ListCleanRoomAssetRevisionsRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAssetRevisionsRequestToSDK(w *ListCleanRoomAssetRevisionsRequest) (*sdk.ListCleanRoomAssetRevisionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAssetRevisionsRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.Name = w.Name
+	out.AssetType = w.AssetType
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetRevisionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAssetRevisionsRequestFromSDK(v *sdk.ListCleanRoomAssetRevisionsRequest) (*ListCleanRoomAssetRevisionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAssetRevisionsRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.Name = v.Name
+	out.AssetType = v.AssetType
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetRevisionsResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAssetRevisionsResponseToSDK(w *ListCleanRoomAssetRevisionsResponse) (*sdk.ListCleanRoomAssetRevisionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAssetRevisionsResponse{}
+	conv87, err := convertSlice(w.Revisions, CleanRoomAssetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetRevisionsResponse.Revisions", err)
+	}
+	out.Revisions = conv87
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetRevisionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAssetRevisionsResponseFromSDK(v *sdk.ListCleanRoomAssetRevisionsResponse) (*ListCleanRoomAssetRevisionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAssetRevisionsResponse{}
+	conv88, err := convertSlice(v.Revisions, CleanRoomAssetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetRevisionsResponse.Revisions", err)
+	}
+	out.Revisions = conv88
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetsRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAssetsRequestToSDK(w *ListCleanRoomAssetsRequest) (*sdk.ListCleanRoomAssetsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAssetsRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAssetsRequestFromSDK(v *sdk.ListCleanRoomAssetsRequest) (*ListCleanRoomAssetsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAssetsRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetsResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAssetsResponseToSDK(w *ListCleanRoomAssetsResponse) (*sdk.ListCleanRoomAssetsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAssetsResponse{}
+	conv89, err := convertSlice(w.Assets, CleanRoomAssetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetsResponse.Assets", err)
+	}
+	out.Assets = conv89
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomAssetsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAssetsResponseFromSDK(v *sdk.ListCleanRoomAssetsResponse) (*ListCleanRoomAssetsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAssetsResponse{}
+	conv90, err := convertSlice(v.Assets, CleanRoomAssetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAssetsResponse.Assets", err)
+	}
+	out.Assets = conv90
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomAutoApprovalRulesRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAutoApprovalRulesRequestToSDK(w *ListCleanRoomAutoApprovalRulesRequest) (*sdk.ListCleanRoomAutoApprovalRulesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAutoApprovalRulesRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAutoApprovalRulesRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAutoApprovalRulesRequestFromSDK(v *sdk.ListCleanRoomAutoApprovalRulesRequest) (*ListCleanRoomAutoApprovalRulesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAutoApprovalRulesRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomAutoApprovalRulesResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomAutoApprovalRulesResponseToSDK(w *ListCleanRoomAutoApprovalRulesResponse) (*sdk.ListCleanRoomAutoApprovalRulesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomAutoApprovalRulesResponse{}
+	conv91, err := convertSlice(w.Rules, CleanRoomAutoApprovalRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAutoApprovalRulesResponse.Rules", err)
+	}
+	out.Rules = conv91
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomAutoApprovalRulesResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomAutoApprovalRulesResponseFromSDK(v *sdk.ListCleanRoomAutoApprovalRulesResponse) (*ListCleanRoomAutoApprovalRulesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomAutoApprovalRulesResponse{}
+	conv92, err := convertSlice(v.Rules, CleanRoomAutoApprovalRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomAutoApprovalRulesResponse.Rules", err)
+	}
+	out.Rules = conv92
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomNotebookTaskRunsRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomNotebookTaskRunsRequestToSDK(w *ListCleanRoomNotebookTaskRunsRequest) (*sdk.ListCleanRoomNotebookTaskRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomNotebookTaskRunsRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.NotebookName = w.NotebookName
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomNotebookTaskRunsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomNotebookTaskRunsRequestFromSDK(v *sdk.ListCleanRoomNotebookTaskRunsRequest) (*ListCleanRoomNotebookTaskRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomNotebookTaskRunsRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.NotebookName = v.NotebookName
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomNotebookTaskRunsResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomNotebookTaskRunsResponseToSDK(w *ListCleanRoomNotebookTaskRunsResponse) (*sdk.ListCleanRoomNotebookTaskRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomNotebookTaskRunsResponse{}
+	conv93, err := convertSlice(w.Runs, CleanRoomNotebookTaskRunToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomNotebookTaskRunsResponse.Runs", err)
+	}
+	out.Runs = conv93
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomNotebookTaskRunsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomNotebookTaskRunsResponseFromSDK(v *sdk.ListCleanRoomNotebookTaskRunsResponse) (*ListCleanRoomNotebookTaskRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomNotebookTaskRunsResponse{}
+	conv94, err := convertSlice(v.Runs, CleanRoomNotebookTaskRunFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomNotebookTaskRunsResponse.Runs", err)
+	}
+	out.Runs = conv94
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomTaskRunsRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomTaskRunsRequestToSDK(w *ListCleanRoomTaskRunsRequest) (*sdk.ListCleanRoomTaskRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomTaskRunsRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	out.Name = w.Name
+	out.TaskType = w.TaskType
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomTaskRunsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomTaskRunsRequestFromSDK(v *sdk.ListCleanRoomTaskRunsRequest) (*ListCleanRoomTaskRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomTaskRunsRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	out.Name = v.Name
+	out.TaskType = v.TaskType
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomTaskRunsResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomTaskRunsResponseToSDK(w *ListCleanRoomTaskRunsResponse) (*sdk.ListCleanRoomTaskRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomTaskRunsResponse{}
+	conv95, err := convertSlice(w.Runs, CleanRoomTaskRunToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomTaskRunsResponse.Runs", err)
+	}
+	out.Runs = conv95
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomTaskRunsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomTaskRunsResponseFromSDK(v *sdk.ListCleanRoomTaskRunsResponse) (*ListCleanRoomTaskRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomTaskRunsResponse{}
+	conv96, err := convertSlice(v.Runs, CleanRoomTaskRunFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomTaskRunsResponse.Runs", err)
+	}
+	out.Runs = conv96
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomsRequestToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomsRequestToSDK(w *ListCleanRoomsRequest) (*sdk.ListCleanRoomsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListCleanRoomsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomsRequestFromSDK(v *sdk.ListCleanRoomsRequest) (*ListCleanRoomsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListCleanRoomsResponseToSDK converts the mirror to the sdk-go type.
+func ListCleanRoomsResponseToSDK(w *ListCleanRoomsResponse) (*sdk.ListCleanRoomsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCleanRoomsResponse{}
+	conv97, err := convertSlice(w.CleanRooms, CleanRoomToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomsResponse.CleanRooms", err)
+	}
+	out.CleanRooms = conv97
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCleanRoomsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCleanRoomsResponseFromSDK(v *sdk.ListCleanRoomsResponse) (*ListCleanRoomsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCleanRoomsResponse{}
+	conv98, err := convertSlice(v.CleanRooms, CleanRoomFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCleanRoomsResponse.CleanRooms", err)
+	}
+	out.CleanRooms = conv98
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// NotebookVersionReviewToSDK converts the mirror to the sdk-go type.
+func NotebookVersionReviewToSDK(w *NotebookVersionReview) (*sdk.NotebookVersionReview, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotebookVersionReview{}
+	out.Etag = w.Etag
+	out.ReviewState = w.ReviewState
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// NotebookVersionReviewFromSDK converts the sdk-go type to the mirror.
+func NotebookVersionReviewFromSDK(v *sdk.NotebookVersionReview) (*NotebookVersionReview, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotebookVersionReview{}
+	out.Etag = v.Etag
+	out.ReviewState = v.ReviewState
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// PartitionSpecification_PartitionToSDK converts the mirror to the sdk-go type.
+func PartitionSpecification_PartitionToSDK(w *PartitionSpecification_Partition) (*sdk.PartitionSpecification_Partition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PartitionSpecification_Partition{}
+	conv99, err := convertSlice(w.Values, PartitionSpecification_Partition_PartitionValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
+	}
+	out.Values = conv99
+	return out, nil
+}
+
+// PartitionSpecification_PartitionFromSDK converts the sdk-go type to the mirror.
+func PartitionSpecification_PartitionFromSDK(v *sdk.PartitionSpecification_Partition) (*PartitionSpecification_Partition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PartitionSpecification_Partition{}
+	conv100, err := convertSlice(v.Values, PartitionSpecification_Partition_PartitionValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PartitionSpecification_Partition.Values", err)
+	}
+	out.Values = conv100
+	return out, nil
+}
+
+// PartitionSpecification_Partition_PartitionValueToSDK converts the mirror to the sdk-go type.
+func PartitionSpecification_Partition_PartitionValueToSDK(w *PartitionSpecification_Partition_PartitionValue) (*sdk.PartitionSpecification_Partition_PartitionValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PartitionSpecification_Partition_PartitionValue{}
+	out.Name = w.Name
+	out.Value = w.Value
+	out.RecipientPropertyKey = w.RecipientPropertyKey
+	out.Op = w.Op
+	return out, nil
+}
+
+// PartitionSpecification_Partition_PartitionValueFromSDK converts the sdk-go type to the mirror.
+func PartitionSpecification_Partition_PartitionValueFromSDK(v *sdk.PartitionSpecification_Partition_PartitionValue) (*PartitionSpecification_Partition_PartitionValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PartitionSpecification_Partition_PartitionValue{}
+	out.Name = v.Name
+	out.Value = v.Value
+	out.RecipientPropertyKey = v.RecipientPropertyKey
+	out.Op = v.Op
+	return out, nil
+}
+
+// PolicyFunctionArgumentToSDK converts the mirror to the sdk-go type.
+func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PolicyFunctionArgument{}
+	{
+		members := 0
+		if w.Column != nil {
+			members++
+		}
+		if w.Constant != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		}
+	}
+	switch {
+	case w.Column != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
+	case w.Constant != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
+	}
+	return out, nil
+}
+
+// PolicyFunctionArgumentFromSDK converts the sdk-go type to the mirror.
+func PolicyFunctionArgumentFromSDK(v *sdk.PolicyFunctionArgument) (*PolicyFunctionArgument, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PolicyFunctionArgument{}
+	switch value := v.Arg.(type) {
+	case *sdk.PolicyFunctionArgument_Arg_Column:
+		if value != nil {
+			out.Column = new(value.Column)
+		}
+	case *sdk.PolicyFunctionArgument_Arg_Constant:
+		if value != nil {
+			out.Constant = new(value.Constant)
+		}
+	}
+	return out, nil
+}
+
+// UpdateCleanRoomAssetRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCleanRoomAssetRequestToSDK(w *UpdateCleanRoomAssetRequest) (*sdk.UpdateCleanRoomAssetRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCleanRoomAssetRequest{}
+	out.CleanRoomName = w.CleanRoomName
+	conv101, err := CleanRoomAssetToSDK(w.Asset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAssetRequest.Asset", err)
+	}
+	out.Asset = conv101
+	return out, nil
+}
+
+// UpdateCleanRoomAssetRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCleanRoomAssetRequestFromSDK(v *sdk.UpdateCleanRoomAssetRequest) (*UpdateCleanRoomAssetRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCleanRoomAssetRequest{}
+	out.CleanRoomName = v.CleanRoomName
+	conv102, err := CleanRoomAssetFromSDK(v.Asset)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAssetRequest.Asset", err)
+	}
+	out.Asset = conv102
+	return out, nil
+}
+
+// UpdateCleanRoomAutoApprovalRuleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCleanRoomAutoApprovalRuleRequestToSDK(w *UpdateCleanRoomAutoApprovalRuleRequest) (*sdk.UpdateCleanRoomAutoApprovalRuleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCleanRoomAutoApprovalRuleRequest{}
+	conv103, err := CleanRoomAutoApprovalRuleToSDK(w.AutoApprovalRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
+	}
+	out.AutoApprovalRule = conv103
+	return out, nil
+}
+
+// UpdateCleanRoomAutoApprovalRuleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCleanRoomAutoApprovalRuleRequestFromSDK(v *sdk.UpdateCleanRoomAutoApprovalRuleRequest) (*UpdateCleanRoomAutoApprovalRuleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCleanRoomAutoApprovalRuleRequest{}
+	conv104, err := CleanRoomAutoApprovalRuleFromSDK(v.AutoApprovalRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomAutoApprovalRuleRequest.AutoApprovalRule", err)
+	}
+	out.AutoApprovalRule = conv104
+	return out, nil
+}
+
+// UpdateCleanRoomRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCleanRoomRequestToSDK(w *UpdateCleanRoomRequest) (*sdk.UpdateCleanRoomRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCleanRoomRequest{}
+	out.Name = w.Name
+	conv105, err := CleanRoomToSDK(w.CleanRoom)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomRequest.CleanRoom", err)
+	}
+	out.CleanRoom = conv105
+	return out, nil
+}
+
+// UpdateCleanRoomRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateCleanRoomRequestFromSDK(v *sdk.UpdateCleanRoomRequest) (*UpdateCleanRoomRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	cleanRoomWireValue, err := CleanRoomFromSDK(v.CleanRoom)
+	out := &UpdateCleanRoomRequest{}
+	out.Name = v.Name
+	conv106, err := CleanRoomFromSDK(v.CleanRoom)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCleanRoomRequest.CleanRoom", err)
 	}
-	return &UpdateCleanRoomRequest{
-		Name:      v.Name,
-		CleanRoom: cleanRoomWireValue,
-	}, nil
+	out.CleanRoom = conv106
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

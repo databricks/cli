@@ -22,22 +22,6 @@ const (
 	PolicySortColumn_PolicyName         = sdk.PolicySortColumn_PolicyName
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreatePolicyRequest struct {
 	// Cluster Policy name requested by the user. This has to be unique. Length must
 	// be between 1 and 100 characters.
@@ -73,55 +57,14 @@ type CreatePolicyRequest struct {
 	Libraries []Library `json:"libraries,omitempty"`
 }
 
-func CreatePolicyRequestFromSDK(v *sdk.CreatePolicyRequest) (*CreatePolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxClustersPerUserWireValue, err := int64ToWire(v.MaxClustersPerUser)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.MaxClustersPerUser", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.Libraries", err)
-	}
-	return &CreatePolicyRequest{
-		Name:                            v.Name,
-		Definition:                      v.Definition,
-		Description:                     v.Description,
-		PolicyFamilyId:                  v.PolicyFamilyId,
-		PolicyFamilyDefinitionOverrides: v.PolicyFamilyDefinitionOverrides,
-		MaxClustersPerUser:              maxClustersPerUserWireValue,
-		Libraries:                       librariesWireValue,
-	}, nil
-}
-
 type CreatePolicyResponse struct {
 	// Canonical unique identifier for the cluster policy.
 	PolicyId *string `json:"policy_id,omitempty"`
 }
 
-func CreatePolicyResponseToSDK(w *CreatePolicyResponse) (*sdk.CreatePolicyResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreatePolicyResponse{
-		PolicyId: w.PolicyId,
-	}, nil
-}
-
 type DeletePolicyRequest struct {
 	// The ID of the policy to delete.
 	PolicyId *string `json:"policy_id,omitempty"`
-}
-
-func DeletePolicyRequestFromSDK(v *sdk.DeletePolicyRequest) (*DeletePolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeletePolicyRequest{
-		PolicyId: v.PolicyId,
-	}, nil
 }
 
 type EditPolicyRequest struct {
@@ -161,42 +104,9 @@ type EditPolicyRequest struct {
 	Libraries []Library `json:"libraries,omitempty"`
 }
 
-func EditPolicyRequestFromSDK(v *sdk.EditPolicyRequest) (*EditPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxClustersPerUserWireValue, err := int64ToWire(v.MaxClustersPerUser)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPolicyRequest.MaxClustersPerUser", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPolicyRequest.Libraries", err)
-	}
-	return &EditPolicyRequest{
-		PolicyId:                        v.PolicyId,
-		Name:                            v.Name,
-		Definition:                      v.Definition,
-		Description:                     v.Description,
-		PolicyFamilyId:                  v.PolicyFamilyId,
-		PolicyFamilyDefinitionOverrides: v.PolicyFamilyDefinitionOverrides,
-		MaxClustersPerUser:              maxClustersPerUserWireValue,
-		Libraries:                       librariesWireValue,
-	}, nil
-}
-
 type GetPolicyRequest struct {
 	// Canonical unique identifier for the Cluster Policy.
 	PolicyId *string `json:"policy_id,omitempty"`
-}
-
-func GetPolicyRequestFromSDK(v *sdk.GetPolicyRequest) (*GetPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetPolicyRequest{
-		PolicyId: v.PolicyId,
-	}, nil
 }
 
 type Library struct {
@@ -209,136 +119,6 @@ type Library struct {
 	Requirements *string            `json:"requirements,omitempty"`
 }
 
-func LibraryFromSDK(v *sdk.Library) (*Library, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var libJarWire *string
-	var libEggWire *string
-	var libPypiWire *PythonPyPiLibrary
-	var libMavenWire *MavenLibrary
-	var libCranWire *RCranLibrary
-	var libWhlWire *string
-	var libRequirementsWire *string
-	switch value := v.Lib.(type) {
-	case nil:
-	case *sdk.Library_Lib_Jar:
-		if value != nil {
-			libJarWire = new(value.Jar)
-		}
-	case *sdk.Library_Lib_Egg:
-		if value != nil {
-			libEggWire = new(value.Egg)
-		}
-	case *sdk.Library_Lib_Pypi:
-		if value != nil {
-			libPypiConverted, err := PythonPyPiLibraryFromSDK(&value.Pypi)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-			}
-			libPypiWire = libPypiConverted
-		}
-	case *sdk.Library_Lib_Maven:
-		if value != nil {
-			libMavenConverted, err := MavenLibraryFromSDK(&value.Maven)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-			}
-			libMavenWire = libMavenConverted
-		}
-	case *sdk.Library_Lib_Cran:
-		if value != nil {
-			libCranConverted, err := RCranLibraryFromSDK(&value.Cran)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-			}
-			libCranWire = libCranConverted
-		}
-	case *sdk.Library_Lib_Whl:
-		if value != nil {
-			libWhlWire = new(value.Whl)
-		}
-	case *sdk.Library_Lib_Requirements:
-		if value != nil {
-			libRequirementsWire = new(value.Requirements)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Library.Lib", value)
-	}
-	return &Library{
-		Jar:          libJarWire,
-		Egg:          libEggWire,
-		Pypi:         libPypiWire,
-		Maven:        libMavenWire,
-		Cran:         libCranWire,
-		Whl:          libWhlWire,
-		Requirements: libRequirementsWire,
-	}, nil
-}
-
-func LibraryToSDK(w *Library) (*sdk.Library, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libMembers := 0
-	if w.Jar != nil {
-		libMembers++
-	}
-	if w.Egg != nil {
-		libMembers++
-	}
-	if w.Pypi != nil {
-		libMembers++
-	}
-	if w.Maven != nil {
-		libMembers++
-	}
-	if w.Cran != nil {
-		libMembers++
-	}
-	if w.Whl != nil {
-		libMembers++
-	}
-	if w.Requirements != nil {
-		libMembers++
-	}
-	if libMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
-	}
-	libSelection := (&sdk.Library{}).Lib
-	switch {
-	case w.Jar != nil:
-		libSelection = &sdk.Library_Lib_Jar{Jar: *w.Jar}
-	case w.Egg != nil:
-		libSelection = &sdk.Library_Lib_Egg{Egg: *w.Egg}
-	case w.Pypi != nil:
-		libPypiConverted, err := PythonPyPiLibraryToSDK(w.Pypi)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-		}
-		libSelection = &sdk.Library_Lib_Pypi{Pypi: *libPypiConverted}
-	case w.Maven != nil:
-		libMavenConverted, err := MavenLibraryToSDK(w.Maven)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-		}
-		libSelection = &sdk.Library_Lib_Maven{Maven: *libMavenConverted}
-	case w.Cran != nil:
-		libCranConverted, err := RCranLibraryToSDK(w.Cran)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-		}
-		libSelection = &sdk.Library_Lib_Cran{Cran: *libCranConverted}
-	case w.Whl != nil:
-		libSelection = &sdk.Library_Lib_Whl{Whl: *w.Whl}
-	case w.Requirements != nil:
-		libSelection = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
-	}
-	return &sdk.Library{
-		Lib: libSelection,
-	}, nil
-}
-
 type ListPoliciesRequest struct {
 	// The order in which the policies get listed. * `DESC` - Sort result list in
 	// descending order. * `ASC` - Sort result list in ascending order.
@@ -349,32 +129,9 @@ type ListPoliciesRequest struct {
 	SortColumn PolicySortColumn `json:"sort_column,omitempty"`
 }
 
-func ListPoliciesRequestFromSDK(v *sdk.ListPoliciesRequest) (*ListPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPoliciesRequest{
-		SortOrder:  v.SortOrder,
-		SortColumn: v.SortColumn,
-	}, nil
-}
-
 type ListPoliciesResponse struct {
 	// List of policies.
 	Policies []Policy `json:"policies,omitempty"`
-}
-
-func ListPoliciesResponseToSDK(w *ListPoliciesResponse) (*sdk.ListPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policiesPublicValue, err := convertSlice(w.Policies, PolicyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
-	}
-	return &sdk.ListPoliciesResponse{
-		Policies: policiesPublicValue,
-	}, nil
 }
 
 type MavenLibrary struct {
@@ -389,28 +146,6 @@ type MavenLibrary struct {
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
-}
-
-func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MavenLibrary{
-		Coordinates: v.Coordinates,
-		Repo:        v.Repo,
-		Exclusions:  v.Exclusions,
-	}, nil
-}
-
-func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MavenLibrary{
-		Coordinates: w.Coordinates,
-		Repo:        w.Repo,
-		Exclusions:  w.Exclusions,
-	}, nil
 }
 
 // Describes a Cluster Policy entity..
@@ -461,37 +196,6 @@ type Policy struct {
 	Libraries []Library `json:"libraries,omitempty"`
 }
 
-func PolicyToSDK(w *Policy) (*sdk.Policy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtTimestampPublicValue, err := int64FromWire(w.CreatedAtTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Policy.CreatedAtTimestamp", err)
-	}
-	maxClustersPerUserPublicValue, err := int64FromWire(w.MaxClustersPerUser)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Policy.MaxClustersPerUser", err)
-	}
-	librariesPublicValue, err := convertSlice(w.Libraries, LibraryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Policy.Libraries", err)
-	}
-	return &sdk.Policy{
-		PolicyId:                        w.PolicyId,
-		CreatorUserName:                 w.CreatorUserName,
-		CreatedAtTimestamp:              createdAtTimestampPublicValue,
-		IsDefault:                       w.IsDefault,
-		Name:                            w.Name,
-		Definition:                      w.Definition,
-		Description:                     w.Description,
-		PolicyFamilyId:                  w.PolicyFamilyId,
-		PolicyFamilyDefinitionOverrides: w.PolicyFamilyDefinitionOverrides,
-		MaxClustersPerUser:              maxClustersPerUserPublicValue,
-		Libraries:                       librariesPublicValue,
-	}, nil
-}
-
 type PythonPyPiLibrary struct {
 	// The name of the pypi package to install. An optional exact version
 	// specification is also supported. Examples: "simplejson" and
@@ -502,26 +206,6 @@ type PythonPyPiLibrary struct {
 	Repo *string `json:"repo,omitempty"`
 }
 
-func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PythonPyPiLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
-}
-
-func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PythonPyPiLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
-}
-
 type RCranLibrary struct {
 	// The name of the CRAN package to install.
 	Package *string `json:"package,omitempty"`
@@ -530,24 +214,427 @@ type RCranLibrary struct {
 	Repo *string `json:"repo,omitempty"`
 }
 
-func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
+// CreatePolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreatePolicyRequestToSDK(w *CreatePolicyRequest) (*sdk.CreatePolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePolicyRequest{}
+	out.Name = w.Name
+	out.Definition = w.Definition
+	out.Description = w.Description
+	out.PolicyFamilyId = w.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = w.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = w.MaxClustersPerUser
+	conv1, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.Libraries", err)
+	}
+	out.Libraries = conv1
+	return out, nil
+}
+
+// CreatePolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePolicyRequestFromSDK(v *sdk.CreatePolicyRequest) (*CreatePolicyRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &RCranLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
+	out := &CreatePolicyRequest{}
+	out.Name = v.Name
+	out.Definition = v.Definition
+	out.Description = v.Description
+	out.PolicyFamilyId = v.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = v.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = v.MaxClustersPerUser
+	conv2, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePolicyRequest.Libraries", err)
+	}
+	out.Libraries = conv2
+	return out, nil
 }
 
+// CreatePolicyResponseToSDK converts the mirror to the sdk-go type.
+func CreatePolicyResponseToSDK(w *CreatePolicyResponse) (*sdk.CreatePolicyResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePolicyResponse{}
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// CreatePolicyResponseFromSDK converts the sdk-go type to the mirror.
+func CreatePolicyResponseFromSDK(v *sdk.CreatePolicyResponse) (*CreatePolicyResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePolicyResponse{}
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// DeletePolicyRequestToSDK converts the mirror to the sdk-go type.
+func DeletePolicyRequestToSDK(w *DeletePolicyRequest) (*sdk.DeletePolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeletePolicyRequest{}
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// DeletePolicyRequestFromSDK converts the sdk-go type to the mirror.
+func DeletePolicyRequestFromSDK(v *sdk.DeletePolicyRequest) (*DeletePolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeletePolicyRequest{}
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// EditPolicyRequestToSDK converts the mirror to the sdk-go type.
+func EditPolicyRequestToSDK(w *EditPolicyRequest) (*sdk.EditPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditPolicyRequest{}
+	out.PolicyId = w.PolicyId
+	out.Name = w.Name
+	out.Definition = w.Definition
+	out.Description = w.Description
+	out.PolicyFamilyId = w.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = w.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = w.MaxClustersPerUser
+	conv3, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPolicyRequest.Libraries", err)
+	}
+	out.Libraries = conv3
+	return out, nil
+}
+
+// EditPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func EditPolicyRequestFromSDK(v *sdk.EditPolicyRequest) (*EditPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditPolicyRequest{}
+	out.PolicyId = v.PolicyId
+	out.Name = v.Name
+	out.Definition = v.Definition
+	out.Description = v.Description
+	out.PolicyFamilyId = v.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = v.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = v.MaxClustersPerUser
+	conv4, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPolicyRequest.Libraries", err)
+	}
+	out.Libraries = conv4
+	return out, nil
+}
+
+// GetPolicyRequestToSDK converts the mirror to the sdk-go type.
+func GetPolicyRequestToSDK(w *GetPolicyRequest) (*sdk.GetPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyRequest{}
+	out.PolicyId = w.PolicyId
+	return out, nil
+}
+
+// GetPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func GetPolicyRequestFromSDK(v *sdk.GetPolicyRequest) (*GetPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyRequest{}
+	out.PolicyId = v.PolicyId
+	return out, nil
+}
+
+// LibraryToSDK converts the mirror to the sdk-go type.
+func LibraryToSDK(w *Library) (*sdk.Library, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Library{}
+	{
+		members := 0
+		if w.Jar != nil {
+			members++
+		}
+		if w.Egg != nil {
+			members++
+		}
+		if w.Pypi != nil {
+			members++
+		}
+		if w.Maven != nil {
+			members++
+		}
+		if w.Cran != nil {
+			members++
+		}
+		if w.Whl != nil {
+			members++
+		}
+		if w.Requirements != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
+		}
+	}
+	switch {
+	case w.Jar != nil:
+		out.Lib = &sdk.Library_Lib_Jar{Jar: *w.Jar}
+	case w.Egg != nil:
+		out.Lib = &sdk.Library_Lib_Egg{Egg: *w.Egg}
+	case w.Pypi != nil:
+		conv5, err := PythonPyPiLibraryToSDK(w.Pypi)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Pypi{Pypi: *conv5}
+	case w.Maven != nil:
+		conv6, err := MavenLibraryToSDK(w.Maven)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Maven{Maven: *conv6}
+	case w.Cran != nil:
+		conv7, err := RCranLibraryToSDK(w.Cran)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Cran{Cran: *conv7}
+	case w.Whl != nil:
+		out.Lib = &sdk.Library_Lib_Whl{Whl: *w.Whl}
+	case w.Requirements != nil:
+		out.Lib = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
+	}
+	return out, nil
+}
+
+// LibraryFromSDK converts the sdk-go type to the mirror.
+func LibraryFromSDK(v *sdk.Library) (*Library, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Library{}
+	switch value := v.Lib.(type) {
+	case *sdk.Library_Lib_Jar:
+		if value != nil {
+			out.Jar = new(value.Jar)
+		}
+	case *sdk.Library_Lib_Egg:
+		if value != nil {
+			out.Egg = new(value.Egg)
+		}
+	case *sdk.Library_Lib_Pypi:
+		if value != nil {
+			conv8, err := PythonPyPiLibraryFromSDK(&value.Pypi)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Pypi = conv8
+		}
+	case *sdk.Library_Lib_Maven:
+		if value != nil {
+			conv9, err := MavenLibraryFromSDK(&value.Maven)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Maven = conv9
+		}
+	case *sdk.Library_Lib_Cran:
+		if value != nil {
+			conv10, err := RCranLibraryFromSDK(&value.Cran)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Cran = conv10
+		}
+	case *sdk.Library_Lib_Whl:
+		if value != nil {
+			out.Whl = new(value.Whl)
+		}
+	case *sdk.Library_Lib_Requirements:
+		if value != nil {
+			out.Requirements = new(value.Requirements)
+		}
+	}
+	return out, nil
+}
+
+// ListPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListPoliciesRequestToSDK(w *ListPoliciesRequest) (*sdk.ListPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPoliciesRequest{}
+	out.SortOrder = w.SortOrder
+	out.SortColumn = w.SortColumn
+	return out, nil
+}
+
+// ListPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListPoliciesRequestFromSDK(v *sdk.ListPoliciesRequest) (*ListPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPoliciesRequest{}
+	out.SortOrder = v.SortOrder
+	out.SortColumn = v.SortColumn
+	return out, nil
+}
+
+// ListPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListPoliciesResponseToSDK(w *ListPoliciesResponse) (*sdk.ListPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPoliciesResponse{}
+	conv11, err := convertSlice(w.Policies, PolicyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv11
+	return out, nil
+}
+
+// ListPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListPoliciesResponseFromSDK(v *sdk.ListPoliciesResponse) (*ListPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPoliciesResponse{}
+	conv12, err := convertSlice(v.Policies, PolicyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPoliciesResponse.Policies", err)
+	}
+	out.Policies = conv12
+	return out, nil
+}
+
+// MavenLibraryToSDK converts the mirror to the sdk-go type.
+func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MavenLibrary{}
+	out.Coordinates = w.Coordinates
+	out.Repo = w.Repo
+	out.Exclusions = w.Exclusions
+	return out, nil
+}
+
+// MavenLibraryFromSDK converts the sdk-go type to the mirror.
+func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MavenLibrary{}
+	out.Coordinates = v.Coordinates
+	out.Repo = v.Repo
+	out.Exclusions = v.Exclusions
+	return out, nil
+}
+
+// PolicyToSDK converts the mirror to the sdk-go type.
+func PolicyToSDK(w *Policy) (*sdk.Policy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Policy{}
+	out.PolicyId = w.PolicyId
+	out.CreatorUserName = w.CreatorUserName
+	out.CreatedAtTimestamp = w.CreatedAtTimestamp
+	out.IsDefault = w.IsDefault
+	out.Name = w.Name
+	out.Definition = w.Definition
+	out.Description = w.Description
+	out.PolicyFamilyId = w.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = w.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = w.MaxClustersPerUser
+	conv13, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Policy.Libraries", err)
+	}
+	out.Libraries = conv13
+	return out, nil
+}
+
+// PolicyFromSDK converts the sdk-go type to the mirror.
+func PolicyFromSDK(v *sdk.Policy) (*Policy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Policy{}
+	out.PolicyId = v.PolicyId
+	out.CreatorUserName = v.CreatorUserName
+	out.CreatedAtTimestamp = v.CreatedAtTimestamp
+	out.IsDefault = v.IsDefault
+	out.Name = v.Name
+	out.Definition = v.Definition
+	out.Description = v.Description
+	out.PolicyFamilyId = v.PolicyFamilyId
+	out.PolicyFamilyDefinitionOverrides = v.PolicyFamilyDefinitionOverrides
+	out.MaxClustersPerUser = v.MaxClustersPerUser
+	conv14, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Policy.Libraries", err)
+	}
+	out.Libraries = conv14
+	return out, nil
+}
+
+// PythonPyPiLibraryToSDK converts the mirror to the sdk-go type.
+func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonPyPiLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// PythonPyPiLibraryFromSDK converts the sdk-go type to the mirror.
+func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonPyPiLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
+}
+
+// RCranLibraryToSDK converts the mirror to the sdk-go type.
 func RCranLibraryToSDK(w *RCranLibrary) (*sdk.RCranLibrary, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.RCranLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
+	out := &sdk.RCranLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// RCranLibraryFromSDK converts the sdk-go type to the mirror.
+func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RCranLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

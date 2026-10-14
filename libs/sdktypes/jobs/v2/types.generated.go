@@ -325,22 +325,6 @@ const (
 	TerminationType_Type_CloudFailure                                                    = sdk.TerminationType_Type_CloudFailure
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AccessControlRequest struct {
 	UserName             *string                            `json:"user_name,omitempty"`
 	GroupName            *string                            `json:"group_name,omitempty"`
@@ -348,61 +332,11 @@ type AccessControlRequest struct {
 	PermissionLevel      AccessControlRequest_JobPermission `json:"permission_level,omitempty"`
 }
 
-func AccessControlRequestFromSDK(v *sdk.AccessControlRequest) (*AccessControlRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var principalNameUserNameWire *string
-	var principalNameGroupNameWire *string
-	var principalNameServicePrincipalNameWire *string
-	switch value := v.PrincipalName.(type) {
-	case nil:
-	case *sdk.AccessControlRequest_PrincipalName_UserName:
-		if value != nil {
-			principalNameUserNameWire = new(value.UserName)
-		}
-	case *sdk.AccessControlRequest_PrincipalName_GroupName:
-		if value != nil {
-			principalNameGroupNameWire = new(value.GroupName)
-		}
-	case *sdk.AccessControlRequest_PrincipalName_ServicePrincipalName:
-		if value != nil {
-			principalNameServicePrincipalNameWire = new(value.ServicePrincipalName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AccessControlRequest.PrincipalName", value)
-	}
-	return &AccessControlRequest{
-		UserName:             principalNameUserNameWire,
-		GroupName:            principalNameGroupNameWire,
-		ServicePrincipalName: principalNameServicePrincipalNameWire,
-		PermissionLevel:      v.PermissionLevel,
-	}, nil
-}
-
 // A storage location in Adls Gen2.
 type Adlsgen2Info struct {
 	// abfss destination, e.g.
 	// `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
 	Destination *string `json:"destination,omitempty"`
-}
-
-func Adlsgen2InfoFromSDK(v *sdk.Adlsgen2Info) (*Adlsgen2Info, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Adlsgen2Info{
-		Destination: v.Destination,
-	}, nil
-}
-
-func Adlsgen2InfoToSDK(w *Adlsgen2Info) (*sdk.Adlsgen2Info, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Adlsgen2Info{
-		Destination: w.Destination,
-	}, nil
 }
 
 // AiRuntimeTask: multi-node GPU compute task definition for Databricks AI
@@ -459,48 +393,6 @@ type AiRuntimeTask struct {
 	UnityCatalogImagePath *string `json:"unity_catalog_image_path,omitempty"`
 }
 
-func AiRuntimeTaskFromSDK(v *sdk.AiRuntimeTask) (*AiRuntimeTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deploymentsWireValue, err := convertSlice(v.Deployments, DeploymentSpecFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiRuntimeTask.Deployments", err)
-	}
-	return &AiRuntimeTask{
-		Experiment:                v.Experiment,
-		Deployments:               deploymentsWireValue,
-		CodeSourcePath:            v.CodeSourcePath,
-		MlflowRun:                 v.MlflowRun,
-		MlflowExperimentDirectory: v.MlflowExperimentDirectory,
-		DockerImageUrl:            v.DockerImageUrl,
-		MlflowArtifactLocation:    v.MlflowArtifactLocation,
-		PriorityClass:             v.PriorityClass,
-		UnityCatalogImagePath:     v.UnityCatalogImagePath,
-	}, nil
-}
-
-func AiRuntimeTaskToSDK(w *AiRuntimeTask) (*sdk.AiRuntimeTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deploymentsPublicValue, err := convertSlice(w.Deployments, DeploymentSpecToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AiRuntimeTask.Deployments", err)
-	}
-	return &sdk.AiRuntimeTask{
-		Experiment:                w.Experiment,
-		Deployments:               deploymentsPublicValue,
-		CodeSourcePath:            w.CodeSourcePath,
-		MlflowRun:                 w.MlflowRun,
-		MlflowExperimentDirectory: w.MlflowExperimentDirectory,
-		DockerImageUrl:            w.DockerImageUrl,
-		MlflowArtifactLocation:    w.MlflowArtifactLocation,
-		PriorityClass:             w.PriorityClass,
-		UnityCatalogImagePath:     w.UnityCatalogImagePath,
-	}, nil
-}
-
 // AiRuntimeTaskOutput: output identifiers for an AiRuntimeTask run — the
 // MLflow experiment and run IDs the task wrote to.
 //
@@ -517,17 +409,6 @@ type AiRuntimeTaskOutput struct {
 	// (for example, that the run is still waiting for GPU compute). Set by the
 	// server only when there is something to surface; empty otherwise.
 	StatusMessage *string `json:"status_message,omitempty"`
-}
-
-func AiRuntimeTaskOutputToSDK(w *AiRuntimeTaskOutput) (*sdk.AiRuntimeTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AiRuntimeTaskOutput{
-		MlflowExperimentId: w.MlflowExperimentId,
-		MlflowRunId:        w.MlflowRunId,
-		StatusMessage:      w.StatusMessage,
-	}, nil
 }
 
 type AlertTask struct {
@@ -552,51 +433,8 @@ type AlertTask struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
 }
 
-func AlertTaskFromSDK(v *sdk.AlertTask) (*AlertTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscribersWireValue, err := convertSlice(v.Subscribers, AlertTaskSubscriberFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertTask.Subscribers", err)
-	}
-	return &AlertTask{
-		AlertId:       v.AlertId,
-		WarehouseId:   v.WarehouseId,
-		WorkspacePath: v.WorkspacePath,
-		Subscribers:   subscribersWireValue,
-		Parameters:    v.Parameters,
-	}, nil
-}
-
-func AlertTaskToSDK(w *AlertTask) (*sdk.AlertTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscribersPublicValue, err := convertSlice(w.Subscribers, AlertTaskSubscriberToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertTask.Subscribers", err)
-	}
-	return &sdk.AlertTask{
-		AlertId:       w.AlertId,
-		WarehouseId:   w.WarehouseId,
-		WorkspacePath: w.WorkspacePath,
-		Subscribers:   subscribersPublicValue,
-		Parameters:    w.Parameters,
-	}, nil
-}
-
 type AlertTaskOutput struct {
 	AlertState AlertEvaluationState_AlertEvaluationState `json:"alert_state,omitempty"`
-}
-
-func AlertTaskOutputToSDK(w *AlertTaskOutput) (*sdk.AlertTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AlertTaskOutput{
-		AlertState: w.AlertState,
-	}, nil
 }
 
 // Represents a subscriber that will receive alert notifications. A subscriber
@@ -605,57 +443,6 @@ func AlertTaskOutputToSDK(w *AlertTaskOutput) (*sdk.AlertTaskOutput, error) {
 type AlertTaskSubscriber struct {
 	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
-}
-
-func AlertTaskSubscriberFromSDK(v *sdk.AlertTaskSubscriber) (*AlertTaskSubscriber, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriberTypeUserNameWire *string
-	var subscriberTypeDestinationIdWire *string
-	switch value := v.SubscriberType.(type) {
-	case nil:
-	case *sdk.AlertTaskSubscriber_SubscriberType_UserName:
-		if value != nil {
-			subscriberTypeUserNameWire = new(value.UserName)
-		}
-	case *sdk.AlertTaskSubscriber_SubscriberType_DestinationId:
-		if value != nil {
-			subscriberTypeDestinationIdWire = new(value.DestinationId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AlertTaskSubscriber.SubscriberType", value)
-	}
-	return &AlertTaskSubscriber{
-		UserName:      subscriberTypeUserNameWire,
-		DestinationId: subscriberTypeDestinationIdWire,
-	}, nil
-}
-
-func AlertTaskSubscriberToSDK(w *AlertTaskSubscriber) (*sdk.AlertTaskSubscriber, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriberTypeMembers := 0
-	if w.UserName != nil {
-		subscriberTypeMembers++
-	}
-	if w.DestinationId != nil {
-		subscriberTypeMembers++
-	}
-	if subscriberTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AlertTaskSubscriber.SubscriberType")
-	}
-	subscriberTypeSelection := (&sdk.AlertTaskSubscriber{}).SubscriberType
-	switch {
-	case w.UserName != nil:
-		subscriberTypeSelection = &sdk.AlertTaskSubscriber_SubscriberType_UserName{UserName: *w.UserName}
-	case w.DestinationId != nil:
-		subscriberTypeSelection = &sdk.AlertTaskSubscriber_SubscriberType_DestinationId{DestinationId: *w.DestinationId}
-	}
-	return &sdk.AlertTaskSubscriber{
-		SubscriberType: subscriberTypeSelection,
-	}, nil
 }
 
 type AutoScale struct {
@@ -667,26 +454,6 @@ type AutoScale struct {
 	// overloaded. Note that `max_workers` must be strictly greater than
 	// `min_workers`.
 	MaxWorkers *int `json:"max_workers,omitempty"`
-}
-
-func AutoScaleFromSDK(v *sdk.AutoScale) (*AutoScale, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AutoScale{
-		MinWorkers: v.MinWorkers,
-		MaxWorkers: v.MaxWorkers,
-	}, nil
-}
-
-func AutoScaleToSDK(w *AutoScale) (*sdk.AutoScale, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AutoScale{
-		MinWorkers: w.MinWorkers,
-		MaxWorkers: w.MaxWorkers,
-	}, nil
 }
 
 // Attributes set during cluster creation which are related to Amazon Web
@@ -763,42 +530,6 @@ type AwsAttributes struct {
 	EbsVolumeThroughput *int `json:"ebs_volume_throughput,omitempty"`
 }
 
-func AwsAttributesFromSDK(v *sdk.AwsAttributes) (*AwsAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsAttributes{
-		FirstOnDemand:       v.FirstOnDemand,
-		Availability:        v.Availability,
-		ZoneId:              v.ZoneId,
-		InstanceProfileArn:  v.InstanceProfileArn,
-		SpotBidPricePercent: v.SpotBidPricePercent,
-		EbsVolumeType:       v.EbsVolumeType,
-		EbsVolumeCount:      v.EbsVolumeCount,
-		EbsVolumeSize:       v.EbsVolumeSize,
-		EbsVolumeIops:       v.EbsVolumeIops,
-		EbsVolumeThroughput: v.EbsVolumeThroughput,
-	}, nil
-}
-
-func AwsAttributesToSDK(w *AwsAttributes) (*sdk.AwsAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsAttributes{
-		FirstOnDemand:       w.FirstOnDemand,
-		Availability:        w.Availability,
-		ZoneId:              w.ZoneId,
-		InstanceProfileArn:  w.InstanceProfileArn,
-		SpotBidPricePercent: w.SpotBidPricePercent,
-		EbsVolumeType:       w.EbsVolumeType,
-		EbsVolumeCount:      w.EbsVolumeCount,
-		EbsVolumeSize:       w.EbsVolumeSize,
-		EbsVolumeIops:       w.EbsVolumeIops,
-		EbsVolumeThroughput: w.EbsVolumeThroughput,
-	}, nil
-}
-
 // Attributes set during cluster creation which are related to Microsoft Azure..
 type AzureAttributes struct {
 	// Defines values necessary to configure and run Azure Log Analytics agent
@@ -837,40 +568,6 @@ type AzureAttributes struct {
 	// Format:
 	// `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
 	CapacityReservationGroup *string `json:"capacity_reservation_group,omitempty"`
-}
-
-func AzureAttributesFromSDK(v *sdk.AzureAttributes) (*AzureAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	logAnalyticsInfoWireValue, err := LogAnalyticsInfoFromSDK(v.LogAnalyticsInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
-	}
-	return &AzureAttributes{
-		LogAnalyticsInfo:         logAnalyticsInfoWireValue,
-		FirstOnDemand:            v.FirstOnDemand,
-		Availability:             v.Availability,
-		SpotBidMaxPrice:          v.SpotBidMaxPrice,
-		CapacityReservationGroup: v.CapacityReservationGroup,
-	}, nil
-}
-
-func AzureAttributesToSDK(w *AzureAttributes) (*sdk.AzureAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	logAnalyticsInfoPublicValue, err := LogAnalyticsInfoToSDK(w.LogAnalyticsInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
-	}
-	return &sdk.AzureAttributes{
-		LogAnalyticsInfo:         logAnalyticsInfoPublicValue,
-		FirstOnDemand:            w.FirstOnDemand,
-		Availability:             w.Availability,
-		SpotBidMaxPrice:          w.SpotBidMaxPrice,
-		CapacityReservationGroup: w.CapacityReservationGroup,
-	}, nil
 }
 
 type BaseJob struct {
@@ -913,44 +610,6 @@ type BaseJob struct {
 	// based on the `GetJob.include_trigger_state` / `include_trigger_history`
 	// flags.
 	TriggerDetails []TriggerDetails `json:"trigger_details,omitempty"`
-}
-
-func BaseJobToSDK(w *BaseJob) (*sdk.BaseJob, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseJob.JobId", err)
-	}
-	settingsPublicValue, err := JobSettingsToSDK(w.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseJob.Settings", err)
-	}
-	createdTimePublicValue, err := int64FromWire(w.CreatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseJob.CreatedTime", err)
-	}
-	triggerStatePublicValue, err := TriggerStateToSDK(w.TriggerState)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerState", err)
-	}
-	triggerDetailsPublicValue, err := convertSlice(w.TriggerDetails, TriggerDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerDetails", err)
-	}
-	return &sdk.BaseJob{
-		JobId:                   jobIdPublicValue,
-		CreatorUserName:         w.CreatorUserName,
-		RunAsUserName:           w.RunAsUserName,
-		Settings:                settingsPublicValue,
-		CreatedTime:             createdTimePublicValue,
-		TriggerState:            triggerStatePublicValue,
-		HasMore:                 w.HasMore,
-		EffectiveBudgetPolicyId: w.EffectiveBudgetPolicyId,
-		EffectiveUsagePolicyId:  w.EffectiveUsagePolicyId,
-		TriggerDetails:          triggerDetailsPublicValue,
-	}, nil
 }
 
 type BaseRun struct {
@@ -1095,151 +754,6 @@ type BaseRun struct {
 	QueueDuration *int64 `json:"queue_duration,omitempty"`
 }
 
-func BaseRunToSDK(w *BaseRun) (*sdk.BaseRun, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.JobId", err)
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.RunId", err)
-	}
-	numberInJobPublicValue, err := int64FromWire(w.NumberInJob)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.NumberInJob", err)
-	}
-	originalAttemptRunIdPublicValue, err := int64FromWire(w.OriginalAttemptRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.OriginalAttemptRunId", err)
-	}
-	statePublicValue, err := RunStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.State", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.Schedule", err)
-	}
-	clusterSpecPublicValue, err := ClusterSpecToSDK(w.ClusterSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterSpec", err)
-	}
-	clusterInstancePublicValue, err := ClusterInstanceToSDK(w.ClusterInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterInstance", err)
-	}
-	jobParametersPublicValue, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.JobParameters", err)
-	}
-	overridingParametersPublicValue, err := RunParametersToSDK(w.OverridingParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.OverridingParameters", err)
-	}
-	triggerInfoPublicValue, err := RunTriggerInfoToSDK(w.TriggerInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.TriggerInfo", err)
-	}
-	tasksPublicValue, err := convertSlice(w.Tasks, RunTaskToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.Tasks", err)
-	}
-	jobClustersPublicValue, err := convertSlice(w.JobClusters, JobClusterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.JobClusters", err)
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.GitSource", err)
-	}
-	repairHistoryPublicValue, err := convertSlice(w.RepairHistory, RepairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.RepairHistory", err)
-	}
-	statusPublicValue, err := RunStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.Status", err)
-	}
-	jobRunIdPublicValue, err := int64FromWire(w.JobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.JobRunId", err)
-	}
-	environmentVariablesPublicValue, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.EnvironmentVariables", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.StartTime", err)
-	}
-	setupDurationPublicValue, err := int64FromWire(w.SetupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.SetupDuration", err)
-	}
-	executionDurationPublicValue, err := int64FromWire(w.ExecutionDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.ExecutionDuration", err)
-	}
-	cleanupDurationPublicValue, err := int64FromWire(w.CleanupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.CleanupDuration", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.EndTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.RunDuration", err)
-	}
-	queueDurationPublicValue, err := int64FromWire(w.QueueDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BaseRun.QueueDuration", err)
-	}
-	return &sdk.BaseRun{
-		JobId:                      jobIdPublicValue,
-		RunId:                      runIdPublicValue,
-		CreatorUserName:            w.CreatorUserName,
-		NumberInJob:                numberInJobPublicValue,
-		OriginalAttemptRunId:       originalAttemptRunIdPublicValue,
-		State:                      statePublicValue,
-		Schedule:                   schedulePublicValue,
-		ClusterSpec:                clusterSpecPublicValue,
-		ClusterInstance:            clusterInstancePublicValue,
-		JobParameters:              jobParametersPublicValue,
-		OverridingParameters:       overridingParametersPublicValue,
-		Trigger:                    w.Trigger,
-		TriggerInfo:                triggerInfoPublicValue,
-		RunName:                    w.RunName,
-		RunPageUrl:                 w.RunPageUrl,
-		RunType:                    w.RunType,
-		Tasks:                      tasksPublicValue,
-		Description:                w.Description,
-		AttemptNumber:              w.AttemptNumber,
-		JobClusters:                jobClustersPublicValue,
-		GitSource:                  gitSourcePublicValue,
-		RepairHistory:              repairHistoryPublicValue,
-		Status:                     statusPublicValue,
-		JobRunId:                   jobRunIdPublicValue,
-		HasMore:                    w.HasMore,
-		EffectivePerformanceTarget: w.EffectivePerformanceTarget,
-		EffectiveUsagePolicyId:     w.EffectiveUsagePolicyId,
-		EnvironmentVariables:       environmentVariablesPublicValue,
-		DeploymentId:               w.DeploymentId,
-		VersionId:                  w.VersionId,
-		StartTime:                  startTimePublicValue,
-		SetupDuration:              setupDurationPublicValue,
-		ExecutionDuration:          executionDurationPublicValue,
-		CleanupDuration:            cleanupDurationPublicValue,
-		EndTime:                    endTimePublicValue,
-		RunDuration:                runDurationPublicValue,
-		QueueDuration:              queueDurationPublicValue,
-	}, nil
-}
-
 type CancelAllRunsRequest struct {
 	// The canonical identifier of the job to cancel all runs of.
 	JobId *int64 `json:"job_id,omitempty"`
@@ -1248,36 +762,9 @@ type CancelAllRunsRequest struct {
 	AllQueuedRuns *bool `json:"all_queued_runs,omitempty"`
 }
 
-func CancelAllRunsRequestFromSDK(v *sdk.CancelAllRunsRequest) (*CancelAllRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CancelAllRunsRequest.JobId", err)
-	}
-	return &CancelAllRunsRequest{
-		JobId:         jobIdWireValue,
-		AllQueuedRuns: v.AllQueuedRuns,
-	}, nil
-}
-
 type CancelRunRequest struct {
 	// This field is required.
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func CancelRunRequestFromSDK(v *sdk.CancelRunRequest) (*CancelRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CancelRunRequest.RunId", err)
-	}
-	return &CancelRunRequest{
-		RunId: runIdWireValue,
-	}, nil
 }
 
 // Stores the run state of the clean rooms notebook task..
@@ -1290,16 +777,6 @@ type CleanRoomTaskRunState struct {
 	// terminal lifecycle states. Note: Additional states might be introduced in
 	// future releases.
 	ResultState CleanRoomTaskRunResultState_CleanRoomTaskRunResultState `json:"result_state,omitempty"`
-}
-
-func CleanRoomTaskRunStateToSDK(w *CleanRoomTaskRunState) (*sdk.CleanRoomTaskRunState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomTaskRunState{
-		LifeCycleState: w.LifeCycleState,
-		ResultState:    w.ResultState,
-	}, nil
 }
 
 // Clean Rooms notebook task for V1 Clean Room service (GA). Replaces the
@@ -1317,30 +794,6 @@ type CleanRoomsNotebookTask struct {
 	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
 }
 
-func CleanRoomsNotebookTaskFromSDK(v *sdk.CleanRoomsNotebookTask) (*CleanRoomsNotebookTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CleanRoomsNotebookTask{
-		CleanRoomName:          v.CleanRoomName,
-		NotebookName:           v.NotebookName,
-		Etag:                   v.Etag,
-		NotebookBaseParameters: v.NotebookBaseParameters,
-	}, nil
-}
-
-func CleanRoomsNotebookTaskToSDK(w *CleanRoomsNotebookTask) (*sdk.CleanRoomsNotebookTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CleanRoomsNotebookTask{
-		CleanRoomName:          w.CleanRoomName,
-		NotebookName:           w.NotebookName,
-		Etag:                   w.Etag,
-		NotebookBaseParameters: w.NotebookBaseParameters,
-	}, nil
-}
-
 type CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput struct {
 	// The run state of the clean rooms notebook task.
 	CleanRoomJobRunState *CleanRoomTaskRunState `json:"clean_room_job_run_state,omitempty"`
@@ -1348,29 +801,6 @@ type CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput struct {
 	NotebookOutput *NotebookTask_NotebookOutput `json:"notebook_output,omitempty"`
 	// Information on how to access the output schema for the clean room run
 	OutputSchemaInfo *OutputSchemaInfo `json:"output_schema_info,omitempty"`
-}
-
-func CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputToSDK(w *CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput) (*sdk.CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cleanRoomJobRunStatePublicValue, err := CleanRoomTaskRunStateToSDK(w.CleanRoomJobRunState)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.CleanRoomJobRunState", err)
-	}
-	notebookOutputPublicValue, err := NotebookTask_NotebookOutputToSDK(w.NotebookOutput)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.NotebookOutput", err)
-	}
-	outputSchemaInfoPublicValue, err := OutputSchemaInfoToSDK(w.OutputSchemaInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.OutputSchemaInfo", err)
-	}
-	return &sdk.CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput{
-		CleanRoomJobRunState: cleanRoomJobRunStatePublicValue,
-		NotebookOutput:       notebookOutputPublicValue,
-		OutputSchemaInfo:     outputSchemaInfoPublicValue,
-	}, nil
 }
 
 type ClusterInstance struct {
@@ -1393,107 +823,11 @@ type ClusterInstance struct {
 	SparkContextId *string `json:"spark_context_id,omitempty"`
 }
 
-func ClusterInstanceToSDK(w *ClusterInstance) (*sdk.ClusterInstance, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ClusterInstance{
-		ClusterId:      w.ClusterId,
-		SparkContextId: w.SparkContextId,
-	}, nil
-}
-
 // Cluster log delivery config.
 type ClusterLogConf struct {
 	Dbfs    *DbfsStorageInfo    `json:"dbfs,omitempty"`
 	S3      *S3StorageInfo      `json:"s3,omitempty"`
 	Volumes *VolumesStorageInfo `json:"volumes,omitempty"`
-}
-
-func ClusterLogConfFromSDK(v *sdk.ClusterLogConf) (*ClusterLogConf, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *DbfsStorageInfo
-	var storageInfoS3Wire *S3StorageInfo
-	var storageInfoVolumesWire *VolumesStorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.ClusterLogConf_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := DbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	case *sdk.ClusterLogConf_StorageInfo_S3:
-		if value != nil {
-			storageInfoS3Converted, err := S3StorageInfoFromSDK(&value.S3)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.S3", err)
-			}
-			storageInfoS3Wire = storageInfoS3Converted
-		}
-	case *sdk.ClusterLogConf_StorageInfo_Volumes:
-		if value != nil {
-			storageInfoVolumesConverted, err := VolumesStorageInfoFromSDK(&value.Volumes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Volumes", err)
-			}
-			storageInfoVolumesWire = storageInfoVolumesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ClusterLogConf.StorageInfo", value)
-	}
-	return &ClusterLogConf{
-		Dbfs:    storageInfoDbfsWire,
-		S3:      storageInfoS3Wire,
-		Volumes: storageInfoVolumesWire,
-	}, nil
-}
-
-func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if w.Volumes != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.ClusterLogConf{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := DbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := S3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_S3{S3: *storageInfoS3Converted}
-	case w.Volumes != nil:
-		storageInfoVolumesConverted, err := VolumesStorageInfoToSDK(w.Volumes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo.Volumes", err)
-		}
-		storageInfoSelection = &sdk.ClusterLogConf_StorageInfo_Volumes{Volumes: *storageInfoVolumesConverted}
-	}
-	return &sdk.ClusterLogConf{
-		StorageInfo: storageInfoSelection,
-	}, nil
 }
 
 type ClusterSpec struct {
@@ -1503,46 +837,6 @@ type ClusterSpec struct {
 	// An optional list of libraries to be installed on the cluster. The default
 	// value is an empty list.
 	Libraries []Library `json:"libraries,omitempty"`
-}
-
-func ClusterSpecToSDK(w *ClusterSpec) (*sdk.ClusterSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specMembers := 0
-	if w.ExistingClusterId != nil {
-		specMembers++
-	}
-	if w.NewCluster != nil {
-		specMembers++
-	}
-	if w.JobClusterKey != nil {
-		specMembers++
-	}
-	if specMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec.Spec")
-	}
-	librariesPublicValue, err := convertSlice(w.Libraries, LibraryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec.Libraries", err)
-	}
-	specSelection := (&sdk.ClusterSpec{}).Spec
-	switch {
-	case w.ExistingClusterId != nil:
-		specSelection = &sdk.ClusterSpec_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
-	case w.NewCluster != nil:
-		specNewClusterConverted, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterSpec.Spec.NewCluster", err)
-		}
-		specSelection = &sdk.ClusterSpec_Spec_NewCluster{NewCluster: *specNewClusterConverted}
-	case w.JobClusterKey != nil:
-		specSelection = &sdk.ClusterSpec_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
-	}
-	return &sdk.ClusterSpec{
-		Libraries: librariesPublicValue,
-		Spec:      specSelection,
-	}, nil
 }
 
 type ClusterSpec_NewCluster struct {
@@ -1688,224 +982,9 @@ type ClusterSpec_NewCluster struct {
 	Autoscale      *AutoScale     `json:"autoscale,omitempty"`
 }
 
-func ClusterSpec_NewClusterFromSDK(v *sdk.ClusterSpec_NewCluster) (*ClusterSpec_NewCluster, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := AwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AwsAttributes", err)
-	}
-	azureAttributesWireValue, err := AzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := GcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityWireValue, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfWireValue, err := ClusterLogConfFromSDK(v.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.ClusterLogConf", err)
-	}
-	initScriptsWireValue, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.InitScripts", err)
-	}
-	dockerImageWireValue, err := DockerImageFromSDK(v.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DockerImage", err)
-	}
-	workloadTypeWireValue, err := WorkloadTypeFromSDK(v.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkloadType", err)
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *AutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.ClusterSpec_NewCluster_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.ClusterSpec_NewCluster_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := AutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ClusterSpec_NewCluster.Size", value)
-	}
-	return &ClusterSpec_NewCluster{
-		ApplyPolicyDefaultValues:   v.ApplyPolicyDefaultValues,
-		ClusterName:                v.ClusterName,
-		SparkVersion:               v.SparkVersion,
-		SparkConf:                  v.SparkConf,
-		AwsAttributes:              awsAttributesWireValue,
-		AzureAttributes:            azureAttributesWireValue,
-		GcpAttributes:              gcpAttributesWireValue,
-		NodeTypeId:                 v.NodeTypeId,
-		DriverNodeTypeId:           v.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityWireValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityWireValue,
-		SshPublicKeys:              v.SshPublicKeys,
-		CustomTags:                 v.CustomTags,
-		ClusterLogConf:             clusterLogConfWireValue,
-		SparkEnvVars:               v.SparkEnvVars,
-		AutoterminationMinutes:     v.AutoterminationMinutes,
-		EnableElasticDisk:          v.EnableElasticDisk,
-		InitScripts:                initScriptsWireValue,
-		DockerImage:                dockerImageWireValue,
-		InstancePoolId:             v.InstancePoolId,
-		SingleUserName:             v.SingleUserName,
-		PolicyId:                   v.PolicyId,
-		EnableLocalDiskEncryption:  v.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       v.DriverInstancePoolId,
-		WorkloadType:               workloadTypeWireValue,
-		DataSecurityMode:           v.DataSecurityMode,
-		RuntimeEngine:              v.RuntimeEngine,
-		Kind:                       v.Kind,
-		UseMlRuntime:               v.UseMlRuntime,
-		IsSingleNode:               v.IsSingleNode,
-		RemoteDiskThroughput:       v.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: v.TotalInitialRemoteDiskSize,
-		DependencyMode:             v.DependencyMode,
-		NumWorkers:                 sizeNumWorkersWire,
-		Autoscale:                  sizeAutoscaleWire,
-	}, nil
-}
-
-func ClusterSpec_NewClusterToSDK(w *ClusterSpec_NewCluster) (*sdk.ClusterSpec_NewCluster, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec_NewCluster.Size")
-	}
-	awsAttributesPublicValue, err := AwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := AzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := GcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.GcpAttributes", err)
-	}
-	workerNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkerNodeTypeFlexibility", err)
-	}
-	driverNodeTypeFlexibilityPublicValue, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DriverNodeTypeFlexibility", err)
-	}
-	clusterLogConfPublicValue, err := ClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.InitScripts", err)
-	}
-	dockerImagePublicValue, err := DockerImageToSDK(w.DockerImage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DockerImage", err)
-	}
-	workloadTypePublicValue, err := WorkloadTypeToSDK(w.WorkloadType)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkloadType", err)
-	}
-	sizeSelection := (&sdk.ClusterSpec_NewCluster{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.ClusterSpec_NewCluster_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := AutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.ClusterSpec_NewCluster_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.ClusterSpec_NewCluster{
-		ApplyPolicyDefaultValues:   w.ApplyPolicyDefaultValues,
-		ClusterName:                w.ClusterName,
-		SparkVersion:               w.SparkVersion,
-		SparkConf:                  w.SparkConf,
-		AwsAttributes:              awsAttributesPublicValue,
-		AzureAttributes:            azureAttributesPublicValue,
-		GcpAttributes:              gcpAttributesPublicValue,
-		NodeTypeId:                 w.NodeTypeId,
-		DriverNodeTypeId:           w.DriverNodeTypeId,
-		WorkerNodeTypeFlexibility:  workerNodeTypeFlexibilityPublicValue,
-		DriverNodeTypeFlexibility:  driverNodeTypeFlexibilityPublicValue,
-		SshPublicKeys:              w.SshPublicKeys,
-		CustomTags:                 w.CustomTags,
-		ClusterLogConf:             clusterLogConfPublicValue,
-		SparkEnvVars:               w.SparkEnvVars,
-		AutoterminationMinutes:     w.AutoterminationMinutes,
-		EnableElasticDisk:          w.EnableElasticDisk,
-		InitScripts:                initScriptsPublicValue,
-		DockerImage:                dockerImagePublicValue,
-		InstancePoolId:             w.InstancePoolId,
-		SingleUserName:             w.SingleUserName,
-		PolicyId:                   w.PolicyId,
-		EnableLocalDiskEncryption:  w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:       w.DriverInstancePoolId,
-		WorkloadType:               workloadTypePublicValue,
-		DataSecurityMode:           w.DataSecurityMode,
-		RuntimeEngine:              w.RuntimeEngine,
-		Kind:                       w.Kind,
-		UseMlRuntime:               w.UseMlRuntime,
-		IsSingleNode:               w.IsSingleNode,
-		RemoteDiskThroughput:       w.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize: w.TotalInitialRemoteDiskSize,
-		DependencyMode:             w.DependencyMode,
-		Size:                       sizeSelection,
-	}, nil
-}
-
 type Compute struct {
 	// Hardware accelerator configuration for Serverless GPU workloads.
 	HardwareAccelerator HardwareAcceleratorType `json:"hardware_accelerator,omitempty"`
-}
-
-func ComputeFromSDK(v *sdk.Compute) (*Compute, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Compute{
-		HardwareAccelerator: v.HardwareAccelerator,
-	}, nil
-}
-
-func ComputeToSDK(w *Compute) (*sdk.Compute, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Compute{
-		HardwareAccelerator: w.HardwareAccelerator,
-	}, nil
 }
 
 type ComputeConfig struct {
@@ -1915,28 +994,6 @@ type ComputeConfig struct {
 	GpuNodePoolId *string `json:"gpu_node_pool_id,omitempty"`
 	// GPU type.
 	GpuType *string `json:"gpu_type,omitempty"`
-}
-
-func ComputeConfigFromSDK(v *sdk.ComputeConfig) (*ComputeConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComputeConfig{
-		NumGpus:       v.NumGpus,
-		GpuNodePoolId: v.GpuNodePoolId,
-		GpuType:       v.GpuType,
-	}, nil
-}
-
-func ComputeConfigToSDK(w *ComputeConfig) (*sdk.ComputeConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComputeConfig{
-		NumGpus:       w.NumGpus,
-		GpuNodePoolId: w.GpuNodePoolId,
-		GpuType:       w.GpuType,
-	}, nil
 }
 
 // ComputeSpec: compute configuration — accelerator type and total accelerator
@@ -1956,28 +1013,6 @@ type ComputeSpec struct {
 	// referenced reserved capacity instead of the on-demand capacity shared among
 	// all <Databricks> customers.
 	ProvisionedCapacityId *string `json:"provisioned_capacity_id,omitempty"`
-}
-
-func ComputeSpecFromSDK(v *sdk.ComputeSpec) (*ComputeSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComputeSpec{
-		AcceleratorType:       v.AcceleratorType,
-		AcceleratorCount:      v.AcceleratorCount,
-		ProvisionedCapacityId: v.ProvisionedCapacityId,
-	}, nil
-}
-
-func ComputeSpecToSDK(w *ComputeSpec) (*sdk.ComputeSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComputeSpec{
-		AcceleratorType:       w.AcceleratorType,
-		AcceleratorCount:      w.AcceleratorCount,
-		ProvisionedCapacityId: w.ProvisionedCapacityId,
-	}, nil
 }
 
 type ConditionTask struct {
@@ -2003,30 +1038,6 @@ type ConditionTask struct {
 	Outcome *string `json:"outcome,omitempty"`
 }
 
-func ConditionTaskFromSDK(v *sdk.ConditionTask) (*ConditionTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConditionTask{
-		Op:      v.Op,
-		Left:    v.Left,
-		Right:   v.Right,
-		Outcome: v.Outcome,
-	}, nil
-}
-
-func ConditionTaskToSDK(w *ConditionTask) (*sdk.ConditionTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConditionTask{
-		Op:      w.Op,
-		Left:    w.Left,
-		Right:   w.Right,
-		Outcome: w.Outcome,
-	}, nil
-}
-
 type ContinuousSettings struct {
 	// Indicate whether the continuous execution of the job is paused or not.
 	// Defaults to UNPAUSED.
@@ -2037,36 +1048,6 @@ type ContinuousSettings struct {
 	// Defines when platform-initiated maintenance may run for this job. If
 	// unspecified, maintenance may run at any time.
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty"`
-}
-
-func ContinuousSettingsFromSDK(v *sdk.ContinuousSettings) (*ContinuousSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maintenanceWindowWireValue, err := MaintenanceWindowFromSDK(v.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousSettings.MaintenanceWindow", err)
-	}
-	return &ContinuousSettings{
-		PauseStatus:       v.PauseStatus,
-		TaskRetryMode:     v.TaskRetryMode,
-		MaintenanceWindow: maintenanceWindowWireValue,
-	}, nil
-}
-
-func ContinuousSettingsToSDK(w *ContinuousSettings) (*sdk.ContinuousSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maintenanceWindowPublicValue, err := MaintenanceWindowToSDK(w.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousSettings.MaintenanceWindow", err)
-	}
-	return &sdk.ContinuousSettings{
-		PauseStatus:       w.PauseStatus,
-		TaskRetryMode:     w.TaskRetryMode,
-		MaintenanceWindow: maintenanceWindowPublicValue,
-	}, nil
 }
 
 // Continuous trigger. Stripped-down counterpart to `ContinuousSettings`:
@@ -2080,53 +1061,10 @@ type ContinuousTriggerConfiguration struct {
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
-func ContinuousTriggerConfigurationFromSDK(v *sdk.ContinuousTriggerConfiguration) (*ContinuousTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maintenanceWindowWireValue, err := MaintenanceWindowFromSDK(v.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousTriggerConfiguration.MaintenanceWindow", err)
-	}
-	return &ContinuousTriggerConfiguration{
-		TaskRetryMode:     v.TaskRetryMode,
-		MaintenanceWindow: maintenanceWindowWireValue,
-	}, nil
-}
-
-func ContinuousTriggerConfigurationToSDK(w *ContinuousTriggerConfiguration) (*sdk.ContinuousTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maintenanceWindowPublicValue, err := MaintenanceWindowToSDK(w.MaintenanceWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousTriggerConfiguration.MaintenanceWindow", err)
-	}
-	return &sdk.ContinuousTriggerConfiguration{
-		TaskRetryMode:     w.TaskRetryMode,
-		MaintenanceWindow: maintenanceWindowPublicValue,
-	}, nil
-}
-
 type ContinuousTriggerState struct {
 	ConsecutiveFailures *int   `json:"consecutive_failures,omitempty"`
 	NextAttemptMs       *int64 `json:"next_attempt_ms,omitempty"`
 	IsBackingOff        *bool  `json:"is_backing_off,omitempty"`
-}
-
-func ContinuousTriggerStateToSDK(w *ContinuousTriggerState) (*sdk.ContinuousTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nextAttemptMsPublicValue, err := int64FromWire(w.NextAttemptMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ContinuousTriggerState.NextAttemptMs", err)
-	}
-	return &sdk.ContinuousTriggerState{
-		ConsecutiveFailures: w.ConsecutiveFailures,
-		NextAttemptMs:       nextAttemptMsPublicValue,
-		IsBackingOff:        w.IsBackingOff,
-	}, nil
 }
 
 type CreateJobRequest struct {
@@ -2283,136 +1221,10 @@ type CreateJobRequest struct {
 	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
 }
 
-func CreateJobRequestFromSDK(v *sdk.CreateJobRequest) (*CreateJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accessControlListWireValue, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.AccessControlList", err)
-	}
-	emailNotificationsWireValue, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EmailNotifications", err)
-	}
-	webhookNotificationsWireValue, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.WebhookNotifications", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.NotificationSettings", err)
-	}
-	healthWireValue, err := JobsHealthRulesFromSDK(v.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Health", err)
-	}
-	scheduleWireValue, err := CronScheduleFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Schedule", err)
-	}
-	triggerWireValue, err := TriggerSettingsFromSDK(v.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Trigger", err)
-	}
-	continuousWireValue, err := ContinuousSettingsFromSDK(v.Continuous)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Continuous", err)
-	}
-	tasksWireValue, err := convertSlice(v.Tasks, TaskSettingsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Tasks", err)
-	}
-	jobClustersWireValue, err := convertSlice(v.JobClusters, JobClusterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.JobClusters", err)
-	}
-	gitSourceWireValue, err := GitSourceFromSDK(v.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.GitSource", err)
-	}
-	queueWireValue, err := QueueSettingsFromSDK(v.Queue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Queue", err)
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, JobLevelParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Parameters", err)
-	}
-	runAsWireValue, err := JobRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.RunAs", err)
-	}
-	deploymentWireValue, err := JobDeploymentFromSDK(v.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Deployment", err)
-	}
-	environmentsWireValue, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Environments", err)
-	}
-	triggersWireValue, err := convertSlice(v.Triggers, TriggerConfigurationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Triggers", err)
-	}
-	environmentVariablesWireValue, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EnvironmentVariables", err)
-	}
-	return &CreateJobRequest{
-		AccessControlList:       accessControlListWireValue,
-		Name:                    v.Name,
-		Description:             v.Description,
-		EmailNotifications:      emailNotificationsWireValue,
-		WebhookNotifications:    webhookNotificationsWireValue,
-		NotificationSettings:    notificationSettingsWireValue,
-		TimeoutSeconds:          v.TimeoutSeconds,
-		Health:                  healthWireValue,
-		Schedule:                scheduleWireValue,
-		Trigger:                 triggerWireValue,
-		Continuous:              continuousWireValue,
-		MaxConcurrentRuns:       v.MaxConcurrentRuns,
-		Tasks:                   tasksWireValue,
-		JobClusters:             jobClustersWireValue,
-		GitSource:               gitSourceWireValue,
-		Tags:                    v.Tags,
-		Format:                  v.Format,
-		Queue:                   queueWireValue,
-		Parameters:              parametersWireValue,
-		RunAs:                   runAsWireValue,
-		EditMode:                v.EditMode,
-		Deployment:              deploymentWireValue,
-		Environments:            environmentsWireValue,
-		BudgetPolicyId:          v.BudgetPolicyId,
-		UsagePolicyId:           v.UsagePolicyId,
-		PerformanceTarget:       v.PerformanceTarget,
-		ParentPath:              v.ParentPath,
-		Triggers:                triggersWireValue,
-		EnvironmentVariables:    environmentVariablesWireValue,
-		MaxRetries:              v.MaxRetries,
-		MinRetryIntervalMillis:  v.MinRetryIntervalMillis,
-		RetryOnTimeout:          v.RetryOnTimeout,
-		DisableAutoOptimization: v.DisableAutoOptimization,
-	}, nil
-}
-
 // Job was created successfully.
 type CreateJobResponse struct {
 	// The canonical identifier for the newly created job.
 	JobId *int64 `json:"job_id,omitempty"`
-}
-
-func CreateJobResponseToSDK(w *CreateJobResponse) (*sdk.CreateJobResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateJobResponse.JobId", err)
-	}
-	return &sdk.CreateJobResponse{
-		JobId: jobIdPublicValue,
-	}, nil
 }
 
 type CronSchedule struct {
@@ -2434,38 +1246,6 @@ type CronSchedule struct {
 	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
 }
 
-func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sqlConditionWireValue, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CronSchedule.SqlCondition", err)
-	}
-	return &CronSchedule{
-		QuartzCronExpression: v.QuartzCronExpression,
-		TimezoneId:           v.TimezoneId,
-		PauseStatus:          v.PauseStatus,
-		SqlCondition:         sqlConditionWireValue,
-	}, nil
-}
-
-func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlConditionPublicValue, err := SqlConditionConfigurationToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CronSchedule.SqlCondition", err)
-	}
-	return &sdk.CronSchedule{
-		QuartzCronExpression: w.QuartzCronExpression,
-		TimezoneId:           w.TimezoneId,
-		PauseStatus:          w.PauseStatus,
-		SqlCondition:         sqlConditionPublicValue,
-	}, nil
-}
-
 // Cron schedule trigger. Stripped-down counterpart to `CronSchedule`:
 // `pause_status` and `sql_condition` are owned by the enclosing
 // `TriggerConfiguration` and intentionally omitted here..
@@ -2482,43 +1262,9 @@ type CronTriggerConfiguration struct {
 	TimezoneId *string `json:"timezone_id,omitempty"`
 }
 
-func CronTriggerConfigurationFromSDK(v *sdk.CronTriggerConfiguration) (*CronTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronTriggerConfiguration{
-		QuartzCronExpression: v.QuartzCronExpression,
-		TimezoneId:           v.TimezoneId,
-	}, nil
-}
-
-func CronTriggerConfigurationToSDK(w *CronTriggerConfiguration) (*sdk.CronTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronTriggerConfiguration{
-		QuartzCronExpression: w.QuartzCronExpression,
-		TimezoneId:           w.TimezoneId,
-	}, nil
-}
-
 type DashboardPageSnapshot struct {
 	PageDisplayName    *string             `json:"page_display_name,omitempty"`
 	WidgetErrorDetails []WidgetErrorDetail `json:"widget_error_details,omitempty"`
-}
-
-func DashboardPageSnapshotToSDK(w *DashboardPageSnapshot) (*sdk.DashboardPageSnapshot, error) {
-	if w == nil {
-		return nil, nil
-	}
-	widgetErrorDetailsPublicValue, err := convertSlice(w.WidgetErrorDetails, WidgetErrorDetailToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DashboardPageSnapshot.WidgetErrorDetails", err)
-	}
-	return &sdk.DashboardPageSnapshot{
-		PageDisplayName:    w.PageDisplayName,
-		WidgetErrorDetails: widgetErrorDetailsPublicValue,
-	}, nil
 }
 
 // Configures the Lakeview Dashboard job task type..
@@ -2543,78 +1289,15 @@ type DashboardTask struct {
 	Filters map[string]string `json:"filters,omitempty"`
 }
 
-func DashboardTaskFromSDK(v *sdk.DashboardTask) (*DashboardTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionWireValue, err := SubscriptionFromSDK(v.Subscription)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DashboardTask.Subscription", err)
-	}
-	return &DashboardTask{
-		Subscription: subscriptionWireValue,
-		WarehouseId:  v.WarehouseId,
-		DashboardId:  v.DashboardId,
-		Filters:      v.Filters,
-	}, nil
-}
-
-func DashboardTaskToSDK(w *DashboardTask) (*sdk.DashboardTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionPublicValue, err := SubscriptionToSDK(w.Subscription)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DashboardTask.Subscription", err)
-	}
-	return &sdk.DashboardTask{
-		Subscription: subscriptionPublicValue,
-		WarehouseId:  w.WarehouseId,
-		DashboardId:  w.DashboardId,
-		Filters:      w.Filters,
-	}, nil
-}
-
 type DashboardTaskOutput struct {
 	// Should only be populated for manual PDF download jobs.
 	PageSnapshots []DashboardPageSnapshot `json:"page_snapshots,omitempty"`
-}
-
-func DashboardTaskOutputToSDK(w *DashboardTaskOutput) (*sdk.DashboardTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pageSnapshotsPublicValue, err := convertSlice(w.PageSnapshots, DashboardPageSnapshotToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DashboardTaskOutput.PageSnapshots", err)
-	}
-	return &sdk.DashboardTaskOutput{
-		PageSnapshots: pageSnapshotsPublicValue,
-	}, nil
 }
 
 // A storage location in DBFS.
 type DbfsStorageInfo struct {
 	// dbfs destination, e.g. `dbfs:/my/path`
 	Destination *string `json:"destination,omitempty"`
-}
-
-func DbfsStorageInfoFromSDK(v *sdk.DbfsStorageInfo) (*DbfsStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DbfsStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func DbfsStorageInfoToSDK(w *DbfsStorageInfo) (*sdk.DbfsStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbfsStorageInfo{
-		Destination: w.Destination,
-	}, nil
 }
 
 // Format of response retrieved from dbt Cloud, for inclusion in output
@@ -2630,18 +1313,6 @@ type DbtCloudJobRunStep struct {
 	Logs *string `json:"logs,omitempty"`
 }
 
-func DbtCloudJobRunStepToSDK(w *DbtCloudJobRunStep) (*sdk.DbtCloudJobRunStep, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbtCloudJobRunStep{
-		Index:  w.Index,
-		Name:   w.Name,
-		Status: w.Status,
-		Logs:   w.Logs,
-	}, nil
-}
-
 // Deprecated in favor of DbtPlatformTask.
 type DbtCloudTask struct {
 	// Id of the dbt Cloud job to be triggered
@@ -2649,34 +1320,6 @@ type DbtCloudTask struct {
 	// The resource name of the UC connection that authenticates the dbt Cloud for
 	// this task
 	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
-}
-
-func DbtCloudTaskFromSDK(v *sdk.DbtCloudTask) (*DbtCloudTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dbtCloudJobIdWireValue, err := int64ToWire(v.DbtCloudJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DbtCloudTask.DbtCloudJobId", err)
-	}
-	return &DbtCloudTask{
-		DbtCloudJobId:          dbtCloudJobIdWireValue,
-		ConnectionResourceName: v.ConnectionResourceName,
-	}, nil
-}
-
-func DbtCloudTaskToSDK(w *DbtCloudTask) (*sdk.DbtCloudTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dbtCloudJobIdPublicValue, err := int64FromWire(w.DbtCloudJobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DbtCloudTask.DbtCloudJobId", err)
-	}
-	return &sdk.DbtCloudTask{
-		DbtCloudJobId:          dbtCloudJobIdPublicValue,
-		ConnectionResourceName: w.ConnectionResourceName,
-	}, nil
 }
 
 // Deprecated in favor of DbtPlatformTaskOutput.
@@ -2687,25 +1330,6 @@ type DbtCloudTaskOutput struct {
 	DbtCloudJobRunUrl *string `json:"dbt_cloud_job_run_url,omitempty"`
 	// Steps of the job run as received from dbt Cloud
 	DbtCloudJobRunOutput []DbtCloudJobRunStep `json:"dbt_cloud_job_run_output,omitempty"`
-}
-
-func DbtCloudTaskOutputToSDK(w *DbtCloudTaskOutput) (*sdk.DbtCloudTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dbtCloudJobRunIdPublicValue, err := int64FromWire(w.DbtCloudJobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DbtCloudTaskOutput.DbtCloudJobRunId", err)
-	}
-	dbtCloudJobRunOutputPublicValue, err := convertSlice(w.DbtCloudJobRunOutput, DbtCloudJobRunStepToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DbtCloudTaskOutput.DbtCloudJobRunOutput", err)
-	}
-	return &sdk.DbtCloudTaskOutput{
-		DbtCloudJobRunId:     dbtCloudJobRunIdPublicValue,
-		DbtCloudJobRunUrl:    w.DbtCloudJobRunUrl,
-		DbtCloudJobRunOutput: dbtCloudJobRunOutputPublicValue,
-	}, nil
 }
 
 // Format of response retrieved from dbt platform, for inclusion in output.
@@ -2726,20 +1350,6 @@ type DbtPlatformJobRunStep struct {
 	LogsTruncated *bool `json:"logs_truncated,omitempty"`
 }
 
-func DbtPlatformJobRunStepToSDK(w *DbtPlatformJobRunStep) (*sdk.DbtPlatformJobRunStep, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbtPlatformJobRunStep{
-		Index:         w.Index,
-		Name:          w.Name,
-		Status:        w.Status,
-		Logs:          w.Logs,
-		NameTruncated: w.NameTruncated,
-		LogsTruncated: w.LogsTruncated,
-	}, nil
-}
-
 type DbtPlatformTask struct {
 	// Id of the dbt platform job to be triggered. Specified as a string for maximum
 	// compatibility with clients.
@@ -2747,26 +1357,6 @@ type DbtPlatformTask struct {
 	// The resource name of the UC connection that authenticates the dbt platform
 	// for this task
 	ConnectionResourceName *string `json:"connection_resource_name,omitempty"`
-}
-
-func DbtPlatformTaskFromSDK(v *sdk.DbtPlatformTask) (*DbtPlatformTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DbtPlatformTask{
-		DbtPlatformJobId:       v.DbtPlatformJobId,
-		ConnectionResourceName: v.ConnectionResourceName,
-	}, nil
-}
-
-func DbtPlatformTaskToSDK(w *DbtPlatformTask) (*sdk.DbtPlatformTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbtPlatformTask{
-		DbtPlatformJobId:       w.DbtPlatformJobId,
-		ConnectionResourceName: w.ConnectionResourceName,
-	}, nil
 }
 
 type DbtPlatformTaskOutput struct {
@@ -2780,22 +1370,6 @@ type DbtPlatformTaskOutput struct {
 	// Whether the number of steps in the output has been truncated. If true, the
 	// output will contain the first 20 steps of the output.
 	StepsTruncated *bool `json:"steps_truncated,omitempty"`
-}
-
-func DbtPlatformTaskOutputToSDK(w *DbtPlatformTaskOutput) (*sdk.DbtPlatformTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dbtPlatformJobRunOutputPublicValue, err := convertSlice(w.DbtPlatformJobRunOutput, DbtPlatformJobRunStepToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DbtPlatformTaskOutput.DbtPlatformJobRunOutput", err)
-	}
-	return &sdk.DbtPlatformTaskOutput{
-		DbtPlatformJobRunId:     w.DbtPlatformJobRunId,
-		DbtPlatformJobRunUrl:    w.DbtPlatformJobRunUrl,
-		DbtPlatformJobRunOutput: dbtPlatformJobRunOutputPublicValue,
-		StepsTruncated:          w.StepsTruncated,
-	}, nil
 }
 
 type DbtTask struct {
@@ -2832,36 +1406,6 @@ type DbtTask struct {
 	Source Source `json:"source,omitempty"`
 }
 
-func DbtTaskFromSDK(v *sdk.DbtTask) (*DbtTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DbtTask{
-		ProjectDirectory:  v.ProjectDirectory,
-		Commands:          v.Commands,
-		Schema:            v.Schema,
-		WarehouseId:       v.WarehouseId,
-		ProfilesDirectory: v.ProfilesDirectory,
-		Catalog:           v.Catalog,
-		Source:            v.Source,
-	}, nil
-}
-
-func DbtTaskToSDK(w *DbtTask) (*sdk.DbtTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbtTask{
-		ProjectDirectory:  w.ProjectDirectory,
-		Commands:          w.Commands,
-		Schema:            w.Schema,
-		WarehouseId:       w.WarehouseId,
-		ProfilesDirectory: w.ProfilesDirectory,
-		Catalog:           w.Catalog,
-		Source:            w.Source,
-	}, nil
-}
-
 type DbtTask_DbtTaskOutput struct {
 	// A pre-signed URL to download the (compressed) dbt artifacts. This link is
 	// valid for a limited time (30 minutes). This information is only available
@@ -2872,50 +1416,14 @@ type DbtTask_DbtTaskOutput struct {
 	ArtifactsHeaders map[string]string `json:"artifacts_headers,omitempty"`
 }
 
-func DbtTask_DbtTaskOutputToSDK(w *DbtTask_DbtTaskOutput) (*sdk.DbtTask_DbtTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DbtTask_DbtTaskOutput{
-		ArtifactsLink:    w.ArtifactsLink,
-		ArtifactsHeaders: w.ArtifactsHeaders,
-	}, nil
-}
-
 type DeleteJobRequest struct {
 	// The canonical identifier of the job to delete. This field is required.
 	JobId *int64 `json:"job_id,omitempty"`
 }
 
-func DeleteJobRequestFromSDK(v *sdk.DeleteJobRequest) (*DeleteJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteJobRequest.JobId", err)
-	}
-	return &DeleteJobRequest{
-		JobId: jobIdWireValue,
-	}, nil
-}
-
 type DeleteRunRequest struct {
 	// ID of the run to delete.
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func DeleteRunRequestFromSDK(v *sdk.DeleteRunRequest) (*DeleteRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteRunRequest.RunId", err)
-	}
-	return &DeleteRunRequest{
-		RunId: runIdWireValue,
-	}, nil
 }
 
 // DeploymentSpec: configuration for one deployment within an AiRuntimeTask.
@@ -2946,61 +1454,11 @@ type DeploymentSpec struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func DeploymentSpecFromSDK(v *sdk.DeploymentSpec) (*DeploymentSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	computeWireValue, err := ComputeSpecFromSDK(v.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeploymentSpec.Compute", err)
-	}
-	return &DeploymentSpec{
-		CommandPath: v.CommandPath,
-		Compute:     computeWireValue,
-		Name:        v.Name,
-	}, nil
-}
-
-func DeploymentSpecToSDK(w *DeploymentSpec) (*sdk.DeploymentSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	computePublicValue, err := ComputeSpecToSDK(w.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeploymentSpec.Compute", err)
-	}
-	return &sdk.DeploymentSpec{
-		CommandPath: w.CommandPath,
-		Compute:     computePublicValue,
-		Name:        w.Name,
-	}, nil
-}
-
 type DockerBasicAuth struct {
 	// Name of the user
 	Username *string `json:"username,omitempty"`
 	// Password of the user
 	Password *string `json:"password,omitempty"`
-}
-
-func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DockerBasicAuth{
-		Username: v.Username,
-		Password: v.Password,
-	}, nil
-}
-
-func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DockerBasicAuth{
-		Username: w.Username,
-		Password: w.Password,
-	}, nil
 }
 
 type DockerImage struct {
@@ -3009,76 +1467,12 @@ type DockerImage struct {
 	BasicAuth *DockerBasicAuth `json:"basic_auth,omitempty"`
 }
 
-func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var credsOneofBasicAuthWire *DockerBasicAuth
-	switch value := v.CredsOneof.(type) {
-	case nil:
-	case *sdk.DockerImage_CredsOneof_BasicAuth:
-		if value != nil {
-			credsOneofBasicAuthConverted, err := DockerBasicAuthFromSDK(&value.BasicAuth)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-			}
-			credsOneofBasicAuthWire = credsOneofBasicAuthConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DockerImage.CredsOneof", value)
-	}
-	return &DockerImage{
-		Url:       v.Url,
-		BasicAuth: credsOneofBasicAuthWire,
-	}, nil
-}
-
-func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	credsOneofMembers := 0
-	if w.BasicAuth != nil {
-		credsOneofMembers++
-	}
-	if credsOneofMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
-	}
-	credsOneofSelection := (&sdk.DockerImage{}).CredsOneof
-	switch {
-	case w.BasicAuth != nil:
-		credsOneofBasicAuthConverted, err := DockerBasicAuthToSDK(w.BasicAuth)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof.BasicAuth", err)
-		}
-		credsOneofSelection = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *credsOneofBasicAuthConverted}
-	}
-	return &sdk.DockerImage{
-		Url:        w.Url,
-		CredsOneof: credsOneofSelection,
-	}, nil
-}
-
 type EnforcePolicyComplianceForJob struct {
 	// The ID of the job you want to enforce policy compliance on.
 	JobId *int64 `json:"job_id,omitempty"`
 	// If set, previews changes made to the job to comply with its policy, but does
 	// not update the job.
 	ValidateOnly *bool `json:"validate_only,omitempty"`
-}
-
-func EnforcePolicyComplianceForJobFromSDK(v *sdk.EnforcePolicyComplianceForJob) (*EnforcePolicyComplianceForJob, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceForJob.JobId", err)
-	}
-	return &EnforcePolicyComplianceForJob{
-		JobId:        jobIdWireValue,
-		ValidateOnly: v.ValidateOnly,
-	}, nil
 }
 
 type EnforcePolicyComplianceResponse struct {
@@ -3097,25 +1491,6 @@ type EnforcePolicyComplianceResponse struct {
 	Settings *JobSettings `json:"settings,omitempty"`
 }
 
-func EnforcePolicyComplianceResponseToSDK(w *EnforcePolicyComplianceResponse) (*sdk.EnforcePolicyComplianceResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobClusterChangesPublicValue, err := convertSlice(w.JobClusterChanges, EnforcePolicyComplianceResponse_JobClusterSettingsChangeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.JobClusterChanges", err)
-	}
-	settingsPublicValue, err := JobSettingsToSDK(w.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.Settings", err)
-	}
-	return &sdk.EnforcePolicyComplianceResponse{
-		HasChanges:        w.HasChanges,
-		JobClusterChanges: jobClusterChangesPublicValue,
-		Settings:          settingsPublicValue,
-	}, nil
-}
-
 // Represents a change to the job cluster's settings that would be required for
 // the job clusters to become compliant with their policies..
 type EnforcePolicyComplianceResponse_JobClusterSettingsChange struct {
@@ -3132,17 +1507,6 @@ type EnforcePolicyComplianceResponse_JobClusterSettingsChange struct {
 	// read by a human. The typed new value of this field can be retrieved by
 	// reading the settings field in the API response.
 	NewValue *string `json:"new_value,omitempty"`
-}
-
-func EnforcePolicyComplianceResponse_JobClusterSettingsChangeToSDK(w *EnforcePolicyComplianceResponse_JobClusterSettingsChange) (*sdk.EnforcePolicyComplianceResponse_JobClusterSettingsChange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EnforcePolicyComplianceResponse_JobClusterSettingsChange{
-		Field:         w.Field,
-		PreviousValue: w.PreviousValue,
-		NewValue:      w.NewValue,
-	}, nil
 }
 
 // The environment entity used to preserve serverless environment side panel,
@@ -3183,34 +1547,6 @@ type Environment struct {
 	ProjectEnvironment *string `json:"project_environment,omitempty"`
 }
 
-func EnvironmentFromSDK(v *sdk.Environment) (*Environment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Environment{
-		Client:             v.Client,
-		Dependencies:       v.Dependencies,
-		BaseEnvironment:    v.BaseEnvironment,
-		EnvironmentVersion: v.EnvironmentVersion,
-		JavaDependencies:   v.JavaDependencies,
-		ProjectEnvironment: v.ProjectEnvironment,
-	}, nil
-}
-
-func EnvironmentToSDK(w *Environment) (*sdk.Environment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Environment{
-		Client:             w.Client,
-		Dependencies:       w.Dependencies,
-		BaseEnvironment:    w.BaseEnvironment,
-		EnvironmentVersion: w.EnvironmentVersion,
-		JavaDependencies:   w.JavaDependencies,
-		ProjectEnvironment: w.ProjectEnvironment,
-	}, nil
-}
-
 // Retrieves the export of a job run task..
 type ExportRunRequest struct {
 	// The canonical identifier for the run. This field is required.
@@ -3219,39 +1555,12 @@ type ExportRunRequest struct {
 	ViewsToExport ViewsToExport `json:"views_to_export,omitempty"`
 }
 
-func ExportRunRequestFromSDK(v *sdk.ExportRunRequest) (*ExportRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExportRunRequest.RunId", err)
-	}
-	return &ExportRunRequest{
-		RunId:         runIdWireValue,
-		ViewsToExport: v.ViewsToExport,
-	}, nil
-}
-
 // Run was exported successfully..
 type ExportRunResponse struct {
 	// The exported content in HTML format (one for every view item). To extract the
 	// HTML notebook from the JSON response, download and run this [Python
 	// script](/_static/examples/extract.py).
 	Views []ViewItem `json:"views,omitempty"`
-}
-
-func ExportRunResponseToSDK(w *ExportRunResponse) (*sdk.ExportRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	viewsPublicValue, err := convertSlice(w.Views, ViewItemToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExportRunResponse.Views", err)
-	}
-	return &sdk.ExportRunResponse{
-		Views: viewsPublicValue,
-	}, nil
 }
 
 type FileArrivalTriggerConfiguration struct {
@@ -3269,40 +1578,9 @@ type FileArrivalTriggerConfiguration struct {
 	WaitAfterLastChangeSeconds *int `json:"wait_after_last_change_seconds,omitempty"`
 }
 
-func FileArrivalTriggerConfigurationFromSDK(v *sdk.FileArrivalTriggerConfiguration) (*FileArrivalTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FileArrivalTriggerConfiguration{
-		Url:                           v.Url,
-		MinTimeBetweenTriggersSeconds: v.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    v.WaitAfterLastChangeSeconds,
-	}, nil
-}
-
-func FileArrivalTriggerConfigurationToSDK(w *FileArrivalTriggerConfiguration) (*sdk.FileArrivalTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FileArrivalTriggerConfiguration{
-		Url:                           w.Url,
-		MinTimeBetweenTriggersSeconds: w.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    w.WaitAfterLastChangeSeconds,
-	}, nil
-}
-
 type FileArrivalTriggerState struct {
 	// Indicates whether the trigger leverages file events to detect file arrivals.
 	UsingFileEvents *bool `json:"using_file_events,omitempty"`
-}
-
-func FileArrivalTriggerStateToSDK(w *FileArrivalTriggerState) (*sdk.FileArrivalTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FileArrivalTriggerState{
-		UsingFileEvents: w.UsingFileEvents,
-	}, nil
 }
 
 type ForEachTask struct {
@@ -3315,36 +1593,6 @@ type ForEachTask struct {
 	Concurrency *int `json:"concurrency,omitempty"`
 	// Configuration for the task that will be run for each element in the array
 	Task *TaskSettings `json:"task,omitempty"`
-}
-
-func ForEachTaskFromSDK(v *sdk.ForEachTask) (*ForEachTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	taskWireValue, err := TaskSettingsFromSDK(v.Task)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ForEachTask.Task", err)
-	}
-	return &ForEachTask{
-		Inputs:      v.Inputs,
-		Concurrency: v.Concurrency,
-		Task:        taskWireValue,
-	}, nil
-}
-
-func ForEachTaskToSDK(w *ForEachTask) (*sdk.ForEachTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	taskPublicValue, err := TaskSettingsToSDK(w.Task)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ForEachTask.Task", err)
-	}
-	return &sdk.ForEachTask{
-		Inputs:      w.Inputs,
-		Concurrency: w.Concurrency,
-		Task:        taskPublicValue,
-	}, nil
 }
 
 // Attributes set during cluster creation which are related to GCP..
@@ -3394,60 +1642,10 @@ type GcpAttributes struct {
 	ConfidentialComputeType ConfidentialComputeType `json:"confidential_compute_type,omitempty"`
 }
 
-func GcpAttributesFromSDK(v *sdk.GcpAttributes) (*GcpAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpAttributes{
-		UsePreemptibleExecutors: v.UsePreemptibleExecutors,
-		GoogleServiceAccount:    v.GoogleServiceAccount,
-		BootDiskSize:            v.BootDiskSize,
-		Availability:            v.Availability,
-		ZoneId:                  v.ZoneId,
-		LocalSsdCount:           v.LocalSsdCount,
-		FirstOnDemand:           v.FirstOnDemand,
-		ConfidentialComputeType: v.ConfidentialComputeType,
-	}, nil
-}
-
-func GcpAttributesToSDK(w *GcpAttributes) (*sdk.GcpAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpAttributes{
-		UsePreemptibleExecutors: w.UsePreemptibleExecutors,
-		GoogleServiceAccount:    w.GoogleServiceAccount,
-		BootDiskSize:            w.BootDiskSize,
-		Availability:            w.Availability,
-		ZoneId:                  w.ZoneId,
-		LocalSsdCount:           w.LocalSsdCount,
-		FirstOnDemand:           w.FirstOnDemand,
-		ConfidentialComputeType: w.ConfidentialComputeType,
-	}, nil
-}
-
 // A storage location in Google Cloud Platform's GCS.
 type GcsStorageInfo struct {
 	// GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
 	Destination *string `json:"destination,omitempty"`
-}
-
-func GcsStorageInfoFromSDK(v *sdk.GcsStorageInfo) (*GcsStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcsStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func GcsStorageInfoToSDK(w *GcsStorageInfo) (*sdk.GcsStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcsStorageInfo{
-		Destination: w.Destination,
-	}, nil
 }
 
 // DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU workloads
@@ -3487,46 +1685,6 @@ type GenAiComputeTask struct {
 	MlflowExperimentName *string `json:"mlflow_experiment_name,omitempty"`
 }
 
-func GenAiComputeTaskFromSDK(v *sdk.GenAiComputeTask) (*GenAiComputeTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	computeWireValue, err := ComputeConfigFromSDK(v.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenAiComputeTask.Compute", err)
-	}
-	return &GenAiComputeTask{
-		DlRuntimeImage:         v.DlRuntimeImage,
-		Compute:                computeWireValue,
-		Command:                v.Command,
-		Source:                 v.Source,
-		TrainingScriptPath:     v.TrainingScriptPath,
-		YamlParametersFilePath: v.YamlParametersFilePath,
-		YamlParameters:         v.YamlParameters,
-		MlflowExperimentName:   v.MlflowExperimentName,
-	}, nil
-}
-
-func GenAiComputeTaskToSDK(w *GenAiComputeTask) (*sdk.GenAiComputeTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	computePublicValue, err := ComputeConfigToSDK(w.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenAiComputeTask.Compute", err)
-	}
-	return &sdk.GenAiComputeTask{
-		DlRuntimeImage:         w.DlRuntimeImage,
-		Compute:                computePublicValue,
-		Command:                w.Command,
-		Source:                 w.Source,
-		TrainingScriptPath:     w.TrainingScriptPath,
-		YamlParametersFilePath: w.YamlParametersFilePath,
-		YamlParameters:         w.YamlParameters,
-		MlflowExperimentName:   w.MlflowExperimentName,
-	}, nil
-}
-
 // Retrieves information about a single job..
 type GetJobRequest struct {
 	// The canonical identifier of the job to retrieve information about. This field
@@ -3537,21 +1695,6 @@ type GetJobRequest struct {
 	// Use `next_page_token` returned from the previous GetJob response to request
 	// the next page of the job's array properties.
 	PageToken *string `json:"page_token,omitempty"`
-}
-
-func GetJobRequestFromSDK(v *sdk.GetJobRequest) (*GetJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobRequest.JobId", err)
-	}
-	return &GetJobRequest{
-		JobId:               jobIdWireValue,
-		IncludeTriggerState: v.IncludeTriggerState,
-		PageToken:           v.PageToken,
-	}, nil
 }
 
 // Job was retrieved successfully..
@@ -3599,61 +1742,9 @@ type GetJobResponse struct {
 	TriggerDetails []TriggerDetails `json:"trigger_details,omitempty"`
 }
 
-func GetJobResponseToSDK(w *GetJobResponse) (*sdk.GetJobResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobResponse.JobId", err)
-	}
-	settingsPublicValue, err := JobSettingsToSDK(w.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobResponse.Settings", err)
-	}
-	createdTimePublicValue, err := int64FromWire(w.CreatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobResponse.CreatedTime", err)
-	}
-	triggerStatePublicValue, err := TriggerStateToSDK(w.TriggerState)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerState", err)
-	}
-	triggerDetailsPublicValue, err := convertSlice(w.TriggerDetails, TriggerDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerDetails", err)
-	}
-	return &sdk.GetJobResponse{
-		NextPageToken:           w.NextPageToken,
-		JobId:                   jobIdPublicValue,
-		CreatorUserName:         w.CreatorUserName,
-		RunAsUserName:           w.RunAsUserName,
-		Settings:                settingsPublicValue,
-		CreatedTime:             createdTimePublicValue,
-		TriggerState:            triggerStatePublicValue,
-		HasMore:                 w.HasMore,
-		EffectiveBudgetPolicyId: w.EffectiveBudgetPolicyId,
-		EffectiveUsagePolicyId:  w.EffectiveUsagePolicyId,
-		TriggerDetails:          triggerDetailsPublicValue,
-	}, nil
-}
-
 type GetPolicyComplianceForJobRequest struct {
 	// The ID of the job whose compliance status you are requesting.
 	JobId *int64 `json:"job_id,omitempty"`
-}
-
-func GetPolicyComplianceForJobRequestFromSDK(v *sdk.GetPolicyComplianceForJobRequest) (*GetPolicyComplianceForJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPolicyComplianceForJobRequest.JobId", err)
-	}
-	return &GetPolicyComplianceForJobRequest{
-		JobId: jobIdWireValue,
-	}, nil
 }
 
 type GetPolicyComplianceForJobResponse struct {
@@ -3670,33 +1761,10 @@ type GetPolicyComplianceForJobResponse struct {
 	Violations map[string]string `json:"violations,omitempty"`
 }
 
-func GetPolicyComplianceForJobResponseToSDK(w *GetPolicyComplianceForJobResponse) (*sdk.GetPolicyComplianceForJobResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetPolicyComplianceForJobResponse{
-		IsCompliant: w.IsCompliant,
-		Violations:  w.Violations,
-	}, nil
-}
-
 // Retrieves both the output and the metadata of a run..
 type GetRunOutputRequest struct {
 	// The canonical identifier for the run.
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func GetRunOutputRequestFromSDK(v *sdk.GetRunOutputRequest) (*GetRunOutputRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunOutputRequest.RunId", err)
-	}
-	return &GetRunOutputRequest{
-		RunId: runIdWireValue,
-	}, nil
 }
 
 // Run output was retrieved successfully..
@@ -3731,122 +1799,6 @@ type GetRunOutputResponse struct {
 	ErrorTrace *string `json:"error_trace,omitempty"`
 }
 
-func GetRunOutputResponseToSDK(w *GetRunOutputResponse) (*sdk.GetRunOutputResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultMembers := 0
-	if w.NotebookOutput != nil {
-		resultMembers++
-	}
-	if w.SqlOutput != nil {
-		resultMembers++
-	}
-	if w.DbtOutput != nil {
-		resultMembers++
-	}
-	if w.RunJobOutput != nil {
-		resultMembers++
-	}
-	if w.CleanRoomsNotebookOutput != nil {
-		resultMembers++
-	}
-	if w.DashboardOutput != nil {
-		resultMembers++
-	}
-	if w.DbtCloudOutput != nil {
-		resultMembers++
-	}
-	if w.DbtPlatformOutput != nil {
-		resultMembers++
-	}
-	if w.AlertOutput != nil {
-		resultMembers++
-	}
-	if w.AiRuntimeTaskOutput != nil {
-		resultMembers++
-	}
-	if resultMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GetRunOutputResponse.Result")
-	}
-	metadataPublicValue, err := RunToSDK(w.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Metadata", err)
-	}
-	resultSelection := (&sdk.GetRunOutputResponse{}).Result
-	switch {
-	case w.NotebookOutput != nil:
-		resultNotebookOutputConverted, err := NotebookTask_NotebookOutputToSDK(w.NotebookOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.NotebookOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_NotebookOutput{NotebookOutput: *resultNotebookOutputConverted}
-	case w.SqlOutput != nil:
-		resultSqlOutputConverted, err := SqlTask_SqlOutputToSDK(w.SqlOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.SqlOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_SqlOutput{SqlOutput: *resultSqlOutputConverted}
-	case w.DbtOutput != nil:
-		resultDbtOutputConverted, err := DbtTask_DbtTaskOutputToSDK(w.DbtOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.DbtOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_DbtOutput{DbtOutput: *resultDbtOutputConverted}
-	case w.RunJobOutput != nil:
-		resultRunJobOutputConverted, err := RunJobTask_RunJobTaskOutputToSDK(w.RunJobOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.RunJobOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_RunJobOutput{RunJobOutput: *resultRunJobOutputConverted}
-	case w.CleanRoomsNotebookOutput != nil:
-		resultCleanRoomsNotebookOutputConverted, err := CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputToSDK(w.CleanRoomsNotebookOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.CleanRoomsNotebookOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_CleanRoomsNotebookOutput{CleanRoomsNotebookOutput: *resultCleanRoomsNotebookOutputConverted}
-	case w.DashboardOutput != nil:
-		resultDashboardOutputConverted, err := DashboardTaskOutputToSDK(w.DashboardOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.DashboardOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_DashboardOutput{DashboardOutput: *resultDashboardOutputConverted}
-	case w.DbtCloudOutput != nil:
-		resultDbtCloudOutputConverted, err := DbtCloudTaskOutputToSDK(w.DbtCloudOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.DbtCloudOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_DbtCloudOutput{DbtCloudOutput: *resultDbtCloudOutputConverted}
-	case w.DbtPlatformOutput != nil:
-		resultDbtPlatformOutputConverted, err := DbtPlatformTaskOutputToSDK(w.DbtPlatformOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.DbtPlatformOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_DbtPlatformOutput{DbtPlatformOutput: *resultDbtPlatformOutputConverted}
-	case w.AlertOutput != nil:
-		resultAlertOutputConverted, err := AlertTaskOutputToSDK(w.AlertOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.AlertOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_AlertOutput{AlertOutput: *resultAlertOutputConverted}
-	case w.AiRuntimeTaskOutput != nil:
-		resultAiRuntimeTaskOutputConverted, err := AiRuntimeTaskOutputToSDK(w.AiRuntimeTaskOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result.AiRuntimeTaskOutput", err)
-		}
-		resultSelection = &sdk.GetRunOutputResponse_Result_AiRuntimeTaskOutput{AiRuntimeTaskOutput: *resultAiRuntimeTaskOutputConverted}
-	}
-	return &sdk.GetRunOutputResponse{
-		Metadata:      metadataPublicValue,
-		Error:         w.Error,
-		Info:          w.Info,
-		Logs:          w.Logs,
-		LogsTruncated: w.LogsTruncated,
-		ErrorTrace:    w.ErrorTrace,
-		Result:        resultSelection,
-	}, nil
-}
-
 type GetRunRequest struct {
 	// The canonical identifier of the run for which to retrieve the metadata. This
 	// field is required.
@@ -3858,22 +1810,6 @@ type GetRunRequest struct {
 	// Use `next_page_token` returned from the previous GetRun response to request
 	// the next page of the run's array properties.
 	PageToken *string `json:"page_token,omitempty"`
-}
-
-func GetRunRequestFromSDK(v *sdk.GetRunRequest) (*GetRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunRequest.RunId", err)
-	}
-	return &GetRunRequest{
-		RunId:                 runIdWireValue,
-		IncludeHistory:        v.IncludeHistory,
-		IncludeResolvedValues: v.IncludeResolvedValues,
-		PageToken:             v.PageToken,
-	}, nil
 }
 
 // Run was retrieved successfully.
@@ -4021,152 +1957,6 @@ type GetRunResponse struct {
 	QueueDuration *int64 `json:"queue_duration,omitempty"`
 }
 
-func GetRunResponseToSDK(w *GetRunResponse) (*sdk.GetRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobId", err)
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.RunId", err)
-	}
-	numberInJobPublicValue, err := int64FromWire(w.NumberInJob)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.NumberInJob", err)
-	}
-	originalAttemptRunIdPublicValue, err := int64FromWire(w.OriginalAttemptRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.OriginalAttemptRunId", err)
-	}
-	statePublicValue, err := RunStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.State", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Schedule", err)
-	}
-	clusterSpecPublicValue, err := ClusterSpecToSDK(w.ClusterSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterSpec", err)
-	}
-	clusterInstancePublicValue, err := ClusterInstanceToSDK(w.ClusterInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterInstance", err)
-	}
-	jobParametersPublicValue, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobParameters", err)
-	}
-	overridingParametersPublicValue, err := RunParametersToSDK(w.OverridingParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.OverridingParameters", err)
-	}
-	triggerInfoPublicValue, err := RunTriggerInfoToSDK(w.TriggerInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.TriggerInfo", err)
-	}
-	tasksPublicValue, err := convertSlice(w.Tasks, RunTaskToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Tasks", err)
-	}
-	jobClustersPublicValue, err := convertSlice(w.JobClusters, JobClusterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobClusters", err)
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.GitSource", err)
-	}
-	repairHistoryPublicValue, err := convertSlice(w.RepairHistory, RepairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.RepairHistory", err)
-	}
-	statusPublicValue, err := RunStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Status", err)
-	}
-	jobRunIdPublicValue, err := int64FromWire(w.JobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobRunId", err)
-	}
-	environmentVariablesPublicValue, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.EnvironmentVariables", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.StartTime", err)
-	}
-	setupDurationPublicValue, err := int64FromWire(w.SetupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.SetupDuration", err)
-	}
-	executionDurationPublicValue, err := int64FromWire(w.ExecutionDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ExecutionDuration", err)
-	}
-	cleanupDurationPublicValue, err := int64FromWire(w.CleanupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.CleanupDuration", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.EndTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.RunDuration", err)
-	}
-	queueDurationPublicValue, err := int64FromWire(w.QueueDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRunResponse.QueueDuration", err)
-	}
-	return &sdk.GetRunResponse{
-		NextPageToken:              w.NextPageToken,
-		JobId:                      jobIdPublicValue,
-		RunId:                      runIdPublicValue,
-		CreatorUserName:            w.CreatorUserName,
-		NumberInJob:                numberInJobPublicValue,
-		OriginalAttemptRunId:       originalAttemptRunIdPublicValue,
-		State:                      statePublicValue,
-		Schedule:                   schedulePublicValue,
-		ClusterSpec:                clusterSpecPublicValue,
-		ClusterInstance:            clusterInstancePublicValue,
-		JobParameters:              jobParametersPublicValue,
-		OverridingParameters:       overridingParametersPublicValue,
-		Trigger:                    w.Trigger,
-		TriggerInfo:                triggerInfoPublicValue,
-		RunName:                    w.RunName,
-		RunPageUrl:                 w.RunPageUrl,
-		RunType:                    w.RunType,
-		Tasks:                      tasksPublicValue,
-		Description:                w.Description,
-		AttemptNumber:              w.AttemptNumber,
-		JobClusters:                jobClustersPublicValue,
-		GitSource:                  gitSourcePublicValue,
-		RepairHistory:              repairHistoryPublicValue,
-		Status:                     statusPublicValue,
-		JobRunId:                   jobRunIdPublicValue,
-		HasMore:                    w.HasMore,
-		EffectivePerformanceTarget: w.EffectivePerformanceTarget,
-		EffectiveUsagePolicyId:     w.EffectiveUsagePolicyId,
-		EnvironmentVariables:       environmentVariablesPublicValue,
-		DeploymentId:               w.DeploymentId,
-		VersionId:                  w.VersionId,
-		StartTime:                  startTimePublicValue,
-		SetupDuration:              setupDurationPublicValue,
-		ExecutionDuration:          executionDurationPublicValue,
-		CleanupDuration:            cleanupDurationPublicValue,
-		EndTime:                    endTimePublicValue,
-		RunDuration:                runDurationPublicValue,
-		QueueDuration:              queueDurationPublicValue,
-	}, nil
-}
-
 // Read-only state of the remote repository at the time the job was run. This
 // field is only included on job runs..
 type GitMetadataSnapshot struct {
@@ -4174,24 +1964,6 @@ type GitMetadataSnapshot struct {
 	// points to the HEAD of the branch at the time of the run; if git_tag was
 	// specified, this points to the commit the tag points to.
 	UsedCommit *string `json:"used_commit,omitempty"`
-}
-
-func GitMetadataSnapshotFromSDK(v *sdk.GitMetadataSnapshot) (*GitMetadataSnapshot, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GitMetadataSnapshot{
-		UsedCommit: v.UsedCommit,
-	}, nil
-}
-
-func GitMetadataSnapshotToSDK(w *GitMetadataSnapshot) (*sdk.GitMetadataSnapshot, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GitMetadataSnapshot{
-		UsedCommit: w.UsedCommit,
-	}, nil
 }
 
 // An optional specification for a remote Git repository containing the source
@@ -4220,102 +1992,6 @@ type GitSource struct {
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
 }
 
-func GitSourceFromSDK(v *sdk.GitSource) (*GitSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	gitSnapshotWireValue, err := GitMetadataSnapshotFromSDK(v.GitSnapshot)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.GitSnapshot", err)
-	}
-	jobSourceWireValue, err := JobSourceFromSDK(v.JobSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.JobSource", err)
-	}
-	sparseCheckoutWireValue, err := SparseCheckoutFromSDK(v.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.SparseCheckout", err)
-	}
-	var gitReferenceGitBranchWire *string
-	var gitReferenceGitTagWire *string
-	var gitReferenceGitCommitWire *string
-	switch value := v.GitReference.(type) {
-	case nil:
-	case *sdk.GitSource_GitReference_GitBranch:
-		if value != nil {
-			gitReferenceGitBranchWire = new(value.GitBranch)
-		}
-	case *sdk.GitSource_GitReference_GitTag:
-		if value != nil {
-			gitReferenceGitTagWire = new(value.GitTag)
-		}
-	case *sdk.GitSource_GitReference_GitCommit:
-		if value != nil {
-			gitReferenceGitCommitWire = new(value.GitCommit)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "GitSource.GitReference", value)
-	}
-	return &GitSource{
-		GitUrl:         v.GitUrl,
-		GitProvider:    v.GitProvider,
-		GitBranch:      gitReferenceGitBranchWire,
-		GitTag:         gitReferenceGitTagWire,
-		GitCommit:      gitReferenceGitCommitWire,
-		GitSnapshot:    gitSnapshotWireValue,
-		JobSource:      jobSourceWireValue,
-		SparseCheckout: sparseCheckoutWireValue,
-	}, nil
-}
-
-func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	gitReferenceMembers := 0
-	if w.GitBranch != nil {
-		gitReferenceMembers++
-	}
-	if w.GitTag != nil {
-		gitReferenceMembers++
-	}
-	if w.GitCommit != nil {
-		gitReferenceMembers++
-	}
-	if gitReferenceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.GitReference")
-	}
-	gitSnapshotPublicValue, err := GitMetadataSnapshotToSDK(w.GitSnapshot)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.GitSnapshot", err)
-	}
-	jobSourcePublicValue, err := JobSourceToSDK(w.JobSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.JobSource", err)
-	}
-	sparseCheckoutPublicValue, err := SparseCheckoutToSDK(w.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.SparseCheckout", err)
-	}
-	gitReferenceSelection := (&sdk.GitSource{}).GitReference
-	switch {
-	case w.GitBranch != nil:
-		gitReferenceSelection = &sdk.GitSource_GitReference_GitBranch{GitBranch: *w.GitBranch}
-	case w.GitTag != nil:
-		gitReferenceSelection = &sdk.GitSource_GitReference_GitTag{GitTag: *w.GitTag}
-	case w.GitCommit != nil:
-		gitReferenceSelection = &sdk.GitSource_GitReference_GitCommit{GitCommit: *w.GitCommit}
-	}
-	return &sdk.GitSource{
-		GitUrl:         w.GitUrl,
-		GitProvider:    w.GitProvider,
-		GitSnapshot:    gitSnapshotPublicValue,
-		JobSource:      jobSourcePublicValue,
-		SparseCheckout: sparseCheckoutPublicValue,
-		GitReference:   gitReferenceSelection,
-	}, nil
-}
-
 // Config for an individual init script.
 type InitScriptInfo struct {
 	Dbfs      *DbfsStorageInfo      `json:"dbfs,omitempty"`
@@ -4325,168 +2001,6 @@ type InitScriptInfo struct {
 	Abfss     *Adlsgen2Info         `json:"abfss,omitempty"`
 	Workspace *WorkspaceStorageInfo `json:"workspace,omitempty"`
 	Volumes   *VolumesStorageInfo   `json:"volumes,omitempty"`
-}
-
-func InitScriptInfoFromSDK(v *sdk.InitScriptInfo) (*InitScriptInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *DbfsStorageInfo
-	var storageInfoS3Wire *S3StorageInfo
-	var storageInfoFileWire *LocalFileInfo
-	var storageInfoGcsWire *GcsStorageInfo
-	var storageInfoAbfssWire *Adlsgen2Info
-	var storageInfoWorkspaceWire *WorkspaceStorageInfo
-	var storageInfoVolumesWire *VolumesStorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.InitScriptInfo_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := DbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_S3:
-		if value != nil {
-			storageInfoS3Converted, err := S3StorageInfoFromSDK(&value.S3)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.S3", err)
-			}
-			storageInfoS3Wire = storageInfoS3Converted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_File:
-		if value != nil {
-			storageInfoFileConverted, err := LocalFileInfoFromSDK(&value.File)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.File", err)
-			}
-			storageInfoFileWire = storageInfoFileConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Gcs:
-		if value != nil {
-			storageInfoGcsConverted, err := GcsStorageInfoFromSDK(&value.Gcs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Gcs", err)
-			}
-			storageInfoGcsWire = storageInfoGcsConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Abfss:
-		if value != nil {
-			storageInfoAbfssConverted, err := Adlsgen2InfoFromSDK(&value.Abfss)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Abfss", err)
-			}
-			storageInfoAbfssWire = storageInfoAbfssConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Workspace:
-		if value != nil {
-			storageInfoWorkspaceConverted, err := WorkspaceStorageInfoFromSDK(&value.Workspace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Workspace", err)
-			}
-			storageInfoWorkspaceWire = storageInfoWorkspaceConverted
-		}
-	case *sdk.InitScriptInfo_StorageInfo_Volumes:
-		if value != nil {
-			storageInfoVolumesConverted, err := VolumesStorageInfoFromSDK(&value.Volumes)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Volumes", err)
-			}
-			storageInfoVolumesWire = storageInfoVolumesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "InitScriptInfo.StorageInfo", value)
-	}
-	return &InitScriptInfo{
-		Dbfs:      storageInfoDbfsWire,
-		S3:        storageInfoS3Wire,
-		File:      storageInfoFileWire,
-		Gcs:       storageInfoGcsWire,
-		Abfss:     storageInfoAbfssWire,
-		Workspace: storageInfoWorkspaceWire,
-		Volumes:   storageInfoVolumesWire,
-	}, nil
-}
-
-func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if w.File != nil {
-		storageInfoMembers++
-	}
-	if w.Gcs != nil {
-		storageInfoMembers++
-	}
-	if w.Abfss != nil {
-		storageInfoMembers++
-	}
-	if w.Workspace != nil {
-		storageInfoMembers++
-	}
-	if w.Volumes != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.InitScriptInfo{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := DbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := S3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_S3{S3: *storageInfoS3Converted}
-	case w.File != nil:
-		storageInfoFileConverted, err := LocalFileInfoToSDK(w.File)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.File", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_File{File: *storageInfoFileConverted}
-	case w.Gcs != nil:
-		storageInfoGcsConverted, err := GcsStorageInfoToSDK(w.Gcs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Gcs", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Gcs{Gcs: *storageInfoGcsConverted}
-	case w.Abfss != nil:
-		storageInfoAbfssConverted, err := Adlsgen2InfoToSDK(w.Abfss)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Abfss", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Abfss{Abfss: *storageInfoAbfssConverted}
-	case w.Workspace != nil:
-		storageInfoWorkspaceConverted, err := WorkspaceStorageInfoToSDK(w.Workspace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Workspace", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Workspace{Workspace: *storageInfoWorkspaceConverted}
-	case w.Volumes != nil:
-		storageInfoVolumesConverted, err := VolumesStorageInfoToSDK(w.Volumes)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo.Volumes", err)
-		}
-		storageInfoSelection = &sdk.InitScriptInfo_StorageInfo_Volumes{Volumes: *storageInfoVolumesConverted}
-	}
-	return &sdk.InitScriptInfo{
-		StorageInfo: storageInfoSelection,
-	}, nil
 }
 
 type JobCluster struct {
@@ -4500,36 +2014,6 @@ type JobCluster struct {
 	// JobCluster per job may set this field; the rate limit defined on the
 	// referenced serverless compute applies across all tasks bound to this cluster.
 	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
-}
-
-func JobClusterFromSDK(v *sdk.JobCluster) (*JobCluster, error) {
-	if v == nil {
-		return nil, nil
-	}
-	newClusterWireValue, err := ClusterSpec_NewClusterFromSDK(v.NewCluster)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobCluster.NewCluster", err)
-	}
-	return &JobCluster{
-		JobClusterKey:       v.JobClusterKey,
-		NewCluster:          newClusterWireValue,
-		ServerlessComputeId: v.ServerlessComputeId,
-	}, nil
-}
-
-func JobClusterToSDK(w *JobCluster) (*sdk.JobCluster, error) {
-	if w == nil {
-		return nil, nil
-	}
-	newClusterPublicValue, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobCluster.NewCluster", err)
-	}
-	return &sdk.JobCluster{
-		JobClusterKey:       w.JobClusterKey,
-		NewCluster:          newClusterPublicValue,
-		ServerlessComputeId: w.ServerlessComputeId,
-	}, nil
 }
 
 type JobDeployment struct {
@@ -4547,30 +2031,6 @@ type JobDeployment struct {
 	// `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment in the
 	// Deployment Metadata service.
 	VersionId *string `json:"version_id,omitempty"`
-}
-
-func JobDeploymentFromSDK(v *sdk.JobDeployment) (*JobDeployment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JobDeployment{
-		Kind:             v.Kind,
-		MetadataFilePath: v.MetadataFilePath,
-		DeploymentId:     v.DeploymentId,
-		VersionId:        v.VersionId,
-	}, nil
-}
-
-func JobDeploymentToSDK(w *JobDeployment) (*sdk.JobDeployment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JobDeployment{
-		Kind:             w.Kind,
-		MetadataFilePath: w.MetadataFilePath,
-		DeploymentId:     w.DeploymentId,
-		VersionId:        w.VersionId,
-	}, nil
 }
 
 type JobEmailNotifications struct {
@@ -4615,70 +2075,10 @@ type JobEmailNotifications struct {
 	NoAlertForSkippedRuns *bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
-func JobEmailNotificationsFromSDK(v *sdk.JobEmailNotifications) (*JobEmailNotifications, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JobEmailNotifications{
-		OnStart:                            v.OnStart,
-		OnSuccess:                          v.OnSuccess,
-		OnFailure:                          v.OnFailure,
-		OnDurationWarningThresholdExceeded: v.OnDurationWarningThresholdExceeded,
-		OnStreamingBacklogExceeded:         v.OnStreamingBacklogExceeded,
-		OnMaintenanceStart:                 v.OnMaintenanceStart,
-		OnMaintenanceComplete:              v.OnMaintenanceComplete,
-		NoAlertForSkippedRuns:              v.NoAlertForSkippedRuns,
-	}, nil
-}
-
-func JobEmailNotificationsToSDK(w *JobEmailNotifications) (*sdk.JobEmailNotifications, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JobEmailNotifications{
-		OnStart:                            w.OnStart,
-		OnSuccess:                          w.OnSuccess,
-		OnFailure:                          w.OnFailure,
-		OnDurationWarningThresholdExceeded: w.OnDurationWarningThresholdExceeded,
-		OnStreamingBacklogExceeded:         w.OnStreamingBacklogExceeded,
-		OnMaintenanceStart:                 w.OnMaintenanceStart,
-		OnMaintenanceComplete:              w.OnMaintenanceComplete,
-		NoAlertForSkippedRuns:              w.NoAlertForSkippedRuns,
-	}, nil
-}
-
 type JobEnvironment struct {
 	// The key of an environment. It has to be unique within a job.
 	EnvironmentKey *string      `json:"environment_key,omitempty"`
 	Spec           *Environment `json:"spec,omitempty"`
-}
-
-func JobEnvironmentFromSDK(v *sdk.JobEnvironment) (*JobEnvironment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := EnvironmentFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobEnvironment.Spec", err)
-	}
-	return &JobEnvironment{
-		EnvironmentKey: v.EnvironmentKey,
-		Spec:           specWireValue,
-	}, nil
-}
-
-func JobEnvironmentToSDK(w *JobEnvironment) (*sdk.JobEnvironment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := EnvironmentToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobEnvironment.Spec", err)
-	}
-	return &sdk.JobEnvironment{
-		EnvironmentKey: w.EnvironmentKey,
-		Spec:           specPublicValue,
-	}, nil
 }
 
 // A named environment-variable entry, defined once at the job level and
@@ -4692,34 +2092,6 @@ type JobEnvironmentVariables struct {
 	EnvironmentVariablesKey *string `json:"environment_variables_key,omitempty"`
 	// The environment variable specification.
 	Spec *JobEnvironmentVariablesSpec `json:"spec,omitempty"`
-}
-
-func JobEnvironmentVariablesFromSDK(v *sdk.JobEnvironmentVariables) (*JobEnvironmentVariables, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := JobEnvironmentVariablesSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobEnvironmentVariables.Spec", err)
-	}
-	return &JobEnvironmentVariables{
-		EnvironmentVariablesKey: v.EnvironmentVariablesKey,
-		Spec:                    specWireValue,
-	}, nil
-}
-
-func JobEnvironmentVariablesToSDK(w *JobEnvironmentVariables) (*sdk.JobEnvironmentVariables, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := JobEnvironmentVariablesSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobEnvironmentVariables.Spec", err)
-	}
-	return &sdk.JobEnvironmentVariables{
-		EnvironmentVariablesKey: w.EnvironmentVariablesKey,
-		Spec:                    specPublicValue,
-	}, nil
 }
 
 // The environment variables and files associated with a job environment
@@ -4755,52 +2127,12 @@ type JobEnvironmentVariablesSpec struct {
 	Files []string `json:"files,omitempty"`
 }
 
-func JobEnvironmentVariablesSpecFromSDK(v *sdk.JobEnvironmentVariablesSpec) (*JobEnvironmentVariablesSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JobEnvironmentVariablesSpec{
-		Variables: v.Variables,
-		Files:     v.Files,
-	}, nil
-}
-
-func JobEnvironmentVariablesSpecToSDK(w *JobEnvironmentVariablesSpec) (*sdk.JobEnvironmentVariablesSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JobEnvironmentVariablesSpec{
-		Variables: w.Variables,
-		Files:     w.Files,
-	}, nil
-}
-
 type JobLevelParameter struct {
 	// The name of the defined parameter. May only contain alphanumeric characters,
 	// `_`, `-`, and `.`
 	Name *string `json:"name,omitempty"`
 	// Default value of the parameter.
 	Default *string `json:"default,omitempty"`
-}
-
-func JobLevelParameterFromSDK(v *sdk.JobLevelParameter) (*JobLevelParameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JobLevelParameter{
-		Name:    v.Name,
-		Default: v.Default,
-	}, nil
-}
-
-func JobLevelParameterToSDK(w *JobLevelParameter) (*sdk.JobLevelParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JobLevelParameter{
-		Name:    w.Name,
-		Default: w.Default,
-	}, nil
 }
 
 // Write-only setting. Specifies the user, service principal, or group that the
@@ -4812,68 +2144,6 @@ type JobRunAs struct {
 	UserName             *string `json:"user_name,omitempty"`
 	ServicePrincipalName *string `json:"service_principal_name,omitempty"`
 	GroupName            *string `json:"group_name,omitempty"`
-}
-
-func JobRunAsFromSDK(v *sdk.JobRunAs) (*JobRunAs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var identityUserNameWire *string
-	var identityServicePrincipalNameWire *string
-	var identityGroupNameWire *string
-	switch value := v.Identity.(type) {
-	case nil:
-	case *sdk.JobRunAs_Identity_UserName:
-		if value != nil {
-			identityUserNameWire = new(value.UserName)
-		}
-	case *sdk.JobRunAs_Identity_ServicePrincipalName:
-		if value != nil {
-			identityServicePrincipalNameWire = new(value.ServicePrincipalName)
-		}
-	case *sdk.JobRunAs_Identity_GroupName:
-		if value != nil {
-			identityGroupNameWire = new(value.GroupName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "JobRunAs.Identity", value)
-	}
-	return &JobRunAs{
-		UserName:             identityUserNameWire,
-		ServicePrincipalName: identityServicePrincipalNameWire,
-		GroupName:            identityGroupNameWire,
-	}, nil
-}
-
-func JobRunAsToSDK(w *JobRunAs) (*sdk.JobRunAs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	identityMembers := 0
-	if w.UserName != nil {
-		identityMembers++
-	}
-	if w.ServicePrincipalName != nil {
-		identityMembers++
-	}
-	if w.GroupName != nil {
-		identityMembers++
-	}
-	if identityMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "JobRunAs.Identity")
-	}
-	identitySelection := (&sdk.JobRunAs{}).Identity
-	switch {
-	case w.UserName != nil:
-		identitySelection = &sdk.JobRunAs_Identity_UserName{UserName: *w.UserName}
-	case w.ServicePrincipalName != nil:
-		identitySelection = &sdk.JobRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
-	case w.GroupName != nil:
-		identitySelection = &sdk.JobRunAs_Identity_GroupName{GroupName: *w.GroupName}
-	}
-	return &sdk.JobRunAs{
-		Identity: identitySelection,
-	}, nil
 }
 
 type JobSettings struct {
@@ -5028,222 +2298,6 @@ type JobSettings struct {
 	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
 }
 
-func JobSettingsFromSDK(v *sdk.JobSettings) (*JobSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	emailNotificationsWireValue, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.EmailNotifications", err)
-	}
-	webhookNotificationsWireValue, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.WebhookNotifications", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.NotificationSettings", err)
-	}
-	healthWireValue, err := JobsHealthRulesFromSDK(v.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Health", err)
-	}
-	scheduleWireValue, err := CronScheduleFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Schedule", err)
-	}
-	triggerWireValue, err := TriggerSettingsFromSDK(v.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Trigger", err)
-	}
-	continuousWireValue, err := ContinuousSettingsFromSDK(v.Continuous)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Continuous", err)
-	}
-	tasksWireValue, err := convertSlice(v.Tasks, TaskSettingsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Tasks", err)
-	}
-	jobClustersWireValue, err := convertSlice(v.JobClusters, JobClusterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.JobClusters", err)
-	}
-	gitSourceWireValue, err := GitSourceFromSDK(v.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.GitSource", err)
-	}
-	queueWireValue, err := QueueSettingsFromSDK(v.Queue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Queue", err)
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, JobLevelParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Parameters", err)
-	}
-	runAsWireValue, err := JobRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.RunAs", err)
-	}
-	deploymentWireValue, err := JobDeploymentFromSDK(v.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Deployment", err)
-	}
-	environmentsWireValue, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Environments", err)
-	}
-	triggersWireValue, err := convertSlice(v.Triggers, TriggerConfigurationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Triggers", err)
-	}
-	environmentVariablesWireValue, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.EnvironmentVariables", err)
-	}
-	return &JobSettings{
-		Name:                    v.Name,
-		Description:             v.Description,
-		EmailNotifications:      emailNotificationsWireValue,
-		WebhookNotifications:    webhookNotificationsWireValue,
-		NotificationSettings:    notificationSettingsWireValue,
-		TimeoutSeconds:          v.TimeoutSeconds,
-		Health:                  healthWireValue,
-		Schedule:                scheduleWireValue,
-		Trigger:                 triggerWireValue,
-		Continuous:              continuousWireValue,
-		MaxConcurrentRuns:       v.MaxConcurrentRuns,
-		Tasks:                   tasksWireValue,
-		JobClusters:             jobClustersWireValue,
-		GitSource:               gitSourceWireValue,
-		Tags:                    v.Tags,
-		Format:                  v.Format,
-		Queue:                   queueWireValue,
-		Parameters:              parametersWireValue,
-		RunAs:                   runAsWireValue,
-		EditMode:                v.EditMode,
-		Deployment:              deploymentWireValue,
-		Environments:            environmentsWireValue,
-		BudgetPolicyId:          v.BudgetPolicyId,
-		UsagePolicyId:           v.UsagePolicyId,
-		PerformanceTarget:       v.PerformanceTarget,
-		ParentPath:              v.ParentPath,
-		Triggers:                triggersWireValue,
-		EnvironmentVariables:    environmentVariablesWireValue,
-		MaxRetries:              v.MaxRetries,
-		MinRetryIntervalMillis:  v.MinRetryIntervalMillis,
-		RetryOnTimeout:          v.RetryOnTimeout,
-		DisableAutoOptimization: v.DisableAutoOptimization,
-	}, nil
-}
-
-func JobSettingsToSDK(w *JobSettings) (*sdk.JobSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	emailNotificationsPublicValue, err := JobEmailNotificationsToSDK(w.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.EmailNotifications", err)
-	}
-	webhookNotificationsPublicValue, err := WebhookNotificationsToSDK(w.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.WebhookNotifications", err)
-	}
-	notificationSettingsPublicValue, err := NotificationSettingsToSDK(w.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.NotificationSettings", err)
-	}
-	healthPublicValue, err := JobsHealthRulesToSDK(w.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Health", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Schedule", err)
-	}
-	triggerPublicValue, err := TriggerSettingsToSDK(w.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Trigger", err)
-	}
-	continuousPublicValue, err := ContinuousSettingsToSDK(w.Continuous)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Continuous", err)
-	}
-	tasksPublicValue, err := convertSlice(w.Tasks, TaskSettingsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Tasks", err)
-	}
-	jobClustersPublicValue, err := convertSlice(w.JobClusters, JobClusterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.JobClusters", err)
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.GitSource", err)
-	}
-	queuePublicValue, err := QueueSettingsToSDK(w.Queue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Queue", err)
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, JobLevelParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Parameters", err)
-	}
-	runAsPublicValue, err := JobRunAsToSDK(w.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.RunAs", err)
-	}
-	deploymentPublicValue, err := JobDeploymentToSDK(w.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Deployment", err)
-	}
-	environmentsPublicValue, err := convertSlice(w.Environments, JobEnvironmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Environments", err)
-	}
-	triggersPublicValue, err := convertSlice(w.Triggers, TriggerConfigurationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.Triggers", err)
-	}
-	environmentVariablesPublicValue, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobSettings.EnvironmentVariables", err)
-	}
-	return &sdk.JobSettings{
-		Name:                    w.Name,
-		Description:             w.Description,
-		EmailNotifications:      emailNotificationsPublicValue,
-		WebhookNotifications:    webhookNotificationsPublicValue,
-		NotificationSettings:    notificationSettingsPublicValue,
-		TimeoutSeconds:          w.TimeoutSeconds,
-		Health:                  healthPublicValue,
-		Schedule:                schedulePublicValue,
-		Trigger:                 triggerPublicValue,
-		Continuous:              continuousPublicValue,
-		MaxConcurrentRuns:       w.MaxConcurrentRuns,
-		Tasks:                   tasksPublicValue,
-		JobClusters:             jobClustersPublicValue,
-		GitSource:               gitSourcePublicValue,
-		Tags:                    w.Tags,
-		Format:                  w.Format,
-		Queue:                   queuePublicValue,
-		Parameters:              parametersPublicValue,
-		RunAs:                   runAsPublicValue,
-		EditMode:                w.EditMode,
-		Deployment:              deploymentPublicValue,
-		Environments:            environmentsPublicValue,
-		BudgetPolicyId:          w.BudgetPolicyId,
-		UsagePolicyId:           w.UsagePolicyId,
-		PerformanceTarget:       w.PerformanceTarget,
-		ParentPath:              w.ParentPath,
-		Triggers:                triggersPublicValue,
-		EnvironmentVariables:    environmentVariablesPublicValue,
-		MaxRetries:              w.MaxRetries,
-		MinRetryIntervalMillis:  w.MinRetryIntervalMillis,
-		RetryOnTimeout:          w.RetryOnTimeout,
-		DisableAutoOptimization: w.DisableAutoOptimization,
-	}, nil
-}
-
 // The source of the job specification in the remote repository when the job is
 // source controlled..
 type JobSource struct {
@@ -5261,50 +2315,6 @@ type JobSource struct {
 	DirtyState JobSource_DirtyState `json:"dirty_state,omitempty"`
 }
 
-func JobSourceFromSDK(v *sdk.JobSource) (*JobSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var importFromGitReferenceImportFromGitBranchWire *string
-	switch value := v.ImportFromGitReference.(type) {
-	case nil:
-	case *sdk.JobSource_ImportFromGitReference_ImportFromGitBranch:
-		if value != nil {
-			importFromGitReferenceImportFromGitBranchWire = new(value.ImportFromGitBranch)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "JobSource.ImportFromGitReference", value)
-	}
-	return &JobSource{
-		JobConfigPath:       v.JobConfigPath,
-		ImportFromGitBranch: importFromGitReferenceImportFromGitBranchWire,
-		DirtyState:          v.DirtyState,
-	}, nil
-}
-
-func JobSourceToSDK(w *JobSource) (*sdk.JobSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	importFromGitReferenceMembers := 0
-	if w.ImportFromGitBranch != nil {
-		importFromGitReferenceMembers++
-	}
-	if importFromGitReferenceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "JobSource.ImportFromGitReference")
-	}
-	importFromGitReferenceSelection := (&sdk.JobSource{}).ImportFromGitReference
-	switch {
-	case w.ImportFromGitBranch != nil:
-		importFromGitReferenceSelection = &sdk.JobSource_ImportFromGitReference_ImportFromGitBranch{ImportFromGitBranch: *w.ImportFromGitBranch}
-	}
-	return &sdk.JobSource{
-		JobConfigPath:          w.JobConfigPath,
-		DirtyState:             w.DirtyState,
-		ImportFromGitReference: importFromGitReferenceSelection,
-	}, nil
-}
-
 type JobsHealthRule struct {
 	Metric JobsHealthMetric   `json:"metric,omitempty"`
 	Op     JobsHealthOperator `json:"op,omitempty"`
@@ -5313,65 +2323,9 @@ type JobsHealthRule struct {
 	Value *int64 `json:"value,omitempty"`
 }
 
-func JobsHealthRuleFromSDK(v *sdk.JobsHealthRule) (*JobsHealthRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valueWireValue, err := int64ToWire(v.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobsHealthRule.Value", err)
-	}
-	return &JobsHealthRule{
-		Metric: v.Metric,
-		Op:     v.Op,
-		Value:  valueWireValue,
-	}, nil
-}
-
-func JobsHealthRuleToSDK(w *JobsHealthRule) (*sdk.JobsHealthRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuePublicValue, err := int64FromWire(w.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobsHealthRule.Value", err)
-	}
-	return &sdk.JobsHealthRule{
-		Metric: w.Metric,
-		Op:     w.Op,
-		Value:  valuePublicValue,
-	}, nil
-}
-
 // An optional set of health rules that can be defined for this job..
 type JobsHealthRules struct {
 	Rules []JobsHealthRule `json:"rules,omitempty"`
-}
-
-func JobsHealthRulesFromSDK(v *sdk.JobsHealthRules) (*JobsHealthRules, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rulesWireValue, err := convertSlice(v.Rules, JobsHealthRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobsHealthRules.Rules", err)
-	}
-	return &JobsHealthRules{
-		Rules: rulesWireValue,
-	}, nil
-}
-
-func JobsHealthRulesToSDK(w *JobsHealthRules) (*sdk.JobsHealthRules, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rulesPublicValue, err := convertSlice(w.Rules, JobsHealthRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "JobsHealthRules.Rules", err)
-	}
-	return &sdk.JobsHealthRules{
-		Rules: rulesPublicValue,
-	}, nil
 }
 
 type Library struct {
@@ -5384,136 +2338,6 @@ type Library struct {
 	Requirements *string            `json:"requirements,omitempty"`
 }
 
-func LibraryFromSDK(v *sdk.Library) (*Library, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var libJarWire *string
-	var libEggWire *string
-	var libPypiWire *PythonPyPiLibrary
-	var libMavenWire *MavenLibrary
-	var libCranWire *RCranLibrary
-	var libWhlWire *string
-	var libRequirementsWire *string
-	switch value := v.Lib.(type) {
-	case nil:
-	case *sdk.Library_Lib_Jar:
-		if value != nil {
-			libJarWire = new(value.Jar)
-		}
-	case *sdk.Library_Lib_Egg:
-		if value != nil {
-			libEggWire = new(value.Egg)
-		}
-	case *sdk.Library_Lib_Pypi:
-		if value != nil {
-			libPypiConverted, err := PythonPyPiLibraryFromSDK(&value.Pypi)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-			}
-			libPypiWire = libPypiConverted
-		}
-	case *sdk.Library_Lib_Maven:
-		if value != nil {
-			libMavenConverted, err := MavenLibraryFromSDK(&value.Maven)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-			}
-			libMavenWire = libMavenConverted
-		}
-	case *sdk.Library_Lib_Cran:
-		if value != nil {
-			libCranConverted, err := RCranLibraryFromSDK(&value.Cran)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-			}
-			libCranWire = libCranConverted
-		}
-	case *sdk.Library_Lib_Whl:
-		if value != nil {
-			libWhlWire = new(value.Whl)
-		}
-	case *sdk.Library_Lib_Requirements:
-		if value != nil {
-			libRequirementsWire = new(value.Requirements)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Library.Lib", value)
-	}
-	return &Library{
-		Jar:          libJarWire,
-		Egg:          libEggWire,
-		Pypi:         libPypiWire,
-		Maven:        libMavenWire,
-		Cran:         libCranWire,
-		Whl:          libWhlWire,
-		Requirements: libRequirementsWire,
-	}, nil
-}
-
-func LibraryToSDK(w *Library) (*sdk.Library, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libMembers := 0
-	if w.Jar != nil {
-		libMembers++
-	}
-	if w.Egg != nil {
-		libMembers++
-	}
-	if w.Pypi != nil {
-		libMembers++
-	}
-	if w.Maven != nil {
-		libMembers++
-	}
-	if w.Cran != nil {
-		libMembers++
-	}
-	if w.Whl != nil {
-		libMembers++
-	}
-	if w.Requirements != nil {
-		libMembers++
-	}
-	if libMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
-	}
-	libSelection := (&sdk.Library{}).Lib
-	switch {
-	case w.Jar != nil:
-		libSelection = &sdk.Library_Lib_Jar{Jar: *w.Jar}
-	case w.Egg != nil:
-		libSelection = &sdk.Library_Lib_Egg{Egg: *w.Egg}
-	case w.Pypi != nil:
-		libPypiConverted, err := PythonPyPiLibraryToSDK(w.Pypi)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Pypi", err)
-		}
-		libSelection = &sdk.Library_Lib_Pypi{Pypi: *libPypiConverted}
-	case w.Maven != nil:
-		libMavenConverted, err := MavenLibraryToSDK(w.Maven)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Maven", err)
-		}
-		libSelection = &sdk.Library_Lib_Maven{Maven: *libMavenConverted}
-	case w.Cran != nil:
-		libCranConverted, err := RCranLibraryToSDK(w.Cran)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Library.Lib.Cran", err)
-		}
-		libSelection = &sdk.Library_Lib_Cran{Cran: *libCranConverted}
-	case w.Whl != nil:
-		libSelection = &sdk.Library_Lib_Whl{Whl: *w.Whl}
-	case w.Requirements != nil:
-		libSelection = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
-	}
-	return &sdk.Library{
-		Lib: libSelection,
-	}, nil
-}
-
 type ListJobComplianceForPolicy struct {
 	// Canonical unique identifier for the cluster policy.
 	PolicyId *string `json:"policy_id,omitempty"`
@@ -5524,17 +2348,6 @@ type ListJobComplianceForPolicy struct {
 	// server. The server may further constrain the maximum number of results
 	// returned in a single page.
 	PageSize *int `json:"page_size,omitempty"`
-}
-
-func ListJobComplianceForPolicyFromSDK(v *sdk.ListJobComplianceForPolicy) (*ListJobComplianceForPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListJobComplianceForPolicy{
-		PolicyId:  v.PolicyId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
 }
 
 type ListJobComplianceForPolicy_JobCompliance struct {
@@ -5550,21 +2363,6 @@ type ListJobComplianceForPolicy_JobCompliance struct {
 	Violations map[string]string `json:"violations,omitempty"`
 }
 
-func ListJobComplianceForPolicy_JobComplianceToSDK(w *ListJobComplianceForPolicy_JobCompliance) (*sdk.ListJobComplianceForPolicy_JobCompliance, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListJobComplianceForPolicy_JobCompliance.JobId", err)
-	}
-	return &sdk.ListJobComplianceForPolicy_JobCompliance{
-		JobId:       jobIdPublicValue,
-		IsCompliant: w.IsCompliant,
-		Violations:  w.Violations,
-	}, nil
-}
-
 type ListJobComplianceResponse struct {
 	// A list of jobs and their policy compliance statuses.
 	Jobs []ListJobComplianceForPolicy_JobCompliance `json:"jobs,omitempty"`
@@ -5576,21 +2374,6 @@ type ListJobComplianceResponse struct {
 	// results. If this field is not in the response, it means no further results
 	// for the request.
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
-}
-
-func ListJobComplianceResponseToSDK(w *ListJobComplianceResponse) (*sdk.ListJobComplianceResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobsPublicValue, err := convertSlice(w.Jobs, ListJobComplianceForPolicy_JobComplianceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListJobComplianceResponse.Jobs", err)
-	}
-	return &sdk.ListJobComplianceResponse{
-		Jobs:          jobsPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
 }
 
 // Lists all jobs..
@@ -5613,19 +2396,6 @@ type ListJobsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListJobsRequestFromSDK(v *sdk.ListJobsRequest) (*ListJobsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListJobsRequest{
-		Offset:      v.Offset,
-		Limit:       v.Limit,
-		ExpandTasks: v.ExpandTasks,
-		Name:        v.Name,
-		PageToken:   v.PageToken,
-	}, nil
-}
-
 // List of jobs was retrieved successfully..
 type ListJobsResponse struct {
 	// The list of jobs. Only included in the response if there are jobs to list.
@@ -5637,22 +2407,6 @@ type ListJobsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// A token that can be used to list the previous page of jobs (if applicable).
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
-}
-
-func ListJobsResponseToSDK(w *ListJobsResponse) (*sdk.ListJobsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobsPublicValue, err := convertSlice(w.Jobs, BaseJobToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListJobsResponse.Jobs", err)
-	}
-	return &sdk.ListJobsResponse{
-		Jobs:          jobsPublicValue,
-		HasMore:       w.HasMore,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
 }
 
 // Lists runs from most recently started to least..
@@ -5690,51 +2444,6 @@ type ListRunsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListRunsRequestFromSDK(v *sdk.ListRunsRequest) (*ListRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRunsRequest.JobId", err)
-	}
-	startTimeFromWireValue, err := int64ToWire(v.StartTimeFrom)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRunsRequest.StartTimeFrom", err)
-	}
-	startTimeToWireValue, err := int64ToWire(v.StartTimeTo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRunsRequest.StartTimeTo", err)
-	}
-	var stateConstraintActiveOnlyWire *bool
-	var stateConstraintCompletedOnlyWire *bool
-	switch value := v.StateConstraint.(type) {
-	case nil:
-	case *sdk.ListRunsRequest_StateConstraint_ActiveOnly:
-		if value != nil {
-			stateConstraintActiveOnlyWire = new(value.ActiveOnly)
-		}
-	case *sdk.ListRunsRequest_StateConstraint_CompletedOnly:
-		if value != nil {
-			stateConstraintCompletedOnlyWire = new(value.CompletedOnly)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ListRunsRequest.StateConstraint", value)
-	}
-	return &ListRunsRequest{
-		JobId:         jobIdWireValue,
-		ActiveOnly:    stateConstraintActiveOnlyWire,
-		CompletedOnly: stateConstraintCompletedOnlyWire,
-		Offset:        v.Offset,
-		Limit:         v.Limit,
-		RunType:       v.RunType,
-		ExpandTasks:   v.ExpandTasks,
-		StartTimeFrom: startTimeFromWireValue,
-		StartTimeTo:   startTimeToWireValue,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 // List of runs was retrieved successfully..
 type ListRunsResponse struct {
 	// A list of runs, from most recently started to least. Only included in the
@@ -5749,68 +2458,14 @@ type ListRunsResponse struct {
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
 }
 
-func ListRunsResponseToSDK(w *ListRunsResponse) (*sdk.ListRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runsPublicValue, err := convertSlice(w.Runs, BaseRunToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRunsResponse.Runs", err)
-	}
-	return &sdk.ListRunsResponse{
-		Runs:          runsPublicValue,
-		HasMore:       w.HasMore,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
-}
-
 type LocalFileInfo struct {
 	// local file destination, e.g. `file:/my/local/file.sh`
 	Destination *string `json:"destination,omitempty"`
 }
 
-func LocalFileInfoFromSDK(v *sdk.LocalFileInfo) (*LocalFileInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LocalFileInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func LocalFileInfoToSDK(w *LocalFileInfo) (*sdk.LocalFileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LocalFileInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 type LogAnalyticsInfo struct {
 	LogAnalyticsWorkspaceId *string `json:"log_analytics_workspace_id,omitempty"`
 	LogAnalyticsPrimaryKey  *string `json:"log_analytics_primary_key,omitempty"`
-}
-
-func LogAnalyticsInfoFromSDK(v *sdk.LogAnalyticsInfo) (*LogAnalyticsInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LogAnalyticsInfo{
-		LogAnalyticsWorkspaceId: v.LogAnalyticsWorkspaceId,
-		LogAnalyticsPrimaryKey:  v.LogAnalyticsPrimaryKey,
-	}, nil
-}
-
-func LogAnalyticsInfoToSDK(w *LogAnalyticsInfo) (*sdk.LogAnalyticsInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LogAnalyticsInfo{
-		LogAnalyticsWorkspaceId: w.LogAnalyticsWorkspaceId,
-		LogAnalyticsPrimaryKey:  w.LogAnalyticsPrimaryKey,
-	}, nil
 }
 
 // A recurring weekly time window during which platform-initiated maintenance is
@@ -5830,28 +2485,6 @@ type MaintenanceWindow struct {
 	TimezoneId *string `json:"timezone_id,omitempty"`
 }
 
-func MaintenanceWindowFromSDK(v *sdk.MaintenanceWindow) (*MaintenanceWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MaintenanceWindow{
-		StartHour:  v.StartHour,
-		DayOfWeek:  v.DayOfWeek,
-		TimezoneId: v.TimezoneId,
-	}, nil
-}
-
-func MaintenanceWindowToSDK(w *MaintenanceWindow) (*sdk.MaintenanceWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MaintenanceWindow{
-		StartHour:  w.StartHour,
-		DayOfWeek:  w.DayOfWeek,
-		TimezoneId: w.TimezoneId,
-	}, nil
-}
-
 type MavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
@@ -5864,28 +2497,6 @@ type MavenLibrary struct {
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
-}
-
-func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MavenLibrary{
-		Coordinates: v.Coordinates,
-		Repo:        v.Repo,
-		Exclusions:  v.Exclusions,
-	}, nil
-}
-
-func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MavenLibrary{
-		Coordinates: w.Coordinates,
-		Repo:        w.Repo,
-		Exclusions:  w.Exclusions,
-	}, nil
 }
 
 type ModelTriggerConfiguration struct {
@@ -5908,42 +2519,9 @@ type ModelTriggerConfiguration struct {
 	WaitAfterLastChangeSeconds *int `json:"wait_after_last_change_seconds,omitempty"`
 }
 
-func ModelTriggerConfigurationFromSDK(v *sdk.ModelTriggerConfiguration) (*ModelTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelTriggerConfiguration{
-		SecurableName:                 v.SecurableName,
-		Aliases:                       v.Aliases,
-		Condition:                     v.Condition,
-		MinTimeBetweenTriggersSeconds: v.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    v.WaitAfterLastChangeSeconds,
-	}, nil
-}
-
-func ModelTriggerConfigurationToSDK(w *ModelTriggerConfiguration) (*sdk.ModelTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelTriggerConfiguration{
-		SecurableName:                 w.SecurableName,
-		Aliases:                       w.Aliases,
-		Condition:                     w.Condition,
-		MinTimeBetweenTriggersSeconds: w.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    w.WaitAfterLastChangeSeconds,
-	}, nil
-}
-
 // Runtime state for a model trigger. Currently empty because model triggers do
 // not expose any trigger-specific runtime state..
 type ModelTriggerState struct {
-}
-
-func ModelTriggerStateToSDK(w *ModelTriggerState) (*sdk.ModelTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelTriggerState{}, nil
 }
 
 // Configuration for flexible node types, allowing fallback to alternate node
@@ -5955,26 +2533,6 @@ type NodeTypeFlexibility struct {
 	// The AWS Context ID for EC2 Fleet. When set (non-empty), the value is passed
 	// to AWS CreateFleet API to create the EC2 Fleet.
 	AwsContextId *string `json:"aws_context_id,omitempty"`
-}
-
-func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NodeTypeFlexibility{
-		AlternateNodeTypeIds: v.AlternateNodeTypeIds,
-		AwsContextId:         v.AwsContextId,
-	}, nil
-}
-
-func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NodeTypeFlexibility{
-		AlternateNodeTypeIds: w.AlternateNodeTypeIds,
-		AwsContextId:         w.AwsContextId,
-	}, nil
 }
 
 type NotebookTask struct {
@@ -6014,30 +2572,6 @@ type NotebookTask struct {
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
-func NotebookTaskFromSDK(v *sdk.NotebookTask) (*NotebookTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotebookTask{
-		NotebookPath:   v.NotebookPath,
-		BaseParameters: v.BaseParameters,
-		Source:         v.Source,
-		WarehouseId:    v.WarehouseId,
-	}, nil
-}
-
-func NotebookTaskToSDK(w *NotebookTask) (*sdk.NotebookTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotebookTask{
-		NotebookPath:   w.NotebookPath,
-		BaseParameters: w.BaseParameters,
-		Source:         w.Source,
-		WarehouseId:    w.WarehouseId,
-	}, nil
-}
-
 type NotebookTask_NotebookOutput struct {
 	// The value passed to
 	// [dbutils.notebook.exit()](/notebooks/notebook-workflows.html#notebook-workflows-exit).
@@ -6047,16 +2581,6 @@ type NotebookTask_NotebookOutput struct {
 	Result *string `json:"result,omitempty"`
 	// Whether or not the result was truncated.
 	Truncated *bool `json:"truncated,omitempty"`
-}
-
-func NotebookTask_NotebookOutputToSDK(w *NotebookTask_NotebookOutput) (*sdk.NotebookTask_NotebookOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotebookTask_NotebookOutput{
-		Result:    w.Result,
-		Truncated: w.Truncated,
-	}, nil
 }
 
 type NotificationSettings struct {
@@ -6072,28 +2596,6 @@ type NotificationSettings struct {
 	AlertOnLastAttempt *bool `json:"alert_on_last_attempt,omitempty"`
 }
 
-func NotificationSettingsFromSDK(v *sdk.NotificationSettings) (*NotificationSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotificationSettings{
-		NoAlertForSkippedRuns:  v.NoAlertForSkippedRuns,
-		NoAlertForCanceledRuns: v.NoAlertForCanceledRuns,
-		AlertOnLastAttempt:     v.AlertOnLastAttempt,
-	}, nil
-}
-
-func NotificationSettingsToSDK(w *NotificationSettings) (*sdk.NotificationSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotificationSettings{
-		NoAlertForSkippedRuns:  w.NoAlertForSkippedRuns,
-		NoAlertForCanceledRuns: w.NoAlertForCanceledRuns,
-		AlertOnLastAttempt:     w.AlertOnLastAttempt,
-	}, nil
-}
-
 // Stores the catalog name, schema name, and the output schema expiration time
 // for the clean room run..
 type OutputSchemaInfo struct {
@@ -6102,21 +2604,6 @@ type OutputSchemaInfo struct {
 	// The expiration time for the output schema as a Unix timestamp in
 	// milliseconds.
 	ExpirationTime *int64 `json:"expiration_time,omitempty"`
-}
-
-func OutputSchemaInfoToSDK(w *OutputSchemaInfo) (*sdk.OutputSchemaInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "OutputSchemaInfo.ExpirationTime", err)
-	}
-	return &sdk.OutputSchemaInfo{
-		CatalogName:    w.CatalogName,
-		SchemaName:     w.SchemaName,
-		ExpirationTime: expirationTimePublicValue,
-	}, nil
 }
 
 // Per-trigger runtime state for the multi-trigger surface. Mirrors
@@ -6136,82 +2623,6 @@ type PerTriggerState struct {
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
 }
 
-func PerTriggerStateToSDK(w *PerTriggerState) (*sdk.PerTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	triggerTypeMembers := 0
-	if w.Periodic != nil {
-		triggerTypeMembers++
-	}
-	if w.Schedule != nil {
-		triggerTypeMembers++
-	}
-	if w.Continuous != nil {
-		triggerTypeMembers++
-	}
-	if w.FileArrival != nil {
-		triggerTypeMembers++
-	}
-	if w.TableUpdate != nil {
-		triggerTypeMembers++
-	}
-	if w.Model != nil {
-		triggerTypeMembers++
-	}
-	if triggerTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PerTriggerState.TriggerType")
-	}
-	sqlConditionPublicValue, err := SqlConditionStateToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PerTriggerState.SqlCondition", err)
-	}
-	triggerTypeSelection := (&sdk.PerTriggerState{}).TriggerType
-	switch {
-	case w.Periodic != nil:
-		triggerTypePeriodicConverted, err := PeriodicTriggerStateToSDK(w.Periodic)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.Periodic", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_Periodic{Periodic: *triggerTypePeriodicConverted}
-	case w.Schedule != nil:
-		triggerTypeScheduleConverted, err := ScheduleTriggerStateToSDK(w.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.Schedule", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_Schedule{Schedule: *triggerTypeScheduleConverted}
-	case w.Continuous != nil:
-		triggerTypeContinuousConverted, err := ContinuousTriggerStateToSDK(w.Continuous)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.Continuous", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_Continuous{Continuous: *triggerTypeContinuousConverted}
-	case w.FileArrival != nil:
-		triggerTypeFileArrivalConverted, err := FileArrivalTriggerStateToSDK(w.FileArrival)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.FileArrival", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_FileArrival{FileArrival: *triggerTypeFileArrivalConverted}
-	case w.TableUpdate != nil:
-		triggerTypeTableUpdateConverted, err := TableTriggerStateToSDK(w.TableUpdate)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.TableUpdate", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_TableUpdate{TableUpdate: *triggerTypeTableUpdateConverted}
-	case w.Model != nil:
-		triggerTypeModelConverted, err := ModelTriggerStateToSDK(w.Model)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType.Model", err)
-		}
-		triggerTypeSelection = &sdk.PerTriggerState_TriggerType_Model{Model: *triggerTypeModelConverted}
-	}
-	return &sdk.PerTriggerState{
-		SqlCondition: sqlConditionPublicValue,
-		PauseStatus:  w.PauseStatus,
-		TriggerType:  triggerTypeSelection,
-	}, nil
-}
-
 type PeriodicTriggerConfiguration struct {
 	// The interval at which the trigger should run.
 	Interval *int `json:"interval,omitempty"`
@@ -6219,41 +2630,8 @@ type PeriodicTriggerConfiguration struct {
 	Unit PeriodicTriggerConfiguration_TimeUnit `json:"unit,omitempty"`
 }
 
-func PeriodicTriggerConfigurationFromSDK(v *sdk.PeriodicTriggerConfiguration) (*PeriodicTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PeriodicTriggerConfiguration{
-		Interval: v.Interval,
-		Unit:     v.Unit,
-	}, nil
-}
-
-func PeriodicTriggerConfigurationToSDK(w *PeriodicTriggerConfiguration) (*sdk.PeriodicTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PeriodicTriggerConfiguration{
-		Interval: w.Interval,
-		Unit:     w.Unit,
-	}, nil
-}
-
 type PeriodicTriggerState struct {
 	NextRunTime *int64 `json:"next_run_time,omitempty"`
-}
-
-func PeriodicTriggerStateToSDK(w *PeriodicTriggerState) (*sdk.PeriodicTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	nextRunTimePublicValue, err := int64FromWire(w.NextRunTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PeriodicTriggerState.NextRunTime", err)
-	}
-	return &sdk.PeriodicTriggerState{
-		NextRunTime: nextRunTimePublicValue,
-	}, nil
 }
 
 type PipelineParameters struct {
@@ -6269,32 +2647,6 @@ type PipelineParameters struct {
 	// refresh options (refresh_selection, full_refresh_selection) to determine the
 	// final set of flows to refresh.
 	RefreshFlowSelection []string `json:"refresh_flow_selection,omitempty"`
-}
-
-func PipelineParametersFromSDK(v *sdk.PipelineParameters) (*PipelineParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelineParameters{
-		FullRefresh:              v.FullRefresh,
-		RefreshSelection:         v.RefreshSelection,
-		FullRefreshSelection:     v.FullRefreshSelection,
-		ResetCheckpointSelection: v.ResetCheckpointSelection,
-		RefreshFlowSelection:     v.RefreshFlowSelection,
-	}, nil
-}
-
-func PipelineParametersToSDK(w *PipelineParameters) (*sdk.PipelineParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelineParameters{
-		FullRefresh:              w.FullRefresh,
-		RefreshSelection:         w.RefreshSelection,
-		FullRefreshSelection:     w.FullRefreshSelection,
-		ResetCheckpointSelection: w.ResetCheckpointSelection,
-		RefreshFlowSelection:     w.RefreshFlowSelection,
-	}, nil
 }
 
 type PipelineTask struct {
@@ -6317,36 +2669,6 @@ type PipelineTask struct {
 	RefreshFlowSelection []string `json:"refresh_flow_selection,omitempty"`
 }
 
-func PipelineTaskFromSDK(v *sdk.PipelineTask) (*PipelineTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelineTask{
-		PipelineId:               v.PipelineId,
-		PipelineTaskParameters:   v.PipelineTaskParameters,
-		FullRefresh:              v.FullRefresh,
-		RefreshSelection:         v.RefreshSelection,
-		FullRefreshSelection:     v.FullRefreshSelection,
-		ResetCheckpointSelection: v.ResetCheckpointSelection,
-		RefreshFlowSelection:     v.RefreshFlowSelection,
-	}, nil
-}
-
-func PipelineTaskToSDK(w *PipelineTask) (*sdk.PipelineTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelineTask{
-		PipelineId:               w.PipelineId,
-		PipelineTaskParameters:   w.PipelineTaskParameters,
-		FullRefresh:              w.FullRefresh,
-		RefreshSelection:         w.RefreshSelection,
-		FullRefreshSelection:     w.FullRefreshSelection,
-		ResetCheckpointSelection: w.ResetCheckpointSelection,
-		RefreshFlowSelection:     w.RefreshFlowSelection,
-	}, nil
-}
-
 type PowerBiModel struct {
 	// The name of the Power BI workspace of the model
 	WorkspaceName *string `json:"workspace_name,omitempty"`
@@ -6360,32 +2682,6 @@ type PowerBiModel struct {
 	OverwriteExisting *bool `json:"overwrite_existing,omitempty"`
 }
 
-func PowerBiModelFromSDK(v *sdk.PowerBiModel) (*PowerBiModel, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PowerBiModel{
-		WorkspaceName:        v.WorkspaceName,
-		ModelName:            v.ModelName,
-		StorageMode:          v.StorageMode,
-		AuthenticationMethod: v.AuthenticationMethod,
-		OverwriteExisting:    v.OverwriteExisting,
-	}, nil
-}
-
-func PowerBiModelToSDK(w *PowerBiModel) (*sdk.PowerBiModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PowerBiModel{
-		WorkspaceName:        w.WorkspaceName,
-		ModelName:            w.ModelName,
-		StorageMode:          w.StorageMode,
-		AuthenticationMethod: w.AuthenticationMethod,
-		OverwriteExisting:    w.OverwriteExisting,
-	}, nil
-}
-
 type PowerBiTable struct {
 	// The table name in <Databricks>
 	Name *string `json:"name,omitempty"`
@@ -6395,30 +2691,6 @@ type PowerBiTable struct {
 	Schema *string `json:"schema,omitempty"`
 	// The Power BI storage mode of the table
 	StorageMode StorageMode `json:"storage_mode,omitempty"`
-}
-
-func PowerBiTableFromSDK(v *sdk.PowerBiTable) (*PowerBiTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PowerBiTable{
-		Name:        v.Name,
-		Catalog:     v.Catalog,
-		Schema:      v.Schema,
-		StorageMode: v.StorageMode,
-	}, nil
-}
-
-func PowerBiTableToSDK(w *PowerBiTable) (*sdk.PowerBiTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PowerBiTable{
-		Name:        w.Name,
-		Catalog:     w.Catalog,
-		Schema:      w.Schema,
-		StorageMode: w.StorageMode,
-	}, nil
 }
 
 type PowerBiTask struct {
@@ -6435,48 +2707,6 @@ type PowerBiTask struct {
 	RefreshAfterUpdate *bool `json:"refresh_after_update,omitempty"`
 }
 
-func PowerBiTaskFromSDK(v *sdk.PowerBiTask) (*PowerBiTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tablesWireValue, err := convertSlice(v.Tables, PowerBiTableFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PowerBiTask.Tables", err)
-	}
-	powerBiModelWireValue, err := PowerBiModelFromSDK(v.PowerBiModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PowerBiTask.PowerBiModel", err)
-	}
-	return &PowerBiTask{
-		Tables:                 tablesWireValue,
-		WarehouseId:            v.WarehouseId,
-		PowerBiModel:           powerBiModelWireValue,
-		ConnectionResourceName: v.ConnectionResourceName,
-		RefreshAfterUpdate:     v.RefreshAfterUpdate,
-	}, nil
-}
-
-func PowerBiTaskToSDK(w *PowerBiTask) (*sdk.PowerBiTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tablesPublicValue, err := convertSlice(w.Tables, PowerBiTableToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PowerBiTask.Tables", err)
-	}
-	powerBiModelPublicValue, err := PowerBiModelToSDK(w.PowerBiModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PowerBiTask.PowerBiModel", err)
-	}
-	return &sdk.PowerBiTask{
-		Tables:                 tablesPublicValue,
-		WarehouseId:            w.WarehouseId,
-		PowerBiModel:           powerBiModelPublicValue,
-		ConnectionResourceName: w.ConnectionResourceName,
-		RefreshAfterUpdate:     w.RefreshAfterUpdate,
-	}, nil
-}
-
 type PythonOperatorTask struct {
 	// An ordered list of task parameters. TODO(JOBS-30885): Add limits for
 	// parameters.
@@ -6486,57 +2716,9 @@ type PythonOperatorTask struct {
 	Main *string `json:"main,omitempty"`
 }
 
-func PythonOperatorTaskFromSDK(v *sdk.PythonOperatorTask) (*PythonOperatorTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parametersWireValue, err := convertSlice(v.Parameters, PythonOperatorTask_ParameterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PythonOperatorTask.Parameters", err)
-	}
-	return &PythonOperatorTask{
-		Parameters: parametersWireValue,
-		Main:       v.Main,
-	}, nil
-}
-
-func PythonOperatorTaskToSDK(w *PythonOperatorTask) (*sdk.PythonOperatorTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, PythonOperatorTask_ParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PythonOperatorTask.Parameters", err)
-	}
-	return &sdk.PythonOperatorTask{
-		Parameters: parametersPublicValue,
-		Main:       w.Main,
-	}, nil
-}
-
 type PythonOperatorTask_Parameter struct {
 	Name  *string `json:"name,omitempty"`
 	Value *string `json:"value,omitempty"`
-}
-
-func PythonOperatorTask_ParameterFromSDK(v *sdk.PythonOperatorTask_Parameter) (*PythonOperatorTask_Parameter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PythonOperatorTask_Parameter{
-		Name:  v.Name,
-		Value: v.Value,
-	}, nil
-}
-
-func PythonOperatorTask_ParameterToSDK(w *PythonOperatorTask_Parameter) (*sdk.PythonOperatorTask_Parameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PythonOperatorTask_Parameter{
-		Name:  w.Name,
-		Value: w.Value,
-	}, nil
 }
 
 type PythonPyPiLibrary struct {
@@ -6547,26 +2729,6 @@ type PythonPyPiLibrary struct {
 	// The repository where the package can be found. If not specified, the default
 	// pip index is used.
 	Repo *string `json:"repo,omitempty"`
-}
-
-func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PythonPyPiLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
-}
-
-func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PythonPyPiLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
 }
 
 type PythonWheelTask struct {
@@ -6585,30 +2747,6 @@ type PythonWheelTask struct {
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
 }
 
-func PythonWheelTaskFromSDK(v *sdk.PythonWheelTask) (*PythonWheelTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PythonWheelTask{
-		PackageName:     v.PackageName,
-		EntryPoint:      v.EntryPoint,
-		Parameters:      v.Parameters,
-		NamedParameters: v.NamedParameters,
-	}, nil
-}
-
-func PythonWheelTaskToSDK(w *PythonWheelTask) (*sdk.PythonWheelTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PythonWheelTask{
-		PackageName:     w.PackageName,
-		EntryPoint:      w.EntryPoint,
-		Parameters:      w.Parameters,
-		NamedParameters: w.NamedParameters,
-	}, nil
-}
-
 type QueueDetails struct {
 	Code QueueDetailsCode_Code `json:"code,omitempty"`
 	// A descriptive message with the queuing details. This field is unstructured,
@@ -6616,37 +2754,9 @@ type QueueDetails struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func QueueDetailsToSDK(w *QueueDetails) (*sdk.QueueDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.QueueDetails{
-		Code:    w.Code,
-		Message: w.Message,
-	}, nil
-}
-
 type QueueSettings struct {
 	// If true, enable queueing for the job. This is a required field.
 	Enabled *bool `json:"enabled,omitempty"`
-}
-
-func QueueSettingsFromSDK(v *sdk.QueueSettings) (*QueueSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &QueueSettings{
-		Enabled: v.Enabled,
-	}, nil
-}
-
-func QueueSettingsToSDK(w *QueueSettings) (*sdk.QueueSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.QueueSettings{
-		Enabled: w.Enabled,
-	}, nil
 }
 
 type RCranLibrary struct {
@@ -6655,26 +2765,6 @@ type RCranLibrary struct {
 	// The repository where the package can be found. If not specified, the default
 	// CRAN repo is used.
 	Repo *string `json:"repo,omitempty"`
-}
-
-func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RCranLibrary{
-		Package: v.Package,
-		Repo:    v.Repo,
-	}, nil
-}
-
-func RCranLibraryToSDK(w *RCranLibrary) (*sdk.RCranLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RCranLibrary{
-		Package: w.Package,
-		Repo:    w.Repo,
-	}, nil
 }
 
 type Repair struct {
@@ -6703,46 +2793,6 @@ type Repair struct {
 	// Enables lower job costs by optimizing compute for your selected target
 	// duration time. Must provide a duration target.
 	EffectivePerformanceTarget PerformanceTarget_PerformanceTarget `json:"effective_performance_target,omitempty"`
-}
-
-func RepairToSDK(w *Repair) (*sdk.Repair, error) {
-	if w == nil {
-		return nil, nil
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.StartTime", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.EndTime", err)
-	}
-	statePublicValue, err := RunStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.State", err)
-	}
-	idPublicValue, err := int64FromWire(w.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.Id", err)
-	}
-	taskRunIdsPublicValue, err := convertSlice(w.TaskRunIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.TaskRunIds", err)
-	}
-	statusPublicValue, err := RunStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Repair.Status", err)
-	}
-	return &sdk.Repair{
-		Type:                       w.Type,
-		StartTime:                  startTimePublicValue,
-		EndTime:                    endTimePublicValue,
-		State:                      statePublicValue,
-		Id:                         idPublicValue,
-		TaskRunIds:                 taskRunIdsPublicValue,
-		Status:                     statusPublicValue,
-		EffectivePerformanceTarget: w.EffectivePerformanceTarget,
-	}, nil
 }
 
 type RepairRunRequest struct {
@@ -6857,59 +2907,11 @@ type RepairRunRequest struct {
 	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
-func RepairRunRequestFromSDK(v *sdk.RepairRunRequest) (*RepairRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runIdWireValue, err := int64ToWire(v.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepairRunRequest.RunId", err)
-	}
-	latestRepairIdWireValue, err := int64ToWire(v.LatestRepairId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepairRunRequest.LatestRepairId", err)
-	}
-	pipelineParamsWireValue, err := PipelineParametersFromSDK(v.PipelineParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepairRunRequest.PipelineParams", err)
-	}
-	return &RepairRunRequest{
-		RunId:               runIdWireValue,
-		LatestRepairId:      latestRepairIdWireValue,
-		RerunTasks:          v.RerunTasks,
-		JobParameters:       v.JobParameters,
-		RerunAllFailedTasks: v.RerunAllFailedTasks,
-		RerunDependentTasks: v.RerunDependentTasks,
-		PerformanceTarget:   v.PerformanceTarget,
-		PipelineParams:      pipelineParamsWireValue,
-		JarParams:           v.JarParams,
-		NotebookParams:      v.NotebookParams,
-		PythonParams:        v.PythonParams,
-		SparkSubmitParams:   v.SparkSubmitParams,
-		PythonNamedParams:   v.PythonNamedParams,
-		SqlParams:           v.SqlParams,
-		DbtCommands:         v.DbtCommands,
-	}, nil
-}
-
 // Run repair was initiated..
 type RepairRunResponse struct {
 	// The ID of the repair. Must be provided in subsequent repairs using the
 	// `latest_repair_id` field to ensure sequential repairs.
 	RepairId *int64 `json:"repair_id,omitempty"`
-}
-
-func RepairRunResponseToSDK(w *RepairRunResponse) (*sdk.RepairRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	repairIdPublicValue, err := int64FromWire(w.RepairId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepairRunResponse.RepairId", err)
-	}
-	return &sdk.RepairRunResponse{
-		RepairId: repairIdPublicValue,
-	}, nil
 }
 
 type ResetJobRequest struct {
@@ -6921,24 +2923,6 @@ type ResetJobRequest struct {
 	// Changes to the field `JobBaseSettings.timeout_seconds` are applied to active
 	// runs. Changes to other fields are applied to future runs only.
 	NewSettings *JobSettings `json:"new_settings,omitempty"`
-}
-
-func ResetJobRequestFromSDK(v *sdk.ResetJobRequest) (*ResetJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResetJobRequest.JobId", err)
-	}
-	newSettingsWireValue, err := JobSettingsFromSDK(v.NewSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResetJobRequest.NewSettings", err)
-	}
-	return &ResetJobRequest{
-		JobId:       jobIdWireValue,
-		NewSettings: newSettingsWireValue,
-	}, nil
 }
 
 type ResolvedValues struct {
@@ -6956,140 +2940,9 @@ type ResolvedValues struct {
 	AiRuntimeTask   *ResolvedValues_AiRuntimeTaskResolvedValues   `json:"ai_runtime_task,omitempty"`
 }
 
-func ResolvedValuesToSDK(w *ResolvedValues) (*sdk.ResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resolvedMembers := 0
-	if w.NotebookTask != nil {
-		resolvedMembers++
-	}
-	if w.SparkJarTask != nil {
-		resolvedMembers++
-	}
-	if w.SparkPythonTask != nil {
-		resolvedMembers++
-	}
-	if w.SparkSubmitTask != nil {
-		resolvedMembers++
-	}
-	if w.PythonWheelTask != nil {
-		resolvedMembers++
-	}
-	if w.DbtTask != nil {
-		resolvedMembers++
-	}
-	if w.SqlTask != nil {
-		resolvedMembers++
-	}
-	if w.RunJobTask != nil {
-		resolvedMembers++
-	}
-	if w.ConditionTask != nil {
-		resolvedMembers++
-	}
-	if w.SimulationTask != nil {
-		resolvedMembers++
-	}
-	if w.PipelineTask != nil {
-		resolvedMembers++
-	}
-	if w.AiRuntimeTask != nil {
-		resolvedMembers++
-	}
-	if resolvedMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ResolvedValues.Resolved")
-	}
-	resolvedSelection := (&sdk.ResolvedValues{}).Resolved
-	switch {
-	case w.NotebookTask != nil:
-		resolvedNotebookTaskConverted, err := ResolvedValues_NotebookTaskResolvedValuesToSDK(w.NotebookTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.NotebookTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_NotebookTask{NotebookTask: *resolvedNotebookTaskConverted}
-	case w.SparkJarTask != nil:
-		resolvedSparkJarTaskConverted, err := ResolvedValues_SparkJarTaskResolvedValuesToSDK(w.SparkJarTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.SparkJarTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_SparkJarTask{SparkJarTask: *resolvedSparkJarTaskConverted}
-	case w.SparkPythonTask != nil:
-		resolvedSparkPythonTaskConverted, err := ResolvedValues_SparkPythonTaskResolvedValuesToSDK(w.SparkPythonTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.SparkPythonTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_SparkPythonTask{SparkPythonTask: *resolvedSparkPythonTaskConverted}
-	case w.SparkSubmitTask != nil:
-		resolvedSparkSubmitTaskConverted, err := ResolvedValues_SparkSubmitTaskResolvedValuesToSDK(w.SparkSubmitTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.SparkSubmitTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_SparkSubmitTask{SparkSubmitTask: *resolvedSparkSubmitTaskConverted}
-	case w.PythonWheelTask != nil:
-		resolvedPythonWheelTaskConverted, err := ResolvedValues_PythonWheelTaskResolvedValuesToSDK(w.PythonWheelTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.PythonWheelTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_PythonWheelTask{PythonWheelTask: *resolvedPythonWheelTaskConverted}
-	case w.DbtTask != nil:
-		resolvedDbtTaskConverted, err := ResolvedValues_DbtTaskResolvedValuesToSDK(w.DbtTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.DbtTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_DbtTask{DbtTask: *resolvedDbtTaskConverted}
-	case w.SqlTask != nil:
-		resolvedSqlTaskConverted, err := ResolvedValues_SqlTaskResolvedValuesToSDK(w.SqlTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.SqlTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_SqlTask{SqlTask: *resolvedSqlTaskConverted}
-	case w.RunJobTask != nil:
-		resolvedRunJobTaskConverted, err := ResolvedValues_RunJobTaskResolvedValuesToSDK(w.RunJobTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.RunJobTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_RunJobTask{RunJobTask: *resolvedRunJobTaskConverted}
-	case w.ConditionTask != nil:
-		resolvedConditionTaskConverted, err := ResolvedValues_ConditionTaskResolvedValuesToSDK(w.ConditionTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.ConditionTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_ConditionTask{ConditionTask: *resolvedConditionTaskConverted}
-	case w.SimulationTask != nil:
-		resolvedSimulationTaskConverted, err := ResolvedValues_SimulationTaskResolvedValuesToSDK(w.SimulationTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.SimulationTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_SimulationTask{SimulationTask: *resolvedSimulationTaskConverted}
-	case w.PipelineTask != nil:
-		resolvedPipelineTaskConverted, err := ResolvedValues_PipelineTaskResolvedValuesToSDK(w.PipelineTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.PipelineTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_PipelineTask{PipelineTask: *resolvedPipelineTaskConverted}
-	case w.AiRuntimeTask != nil:
-		resolvedAiRuntimeTaskConverted, err := ResolvedValues_AiRuntimeTaskResolvedValuesToSDK(w.AiRuntimeTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved.AiRuntimeTask", err)
-		}
-		resolvedSelection = &sdk.ResolvedValues_Resolved_AiRuntimeTask{AiRuntimeTask: *resolvedAiRuntimeTaskConverted}
-	}
-	return &sdk.ResolvedValues{
-		Resolved: resolvedSelection,
-	}, nil
-}
-
 // Resolved values for an AiRuntimeTask after dynamic-value substitution, so
 // Jobs can expand `{{tasks.<key>.values.<name>}}` references before submission..
 type ResolvedValues_AiRuntimeTaskResolvedValues struct {
-}
-
-func ResolvedValues_AiRuntimeTaskResolvedValuesToSDK(w *ResolvedValues_AiRuntimeTaskResolvedValues) (*sdk.ResolvedValues_AiRuntimeTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_AiRuntimeTaskResolvedValues{}, nil
 }
 
 type ResolvedValues_ConditionTaskResolvedValues struct {
@@ -7097,40 +2950,12 @@ type ResolvedValues_ConditionTaskResolvedValues struct {
 	Right *string `json:"right,omitempty"`
 }
 
-func ResolvedValues_ConditionTaskResolvedValuesToSDK(w *ResolvedValues_ConditionTaskResolvedValues) (*sdk.ResolvedValues_ConditionTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_ConditionTaskResolvedValues{
-		Left:  w.Left,
-		Right: w.Right,
-	}, nil
-}
-
 type ResolvedValues_DbtTaskResolvedValues struct {
 	Commands []string `json:"commands,omitempty"`
 }
 
-func ResolvedValues_DbtTaskResolvedValuesToSDK(w *ResolvedValues_DbtTaskResolvedValues) (*sdk.ResolvedValues_DbtTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_DbtTaskResolvedValues{
-		Commands: w.Commands,
-	}, nil
-}
-
 type ResolvedValues_NotebookTaskResolvedValues struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
-}
-
-func ResolvedValues_NotebookTaskResolvedValuesToSDK(w *ResolvedValues_NotebookTaskResolvedValues) (*sdk.ResolvedValues_NotebookTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_NotebookTaskResolvedValues{
-		BaseParameters: w.BaseParameters,
-	}, nil
 }
 
 type ResolvedValues_PipelineTaskResolvedValues struct {
@@ -7139,28 +2964,9 @@ type ResolvedValues_PipelineTaskResolvedValues struct {
 	PipelineTaskParameters map[string]string `json:"parameters,omitempty"`
 }
 
-func ResolvedValues_PipelineTaskResolvedValuesToSDK(w *ResolvedValues_PipelineTaskResolvedValues) (*sdk.ResolvedValues_PipelineTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_PipelineTaskResolvedValues{
-		PipelineTaskParameters: w.PipelineTaskParameters,
-	}, nil
-}
-
 type ResolvedValues_PythonWheelTaskResolvedValues struct {
 	Parameters      []string          `json:"parameters,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
-}
-
-func ResolvedValues_PythonWheelTaskResolvedValuesToSDK(w *ResolvedValues_PythonWheelTaskResolvedValues) (*sdk.ResolvedValues_PythonWheelTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_PythonWheelTaskResolvedValues{
-		Parameters:      w.Parameters,
-		NamedParameters: w.NamedParameters,
-	}, nil
 }
 
 type ResolvedValues_RunJobTaskResolvedValues struct {
@@ -7168,73 +2974,22 @@ type ResolvedValues_RunJobTaskResolvedValues struct {
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
-func ResolvedValues_RunJobTaskResolvedValuesToSDK(w *ResolvedValues_RunJobTaskResolvedValues) (*sdk.ResolvedValues_RunJobTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_RunJobTaskResolvedValues{
-		Parameters:    w.Parameters,
-		JobParameters: w.JobParameters,
-	}, nil
-}
-
 type ResolvedValues_SimulationTaskResolvedValues struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
-}
-
-func ResolvedValues_SimulationTaskResolvedValuesToSDK(w *ResolvedValues_SimulationTaskResolvedValues) (*sdk.ResolvedValues_SimulationTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_SimulationTaskResolvedValues{
-		Parameters: w.Parameters,
-	}, nil
 }
 
 type ResolvedValues_SparkJarTaskResolvedValues struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
-func ResolvedValues_SparkJarTaskResolvedValuesToSDK(w *ResolvedValues_SparkJarTaskResolvedValues) (*sdk.ResolvedValues_SparkJarTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_SparkJarTaskResolvedValues{
-		Parameters: w.Parameters,
-	}, nil
-}
-
 type ResolvedValues_SparkPythonTaskResolvedValues struct {
-}
-
-func ResolvedValues_SparkPythonTaskResolvedValuesToSDK(w *ResolvedValues_SparkPythonTaskResolvedValues) (*sdk.ResolvedValues_SparkPythonTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_SparkPythonTaskResolvedValues{}, nil
 }
 
 type ResolvedValues_SparkSubmitTaskResolvedValues struct {
 }
 
-func ResolvedValues_SparkSubmitTaskResolvedValuesToSDK(w *ResolvedValues_SparkSubmitTaskResolvedValues) (*sdk.ResolvedValues_SparkSubmitTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_SparkSubmitTaskResolvedValues{}, nil
-}
-
 type ResolvedValues_SqlTaskResolvedValues struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
-}
-
-func ResolvedValues_SqlTaskResolvedValuesToSDK(w *ResolvedValues_SqlTaskResolvedValues) (*sdk.ResolvedValues_SqlTaskResolvedValues, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ResolvedValues_SqlTaskResolvedValues{
-		Parameters: w.Parameters,
-	}, nil
 }
 
 type Run struct {
@@ -7379,151 +3134,6 @@ type Run struct {
 	QueueDuration *int64 `json:"queue_duration,omitempty"`
 }
 
-func RunToSDK(w *Run) (*sdk.Run, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.JobId", err)
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.RunId", err)
-	}
-	numberInJobPublicValue, err := int64FromWire(w.NumberInJob)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.NumberInJob", err)
-	}
-	originalAttemptRunIdPublicValue, err := int64FromWire(w.OriginalAttemptRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.OriginalAttemptRunId", err)
-	}
-	statePublicValue, err := RunStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.State", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Schedule", err)
-	}
-	clusterSpecPublicValue, err := ClusterSpecToSDK(w.ClusterSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.ClusterSpec", err)
-	}
-	clusterInstancePublicValue, err := ClusterInstanceToSDK(w.ClusterInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.ClusterInstance", err)
-	}
-	jobParametersPublicValue, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.JobParameters", err)
-	}
-	overridingParametersPublicValue, err := RunParametersToSDK(w.OverridingParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.OverridingParameters", err)
-	}
-	triggerInfoPublicValue, err := RunTriggerInfoToSDK(w.TriggerInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.TriggerInfo", err)
-	}
-	tasksPublicValue, err := convertSlice(w.Tasks, RunTaskToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Tasks", err)
-	}
-	jobClustersPublicValue, err := convertSlice(w.JobClusters, JobClusterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.JobClusters", err)
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.GitSource", err)
-	}
-	repairHistoryPublicValue, err := convertSlice(w.RepairHistory, RepairToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.RepairHistory", err)
-	}
-	statusPublicValue, err := RunStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.Status", err)
-	}
-	jobRunIdPublicValue, err := int64FromWire(w.JobRunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.JobRunId", err)
-	}
-	environmentVariablesPublicValue, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.EnvironmentVariables", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.StartTime", err)
-	}
-	setupDurationPublicValue, err := int64FromWire(w.SetupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.SetupDuration", err)
-	}
-	executionDurationPublicValue, err := int64FromWire(w.ExecutionDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.ExecutionDuration", err)
-	}
-	cleanupDurationPublicValue, err := int64FromWire(w.CleanupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.CleanupDuration", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.EndTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.RunDuration", err)
-	}
-	queueDurationPublicValue, err := int64FromWire(w.QueueDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Run.QueueDuration", err)
-	}
-	return &sdk.Run{
-		JobId:                      jobIdPublicValue,
-		RunId:                      runIdPublicValue,
-		CreatorUserName:            w.CreatorUserName,
-		NumberInJob:                numberInJobPublicValue,
-		OriginalAttemptRunId:       originalAttemptRunIdPublicValue,
-		State:                      statePublicValue,
-		Schedule:                   schedulePublicValue,
-		ClusterSpec:                clusterSpecPublicValue,
-		ClusterInstance:            clusterInstancePublicValue,
-		JobParameters:              jobParametersPublicValue,
-		OverridingParameters:       overridingParametersPublicValue,
-		Trigger:                    w.Trigger,
-		TriggerInfo:                triggerInfoPublicValue,
-		RunName:                    w.RunName,
-		RunPageUrl:                 w.RunPageUrl,
-		RunType:                    w.RunType,
-		Tasks:                      tasksPublicValue,
-		Description:                w.Description,
-		AttemptNumber:              w.AttemptNumber,
-		JobClusters:                jobClustersPublicValue,
-		GitSource:                  gitSourcePublicValue,
-		RepairHistory:              repairHistoryPublicValue,
-		Status:                     statusPublicValue,
-		JobRunId:                   jobRunIdPublicValue,
-		HasMore:                    w.HasMore,
-		EffectivePerformanceTarget: w.EffectivePerformanceTarget,
-		EffectiveUsagePolicyId:     w.EffectiveUsagePolicyId,
-		EnvironmentVariables:       environmentVariablesPublicValue,
-		DeploymentId:               w.DeploymentId,
-		VersionId:                  w.VersionId,
-		StartTime:                  startTimePublicValue,
-		SetupDuration:              setupDurationPublicValue,
-		ExecutionDuration:          executionDurationPublicValue,
-		CleanupDuration:            cleanupDurationPublicValue,
-		EndTime:                    endTimePublicValue,
-		RunDuration:                runDurationPublicValue,
-		QueueDuration:              queueDurationPublicValue,
-	}, nil
-}
-
 type Run_JobLevelParameters struct {
 	// The name of the parameter
 	Name *string `json:"name,omitempty"`
@@ -7531,17 +3141,6 @@ type Run_JobLevelParameters struct {
 	Default *string `json:"default,omitempty"`
 	// The value used in the run
 	Value *string `json:"value,omitempty"`
-}
-
-func Run_JobLevelParametersToSDK(w *Run_JobLevelParameters) (*sdk.Run_JobLevelParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Run_JobLevelParameters{
-		Name:    w.Name,
-		Default: w.Default,
-		Value:   w.Value,
-	}, nil
 }
 
 type RunJobTask struct {
@@ -7633,74 +3232,9 @@ type RunJobTask struct {
 	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
-func RunJobTaskFromSDK(v *sdk.RunJobTask) (*RunJobTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunJobTask.JobId", err)
-	}
-	pipelineParamsWireValue, err := PipelineParametersFromSDK(v.PipelineParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunJobTask.PipelineParams", err)
-	}
-	return &RunJobTask{
-		JobId:             jobIdWireValue,
-		JobParameters:     v.JobParameters,
-		PipelineParams:    pipelineParamsWireValue,
-		JarParams:         v.JarParams,
-		NotebookParams:    v.NotebookParams,
-		PythonParams:      v.PythonParams,
-		SparkSubmitParams: v.SparkSubmitParams,
-		PythonNamedParams: v.PythonNamedParams,
-		SqlParams:         v.SqlParams,
-		DbtCommands:       v.DbtCommands,
-	}, nil
-}
-
-func RunJobTaskToSDK(w *RunJobTask) (*sdk.RunJobTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	jobIdPublicValue, err := int64FromWire(w.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunJobTask.JobId", err)
-	}
-	pipelineParamsPublicValue, err := PipelineParametersToSDK(w.PipelineParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunJobTask.PipelineParams", err)
-	}
-	return &sdk.RunJobTask{
-		JobId:             jobIdPublicValue,
-		JobParameters:     w.JobParameters,
-		PipelineParams:    pipelineParamsPublicValue,
-		JarParams:         w.JarParams,
-		NotebookParams:    w.NotebookParams,
-		PythonParams:      w.PythonParams,
-		SparkSubmitParams: w.SparkSubmitParams,
-		PythonNamedParams: w.PythonNamedParams,
-		SqlParams:         w.SqlParams,
-		DbtCommands:       w.DbtCommands,
-	}, nil
-}
-
 type RunJobTask_RunJobTaskOutput struct {
 	// The run id of the triggered job run
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func RunJobTask_RunJobTaskOutputToSDK(w *RunJobTask_RunJobTaskOutput) (*sdk.RunJobTask_RunJobTaskOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunJobTask_RunJobTaskOutput.RunId", err)
-	}
-	return &sdk.RunJobTask_RunJobTaskOutput{
-		RunId: runIdPublicValue,
-	}, nil
 }
 
 type RunNowRequest struct {
@@ -7824,40 +3358,6 @@ type RunNowRequest struct {
 	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
-func RunNowRequestFromSDK(v *sdk.RunNowRequest) (*RunNowRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunNowRequest.JobId", err)
-	}
-	queueWireValue, err := QueueSettingsFromSDK(v.Queue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunNowRequest.Queue", err)
-	}
-	pipelineParamsWireValue, err := PipelineParametersFromSDK(v.PipelineParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunNowRequest.PipelineParams", err)
-	}
-	return &RunNowRequest{
-		JobId:             jobIdWireValue,
-		JobParameters:     v.JobParameters,
-		IdempotencyToken:  v.IdempotencyToken,
-		Queue:             queueWireValue,
-		Only:              v.Only,
-		PerformanceTarget: v.PerformanceTarget,
-		PipelineParams:    pipelineParamsWireValue,
-		JarParams:         v.JarParams,
-		NotebookParams:    v.NotebookParams,
-		PythonParams:      v.PythonParams,
-		SparkSubmitParams: v.SparkSubmitParams,
-		PythonNamedParams: v.PythonNamedParams,
-		SqlParams:         v.SqlParams,
-		DbtCommands:       v.DbtCommands,
-	}, nil
-}
-
 // Run was started successfully..
 type RunNowResponse struct {
 	// The globally unique ID of the newly triggered run.
@@ -7865,24 +3365,6 @@ type RunNowResponse struct {
 	// A unique identifier for this job run. This is set to the same value as
 	// `run_id`.
 	NumberInJob *int64 `json:"number_in_job,omitempty"`
-}
-
-func RunNowResponseToSDK(w *RunNowResponse) (*sdk.RunNowResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunNowResponse.RunId", err)
-	}
-	numberInJobPublicValue, err := int64FromWire(w.NumberInJob)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunNowResponse.NumberInJob", err)
-	}
-	return &sdk.RunNowResponse{
-		RunId:       runIdPublicValue,
-		NumberInJob: numberInJobPublicValue,
-	}, nil
 }
 
 type RunParameters struct {
@@ -7970,26 +3452,6 @@ type RunParameters struct {
 	DbtCommands []string `json:"dbt_commands,omitempty"`
 }
 
-func RunParametersToSDK(w *RunParameters) (*sdk.RunParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pipelineParamsPublicValue, err := PipelineParametersToSDK(w.PipelineParams)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunParameters.PipelineParams", err)
-	}
-	return &sdk.RunParameters{
-		PipelineParams:    pipelineParamsPublicValue,
-		JarParams:         w.JarParams,
-		NotebookParams:    w.NotebookParams,
-		PythonParams:      w.PythonParams,
-		SparkSubmitParams: w.SparkSubmitParams,
-		PythonNamedParams: w.PythonNamedParams,
-		SqlParams:         w.SqlParams,
-		DbtCommands:       w.DbtCommands,
-	}, nil
-}
-
 // The current state of the run..
 type RunState struct {
 	// A value indicating the run's current lifecycle state. This field is always
@@ -8010,19 +3472,6 @@ type RunState struct {
 	QueueReason *string `json:"queue_reason,omitempty"`
 }
 
-func RunStateToSDK(w *RunState) (*sdk.RunState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RunState{
-		LifeCycleState:          w.LifeCycleState,
-		ResultState:             w.ResultState,
-		StateMessage:            w.StateMessage,
-		UserCancelledOrTimedout: w.UserCancelledOrTimedout,
-		QueueReason:             w.QueueReason,
-	}, nil
-}
-
 // The current status of the run.
 type RunStatus struct {
 	State RunLifecycleStateV2_State `json:"state,omitempty"`
@@ -8031,25 +3480,6 @@ type RunStatus struct {
 	TerminationDetails *TerminationDetails `json:"termination_details,omitempty"`
 	// If the run was queued, details about the reason for queuing the run.
 	QueueDetails *QueueDetails `json:"queue_details,omitempty"`
-}
-
-func RunStatusToSDK(w *RunStatus) (*sdk.RunStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	terminationDetailsPublicValue, err := TerminationDetailsToSDK(w.TerminationDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunStatus.TerminationDetails", err)
-	}
-	queueDetailsPublicValue, err := QueueDetailsToSDK(w.QueueDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunStatus.QueueDetails", err)
-	}
-	return &sdk.RunStatus{
-		State:              w.State,
-		TerminationDetails: terminationDetailsPublicValue,
-		QueueDetails:       queueDetailsPublicValue,
-	}, nil
 }
 
 // Used when outputting a child run, in GetRun or ListRuns..
@@ -8211,355 +3641,6 @@ type RunTask struct {
 	QueueDuration *int64 `json:"queue_duration,omitempty"`
 }
 
-func RunTaskToSDK(w *RunTask) (*sdk.RunTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	environmentRefMembers := 0
-	if w.EnvironmentKey != nil {
-		environmentRefMembers++
-	}
-	if environmentRefMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.EnvironmentRef")
-	}
-	taskMembers := 0
-	if w.NotebookTask != nil {
-		taskMembers++
-	}
-	if w.SparkJarTask != nil {
-		taskMembers++
-	}
-	if w.SparkPythonTask != nil {
-		taskMembers++
-	}
-	if w.SparkSubmitTask != nil {
-		taskMembers++
-	}
-	if w.PipelineTask != nil {
-		taskMembers++
-	}
-	if w.PythonWheelTask != nil {
-		taskMembers++
-	}
-	if w.DbtTask != nil {
-		taskMembers++
-	}
-	if w.SqlTask != nil {
-		taskMembers++
-	}
-	if w.RunJobTask != nil {
-		taskMembers++
-	}
-	if w.ConditionTask != nil {
-		taskMembers++
-	}
-	if w.ForEachTask != nil {
-		taskMembers++
-	}
-	if w.CleanRoomsNotebookTask != nil {
-		taskMembers++
-	}
-	if w.GenAiComputeTask != nil {
-		taskMembers++
-	}
-	if w.AlertTask != nil {
-		taskMembers++
-	}
-	if w.PowerBiTask != nil {
-		taskMembers++
-	}
-	if w.DashboardTask != nil {
-		taskMembers++
-	}
-	if w.DbtCloudTask != nil {
-		taskMembers++
-	}
-	if w.DbtPlatformTask != nil {
-		taskMembers++
-	}
-	if w.PythonOperatorTask != nil {
-		taskMembers++
-	}
-	if w.AiRuntimeTask != nil {
-		taskMembers++
-	}
-	if taskMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Task")
-	}
-	specMembers := 0
-	if w.ExistingClusterId != nil {
-		specMembers++
-	}
-	if w.NewCluster != nil {
-		specMembers++
-	}
-	if w.JobClusterKey != nil {
-		specMembers++
-	}
-	if specMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Spec")
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.RunId", err)
-	}
-	statePublicValue, err := RunStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.State", err)
-	}
-	clusterInstancePublicValue, err := ClusterInstanceToSDK(w.ClusterInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.ClusterInstance", err)
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.GitSource", err)
-	}
-	resolvedValuesPublicValue, err := ResolvedValuesToSDK(w.ResolvedValues)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.ResolvedValues", err)
-	}
-	statusPublicValue, err := RunStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.Status", err)
-	}
-	dependsOnPublicValue, err := convertSlice(w.DependsOn, TaskDependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.DependsOn", err)
-	}
-	emailNotificationsPublicValue, err := JobEmailNotificationsToSDK(w.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.EmailNotifications", err)
-	}
-	healthPublicValue, err := JobsHealthRulesToSDK(w.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.Health", err)
-	}
-	notificationSettingsPublicValue, err := NotificationSettingsToSDK(w.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.NotificationSettings", err)
-	}
-	webhookNotificationsPublicValue, err := WebhookNotificationsToSDK(w.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.WebhookNotifications", err)
-	}
-	computePublicValue, err := ComputeToSDK(w.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.Compute", err)
-	}
-	librariesPublicValue, err := convertSlice(w.Libraries, LibraryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.Libraries", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.StartTime", err)
-	}
-	setupDurationPublicValue, err := int64FromWire(w.SetupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.SetupDuration", err)
-	}
-	executionDurationPublicValue, err := int64FromWire(w.ExecutionDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.ExecutionDuration", err)
-	}
-	cleanupDurationPublicValue, err := int64FromWire(w.CleanupDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.CleanupDuration", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.EndTime", err)
-	}
-	runDurationPublicValue, err := int64FromWire(w.RunDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.RunDuration", err)
-	}
-	queueDurationPublicValue, err := int64FromWire(w.QueueDuration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTask.QueueDuration", err)
-	}
-	environmentRefSelection := (&sdk.RunTask{}).EnvironmentRef
-	switch {
-	case w.EnvironmentKey != nil:
-		environmentRefSelection = &sdk.RunTask_EnvironmentRef_EnvironmentKey{EnvironmentKey: *w.EnvironmentKey}
-	}
-	taskSelection := (&sdk.RunTask{}).Task
-	switch {
-	case w.NotebookTask != nil:
-		taskNotebookTaskConverted, err := NotebookTaskToSDK(w.NotebookTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.NotebookTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_NotebookTask{NotebookTask: *taskNotebookTaskConverted}
-	case w.SparkJarTask != nil:
-		taskSparkJarTaskConverted, err := SparkJarTaskToSDK(w.SparkJarTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.SparkJarTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_SparkJarTask{SparkJarTask: *taskSparkJarTaskConverted}
-	case w.SparkPythonTask != nil:
-		taskSparkPythonTaskConverted, err := SparkPythonTaskToSDK(w.SparkPythonTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.SparkPythonTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_SparkPythonTask{SparkPythonTask: *taskSparkPythonTaskConverted}
-	case w.SparkSubmitTask != nil:
-		taskSparkSubmitTaskConverted, err := SparkSubmitTaskToSDK(w.SparkSubmitTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.SparkSubmitTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_SparkSubmitTask{SparkSubmitTask: *taskSparkSubmitTaskConverted}
-	case w.PipelineTask != nil:
-		taskPipelineTaskConverted, err := PipelineTaskToSDK(w.PipelineTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.PipelineTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_PipelineTask{PipelineTask: *taskPipelineTaskConverted}
-	case w.PythonWheelTask != nil:
-		taskPythonWheelTaskConverted, err := PythonWheelTaskToSDK(w.PythonWheelTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.PythonWheelTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_PythonWheelTask{PythonWheelTask: *taskPythonWheelTaskConverted}
-	case w.DbtTask != nil:
-		taskDbtTaskConverted, err := DbtTaskToSDK(w.DbtTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.DbtTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_DbtTask{DbtTask: *taskDbtTaskConverted}
-	case w.SqlTask != nil:
-		taskSqlTaskConverted, err := SqlTaskToSDK(w.SqlTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.SqlTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_SqlTask{SqlTask: *taskSqlTaskConverted}
-	case w.RunJobTask != nil:
-		taskRunJobTaskConverted, err := RunJobTaskToSDK(w.RunJobTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.RunJobTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_RunJobTask{RunJobTask: *taskRunJobTaskConverted}
-	case w.ConditionTask != nil:
-		taskConditionTaskConverted, err := ConditionTaskToSDK(w.ConditionTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.ConditionTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_ConditionTask{ConditionTask: *taskConditionTaskConverted}
-	case w.ForEachTask != nil:
-		taskForEachTaskConverted, err := ForEachTaskToSDK(w.ForEachTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.ForEachTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_ForEachTask{ForEachTask: *taskForEachTaskConverted}
-	case w.CleanRoomsNotebookTask != nil:
-		taskCleanRoomsNotebookTaskConverted, err := CleanRoomsNotebookTaskToSDK(w.CleanRoomsNotebookTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.CleanRoomsNotebookTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_CleanRoomsNotebookTask{CleanRoomsNotebookTask: *taskCleanRoomsNotebookTaskConverted}
-	case w.GenAiComputeTask != nil:
-		taskGenAiComputeTaskConverted, err := GenAiComputeTaskToSDK(w.GenAiComputeTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.GenAiComputeTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_GenAiComputeTask{GenAiComputeTask: *taskGenAiComputeTaskConverted}
-	case w.AlertTask != nil:
-		taskAlertTaskConverted, err := AlertTaskToSDK(w.AlertTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.AlertTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_AlertTask{AlertTask: *taskAlertTaskConverted}
-	case w.PowerBiTask != nil:
-		taskPowerBiTaskConverted, err := PowerBiTaskToSDK(w.PowerBiTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.PowerBiTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_PowerBiTask{PowerBiTask: *taskPowerBiTaskConverted}
-	case w.DashboardTask != nil:
-		taskDashboardTaskConverted, err := DashboardTaskToSDK(w.DashboardTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.DashboardTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_DashboardTask{DashboardTask: *taskDashboardTaskConverted}
-	case w.DbtCloudTask != nil:
-		taskDbtCloudTaskConverted, err := DbtCloudTaskToSDK(w.DbtCloudTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.DbtCloudTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_DbtCloudTask{DbtCloudTask: *taskDbtCloudTaskConverted}
-	case w.DbtPlatformTask != nil:
-		taskDbtPlatformTaskConverted, err := DbtPlatformTaskToSDK(w.DbtPlatformTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.DbtPlatformTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_DbtPlatformTask{DbtPlatformTask: *taskDbtPlatformTaskConverted}
-	case w.PythonOperatorTask != nil:
-		taskPythonOperatorTaskConverted, err := PythonOperatorTaskToSDK(w.PythonOperatorTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.PythonOperatorTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_PythonOperatorTask{PythonOperatorTask: *taskPythonOperatorTaskConverted}
-	case w.AiRuntimeTask != nil:
-		taskAiRuntimeTaskConverted, err := AiRuntimeTaskToSDK(w.AiRuntimeTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Task.AiRuntimeTask", err)
-		}
-		taskSelection = &sdk.RunTask_Task_AiRuntimeTask{AiRuntimeTask: *taskAiRuntimeTaskConverted}
-	}
-	specSelection := (&sdk.RunTask{}).Spec
-	switch {
-	case w.ExistingClusterId != nil:
-		specSelection = &sdk.RunTask_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
-	case w.NewCluster != nil:
-		specNewClusterConverted, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "RunTask.Spec.NewCluster", err)
-		}
-		specSelection = &sdk.RunTask_Spec_NewCluster{NewCluster: *specNewClusterConverted}
-	case w.JobClusterKey != nil:
-		specSelection = &sdk.RunTask_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
-	}
-	return &sdk.RunTask{
-		RunId:                      runIdPublicValue,
-		State:                      statePublicValue,
-		RunPageUrl:                 w.RunPageUrl,
-		ClusterInstance:            clusterInstancePublicValue,
-		AttemptNumber:              w.AttemptNumber,
-		GitSource:                  gitSourcePublicValue,
-		ResolvedValues:             resolvedValuesPublicValue,
-		Status:                     statusPublicValue,
-		EffectivePerformanceTarget: w.EffectivePerformanceTarget,
-		TaskKey:                    w.TaskKey,
-		Description:                w.Description,
-		DependsOn:                  dependsOnPublicValue,
-		RunIf:                      w.RunIf,
-		TimeoutSeconds:             w.TimeoutSeconds,
-		EmailNotifications:         emailNotificationsPublicValue,
-		Health:                     healthPublicValue,
-		NotificationSettings:       notificationSettingsPublicValue,
-		WebhookNotifications:       webhookNotificationsPublicValue,
-		Disabled:                   w.Disabled,
-		Compute:                    computePublicValue,
-		EnvironmentVariablesKey:    w.EnvironmentVariablesKey,
-		Libraries:                  librariesPublicValue,
-		MaxRetries:                 w.MaxRetries,
-		MinRetryIntervalMillis:     w.MinRetryIntervalMillis,
-		RetryOnTimeout:             w.RetryOnTimeout,
-		DisableAutoOptimization:    w.DisableAutoOptimization,
-		StartTime:                  startTimePublicValue,
-		SetupDuration:              setupDurationPublicValue,
-		ExecutionDuration:          executionDurationPublicValue,
-		CleanupDuration:            cleanupDurationPublicValue,
-		EndTime:                    endTimePublicValue,
-		RunDuration:                runDurationPublicValue,
-		QueueDuration:              queueDurationPublicValue,
-		EnvironmentRef:             environmentRefSelection,
-		Task:                       taskSelection,
-		Spec:                       specSelection,
-	}, nil
-}
-
 type RunTaskSettings struct {
 	// A unique name for the task. This field is used to refer to this task from
 	// other tasks. This field is required and must be unique within its parent job.
@@ -8647,326 +3728,12 @@ type RunTaskSettings struct {
 	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
 }
 
-func RunTaskSettingsFromSDK(v *sdk.RunTaskSettings) (*RunTaskSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dependsOnWireValue, err := convertSlice(v.DependsOn, TaskDependencyFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.DependsOn", err)
-	}
-	emailNotificationsWireValue, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.EmailNotifications", err)
-	}
-	healthWireValue, err := JobsHealthRulesFromSDK(v.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Health", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.NotificationSettings", err)
-	}
-	webhookNotificationsWireValue, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.WebhookNotifications", err)
-	}
-	computeWireValue, err := ComputeFromSDK(v.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Compute", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Libraries", err)
-	}
-	var environmentRefEnvironmentKeyWire *string
-	switch value := v.EnvironmentRef.(type) {
-	case nil:
-	case *sdk.RunTaskSettings_EnvironmentRef_EnvironmentKey:
-		if value != nil {
-			environmentRefEnvironmentKeyWire = new(value.EnvironmentKey)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RunTaskSettings.EnvironmentRef", value)
-	}
-	var taskNotebookTaskWire *NotebookTask
-	var taskSparkJarTaskWire *SparkJarTask
-	var taskSparkPythonTaskWire *SparkPythonTask
-	var taskSparkSubmitTaskWire *SparkSubmitTask
-	var taskPipelineTaskWire *PipelineTask
-	var taskPythonWheelTaskWire *PythonWheelTask
-	var taskDbtTaskWire *DbtTask
-	var taskSqlTaskWire *SqlTask
-	var taskRunJobTaskWire *RunJobTask
-	var taskConditionTaskWire *ConditionTask
-	var taskForEachTaskWire *ForEachTask
-	var taskCleanRoomsNotebookTaskWire *CleanRoomsNotebookTask
-	var taskGenAiComputeTaskWire *GenAiComputeTask
-	var taskAlertTaskWire *AlertTask
-	var taskPowerBiTaskWire *PowerBiTask
-	var taskDashboardTaskWire *DashboardTask
-	var taskDbtCloudTaskWire *DbtCloudTask
-	var taskDbtPlatformTaskWire *DbtPlatformTask
-	var taskPythonOperatorTaskWire *PythonOperatorTask
-	var taskAiRuntimeTaskWire *AiRuntimeTask
-	switch value := v.Task.(type) {
-	case nil:
-	case *sdk.RunTaskSettings_Task_NotebookTask:
-		if value != nil {
-			taskNotebookTaskConverted, err := NotebookTaskFromSDK(&value.NotebookTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.NotebookTask", err)
-			}
-			taskNotebookTaskWire = taskNotebookTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_SparkJarTask:
-		if value != nil {
-			taskSparkJarTaskConverted, err := SparkJarTaskFromSDK(&value.SparkJarTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.SparkJarTask", err)
-			}
-			taskSparkJarTaskWire = taskSparkJarTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_SparkPythonTask:
-		if value != nil {
-			taskSparkPythonTaskConverted, err := SparkPythonTaskFromSDK(&value.SparkPythonTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.SparkPythonTask", err)
-			}
-			taskSparkPythonTaskWire = taskSparkPythonTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_SparkSubmitTask:
-		if value != nil {
-			taskSparkSubmitTaskConverted, err := SparkSubmitTaskFromSDK(&value.SparkSubmitTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.SparkSubmitTask", err)
-			}
-			taskSparkSubmitTaskWire = taskSparkSubmitTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_PipelineTask:
-		if value != nil {
-			taskPipelineTaskConverted, err := PipelineTaskFromSDK(&value.PipelineTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.PipelineTask", err)
-			}
-			taskPipelineTaskWire = taskPipelineTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_PythonWheelTask:
-		if value != nil {
-			taskPythonWheelTaskConverted, err := PythonWheelTaskFromSDK(&value.PythonWheelTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.PythonWheelTask", err)
-			}
-			taskPythonWheelTaskWire = taskPythonWheelTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_DbtTask:
-		if value != nil {
-			taskDbtTaskConverted, err := DbtTaskFromSDK(&value.DbtTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.DbtTask", err)
-			}
-			taskDbtTaskWire = taskDbtTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_SqlTask:
-		if value != nil {
-			taskSqlTaskConverted, err := SqlTaskFromSDK(&value.SqlTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.SqlTask", err)
-			}
-			taskSqlTaskWire = taskSqlTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_RunJobTask:
-		if value != nil {
-			taskRunJobTaskConverted, err := RunJobTaskFromSDK(&value.RunJobTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.RunJobTask", err)
-			}
-			taskRunJobTaskWire = taskRunJobTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_ConditionTask:
-		if value != nil {
-			taskConditionTaskConverted, err := ConditionTaskFromSDK(&value.ConditionTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.ConditionTask", err)
-			}
-			taskConditionTaskWire = taskConditionTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_ForEachTask:
-		if value != nil {
-			taskForEachTaskConverted, err := ForEachTaskFromSDK(&value.ForEachTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.ForEachTask", err)
-			}
-			taskForEachTaskWire = taskForEachTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_CleanRoomsNotebookTask:
-		if value != nil {
-			taskCleanRoomsNotebookTaskConverted, err := CleanRoomsNotebookTaskFromSDK(&value.CleanRoomsNotebookTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.CleanRoomsNotebookTask", err)
-			}
-			taskCleanRoomsNotebookTaskWire = taskCleanRoomsNotebookTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_GenAiComputeTask:
-		if value != nil {
-			taskGenAiComputeTaskConverted, err := GenAiComputeTaskFromSDK(&value.GenAiComputeTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.GenAiComputeTask", err)
-			}
-			taskGenAiComputeTaskWire = taskGenAiComputeTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_AlertTask:
-		if value != nil {
-			taskAlertTaskConverted, err := AlertTaskFromSDK(&value.AlertTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.AlertTask", err)
-			}
-			taskAlertTaskWire = taskAlertTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_PowerBiTask:
-		if value != nil {
-			taskPowerBiTaskConverted, err := PowerBiTaskFromSDK(&value.PowerBiTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.PowerBiTask", err)
-			}
-			taskPowerBiTaskWire = taskPowerBiTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_DashboardTask:
-		if value != nil {
-			taskDashboardTaskConverted, err := DashboardTaskFromSDK(&value.DashboardTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.DashboardTask", err)
-			}
-			taskDashboardTaskWire = taskDashboardTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_DbtCloudTask:
-		if value != nil {
-			taskDbtCloudTaskConverted, err := DbtCloudTaskFromSDK(&value.DbtCloudTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.DbtCloudTask", err)
-			}
-			taskDbtCloudTaskWire = taskDbtCloudTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_DbtPlatformTask:
-		if value != nil {
-			taskDbtPlatformTaskConverted, err := DbtPlatformTaskFromSDK(&value.DbtPlatformTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.DbtPlatformTask", err)
-			}
-			taskDbtPlatformTaskWire = taskDbtPlatformTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_PythonOperatorTask:
-		if value != nil {
-			taskPythonOperatorTaskConverted, err := PythonOperatorTaskFromSDK(&value.PythonOperatorTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.PythonOperatorTask", err)
-			}
-			taskPythonOperatorTaskWire = taskPythonOperatorTaskConverted
-		}
-	case *sdk.RunTaskSettings_Task_AiRuntimeTask:
-		if value != nil {
-			taskAiRuntimeTaskConverted, err := AiRuntimeTaskFromSDK(&value.AiRuntimeTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task.AiRuntimeTask", err)
-			}
-			taskAiRuntimeTaskWire = taskAiRuntimeTaskConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RunTaskSettings.Task", value)
-	}
-	var specExistingClusterIdWire *string
-	var specNewClusterWire *ClusterSpec_NewCluster
-	var specJobClusterKeyWire *string
-	switch value := v.Spec.(type) {
-	case nil:
-	case *sdk.RunTaskSettings_Spec_ExistingClusterId:
-		if value != nil {
-			specExistingClusterIdWire = new(value.ExistingClusterId)
-		}
-	case *sdk.RunTaskSettings_Spec_NewCluster:
-		if value != nil {
-			specNewClusterConverted, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Spec.NewCluster", err)
-			}
-			specNewClusterWire = specNewClusterConverted
-		}
-	case *sdk.RunTaskSettings_Spec_JobClusterKey:
-		if value != nil {
-			specJobClusterKeyWire = new(value.JobClusterKey)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RunTaskSettings.Spec", value)
-	}
-	return &RunTaskSettings{
-		TaskKey:                 v.TaskKey,
-		Description:             v.Description,
-		DependsOn:               dependsOnWireValue,
-		RunIf:                   v.RunIf,
-		TimeoutSeconds:          v.TimeoutSeconds,
-		EmailNotifications:      emailNotificationsWireValue,
-		Health:                  healthWireValue,
-		NotificationSettings:    notificationSettingsWireValue,
-		WebhookNotifications:    webhookNotificationsWireValue,
-		EnvironmentKey:          environmentRefEnvironmentKeyWire,
-		Disabled:                v.Disabled,
-		Compute:                 computeWireValue,
-		EnvironmentVariablesKey: v.EnvironmentVariablesKey,
-		NotebookTask:            taskNotebookTaskWire,
-		SparkJarTask:            taskSparkJarTaskWire,
-		SparkPythonTask:         taskSparkPythonTaskWire,
-		SparkSubmitTask:         taskSparkSubmitTaskWire,
-		PipelineTask:            taskPipelineTaskWire,
-		PythonWheelTask:         taskPythonWheelTaskWire,
-		DbtTask:                 taskDbtTaskWire,
-		SqlTask:                 taskSqlTaskWire,
-		RunJobTask:              taskRunJobTaskWire,
-		ConditionTask:           taskConditionTaskWire,
-		ForEachTask:             taskForEachTaskWire,
-		CleanRoomsNotebookTask:  taskCleanRoomsNotebookTaskWire,
-		GenAiComputeTask:        taskGenAiComputeTaskWire,
-		AlertTask:               taskAlertTaskWire,
-		PowerBiTask:             taskPowerBiTaskWire,
-		DashboardTask:           taskDashboardTaskWire,
-		DbtCloudTask:            taskDbtCloudTaskWire,
-		DbtPlatformTask:         taskDbtPlatformTaskWire,
-		PythonOperatorTask:      taskPythonOperatorTaskWire,
-		AiRuntimeTask:           taskAiRuntimeTaskWire,
-		ExistingClusterId:       specExistingClusterIdWire,
-		NewCluster:              specNewClusterWire,
-		JobClusterKey:           specJobClusterKeyWire,
-		Libraries:               librariesWireValue,
-		MaxRetries:              v.MaxRetries,
-		MinRetryIntervalMillis:  v.MinRetryIntervalMillis,
-		RetryOnTimeout:          v.RetryOnTimeout,
-		DisableAutoOptimization: v.DisableAutoOptimization,
-	}, nil
-}
-
 // Additional details about what triggered the run.
 type RunTriggerInfo struct {
 	// SQL condition evaluation details for this run
 	SqlCondition *SqlConditionRunInfoDetails `json:"sql_condition,omitempty"`
 	// The run id of the Run Job task run
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func RunTriggerInfoToSDK(w *RunTriggerInfo) (*sdk.RunTriggerInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlConditionPublicValue, err := SqlConditionRunInfoDetailsToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTriggerInfo.SqlCondition", err)
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RunTriggerInfo.RunId", err)
-	}
-	return &sdk.RunTriggerInfo{
-		SqlCondition: sqlConditionPublicValue,
-		RunId:        runIdPublicValue,
-	}, nil
 }
 
 // A storage location in Amazon S3.
@@ -9001,46 +3768,9 @@ type S3StorageInfo struct {
 	CannedAcl *string `json:"canned_acl,omitempty"`
 }
 
-func S3StorageInfoFromSDK(v *sdk.S3StorageInfo) (*S3StorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &S3StorageInfo{
-		Destination:      v.Destination,
-		Region:           v.Region,
-		Endpoint:         v.Endpoint,
-		EnableEncryption: v.EnableEncryption,
-		EncryptionType:   v.EncryptionType,
-		KmsKey:           v.KmsKey,
-		CannedAcl:        v.CannedAcl,
-	}, nil
-}
-
-func S3StorageInfoToSDK(w *S3StorageInfo) (*sdk.S3StorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.S3StorageInfo{
-		Destination:      w.Destination,
-		Region:           w.Region,
-		Endpoint:         w.Endpoint,
-		EnableEncryption: w.EnableEncryption,
-		EncryptionType:   w.EncryptionType,
-		KmsKey:           w.KmsKey,
-		CannedAcl:        w.CannedAcl,
-	}, nil
-}
-
 // Runtime state for a schedule trigger. Currently empty because schedule
 // triggers do not expose any trigger-specific runtime state..
 type ScheduleTriggerState struct {
-}
-
-func ScheduleTriggerStateToSDK(w *ScheduleTriggerState) (*sdk.ScheduleTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ScheduleTriggerState{}, nil
 }
 
 type SparkJarTask struct {
@@ -9064,30 +3794,6 @@ type SparkJarTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 	// Deprecated. A value of `false` is no longer supported.
 	RunAsRepl *bool `json:"run_as_repl,omitempty"`
-}
-
-func SparkJarTaskFromSDK(v *sdk.SparkJarTask) (*SparkJarTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparkJarTask{
-		JarUri:        v.JarUri,
-		MainClassName: v.MainClassName,
-		Parameters:    v.Parameters,
-		RunAsRepl:     v.RunAsRepl,
-	}, nil
-}
-
-func SparkJarTaskToSDK(w *SparkJarTask) (*sdk.SparkJarTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparkJarTask{
-		JarUri:        w.JarUri,
-		MainClassName: w.MainClassName,
-		Parameters:    w.Parameters,
-		RunAsRepl:     w.RunAsRepl,
-	}, nil
 }
 
 type SparkPythonTask struct {
@@ -9114,28 +3820,6 @@ type SparkPythonTask struct {
 	Source Source `json:"source,omitempty"`
 }
 
-func SparkPythonTaskFromSDK(v *sdk.SparkPythonTask) (*SparkPythonTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparkPythonTask{
-		PythonFile: v.PythonFile,
-		Parameters: v.Parameters,
-		Source:     v.Source,
-	}, nil
-}
-
-func SparkPythonTaskToSDK(w *SparkPythonTask) (*sdk.SparkPythonTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparkPythonTask{
-		PythonFile: w.PythonFile,
-		Parameters: w.Parameters,
-		Source:     w.Source,
-	}, nil
-}
-
 type SparkSubmitTask struct {
 	// Command-line parameters passed to spark submit.
 	//
@@ -9144,45 +3828,9 @@ type SparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
-func SparkSubmitTaskFromSDK(v *sdk.SparkSubmitTask) (*SparkSubmitTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparkSubmitTask{
-		Parameters: v.Parameters,
-	}, nil
-}
-
-func SparkSubmitTaskToSDK(w *SparkSubmitTask) (*sdk.SparkSubmitTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparkSubmitTask{
-		Parameters: w.Parameters,
-	}, nil
-}
-
 type SparseCheckout struct {
 	// List of patterns to include for sparse checkout.
 	Patterns []string `json:"patterns,omitempty"`
-}
-
-func SparseCheckoutFromSDK(v *sdk.SparseCheckout) (*SparseCheckout, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparseCheckout{
-		Patterns: v.Patterns,
-	}, nil
-}
-
-func SparseCheckoutToSDK(w *SparseCheckout) (*sdk.SparseCheckout, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparseCheckout{
-		Patterns: w.Patterns,
-	}, nil
 }
 
 type SqlConditionConfiguration struct {
@@ -9200,28 +3848,6 @@ type SqlConditionConfiguration struct {
 	TriggerMode SqlConditionTriggerMode `json:"trigger_mode,omitempty"`
 }
 
-func SqlConditionConfigurationFromSDK(v *sdk.SqlConditionConfiguration) (*SqlConditionConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SqlConditionConfiguration{
-		SqlQueryId:  v.SqlQueryId,
-		WarehouseId: v.WarehouseId,
-		TriggerMode: v.TriggerMode,
-	}, nil
-}
-
-func SqlConditionConfigurationToSDK(w *SqlConditionConfiguration) (*sdk.SqlConditionConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlConditionConfiguration{
-		SqlQueryId:  w.SqlQueryId,
-		WarehouseId: w.WarehouseId,
-		TriggerMode: w.TriggerMode,
-	}, nil
-}
-
 // SQL condition evaluation details captured at the time the run was triggered.
 type SqlConditionRunInfoDetails struct {
 	// The SQL statement ID of the condition evaluation, set when the condition is
@@ -9236,17 +3862,6 @@ type SqlConditionRunInfoDetails struct {
 	ConditionEvaluationSqlSessionId *string `json:"condition_evaluation_sql_session_id,omitempty"`
 }
 
-func SqlConditionRunInfoDetailsToSDK(w *SqlConditionRunInfoDetails) (*sdk.SqlConditionRunInfoDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlConditionRunInfoDetails{
-		ConditionEvaluationSqlStatementId: w.ConditionEvaluationSqlStatementId,
-		ConditionEvaluationSatisfied:      w.ConditionEvaluationSatisfied,
-		ConditionEvaluationSqlSessionId:   w.ConditionEvaluationSqlSessionId,
-	}, nil
-}
-
 type SqlConditionState struct {
 	// The SEA statement ID of the SQL statement executed for the latest condition
 	// evaluation. Populated for RESULT_VALUE_CHANGES, which executes the query
@@ -9258,17 +3873,6 @@ type SqlConditionState struct {
 	// The ID of the SQL session, used by UI to track session context. Populated for
 	// QUERY_RETURNS_ROWS, which executes the query through Redash.
 	LatestConditionEvaluationSqlSessionId *string `json:"latest_condition_evaluation_sql_session_id,omitempty"`
-}
-
-func SqlConditionStateToSDK(w *SqlConditionState) (*sdk.SqlConditionState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlConditionState{
-		LatestConditionEvaluationSqlStatementId: w.LatestConditionEvaluationSqlStatementId,
-		LatestConditionEvaluationSatisfied:      w.LatestConditionEvaluationSatisfied,
-		LatestConditionEvaluationSqlSessionId:   w.LatestConditionEvaluationSqlSessionId,
-	}, nil
 }
 
 type SqlTask struct {
@@ -9286,115 +3890,6 @@ type SqlTask struct {
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
-func SqlTaskFromSDK(v *sdk.SqlTask) (*SqlTask, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sqlTaskTypeQueryWire *SqlTaskQuery
-	var sqlTaskTypeDashboardWire *SqlTaskDashboard
-	var sqlTaskTypeAlertWire *SqlTaskAlert
-	var sqlTaskTypeFileWire *SqlTaskFile
-	switch value := v.SqlTaskType.(type) {
-	case nil:
-	case *sdk.SqlTask_SqlTaskType_Query:
-		if value != nil {
-			sqlTaskTypeQueryConverted, err := SqlTaskQueryFromSDK(&value.Query)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Query", err)
-			}
-			sqlTaskTypeQueryWire = sqlTaskTypeQueryConverted
-		}
-	case *sdk.SqlTask_SqlTaskType_Dashboard:
-		if value != nil {
-			sqlTaskTypeDashboardConverted, err := SqlTaskDashboardFromSDK(&value.Dashboard)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Dashboard", err)
-			}
-			sqlTaskTypeDashboardWire = sqlTaskTypeDashboardConverted
-		}
-	case *sdk.SqlTask_SqlTaskType_Alert:
-		if value != nil {
-			sqlTaskTypeAlertConverted, err := SqlTaskAlertFromSDK(&value.Alert)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Alert", err)
-			}
-			sqlTaskTypeAlertWire = sqlTaskTypeAlertConverted
-		}
-	case *sdk.SqlTask_SqlTaskType_File:
-		if value != nil {
-			sqlTaskTypeFileConverted, err := SqlTaskFileFromSDK(&value.File)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.File", err)
-			}
-			sqlTaskTypeFileWire = sqlTaskTypeFileConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SqlTask.SqlTaskType", value)
-	}
-	return &SqlTask{
-		Parameters:  v.Parameters,
-		Query:       sqlTaskTypeQueryWire,
-		Dashboard:   sqlTaskTypeDashboardWire,
-		Alert:       sqlTaskTypeAlertWire,
-		File:        sqlTaskTypeFileWire,
-		WarehouseId: v.WarehouseId,
-	}, nil
-}
-
-func SqlTaskToSDK(w *SqlTask) (*sdk.SqlTask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlTaskTypeMembers := 0
-	if w.Query != nil {
-		sqlTaskTypeMembers++
-	}
-	if w.Dashboard != nil {
-		sqlTaskTypeMembers++
-	}
-	if w.Alert != nil {
-		sqlTaskTypeMembers++
-	}
-	if w.File != nil {
-		sqlTaskTypeMembers++
-	}
-	if sqlTaskTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask.SqlTaskType")
-	}
-	sqlTaskTypeSelection := (&sdk.SqlTask{}).SqlTaskType
-	switch {
-	case w.Query != nil:
-		sqlTaskTypeQueryConverted, err := SqlTaskQueryToSDK(w.Query)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Query", err)
-		}
-		sqlTaskTypeSelection = &sdk.SqlTask_SqlTaskType_Query{Query: *sqlTaskTypeQueryConverted}
-	case w.Dashboard != nil:
-		sqlTaskTypeDashboardConverted, err := SqlTaskDashboardToSDK(w.Dashboard)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Dashboard", err)
-		}
-		sqlTaskTypeSelection = &sdk.SqlTask_SqlTaskType_Dashboard{Dashboard: *sqlTaskTypeDashboardConverted}
-	case w.Alert != nil:
-		sqlTaskTypeAlertConverted, err := SqlTaskAlertToSDK(w.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.Alert", err)
-		}
-		sqlTaskTypeSelection = &sdk.SqlTask_SqlTaskType_Alert{Alert: *sqlTaskTypeAlertConverted}
-	case w.File != nil:
-		sqlTaskTypeFileConverted, err := SqlTaskFileToSDK(w.File)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType.File", err)
-		}
-		sqlTaskTypeSelection = &sdk.SqlTask_SqlTaskType_File{File: *sqlTaskTypeFileConverted}
-	}
-	return &sdk.SqlTask{
-		Parameters:  w.Parameters,
-		WarehouseId: w.WarehouseId,
-		SqlTaskType: sqlTaskTypeSelection,
-	}, nil
-}
-
 type SqlTask_SqlAlertOutput struct {
 	// The text of the SQL query. Can Run permission of the SQL query associated
 	// with the SQL alert is required to view this field.
@@ -9408,42 +3903,11 @@ type SqlTask_SqlAlertOutput struct {
 	AlertState  SqlAlertState_SqlAlertState `json:"alert_state,omitempty"`
 }
 
-func SqlTask_SqlAlertOutputToSDK(w *SqlTask_SqlAlertOutput) (*sdk.SqlTask_SqlAlertOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlStatementsPublicValue, err := convertSlice(w.SqlStatements, SqlTask_SqlStatementOutputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlAlertOutput.SqlStatements", err)
-	}
-	return &sdk.SqlTask_SqlAlertOutput{
-		QueryText:     w.QueryText,
-		SqlStatements: sqlStatementsPublicValue,
-		OutputLink:    w.OutputLink,
-		WarehouseId:   w.WarehouseId,
-		AlertState:    w.AlertState,
-	}, nil
-}
-
 type SqlTask_SqlDashboardOutput struct {
 	// Widgets executed in the run. Only SQL query based widgets are listed.
 	Widgets []SqlTask_SqlDashboardWidgetOutput `json:"widgets,omitempty"`
 	// The canonical identifier of the SQL warehouse.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func SqlTask_SqlDashboardOutputToSDK(w *SqlTask_SqlDashboardOutput) (*sdk.SqlTask_SqlDashboardOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	widgetsPublicValue, err := convertSlice(w.Widgets, SqlTask_SqlDashboardWidgetOutputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardOutput.Widgets", err)
-	}
-	return &sdk.SqlTask_SqlDashboardOutput{
-		Widgets:     widgetsPublicValue,
-		WarehouseId: w.WarehouseId,
-	}, nil
 }
 
 type SqlTask_SqlDashboardWidgetOutput struct {
@@ -9463,94 +3927,15 @@ type SqlTask_SqlDashboardWidgetOutput struct {
 	EndTime *int64 `json:"end_time,omitempty"`
 }
 
-func SqlTask_SqlDashboardWidgetOutputToSDK(w *SqlTask_SqlDashboardWidgetOutput) (*sdk.SqlTask_SqlDashboardWidgetOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	errorPublicValue, err := SqlTask_SqlOutputErrorToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardWidgetOutput.Error", err)
-	}
-	startTimePublicValue, err := int64FromWire(w.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardWidgetOutput.StartTime", err)
-	}
-	endTimePublicValue, err := int64FromWire(w.EndTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardWidgetOutput.EndTime", err)
-	}
-	return &sdk.SqlTask_SqlDashboardWidgetOutput{
-		WidgetId:    w.WidgetId,
-		WidgetTitle: w.WidgetTitle,
-		OutputLink:  w.OutputLink,
-		Status:      w.Status,
-		Error:       errorPublicValue,
-		StartTime:   startTimePublicValue,
-		EndTime:     endTimePublicValue,
-	}, nil
-}
-
 type SqlTask_SqlOutput struct {
 	QueryOutput     *SqlTask_SqlQueryOutput     `json:"query_output,omitempty"`
 	DashboardOutput *SqlTask_SqlDashboardOutput `json:"dashboard_output,omitempty"`
 	AlertOutput     *SqlTask_SqlAlertOutput     `json:"alert_output,omitempty"`
 }
 
-func SqlTask_SqlOutputToSDK(w *SqlTask_SqlOutput) (*sdk.SqlTask_SqlOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlOutputTypeMembers := 0
-	if w.QueryOutput != nil {
-		sqlOutputTypeMembers++
-	}
-	if w.DashboardOutput != nil {
-		sqlOutputTypeMembers++
-	}
-	if w.AlertOutput != nil {
-		sqlOutputTypeMembers++
-	}
-	if sqlOutputTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask_SqlOutput.SqlOutputType")
-	}
-	sqlOutputTypeSelection := (&sdk.SqlTask_SqlOutput{}).SqlOutputType
-	switch {
-	case w.QueryOutput != nil:
-		sqlOutputTypeQueryOutputConverted, err := SqlTask_SqlQueryOutputToSDK(w.QueryOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType.QueryOutput", err)
-		}
-		sqlOutputTypeSelection = &sdk.SqlTask_SqlOutput_SqlOutputType_QueryOutput{QueryOutput: *sqlOutputTypeQueryOutputConverted}
-	case w.DashboardOutput != nil:
-		sqlOutputTypeDashboardOutputConverted, err := SqlTask_SqlDashboardOutputToSDK(w.DashboardOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType.DashboardOutput", err)
-		}
-		sqlOutputTypeSelection = &sdk.SqlTask_SqlOutput_SqlOutputType_DashboardOutput{DashboardOutput: *sqlOutputTypeDashboardOutputConverted}
-	case w.AlertOutput != nil:
-		sqlOutputTypeAlertOutputConverted, err := SqlTask_SqlAlertOutputToSDK(w.AlertOutput)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType.AlertOutput", err)
-		}
-		sqlOutputTypeSelection = &sdk.SqlTask_SqlOutput_SqlOutputType_AlertOutput{AlertOutput: *sqlOutputTypeAlertOutputConverted}
-	}
-	return &sdk.SqlTask_SqlOutput{
-		SqlOutputType: sqlOutputTypeSelection,
-	}, nil
-}
-
 type SqlTask_SqlOutputError struct {
 	// The error message when execution fails.
 	Message *string `json:"message,omitempty"`
-}
-
-func SqlTask_SqlOutputErrorToSDK(w *SqlTask_SqlOutputError) (*sdk.SqlTask_SqlOutputError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlTask_SqlOutputError{
-		Message: w.Message,
-	}, nil
 }
 
 type SqlTask_SqlQueryOutput struct {
@@ -9566,35 +3951,9 @@ type SqlTask_SqlQueryOutput struct {
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
-func SqlTask_SqlQueryOutputToSDK(w *SqlTask_SqlQueryOutput) (*sdk.SqlTask_SqlQueryOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlStatementsPublicValue, err := convertSlice(w.SqlStatements, SqlTask_SqlStatementOutputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlQueryOutput.SqlStatements", err)
-	}
-	return &sdk.SqlTask_SqlQueryOutput{
-		QueryText:     w.QueryText,
-		EndpointId:    w.EndpointId,
-		SqlStatements: sqlStatementsPublicValue,
-		OutputLink:    w.OutputLink,
-		WarehouseId:   w.WarehouseId,
-	}, nil
-}
-
 type SqlTask_SqlStatementOutput struct {
 	// A key that can be used to look up query details.
 	LookupKey *string `json:"lookup_key,omitempty"`
-}
-
-func SqlTask_SqlStatementOutputToSDK(w *SqlTask_SqlStatementOutput) (*sdk.SqlTask_SqlStatementOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlTask_SqlStatementOutput{
-		LookupKey: w.LookupKey,
-	}, nil
 }
 
 type SqlTaskAlert struct {
@@ -9604,36 +3963,6 @@ type SqlTaskAlert struct {
 	Subscriptions []SqlTaskSubscription `json:"subscriptions,omitempty"`
 	// If true, the alert notifications are not sent to subscribers.
 	PauseSubscriptions *bool `json:"pause_subscriptions,omitempty"`
-}
-
-func SqlTaskAlertFromSDK(v *sdk.SqlTaskAlert) (*SqlTaskAlert, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionsWireValue, err := convertSlice(v.Subscriptions, SqlTaskSubscriptionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTaskAlert.Subscriptions", err)
-	}
-	return &SqlTaskAlert{
-		AlertId:            v.AlertId,
-		Subscriptions:      subscriptionsWireValue,
-		PauseSubscriptions: v.PauseSubscriptions,
-	}, nil
-}
-
-func SqlTaskAlertToSDK(w *SqlTaskAlert) (*sdk.SqlTaskAlert, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionsPublicValue, err := convertSlice(w.Subscriptions, SqlTaskSubscriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTaskAlert.Subscriptions", err)
-	}
-	return &sdk.SqlTaskAlert{
-		AlertId:            w.AlertId,
-		Subscriptions:      subscriptionsPublicValue,
-		PauseSubscriptions: w.PauseSubscriptions,
-	}, nil
 }
 
 type SqlTaskDashboard struct {
@@ -9646,38 +3975,6 @@ type SqlTaskDashboard struct {
 	// If true, the dashboard snapshot is not taken, and emails are not sent to
 	// subscribers.
 	PauseSubscriptions *bool `json:"pause_subscriptions,omitempty"`
-}
-
-func SqlTaskDashboardFromSDK(v *sdk.SqlTaskDashboard) (*SqlTaskDashboard, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionsWireValue, err := convertSlice(v.Subscriptions, SqlTaskSubscriptionFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTaskDashboard.Subscriptions", err)
-	}
-	return &SqlTaskDashboard{
-		DashboardId:        v.DashboardId,
-		Subscriptions:      subscriptionsWireValue,
-		CustomSubject:      v.CustomSubject,
-		PauseSubscriptions: v.PauseSubscriptions,
-	}, nil
-}
-
-func SqlTaskDashboardToSDK(w *SqlTaskDashboard) (*sdk.SqlTaskDashboard, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionsPublicValue, err := convertSlice(w.Subscriptions, SqlTaskSubscriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SqlTaskDashboard.Subscriptions", err)
-	}
-	return &sdk.SqlTaskDashboard{
-		DashboardId:        w.DashboardId,
-		Subscriptions:      subscriptionsPublicValue,
-		CustomSubject:      w.CustomSubject,
-		PauseSubscriptions: w.PauseSubscriptions,
-	}, nil
 }
 
 type SqlTaskFile struct {
@@ -9695,124 +3992,13 @@ type SqlTaskFile struct {
 	Source Source `json:"source,omitempty"`
 }
 
-func SqlTaskFileFromSDK(v *sdk.SqlTaskFile) (*SqlTaskFile, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SqlTaskFile{
-		Path:   v.Path,
-		Source: v.Source,
-	}, nil
-}
-
-func SqlTaskFileToSDK(w *SqlTaskFile) (*sdk.SqlTaskFile, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SqlTaskFile{
-		Path:   w.Path,
-		Source: w.Source,
-	}, nil
-}
-
 type SqlTaskQuery struct {
 	QueryId *string `json:"query_id,omitempty"`
-}
-
-func SqlTaskQueryFromSDK(v *sdk.SqlTaskQuery) (*SqlTaskQuery, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var queryTypeQueryIdWire *string
-	switch value := v.QueryType.(type) {
-	case nil:
-	case *sdk.SqlTaskQuery_QueryType_QueryId:
-		if value != nil {
-			queryTypeQueryIdWire = new(value.QueryId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SqlTaskQuery.QueryType", value)
-	}
-	return &SqlTaskQuery{
-		QueryId: queryTypeQueryIdWire,
-	}, nil
-}
-
-func SqlTaskQueryToSDK(w *SqlTaskQuery) (*sdk.SqlTaskQuery, error) {
-	if w == nil {
-		return nil, nil
-	}
-	queryTypeMembers := 0
-	if w.QueryId != nil {
-		queryTypeMembers++
-	}
-	if queryTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskQuery.QueryType")
-	}
-	queryTypeSelection := (&sdk.SqlTaskQuery{}).QueryType
-	switch {
-	case w.QueryId != nil:
-		queryTypeSelection = &sdk.SqlTaskQuery_QueryType_QueryId{QueryId: *w.QueryId}
-	}
-	return &sdk.SqlTaskQuery{
-		QueryType: queryTypeSelection,
-	}, nil
 }
 
 type SqlTaskSubscription struct {
 	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
-}
-
-func SqlTaskSubscriptionFromSDK(v *sdk.SqlTaskSubscription) (*SqlTaskSubscription, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriptionTypeUserNameWire *string
-	var subscriptionTypeDestinationIdWire *string
-	switch value := v.SubscriptionType.(type) {
-	case nil:
-	case *sdk.SqlTaskSubscription_SubscriptionType_UserName:
-		if value != nil {
-			subscriptionTypeUserNameWire = new(value.UserName)
-		}
-	case *sdk.SqlTaskSubscription_SubscriptionType_DestinationId:
-		if value != nil {
-			subscriptionTypeDestinationIdWire = new(value.DestinationId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SqlTaskSubscription.SubscriptionType", value)
-	}
-	return &SqlTaskSubscription{
-		UserName:      subscriptionTypeUserNameWire,
-		DestinationId: subscriptionTypeDestinationIdWire,
-	}, nil
-}
-
-func SqlTaskSubscriptionToSDK(w *SqlTaskSubscription) (*sdk.SqlTaskSubscription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionTypeMembers := 0
-	if w.UserName != nil {
-		subscriptionTypeMembers++
-	}
-	if w.DestinationId != nil {
-		subscriptionTypeMembers++
-	}
-	if subscriptionTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskSubscription.SubscriptionType")
-	}
-	subscriptionTypeSelection := (&sdk.SqlTaskSubscription{}).SubscriptionType
-	switch {
-	case w.UserName != nil:
-		subscriptionTypeSelection = &sdk.SqlTaskSubscription_SubscriptionType_UserName{UserName: *w.UserName}
-	case w.DestinationId != nil:
-		subscriptionTypeSelection = &sdk.SqlTaskSubscription_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
-	}
-	return &sdk.SqlTaskSubscription{
-		SubscriptionType: subscriptionTypeSelection,
-	}, nil
 }
 
 type SubmitRunRequest struct {
@@ -9888,92 +4074,10 @@ type SubmitRunRequest struct {
 	PerformanceTarget PerformanceTarget_PerformanceTarget `json:"performance_target,omitempty"`
 }
 
-func SubmitRunRequestFromSDK(v *sdk.SubmitRunRequest) (*SubmitRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accessControlListWireValue, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.AccessControlList", err)
-	}
-	queueWireValue, err := QueueSettingsFromSDK(v.Queue)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Queue", err)
-	}
-	runAsWireValue, err := JobRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.RunAs", err)
-	}
-	healthWireValue, err := JobsHealthRulesFromSDK(v.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Health", err)
-	}
-	tasksWireValue, err := convertSlice(v.Tasks, RunTaskSettingsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Tasks", err)
-	}
-	gitSourceWireValue, err := GitSourceFromSDK(v.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.GitSource", err)
-	}
-	webhookNotificationsWireValue, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.WebhookNotifications", err)
-	}
-	emailNotificationsWireValue, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EmailNotifications", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.NotificationSettings", err)
-	}
-	environmentsWireValue, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Environments", err)
-	}
-	environmentVariablesWireValue, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EnvironmentVariables", err)
-	}
-	return &SubmitRunRequest{
-		AccessControlList:    accessControlListWireValue,
-		Queue:                queueWireValue,
-		RunAs:                runAsWireValue,
-		RunName:              v.RunName,
-		TimeoutSeconds:       v.TimeoutSeconds,
-		Health:               healthWireValue,
-		IdempotencyToken:     v.IdempotencyToken,
-		Tasks:                tasksWireValue,
-		GitSource:            gitSourceWireValue,
-		WebhookNotifications: webhookNotificationsWireValue,
-		EmailNotifications:   emailNotificationsWireValue,
-		NotificationSettings: notificationSettingsWireValue,
-		Environments:         environmentsWireValue,
-		BudgetPolicyId:       v.BudgetPolicyId,
-		UsagePolicyId:        v.UsagePolicyId,
-		EnvironmentVariables: environmentVariablesWireValue,
-		PerformanceTarget:    v.PerformanceTarget,
-	}, nil
-}
-
 // Run was created and started successfully..
 type SubmitRunResponse struct {
 	// The canonical identifier for the newly submitted run.
 	RunId *int64 `json:"run_id,omitempty"`
-}
-
-func SubmitRunResponseToSDK(w *SubmitRunResponse) (*sdk.SubmitRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubmitRunResponse.RunId", err)
-	}
-	return &sdk.SubmitRunResponse{
-		RunId: runIdPublicValue,
-	}, nil
 }
 
 type Subscription struct {
@@ -9986,90 +4090,9 @@ type Subscription struct {
 	CustomSubject *string `json:"custom_subject,omitempty"`
 }
 
-func SubscriptionFromSDK(v *sdk.Subscription) (*Subscription, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscribersWireValue, err := convertSlice(v.Subscribers, Subscription_SubscriberFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription.Subscribers", err)
-	}
-	return &Subscription{
-		Subscribers:   subscribersWireValue,
-		Paused:        v.Paused,
-		CustomSubject: v.CustomSubject,
-	}, nil
-}
-
-func SubscriptionToSDK(w *Subscription) (*sdk.Subscription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscribersPublicValue, err := convertSlice(w.Subscribers, Subscription_SubscriberToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription.Subscribers", err)
-	}
-	return &sdk.Subscription{
-		Subscribers:   subscribersPublicValue,
-		Paused:        w.Paused,
-		CustomSubject: w.CustomSubject,
-	}, nil
-}
-
 type Subscription_Subscriber struct {
 	UserName      *string `json:"user_name,omitempty"`
 	DestinationId *string `json:"destination_id,omitempty"`
-}
-
-func Subscription_SubscriberFromSDK(v *sdk.Subscription_Subscriber) (*Subscription_Subscriber, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var subscriptionTypeUserNameWire *string
-	var subscriptionTypeDestinationIdWire *string
-	switch value := v.SubscriptionType.(type) {
-	case nil:
-	case *sdk.Subscription_Subscriber_SubscriptionType_UserName:
-		if value != nil {
-			subscriptionTypeUserNameWire = new(value.UserName)
-		}
-	case *sdk.Subscription_Subscriber_SubscriptionType_DestinationId:
-		if value != nil {
-			subscriptionTypeDestinationIdWire = new(value.DestinationId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Subscription_Subscriber.SubscriptionType", value)
-	}
-	return &Subscription_Subscriber{
-		UserName:      subscriptionTypeUserNameWire,
-		DestinationId: subscriptionTypeDestinationIdWire,
-	}, nil
-}
-
-func Subscription_SubscriberToSDK(w *Subscription_Subscriber) (*sdk.Subscription_Subscriber, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionTypeMembers := 0
-	if w.UserName != nil {
-		subscriptionTypeMembers++
-	}
-	if w.DestinationId != nil {
-		subscriptionTypeMembers++
-	}
-	if subscriptionTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Subscription_Subscriber.SubscriptionType")
-	}
-	subscriptionTypeSelection := (&sdk.Subscription_Subscriber{}).SubscriptionType
-	switch {
-	case w.UserName != nil:
-		subscriptionTypeSelection = &sdk.Subscription_Subscriber_SubscriptionType_UserName{UserName: *w.UserName}
-	case w.DestinationId != nil:
-		subscriptionTypeSelection = &sdk.Subscription_Subscriber_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
-	}
-	return &sdk.Subscription_Subscriber{
-		SubscriptionType: subscriptionTypeSelection,
-	}, nil
 }
 
 type TableState struct {
@@ -10078,16 +4101,6 @@ type TableState struct {
 	// Whether or not the table has seen updates since either the creation of the
 	// trigger or the last successful evaluation of the trigger
 	HasSeenUpdates *bool `json:"has_seen_updates,omitempty"`
-}
-
-func TableStateToSDK(w *TableState) (*sdk.TableState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableState{
-		TableName:      w.TableName,
-		HasSeenUpdates: w.HasSeenUpdates,
-	}, nil
 }
 
 type TableTriggerConfiguration struct {
@@ -10106,48 +4119,10 @@ type TableTriggerConfiguration struct {
 	Condition TableTriggerConfiguration_Condition `json:"condition,omitempty"`
 }
 
-func TableTriggerConfigurationFromSDK(v *sdk.TableTriggerConfiguration) (*TableTriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TableTriggerConfiguration{
-		TableNames:                    v.TableNames,
-		MinTimeBetweenTriggersSeconds: v.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    v.WaitAfterLastChangeSeconds,
-		Condition:                     v.Condition,
-	}, nil
-}
-
-func TableTriggerConfigurationToSDK(w *TableTriggerConfiguration) (*sdk.TableTriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TableTriggerConfiguration{
-		TableNames:                    w.TableNames,
-		MinTimeBetweenTriggersSeconds: w.MinTimeBetweenTriggersSeconds,
-		WaitAfterLastChangeSeconds:    w.WaitAfterLastChangeSeconds,
-		Condition:                     w.Condition,
-	}, nil
-}
-
 type TableTriggerState struct {
 	LastSeenTableStates []TableState `json:"last_seen_table_states,omitempty"`
 	// Indicates whether the trigger is using scalable monitoring.
 	UsingScalableMonitoring *bool `json:"using_scalable_monitoring,omitempty"`
-}
-
-func TableTriggerStateToSDK(w *TableTriggerState) (*sdk.TableTriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastSeenTableStatesPublicValue, err := convertSlice(w.LastSeenTableStates, TableStateToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TableTriggerState.LastSeenTableStates", err)
-	}
-	return &sdk.TableTriggerState{
-		LastSeenTableStates:     lastSeenTableStatesPublicValue,
-		UsingScalableMonitoring: w.UsingScalableMonitoring,
-	}, nil
 }
 
 type TaskDependency struct {
@@ -10156,26 +4131,6 @@ type TaskDependency struct {
 	// Can only be specified on condition task dependencies. The outcome of the
 	// dependent task that must be met for this task to run.
 	Outcome *string `json:"outcome,omitempty"`
-}
-
-func TaskDependencyFromSDK(v *sdk.TaskDependency) (*TaskDependency, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TaskDependency{
-		TaskKey: v.TaskKey,
-		Outcome: v.Outcome,
-	}, nil
-}
-
-func TaskDependencyToSDK(w *TaskDependency) (*sdk.TaskDependency, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TaskDependency{
-		TaskKey: w.TaskKey,
-		Outcome: w.Outcome,
-	}, nil
 }
 
 type TaskSettings struct {
@@ -10269,600 +4224,12 @@ type TaskSettings struct {
 	DisableAutoOptimization *bool `json:"disable_auto_optimization,omitempty"`
 }
 
-func TaskSettingsFromSDK(v *sdk.TaskSettings) (*TaskSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dependsOnWireValue, err := convertSlice(v.DependsOn, TaskDependencyFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.DependsOn", err)
-	}
-	healthWireValue, err := JobsHealthRulesFromSDK(v.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Health", err)
-	}
-	emailNotificationsWireValue, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.EmailNotifications", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.NotificationSettings", err)
-	}
-	webhookNotificationsWireValue, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.WebhookNotifications", err)
-	}
-	computeWireValue, err := ComputeFromSDK(v.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Compute", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, LibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Libraries", err)
-	}
-	var environmentRefEnvironmentKeyWire *string
-	switch value := v.EnvironmentRef.(type) {
-	case nil:
-	case *sdk.TaskSettings_EnvironmentRef_EnvironmentKey:
-		if value != nil {
-			environmentRefEnvironmentKeyWire = new(value.EnvironmentKey)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TaskSettings.EnvironmentRef", value)
-	}
-	var taskNotebookTaskWire *NotebookTask
-	var taskSparkJarTaskWire *SparkJarTask
-	var taskSparkPythonTaskWire *SparkPythonTask
-	var taskSparkSubmitTaskWire *SparkSubmitTask
-	var taskPipelineTaskWire *PipelineTask
-	var taskPythonWheelTaskWire *PythonWheelTask
-	var taskDbtTaskWire *DbtTask
-	var taskSqlTaskWire *SqlTask
-	var taskRunJobTaskWire *RunJobTask
-	var taskConditionTaskWire *ConditionTask
-	var taskForEachTaskWire *ForEachTask
-	var taskCleanRoomsNotebookTaskWire *CleanRoomsNotebookTask
-	var taskGenAiComputeTaskWire *GenAiComputeTask
-	var taskAlertTaskWire *AlertTask
-	var taskPowerBiTaskWire *PowerBiTask
-	var taskDashboardTaskWire *DashboardTask
-	var taskDbtCloudTaskWire *DbtCloudTask
-	var taskDbtPlatformTaskWire *DbtPlatformTask
-	var taskPythonOperatorTaskWire *PythonOperatorTask
-	var taskAiRuntimeTaskWire *AiRuntimeTask
-	switch value := v.Task.(type) {
-	case nil:
-	case *sdk.TaskSettings_Task_NotebookTask:
-		if value != nil {
-			taskNotebookTaskConverted, err := NotebookTaskFromSDK(&value.NotebookTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.NotebookTask", err)
-			}
-			taskNotebookTaskWire = taskNotebookTaskConverted
-		}
-	case *sdk.TaskSettings_Task_SparkJarTask:
-		if value != nil {
-			taskSparkJarTaskConverted, err := SparkJarTaskFromSDK(&value.SparkJarTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkJarTask", err)
-			}
-			taskSparkJarTaskWire = taskSparkJarTaskConverted
-		}
-	case *sdk.TaskSettings_Task_SparkPythonTask:
-		if value != nil {
-			taskSparkPythonTaskConverted, err := SparkPythonTaskFromSDK(&value.SparkPythonTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkPythonTask", err)
-			}
-			taskSparkPythonTaskWire = taskSparkPythonTaskConverted
-		}
-	case *sdk.TaskSettings_Task_SparkSubmitTask:
-		if value != nil {
-			taskSparkSubmitTaskConverted, err := SparkSubmitTaskFromSDK(&value.SparkSubmitTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkSubmitTask", err)
-			}
-			taskSparkSubmitTaskWire = taskSparkSubmitTaskConverted
-		}
-	case *sdk.TaskSettings_Task_PipelineTask:
-		if value != nil {
-			taskPipelineTaskConverted, err := PipelineTaskFromSDK(&value.PipelineTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PipelineTask", err)
-			}
-			taskPipelineTaskWire = taskPipelineTaskConverted
-		}
-	case *sdk.TaskSettings_Task_PythonWheelTask:
-		if value != nil {
-			taskPythonWheelTaskConverted, err := PythonWheelTaskFromSDK(&value.PythonWheelTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PythonWheelTask", err)
-			}
-			taskPythonWheelTaskWire = taskPythonWheelTaskConverted
-		}
-	case *sdk.TaskSettings_Task_DbtTask:
-		if value != nil {
-			taskDbtTaskConverted, err := DbtTaskFromSDK(&value.DbtTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtTask", err)
-			}
-			taskDbtTaskWire = taskDbtTaskConverted
-		}
-	case *sdk.TaskSettings_Task_SqlTask:
-		if value != nil {
-			taskSqlTaskConverted, err := SqlTaskFromSDK(&value.SqlTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SqlTask", err)
-			}
-			taskSqlTaskWire = taskSqlTaskConverted
-		}
-	case *sdk.TaskSettings_Task_RunJobTask:
-		if value != nil {
-			taskRunJobTaskConverted, err := RunJobTaskFromSDK(&value.RunJobTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.RunJobTask", err)
-			}
-			taskRunJobTaskWire = taskRunJobTaskConverted
-		}
-	case *sdk.TaskSettings_Task_ConditionTask:
-		if value != nil {
-			taskConditionTaskConverted, err := ConditionTaskFromSDK(&value.ConditionTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.ConditionTask", err)
-			}
-			taskConditionTaskWire = taskConditionTaskConverted
-		}
-	case *sdk.TaskSettings_Task_ForEachTask:
-		if value != nil {
-			taskForEachTaskConverted, err := ForEachTaskFromSDK(&value.ForEachTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.ForEachTask", err)
-			}
-			taskForEachTaskWire = taskForEachTaskConverted
-		}
-	case *sdk.TaskSettings_Task_CleanRoomsNotebookTask:
-		if value != nil {
-			taskCleanRoomsNotebookTaskConverted, err := CleanRoomsNotebookTaskFromSDK(&value.CleanRoomsNotebookTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.CleanRoomsNotebookTask", err)
-			}
-			taskCleanRoomsNotebookTaskWire = taskCleanRoomsNotebookTaskConverted
-		}
-	case *sdk.TaskSettings_Task_GenAiComputeTask:
-		if value != nil {
-			taskGenAiComputeTaskConverted, err := GenAiComputeTaskFromSDK(&value.GenAiComputeTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.GenAiComputeTask", err)
-			}
-			taskGenAiComputeTaskWire = taskGenAiComputeTaskConverted
-		}
-	case *sdk.TaskSettings_Task_AlertTask:
-		if value != nil {
-			taskAlertTaskConverted, err := AlertTaskFromSDK(&value.AlertTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.AlertTask", err)
-			}
-			taskAlertTaskWire = taskAlertTaskConverted
-		}
-	case *sdk.TaskSettings_Task_PowerBiTask:
-		if value != nil {
-			taskPowerBiTaskConverted, err := PowerBiTaskFromSDK(&value.PowerBiTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PowerBiTask", err)
-			}
-			taskPowerBiTaskWire = taskPowerBiTaskConverted
-		}
-	case *sdk.TaskSettings_Task_DashboardTask:
-		if value != nil {
-			taskDashboardTaskConverted, err := DashboardTaskFromSDK(&value.DashboardTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DashboardTask", err)
-			}
-			taskDashboardTaskWire = taskDashboardTaskConverted
-		}
-	case *sdk.TaskSettings_Task_DbtCloudTask:
-		if value != nil {
-			taskDbtCloudTaskConverted, err := DbtCloudTaskFromSDK(&value.DbtCloudTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtCloudTask", err)
-			}
-			taskDbtCloudTaskWire = taskDbtCloudTaskConverted
-		}
-	case *sdk.TaskSettings_Task_DbtPlatformTask:
-		if value != nil {
-			taskDbtPlatformTaskConverted, err := DbtPlatformTaskFromSDK(&value.DbtPlatformTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtPlatformTask", err)
-			}
-			taskDbtPlatformTaskWire = taskDbtPlatformTaskConverted
-		}
-	case *sdk.TaskSettings_Task_PythonOperatorTask:
-		if value != nil {
-			taskPythonOperatorTaskConverted, err := PythonOperatorTaskFromSDK(&value.PythonOperatorTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PythonOperatorTask", err)
-			}
-			taskPythonOperatorTaskWire = taskPythonOperatorTaskConverted
-		}
-	case *sdk.TaskSettings_Task_AiRuntimeTask:
-		if value != nil {
-			taskAiRuntimeTaskConverted, err := AiRuntimeTaskFromSDK(&value.AiRuntimeTask)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.AiRuntimeTask", err)
-			}
-			taskAiRuntimeTaskWire = taskAiRuntimeTaskConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TaskSettings.Task", value)
-	}
-	var specExistingClusterIdWire *string
-	var specNewClusterWire *ClusterSpec_NewCluster
-	var specJobClusterKeyWire *string
-	switch value := v.Spec.(type) {
-	case nil:
-	case *sdk.TaskSettings_Spec_ExistingClusterId:
-		if value != nil {
-			specExistingClusterIdWire = new(value.ExistingClusterId)
-		}
-	case *sdk.TaskSettings_Spec_NewCluster:
-		if value != nil {
-			specNewClusterConverted, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TaskSettings.Spec.NewCluster", err)
-			}
-			specNewClusterWire = specNewClusterConverted
-		}
-	case *sdk.TaskSettings_Spec_JobClusterKey:
-		if value != nil {
-			specJobClusterKeyWire = new(value.JobClusterKey)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TaskSettings.Spec", value)
-	}
-	return &TaskSettings{
-		TaskKey:                 v.TaskKey,
-		DependsOn:               dependsOnWireValue,
-		RunIf:                   v.RunIf,
-		TimeoutSeconds:          v.TimeoutSeconds,
-		Health:                  healthWireValue,
-		EmailNotifications:      emailNotificationsWireValue,
-		NotificationSettings:    notificationSettingsWireValue,
-		WebhookNotifications:    webhookNotificationsWireValue,
-		Description:             v.Description,
-		EnvironmentKey:          environmentRefEnvironmentKeyWire,
-		Disabled:                v.Disabled,
-		Compute:                 computeWireValue,
-		EnvironmentVariablesKey: v.EnvironmentVariablesKey,
-		NotebookTask:            taskNotebookTaskWire,
-		SparkJarTask:            taskSparkJarTaskWire,
-		SparkPythonTask:         taskSparkPythonTaskWire,
-		SparkSubmitTask:         taskSparkSubmitTaskWire,
-		PipelineTask:            taskPipelineTaskWire,
-		PythonWheelTask:         taskPythonWheelTaskWire,
-		DbtTask:                 taskDbtTaskWire,
-		SqlTask:                 taskSqlTaskWire,
-		RunJobTask:              taskRunJobTaskWire,
-		ConditionTask:           taskConditionTaskWire,
-		ForEachTask:             taskForEachTaskWire,
-		CleanRoomsNotebookTask:  taskCleanRoomsNotebookTaskWire,
-		GenAiComputeTask:        taskGenAiComputeTaskWire,
-		AlertTask:               taskAlertTaskWire,
-		PowerBiTask:             taskPowerBiTaskWire,
-		DashboardTask:           taskDashboardTaskWire,
-		DbtCloudTask:            taskDbtCloudTaskWire,
-		DbtPlatformTask:         taskDbtPlatformTaskWire,
-		PythonOperatorTask:      taskPythonOperatorTaskWire,
-		AiRuntimeTask:           taskAiRuntimeTaskWire,
-		ExistingClusterId:       specExistingClusterIdWire,
-		NewCluster:              specNewClusterWire,
-		JobClusterKey:           specJobClusterKeyWire,
-		Libraries:               librariesWireValue,
-		MaxRetries:              v.MaxRetries,
-		MinRetryIntervalMillis:  v.MinRetryIntervalMillis,
-		RetryOnTimeout:          v.RetryOnTimeout,
-		DisableAutoOptimization: v.DisableAutoOptimization,
-	}, nil
-}
-
-func TaskSettingsToSDK(w *TaskSettings) (*sdk.TaskSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	environmentRefMembers := 0
-	if w.EnvironmentKey != nil {
-		environmentRefMembers++
-	}
-	if environmentRefMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.EnvironmentRef")
-	}
-	taskMembers := 0
-	if w.NotebookTask != nil {
-		taskMembers++
-	}
-	if w.SparkJarTask != nil {
-		taskMembers++
-	}
-	if w.SparkPythonTask != nil {
-		taskMembers++
-	}
-	if w.SparkSubmitTask != nil {
-		taskMembers++
-	}
-	if w.PipelineTask != nil {
-		taskMembers++
-	}
-	if w.PythonWheelTask != nil {
-		taskMembers++
-	}
-	if w.DbtTask != nil {
-		taskMembers++
-	}
-	if w.SqlTask != nil {
-		taskMembers++
-	}
-	if w.RunJobTask != nil {
-		taskMembers++
-	}
-	if w.ConditionTask != nil {
-		taskMembers++
-	}
-	if w.ForEachTask != nil {
-		taskMembers++
-	}
-	if w.CleanRoomsNotebookTask != nil {
-		taskMembers++
-	}
-	if w.GenAiComputeTask != nil {
-		taskMembers++
-	}
-	if w.AlertTask != nil {
-		taskMembers++
-	}
-	if w.PowerBiTask != nil {
-		taskMembers++
-	}
-	if w.DashboardTask != nil {
-		taskMembers++
-	}
-	if w.DbtCloudTask != nil {
-		taskMembers++
-	}
-	if w.DbtPlatformTask != nil {
-		taskMembers++
-	}
-	if w.PythonOperatorTask != nil {
-		taskMembers++
-	}
-	if w.AiRuntimeTask != nil {
-		taskMembers++
-	}
-	if taskMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Task")
-	}
-	specMembers := 0
-	if w.ExistingClusterId != nil {
-		specMembers++
-	}
-	if w.NewCluster != nil {
-		specMembers++
-	}
-	if w.JobClusterKey != nil {
-		specMembers++
-	}
-	if specMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Spec")
-	}
-	dependsOnPublicValue, err := convertSlice(w.DependsOn, TaskDependencyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.DependsOn", err)
-	}
-	healthPublicValue, err := JobsHealthRulesToSDK(w.Health)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Health", err)
-	}
-	emailNotificationsPublicValue, err := JobEmailNotificationsToSDK(w.EmailNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.EmailNotifications", err)
-	}
-	notificationSettingsPublicValue, err := NotificationSettingsToSDK(w.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.NotificationSettings", err)
-	}
-	webhookNotificationsPublicValue, err := WebhookNotificationsToSDK(w.WebhookNotifications)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.WebhookNotifications", err)
-	}
-	computePublicValue, err := ComputeToSDK(w.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Compute", err)
-	}
-	librariesPublicValue, err := convertSlice(w.Libraries, LibraryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TaskSettings.Libraries", err)
-	}
-	environmentRefSelection := (&sdk.TaskSettings{}).EnvironmentRef
-	switch {
-	case w.EnvironmentKey != nil:
-		environmentRefSelection = &sdk.TaskSettings_EnvironmentRef_EnvironmentKey{EnvironmentKey: *w.EnvironmentKey}
-	}
-	taskSelection := (&sdk.TaskSettings{}).Task
-	switch {
-	case w.NotebookTask != nil:
-		taskNotebookTaskConverted, err := NotebookTaskToSDK(w.NotebookTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.NotebookTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_NotebookTask{NotebookTask: *taskNotebookTaskConverted}
-	case w.SparkJarTask != nil:
-		taskSparkJarTaskConverted, err := SparkJarTaskToSDK(w.SparkJarTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkJarTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_SparkJarTask{SparkJarTask: *taskSparkJarTaskConverted}
-	case w.SparkPythonTask != nil:
-		taskSparkPythonTaskConverted, err := SparkPythonTaskToSDK(w.SparkPythonTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkPythonTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_SparkPythonTask{SparkPythonTask: *taskSparkPythonTaskConverted}
-	case w.SparkSubmitTask != nil:
-		taskSparkSubmitTaskConverted, err := SparkSubmitTaskToSDK(w.SparkSubmitTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SparkSubmitTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_SparkSubmitTask{SparkSubmitTask: *taskSparkSubmitTaskConverted}
-	case w.PipelineTask != nil:
-		taskPipelineTaskConverted, err := PipelineTaskToSDK(w.PipelineTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PipelineTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_PipelineTask{PipelineTask: *taskPipelineTaskConverted}
-	case w.PythonWheelTask != nil:
-		taskPythonWheelTaskConverted, err := PythonWheelTaskToSDK(w.PythonWheelTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PythonWheelTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_PythonWheelTask{PythonWheelTask: *taskPythonWheelTaskConverted}
-	case w.DbtTask != nil:
-		taskDbtTaskConverted, err := DbtTaskToSDK(w.DbtTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_DbtTask{DbtTask: *taskDbtTaskConverted}
-	case w.SqlTask != nil:
-		taskSqlTaskConverted, err := SqlTaskToSDK(w.SqlTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.SqlTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_SqlTask{SqlTask: *taskSqlTaskConverted}
-	case w.RunJobTask != nil:
-		taskRunJobTaskConverted, err := RunJobTaskToSDK(w.RunJobTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.RunJobTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_RunJobTask{RunJobTask: *taskRunJobTaskConverted}
-	case w.ConditionTask != nil:
-		taskConditionTaskConverted, err := ConditionTaskToSDK(w.ConditionTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.ConditionTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_ConditionTask{ConditionTask: *taskConditionTaskConverted}
-	case w.ForEachTask != nil:
-		taskForEachTaskConverted, err := ForEachTaskToSDK(w.ForEachTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.ForEachTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_ForEachTask{ForEachTask: *taskForEachTaskConverted}
-	case w.CleanRoomsNotebookTask != nil:
-		taskCleanRoomsNotebookTaskConverted, err := CleanRoomsNotebookTaskToSDK(w.CleanRoomsNotebookTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.CleanRoomsNotebookTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_CleanRoomsNotebookTask{CleanRoomsNotebookTask: *taskCleanRoomsNotebookTaskConverted}
-	case w.GenAiComputeTask != nil:
-		taskGenAiComputeTaskConverted, err := GenAiComputeTaskToSDK(w.GenAiComputeTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.GenAiComputeTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_GenAiComputeTask{GenAiComputeTask: *taskGenAiComputeTaskConverted}
-	case w.AlertTask != nil:
-		taskAlertTaskConverted, err := AlertTaskToSDK(w.AlertTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.AlertTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_AlertTask{AlertTask: *taskAlertTaskConverted}
-	case w.PowerBiTask != nil:
-		taskPowerBiTaskConverted, err := PowerBiTaskToSDK(w.PowerBiTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PowerBiTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_PowerBiTask{PowerBiTask: *taskPowerBiTaskConverted}
-	case w.DashboardTask != nil:
-		taskDashboardTaskConverted, err := DashboardTaskToSDK(w.DashboardTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DashboardTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_DashboardTask{DashboardTask: *taskDashboardTaskConverted}
-	case w.DbtCloudTask != nil:
-		taskDbtCloudTaskConverted, err := DbtCloudTaskToSDK(w.DbtCloudTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtCloudTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_DbtCloudTask{DbtCloudTask: *taskDbtCloudTaskConverted}
-	case w.DbtPlatformTask != nil:
-		taskDbtPlatformTaskConverted, err := DbtPlatformTaskToSDK(w.DbtPlatformTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.DbtPlatformTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_DbtPlatformTask{DbtPlatformTask: *taskDbtPlatformTaskConverted}
-	case w.PythonOperatorTask != nil:
-		taskPythonOperatorTaskConverted, err := PythonOperatorTaskToSDK(w.PythonOperatorTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.PythonOperatorTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_PythonOperatorTask{PythonOperatorTask: *taskPythonOperatorTaskConverted}
-	case w.AiRuntimeTask != nil:
-		taskAiRuntimeTaskConverted, err := AiRuntimeTaskToSDK(w.AiRuntimeTask)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task.AiRuntimeTask", err)
-		}
-		taskSelection = &sdk.TaskSettings_Task_AiRuntimeTask{AiRuntimeTask: *taskAiRuntimeTaskConverted}
-	}
-	specSelection := (&sdk.TaskSettings{}).Spec
-	switch {
-	case w.ExistingClusterId != nil:
-		specSelection = &sdk.TaskSettings_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
-	case w.NewCluster != nil:
-		specNewClusterConverted, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TaskSettings.Spec.NewCluster", err)
-		}
-		specSelection = &sdk.TaskSettings_Spec_NewCluster{NewCluster: *specNewClusterConverted}
-	case w.JobClusterKey != nil:
-		specSelection = &sdk.TaskSettings_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
-	}
-	return &sdk.TaskSettings{
-		TaskKey:                 w.TaskKey,
-		DependsOn:               dependsOnPublicValue,
-		RunIf:                   w.RunIf,
-		TimeoutSeconds:          w.TimeoutSeconds,
-		Health:                  healthPublicValue,
-		EmailNotifications:      emailNotificationsPublicValue,
-		NotificationSettings:    notificationSettingsPublicValue,
-		WebhookNotifications:    webhookNotificationsPublicValue,
-		Description:             w.Description,
-		Disabled:                w.Disabled,
-		Compute:                 computePublicValue,
-		EnvironmentVariablesKey: w.EnvironmentVariablesKey,
-		Libraries:               librariesPublicValue,
-		MaxRetries:              w.MaxRetries,
-		MinRetryIntervalMillis:  w.MinRetryIntervalMillis,
-		RetryOnTimeout:          w.RetryOnTimeout,
-		DisableAutoOptimization: w.DisableAutoOptimization,
-		EnvironmentRef:          environmentRefSelection,
-		Task:                    taskSelection,
-		Spec:                    specSelection,
-	}, nil
-}
-
 type TerminationDetails struct {
 	Code TerminationCode_Code `json:"code,omitempty"`
 	Type TerminationType_Type `json:"type,omitempty"`
 	// A descriptive message with the termination details. This field is
 	// unstructured and the format might change.
 	Message *string `json:"message,omitempty"`
-}
-
-func TerminationDetailsToSDK(w *TerminationDetails) (*sdk.TerminationDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TerminationDetails{
-		Code:    w.Code,
-		Type:    w.Type,
-		Message: w.Message,
-	}, nil
 }
 
 // A single trigger attached to a job via `JobSettings.triggers`. Exactly one of
@@ -10892,94 +4259,6 @@ type TriggerConfiguration struct {
 	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
 }
 
-func TriggerConfigurationFromSDK(v *sdk.TriggerConfiguration) (*TriggerConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	periodicWireValue, err := PeriodicTriggerConfigurationFromSDK(v.Periodic)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Periodic", err)
-	}
-	scheduleWireValue, err := CronTriggerConfigurationFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Schedule", err)
-	}
-	continuousWireValue, err := ContinuousTriggerConfigurationFromSDK(v.Continuous)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Continuous", err)
-	}
-	fileArrivalWireValue, err := FileArrivalTriggerConfigurationFromSDK(v.FileArrival)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.FileArrival", err)
-	}
-	tableUpdateWireValue, err := TableTriggerConfigurationFromSDK(v.TableUpdate)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.TableUpdate", err)
-	}
-	modelWireValue, err := ModelTriggerConfigurationFromSDK(v.Model)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Model", err)
-	}
-	sqlConditionWireValue, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.SqlCondition", err)
-	}
-	return &TriggerConfiguration{
-		PauseStatus:  v.PauseStatus,
-		Periodic:     periodicWireValue,
-		Schedule:     scheduleWireValue,
-		Continuous:   continuousWireValue,
-		FileArrival:  fileArrivalWireValue,
-		TableUpdate:  tableUpdateWireValue,
-		Model:        modelWireValue,
-		SqlCondition: sqlConditionWireValue,
-	}, nil
-}
-
-func TriggerConfigurationToSDK(w *TriggerConfiguration) (*sdk.TriggerConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	periodicPublicValue, err := PeriodicTriggerConfigurationToSDK(w.Periodic)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Periodic", err)
-	}
-	schedulePublicValue, err := CronTriggerConfigurationToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Schedule", err)
-	}
-	continuousPublicValue, err := ContinuousTriggerConfigurationToSDK(w.Continuous)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Continuous", err)
-	}
-	fileArrivalPublicValue, err := FileArrivalTriggerConfigurationToSDK(w.FileArrival)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.FileArrival", err)
-	}
-	tableUpdatePublicValue, err := TableTriggerConfigurationToSDK(w.TableUpdate)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.TableUpdate", err)
-	}
-	modelPublicValue, err := ModelTriggerConfigurationToSDK(w.Model)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Model", err)
-	}
-	sqlConditionPublicValue, err := SqlConditionConfigurationToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.SqlCondition", err)
-	}
-	return &sdk.TriggerConfiguration{
-		PauseStatus:  w.PauseStatus,
-		Periodic:     periodicPublicValue,
-		Schedule:     schedulePublicValue,
-		Continuous:   continuousPublicValue,
-		FileArrival:  fileArrivalPublicValue,
-		TableUpdate:  tableUpdatePublicValue,
-		Model:        modelPublicValue,
-		SqlCondition: sqlConditionPublicValue,
-	}, nil
-}
-
 // Per-trigger runtime details returned by `GetJob`. Same length and order as
 // `JobSettings.triggers`; sub-fields are populated independently based on the
 // corresponding `GetJob.include_trigger_state` / `include_trigger_history`
@@ -10990,24 +4269,6 @@ type TriggerDetails struct {
 	// Recent evaluation history. Populated when `GetJob.include_trigger_history` is
 	// set.
 	History *TriggerHistory `json:"history,omitempty"`
-}
-
-func TriggerDetailsToSDK(w *TriggerDetails) (*sdk.TriggerDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statePublicValue, err := PerTriggerStateToSDK(w.State)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerDetails.State", err)
-	}
-	historyPublicValue, err := TriggerHistoryToSDK(w.History)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerDetails.History", err)
-	}
-	return &sdk.TriggerDetails{
-		State:   statePublicValue,
-		History: historyPublicValue,
-	}, nil
 }
 
 type TriggerEvaluation struct {
@@ -11021,25 +4282,6 @@ type TriggerEvaluation struct {
 	RunId *int64 `json:"run_id,omitempty"`
 }
 
-func TriggerEvaluationToSDK(w *TriggerEvaluation) (*sdk.TriggerEvaluation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	timestampPublicValue, err := int64FromWire(w.Timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerEvaluation.Timestamp", err)
-	}
-	runIdPublicValue, err := int64FromWire(w.RunId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerEvaluation.RunId", err)
-	}
-	return &sdk.TriggerEvaluation{
-		Timestamp:   timestampPublicValue,
-		Description: w.Description,
-		RunId:       runIdPublicValue,
-	}, nil
-}
-
 type TriggerHistory struct {
 	// The last time the run was triggered due to a file arrival.
 	LastTriggered *TriggerEvaluation `json:"last_triggered,omitempty"`
@@ -11047,29 +4289,6 @@ type TriggerHistory struct {
 	LastNotTriggered *TriggerEvaluation `json:"last_not_triggered,omitempty"`
 	// The last time the trigger failed to evaluate.
 	LastFailed *TriggerEvaluation `json:"last_failed,omitempty"`
-}
-
-func TriggerHistoryToSDK(w *TriggerHistory) (*sdk.TriggerHistory, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastTriggeredPublicValue, err := TriggerEvaluationToSDK(w.LastTriggered)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastTriggered", err)
-	}
-	lastNotTriggeredPublicValue, err := TriggerEvaluationToSDK(w.LastNotTriggered)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastNotTriggered", err)
-	}
-	lastFailedPublicValue, err := TriggerEvaluationToSDK(w.LastFailed)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastFailed", err)
-	}
-	return &sdk.TriggerHistory{
-		LastTriggered:    lastTriggeredPublicValue,
-		LastNotTriggered: lastNotTriggeredPublicValue,
-		LastFailed:       lastFailedPublicValue,
-	}, nil
 }
 
 type TriggerSettings struct {
@@ -11085,123 +4304,6 @@ type TriggerSettings struct {
 	SqlCondition *SqlConditionConfiguration `json:"sql_condition,omitempty"`
 }
 
-func TriggerSettingsFromSDK(v *sdk.TriggerSettings) (*TriggerSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sqlConditionWireValue, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerSettings.SqlCondition", err)
-	}
-	var configurationFileArrivalWire *FileArrivalTriggerConfiguration
-	var configurationPeriodicWire *PeriodicTriggerConfiguration
-	var configurationTableUpdateWire *TableTriggerConfiguration
-	var configurationModelWire *ModelTriggerConfiguration
-	switch value := v.Configuration.(type) {
-	case nil:
-	case *sdk.TriggerSettings_Configuration_FileArrival:
-		if value != nil {
-			configurationFileArrivalConverted, err := FileArrivalTriggerConfigurationFromSDK(&value.FileArrival)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.FileArrival", err)
-			}
-			configurationFileArrivalWire = configurationFileArrivalConverted
-		}
-	case *sdk.TriggerSettings_Configuration_Periodic:
-		if value != nil {
-			configurationPeriodicConverted, err := PeriodicTriggerConfigurationFromSDK(&value.Periodic)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.Periodic", err)
-			}
-			configurationPeriodicWire = configurationPeriodicConverted
-		}
-	case *sdk.TriggerSettings_Configuration_TableUpdate:
-		if value != nil {
-			configurationTableUpdateConverted, err := TableTriggerConfigurationFromSDK(&value.TableUpdate)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.TableUpdate", err)
-			}
-			configurationTableUpdateWire = configurationTableUpdateConverted
-		}
-	case *sdk.TriggerSettings_Configuration_Model:
-		if value != nil {
-			configurationModelConverted, err := ModelTriggerConfigurationFromSDK(&value.Model)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.Model", err)
-			}
-			configurationModelWire = configurationModelConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TriggerSettings.Configuration", value)
-	}
-	return &TriggerSettings{
-		PauseStatus:  v.PauseStatus,
-		FileArrival:  configurationFileArrivalWire,
-		Periodic:     configurationPeriodicWire,
-		TableUpdate:  configurationTableUpdateWire,
-		Model:        configurationModelWire,
-		SqlCondition: sqlConditionWireValue,
-	}, nil
-}
-
-func TriggerSettingsToSDK(w *TriggerSettings) (*sdk.TriggerSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configurationMembers := 0
-	if w.FileArrival != nil {
-		configurationMembers++
-	}
-	if w.Periodic != nil {
-		configurationMembers++
-	}
-	if w.TableUpdate != nil {
-		configurationMembers++
-	}
-	if w.Model != nil {
-		configurationMembers++
-	}
-	if configurationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerSettings.Configuration")
-	}
-	sqlConditionPublicValue, err := SqlConditionConfigurationToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerSettings.SqlCondition", err)
-	}
-	configurationSelection := (&sdk.TriggerSettings{}).Configuration
-	switch {
-	case w.FileArrival != nil:
-		configurationFileArrivalConverted, err := FileArrivalTriggerConfigurationToSDK(w.FileArrival)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.FileArrival", err)
-		}
-		configurationSelection = &sdk.TriggerSettings_Configuration_FileArrival{FileArrival: *configurationFileArrivalConverted}
-	case w.Periodic != nil:
-		configurationPeriodicConverted, err := PeriodicTriggerConfigurationToSDK(w.Periodic)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.Periodic", err)
-		}
-		configurationSelection = &sdk.TriggerSettings_Configuration_Periodic{Periodic: *configurationPeriodicConverted}
-	case w.TableUpdate != nil:
-		configurationTableUpdateConverted, err := TableTriggerConfigurationToSDK(w.TableUpdate)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.TableUpdate", err)
-		}
-		configurationSelection = &sdk.TriggerSettings_Configuration_TableUpdate{TableUpdate: *configurationTableUpdateConverted}
-	case w.Model != nil:
-		configurationModelConverted, err := ModelTriggerConfigurationToSDK(w.Model)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration.Model", err)
-		}
-		configurationSelection = &sdk.TriggerSettings_Configuration_Model{Model: *configurationModelConverted}
-	}
-	return &sdk.TriggerSettings{
-		PauseStatus:   w.PauseStatus,
-		SqlCondition:  sqlConditionPublicValue,
-		Configuration: configurationSelection,
-	}, nil
-}
-
 type TriggerState struct {
 	Table       *TableTriggerState       `json:"table,omitempty"`
 	FileArrival *FileArrivalTriggerState `json:"file_arrival,omitempty"`
@@ -11211,46 +4313,6 @@ type TriggerState struct {
 	// differ from the configured pause_status whenever a paused continuous job is
 	// kickstarted by an operation other than an update, such as a run-now.
 	PauseStatus SchedulePauseStatus `json:"pause_status,omitempty"`
-}
-
-func TriggerStateToSDK(w *TriggerState) (*sdk.TriggerState, error) {
-	if w == nil {
-		return nil, nil
-	}
-	triggerTypeMembers := 0
-	if w.Table != nil {
-		triggerTypeMembers++
-	}
-	if w.FileArrival != nil {
-		triggerTypeMembers++
-	}
-	if triggerTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerState.TriggerType")
-	}
-	sqlConditionPublicValue, err := SqlConditionStateToSDK(w.SqlCondition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TriggerState.SqlCondition", err)
-	}
-	triggerTypeSelection := (&sdk.TriggerState{}).TriggerType
-	switch {
-	case w.Table != nil:
-		triggerTypeTableConverted, err := TableTriggerStateToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType.Table", err)
-		}
-		triggerTypeSelection = &sdk.TriggerState_TriggerType_Table{Table: *triggerTypeTableConverted}
-	case w.FileArrival != nil:
-		triggerTypeFileArrivalConverted, err := FileArrivalTriggerStateToSDK(w.FileArrival)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType.FileArrival", err)
-		}
-		triggerTypeSelection = &sdk.TriggerState_TriggerType_FileArrival{FileArrival: *triggerTypeFileArrivalConverted}
-	}
-	return &sdk.TriggerState{
-		SqlCondition: sqlConditionPublicValue,
-		PauseStatus:  w.PauseStatus,
-		TriggerType:  triggerTypeSelection,
-	}, nil
 }
 
 type UpdateJobRequest struct {
@@ -11274,25 +4336,6 @@ type UpdateJobRequest struct {
 	FieldsToRemove []string `json:"fields_to_remove,omitempty"`
 }
 
-func UpdateJobRequestFromSDK(v *sdk.UpdateJobRequest) (*UpdateJobRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	jobIdWireValue, err := int64ToWire(v.JobId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateJobRequest.JobId", err)
-	}
-	newSettingsWireValue, err := JobSettingsFromSDK(v.NewSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateJobRequest.NewSettings", err)
-	}
-	return &UpdateJobRequest{
-		JobId:          jobIdWireValue,
-		NewSettings:    newSettingsWireValue,
-		FieldsToRemove: v.FieldsToRemove,
-	}, nil
-}
-
 type ViewItem struct {
 	// Content of the view.
 	Content *string `json:"content,omitempty"`
@@ -11303,17 +4346,6 @@ type ViewItem struct {
 	Type ViewType `json:"type,omitempty"`
 }
 
-func ViewItemToSDK(w *ViewItem) (*sdk.ViewItem, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ViewItem{
-		Content: w.Content,
-		Name:    w.Name,
-		Type:    w.Type,
-	}, nil
-}
-
 // A storage location back by UC Volumes..
 type VolumesStorageInfo struct {
 	// UC Volumes destination, e.g.
@@ -11322,44 +4354,8 @@ type VolumesStorageInfo struct {
 	Destination *string `json:"destination,omitempty"`
 }
 
-func VolumesStorageInfoFromSDK(v *sdk.VolumesStorageInfo) (*VolumesStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &VolumesStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func VolumesStorageInfoToSDK(w *VolumesStorageInfo) (*sdk.VolumesStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.VolumesStorageInfo{
-		Destination: w.Destination,
-	}, nil
-}
-
 type Webhook struct {
 	Id *string `json:"id,omitempty"`
-}
-
-func WebhookFromSDK(v *sdk.Webhook) (*Webhook, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Webhook{
-		Id: v.Id,
-	}, nil
-}
-
-func WebhookToSDK(w *Webhook) (*sdk.Webhook, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Webhook{
-		Id: w.Id,
-	}, nil
 }
 
 type WebhookNotifications struct {
@@ -11397,135 +4393,14 @@ type WebhookNotifications struct {
 	OnMaintenanceComplete []Webhook `json:"on_maintenance_complete,omitempty"`
 }
 
-func WebhookNotificationsFromSDK(v *sdk.WebhookNotifications) (*WebhookNotifications, error) {
-	if v == nil {
-		return nil, nil
-	}
-	onStartWireValue, err := convertSlice(v.OnStart, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStart", err)
-	}
-	onSuccessWireValue, err := convertSlice(v.OnSuccess, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnSuccess", err)
-	}
-	onFailureWireValue, err := convertSlice(v.OnFailure, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnFailure", err)
-	}
-	onDurationWarningThresholdExceededWireValue, err := convertSlice(v.OnDurationWarningThresholdExceeded, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnDurationWarningThresholdExceeded", err)
-	}
-	onStreamingBacklogExceededWireValue, err := convertSlice(v.OnStreamingBacklogExceeded, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStreamingBacklogExceeded", err)
-	}
-	onMaintenanceStartWireValue, err := convertSlice(v.OnMaintenanceStart, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceStart", err)
-	}
-	onMaintenanceCompleteWireValue, err := convertSlice(v.OnMaintenanceComplete, WebhookFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceComplete", err)
-	}
-	return &WebhookNotifications{
-		OnStart:                            onStartWireValue,
-		OnSuccess:                          onSuccessWireValue,
-		OnFailure:                          onFailureWireValue,
-		OnDurationWarningThresholdExceeded: onDurationWarningThresholdExceededWireValue,
-		OnStreamingBacklogExceeded:         onStreamingBacklogExceededWireValue,
-		OnMaintenanceStart:                 onMaintenanceStartWireValue,
-		OnMaintenanceComplete:              onMaintenanceCompleteWireValue,
-	}, nil
-}
-
-func WebhookNotificationsToSDK(w *WebhookNotifications) (*sdk.WebhookNotifications, error) {
-	if w == nil {
-		return nil, nil
-	}
-	onStartPublicValue, err := convertSlice(w.OnStart, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStart", err)
-	}
-	onSuccessPublicValue, err := convertSlice(w.OnSuccess, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnSuccess", err)
-	}
-	onFailurePublicValue, err := convertSlice(w.OnFailure, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnFailure", err)
-	}
-	onDurationWarningThresholdExceededPublicValue, err := convertSlice(w.OnDurationWarningThresholdExceeded, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnDurationWarningThresholdExceeded", err)
-	}
-	onStreamingBacklogExceededPublicValue, err := convertSlice(w.OnStreamingBacklogExceeded, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStreamingBacklogExceeded", err)
-	}
-	onMaintenanceStartPublicValue, err := convertSlice(w.OnMaintenanceStart, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceStart", err)
-	}
-	onMaintenanceCompletePublicValue, err := convertSlice(w.OnMaintenanceComplete, WebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceComplete", err)
-	}
-	return &sdk.WebhookNotifications{
-		OnStart:                            onStartPublicValue,
-		OnSuccess:                          onSuccessPublicValue,
-		OnFailure:                          onFailurePublicValue,
-		OnDurationWarningThresholdExceeded: onDurationWarningThresholdExceededPublicValue,
-		OnStreamingBacklogExceeded:         onStreamingBacklogExceededPublicValue,
-		OnMaintenanceStart:                 onMaintenanceStartPublicValue,
-		OnMaintenanceComplete:              onMaintenanceCompletePublicValue,
-	}, nil
-}
-
 type WidgetErrorDetail struct {
 	Message *string `json:"message,omitempty"`
-}
-
-func WidgetErrorDetailToSDK(w *WidgetErrorDetail) (*sdk.WidgetErrorDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.WidgetErrorDetail{
-		Message: w.Message,
-	}, nil
 }
 
 // Cluster Attributes showing for clusters workload types..
 type WorkloadType struct {
 	// defined what type of clients can use the cluster. E.g. Notebooks, Jobs
 	Clients *WorkloadType_ClientsTypes `json:"clients,omitempty"`
-}
-
-func WorkloadTypeFromSDK(v *sdk.WorkloadType) (*WorkloadType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	clientsWireValue, err := WorkloadType_ClientsTypesFromSDK(v.Clients)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
-	}
-	return &WorkloadType{
-		Clients: clientsWireValue,
-	}, nil
-}
-
-func WorkloadTypeToSDK(w *WorkloadType) (*sdk.WorkloadType, error) {
-	if w == nil {
-		return nil, nil
-	}
-	clientsPublicValue, err := WorkloadType_ClientsTypesToSDK(w.Clients)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
-	}
-	return &sdk.WorkloadType{
-		Clients: clientsPublicValue,
-	}, nil
 }
 
 type WorkloadType_ClientsTypes struct {
@@ -11535,48 +4410,9471 @@ type WorkloadType_ClientsTypes struct {
 	Jobs *bool `json:"jobs,omitempty"`
 }
 
-func WorkloadType_ClientsTypesFromSDK(v *sdk.WorkloadType_ClientsTypes) (*WorkloadType_ClientsTypes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &WorkloadType_ClientsTypes{
-		Notebooks: v.Notebooks,
-		Jobs:      v.Jobs,
-	}, nil
-}
-
-func WorkloadType_ClientsTypesToSDK(w *WorkloadType_ClientsTypes) (*sdk.WorkloadType_ClientsTypes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.WorkloadType_ClientsTypes{
-		Notebooks: w.Notebooks,
-		Jobs:      w.Jobs,
-	}, nil
-}
-
 // A storage location in Workspace Filesystem (WSFS).
 type WorkspaceStorageInfo struct {
 	// wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
 	Destination *string `json:"destination,omitempty"`
 }
 
-func WorkspaceStorageInfoFromSDK(v *sdk.WorkspaceStorageInfo) (*WorkspaceStorageInfo, error) {
+// AccessControlRequestToSDK converts the mirror to the sdk-go type.
+func AccessControlRequestToSDK(w *AccessControlRequest) (*sdk.AccessControlRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccessControlRequest{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlRequest.PrincipalName")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_UserName{UserName: *w.UserName}
+	case w.GroupName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_GroupName{GroupName: *w.GroupName}
+	case w.ServicePrincipalName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	}
+	out.PermissionLevel = w.PermissionLevel
+	return out, nil
+}
+
+// AccessControlRequestFromSDK converts the sdk-go type to the mirror.
+func AccessControlRequestFromSDK(v *sdk.AccessControlRequest) (*AccessControlRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &WorkspaceStorageInfo{
-		Destination: v.Destination,
-	}, nil
+	out := &AccessControlRequest{}
+	switch value := v.PrincipalName.(type) {
+	case *sdk.AccessControlRequest_PrincipalName_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.AccessControlRequest_PrincipalName_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	case *sdk.AccessControlRequest_PrincipalName_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	}
+	out.PermissionLevel = v.PermissionLevel
+	return out, nil
 }
 
+// Adlsgen2InfoToSDK converts the mirror to the sdk-go type.
+func Adlsgen2InfoToSDK(w *Adlsgen2Info) (*sdk.Adlsgen2Info, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Adlsgen2Info{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// Adlsgen2InfoFromSDK converts the sdk-go type to the mirror.
+func Adlsgen2InfoFromSDK(v *sdk.Adlsgen2Info) (*Adlsgen2Info, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Adlsgen2Info{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// AiRuntimeTaskToSDK converts the mirror to the sdk-go type.
+func AiRuntimeTaskToSDK(w *AiRuntimeTask) (*sdk.AiRuntimeTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiRuntimeTask{}
+	out.Experiment = w.Experiment
+	conv1, err := convertSlice(w.Deployments, DeploymentSpecToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiRuntimeTask.Deployments", err)
+	}
+	out.Deployments = conv1
+	out.CodeSourcePath = w.CodeSourcePath
+	out.MlflowRun = w.MlflowRun
+	out.MlflowExperimentDirectory = w.MlflowExperimentDirectory
+	out.DockerImageUrl = w.DockerImageUrl
+	out.MlflowArtifactLocation = w.MlflowArtifactLocation
+	out.PriorityClass = w.PriorityClass
+	out.UnityCatalogImagePath = w.UnityCatalogImagePath
+	return out, nil
+}
+
+// AiRuntimeTaskFromSDK converts the sdk-go type to the mirror.
+func AiRuntimeTaskFromSDK(v *sdk.AiRuntimeTask) (*AiRuntimeTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiRuntimeTask{}
+	out.Experiment = v.Experiment
+	conv2, err := convertSlice(v.Deployments, DeploymentSpecFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AiRuntimeTask.Deployments", err)
+	}
+	out.Deployments = conv2
+	out.CodeSourcePath = v.CodeSourcePath
+	out.MlflowRun = v.MlflowRun
+	out.MlflowExperimentDirectory = v.MlflowExperimentDirectory
+	out.DockerImageUrl = v.DockerImageUrl
+	out.MlflowArtifactLocation = v.MlflowArtifactLocation
+	out.PriorityClass = v.PriorityClass
+	out.UnityCatalogImagePath = v.UnityCatalogImagePath
+	return out, nil
+}
+
+// AiRuntimeTaskOutputToSDK converts the mirror to the sdk-go type.
+func AiRuntimeTaskOutputToSDK(w *AiRuntimeTaskOutput) (*sdk.AiRuntimeTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AiRuntimeTaskOutput{}
+	out.MlflowExperimentId = w.MlflowExperimentId
+	out.MlflowRunId = w.MlflowRunId
+	out.StatusMessage = w.StatusMessage
+	return out, nil
+}
+
+// AiRuntimeTaskOutputFromSDK converts the sdk-go type to the mirror.
+func AiRuntimeTaskOutputFromSDK(v *sdk.AiRuntimeTaskOutput) (*AiRuntimeTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AiRuntimeTaskOutput{}
+	out.MlflowExperimentId = v.MlflowExperimentId
+	out.MlflowRunId = v.MlflowRunId
+	out.StatusMessage = v.StatusMessage
+	return out, nil
+}
+
+// AlertTaskToSDK converts the mirror to the sdk-go type.
+func AlertTaskToSDK(w *AlertTask) (*sdk.AlertTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertTask{}
+	out.AlertId = w.AlertId
+	out.WarehouseId = w.WarehouseId
+	out.WorkspacePath = w.WorkspacePath
+	conv3, err := convertSlice(w.Subscribers, AlertTaskSubscriberToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertTask.Subscribers", err)
+	}
+	out.Subscribers = conv3
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// AlertTaskFromSDK converts the sdk-go type to the mirror.
+func AlertTaskFromSDK(v *sdk.AlertTask) (*AlertTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertTask{}
+	out.AlertId = v.AlertId
+	out.WarehouseId = v.WarehouseId
+	out.WorkspacePath = v.WorkspacePath
+	conv4, err := convertSlice(v.Subscribers, AlertTaskSubscriberFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertTask.Subscribers", err)
+	}
+	out.Subscribers = conv4
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// AlertTaskOutputToSDK converts the mirror to the sdk-go type.
+func AlertTaskOutputToSDK(w *AlertTaskOutput) (*sdk.AlertTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertTaskOutput{}
+	out.AlertState = w.AlertState
+	return out, nil
+}
+
+// AlertTaskOutputFromSDK converts the sdk-go type to the mirror.
+func AlertTaskOutputFromSDK(v *sdk.AlertTaskOutput) (*AlertTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertTaskOutput{}
+	out.AlertState = v.AlertState
+	return out, nil
+}
+
+// AlertTaskSubscriberToSDK converts the mirror to the sdk-go type.
+func AlertTaskSubscriberToSDK(w *AlertTaskSubscriber) (*sdk.AlertTaskSubscriber, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertTaskSubscriber{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.DestinationId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AlertTaskSubscriber.SubscriberType")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.SubscriberType = &sdk.AlertTaskSubscriber_SubscriberType_UserName{UserName: *w.UserName}
+	case w.DestinationId != nil:
+		out.SubscriberType = &sdk.AlertTaskSubscriber_SubscriberType_DestinationId{DestinationId: *w.DestinationId}
+	}
+	return out, nil
+}
+
+// AlertTaskSubscriberFromSDK converts the sdk-go type to the mirror.
+func AlertTaskSubscriberFromSDK(v *sdk.AlertTaskSubscriber) (*AlertTaskSubscriber, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertTaskSubscriber{}
+	switch value := v.SubscriberType.(type) {
+	case *sdk.AlertTaskSubscriber_SubscriberType_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.AlertTaskSubscriber_SubscriberType_DestinationId:
+		if value != nil {
+			out.DestinationId = new(value.DestinationId)
+		}
+	}
+	return out, nil
+}
+
+// AutoScaleToSDK converts the mirror to the sdk-go type.
+func AutoScaleToSDK(w *AutoScale) (*sdk.AutoScale, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoScale{}
+	out.MinWorkers = w.MinWorkers
+	out.MaxWorkers = w.MaxWorkers
+	return out, nil
+}
+
+// AutoScaleFromSDK converts the sdk-go type to the mirror.
+func AutoScaleFromSDK(v *sdk.AutoScale) (*AutoScale, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoScale{}
+	out.MinWorkers = v.MinWorkers
+	out.MaxWorkers = v.MaxWorkers
+	return out, nil
+}
+
+// AwsAttributesToSDK converts the mirror to the sdk-go type.
+func AwsAttributesToSDK(w *AwsAttributes) (*sdk.AwsAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsAttributes{}
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.SpotBidPricePercent = w.SpotBidPricePercent
+	out.EbsVolumeType = w.EbsVolumeType
+	out.EbsVolumeCount = w.EbsVolumeCount
+	out.EbsVolumeSize = w.EbsVolumeSize
+	out.EbsVolumeIops = w.EbsVolumeIops
+	out.EbsVolumeThroughput = w.EbsVolumeThroughput
+	return out, nil
+}
+
+// AwsAttributesFromSDK converts the sdk-go type to the mirror.
+func AwsAttributesFromSDK(v *sdk.AwsAttributes) (*AwsAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsAttributes{}
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.SpotBidPricePercent = v.SpotBidPricePercent
+	out.EbsVolumeType = v.EbsVolumeType
+	out.EbsVolumeCount = v.EbsVolumeCount
+	out.EbsVolumeSize = v.EbsVolumeSize
+	out.EbsVolumeIops = v.EbsVolumeIops
+	out.EbsVolumeThroughput = v.EbsVolumeThroughput
+	return out, nil
+}
+
+// AzureAttributesToSDK converts the mirror to the sdk-go type.
+func AzureAttributesToSDK(w *AzureAttributes) (*sdk.AzureAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureAttributes{}
+	conv5, err := LogAnalyticsInfoToSDK(w.LogAnalyticsInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
+	}
+	out.LogAnalyticsInfo = conv5
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.SpotBidMaxPrice = w.SpotBidMaxPrice
+	out.CapacityReservationGroup = w.CapacityReservationGroup
+	return out, nil
+}
+
+// AzureAttributesFromSDK converts the sdk-go type to the mirror.
+func AzureAttributesFromSDK(v *sdk.AzureAttributes) (*AzureAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureAttributes{}
+	conv6, err := LogAnalyticsInfoFromSDK(v.LogAnalyticsInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureAttributes.LogAnalyticsInfo", err)
+	}
+	out.LogAnalyticsInfo = conv6
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.SpotBidMaxPrice = v.SpotBidMaxPrice
+	out.CapacityReservationGroup = v.CapacityReservationGroup
+	return out, nil
+}
+
+// BaseJobToSDK converts the mirror to the sdk-go type.
+func BaseJobToSDK(w *BaseJob) (*sdk.BaseJob, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BaseJob{}
+	out.JobId = w.JobId
+	out.CreatorUserName = w.CreatorUserName
+	out.RunAsUserName = w.RunAsUserName
+	conv7, err := JobSettingsToSDK(w.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.Settings", err)
+	}
+	out.Settings = conv7
+	out.CreatedTime = w.CreatedTime
+	conv8, err := TriggerStateToSDK(w.TriggerState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerState", err)
+	}
+	out.TriggerState = conv8
+	out.HasMore = w.HasMore
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv9, err := convertSlice(w.TriggerDetails, TriggerDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerDetails", err)
+	}
+	out.TriggerDetails = conv9
+	return out, nil
+}
+
+// BaseJobFromSDK converts the sdk-go type to the mirror.
+func BaseJobFromSDK(v *sdk.BaseJob) (*BaseJob, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BaseJob{}
+	out.JobId = v.JobId
+	out.CreatorUserName = v.CreatorUserName
+	out.RunAsUserName = v.RunAsUserName
+	conv10, err := JobSettingsFromSDK(v.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.Settings", err)
+	}
+	out.Settings = conv10
+	out.CreatedTime = v.CreatedTime
+	conv11, err := TriggerStateFromSDK(v.TriggerState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerState", err)
+	}
+	out.TriggerState = conv11
+	out.HasMore = v.HasMore
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv12, err := convertSlice(v.TriggerDetails, TriggerDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseJob.TriggerDetails", err)
+	}
+	out.TriggerDetails = conv12
+	return out, nil
+}
+
+// BaseRunToSDK converts the mirror to the sdk-go type.
+func BaseRunToSDK(w *BaseRun) (*sdk.BaseRun, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BaseRun{}
+	out.JobId = w.JobId
+	out.RunId = w.RunId
+	out.CreatorUserName = w.CreatorUserName
+	out.NumberInJob = w.NumberInJob
+	out.OriginalAttemptRunId = w.OriginalAttemptRunId
+	conv13, err := RunStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.State", err)
+	}
+	out.State = conv13
+	conv14, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Schedule", err)
+	}
+	out.Schedule = conv14
+	conv15, err := ClusterSpecToSDK(w.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv15
+	conv16, err := ClusterInstanceToSDK(w.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv16
+	conv17, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.JobParameters", err)
+	}
+	out.JobParameters = conv17
+	conv18, err := RunParametersToSDK(w.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv18
+	out.Trigger = w.Trigger
+	conv19, err := RunTriggerInfoToSDK(w.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv19
+	out.RunName = w.RunName
+	out.RunPageUrl = w.RunPageUrl
+	out.RunType = w.RunType
+	conv20, err := convertSlice(w.Tasks, RunTaskToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Tasks", err)
+	}
+	out.Tasks = conv20
+	out.Description = w.Description
+	out.AttemptNumber = w.AttemptNumber
+	conv21, err := convertSlice(w.JobClusters, JobClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.JobClusters", err)
+	}
+	out.JobClusters = conv21
+	conv22, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.GitSource", err)
+	}
+	out.GitSource = conv22
+	conv23, err := convertSlice(w.RepairHistory, RepairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.RepairHistory", err)
+	}
+	out.RepairHistory = conv23
+	conv24, err := RunStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Status", err)
+	}
+	out.Status = conv24
+	out.JobRunId = w.JobRunId
+	out.HasMore = w.HasMore
+	out.EffectivePerformanceTarget = w.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv25, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv25
+	out.DeploymentId = w.DeploymentId
+	out.VersionId = w.VersionId
+	out.StartTime = w.StartTime
+	out.SetupDuration = w.SetupDuration
+	out.ExecutionDuration = w.ExecutionDuration
+	out.CleanupDuration = w.CleanupDuration
+	out.EndTime = w.EndTime
+	out.RunDuration = w.RunDuration
+	out.QueueDuration = w.QueueDuration
+	return out, nil
+}
+
+// BaseRunFromSDK converts the sdk-go type to the mirror.
+func BaseRunFromSDK(v *sdk.BaseRun) (*BaseRun, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BaseRun{}
+	out.JobId = v.JobId
+	out.RunId = v.RunId
+	out.CreatorUserName = v.CreatorUserName
+	out.NumberInJob = v.NumberInJob
+	out.OriginalAttemptRunId = v.OriginalAttemptRunId
+	conv26, err := RunStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.State", err)
+	}
+	out.State = conv26
+	conv27, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Schedule", err)
+	}
+	out.Schedule = conv27
+	conv28, err := ClusterSpecFromSDK(v.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv28
+	conv29, err := ClusterInstanceFromSDK(v.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv29
+	conv30, err := convertSlice(v.JobParameters, Run_JobLevelParametersFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.JobParameters", err)
+	}
+	out.JobParameters = conv30
+	conv31, err := RunParametersFromSDK(v.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv31
+	out.Trigger = v.Trigger
+	conv32, err := RunTriggerInfoFromSDK(v.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv32
+	out.RunName = v.RunName
+	out.RunPageUrl = v.RunPageUrl
+	out.RunType = v.RunType
+	conv33, err := convertSlice(v.Tasks, RunTaskFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Tasks", err)
+	}
+	out.Tasks = conv33
+	out.Description = v.Description
+	out.AttemptNumber = v.AttemptNumber
+	conv34, err := convertSlice(v.JobClusters, JobClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.JobClusters", err)
+	}
+	out.JobClusters = conv34
+	conv35, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.GitSource", err)
+	}
+	out.GitSource = conv35
+	conv36, err := convertSlice(v.RepairHistory, RepairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.RepairHistory", err)
+	}
+	out.RepairHistory = conv36
+	conv37, err := RunStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.Status", err)
+	}
+	out.Status = conv37
+	out.JobRunId = v.JobRunId
+	out.HasMore = v.HasMore
+	out.EffectivePerformanceTarget = v.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv38, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BaseRun.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv38
+	out.DeploymentId = v.DeploymentId
+	out.VersionId = v.VersionId
+	out.StartTime = v.StartTime
+	out.SetupDuration = v.SetupDuration
+	out.ExecutionDuration = v.ExecutionDuration
+	out.CleanupDuration = v.CleanupDuration
+	out.EndTime = v.EndTime
+	out.RunDuration = v.RunDuration
+	out.QueueDuration = v.QueueDuration
+	return out, nil
+}
+
+// CancelAllRunsRequestToSDK converts the mirror to the sdk-go type.
+func CancelAllRunsRequestToSDK(w *CancelAllRunsRequest) (*sdk.CancelAllRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelAllRunsRequest{}
+	out.JobId = w.JobId
+	out.AllQueuedRuns = w.AllQueuedRuns
+	return out, nil
+}
+
+// CancelAllRunsRequestFromSDK converts the sdk-go type to the mirror.
+func CancelAllRunsRequestFromSDK(v *sdk.CancelAllRunsRequest) (*CancelAllRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelAllRunsRequest{}
+	out.JobId = v.JobId
+	out.AllQueuedRuns = v.AllQueuedRuns
+	return out, nil
+}
+
+// CancelRunRequestToSDK converts the mirror to the sdk-go type.
+func CancelRunRequestToSDK(w *CancelRunRequest) (*sdk.CancelRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelRunRequest{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// CancelRunRequestFromSDK converts the sdk-go type to the mirror.
+func CancelRunRequestFromSDK(v *sdk.CancelRunRequest) (*CancelRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelRunRequest{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// CleanRoomTaskRunStateToSDK converts the mirror to the sdk-go type.
+func CleanRoomTaskRunStateToSDK(w *CleanRoomTaskRunState) (*sdk.CleanRoomTaskRunState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomTaskRunState{}
+	out.LifeCycleState = w.LifeCycleState
+	out.ResultState = w.ResultState
+	return out, nil
+}
+
+// CleanRoomTaskRunStateFromSDK converts the sdk-go type to the mirror.
+func CleanRoomTaskRunStateFromSDK(v *sdk.CleanRoomTaskRunState) (*CleanRoomTaskRunState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomTaskRunState{}
+	out.LifeCycleState = v.LifeCycleState
+	out.ResultState = v.ResultState
+	return out, nil
+}
+
+// CleanRoomsNotebookTaskToSDK converts the mirror to the sdk-go type.
+func CleanRoomsNotebookTaskToSDK(w *CleanRoomsNotebookTask) (*sdk.CleanRoomsNotebookTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomsNotebookTask{}
+	out.CleanRoomName = w.CleanRoomName
+	out.NotebookName = w.NotebookName
+	out.Etag = w.Etag
+	out.NotebookBaseParameters = w.NotebookBaseParameters
+	return out, nil
+}
+
+// CleanRoomsNotebookTaskFromSDK converts the sdk-go type to the mirror.
+func CleanRoomsNotebookTaskFromSDK(v *sdk.CleanRoomsNotebookTask) (*CleanRoomsNotebookTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomsNotebookTask{}
+	out.CleanRoomName = v.CleanRoomName
+	out.NotebookName = v.NotebookName
+	out.Etag = v.Etag
+	out.NotebookBaseParameters = v.NotebookBaseParameters
+	return out, nil
+}
+
+// CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputToSDK converts the mirror to the sdk-go type.
+func CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputToSDK(w *CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput) (*sdk.CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput{}
+	conv39, err := CleanRoomTaskRunStateToSDK(w.CleanRoomJobRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.CleanRoomJobRunState", err)
+	}
+	out.CleanRoomJobRunState = conv39
+	conv40, err := NotebookTask_NotebookOutputToSDK(w.NotebookOutput)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.NotebookOutput", err)
+	}
+	out.NotebookOutput = conv40
+	conv41, err := OutputSchemaInfoToSDK(w.OutputSchemaInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.OutputSchemaInfo", err)
+	}
+	out.OutputSchemaInfo = conv41
+	return out, nil
+}
+
+// CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputFromSDK converts the sdk-go type to the mirror.
+func CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputFromSDK(v *sdk.CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput) (*CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput{}
+	conv42, err := CleanRoomTaskRunStateFromSDK(v.CleanRoomJobRunState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.CleanRoomJobRunState", err)
+	}
+	out.CleanRoomJobRunState = conv42
+	conv43, err := NotebookTask_NotebookOutputFromSDK(v.NotebookOutput)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.NotebookOutput", err)
+	}
+	out.NotebookOutput = conv43
+	conv44, err := OutputSchemaInfoFromSDK(v.OutputSchemaInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutput.OutputSchemaInfo", err)
+	}
+	out.OutputSchemaInfo = conv44
+	return out, nil
+}
+
+// ClusterInstanceToSDK converts the mirror to the sdk-go type.
+func ClusterInstanceToSDK(w *ClusterInstance) (*sdk.ClusterInstance, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterInstance{}
+	out.ClusterId = w.ClusterId
+	out.SparkContextId = w.SparkContextId
+	return out, nil
+}
+
+// ClusterInstanceFromSDK converts the sdk-go type to the mirror.
+func ClusterInstanceFromSDK(v *sdk.ClusterInstance) (*ClusterInstance, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterInstance{}
+	out.ClusterId = v.ClusterId
+	out.SparkContextId = v.SparkContextId
+	return out, nil
+}
+
+// ClusterLogConfToSDK converts the mirror to the sdk-go type.
+func ClusterLogConfToSDK(w *ClusterLogConf) (*sdk.ClusterLogConf, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterLogConf{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if w.Volumes != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterLogConf.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv45, err := DbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_Dbfs{Dbfs: *conv45}
+	case w.S3 != nil:
+		conv46, err := S3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_S3{S3: *conv46}
+	case w.Volumes != nil:
+		conv47, err := VolumesStorageInfoToSDK(w.Volumes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.ClusterLogConf_StorageInfo_Volumes{Volumes: *conv47}
+	}
+	return out, nil
+}
+
+// ClusterLogConfFromSDK converts the sdk-go type to the mirror.
+func ClusterLogConfFromSDK(v *sdk.ClusterLogConf) (*ClusterLogConf, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterLogConf{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.ClusterLogConf_StorageInfo_Dbfs:
+		if value != nil {
+			conv48, err := DbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.Dbfs = conv48
+		}
+	case *sdk.ClusterLogConf_StorageInfo_S3:
+		if value != nil {
+			conv49, err := S3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.S3 = conv49
+		}
+	case *sdk.ClusterLogConf_StorageInfo_Volumes:
+		if value != nil {
+			conv50, err := VolumesStorageInfoFromSDK(&value.Volumes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterLogConf.StorageInfo", err)
+			}
+			out.Volumes = conv50
+		}
+	}
+	return out, nil
+}
+
+// ClusterSpecToSDK converts the mirror to the sdk-go type.
+func ClusterSpecToSDK(w *ClusterSpec) (*sdk.ClusterSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterSpec{}
+	{
+		members := 0
+		if w.ExistingClusterId != nil {
+			members++
+		}
+		if w.NewCluster != nil {
+			members++
+		}
+		if w.JobClusterKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec.Spec")
+		}
+	}
+	switch {
+	case w.ExistingClusterId != nil:
+		out.Spec = &sdk.ClusterSpec_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
+	case w.NewCluster != nil:
+		conv51, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterSpec.Spec", err)
+		}
+		out.Spec = &sdk.ClusterSpec_Spec_NewCluster{NewCluster: *conv51}
+	case w.JobClusterKey != nil:
+		out.Spec = &sdk.ClusterSpec_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
+	}
+	conv52, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec.Libraries", err)
+	}
+	out.Libraries = conv52
+	return out, nil
+}
+
+// ClusterSpecFromSDK converts the sdk-go type to the mirror.
+func ClusterSpecFromSDK(v *sdk.ClusterSpec) (*ClusterSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterSpec{}
+	switch value := v.Spec.(type) {
+	case *sdk.ClusterSpec_Spec_ExistingClusterId:
+		if value != nil {
+			out.ExistingClusterId = new(value.ExistingClusterId)
+		}
+	case *sdk.ClusterSpec_Spec_NewCluster:
+		if value != nil {
+			conv53, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterSpec.Spec", err)
+			}
+			out.NewCluster = conv53
+		}
+	case *sdk.ClusterSpec_Spec_JobClusterKey:
+		if value != nil {
+			out.JobClusterKey = new(value.JobClusterKey)
+		}
+	}
+	conv54, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec.Libraries", err)
+	}
+	out.Libraries = conv54
+	return out, nil
+}
+
+// ClusterSpec_NewClusterToSDK converts the mirror to the sdk-go type.
+func ClusterSpec_NewClusterToSDK(w *ClusterSpec_NewCluster) (*sdk.ClusterSpec_NewCluster, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClusterSpec_NewCluster{}
+	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
+	out.ClusterName = w.ClusterName
+	out.SparkVersion = w.SparkVersion
+	out.SparkConf = w.SparkConf
+	conv55, err := AwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv55
+	conv56, err := AzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv56
+	conv57, err := GcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv57
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	conv58, err := NodeTypeFlexibilityToSDK(w.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv58
+	conv59, err := NodeTypeFlexibilityToSDK(w.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv59
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv60, err := ClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv60
+	out.SparkEnvVars = w.SparkEnvVars
+	out.AutoterminationMinutes = w.AutoterminationMinutes
+	out.EnableElasticDisk = w.EnableElasticDisk
+	conv61, err := convertSlice(w.InitScripts, InitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.InitScripts", err)
+	}
+	out.InitScripts = conv61
+	conv62, err := DockerImageToSDK(w.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DockerImage", err)
+	}
+	out.DockerImage = conv62
+	out.InstancePoolId = w.InstancePoolId
+	out.SingleUserName = w.SingleUserName
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	conv63, err := WorkloadTypeToSDK(w.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkloadType", err)
+	}
+	out.WorkloadType = conv63
+	out.DataSecurityMode = w.DataSecurityMode
+	out.RuntimeEngine = w.RuntimeEngine
+	out.Kind = w.Kind
+	out.UseMlRuntime = w.UseMlRuntime
+	out.IsSingleNode = w.IsSingleNode
+	out.RemoteDiskThroughput = w.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = w.TotalInitialRemoteDiskSize
+	out.DependencyMode = w.DependencyMode
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ClusterSpec_NewCluster.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.ClusterSpec_NewCluster_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv64, err := AutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.Size", err)
+		}
+		out.Size = &sdk.ClusterSpec_NewCluster_Size_Autoscale{Autoscale: *conv64}
+	}
+	return out, nil
+}
+
+// ClusterSpec_NewClusterFromSDK converts the sdk-go type to the mirror.
+func ClusterSpec_NewClusterFromSDK(v *sdk.ClusterSpec_NewCluster) (*ClusterSpec_NewCluster, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClusterSpec_NewCluster{}
+	out.ApplyPolicyDefaultValues = v.ApplyPolicyDefaultValues
+	out.ClusterName = v.ClusterName
+	out.SparkVersion = v.SparkVersion
+	out.SparkConf = v.SparkConf
+	conv65, err := AwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv65
+	conv66, err := AzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv66
+	conv67, err := GcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv67
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	conv68, err := NodeTypeFlexibilityFromSDK(v.WorkerNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkerNodeTypeFlexibility", err)
+	}
+	out.WorkerNodeTypeFlexibility = conv68
+	conv69, err := NodeTypeFlexibilityFromSDK(v.DriverNodeTypeFlexibility)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DriverNodeTypeFlexibility", err)
+	}
+	out.DriverNodeTypeFlexibility = conv69
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv70, err := ClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv70
+	out.SparkEnvVars = v.SparkEnvVars
+	out.AutoterminationMinutes = v.AutoterminationMinutes
+	out.EnableElasticDisk = v.EnableElasticDisk
+	conv71, err := convertSlice(v.InitScripts, InitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.InitScripts", err)
+	}
+	out.InitScripts = conv71
+	conv72, err := DockerImageFromSDK(v.DockerImage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.DockerImage", err)
+	}
+	out.DockerImage = conv72
+	out.InstancePoolId = v.InstancePoolId
+	out.SingleUserName = v.SingleUserName
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	conv73, err := WorkloadTypeFromSDK(v.WorkloadType)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.WorkloadType", err)
+	}
+	out.WorkloadType = conv73
+	out.DataSecurityMode = v.DataSecurityMode
+	out.RuntimeEngine = v.RuntimeEngine
+	out.Kind = v.Kind
+	out.UseMlRuntime = v.UseMlRuntime
+	out.IsSingleNode = v.IsSingleNode
+	out.RemoteDiskThroughput = v.RemoteDiskThroughput
+	out.TotalInitialRemoteDiskSize = v.TotalInitialRemoteDiskSize
+	out.DependencyMode = v.DependencyMode
+	switch value := v.Size.(type) {
+	case *sdk.ClusterSpec_NewCluster_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.ClusterSpec_NewCluster_Size_Autoscale:
+		if value != nil {
+			conv74, err := AutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ClusterSpec_NewCluster.Size", err)
+			}
+			out.Autoscale = conv74
+		}
+	}
+	return out, nil
+}
+
+// ComputeToSDK converts the mirror to the sdk-go type.
+func ComputeToSDK(w *Compute) (*sdk.Compute, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Compute{}
+	out.HardwareAccelerator = w.HardwareAccelerator
+	return out, nil
+}
+
+// ComputeFromSDK converts the sdk-go type to the mirror.
+func ComputeFromSDK(v *sdk.Compute) (*Compute, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Compute{}
+	out.HardwareAccelerator = v.HardwareAccelerator
+	return out, nil
+}
+
+// ComputeConfigToSDK converts the mirror to the sdk-go type.
+func ComputeConfigToSDK(w *ComputeConfig) (*sdk.ComputeConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComputeConfig{}
+	out.NumGpus = w.NumGpus
+	out.GpuNodePoolId = w.GpuNodePoolId
+	out.GpuType = w.GpuType
+	return out, nil
+}
+
+// ComputeConfigFromSDK converts the sdk-go type to the mirror.
+func ComputeConfigFromSDK(v *sdk.ComputeConfig) (*ComputeConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComputeConfig{}
+	out.NumGpus = v.NumGpus
+	out.GpuNodePoolId = v.GpuNodePoolId
+	out.GpuType = v.GpuType
+	return out, nil
+}
+
+// ComputeSpecToSDK converts the mirror to the sdk-go type.
+func ComputeSpecToSDK(w *ComputeSpec) (*sdk.ComputeSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComputeSpec{}
+	out.AcceleratorType = w.AcceleratorType
+	out.AcceleratorCount = w.AcceleratorCount
+	out.ProvisionedCapacityId = w.ProvisionedCapacityId
+	return out, nil
+}
+
+// ComputeSpecFromSDK converts the sdk-go type to the mirror.
+func ComputeSpecFromSDK(v *sdk.ComputeSpec) (*ComputeSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComputeSpec{}
+	out.AcceleratorType = v.AcceleratorType
+	out.AcceleratorCount = v.AcceleratorCount
+	out.ProvisionedCapacityId = v.ProvisionedCapacityId
+	return out, nil
+}
+
+// ConditionTaskToSDK converts the mirror to the sdk-go type.
+func ConditionTaskToSDK(w *ConditionTask) (*sdk.ConditionTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConditionTask{}
+	out.Op = w.Op
+	out.Left = w.Left
+	out.Right = w.Right
+	out.Outcome = w.Outcome
+	return out, nil
+}
+
+// ConditionTaskFromSDK converts the sdk-go type to the mirror.
+func ConditionTaskFromSDK(v *sdk.ConditionTask) (*ConditionTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConditionTask{}
+	out.Op = v.Op
+	out.Left = v.Left
+	out.Right = v.Right
+	out.Outcome = v.Outcome
+	return out, nil
+}
+
+// ContinuousSettingsToSDK converts the mirror to the sdk-go type.
+func ContinuousSettingsToSDK(w *ContinuousSettings) (*sdk.ContinuousSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContinuousSettings{}
+	out.PauseStatus = w.PauseStatus
+	out.TaskRetryMode = w.TaskRetryMode
+	conv75, err := MaintenanceWindowToSDK(w.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ContinuousSettings.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv75
+	return out, nil
+}
+
+// ContinuousSettingsFromSDK converts the sdk-go type to the mirror.
+func ContinuousSettingsFromSDK(v *sdk.ContinuousSettings) (*ContinuousSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ContinuousSettings{}
+	out.PauseStatus = v.PauseStatus
+	out.TaskRetryMode = v.TaskRetryMode
+	conv76, err := MaintenanceWindowFromSDK(v.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ContinuousSettings.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv76
+	return out, nil
+}
+
+// ContinuousTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func ContinuousTriggerConfigurationToSDK(w *ContinuousTriggerConfiguration) (*sdk.ContinuousTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContinuousTriggerConfiguration{}
+	out.TaskRetryMode = w.TaskRetryMode
+	conv77, err := MaintenanceWindowToSDK(w.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ContinuousTriggerConfiguration.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv77
+	return out, nil
+}
+
+// ContinuousTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func ContinuousTriggerConfigurationFromSDK(v *sdk.ContinuousTriggerConfiguration) (*ContinuousTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ContinuousTriggerConfiguration{}
+	out.TaskRetryMode = v.TaskRetryMode
+	conv78, err := MaintenanceWindowFromSDK(v.MaintenanceWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ContinuousTriggerConfiguration.MaintenanceWindow", err)
+	}
+	out.MaintenanceWindow = conv78
+	return out, nil
+}
+
+// ContinuousTriggerStateToSDK converts the mirror to the sdk-go type.
+func ContinuousTriggerStateToSDK(w *ContinuousTriggerState) (*sdk.ContinuousTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContinuousTriggerState{}
+	out.ConsecutiveFailures = w.ConsecutiveFailures
+	out.NextAttemptMs = w.NextAttemptMs
+	out.IsBackingOff = w.IsBackingOff
+	return out, nil
+}
+
+// ContinuousTriggerStateFromSDK converts the sdk-go type to the mirror.
+func ContinuousTriggerStateFromSDK(v *sdk.ContinuousTriggerState) (*ContinuousTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ContinuousTriggerState{}
+	out.ConsecutiveFailures = v.ConsecutiveFailures
+	out.NextAttemptMs = v.NextAttemptMs
+	out.IsBackingOff = v.IsBackingOff
+	return out, nil
+}
+
+// CreateJobRequestToSDK converts the mirror to the sdk-go type.
+func CreateJobRequestToSDK(w *CreateJobRequest) (*sdk.CreateJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateJobRequest{}
+	conv79, err := convertSlice(w.AccessControlList, AccessControlRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv79
+	out.Name = w.Name
+	out.Description = w.Description
+	conv80, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv80
+	conv81, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv81
+	conv82, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv82
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv83, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Health", err)
+	}
+	out.Health = conv83
+	conv84, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Schedule", err)
+	}
+	out.Schedule = conv84
+	conv85, err := TriggerSettingsToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Trigger", err)
+	}
+	out.Trigger = conv85
+	conv86, err := ContinuousSettingsToSDK(w.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Continuous", err)
+	}
+	out.Continuous = conv86
+	out.MaxConcurrentRuns = w.MaxConcurrentRuns
+	conv87, err := convertSlice(w.Tasks, TaskSettingsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Tasks", err)
+	}
+	out.Tasks = conv87
+	conv88, err := convertSlice(w.JobClusters, JobClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.JobClusters", err)
+	}
+	out.JobClusters = conv88
+	conv89, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.GitSource", err)
+	}
+	out.GitSource = conv89
+	out.Tags = w.Tags
+	out.Format = w.Format
+	conv90, err := QueueSettingsToSDK(w.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Queue", err)
+	}
+	out.Queue = conv90
+	conv91, err := convertSlice(w.Parameters, JobLevelParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Parameters", err)
+	}
+	out.Parameters = conv91
+	conv92, err := JobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.RunAs", err)
+	}
+	out.RunAs = conv92
+	out.EditMode = w.EditMode
+	conv93, err := JobDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Deployment", err)
+	}
+	out.Deployment = conv93
+	conv94, err := convertSlice(w.Environments, JobEnvironmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Environments", err)
+	}
+	out.Environments = conv94
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.UsagePolicyId = w.UsagePolicyId
+	out.PerformanceTarget = w.PerformanceTarget
+	out.ParentPath = w.ParentPath
+	conv95, err := convertSlice(w.Triggers, TriggerConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Triggers", err)
+	}
+	out.Triggers = conv95
+	conv96, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv96
+	out.MaxRetries = w.MaxRetries
+	out.MinRetryIntervalMillis = w.MinRetryIntervalMillis
+	out.RetryOnTimeout = w.RetryOnTimeout
+	out.DisableAutoOptimization = w.DisableAutoOptimization
+	return out, nil
+}
+
+// CreateJobRequestFromSDK converts the sdk-go type to the mirror.
+func CreateJobRequestFromSDK(v *sdk.CreateJobRequest) (*CreateJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateJobRequest{}
+	conv97, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv97
+	out.Name = v.Name
+	out.Description = v.Description
+	conv98, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv98
+	conv99, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv99
+	conv100, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv100
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv101, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Health", err)
+	}
+	out.Health = conv101
+	conv102, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Schedule", err)
+	}
+	out.Schedule = conv102
+	conv103, err := TriggerSettingsFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Trigger", err)
+	}
+	out.Trigger = conv103
+	conv104, err := ContinuousSettingsFromSDK(v.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Continuous", err)
+	}
+	out.Continuous = conv104
+	out.MaxConcurrentRuns = v.MaxConcurrentRuns
+	conv105, err := convertSlice(v.Tasks, TaskSettingsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Tasks", err)
+	}
+	out.Tasks = conv105
+	conv106, err := convertSlice(v.JobClusters, JobClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.JobClusters", err)
+	}
+	out.JobClusters = conv106
+	conv107, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.GitSource", err)
+	}
+	out.GitSource = conv107
+	out.Tags = v.Tags
+	out.Format = v.Format
+	conv108, err := QueueSettingsFromSDK(v.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Queue", err)
+	}
+	out.Queue = conv108
+	conv109, err := convertSlice(v.Parameters, JobLevelParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Parameters", err)
+	}
+	out.Parameters = conv109
+	conv110, err := JobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.RunAs", err)
+	}
+	out.RunAs = conv110
+	out.EditMode = v.EditMode
+	conv111, err := JobDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Deployment", err)
+	}
+	out.Deployment = conv111
+	conv112, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Environments", err)
+	}
+	out.Environments = conv112
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.UsagePolicyId = v.UsagePolicyId
+	out.PerformanceTarget = v.PerformanceTarget
+	out.ParentPath = v.ParentPath
+	conv113, err := convertSlice(v.Triggers, TriggerConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.Triggers", err)
+	}
+	out.Triggers = conv113
+	conv114, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateJobRequest.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv114
+	out.MaxRetries = v.MaxRetries
+	out.MinRetryIntervalMillis = v.MinRetryIntervalMillis
+	out.RetryOnTimeout = v.RetryOnTimeout
+	out.DisableAutoOptimization = v.DisableAutoOptimization
+	return out, nil
+}
+
+// CreateJobResponseToSDK converts the mirror to the sdk-go type.
+func CreateJobResponseToSDK(w *CreateJobResponse) (*sdk.CreateJobResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateJobResponse{}
+	out.JobId = w.JobId
+	return out, nil
+}
+
+// CreateJobResponseFromSDK converts the sdk-go type to the mirror.
+func CreateJobResponseFromSDK(v *sdk.CreateJobResponse) (*CreateJobResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateJobResponse{}
+	out.JobId = v.JobId
+	return out, nil
+}
+
+// CronScheduleToSDK converts the mirror to the sdk-go type.
+func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronSchedule{}
+	out.QuartzCronExpression = w.QuartzCronExpression
+	out.TimezoneId = w.TimezoneId
+	out.PauseStatus = w.PauseStatus
+	conv115, err := SqlConditionConfigurationToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CronSchedule.SqlCondition", err)
+	}
+	out.SqlCondition = conv115
+	return out, nil
+}
+
+// CronScheduleFromSDK converts the sdk-go type to the mirror.
+func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronSchedule{}
+	out.QuartzCronExpression = v.QuartzCronExpression
+	out.TimezoneId = v.TimezoneId
+	out.PauseStatus = v.PauseStatus
+	conv116, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CronSchedule.SqlCondition", err)
+	}
+	out.SqlCondition = conv116
+	return out, nil
+}
+
+// CronTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func CronTriggerConfigurationToSDK(w *CronTriggerConfiguration) (*sdk.CronTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronTriggerConfiguration{}
+	out.QuartzCronExpression = w.QuartzCronExpression
+	out.TimezoneId = w.TimezoneId
+	return out, nil
+}
+
+// CronTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func CronTriggerConfigurationFromSDK(v *sdk.CronTriggerConfiguration) (*CronTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronTriggerConfiguration{}
+	out.QuartzCronExpression = v.QuartzCronExpression
+	out.TimezoneId = v.TimezoneId
+	return out, nil
+}
+
+// DashboardPageSnapshotToSDK converts the mirror to the sdk-go type.
+func DashboardPageSnapshotToSDK(w *DashboardPageSnapshot) (*sdk.DashboardPageSnapshot, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DashboardPageSnapshot{}
+	out.PageDisplayName = w.PageDisplayName
+	conv117, err := convertSlice(w.WidgetErrorDetails, WidgetErrorDetailToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardPageSnapshot.WidgetErrorDetails", err)
+	}
+	out.WidgetErrorDetails = conv117
+	return out, nil
+}
+
+// DashboardPageSnapshotFromSDK converts the sdk-go type to the mirror.
+func DashboardPageSnapshotFromSDK(v *sdk.DashboardPageSnapshot) (*DashboardPageSnapshot, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DashboardPageSnapshot{}
+	out.PageDisplayName = v.PageDisplayName
+	conv118, err := convertSlice(v.WidgetErrorDetails, WidgetErrorDetailFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardPageSnapshot.WidgetErrorDetails", err)
+	}
+	out.WidgetErrorDetails = conv118
+	return out, nil
+}
+
+// DashboardTaskToSDK converts the mirror to the sdk-go type.
+func DashboardTaskToSDK(w *DashboardTask) (*sdk.DashboardTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DashboardTask{}
+	conv119, err := SubscriptionToSDK(w.Subscription)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardTask.Subscription", err)
+	}
+	out.Subscription = conv119
+	out.WarehouseId = w.WarehouseId
+	out.DashboardId = w.DashboardId
+	out.Filters = w.Filters
+	return out, nil
+}
+
+// DashboardTaskFromSDK converts the sdk-go type to the mirror.
+func DashboardTaskFromSDK(v *sdk.DashboardTask) (*DashboardTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DashboardTask{}
+	conv120, err := SubscriptionFromSDK(v.Subscription)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardTask.Subscription", err)
+	}
+	out.Subscription = conv120
+	out.WarehouseId = v.WarehouseId
+	out.DashboardId = v.DashboardId
+	out.Filters = v.Filters
+	return out, nil
+}
+
+// DashboardTaskOutputToSDK converts the mirror to the sdk-go type.
+func DashboardTaskOutputToSDK(w *DashboardTaskOutput) (*sdk.DashboardTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DashboardTaskOutput{}
+	conv121, err := convertSlice(w.PageSnapshots, DashboardPageSnapshotToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardTaskOutput.PageSnapshots", err)
+	}
+	out.PageSnapshots = conv121
+	return out, nil
+}
+
+// DashboardTaskOutputFromSDK converts the sdk-go type to the mirror.
+func DashboardTaskOutputFromSDK(v *sdk.DashboardTaskOutput) (*DashboardTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DashboardTaskOutput{}
+	conv122, err := convertSlice(v.PageSnapshots, DashboardPageSnapshotFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DashboardTaskOutput.PageSnapshots", err)
+	}
+	out.PageSnapshots = conv122
+	return out, nil
+}
+
+// DbfsStorageInfoToSDK converts the mirror to the sdk-go type.
+func DbfsStorageInfoToSDK(w *DbfsStorageInfo) (*sdk.DbfsStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbfsStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// DbfsStorageInfoFromSDK converts the sdk-go type to the mirror.
+func DbfsStorageInfoFromSDK(v *sdk.DbfsStorageInfo) (*DbfsStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbfsStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// DbtCloudJobRunStepToSDK converts the mirror to the sdk-go type.
+func DbtCloudJobRunStepToSDK(w *DbtCloudJobRunStep) (*sdk.DbtCloudJobRunStep, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtCloudJobRunStep{}
+	out.Index = w.Index
+	out.Name = w.Name
+	out.Status = w.Status
+	out.Logs = w.Logs
+	return out, nil
+}
+
+// DbtCloudJobRunStepFromSDK converts the sdk-go type to the mirror.
+func DbtCloudJobRunStepFromSDK(v *sdk.DbtCloudJobRunStep) (*DbtCloudJobRunStep, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtCloudJobRunStep{}
+	out.Index = v.Index
+	out.Name = v.Name
+	out.Status = v.Status
+	out.Logs = v.Logs
+	return out, nil
+}
+
+// DbtCloudTaskToSDK converts the mirror to the sdk-go type.
+func DbtCloudTaskToSDK(w *DbtCloudTask) (*sdk.DbtCloudTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtCloudTask{}
+	out.DbtCloudJobId = w.DbtCloudJobId
+	out.ConnectionResourceName = w.ConnectionResourceName
+	return out, nil
+}
+
+// DbtCloudTaskFromSDK converts the sdk-go type to the mirror.
+func DbtCloudTaskFromSDK(v *sdk.DbtCloudTask) (*DbtCloudTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtCloudTask{}
+	out.DbtCloudJobId = v.DbtCloudJobId
+	out.ConnectionResourceName = v.ConnectionResourceName
+	return out, nil
+}
+
+// DbtCloudTaskOutputToSDK converts the mirror to the sdk-go type.
+func DbtCloudTaskOutputToSDK(w *DbtCloudTaskOutput) (*sdk.DbtCloudTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtCloudTaskOutput{}
+	out.DbtCloudJobRunId = w.DbtCloudJobRunId
+	out.DbtCloudJobRunUrl = w.DbtCloudJobRunUrl
+	conv123, err := convertSlice(w.DbtCloudJobRunOutput, DbtCloudJobRunStepToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DbtCloudTaskOutput.DbtCloudJobRunOutput", err)
+	}
+	out.DbtCloudJobRunOutput = conv123
+	return out, nil
+}
+
+// DbtCloudTaskOutputFromSDK converts the sdk-go type to the mirror.
+func DbtCloudTaskOutputFromSDK(v *sdk.DbtCloudTaskOutput) (*DbtCloudTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtCloudTaskOutput{}
+	out.DbtCloudJobRunId = v.DbtCloudJobRunId
+	out.DbtCloudJobRunUrl = v.DbtCloudJobRunUrl
+	conv124, err := convertSlice(v.DbtCloudJobRunOutput, DbtCloudJobRunStepFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DbtCloudTaskOutput.DbtCloudJobRunOutput", err)
+	}
+	out.DbtCloudJobRunOutput = conv124
+	return out, nil
+}
+
+// DbtPlatformJobRunStepToSDK converts the mirror to the sdk-go type.
+func DbtPlatformJobRunStepToSDK(w *DbtPlatformJobRunStep) (*sdk.DbtPlatformJobRunStep, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtPlatformJobRunStep{}
+	out.Index = w.Index
+	out.Name = w.Name
+	out.Status = w.Status
+	out.Logs = w.Logs
+	out.NameTruncated = w.NameTruncated
+	out.LogsTruncated = w.LogsTruncated
+	return out, nil
+}
+
+// DbtPlatformJobRunStepFromSDK converts the sdk-go type to the mirror.
+func DbtPlatformJobRunStepFromSDK(v *sdk.DbtPlatformJobRunStep) (*DbtPlatformJobRunStep, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtPlatformJobRunStep{}
+	out.Index = v.Index
+	out.Name = v.Name
+	out.Status = v.Status
+	out.Logs = v.Logs
+	out.NameTruncated = v.NameTruncated
+	out.LogsTruncated = v.LogsTruncated
+	return out, nil
+}
+
+// DbtPlatformTaskToSDK converts the mirror to the sdk-go type.
+func DbtPlatformTaskToSDK(w *DbtPlatformTask) (*sdk.DbtPlatformTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtPlatformTask{}
+	out.DbtPlatformJobId = w.DbtPlatformJobId
+	out.ConnectionResourceName = w.ConnectionResourceName
+	return out, nil
+}
+
+// DbtPlatformTaskFromSDK converts the sdk-go type to the mirror.
+func DbtPlatformTaskFromSDK(v *sdk.DbtPlatformTask) (*DbtPlatformTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtPlatformTask{}
+	out.DbtPlatformJobId = v.DbtPlatformJobId
+	out.ConnectionResourceName = v.ConnectionResourceName
+	return out, nil
+}
+
+// DbtPlatformTaskOutputToSDK converts the mirror to the sdk-go type.
+func DbtPlatformTaskOutputToSDK(w *DbtPlatformTaskOutput) (*sdk.DbtPlatformTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtPlatformTaskOutput{}
+	out.DbtPlatformJobRunId = w.DbtPlatformJobRunId
+	out.DbtPlatformJobRunUrl = w.DbtPlatformJobRunUrl
+	conv125, err := convertSlice(w.DbtPlatformJobRunOutput, DbtPlatformJobRunStepToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DbtPlatformTaskOutput.DbtPlatformJobRunOutput", err)
+	}
+	out.DbtPlatformJobRunOutput = conv125
+	out.StepsTruncated = w.StepsTruncated
+	return out, nil
+}
+
+// DbtPlatformTaskOutputFromSDK converts the sdk-go type to the mirror.
+func DbtPlatformTaskOutputFromSDK(v *sdk.DbtPlatformTaskOutput) (*DbtPlatformTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtPlatformTaskOutput{}
+	out.DbtPlatformJobRunId = v.DbtPlatformJobRunId
+	out.DbtPlatformJobRunUrl = v.DbtPlatformJobRunUrl
+	conv126, err := convertSlice(v.DbtPlatformJobRunOutput, DbtPlatformJobRunStepFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DbtPlatformTaskOutput.DbtPlatformJobRunOutput", err)
+	}
+	out.DbtPlatformJobRunOutput = conv126
+	out.StepsTruncated = v.StepsTruncated
+	return out, nil
+}
+
+// DbtTaskToSDK converts the mirror to the sdk-go type.
+func DbtTaskToSDK(w *DbtTask) (*sdk.DbtTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtTask{}
+	out.ProjectDirectory = w.ProjectDirectory
+	out.Commands = w.Commands
+	out.Schema = w.Schema
+	out.WarehouseId = w.WarehouseId
+	out.ProfilesDirectory = w.ProfilesDirectory
+	out.Catalog = w.Catalog
+	out.Source = w.Source
+	return out, nil
+}
+
+// DbtTaskFromSDK converts the sdk-go type to the mirror.
+func DbtTaskFromSDK(v *sdk.DbtTask) (*DbtTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtTask{}
+	out.ProjectDirectory = v.ProjectDirectory
+	out.Commands = v.Commands
+	out.Schema = v.Schema
+	out.WarehouseId = v.WarehouseId
+	out.ProfilesDirectory = v.ProfilesDirectory
+	out.Catalog = v.Catalog
+	out.Source = v.Source
+	return out, nil
+}
+
+// DbtTask_DbtTaskOutputToSDK converts the mirror to the sdk-go type.
+func DbtTask_DbtTaskOutputToSDK(w *DbtTask_DbtTaskOutput) (*sdk.DbtTask_DbtTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DbtTask_DbtTaskOutput{}
+	out.ArtifactsLink = w.ArtifactsLink
+	out.ArtifactsHeaders = w.ArtifactsHeaders
+	return out, nil
+}
+
+// DbtTask_DbtTaskOutputFromSDK converts the sdk-go type to the mirror.
+func DbtTask_DbtTaskOutputFromSDK(v *sdk.DbtTask_DbtTaskOutput) (*DbtTask_DbtTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DbtTask_DbtTaskOutput{}
+	out.ArtifactsLink = v.ArtifactsLink
+	out.ArtifactsHeaders = v.ArtifactsHeaders
+	return out, nil
+}
+
+// DeleteJobRequestToSDK converts the mirror to the sdk-go type.
+func DeleteJobRequestToSDK(w *DeleteJobRequest) (*sdk.DeleteJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteJobRequest{}
+	out.JobId = w.JobId
+	return out, nil
+}
+
+// DeleteJobRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteJobRequestFromSDK(v *sdk.DeleteJobRequest) (*DeleteJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteJobRequest{}
+	out.JobId = v.JobId
+	return out, nil
+}
+
+// DeleteRunRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRunRequestToSDK(w *DeleteRunRequest) (*sdk.DeleteRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRunRequest{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// DeleteRunRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRunRequestFromSDK(v *sdk.DeleteRunRequest) (*DeleteRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRunRequest{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// DeploymentSpecToSDK converts the mirror to the sdk-go type.
+func DeploymentSpecToSDK(w *DeploymentSpec) (*sdk.DeploymentSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeploymentSpec{}
+	out.CommandPath = w.CommandPath
+	conv127, err := ComputeSpecToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeploymentSpec.Compute", err)
+	}
+	out.Compute = conv127
+	out.Name = w.Name
+	return out, nil
+}
+
+// DeploymentSpecFromSDK converts the sdk-go type to the mirror.
+func DeploymentSpecFromSDK(v *sdk.DeploymentSpec) (*DeploymentSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeploymentSpec{}
+	out.CommandPath = v.CommandPath
+	conv128, err := ComputeSpecFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeploymentSpec.Compute", err)
+	}
+	out.Compute = conv128
+	out.Name = v.Name
+	return out, nil
+}
+
+// DockerBasicAuthToSDK converts the mirror to the sdk-go type.
+func DockerBasicAuthToSDK(w *DockerBasicAuth) (*sdk.DockerBasicAuth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerBasicAuth{}
+	out.Username = w.Username
+	out.Password = w.Password
+	return out, nil
+}
+
+// DockerBasicAuthFromSDK converts the sdk-go type to the mirror.
+func DockerBasicAuthFromSDK(v *sdk.DockerBasicAuth) (*DockerBasicAuth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerBasicAuth{}
+	out.Username = v.Username
+	out.Password = v.Password
+	return out, nil
+}
+
+// DockerImageToSDK converts the mirror to the sdk-go type.
+func DockerImageToSDK(w *DockerImage) (*sdk.DockerImage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DockerImage{}
+	out.Url = w.Url
+	{
+		members := 0
+		if w.BasicAuth != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DockerImage.CredsOneof")
+		}
+	}
+	switch {
+	case w.BasicAuth != nil:
+		conv129, err := DockerBasicAuthToSDK(w.BasicAuth)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+		}
+		out.CredsOneof = &sdk.DockerImage_CredsOneof_BasicAuth{BasicAuth: *conv129}
+	}
+	return out, nil
+}
+
+// DockerImageFromSDK converts the sdk-go type to the mirror.
+func DockerImageFromSDK(v *sdk.DockerImage) (*DockerImage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DockerImage{}
+	out.Url = v.Url
+	switch value := v.CredsOneof.(type) {
+	case *sdk.DockerImage_CredsOneof_BasicAuth:
+		if value != nil {
+			conv130, err := DockerBasicAuthFromSDK(&value.BasicAuth)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DockerImage.CredsOneof", err)
+			}
+			out.BasicAuth = conv130
+		}
+	}
+	return out, nil
+}
+
+// EnforcePolicyComplianceForJobToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceForJobToSDK(w *EnforcePolicyComplianceForJob) (*sdk.EnforcePolicyComplianceForJob, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceForJob{}
+	out.JobId = w.JobId
+	out.ValidateOnly = w.ValidateOnly
+	return out, nil
+}
+
+// EnforcePolicyComplianceForJobFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceForJobFromSDK(v *sdk.EnforcePolicyComplianceForJob) (*EnforcePolicyComplianceForJob, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceForJob{}
+	out.JobId = v.JobId
+	out.ValidateOnly = v.ValidateOnly
+	return out, nil
+}
+
+// EnforcePolicyComplianceResponseToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceResponseToSDK(w *EnforcePolicyComplianceResponse) (*sdk.EnforcePolicyComplianceResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceResponse{}
+	out.HasChanges = w.HasChanges
+	conv131, err := convertSlice(w.JobClusterChanges, EnforcePolicyComplianceResponse_JobClusterSettingsChangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.JobClusterChanges", err)
+	}
+	out.JobClusterChanges = conv131
+	conv132, err := JobSettingsToSDK(w.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.Settings", err)
+	}
+	out.Settings = conv132
+	return out, nil
+}
+
+// EnforcePolicyComplianceResponseFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceResponseFromSDK(v *sdk.EnforcePolicyComplianceResponse) (*EnforcePolicyComplianceResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceResponse{}
+	out.HasChanges = v.HasChanges
+	conv133, err := convertSlice(v.JobClusterChanges, EnforcePolicyComplianceResponse_JobClusterSettingsChangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.JobClusterChanges", err)
+	}
+	out.JobClusterChanges = conv133
+	conv134, err := JobSettingsFromSDK(v.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EnforcePolicyComplianceResponse.Settings", err)
+	}
+	out.Settings = conv134
+	return out, nil
+}
+
+// EnforcePolicyComplianceResponse_JobClusterSettingsChangeToSDK converts the mirror to the sdk-go type.
+func EnforcePolicyComplianceResponse_JobClusterSettingsChangeToSDK(w *EnforcePolicyComplianceResponse_JobClusterSettingsChange) (*sdk.EnforcePolicyComplianceResponse_JobClusterSettingsChange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnforcePolicyComplianceResponse_JobClusterSettingsChange{}
+	out.Field = w.Field
+	out.PreviousValue = w.PreviousValue
+	out.NewValue = w.NewValue
+	return out, nil
+}
+
+// EnforcePolicyComplianceResponse_JobClusterSettingsChangeFromSDK converts the sdk-go type to the mirror.
+func EnforcePolicyComplianceResponse_JobClusterSettingsChangeFromSDK(v *sdk.EnforcePolicyComplianceResponse_JobClusterSettingsChange) (*EnforcePolicyComplianceResponse_JobClusterSettingsChange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnforcePolicyComplianceResponse_JobClusterSettingsChange{}
+	out.Field = v.Field
+	out.PreviousValue = v.PreviousValue
+	out.NewValue = v.NewValue
+	return out, nil
+}
+
+// EnvironmentToSDK converts the mirror to the sdk-go type.
+func EnvironmentToSDK(w *Environment) (*sdk.Environment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Environment{}
+	out.Client = w.Client
+	out.Dependencies = w.Dependencies
+	out.BaseEnvironment = w.BaseEnvironment
+	out.EnvironmentVersion = w.EnvironmentVersion
+	out.JavaDependencies = w.JavaDependencies
+	out.ProjectEnvironment = w.ProjectEnvironment
+	return out, nil
+}
+
+// EnvironmentFromSDK converts the sdk-go type to the mirror.
+func EnvironmentFromSDK(v *sdk.Environment) (*Environment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Environment{}
+	out.Client = v.Client
+	out.Dependencies = v.Dependencies
+	out.BaseEnvironment = v.BaseEnvironment
+	out.EnvironmentVersion = v.EnvironmentVersion
+	out.JavaDependencies = v.JavaDependencies
+	out.ProjectEnvironment = v.ProjectEnvironment
+	return out, nil
+}
+
+// ExportRunRequestToSDK converts the mirror to the sdk-go type.
+func ExportRunRequestToSDK(w *ExportRunRequest) (*sdk.ExportRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExportRunRequest{}
+	out.RunId = w.RunId
+	out.ViewsToExport = w.ViewsToExport
+	return out, nil
+}
+
+// ExportRunRequestFromSDK converts the sdk-go type to the mirror.
+func ExportRunRequestFromSDK(v *sdk.ExportRunRequest) (*ExportRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExportRunRequest{}
+	out.RunId = v.RunId
+	out.ViewsToExport = v.ViewsToExport
+	return out, nil
+}
+
+// ExportRunResponseToSDK converts the mirror to the sdk-go type.
+func ExportRunResponseToSDK(w *ExportRunResponse) (*sdk.ExportRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExportRunResponse{}
+	conv135, err := convertSlice(w.Views, ViewItemToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExportRunResponse.Views", err)
+	}
+	out.Views = conv135
+	return out, nil
+}
+
+// ExportRunResponseFromSDK converts the sdk-go type to the mirror.
+func ExportRunResponseFromSDK(v *sdk.ExportRunResponse) (*ExportRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExportRunResponse{}
+	conv136, err := convertSlice(v.Views, ViewItemFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExportRunResponse.Views", err)
+	}
+	out.Views = conv136
+	return out, nil
+}
+
+// FileArrivalTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func FileArrivalTriggerConfigurationToSDK(w *FileArrivalTriggerConfiguration) (*sdk.FileArrivalTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileArrivalTriggerConfiguration{}
+	out.Url = w.Url
+	out.MinTimeBetweenTriggersSeconds = w.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = w.WaitAfterLastChangeSeconds
+	return out, nil
+}
+
+// FileArrivalTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func FileArrivalTriggerConfigurationFromSDK(v *sdk.FileArrivalTriggerConfiguration) (*FileArrivalTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileArrivalTriggerConfiguration{}
+	out.Url = v.Url
+	out.MinTimeBetweenTriggersSeconds = v.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = v.WaitAfterLastChangeSeconds
+	return out, nil
+}
+
+// FileArrivalTriggerStateToSDK converts the mirror to the sdk-go type.
+func FileArrivalTriggerStateToSDK(w *FileArrivalTriggerState) (*sdk.FileArrivalTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileArrivalTriggerState{}
+	out.UsingFileEvents = w.UsingFileEvents
+	return out, nil
+}
+
+// FileArrivalTriggerStateFromSDK converts the sdk-go type to the mirror.
+func FileArrivalTriggerStateFromSDK(v *sdk.FileArrivalTriggerState) (*FileArrivalTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileArrivalTriggerState{}
+	out.UsingFileEvents = v.UsingFileEvents
+	return out, nil
+}
+
+// ForEachTaskToSDK converts the mirror to the sdk-go type.
+func ForEachTaskToSDK(w *ForEachTask) (*sdk.ForEachTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ForEachTask{}
+	out.Inputs = w.Inputs
+	out.Concurrency = w.Concurrency
+	conv137, err := TaskSettingsToSDK(w.Task)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ForEachTask.Task", err)
+	}
+	out.Task = conv137
+	return out, nil
+}
+
+// ForEachTaskFromSDK converts the sdk-go type to the mirror.
+func ForEachTaskFromSDK(v *sdk.ForEachTask) (*ForEachTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ForEachTask{}
+	out.Inputs = v.Inputs
+	out.Concurrency = v.Concurrency
+	conv138, err := TaskSettingsFromSDK(v.Task)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ForEachTask.Task", err)
+	}
+	out.Task = conv138
+	return out, nil
+}
+
+// GcpAttributesToSDK converts the mirror to the sdk-go type.
+func GcpAttributesToSDK(w *GcpAttributes) (*sdk.GcpAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpAttributes{}
+	out.UsePreemptibleExecutors = w.UsePreemptibleExecutors
+	out.GoogleServiceAccount = w.GoogleServiceAccount
+	out.BootDiskSize = w.BootDiskSize
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.LocalSsdCount = w.LocalSsdCount
+	out.FirstOnDemand = w.FirstOnDemand
+	out.ConfidentialComputeType = w.ConfidentialComputeType
+	return out, nil
+}
+
+// GcpAttributesFromSDK converts the sdk-go type to the mirror.
+func GcpAttributesFromSDK(v *sdk.GcpAttributes) (*GcpAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpAttributes{}
+	out.UsePreemptibleExecutors = v.UsePreemptibleExecutors
+	out.GoogleServiceAccount = v.GoogleServiceAccount
+	out.BootDiskSize = v.BootDiskSize
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.LocalSsdCount = v.LocalSsdCount
+	out.FirstOnDemand = v.FirstOnDemand
+	out.ConfidentialComputeType = v.ConfidentialComputeType
+	return out, nil
+}
+
+// GcsStorageInfoToSDK converts the mirror to the sdk-go type.
+func GcsStorageInfoToSDK(w *GcsStorageInfo) (*sdk.GcsStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcsStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// GcsStorageInfoFromSDK converts the sdk-go type to the mirror.
+func GcsStorageInfoFromSDK(v *sdk.GcsStorageInfo) (*GcsStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcsStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// GenAiComputeTaskToSDK converts the mirror to the sdk-go type.
+func GenAiComputeTaskToSDK(w *GenAiComputeTask) (*sdk.GenAiComputeTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenAiComputeTask{}
+	out.DlRuntimeImage = w.DlRuntimeImage
+	conv139, err := ComputeConfigToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenAiComputeTask.Compute", err)
+	}
+	out.Compute = conv139
+	out.Command = w.Command
+	out.Source = w.Source
+	out.TrainingScriptPath = w.TrainingScriptPath
+	out.YamlParametersFilePath = w.YamlParametersFilePath
+	out.YamlParameters = w.YamlParameters
+	out.MlflowExperimentName = w.MlflowExperimentName
+	return out, nil
+}
+
+// GenAiComputeTaskFromSDK converts the sdk-go type to the mirror.
+func GenAiComputeTaskFromSDK(v *sdk.GenAiComputeTask) (*GenAiComputeTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenAiComputeTask{}
+	out.DlRuntimeImage = v.DlRuntimeImage
+	conv140, err := ComputeConfigFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenAiComputeTask.Compute", err)
+	}
+	out.Compute = conv140
+	out.Command = v.Command
+	out.Source = v.Source
+	out.TrainingScriptPath = v.TrainingScriptPath
+	out.YamlParametersFilePath = v.YamlParametersFilePath
+	out.YamlParameters = v.YamlParameters
+	out.MlflowExperimentName = v.MlflowExperimentName
+	return out, nil
+}
+
+// GetJobRequestToSDK converts the mirror to the sdk-go type.
+func GetJobRequestToSDK(w *GetJobRequest) (*sdk.GetJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetJobRequest{}
+	out.JobId = w.JobId
+	out.IncludeTriggerState = w.IncludeTriggerState
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GetJobRequestFromSDK converts the sdk-go type to the mirror.
+func GetJobRequestFromSDK(v *sdk.GetJobRequest) (*GetJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetJobRequest{}
+	out.JobId = v.JobId
+	out.IncludeTriggerState = v.IncludeTriggerState
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GetJobResponseToSDK converts the mirror to the sdk-go type.
+func GetJobResponseToSDK(w *GetJobResponse) (*sdk.GetJobResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetJobResponse{}
+	out.NextPageToken = w.NextPageToken
+	out.JobId = w.JobId
+	out.CreatorUserName = w.CreatorUserName
+	out.RunAsUserName = w.RunAsUserName
+	conv141, err := JobSettingsToSDK(w.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.Settings", err)
+	}
+	out.Settings = conv141
+	out.CreatedTime = w.CreatedTime
+	conv142, err := TriggerStateToSDK(w.TriggerState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerState", err)
+	}
+	out.TriggerState = conv142
+	out.HasMore = w.HasMore
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv143, err := convertSlice(w.TriggerDetails, TriggerDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerDetails", err)
+	}
+	out.TriggerDetails = conv143
+	return out, nil
+}
+
+// GetJobResponseFromSDK converts the sdk-go type to the mirror.
+func GetJobResponseFromSDK(v *sdk.GetJobResponse) (*GetJobResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetJobResponse{}
+	out.NextPageToken = v.NextPageToken
+	out.JobId = v.JobId
+	out.CreatorUserName = v.CreatorUserName
+	out.RunAsUserName = v.RunAsUserName
+	conv144, err := JobSettingsFromSDK(v.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.Settings", err)
+	}
+	out.Settings = conv144
+	out.CreatedTime = v.CreatedTime
+	conv145, err := TriggerStateFromSDK(v.TriggerState)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerState", err)
+	}
+	out.TriggerState = conv145
+	out.HasMore = v.HasMore
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv146, err := convertSlice(v.TriggerDetails, TriggerDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetJobResponse.TriggerDetails", err)
+	}
+	out.TriggerDetails = conv146
+	return out, nil
+}
+
+// GetPolicyComplianceForJobRequestToSDK converts the mirror to the sdk-go type.
+func GetPolicyComplianceForJobRequestToSDK(w *GetPolicyComplianceForJobRequest) (*sdk.GetPolicyComplianceForJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyComplianceForJobRequest{}
+	out.JobId = w.JobId
+	return out, nil
+}
+
+// GetPolicyComplianceForJobRequestFromSDK converts the sdk-go type to the mirror.
+func GetPolicyComplianceForJobRequestFromSDK(v *sdk.GetPolicyComplianceForJobRequest) (*GetPolicyComplianceForJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyComplianceForJobRequest{}
+	out.JobId = v.JobId
+	return out, nil
+}
+
+// GetPolicyComplianceForJobResponseToSDK converts the mirror to the sdk-go type.
+func GetPolicyComplianceForJobResponseToSDK(w *GetPolicyComplianceForJobResponse) (*sdk.GetPolicyComplianceForJobResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyComplianceForJobResponse{}
+	out.IsCompliant = w.IsCompliant
+	out.Violations = w.Violations
+	return out, nil
+}
+
+// GetPolicyComplianceForJobResponseFromSDK converts the sdk-go type to the mirror.
+func GetPolicyComplianceForJobResponseFromSDK(v *sdk.GetPolicyComplianceForJobResponse) (*GetPolicyComplianceForJobResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyComplianceForJobResponse{}
+	out.IsCompliant = v.IsCompliant
+	out.Violations = v.Violations
+	return out, nil
+}
+
+// GetRunOutputRequestToSDK converts the mirror to the sdk-go type.
+func GetRunOutputRequestToSDK(w *GetRunOutputRequest) (*sdk.GetRunOutputRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunOutputRequest{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// GetRunOutputRequestFromSDK converts the sdk-go type to the mirror.
+func GetRunOutputRequestFromSDK(v *sdk.GetRunOutputRequest) (*GetRunOutputRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunOutputRequest{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// GetRunOutputResponseToSDK converts the mirror to the sdk-go type.
+func GetRunOutputResponseToSDK(w *GetRunOutputResponse) (*sdk.GetRunOutputResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunOutputResponse{}
+	conv147, err := RunToSDK(w.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Metadata", err)
+	}
+	out.Metadata = conv147
+	out.Error = w.Error
+	out.Info = w.Info
+	{
+		members := 0
+		if w.NotebookOutput != nil {
+			members++
+		}
+		if w.SqlOutput != nil {
+			members++
+		}
+		if w.DbtOutput != nil {
+			members++
+		}
+		if w.RunJobOutput != nil {
+			members++
+		}
+		if w.CleanRoomsNotebookOutput != nil {
+			members++
+		}
+		if w.DashboardOutput != nil {
+			members++
+		}
+		if w.DbtCloudOutput != nil {
+			members++
+		}
+		if w.DbtPlatformOutput != nil {
+			members++
+		}
+		if w.AlertOutput != nil {
+			members++
+		}
+		if w.AiRuntimeTaskOutput != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GetRunOutputResponse.Result")
+		}
+	}
+	switch {
+	case w.NotebookOutput != nil:
+		conv148, err := NotebookTask_NotebookOutputToSDK(w.NotebookOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_NotebookOutput{NotebookOutput: *conv148}
+	case w.SqlOutput != nil:
+		conv149, err := SqlTask_SqlOutputToSDK(w.SqlOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_SqlOutput{SqlOutput: *conv149}
+	case w.DbtOutput != nil:
+		conv150, err := DbtTask_DbtTaskOutputToSDK(w.DbtOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_DbtOutput{DbtOutput: *conv150}
+	case w.RunJobOutput != nil:
+		conv151, err := RunJobTask_RunJobTaskOutputToSDK(w.RunJobOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_RunJobOutput{RunJobOutput: *conv151}
+	case w.CleanRoomsNotebookOutput != nil:
+		conv152, err := CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputToSDK(w.CleanRoomsNotebookOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_CleanRoomsNotebookOutput{CleanRoomsNotebookOutput: *conv152}
+	case w.DashboardOutput != nil:
+		conv153, err := DashboardTaskOutputToSDK(w.DashboardOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_DashboardOutput{DashboardOutput: *conv153}
+	case w.DbtCloudOutput != nil:
+		conv154, err := DbtCloudTaskOutputToSDK(w.DbtCloudOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_DbtCloudOutput{DbtCloudOutput: *conv154}
+	case w.DbtPlatformOutput != nil:
+		conv155, err := DbtPlatformTaskOutputToSDK(w.DbtPlatformOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_DbtPlatformOutput{DbtPlatformOutput: *conv155}
+	case w.AlertOutput != nil:
+		conv156, err := AlertTaskOutputToSDK(w.AlertOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_AlertOutput{AlertOutput: *conv156}
+	case w.AiRuntimeTaskOutput != nil:
+		conv157, err := AiRuntimeTaskOutputToSDK(w.AiRuntimeTaskOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+		}
+		out.Result = &sdk.GetRunOutputResponse_Result_AiRuntimeTaskOutput{AiRuntimeTaskOutput: *conv157}
+	}
+	out.Logs = w.Logs
+	out.LogsTruncated = w.LogsTruncated
+	out.ErrorTrace = w.ErrorTrace
+	return out, nil
+}
+
+// GetRunOutputResponseFromSDK converts the sdk-go type to the mirror.
+func GetRunOutputResponseFromSDK(v *sdk.GetRunOutputResponse) (*GetRunOutputResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunOutputResponse{}
+	conv158, err := RunFromSDK(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Metadata", err)
+	}
+	out.Metadata = conv158
+	out.Error = v.Error
+	out.Info = v.Info
+	switch value := v.Result.(type) {
+	case *sdk.GetRunOutputResponse_Result_NotebookOutput:
+		if value != nil {
+			conv159, err := NotebookTask_NotebookOutputFromSDK(&value.NotebookOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.NotebookOutput = conv159
+		}
+	case *sdk.GetRunOutputResponse_Result_SqlOutput:
+		if value != nil {
+			conv160, err := SqlTask_SqlOutputFromSDK(&value.SqlOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.SqlOutput = conv160
+		}
+	case *sdk.GetRunOutputResponse_Result_DbtOutput:
+		if value != nil {
+			conv161, err := DbtTask_DbtTaskOutputFromSDK(&value.DbtOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.DbtOutput = conv161
+		}
+	case *sdk.GetRunOutputResponse_Result_RunJobOutput:
+		if value != nil {
+			conv162, err := RunJobTask_RunJobTaskOutputFromSDK(&value.RunJobOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.RunJobOutput = conv162
+		}
+	case *sdk.GetRunOutputResponse_Result_CleanRoomsNotebookOutput:
+		if value != nil {
+			conv163, err := CleanRoomsNotebookTask_CleanRoomsNotebookTaskOutputFromSDK(&value.CleanRoomsNotebookOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.CleanRoomsNotebookOutput = conv163
+		}
+	case *sdk.GetRunOutputResponse_Result_DashboardOutput:
+		if value != nil {
+			conv164, err := DashboardTaskOutputFromSDK(&value.DashboardOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.DashboardOutput = conv164
+		}
+	case *sdk.GetRunOutputResponse_Result_DbtCloudOutput:
+		if value != nil {
+			conv165, err := DbtCloudTaskOutputFromSDK(&value.DbtCloudOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.DbtCloudOutput = conv165
+		}
+	case *sdk.GetRunOutputResponse_Result_DbtPlatformOutput:
+		if value != nil {
+			conv166, err := DbtPlatformTaskOutputFromSDK(&value.DbtPlatformOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.DbtPlatformOutput = conv166
+		}
+	case *sdk.GetRunOutputResponse_Result_AlertOutput:
+		if value != nil {
+			conv167, err := AlertTaskOutputFromSDK(&value.AlertOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.AlertOutput = conv167
+		}
+	case *sdk.GetRunOutputResponse_Result_AiRuntimeTaskOutput:
+		if value != nil {
+			conv168, err := AiRuntimeTaskOutputFromSDK(&value.AiRuntimeTaskOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GetRunOutputResponse.Result", err)
+			}
+			out.AiRuntimeTaskOutput = conv168
+		}
+	}
+	out.Logs = v.Logs
+	out.LogsTruncated = v.LogsTruncated
+	out.ErrorTrace = v.ErrorTrace
+	return out, nil
+}
+
+// GetRunRequestToSDK converts the mirror to the sdk-go type.
+func GetRunRequestToSDK(w *GetRunRequest) (*sdk.GetRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunRequest{}
+	out.RunId = w.RunId
+	out.IncludeHistory = w.IncludeHistory
+	out.IncludeResolvedValues = w.IncludeResolvedValues
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GetRunRequestFromSDK converts the sdk-go type to the mirror.
+func GetRunRequestFromSDK(v *sdk.GetRunRequest) (*GetRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunRequest{}
+	out.RunId = v.RunId
+	out.IncludeHistory = v.IncludeHistory
+	out.IncludeResolvedValues = v.IncludeResolvedValues
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GetRunResponseToSDK converts the mirror to the sdk-go type.
+func GetRunResponseToSDK(w *GetRunResponse) (*sdk.GetRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRunResponse{}
+	out.NextPageToken = w.NextPageToken
+	out.JobId = w.JobId
+	out.RunId = w.RunId
+	out.CreatorUserName = w.CreatorUserName
+	out.NumberInJob = w.NumberInJob
+	out.OriginalAttemptRunId = w.OriginalAttemptRunId
+	conv169, err := RunStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.State", err)
+	}
+	out.State = conv169
+	conv170, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Schedule", err)
+	}
+	out.Schedule = conv170
+	conv171, err := ClusterSpecToSDK(w.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv171
+	conv172, err := ClusterInstanceToSDK(w.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv172
+	conv173, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobParameters", err)
+	}
+	out.JobParameters = conv173
+	conv174, err := RunParametersToSDK(w.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv174
+	out.Trigger = w.Trigger
+	conv175, err := RunTriggerInfoToSDK(w.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv175
+	out.RunName = w.RunName
+	out.RunPageUrl = w.RunPageUrl
+	out.RunType = w.RunType
+	conv176, err := convertSlice(w.Tasks, RunTaskToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Tasks", err)
+	}
+	out.Tasks = conv176
+	out.Description = w.Description
+	out.AttemptNumber = w.AttemptNumber
+	conv177, err := convertSlice(w.JobClusters, JobClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobClusters", err)
+	}
+	out.JobClusters = conv177
+	conv178, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.GitSource", err)
+	}
+	out.GitSource = conv178
+	conv179, err := convertSlice(w.RepairHistory, RepairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.RepairHistory", err)
+	}
+	out.RepairHistory = conv179
+	conv180, err := RunStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Status", err)
+	}
+	out.Status = conv180
+	out.JobRunId = w.JobRunId
+	out.HasMore = w.HasMore
+	out.EffectivePerformanceTarget = w.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv181, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv181
+	out.DeploymentId = w.DeploymentId
+	out.VersionId = w.VersionId
+	out.StartTime = w.StartTime
+	out.SetupDuration = w.SetupDuration
+	out.ExecutionDuration = w.ExecutionDuration
+	out.CleanupDuration = w.CleanupDuration
+	out.EndTime = w.EndTime
+	out.RunDuration = w.RunDuration
+	out.QueueDuration = w.QueueDuration
+	return out, nil
+}
+
+// GetRunResponseFromSDK converts the sdk-go type to the mirror.
+func GetRunResponseFromSDK(v *sdk.GetRunResponse) (*GetRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRunResponse{}
+	out.NextPageToken = v.NextPageToken
+	out.JobId = v.JobId
+	out.RunId = v.RunId
+	out.CreatorUserName = v.CreatorUserName
+	out.NumberInJob = v.NumberInJob
+	out.OriginalAttemptRunId = v.OriginalAttemptRunId
+	conv182, err := RunStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.State", err)
+	}
+	out.State = conv182
+	conv183, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Schedule", err)
+	}
+	out.Schedule = conv183
+	conv184, err := ClusterSpecFromSDK(v.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv184
+	conv185, err := ClusterInstanceFromSDK(v.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv185
+	conv186, err := convertSlice(v.JobParameters, Run_JobLevelParametersFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobParameters", err)
+	}
+	out.JobParameters = conv186
+	conv187, err := RunParametersFromSDK(v.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv187
+	out.Trigger = v.Trigger
+	conv188, err := RunTriggerInfoFromSDK(v.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv188
+	out.RunName = v.RunName
+	out.RunPageUrl = v.RunPageUrl
+	out.RunType = v.RunType
+	conv189, err := convertSlice(v.Tasks, RunTaskFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Tasks", err)
+	}
+	out.Tasks = conv189
+	out.Description = v.Description
+	out.AttemptNumber = v.AttemptNumber
+	conv190, err := convertSlice(v.JobClusters, JobClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.JobClusters", err)
+	}
+	out.JobClusters = conv190
+	conv191, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.GitSource", err)
+	}
+	out.GitSource = conv191
+	conv192, err := convertSlice(v.RepairHistory, RepairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.RepairHistory", err)
+	}
+	out.RepairHistory = conv192
+	conv193, err := RunStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.Status", err)
+	}
+	out.Status = conv193
+	out.JobRunId = v.JobRunId
+	out.HasMore = v.HasMore
+	out.EffectivePerformanceTarget = v.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv194, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRunResponse.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv194
+	out.DeploymentId = v.DeploymentId
+	out.VersionId = v.VersionId
+	out.StartTime = v.StartTime
+	out.SetupDuration = v.SetupDuration
+	out.ExecutionDuration = v.ExecutionDuration
+	out.CleanupDuration = v.CleanupDuration
+	out.EndTime = v.EndTime
+	out.RunDuration = v.RunDuration
+	out.QueueDuration = v.QueueDuration
+	return out, nil
+}
+
+// GitMetadataSnapshotToSDK converts the mirror to the sdk-go type.
+func GitMetadataSnapshotToSDK(w *GitMetadataSnapshot) (*sdk.GitMetadataSnapshot, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GitMetadataSnapshot{}
+	out.UsedCommit = w.UsedCommit
+	return out, nil
+}
+
+// GitMetadataSnapshotFromSDK converts the sdk-go type to the mirror.
+func GitMetadataSnapshotFromSDK(v *sdk.GitMetadataSnapshot) (*GitMetadataSnapshot, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GitMetadataSnapshot{}
+	out.UsedCommit = v.UsedCommit
+	return out, nil
+}
+
+// GitSourceToSDK converts the mirror to the sdk-go type.
+func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GitSource{}
+	out.GitUrl = w.GitUrl
+	out.GitProvider = w.GitProvider
+	{
+		members := 0
+		if w.GitBranch != nil {
+			members++
+		}
+		if w.GitTag != nil {
+			members++
+		}
+		if w.GitCommit != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.GitReference")
+		}
+	}
+	switch {
+	case w.GitBranch != nil:
+		out.GitReference = &sdk.GitSource_GitReference_GitBranch{GitBranch: *w.GitBranch}
+	case w.GitTag != nil:
+		out.GitReference = &sdk.GitSource_GitReference_GitTag{GitTag: *w.GitTag}
+	case w.GitCommit != nil:
+		out.GitReference = &sdk.GitSource_GitReference_GitCommit{GitCommit: *w.GitCommit}
+	}
+	conv195, err := GitMetadataSnapshotToSDK(w.GitSnapshot)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.GitSnapshot", err)
+	}
+	out.GitSnapshot = conv195
+	conv196, err := JobSourceToSDK(w.JobSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.JobSource", err)
+	}
+	out.JobSource = conv196
+	conv197, err := SparseCheckoutToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv197
+	return out, nil
+}
+
+// GitSourceFromSDK converts the sdk-go type to the mirror.
+func GitSourceFromSDK(v *sdk.GitSource) (*GitSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GitSource{}
+	out.GitUrl = v.GitUrl
+	out.GitProvider = v.GitProvider
+	switch value := v.GitReference.(type) {
+	case *sdk.GitSource_GitReference_GitBranch:
+		if value != nil {
+			out.GitBranch = new(value.GitBranch)
+		}
+	case *sdk.GitSource_GitReference_GitTag:
+		if value != nil {
+			out.GitTag = new(value.GitTag)
+		}
+	case *sdk.GitSource_GitReference_GitCommit:
+		if value != nil {
+			out.GitCommit = new(value.GitCommit)
+		}
+	}
+	conv198, err := GitMetadataSnapshotFromSDK(v.GitSnapshot)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.GitSnapshot", err)
+	}
+	out.GitSnapshot = conv198
+	conv199, err := JobSourceFromSDK(v.JobSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.JobSource", err)
+	}
+	out.JobSource = conv199
+	conv200, err := SparseCheckoutFromSDK(v.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv200
+	return out, nil
+}
+
+// InitScriptInfoToSDK converts the mirror to the sdk-go type.
+func InitScriptInfoToSDK(w *InitScriptInfo) (*sdk.InitScriptInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InitScriptInfo{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if w.File != nil {
+			members++
+		}
+		if w.Gcs != nil {
+			members++
+		}
+		if w.Abfss != nil {
+			members++
+		}
+		if w.Workspace != nil {
+			members++
+		}
+		if w.Volumes != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "InitScriptInfo.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv201, err := DbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Dbfs{Dbfs: *conv201}
+	case w.S3 != nil:
+		conv202, err := S3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_S3{S3: *conv202}
+	case w.File != nil:
+		conv203, err := LocalFileInfoToSDK(w.File)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_File{File: *conv203}
+	case w.Gcs != nil:
+		conv204, err := GcsStorageInfoToSDK(w.Gcs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Gcs{Gcs: *conv204}
+	case w.Abfss != nil:
+		conv205, err := Adlsgen2InfoToSDK(w.Abfss)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Abfss{Abfss: *conv205}
+	case w.Workspace != nil:
+		conv206, err := WorkspaceStorageInfoToSDK(w.Workspace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Workspace{Workspace: *conv206}
+	case w.Volumes != nil:
+		conv207, err := VolumesStorageInfoToSDK(w.Volumes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.InitScriptInfo_StorageInfo_Volumes{Volumes: *conv207}
+	}
+	return out, nil
+}
+
+// InitScriptInfoFromSDK converts the sdk-go type to the mirror.
+func InitScriptInfoFromSDK(v *sdk.InitScriptInfo) (*InitScriptInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InitScriptInfo{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.InitScriptInfo_StorageInfo_Dbfs:
+		if value != nil {
+			conv208, err := DbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Dbfs = conv208
+		}
+	case *sdk.InitScriptInfo_StorageInfo_S3:
+		if value != nil {
+			conv209, err := S3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.S3 = conv209
+		}
+	case *sdk.InitScriptInfo_StorageInfo_File:
+		if value != nil {
+			conv210, err := LocalFileInfoFromSDK(&value.File)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.File = conv210
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Gcs:
+		if value != nil {
+			conv211, err := GcsStorageInfoFromSDK(&value.Gcs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Gcs = conv211
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Abfss:
+		if value != nil {
+			conv212, err := Adlsgen2InfoFromSDK(&value.Abfss)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Abfss = conv212
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Workspace:
+		if value != nil {
+			conv213, err := WorkspaceStorageInfoFromSDK(&value.Workspace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Workspace = conv213
+		}
+	case *sdk.InitScriptInfo_StorageInfo_Volumes:
+		if value != nil {
+			conv214, err := VolumesStorageInfoFromSDK(&value.Volumes)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "InitScriptInfo.StorageInfo", err)
+			}
+			out.Volumes = conv214
+		}
+	}
+	return out, nil
+}
+
+// JobClusterToSDK converts the mirror to the sdk-go type.
+func JobClusterToSDK(w *JobCluster) (*sdk.JobCluster, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobCluster{}
+	out.JobClusterKey = w.JobClusterKey
+	conv215, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobCluster.NewCluster", err)
+	}
+	out.NewCluster = conv215
+	out.ServerlessComputeId = w.ServerlessComputeId
+	return out, nil
+}
+
+// JobClusterFromSDK converts the sdk-go type to the mirror.
+func JobClusterFromSDK(v *sdk.JobCluster) (*JobCluster, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobCluster{}
+	out.JobClusterKey = v.JobClusterKey
+	conv216, err := ClusterSpec_NewClusterFromSDK(v.NewCluster)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobCluster.NewCluster", err)
+	}
+	out.NewCluster = conv216
+	out.ServerlessComputeId = v.ServerlessComputeId
+	return out, nil
+}
+
+// JobDeploymentToSDK converts the mirror to the sdk-go type.
+func JobDeploymentToSDK(w *JobDeployment) (*sdk.JobDeployment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobDeployment{}
+	out.Kind = w.Kind
+	out.MetadataFilePath = w.MetadataFilePath
+	out.DeploymentId = w.DeploymentId
+	out.VersionId = w.VersionId
+	return out, nil
+}
+
+// JobDeploymentFromSDK converts the sdk-go type to the mirror.
+func JobDeploymentFromSDK(v *sdk.JobDeployment) (*JobDeployment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobDeployment{}
+	out.Kind = v.Kind
+	out.MetadataFilePath = v.MetadataFilePath
+	out.DeploymentId = v.DeploymentId
+	out.VersionId = v.VersionId
+	return out, nil
+}
+
+// JobEmailNotificationsToSDK converts the mirror to the sdk-go type.
+func JobEmailNotificationsToSDK(w *JobEmailNotifications) (*sdk.JobEmailNotifications, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobEmailNotifications{}
+	out.OnStart = w.OnStart
+	out.OnSuccess = w.OnSuccess
+	out.OnFailure = w.OnFailure
+	out.OnDurationWarningThresholdExceeded = w.OnDurationWarningThresholdExceeded
+	out.OnStreamingBacklogExceeded = w.OnStreamingBacklogExceeded
+	out.OnMaintenanceStart = w.OnMaintenanceStart
+	out.OnMaintenanceComplete = w.OnMaintenanceComplete
+	out.NoAlertForSkippedRuns = w.NoAlertForSkippedRuns
+	return out, nil
+}
+
+// JobEmailNotificationsFromSDK converts the sdk-go type to the mirror.
+func JobEmailNotificationsFromSDK(v *sdk.JobEmailNotifications) (*JobEmailNotifications, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobEmailNotifications{}
+	out.OnStart = v.OnStart
+	out.OnSuccess = v.OnSuccess
+	out.OnFailure = v.OnFailure
+	out.OnDurationWarningThresholdExceeded = v.OnDurationWarningThresholdExceeded
+	out.OnStreamingBacklogExceeded = v.OnStreamingBacklogExceeded
+	out.OnMaintenanceStart = v.OnMaintenanceStart
+	out.OnMaintenanceComplete = v.OnMaintenanceComplete
+	out.NoAlertForSkippedRuns = v.NoAlertForSkippedRuns
+	return out, nil
+}
+
+// JobEnvironmentToSDK converts the mirror to the sdk-go type.
+func JobEnvironmentToSDK(w *JobEnvironment) (*sdk.JobEnvironment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobEnvironment{}
+	out.EnvironmentKey = w.EnvironmentKey
+	conv217, err := EnvironmentToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobEnvironment.Spec", err)
+	}
+	out.Spec = conv217
+	return out, nil
+}
+
+// JobEnvironmentFromSDK converts the sdk-go type to the mirror.
+func JobEnvironmentFromSDK(v *sdk.JobEnvironment) (*JobEnvironment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobEnvironment{}
+	out.EnvironmentKey = v.EnvironmentKey
+	conv218, err := EnvironmentFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobEnvironment.Spec", err)
+	}
+	out.Spec = conv218
+	return out, nil
+}
+
+// JobEnvironmentVariablesToSDK converts the mirror to the sdk-go type.
+func JobEnvironmentVariablesToSDK(w *JobEnvironmentVariables) (*sdk.JobEnvironmentVariables, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobEnvironmentVariables{}
+	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
+	conv219, err := JobEnvironmentVariablesSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobEnvironmentVariables.Spec", err)
+	}
+	out.Spec = conv219
+	return out, nil
+}
+
+// JobEnvironmentVariablesFromSDK converts the sdk-go type to the mirror.
+func JobEnvironmentVariablesFromSDK(v *sdk.JobEnvironmentVariables) (*JobEnvironmentVariables, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobEnvironmentVariables{}
+	out.EnvironmentVariablesKey = v.EnvironmentVariablesKey
+	conv220, err := JobEnvironmentVariablesSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobEnvironmentVariables.Spec", err)
+	}
+	out.Spec = conv220
+	return out, nil
+}
+
+// JobEnvironmentVariablesSpecToSDK converts the mirror to the sdk-go type.
+func JobEnvironmentVariablesSpecToSDK(w *JobEnvironmentVariablesSpec) (*sdk.JobEnvironmentVariablesSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobEnvironmentVariablesSpec{}
+	out.Variables = w.Variables
+	out.Files = w.Files
+	return out, nil
+}
+
+// JobEnvironmentVariablesSpecFromSDK converts the sdk-go type to the mirror.
+func JobEnvironmentVariablesSpecFromSDK(v *sdk.JobEnvironmentVariablesSpec) (*JobEnvironmentVariablesSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobEnvironmentVariablesSpec{}
+	out.Variables = v.Variables
+	out.Files = v.Files
+	return out, nil
+}
+
+// JobLevelParameterToSDK converts the mirror to the sdk-go type.
+func JobLevelParameterToSDK(w *JobLevelParameter) (*sdk.JobLevelParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobLevelParameter{}
+	out.Name = w.Name
+	out.Default = w.Default
+	return out, nil
+}
+
+// JobLevelParameterFromSDK converts the sdk-go type to the mirror.
+func JobLevelParameterFromSDK(v *sdk.JobLevelParameter) (*JobLevelParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobLevelParameter{}
+	out.Name = v.Name
+	out.Default = v.Default
+	return out, nil
+}
+
+// JobRunAsToSDK converts the mirror to the sdk-go type.
+func JobRunAsToSDK(w *JobRunAs) (*sdk.JobRunAs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobRunAs{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "JobRunAs.Identity")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.Identity = &sdk.JobRunAs_Identity_UserName{UserName: *w.UserName}
+	case w.ServicePrincipalName != nil:
+		out.Identity = &sdk.JobRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	case w.GroupName != nil:
+		out.Identity = &sdk.JobRunAs_Identity_GroupName{GroupName: *w.GroupName}
+	}
+	return out, nil
+}
+
+// JobRunAsFromSDK converts the sdk-go type to the mirror.
+func JobRunAsFromSDK(v *sdk.JobRunAs) (*JobRunAs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobRunAs{}
+	switch value := v.Identity.(type) {
+	case *sdk.JobRunAs_Identity_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.JobRunAs_Identity_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	case *sdk.JobRunAs_Identity_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	}
+	return out, nil
+}
+
+// JobSettingsToSDK converts the mirror to the sdk-go type.
+func JobSettingsToSDK(w *JobSettings) (*sdk.JobSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobSettings{}
+	out.Name = w.Name
+	out.Description = w.Description
+	conv221, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv221
+	conv222, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv222
+	conv223, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv223
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv224, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Health", err)
+	}
+	out.Health = conv224
+	conv225, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Schedule", err)
+	}
+	out.Schedule = conv225
+	conv226, err := TriggerSettingsToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Trigger", err)
+	}
+	out.Trigger = conv226
+	conv227, err := ContinuousSettingsToSDK(w.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Continuous", err)
+	}
+	out.Continuous = conv227
+	out.MaxConcurrentRuns = w.MaxConcurrentRuns
+	conv228, err := convertSlice(w.Tasks, TaskSettingsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Tasks", err)
+	}
+	out.Tasks = conv228
+	conv229, err := convertSlice(w.JobClusters, JobClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.JobClusters", err)
+	}
+	out.JobClusters = conv229
+	conv230, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.GitSource", err)
+	}
+	out.GitSource = conv230
+	out.Tags = w.Tags
+	out.Format = w.Format
+	conv231, err := QueueSettingsToSDK(w.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Queue", err)
+	}
+	out.Queue = conv231
+	conv232, err := convertSlice(w.Parameters, JobLevelParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Parameters", err)
+	}
+	out.Parameters = conv232
+	conv233, err := JobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.RunAs", err)
+	}
+	out.RunAs = conv233
+	out.EditMode = w.EditMode
+	conv234, err := JobDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Deployment", err)
+	}
+	out.Deployment = conv234
+	conv235, err := convertSlice(w.Environments, JobEnvironmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Environments", err)
+	}
+	out.Environments = conv235
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.UsagePolicyId = w.UsagePolicyId
+	out.PerformanceTarget = w.PerformanceTarget
+	out.ParentPath = w.ParentPath
+	conv236, err := convertSlice(w.Triggers, TriggerConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Triggers", err)
+	}
+	out.Triggers = conv236
+	conv237, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv237
+	out.MaxRetries = w.MaxRetries
+	out.MinRetryIntervalMillis = w.MinRetryIntervalMillis
+	out.RetryOnTimeout = w.RetryOnTimeout
+	out.DisableAutoOptimization = w.DisableAutoOptimization
+	return out, nil
+}
+
+// JobSettingsFromSDK converts the sdk-go type to the mirror.
+func JobSettingsFromSDK(v *sdk.JobSettings) (*JobSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobSettings{}
+	out.Name = v.Name
+	out.Description = v.Description
+	conv238, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv238
+	conv239, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv239
+	conv240, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv240
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv241, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Health", err)
+	}
+	out.Health = conv241
+	conv242, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Schedule", err)
+	}
+	out.Schedule = conv242
+	conv243, err := TriggerSettingsFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Trigger", err)
+	}
+	out.Trigger = conv243
+	conv244, err := ContinuousSettingsFromSDK(v.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Continuous", err)
+	}
+	out.Continuous = conv244
+	out.MaxConcurrentRuns = v.MaxConcurrentRuns
+	conv245, err := convertSlice(v.Tasks, TaskSettingsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Tasks", err)
+	}
+	out.Tasks = conv245
+	conv246, err := convertSlice(v.JobClusters, JobClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.JobClusters", err)
+	}
+	out.JobClusters = conv246
+	conv247, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.GitSource", err)
+	}
+	out.GitSource = conv247
+	out.Tags = v.Tags
+	out.Format = v.Format
+	conv248, err := QueueSettingsFromSDK(v.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Queue", err)
+	}
+	out.Queue = conv248
+	conv249, err := convertSlice(v.Parameters, JobLevelParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Parameters", err)
+	}
+	out.Parameters = conv249
+	conv250, err := JobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.RunAs", err)
+	}
+	out.RunAs = conv250
+	out.EditMode = v.EditMode
+	conv251, err := JobDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Deployment", err)
+	}
+	out.Deployment = conv251
+	conv252, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Environments", err)
+	}
+	out.Environments = conv252
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.UsagePolicyId = v.UsagePolicyId
+	out.PerformanceTarget = v.PerformanceTarget
+	out.ParentPath = v.ParentPath
+	conv253, err := convertSlice(v.Triggers, TriggerConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.Triggers", err)
+	}
+	out.Triggers = conv253
+	conv254, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobSettings.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv254
+	out.MaxRetries = v.MaxRetries
+	out.MinRetryIntervalMillis = v.MinRetryIntervalMillis
+	out.RetryOnTimeout = v.RetryOnTimeout
+	out.DisableAutoOptimization = v.DisableAutoOptimization
+	return out, nil
+}
+
+// JobSourceToSDK converts the mirror to the sdk-go type.
+func JobSourceToSDK(w *JobSource) (*sdk.JobSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobSource{}
+	out.JobConfigPath = w.JobConfigPath
+	{
+		members := 0
+		if w.ImportFromGitBranch != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "JobSource.ImportFromGitReference")
+		}
+	}
+	switch {
+	case w.ImportFromGitBranch != nil:
+		out.ImportFromGitReference = &sdk.JobSource_ImportFromGitReference_ImportFromGitBranch{ImportFromGitBranch: *w.ImportFromGitBranch}
+	}
+	out.DirtyState = w.DirtyState
+	return out, nil
+}
+
+// JobSourceFromSDK converts the sdk-go type to the mirror.
+func JobSourceFromSDK(v *sdk.JobSource) (*JobSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobSource{}
+	out.JobConfigPath = v.JobConfigPath
+	switch value := v.ImportFromGitReference.(type) {
+	case *sdk.JobSource_ImportFromGitReference_ImportFromGitBranch:
+		if value != nil {
+			out.ImportFromGitBranch = new(value.ImportFromGitBranch)
+		}
+	}
+	out.DirtyState = v.DirtyState
+	return out, nil
+}
+
+// JobsHealthRuleToSDK converts the mirror to the sdk-go type.
+func JobsHealthRuleToSDK(w *JobsHealthRule) (*sdk.JobsHealthRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobsHealthRule{}
+	out.Metric = w.Metric
+	out.Op = w.Op
+	out.Value = w.Value
+	return out, nil
+}
+
+// JobsHealthRuleFromSDK converts the sdk-go type to the mirror.
+func JobsHealthRuleFromSDK(v *sdk.JobsHealthRule) (*JobsHealthRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobsHealthRule{}
+	out.Metric = v.Metric
+	out.Op = v.Op
+	out.Value = v.Value
+	return out, nil
+}
+
+// JobsHealthRulesToSDK converts the mirror to the sdk-go type.
+func JobsHealthRulesToSDK(w *JobsHealthRules) (*sdk.JobsHealthRules, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobsHealthRules{}
+	conv255, err := convertSlice(w.Rules, JobsHealthRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobsHealthRules.Rules", err)
+	}
+	out.Rules = conv255
+	return out, nil
+}
+
+// JobsHealthRulesFromSDK converts the sdk-go type to the mirror.
+func JobsHealthRulesFromSDK(v *sdk.JobsHealthRules) (*JobsHealthRules, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobsHealthRules{}
+	conv256, err := convertSlice(v.Rules, JobsHealthRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "JobsHealthRules.Rules", err)
+	}
+	out.Rules = conv256
+	return out, nil
+}
+
+// LibraryToSDK converts the mirror to the sdk-go type.
+func LibraryToSDK(w *Library) (*sdk.Library, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Library{}
+	{
+		members := 0
+		if w.Jar != nil {
+			members++
+		}
+		if w.Egg != nil {
+			members++
+		}
+		if w.Pypi != nil {
+			members++
+		}
+		if w.Maven != nil {
+			members++
+		}
+		if w.Cran != nil {
+			members++
+		}
+		if w.Whl != nil {
+			members++
+		}
+		if w.Requirements != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Library.Lib")
+		}
+	}
+	switch {
+	case w.Jar != nil:
+		out.Lib = &sdk.Library_Lib_Jar{Jar: *w.Jar}
+	case w.Egg != nil:
+		out.Lib = &sdk.Library_Lib_Egg{Egg: *w.Egg}
+	case w.Pypi != nil:
+		conv257, err := PythonPyPiLibraryToSDK(w.Pypi)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Pypi{Pypi: *conv257}
+	case w.Maven != nil:
+		conv258, err := MavenLibraryToSDK(w.Maven)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Maven{Maven: *conv258}
+	case w.Cran != nil:
+		conv259, err := RCranLibraryToSDK(w.Cran)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+		}
+		out.Lib = &sdk.Library_Lib_Cran{Cran: *conv259}
+	case w.Whl != nil:
+		out.Lib = &sdk.Library_Lib_Whl{Whl: *w.Whl}
+	case w.Requirements != nil:
+		out.Lib = &sdk.Library_Lib_Requirements{Requirements: *w.Requirements}
+	}
+	return out, nil
+}
+
+// LibraryFromSDK converts the sdk-go type to the mirror.
+func LibraryFromSDK(v *sdk.Library) (*Library, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Library{}
+	switch value := v.Lib.(type) {
+	case *sdk.Library_Lib_Jar:
+		if value != nil {
+			out.Jar = new(value.Jar)
+		}
+	case *sdk.Library_Lib_Egg:
+		if value != nil {
+			out.Egg = new(value.Egg)
+		}
+	case *sdk.Library_Lib_Pypi:
+		if value != nil {
+			conv260, err := PythonPyPiLibraryFromSDK(&value.Pypi)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Pypi = conv260
+		}
+	case *sdk.Library_Lib_Maven:
+		if value != nil {
+			conv261, err := MavenLibraryFromSDK(&value.Maven)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Maven = conv261
+		}
+	case *sdk.Library_Lib_Cran:
+		if value != nil {
+			conv262, err := RCranLibraryFromSDK(&value.Cran)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Library.Lib", err)
+			}
+			out.Cran = conv262
+		}
+	case *sdk.Library_Lib_Whl:
+		if value != nil {
+			out.Whl = new(value.Whl)
+		}
+	case *sdk.Library_Lib_Requirements:
+		if value != nil {
+			out.Requirements = new(value.Requirements)
+		}
+	}
+	return out, nil
+}
+
+// ListJobComplianceForPolicyToSDK converts the mirror to the sdk-go type.
+func ListJobComplianceForPolicyToSDK(w *ListJobComplianceForPolicy) (*sdk.ListJobComplianceForPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListJobComplianceForPolicy{}
+	out.PolicyId = w.PolicyId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListJobComplianceForPolicyFromSDK converts the sdk-go type to the mirror.
+func ListJobComplianceForPolicyFromSDK(v *sdk.ListJobComplianceForPolicy) (*ListJobComplianceForPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListJobComplianceForPolicy{}
+	out.PolicyId = v.PolicyId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListJobComplianceForPolicy_JobComplianceToSDK converts the mirror to the sdk-go type.
+func ListJobComplianceForPolicy_JobComplianceToSDK(w *ListJobComplianceForPolicy_JobCompliance) (*sdk.ListJobComplianceForPolicy_JobCompliance, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListJobComplianceForPolicy_JobCompliance{}
+	out.JobId = w.JobId
+	out.IsCompliant = w.IsCompliant
+	out.Violations = w.Violations
+	return out, nil
+}
+
+// ListJobComplianceForPolicy_JobComplianceFromSDK converts the sdk-go type to the mirror.
+func ListJobComplianceForPolicy_JobComplianceFromSDK(v *sdk.ListJobComplianceForPolicy_JobCompliance) (*ListJobComplianceForPolicy_JobCompliance, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListJobComplianceForPolicy_JobCompliance{}
+	out.JobId = v.JobId
+	out.IsCompliant = v.IsCompliant
+	out.Violations = v.Violations
+	return out, nil
+}
+
+// ListJobComplianceResponseToSDK converts the mirror to the sdk-go type.
+func ListJobComplianceResponseToSDK(w *ListJobComplianceResponse) (*sdk.ListJobComplianceResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListJobComplianceResponse{}
+	conv263, err := convertSlice(w.Jobs, ListJobComplianceForPolicy_JobComplianceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListJobComplianceResponse.Jobs", err)
+	}
+	out.Jobs = conv263
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListJobComplianceResponseFromSDK converts the sdk-go type to the mirror.
+func ListJobComplianceResponseFromSDK(v *sdk.ListJobComplianceResponse) (*ListJobComplianceResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListJobComplianceResponse{}
+	conv264, err := convertSlice(v.Jobs, ListJobComplianceForPolicy_JobComplianceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListJobComplianceResponse.Jobs", err)
+	}
+	out.Jobs = conv264
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ListJobsRequestToSDK converts the mirror to the sdk-go type.
+func ListJobsRequestToSDK(w *ListJobsRequest) (*sdk.ListJobsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListJobsRequest{}
+	out.Offset = w.Offset
+	out.Limit = w.Limit
+	out.ExpandTasks = w.ExpandTasks
+	out.Name = w.Name
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListJobsRequestFromSDK converts the sdk-go type to the mirror.
+func ListJobsRequestFromSDK(v *sdk.ListJobsRequest) (*ListJobsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListJobsRequest{}
+	out.Offset = v.Offset
+	out.Limit = v.Limit
+	out.ExpandTasks = v.ExpandTasks
+	out.Name = v.Name
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListJobsResponseToSDK converts the mirror to the sdk-go type.
+func ListJobsResponseToSDK(w *ListJobsResponse) (*sdk.ListJobsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListJobsResponse{}
+	conv265, err := convertSlice(w.Jobs, BaseJobToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListJobsResponse.Jobs", err)
+	}
+	out.Jobs = conv265
+	out.HasMore = w.HasMore
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListJobsResponseFromSDK converts the sdk-go type to the mirror.
+func ListJobsResponseFromSDK(v *sdk.ListJobsResponse) (*ListJobsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListJobsResponse{}
+	conv266, err := convertSlice(v.Jobs, BaseJobFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListJobsResponse.Jobs", err)
+	}
+	out.Jobs = conv266
+	out.HasMore = v.HasMore
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ListRunsRequestToSDK converts the mirror to the sdk-go type.
+func ListRunsRequestToSDK(w *ListRunsRequest) (*sdk.ListRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRunsRequest{}
+	out.JobId = w.JobId
+	{
+		members := 0
+		if w.ActiveOnly != nil {
+			members++
+		}
+		if w.CompletedOnly != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ListRunsRequest.StateConstraint")
+		}
+	}
+	switch {
+	case w.ActiveOnly != nil:
+		out.StateConstraint = &sdk.ListRunsRequest_StateConstraint_ActiveOnly{ActiveOnly: *w.ActiveOnly}
+	case w.CompletedOnly != nil:
+		out.StateConstraint = &sdk.ListRunsRequest_StateConstraint_CompletedOnly{CompletedOnly: *w.CompletedOnly}
+	}
+	out.Offset = w.Offset
+	out.Limit = w.Limit
+	out.RunType = w.RunType
+	out.ExpandTasks = w.ExpandTasks
+	out.StartTimeFrom = w.StartTimeFrom
+	out.StartTimeTo = w.StartTimeTo
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListRunsRequestFromSDK converts the sdk-go type to the mirror.
+func ListRunsRequestFromSDK(v *sdk.ListRunsRequest) (*ListRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRunsRequest{}
+	out.JobId = v.JobId
+	switch value := v.StateConstraint.(type) {
+	case *sdk.ListRunsRequest_StateConstraint_ActiveOnly:
+		if value != nil {
+			out.ActiveOnly = new(value.ActiveOnly)
+		}
+	case *sdk.ListRunsRequest_StateConstraint_CompletedOnly:
+		if value != nil {
+			out.CompletedOnly = new(value.CompletedOnly)
+		}
+	}
+	out.Offset = v.Offset
+	out.Limit = v.Limit
+	out.RunType = v.RunType
+	out.ExpandTasks = v.ExpandTasks
+	out.StartTimeFrom = v.StartTimeFrom
+	out.StartTimeTo = v.StartTimeTo
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListRunsResponseToSDK converts the mirror to the sdk-go type.
+func ListRunsResponseToSDK(w *ListRunsResponse) (*sdk.ListRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRunsResponse{}
+	conv267, err := convertSlice(w.Runs, BaseRunToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRunsResponse.Runs", err)
+	}
+	out.Runs = conv267
+	out.HasMore = w.HasMore
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListRunsResponseFromSDK converts the sdk-go type to the mirror.
+func ListRunsResponseFromSDK(v *sdk.ListRunsResponse) (*ListRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRunsResponse{}
+	conv268, err := convertSlice(v.Runs, BaseRunFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRunsResponse.Runs", err)
+	}
+	out.Runs = conv268
+	out.HasMore = v.HasMore
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// LocalFileInfoToSDK converts the mirror to the sdk-go type.
+func LocalFileInfoToSDK(w *LocalFileInfo) (*sdk.LocalFileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LocalFileInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// LocalFileInfoFromSDK converts the sdk-go type to the mirror.
+func LocalFileInfoFromSDK(v *sdk.LocalFileInfo) (*LocalFileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LocalFileInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// LogAnalyticsInfoToSDK converts the mirror to the sdk-go type.
+func LogAnalyticsInfoToSDK(w *LogAnalyticsInfo) (*sdk.LogAnalyticsInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LogAnalyticsInfo{}
+	out.LogAnalyticsWorkspaceId = w.LogAnalyticsWorkspaceId
+	out.LogAnalyticsPrimaryKey = w.LogAnalyticsPrimaryKey
+	return out, nil
+}
+
+// LogAnalyticsInfoFromSDK converts the sdk-go type to the mirror.
+func LogAnalyticsInfoFromSDK(v *sdk.LogAnalyticsInfo) (*LogAnalyticsInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LogAnalyticsInfo{}
+	out.LogAnalyticsWorkspaceId = v.LogAnalyticsWorkspaceId
+	out.LogAnalyticsPrimaryKey = v.LogAnalyticsPrimaryKey
+	return out, nil
+}
+
+// MaintenanceWindowToSDK converts the mirror to the sdk-go type.
+func MaintenanceWindowToSDK(w *MaintenanceWindow) (*sdk.MaintenanceWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MaintenanceWindow{}
+	out.StartHour = w.StartHour
+	out.DayOfWeek = w.DayOfWeek
+	out.TimezoneId = w.TimezoneId
+	return out, nil
+}
+
+// MaintenanceWindowFromSDK converts the sdk-go type to the mirror.
+func MaintenanceWindowFromSDK(v *sdk.MaintenanceWindow) (*MaintenanceWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MaintenanceWindow{}
+	out.StartHour = v.StartHour
+	out.DayOfWeek = v.DayOfWeek
+	out.TimezoneId = v.TimezoneId
+	return out, nil
+}
+
+// MavenLibraryToSDK converts the mirror to the sdk-go type.
+func MavenLibraryToSDK(w *MavenLibrary) (*sdk.MavenLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MavenLibrary{}
+	out.Coordinates = w.Coordinates
+	out.Repo = w.Repo
+	out.Exclusions = w.Exclusions
+	return out, nil
+}
+
+// MavenLibraryFromSDK converts the sdk-go type to the mirror.
+func MavenLibraryFromSDK(v *sdk.MavenLibrary) (*MavenLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MavenLibrary{}
+	out.Coordinates = v.Coordinates
+	out.Repo = v.Repo
+	out.Exclusions = v.Exclusions
+	return out, nil
+}
+
+// ModelTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func ModelTriggerConfigurationToSDK(w *ModelTriggerConfiguration) (*sdk.ModelTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelTriggerConfiguration{}
+	out.SecurableName = w.SecurableName
+	out.Aliases = w.Aliases
+	out.Condition = w.Condition
+	out.MinTimeBetweenTriggersSeconds = w.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = w.WaitAfterLastChangeSeconds
+	return out, nil
+}
+
+// ModelTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func ModelTriggerConfigurationFromSDK(v *sdk.ModelTriggerConfiguration) (*ModelTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelTriggerConfiguration{}
+	out.SecurableName = v.SecurableName
+	out.Aliases = v.Aliases
+	out.Condition = v.Condition
+	out.MinTimeBetweenTriggersSeconds = v.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = v.WaitAfterLastChangeSeconds
+	return out, nil
+}
+
+// ModelTriggerStateToSDK converts the mirror to the sdk-go type.
+func ModelTriggerStateToSDK(w *ModelTriggerState) (*sdk.ModelTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelTriggerState{}
+	return out, nil
+}
+
+// ModelTriggerStateFromSDK converts the sdk-go type to the mirror.
+func ModelTriggerStateFromSDK(v *sdk.ModelTriggerState) (*ModelTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelTriggerState{}
+	return out, nil
+}
+
+// NodeTypeFlexibilityToSDK converts the mirror to the sdk-go type.
+func NodeTypeFlexibilityToSDK(w *NodeTypeFlexibility) (*sdk.NodeTypeFlexibility, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = w.AlternateNodeTypeIds
+	out.AwsContextId = w.AwsContextId
+	return out, nil
+}
+
+// NodeTypeFlexibilityFromSDK converts the sdk-go type to the mirror.
+func NodeTypeFlexibilityFromSDK(v *sdk.NodeTypeFlexibility) (*NodeTypeFlexibility, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NodeTypeFlexibility{}
+	out.AlternateNodeTypeIds = v.AlternateNodeTypeIds
+	out.AwsContextId = v.AwsContextId
+	return out, nil
+}
+
+// NotebookTaskToSDK converts the mirror to the sdk-go type.
+func NotebookTaskToSDK(w *NotebookTask) (*sdk.NotebookTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotebookTask{}
+	out.NotebookPath = w.NotebookPath
+	out.BaseParameters = w.BaseParameters
+	out.Source = w.Source
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// NotebookTaskFromSDK converts the sdk-go type to the mirror.
+func NotebookTaskFromSDK(v *sdk.NotebookTask) (*NotebookTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotebookTask{}
+	out.NotebookPath = v.NotebookPath
+	out.BaseParameters = v.BaseParameters
+	out.Source = v.Source
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// NotebookTask_NotebookOutputToSDK converts the mirror to the sdk-go type.
+func NotebookTask_NotebookOutputToSDK(w *NotebookTask_NotebookOutput) (*sdk.NotebookTask_NotebookOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotebookTask_NotebookOutput{}
+	out.Result = w.Result
+	out.Truncated = w.Truncated
+	return out, nil
+}
+
+// NotebookTask_NotebookOutputFromSDK converts the sdk-go type to the mirror.
+func NotebookTask_NotebookOutputFromSDK(v *sdk.NotebookTask_NotebookOutput) (*NotebookTask_NotebookOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotebookTask_NotebookOutput{}
+	out.Result = v.Result
+	out.Truncated = v.Truncated
+	return out, nil
+}
+
+// NotificationSettingsToSDK converts the mirror to the sdk-go type.
+func NotificationSettingsToSDK(w *NotificationSettings) (*sdk.NotificationSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotificationSettings{}
+	out.NoAlertForSkippedRuns = w.NoAlertForSkippedRuns
+	out.NoAlertForCanceledRuns = w.NoAlertForCanceledRuns
+	out.AlertOnLastAttempt = w.AlertOnLastAttempt
+	return out, nil
+}
+
+// NotificationSettingsFromSDK converts the sdk-go type to the mirror.
+func NotificationSettingsFromSDK(v *sdk.NotificationSettings) (*NotificationSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotificationSettings{}
+	out.NoAlertForSkippedRuns = v.NoAlertForSkippedRuns
+	out.NoAlertForCanceledRuns = v.NoAlertForCanceledRuns
+	out.AlertOnLastAttempt = v.AlertOnLastAttempt
+	return out, nil
+}
+
+// OutputSchemaInfoToSDK converts the mirror to the sdk-go type.
+func OutputSchemaInfoToSDK(w *OutputSchemaInfo) (*sdk.OutputSchemaInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OutputSchemaInfo{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.ExpirationTime = w.ExpirationTime
+	return out, nil
+}
+
+// OutputSchemaInfoFromSDK converts the sdk-go type to the mirror.
+func OutputSchemaInfoFromSDK(v *sdk.OutputSchemaInfo) (*OutputSchemaInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OutputSchemaInfo{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.ExpirationTime = v.ExpirationTime
+	return out, nil
+}
+
+// PerTriggerStateToSDK converts the mirror to the sdk-go type.
+func PerTriggerStateToSDK(w *PerTriggerState) (*sdk.PerTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PerTriggerState{}
+	{
+		members := 0
+		if w.Periodic != nil {
+			members++
+		}
+		if w.Schedule != nil {
+			members++
+		}
+		if w.Continuous != nil {
+			members++
+		}
+		if w.FileArrival != nil {
+			members++
+		}
+		if w.TableUpdate != nil {
+			members++
+		}
+		if w.Model != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PerTriggerState.TriggerType")
+		}
+	}
+	switch {
+	case w.Periodic != nil:
+		conv269, err := PeriodicTriggerStateToSDK(w.Periodic)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_Periodic{Periodic: *conv269}
+	case w.Schedule != nil:
+		conv270, err := ScheduleTriggerStateToSDK(w.Schedule)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_Schedule{Schedule: *conv270}
+	case w.Continuous != nil:
+		conv271, err := ContinuousTriggerStateToSDK(w.Continuous)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_Continuous{Continuous: *conv271}
+	case w.FileArrival != nil:
+		conv272, err := FileArrivalTriggerStateToSDK(w.FileArrival)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_FileArrival{FileArrival: *conv272}
+	case w.TableUpdate != nil:
+		conv273, err := TableTriggerStateToSDK(w.TableUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_TableUpdate{TableUpdate: *conv273}
+	case w.Model != nil:
+		conv274, err := ModelTriggerStateToSDK(w.Model)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.PerTriggerState_TriggerType_Model{Model: *conv274}
+	}
+	conv275, err := SqlConditionStateToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PerTriggerState.SqlCondition", err)
+	}
+	out.SqlCondition = conv275
+	out.PauseStatus = w.PauseStatus
+	return out, nil
+}
+
+// PerTriggerStateFromSDK converts the sdk-go type to the mirror.
+func PerTriggerStateFromSDK(v *sdk.PerTriggerState) (*PerTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PerTriggerState{}
+	switch value := v.TriggerType.(type) {
+	case *sdk.PerTriggerState_TriggerType_Periodic:
+		if value != nil {
+			conv276, err := PeriodicTriggerStateFromSDK(&value.Periodic)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.Periodic = conv276
+		}
+	case *sdk.PerTriggerState_TriggerType_Schedule:
+		if value != nil {
+			conv277, err := ScheduleTriggerStateFromSDK(&value.Schedule)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.Schedule = conv277
+		}
+	case *sdk.PerTriggerState_TriggerType_Continuous:
+		if value != nil {
+			conv278, err := ContinuousTriggerStateFromSDK(&value.Continuous)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.Continuous = conv278
+		}
+	case *sdk.PerTriggerState_TriggerType_FileArrival:
+		if value != nil {
+			conv279, err := FileArrivalTriggerStateFromSDK(&value.FileArrival)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.FileArrival = conv279
+		}
+	case *sdk.PerTriggerState_TriggerType_TableUpdate:
+		if value != nil {
+			conv280, err := TableTriggerStateFromSDK(&value.TableUpdate)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.TableUpdate = conv280
+		}
+	case *sdk.PerTriggerState_TriggerType_Model:
+		if value != nil {
+			conv281, err := ModelTriggerStateFromSDK(&value.Model)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PerTriggerState.TriggerType", err)
+			}
+			out.Model = conv281
+		}
+	}
+	conv282, err := SqlConditionStateFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PerTriggerState.SqlCondition", err)
+	}
+	out.SqlCondition = conv282
+	out.PauseStatus = v.PauseStatus
+	return out, nil
+}
+
+// PeriodicTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func PeriodicTriggerConfigurationToSDK(w *PeriodicTriggerConfiguration) (*sdk.PeriodicTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PeriodicTriggerConfiguration{}
+	out.Interval = w.Interval
+	out.Unit = w.Unit
+	return out, nil
+}
+
+// PeriodicTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func PeriodicTriggerConfigurationFromSDK(v *sdk.PeriodicTriggerConfiguration) (*PeriodicTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PeriodicTriggerConfiguration{}
+	out.Interval = v.Interval
+	out.Unit = v.Unit
+	return out, nil
+}
+
+// PeriodicTriggerStateToSDK converts the mirror to the sdk-go type.
+func PeriodicTriggerStateToSDK(w *PeriodicTriggerState) (*sdk.PeriodicTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PeriodicTriggerState{}
+	out.NextRunTime = w.NextRunTime
+	return out, nil
+}
+
+// PeriodicTriggerStateFromSDK converts the sdk-go type to the mirror.
+func PeriodicTriggerStateFromSDK(v *sdk.PeriodicTriggerState) (*PeriodicTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PeriodicTriggerState{}
+	out.NextRunTime = v.NextRunTime
+	return out, nil
+}
+
+// PipelineParametersToSDK converts the mirror to the sdk-go type.
+func PipelineParametersToSDK(w *PipelineParameters) (*sdk.PipelineParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineParameters{}
+	out.FullRefresh = w.FullRefresh
+	out.RefreshSelection = w.RefreshSelection
+	out.FullRefreshSelection = w.FullRefreshSelection
+	out.ResetCheckpointSelection = w.ResetCheckpointSelection
+	out.RefreshFlowSelection = w.RefreshFlowSelection
+	return out, nil
+}
+
+// PipelineParametersFromSDK converts the sdk-go type to the mirror.
+func PipelineParametersFromSDK(v *sdk.PipelineParameters) (*PipelineParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineParameters{}
+	out.FullRefresh = v.FullRefresh
+	out.RefreshSelection = v.RefreshSelection
+	out.FullRefreshSelection = v.FullRefreshSelection
+	out.ResetCheckpointSelection = v.ResetCheckpointSelection
+	out.RefreshFlowSelection = v.RefreshFlowSelection
+	return out, nil
+}
+
+// PipelineTaskToSDK converts the mirror to the sdk-go type.
+func PipelineTaskToSDK(w *PipelineTask) (*sdk.PipelineTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineTask{}
+	out.PipelineId = w.PipelineId
+	out.PipelineTaskParameters = w.PipelineTaskParameters
+	out.FullRefresh = w.FullRefresh
+	out.RefreshSelection = w.RefreshSelection
+	out.FullRefreshSelection = w.FullRefreshSelection
+	out.ResetCheckpointSelection = w.ResetCheckpointSelection
+	out.RefreshFlowSelection = w.RefreshFlowSelection
+	return out, nil
+}
+
+// PipelineTaskFromSDK converts the sdk-go type to the mirror.
+func PipelineTaskFromSDK(v *sdk.PipelineTask) (*PipelineTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineTask{}
+	out.PipelineId = v.PipelineId
+	out.PipelineTaskParameters = v.PipelineTaskParameters
+	out.FullRefresh = v.FullRefresh
+	out.RefreshSelection = v.RefreshSelection
+	out.FullRefreshSelection = v.FullRefreshSelection
+	out.ResetCheckpointSelection = v.ResetCheckpointSelection
+	out.RefreshFlowSelection = v.RefreshFlowSelection
+	return out, nil
+}
+
+// PowerBiModelToSDK converts the mirror to the sdk-go type.
+func PowerBiModelToSDK(w *PowerBiModel) (*sdk.PowerBiModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PowerBiModel{}
+	out.WorkspaceName = w.WorkspaceName
+	out.ModelName = w.ModelName
+	out.StorageMode = w.StorageMode
+	out.AuthenticationMethod = w.AuthenticationMethod
+	out.OverwriteExisting = w.OverwriteExisting
+	return out, nil
+}
+
+// PowerBiModelFromSDK converts the sdk-go type to the mirror.
+func PowerBiModelFromSDK(v *sdk.PowerBiModel) (*PowerBiModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PowerBiModel{}
+	out.WorkspaceName = v.WorkspaceName
+	out.ModelName = v.ModelName
+	out.StorageMode = v.StorageMode
+	out.AuthenticationMethod = v.AuthenticationMethod
+	out.OverwriteExisting = v.OverwriteExisting
+	return out, nil
+}
+
+// PowerBiTableToSDK converts the mirror to the sdk-go type.
+func PowerBiTableToSDK(w *PowerBiTable) (*sdk.PowerBiTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PowerBiTable{}
+	out.Name = w.Name
+	out.Catalog = w.Catalog
+	out.Schema = w.Schema
+	out.StorageMode = w.StorageMode
+	return out, nil
+}
+
+// PowerBiTableFromSDK converts the sdk-go type to the mirror.
+func PowerBiTableFromSDK(v *sdk.PowerBiTable) (*PowerBiTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PowerBiTable{}
+	out.Name = v.Name
+	out.Catalog = v.Catalog
+	out.Schema = v.Schema
+	out.StorageMode = v.StorageMode
+	return out, nil
+}
+
+// PowerBiTaskToSDK converts the mirror to the sdk-go type.
+func PowerBiTaskToSDK(w *PowerBiTask) (*sdk.PowerBiTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PowerBiTask{}
+	conv283, err := convertSlice(w.Tables, PowerBiTableToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PowerBiTask.Tables", err)
+	}
+	out.Tables = conv283
+	out.WarehouseId = w.WarehouseId
+	conv284, err := PowerBiModelToSDK(w.PowerBiModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PowerBiTask.PowerBiModel", err)
+	}
+	out.PowerBiModel = conv284
+	out.ConnectionResourceName = w.ConnectionResourceName
+	out.RefreshAfterUpdate = w.RefreshAfterUpdate
+	return out, nil
+}
+
+// PowerBiTaskFromSDK converts the sdk-go type to the mirror.
+func PowerBiTaskFromSDK(v *sdk.PowerBiTask) (*PowerBiTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PowerBiTask{}
+	conv285, err := convertSlice(v.Tables, PowerBiTableFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PowerBiTask.Tables", err)
+	}
+	out.Tables = conv285
+	out.WarehouseId = v.WarehouseId
+	conv286, err := PowerBiModelFromSDK(v.PowerBiModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PowerBiTask.PowerBiModel", err)
+	}
+	out.PowerBiModel = conv286
+	out.ConnectionResourceName = v.ConnectionResourceName
+	out.RefreshAfterUpdate = v.RefreshAfterUpdate
+	return out, nil
+}
+
+// PythonOperatorTaskToSDK converts the mirror to the sdk-go type.
+func PythonOperatorTaskToSDK(w *PythonOperatorTask) (*sdk.PythonOperatorTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonOperatorTask{}
+	conv287, err := convertSlice(w.Parameters, PythonOperatorTask_ParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PythonOperatorTask.Parameters", err)
+	}
+	out.Parameters = conv287
+	out.Main = w.Main
+	return out, nil
+}
+
+// PythonOperatorTaskFromSDK converts the sdk-go type to the mirror.
+func PythonOperatorTaskFromSDK(v *sdk.PythonOperatorTask) (*PythonOperatorTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonOperatorTask{}
+	conv288, err := convertSlice(v.Parameters, PythonOperatorTask_ParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PythonOperatorTask.Parameters", err)
+	}
+	out.Parameters = conv288
+	out.Main = v.Main
+	return out, nil
+}
+
+// PythonOperatorTask_ParameterToSDK converts the mirror to the sdk-go type.
+func PythonOperatorTask_ParameterToSDK(w *PythonOperatorTask_Parameter) (*sdk.PythonOperatorTask_Parameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonOperatorTask_Parameter{}
+	out.Name = w.Name
+	out.Value = w.Value
+	return out, nil
+}
+
+// PythonOperatorTask_ParameterFromSDK converts the sdk-go type to the mirror.
+func PythonOperatorTask_ParameterFromSDK(v *sdk.PythonOperatorTask_Parameter) (*PythonOperatorTask_Parameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonOperatorTask_Parameter{}
+	out.Name = v.Name
+	out.Value = v.Value
+	return out, nil
+}
+
+// PythonPyPiLibraryToSDK converts the mirror to the sdk-go type.
+func PythonPyPiLibraryToSDK(w *PythonPyPiLibrary) (*sdk.PythonPyPiLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonPyPiLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// PythonPyPiLibraryFromSDK converts the sdk-go type to the mirror.
+func PythonPyPiLibraryFromSDK(v *sdk.PythonPyPiLibrary) (*PythonPyPiLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonPyPiLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
+}
+
+// PythonWheelTaskToSDK converts the mirror to the sdk-go type.
+func PythonWheelTaskToSDK(w *PythonWheelTask) (*sdk.PythonWheelTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PythonWheelTask{}
+	out.PackageName = w.PackageName
+	out.EntryPoint = w.EntryPoint
+	out.Parameters = w.Parameters
+	out.NamedParameters = w.NamedParameters
+	return out, nil
+}
+
+// PythonWheelTaskFromSDK converts the sdk-go type to the mirror.
+func PythonWheelTaskFromSDK(v *sdk.PythonWheelTask) (*PythonWheelTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PythonWheelTask{}
+	out.PackageName = v.PackageName
+	out.EntryPoint = v.EntryPoint
+	out.Parameters = v.Parameters
+	out.NamedParameters = v.NamedParameters
+	return out, nil
+}
+
+// QueueDetailsToSDK converts the mirror to the sdk-go type.
+func QueueDetailsToSDK(w *QueueDetails) (*sdk.QueueDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueueDetails{}
+	out.Code = w.Code
+	out.Message = w.Message
+	return out, nil
+}
+
+// QueueDetailsFromSDK converts the sdk-go type to the mirror.
+func QueueDetailsFromSDK(v *sdk.QueueDetails) (*QueueDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueueDetails{}
+	out.Code = v.Code
+	out.Message = v.Message
+	return out, nil
+}
+
+// QueueSettingsToSDK converts the mirror to the sdk-go type.
+func QueueSettingsToSDK(w *QueueSettings) (*sdk.QueueSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueueSettings{}
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// QueueSettingsFromSDK converts the sdk-go type to the mirror.
+func QueueSettingsFromSDK(v *sdk.QueueSettings) (*QueueSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueueSettings{}
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// RCranLibraryToSDK converts the mirror to the sdk-go type.
+func RCranLibraryToSDK(w *RCranLibrary) (*sdk.RCranLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RCranLibrary{}
+	out.Package = w.Package
+	out.Repo = w.Repo
+	return out, nil
+}
+
+// RCranLibraryFromSDK converts the sdk-go type to the mirror.
+func RCranLibraryFromSDK(v *sdk.RCranLibrary) (*RCranLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RCranLibrary{}
+	out.Package = v.Package
+	out.Repo = v.Repo
+	return out, nil
+}
+
+// RepairToSDK converts the mirror to the sdk-go type.
+func RepairToSDK(w *Repair) (*sdk.Repair, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Repair{}
+	out.Type = w.Type
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	conv289, err := RunStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Repair.State", err)
+	}
+	out.State = conv289
+	out.Id = w.Id
+	out.TaskRunIds = w.TaskRunIds
+	conv290, err := RunStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Repair.Status", err)
+	}
+	out.Status = conv290
+	out.EffectivePerformanceTarget = w.EffectivePerformanceTarget
+	return out, nil
+}
+
+// RepairFromSDK converts the sdk-go type to the mirror.
+func RepairFromSDK(v *sdk.Repair) (*Repair, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Repair{}
+	out.Type = v.Type
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	conv291, err := RunStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Repair.State", err)
+	}
+	out.State = conv291
+	out.Id = v.Id
+	out.TaskRunIds = v.TaskRunIds
+	conv292, err := RunStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Repair.Status", err)
+	}
+	out.Status = conv292
+	out.EffectivePerformanceTarget = v.EffectivePerformanceTarget
+	return out, nil
+}
+
+// RepairRunRequestToSDK converts the mirror to the sdk-go type.
+func RepairRunRequestToSDK(w *RepairRunRequest) (*sdk.RepairRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepairRunRequest{}
+	out.RunId = w.RunId
+	out.LatestRepairId = w.LatestRepairId
+	out.RerunTasks = w.RerunTasks
+	out.JobParameters = w.JobParameters
+	out.RerunAllFailedTasks = w.RerunAllFailedTasks
+	out.RerunDependentTasks = w.RerunDependentTasks
+	out.PerformanceTarget = w.PerformanceTarget
+	conv293, err := PipelineParametersToSDK(w.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepairRunRequest.PipelineParams", err)
+	}
+	out.PipelineParams = conv293
+	out.JarParams = w.JarParams
+	out.NotebookParams = w.NotebookParams
+	out.PythonParams = w.PythonParams
+	out.SparkSubmitParams = w.SparkSubmitParams
+	out.PythonNamedParams = w.PythonNamedParams
+	out.SqlParams = w.SqlParams
+	out.DbtCommands = w.DbtCommands
+	return out, nil
+}
+
+// RepairRunRequestFromSDK converts the sdk-go type to the mirror.
+func RepairRunRequestFromSDK(v *sdk.RepairRunRequest) (*RepairRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepairRunRequest{}
+	out.RunId = v.RunId
+	out.LatestRepairId = v.LatestRepairId
+	out.RerunTasks = v.RerunTasks
+	out.JobParameters = v.JobParameters
+	out.RerunAllFailedTasks = v.RerunAllFailedTasks
+	out.RerunDependentTasks = v.RerunDependentTasks
+	out.PerformanceTarget = v.PerformanceTarget
+	conv294, err := PipelineParametersFromSDK(v.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepairRunRequest.PipelineParams", err)
+	}
+	out.PipelineParams = conv294
+	out.JarParams = v.JarParams
+	out.NotebookParams = v.NotebookParams
+	out.PythonParams = v.PythonParams
+	out.SparkSubmitParams = v.SparkSubmitParams
+	out.PythonNamedParams = v.PythonNamedParams
+	out.SqlParams = v.SqlParams
+	out.DbtCommands = v.DbtCommands
+	return out, nil
+}
+
+// RepairRunResponseToSDK converts the mirror to the sdk-go type.
+func RepairRunResponseToSDK(w *RepairRunResponse) (*sdk.RepairRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepairRunResponse{}
+	out.RepairId = w.RepairId
+	return out, nil
+}
+
+// RepairRunResponseFromSDK converts the sdk-go type to the mirror.
+func RepairRunResponseFromSDK(v *sdk.RepairRunResponse) (*RepairRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepairRunResponse{}
+	out.RepairId = v.RepairId
+	return out, nil
+}
+
+// ResetJobRequestToSDK converts the mirror to the sdk-go type.
+func ResetJobRequestToSDK(w *ResetJobRequest) (*sdk.ResetJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResetJobRequest{}
+	out.JobId = w.JobId
+	conv295, err := JobSettingsToSDK(w.NewSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResetJobRequest.NewSettings", err)
+	}
+	out.NewSettings = conv295
+	return out, nil
+}
+
+// ResetJobRequestFromSDK converts the sdk-go type to the mirror.
+func ResetJobRequestFromSDK(v *sdk.ResetJobRequest) (*ResetJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResetJobRequest{}
+	out.JobId = v.JobId
+	conv296, err := JobSettingsFromSDK(v.NewSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResetJobRequest.NewSettings", err)
+	}
+	out.NewSettings = conv296
+	return out, nil
+}
+
+// ResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValuesToSDK(w *ResolvedValues) (*sdk.ResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues{}
+	{
+		members := 0
+		if w.NotebookTask != nil {
+			members++
+		}
+		if w.SparkJarTask != nil {
+			members++
+		}
+		if w.SparkPythonTask != nil {
+			members++
+		}
+		if w.SparkSubmitTask != nil {
+			members++
+		}
+		if w.PythonWheelTask != nil {
+			members++
+		}
+		if w.DbtTask != nil {
+			members++
+		}
+		if w.SqlTask != nil {
+			members++
+		}
+		if w.RunJobTask != nil {
+			members++
+		}
+		if w.ConditionTask != nil {
+			members++
+		}
+		if w.SimulationTask != nil {
+			members++
+		}
+		if w.PipelineTask != nil {
+			members++
+		}
+		if w.AiRuntimeTask != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ResolvedValues.Resolved")
+		}
+	}
+	switch {
+	case w.NotebookTask != nil:
+		conv297, err := ResolvedValues_NotebookTaskResolvedValuesToSDK(w.NotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_NotebookTask{NotebookTask: *conv297}
+	case w.SparkJarTask != nil:
+		conv298, err := ResolvedValues_SparkJarTaskResolvedValuesToSDK(w.SparkJarTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_SparkJarTask{SparkJarTask: *conv298}
+	case w.SparkPythonTask != nil:
+		conv299, err := ResolvedValues_SparkPythonTaskResolvedValuesToSDK(w.SparkPythonTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_SparkPythonTask{SparkPythonTask: *conv299}
+	case w.SparkSubmitTask != nil:
+		conv300, err := ResolvedValues_SparkSubmitTaskResolvedValuesToSDK(w.SparkSubmitTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_SparkSubmitTask{SparkSubmitTask: *conv300}
+	case w.PythonWheelTask != nil:
+		conv301, err := ResolvedValues_PythonWheelTaskResolvedValuesToSDK(w.PythonWheelTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_PythonWheelTask{PythonWheelTask: *conv301}
+	case w.DbtTask != nil:
+		conv302, err := ResolvedValues_DbtTaskResolvedValuesToSDK(w.DbtTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_DbtTask{DbtTask: *conv302}
+	case w.SqlTask != nil:
+		conv303, err := ResolvedValues_SqlTaskResolvedValuesToSDK(w.SqlTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_SqlTask{SqlTask: *conv303}
+	case w.RunJobTask != nil:
+		conv304, err := ResolvedValues_RunJobTaskResolvedValuesToSDK(w.RunJobTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_RunJobTask{RunJobTask: *conv304}
+	case w.ConditionTask != nil:
+		conv305, err := ResolvedValues_ConditionTaskResolvedValuesToSDK(w.ConditionTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_ConditionTask{ConditionTask: *conv305}
+	case w.SimulationTask != nil:
+		conv306, err := ResolvedValues_SimulationTaskResolvedValuesToSDK(w.SimulationTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_SimulationTask{SimulationTask: *conv306}
+	case w.PipelineTask != nil:
+		conv307, err := ResolvedValues_PipelineTaskResolvedValuesToSDK(w.PipelineTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_PipelineTask{PipelineTask: *conv307}
+	case w.AiRuntimeTask != nil:
+		conv308, err := ResolvedValues_AiRuntimeTaskResolvedValuesToSDK(w.AiRuntimeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+		}
+		out.Resolved = &sdk.ResolvedValues_Resolved_AiRuntimeTask{AiRuntimeTask: *conv308}
+	}
+	return out, nil
+}
+
+// ResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValuesFromSDK(v *sdk.ResolvedValues) (*ResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues{}
+	switch value := v.Resolved.(type) {
+	case *sdk.ResolvedValues_Resolved_NotebookTask:
+		if value != nil {
+			conv309, err := ResolvedValues_NotebookTaskResolvedValuesFromSDK(&value.NotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.NotebookTask = conv309
+		}
+	case *sdk.ResolvedValues_Resolved_SparkJarTask:
+		if value != nil {
+			conv310, err := ResolvedValues_SparkJarTaskResolvedValuesFromSDK(&value.SparkJarTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.SparkJarTask = conv310
+		}
+	case *sdk.ResolvedValues_Resolved_SparkPythonTask:
+		if value != nil {
+			conv311, err := ResolvedValues_SparkPythonTaskResolvedValuesFromSDK(&value.SparkPythonTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.SparkPythonTask = conv311
+		}
+	case *sdk.ResolvedValues_Resolved_SparkSubmitTask:
+		if value != nil {
+			conv312, err := ResolvedValues_SparkSubmitTaskResolvedValuesFromSDK(&value.SparkSubmitTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.SparkSubmitTask = conv312
+		}
+	case *sdk.ResolvedValues_Resolved_PythonWheelTask:
+		if value != nil {
+			conv313, err := ResolvedValues_PythonWheelTaskResolvedValuesFromSDK(&value.PythonWheelTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.PythonWheelTask = conv313
+		}
+	case *sdk.ResolvedValues_Resolved_DbtTask:
+		if value != nil {
+			conv314, err := ResolvedValues_DbtTaskResolvedValuesFromSDK(&value.DbtTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.DbtTask = conv314
+		}
+	case *sdk.ResolvedValues_Resolved_SqlTask:
+		if value != nil {
+			conv315, err := ResolvedValues_SqlTaskResolvedValuesFromSDK(&value.SqlTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.SqlTask = conv315
+		}
+	case *sdk.ResolvedValues_Resolved_RunJobTask:
+		if value != nil {
+			conv316, err := ResolvedValues_RunJobTaskResolvedValuesFromSDK(&value.RunJobTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.RunJobTask = conv316
+		}
+	case *sdk.ResolvedValues_Resolved_ConditionTask:
+		if value != nil {
+			conv317, err := ResolvedValues_ConditionTaskResolvedValuesFromSDK(&value.ConditionTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.ConditionTask = conv317
+		}
+	case *sdk.ResolvedValues_Resolved_SimulationTask:
+		if value != nil {
+			conv318, err := ResolvedValues_SimulationTaskResolvedValuesFromSDK(&value.SimulationTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.SimulationTask = conv318
+		}
+	case *sdk.ResolvedValues_Resolved_PipelineTask:
+		if value != nil {
+			conv319, err := ResolvedValues_PipelineTaskResolvedValuesFromSDK(&value.PipelineTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.PipelineTask = conv319
+		}
+	case *sdk.ResolvedValues_Resolved_AiRuntimeTask:
+		if value != nil {
+			conv320, err := ResolvedValues_AiRuntimeTaskResolvedValuesFromSDK(&value.AiRuntimeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ResolvedValues.Resolved", err)
+			}
+			out.AiRuntimeTask = conv320
+		}
+	}
+	return out, nil
+}
+
+// ResolvedValues_AiRuntimeTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_AiRuntimeTaskResolvedValuesToSDK(w *ResolvedValues_AiRuntimeTaskResolvedValues) (*sdk.ResolvedValues_AiRuntimeTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_AiRuntimeTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_AiRuntimeTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_AiRuntimeTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_AiRuntimeTaskResolvedValues) (*ResolvedValues_AiRuntimeTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_AiRuntimeTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_ConditionTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_ConditionTaskResolvedValuesToSDK(w *ResolvedValues_ConditionTaskResolvedValues) (*sdk.ResolvedValues_ConditionTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_ConditionTaskResolvedValues{}
+	out.Left = w.Left
+	out.Right = w.Right
+	return out, nil
+}
+
+// ResolvedValues_ConditionTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_ConditionTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_ConditionTaskResolvedValues) (*ResolvedValues_ConditionTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_ConditionTaskResolvedValues{}
+	out.Left = v.Left
+	out.Right = v.Right
+	return out, nil
+}
+
+// ResolvedValues_DbtTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_DbtTaskResolvedValuesToSDK(w *ResolvedValues_DbtTaskResolvedValues) (*sdk.ResolvedValues_DbtTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_DbtTaskResolvedValues{}
+	out.Commands = w.Commands
+	return out, nil
+}
+
+// ResolvedValues_DbtTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_DbtTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_DbtTaskResolvedValues) (*ResolvedValues_DbtTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_DbtTaskResolvedValues{}
+	out.Commands = v.Commands
+	return out, nil
+}
+
+// ResolvedValues_NotebookTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_NotebookTaskResolvedValuesToSDK(w *ResolvedValues_NotebookTaskResolvedValues) (*sdk.ResolvedValues_NotebookTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_NotebookTaskResolvedValues{}
+	out.BaseParameters = w.BaseParameters
+	return out, nil
+}
+
+// ResolvedValues_NotebookTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_NotebookTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_NotebookTaskResolvedValues) (*ResolvedValues_NotebookTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_NotebookTaskResolvedValues{}
+	out.BaseParameters = v.BaseParameters
+	return out, nil
+}
+
+// ResolvedValues_PipelineTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_PipelineTaskResolvedValuesToSDK(w *ResolvedValues_PipelineTaskResolvedValues) (*sdk.ResolvedValues_PipelineTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_PipelineTaskResolvedValues{}
+	out.PipelineTaskParameters = w.PipelineTaskParameters
+	return out, nil
+}
+
+// ResolvedValues_PipelineTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_PipelineTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_PipelineTaskResolvedValues) (*ResolvedValues_PipelineTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_PipelineTaskResolvedValues{}
+	out.PipelineTaskParameters = v.PipelineTaskParameters
+	return out, nil
+}
+
+// ResolvedValues_PythonWheelTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_PythonWheelTaskResolvedValuesToSDK(w *ResolvedValues_PythonWheelTaskResolvedValues) (*sdk.ResolvedValues_PythonWheelTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_PythonWheelTaskResolvedValues{}
+	out.Parameters = w.Parameters
+	out.NamedParameters = w.NamedParameters
+	return out, nil
+}
+
+// ResolvedValues_PythonWheelTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_PythonWheelTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_PythonWheelTaskResolvedValues) (*ResolvedValues_PythonWheelTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_PythonWheelTaskResolvedValues{}
+	out.Parameters = v.Parameters
+	out.NamedParameters = v.NamedParameters
+	return out, nil
+}
+
+// ResolvedValues_RunJobTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_RunJobTaskResolvedValuesToSDK(w *ResolvedValues_RunJobTaskResolvedValues) (*sdk.ResolvedValues_RunJobTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_RunJobTaskResolvedValues{}
+	out.Parameters = w.Parameters
+	out.JobParameters = w.JobParameters
+	return out, nil
+}
+
+// ResolvedValues_RunJobTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_RunJobTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_RunJobTaskResolvedValues) (*ResolvedValues_RunJobTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_RunJobTaskResolvedValues{}
+	out.Parameters = v.Parameters
+	out.JobParameters = v.JobParameters
+	return out, nil
+}
+
+// ResolvedValues_SimulationTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_SimulationTaskResolvedValuesToSDK(w *ResolvedValues_SimulationTaskResolvedValues) (*sdk.ResolvedValues_SimulationTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_SimulationTaskResolvedValues{}
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// ResolvedValues_SimulationTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_SimulationTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_SimulationTaskResolvedValues) (*ResolvedValues_SimulationTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_SimulationTaskResolvedValues{}
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// ResolvedValues_SparkJarTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_SparkJarTaskResolvedValuesToSDK(w *ResolvedValues_SparkJarTaskResolvedValues) (*sdk.ResolvedValues_SparkJarTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_SparkJarTaskResolvedValues{}
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// ResolvedValues_SparkJarTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_SparkJarTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_SparkJarTaskResolvedValues) (*ResolvedValues_SparkJarTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_SparkJarTaskResolvedValues{}
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// ResolvedValues_SparkPythonTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_SparkPythonTaskResolvedValuesToSDK(w *ResolvedValues_SparkPythonTaskResolvedValues) (*sdk.ResolvedValues_SparkPythonTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_SparkPythonTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_SparkPythonTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_SparkPythonTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_SparkPythonTaskResolvedValues) (*ResolvedValues_SparkPythonTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_SparkPythonTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_SparkSubmitTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_SparkSubmitTaskResolvedValuesToSDK(w *ResolvedValues_SparkSubmitTaskResolvedValues) (*sdk.ResolvedValues_SparkSubmitTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_SparkSubmitTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_SparkSubmitTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_SparkSubmitTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_SparkSubmitTaskResolvedValues) (*ResolvedValues_SparkSubmitTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_SparkSubmitTaskResolvedValues{}
+	return out, nil
+}
+
+// ResolvedValues_SqlTaskResolvedValuesToSDK converts the mirror to the sdk-go type.
+func ResolvedValues_SqlTaskResolvedValuesToSDK(w *ResolvedValues_SqlTaskResolvedValues) (*sdk.ResolvedValues_SqlTaskResolvedValues, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResolvedValues_SqlTaskResolvedValues{}
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// ResolvedValues_SqlTaskResolvedValuesFromSDK converts the sdk-go type to the mirror.
+func ResolvedValues_SqlTaskResolvedValuesFromSDK(v *sdk.ResolvedValues_SqlTaskResolvedValues) (*ResolvedValues_SqlTaskResolvedValues, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResolvedValues_SqlTaskResolvedValues{}
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// RunToSDK converts the mirror to the sdk-go type.
+func RunToSDK(w *Run) (*sdk.Run, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Run{}
+	out.JobId = w.JobId
+	out.RunId = w.RunId
+	out.CreatorUserName = w.CreatorUserName
+	out.NumberInJob = w.NumberInJob
+	out.OriginalAttemptRunId = w.OriginalAttemptRunId
+	conv321, err := RunStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.State", err)
+	}
+	out.State = conv321
+	conv322, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Schedule", err)
+	}
+	out.Schedule = conv322
+	conv323, err := ClusterSpecToSDK(w.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv323
+	conv324, err := ClusterInstanceToSDK(w.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv324
+	conv325, err := convertSlice(w.JobParameters, Run_JobLevelParametersToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.JobParameters", err)
+	}
+	out.JobParameters = conv325
+	conv326, err := RunParametersToSDK(w.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv326
+	out.Trigger = w.Trigger
+	conv327, err := RunTriggerInfoToSDK(w.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv327
+	out.RunName = w.RunName
+	out.RunPageUrl = w.RunPageUrl
+	out.RunType = w.RunType
+	conv328, err := convertSlice(w.Tasks, RunTaskToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Tasks", err)
+	}
+	out.Tasks = conv328
+	out.Description = w.Description
+	out.AttemptNumber = w.AttemptNumber
+	conv329, err := convertSlice(w.JobClusters, JobClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.JobClusters", err)
+	}
+	out.JobClusters = conv329
+	conv330, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.GitSource", err)
+	}
+	out.GitSource = conv330
+	conv331, err := convertSlice(w.RepairHistory, RepairToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.RepairHistory", err)
+	}
+	out.RepairHistory = conv331
+	conv332, err := RunStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Status", err)
+	}
+	out.Status = conv332
+	out.JobRunId = w.JobRunId
+	out.HasMore = w.HasMore
+	out.EffectivePerformanceTarget = w.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv333, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv333
+	out.DeploymentId = w.DeploymentId
+	out.VersionId = w.VersionId
+	out.StartTime = w.StartTime
+	out.SetupDuration = w.SetupDuration
+	out.ExecutionDuration = w.ExecutionDuration
+	out.CleanupDuration = w.CleanupDuration
+	out.EndTime = w.EndTime
+	out.RunDuration = w.RunDuration
+	out.QueueDuration = w.QueueDuration
+	return out, nil
+}
+
+// RunFromSDK converts the sdk-go type to the mirror.
+func RunFromSDK(v *sdk.Run) (*Run, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Run{}
+	out.JobId = v.JobId
+	out.RunId = v.RunId
+	out.CreatorUserName = v.CreatorUserName
+	out.NumberInJob = v.NumberInJob
+	out.OriginalAttemptRunId = v.OriginalAttemptRunId
+	conv334, err := RunStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.State", err)
+	}
+	out.State = conv334
+	conv335, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Schedule", err)
+	}
+	out.Schedule = conv335
+	conv336, err := ClusterSpecFromSDK(v.ClusterSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.ClusterSpec", err)
+	}
+	out.ClusterSpec = conv336
+	conv337, err := ClusterInstanceFromSDK(v.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv337
+	conv338, err := convertSlice(v.JobParameters, Run_JobLevelParametersFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.JobParameters", err)
+	}
+	out.JobParameters = conv338
+	conv339, err := RunParametersFromSDK(v.OverridingParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.OverridingParameters", err)
+	}
+	out.OverridingParameters = conv339
+	out.Trigger = v.Trigger
+	conv340, err := RunTriggerInfoFromSDK(v.TriggerInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.TriggerInfo", err)
+	}
+	out.TriggerInfo = conv340
+	out.RunName = v.RunName
+	out.RunPageUrl = v.RunPageUrl
+	out.RunType = v.RunType
+	conv341, err := convertSlice(v.Tasks, RunTaskFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Tasks", err)
+	}
+	out.Tasks = conv341
+	out.Description = v.Description
+	out.AttemptNumber = v.AttemptNumber
+	conv342, err := convertSlice(v.JobClusters, JobClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.JobClusters", err)
+	}
+	out.JobClusters = conv342
+	conv343, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.GitSource", err)
+	}
+	out.GitSource = conv343
+	conv344, err := convertSlice(v.RepairHistory, RepairFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.RepairHistory", err)
+	}
+	out.RepairHistory = conv344
+	conv345, err := RunStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.Status", err)
+	}
+	out.Status = conv345
+	out.JobRunId = v.JobRunId
+	out.HasMore = v.HasMore
+	out.EffectivePerformanceTarget = v.EffectivePerformanceTarget
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv346, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Run.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv346
+	out.DeploymentId = v.DeploymentId
+	out.VersionId = v.VersionId
+	out.StartTime = v.StartTime
+	out.SetupDuration = v.SetupDuration
+	out.ExecutionDuration = v.ExecutionDuration
+	out.CleanupDuration = v.CleanupDuration
+	out.EndTime = v.EndTime
+	out.RunDuration = v.RunDuration
+	out.QueueDuration = v.QueueDuration
+	return out, nil
+}
+
+// RunJobTaskToSDK converts the mirror to the sdk-go type.
+func RunJobTaskToSDK(w *RunJobTask) (*sdk.RunJobTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunJobTask{}
+	out.JobId = w.JobId
+	out.JobParameters = w.JobParameters
+	conv347, err := PipelineParametersToSDK(w.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunJobTask.PipelineParams", err)
+	}
+	out.PipelineParams = conv347
+	out.JarParams = w.JarParams
+	out.NotebookParams = w.NotebookParams
+	out.PythonParams = w.PythonParams
+	out.SparkSubmitParams = w.SparkSubmitParams
+	out.PythonNamedParams = w.PythonNamedParams
+	out.SqlParams = w.SqlParams
+	out.DbtCommands = w.DbtCommands
+	return out, nil
+}
+
+// RunJobTaskFromSDK converts the sdk-go type to the mirror.
+func RunJobTaskFromSDK(v *sdk.RunJobTask) (*RunJobTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunJobTask{}
+	out.JobId = v.JobId
+	out.JobParameters = v.JobParameters
+	conv348, err := PipelineParametersFromSDK(v.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunJobTask.PipelineParams", err)
+	}
+	out.PipelineParams = conv348
+	out.JarParams = v.JarParams
+	out.NotebookParams = v.NotebookParams
+	out.PythonParams = v.PythonParams
+	out.SparkSubmitParams = v.SparkSubmitParams
+	out.PythonNamedParams = v.PythonNamedParams
+	out.SqlParams = v.SqlParams
+	out.DbtCommands = v.DbtCommands
+	return out, nil
+}
+
+// RunJobTask_RunJobTaskOutputToSDK converts the mirror to the sdk-go type.
+func RunJobTask_RunJobTaskOutputToSDK(w *RunJobTask_RunJobTaskOutput) (*sdk.RunJobTask_RunJobTaskOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunJobTask_RunJobTaskOutput{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// RunJobTask_RunJobTaskOutputFromSDK converts the sdk-go type to the mirror.
+func RunJobTask_RunJobTaskOutputFromSDK(v *sdk.RunJobTask_RunJobTaskOutput) (*RunJobTask_RunJobTaskOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunJobTask_RunJobTaskOutput{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// RunNowRequestToSDK converts the mirror to the sdk-go type.
+func RunNowRequestToSDK(w *RunNowRequest) (*sdk.RunNowRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunNowRequest{}
+	out.JobId = w.JobId
+	out.JobParameters = w.JobParameters
+	out.IdempotencyToken = w.IdempotencyToken
+	conv349, err := QueueSettingsToSDK(w.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunNowRequest.Queue", err)
+	}
+	out.Queue = conv349
+	out.Only = w.Only
+	out.PerformanceTarget = w.PerformanceTarget
+	conv350, err := PipelineParametersToSDK(w.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunNowRequest.PipelineParams", err)
+	}
+	out.PipelineParams = conv350
+	out.JarParams = w.JarParams
+	out.NotebookParams = w.NotebookParams
+	out.PythonParams = w.PythonParams
+	out.SparkSubmitParams = w.SparkSubmitParams
+	out.PythonNamedParams = w.PythonNamedParams
+	out.SqlParams = w.SqlParams
+	out.DbtCommands = w.DbtCommands
+	return out, nil
+}
+
+// RunNowRequestFromSDK converts the sdk-go type to the mirror.
+func RunNowRequestFromSDK(v *sdk.RunNowRequest) (*RunNowRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunNowRequest{}
+	out.JobId = v.JobId
+	out.JobParameters = v.JobParameters
+	out.IdempotencyToken = v.IdempotencyToken
+	conv351, err := QueueSettingsFromSDK(v.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunNowRequest.Queue", err)
+	}
+	out.Queue = conv351
+	out.Only = v.Only
+	out.PerformanceTarget = v.PerformanceTarget
+	conv352, err := PipelineParametersFromSDK(v.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunNowRequest.PipelineParams", err)
+	}
+	out.PipelineParams = conv352
+	out.JarParams = v.JarParams
+	out.NotebookParams = v.NotebookParams
+	out.PythonParams = v.PythonParams
+	out.SparkSubmitParams = v.SparkSubmitParams
+	out.PythonNamedParams = v.PythonNamedParams
+	out.SqlParams = v.SqlParams
+	out.DbtCommands = v.DbtCommands
+	return out, nil
+}
+
+// RunNowResponseToSDK converts the mirror to the sdk-go type.
+func RunNowResponseToSDK(w *RunNowResponse) (*sdk.RunNowResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunNowResponse{}
+	out.RunId = w.RunId
+	out.NumberInJob = w.NumberInJob
+	return out, nil
+}
+
+// RunNowResponseFromSDK converts the sdk-go type to the mirror.
+func RunNowResponseFromSDK(v *sdk.RunNowResponse) (*RunNowResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunNowResponse{}
+	out.RunId = v.RunId
+	out.NumberInJob = v.NumberInJob
+	return out, nil
+}
+
+// RunParametersToSDK converts the mirror to the sdk-go type.
+func RunParametersToSDK(w *RunParameters) (*sdk.RunParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunParameters{}
+	conv353, err := PipelineParametersToSDK(w.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunParameters.PipelineParams", err)
+	}
+	out.PipelineParams = conv353
+	out.JarParams = w.JarParams
+	out.NotebookParams = w.NotebookParams
+	out.PythonParams = w.PythonParams
+	out.SparkSubmitParams = w.SparkSubmitParams
+	out.PythonNamedParams = w.PythonNamedParams
+	out.SqlParams = w.SqlParams
+	out.DbtCommands = w.DbtCommands
+	return out, nil
+}
+
+// RunParametersFromSDK converts the sdk-go type to the mirror.
+func RunParametersFromSDK(v *sdk.RunParameters) (*RunParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunParameters{}
+	conv354, err := PipelineParametersFromSDK(v.PipelineParams)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunParameters.PipelineParams", err)
+	}
+	out.PipelineParams = conv354
+	out.JarParams = v.JarParams
+	out.NotebookParams = v.NotebookParams
+	out.PythonParams = v.PythonParams
+	out.SparkSubmitParams = v.SparkSubmitParams
+	out.PythonNamedParams = v.PythonNamedParams
+	out.SqlParams = v.SqlParams
+	out.DbtCommands = v.DbtCommands
+	return out, nil
+}
+
+// RunStateToSDK converts the mirror to the sdk-go type.
+func RunStateToSDK(w *RunState) (*sdk.RunState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunState{}
+	out.LifeCycleState = w.LifeCycleState
+	out.ResultState = w.ResultState
+	out.StateMessage = w.StateMessage
+	out.UserCancelledOrTimedout = w.UserCancelledOrTimedout
+	out.QueueReason = w.QueueReason
+	return out, nil
+}
+
+// RunStateFromSDK converts the sdk-go type to the mirror.
+func RunStateFromSDK(v *sdk.RunState) (*RunState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunState{}
+	out.LifeCycleState = v.LifeCycleState
+	out.ResultState = v.ResultState
+	out.StateMessage = v.StateMessage
+	out.UserCancelledOrTimedout = v.UserCancelledOrTimedout
+	out.QueueReason = v.QueueReason
+	return out, nil
+}
+
+// RunStatusToSDK converts the mirror to the sdk-go type.
+func RunStatusToSDK(w *RunStatus) (*sdk.RunStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunStatus{}
+	out.State = w.State
+	conv355, err := TerminationDetailsToSDK(w.TerminationDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunStatus.TerminationDetails", err)
+	}
+	out.TerminationDetails = conv355
+	conv356, err := QueueDetailsToSDK(w.QueueDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunStatus.QueueDetails", err)
+	}
+	out.QueueDetails = conv356
+	return out, nil
+}
+
+// RunStatusFromSDK converts the sdk-go type to the mirror.
+func RunStatusFromSDK(v *sdk.RunStatus) (*RunStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunStatus{}
+	out.State = v.State
+	conv357, err := TerminationDetailsFromSDK(v.TerminationDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunStatus.TerminationDetails", err)
+	}
+	out.TerminationDetails = conv357
+	conv358, err := QueueDetailsFromSDK(v.QueueDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunStatus.QueueDetails", err)
+	}
+	out.QueueDetails = conv358
+	return out, nil
+}
+
+// RunTaskToSDK converts the mirror to the sdk-go type.
+func RunTaskToSDK(w *RunTask) (*sdk.RunTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunTask{}
+	out.RunId = w.RunId
+	conv359, err := RunStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.State", err)
+	}
+	out.State = conv359
+	out.RunPageUrl = w.RunPageUrl
+	conv360, err := ClusterInstanceToSDK(w.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv360
+	out.AttemptNumber = w.AttemptNumber
+	conv361, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.GitSource", err)
+	}
+	out.GitSource = conv361
+	conv362, err := ResolvedValuesToSDK(w.ResolvedValues)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.ResolvedValues", err)
+	}
+	out.ResolvedValues = conv362
+	conv363, err := RunStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Status", err)
+	}
+	out.Status = conv363
+	out.EffectivePerformanceTarget = w.EffectivePerformanceTarget
+	out.TaskKey = w.TaskKey
+	out.Description = w.Description
+	conv364, err := convertSlice(w.DependsOn, TaskDependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.DependsOn", err)
+	}
+	out.DependsOn = conv364
+	out.RunIf = w.RunIf
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv365, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv365
+	conv366, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Health", err)
+	}
+	out.Health = conv366
+	conv367, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv367
+	conv368, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv368
+	{
+		members := 0
+		if w.EnvironmentKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.EnvironmentRef")
+		}
+	}
+	switch {
+	case w.EnvironmentKey != nil:
+		out.EnvironmentRef = &sdk.RunTask_EnvironmentRef_EnvironmentKey{EnvironmentKey: *w.EnvironmentKey}
+	}
+	out.Disabled = w.Disabled
+	conv369, err := ComputeToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Compute", err)
+	}
+	out.Compute = conv369
+	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
+	{
+		members := 0
+		if w.NotebookTask != nil {
+			members++
+		}
+		if w.SparkJarTask != nil {
+			members++
+		}
+		if w.SparkPythonTask != nil {
+			members++
+		}
+		if w.SparkSubmitTask != nil {
+			members++
+		}
+		if w.PipelineTask != nil {
+			members++
+		}
+		if w.PythonWheelTask != nil {
+			members++
+		}
+		if w.DbtTask != nil {
+			members++
+		}
+		if w.SqlTask != nil {
+			members++
+		}
+		if w.RunJobTask != nil {
+			members++
+		}
+		if w.ConditionTask != nil {
+			members++
+		}
+		if w.ForEachTask != nil {
+			members++
+		}
+		if w.CleanRoomsNotebookTask != nil {
+			members++
+		}
+		if w.GenAiComputeTask != nil {
+			members++
+		}
+		if w.AlertTask != nil {
+			members++
+		}
+		if w.PowerBiTask != nil {
+			members++
+		}
+		if w.DashboardTask != nil {
+			members++
+		}
+		if w.DbtCloudTask != nil {
+			members++
+		}
+		if w.DbtPlatformTask != nil {
+			members++
+		}
+		if w.PythonOperatorTask != nil {
+			members++
+		}
+		if w.AiRuntimeTask != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Task")
+		}
+	}
+	switch {
+	case w.NotebookTask != nil:
+		conv370, err := NotebookTaskToSDK(w.NotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_NotebookTask{NotebookTask: *conv370}
+	case w.SparkJarTask != nil:
+		conv371, err := SparkJarTaskToSDK(w.SparkJarTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_SparkJarTask{SparkJarTask: *conv371}
+	case w.SparkPythonTask != nil:
+		conv372, err := SparkPythonTaskToSDK(w.SparkPythonTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_SparkPythonTask{SparkPythonTask: *conv372}
+	case w.SparkSubmitTask != nil:
+		conv373, err := SparkSubmitTaskToSDK(w.SparkSubmitTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_SparkSubmitTask{SparkSubmitTask: *conv373}
+	case w.PipelineTask != nil:
+		conv374, err := PipelineTaskToSDK(w.PipelineTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_PipelineTask{PipelineTask: *conv374}
+	case w.PythonWheelTask != nil:
+		conv375, err := PythonWheelTaskToSDK(w.PythonWheelTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_PythonWheelTask{PythonWheelTask: *conv375}
+	case w.DbtTask != nil:
+		conv376, err := DbtTaskToSDK(w.DbtTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_DbtTask{DbtTask: *conv376}
+	case w.SqlTask != nil:
+		conv377, err := SqlTaskToSDK(w.SqlTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_SqlTask{SqlTask: *conv377}
+	case w.RunJobTask != nil:
+		conv378, err := RunJobTaskToSDK(w.RunJobTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_RunJobTask{RunJobTask: *conv378}
+	case w.ConditionTask != nil:
+		conv379, err := ConditionTaskToSDK(w.ConditionTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_ConditionTask{ConditionTask: *conv379}
+	case w.ForEachTask != nil:
+		conv380, err := ForEachTaskToSDK(w.ForEachTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_ForEachTask{ForEachTask: *conv380}
+	case w.CleanRoomsNotebookTask != nil:
+		conv381, err := CleanRoomsNotebookTaskToSDK(w.CleanRoomsNotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_CleanRoomsNotebookTask{CleanRoomsNotebookTask: *conv381}
+	case w.GenAiComputeTask != nil:
+		conv382, err := GenAiComputeTaskToSDK(w.GenAiComputeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_GenAiComputeTask{GenAiComputeTask: *conv382}
+	case w.AlertTask != nil:
+		conv383, err := AlertTaskToSDK(w.AlertTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_AlertTask{AlertTask: *conv383}
+	case w.PowerBiTask != nil:
+		conv384, err := PowerBiTaskToSDK(w.PowerBiTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_PowerBiTask{PowerBiTask: *conv384}
+	case w.DashboardTask != nil:
+		conv385, err := DashboardTaskToSDK(w.DashboardTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_DashboardTask{DashboardTask: *conv385}
+	case w.DbtCloudTask != nil:
+		conv386, err := DbtCloudTaskToSDK(w.DbtCloudTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_DbtCloudTask{DbtCloudTask: *conv386}
+	case w.DbtPlatformTask != nil:
+		conv387, err := DbtPlatformTaskToSDK(w.DbtPlatformTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_DbtPlatformTask{DbtPlatformTask: *conv387}
+	case w.PythonOperatorTask != nil:
+		conv388, err := PythonOperatorTaskToSDK(w.PythonOperatorTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_PythonOperatorTask{PythonOperatorTask: *conv388}
+	case w.AiRuntimeTask != nil:
+		conv389, err := AiRuntimeTaskToSDK(w.AiRuntimeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+		}
+		out.Task = &sdk.RunTask_Task_AiRuntimeTask{AiRuntimeTask: *conv389}
+	}
+	{
+		members := 0
+		if w.ExistingClusterId != nil {
+			members++
+		}
+		if w.NewCluster != nil {
+			members++
+		}
+		if w.JobClusterKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTask.Spec")
+		}
+	}
+	switch {
+	case w.ExistingClusterId != nil:
+		out.Spec = &sdk.RunTask_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
+	case w.NewCluster != nil:
+		conv390, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTask.Spec", err)
+		}
+		out.Spec = &sdk.RunTask_Spec_NewCluster{NewCluster: *conv390}
+	case w.JobClusterKey != nil:
+		out.Spec = &sdk.RunTask_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
+	}
+	conv391, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Libraries", err)
+	}
+	out.Libraries = conv391
+	out.MaxRetries = w.MaxRetries
+	out.MinRetryIntervalMillis = w.MinRetryIntervalMillis
+	out.RetryOnTimeout = w.RetryOnTimeout
+	out.DisableAutoOptimization = w.DisableAutoOptimization
+	out.StartTime = w.StartTime
+	out.SetupDuration = w.SetupDuration
+	out.ExecutionDuration = w.ExecutionDuration
+	out.CleanupDuration = w.CleanupDuration
+	out.EndTime = w.EndTime
+	out.RunDuration = w.RunDuration
+	out.QueueDuration = w.QueueDuration
+	return out, nil
+}
+
+// RunTaskFromSDK converts the sdk-go type to the mirror.
+func RunTaskFromSDK(v *sdk.RunTask) (*RunTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunTask{}
+	out.RunId = v.RunId
+	conv392, err := RunStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.State", err)
+	}
+	out.State = conv392
+	out.RunPageUrl = v.RunPageUrl
+	conv393, err := ClusterInstanceFromSDK(v.ClusterInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.ClusterInstance", err)
+	}
+	out.ClusterInstance = conv393
+	out.AttemptNumber = v.AttemptNumber
+	conv394, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.GitSource", err)
+	}
+	out.GitSource = conv394
+	conv395, err := ResolvedValuesFromSDK(v.ResolvedValues)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.ResolvedValues", err)
+	}
+	out.ResolvedValues = conv395
+	conv396, err := RunStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Status", err)
+	}
+	out.Status = conv396
+	out.EffectivePerformanceTarget = v.EffectivePerformanceTarget
+	out.TaskKey = v.TaskKey
+	out.Description = v.Description
+	conv397, err := convertSlice(v.DependsOn, TaskDependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.DependsOn", err)
+	}
+	out.DependsOn = conv397
+	out.RunIf = v.RunIf
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv398, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv398
+	conv399, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Health", err)
+	}
+	out.Health = conv399
+	conv400, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv400
+	conv401, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv401
+	switch value := v.EnvironmentRef.(type) {
+	case *sdk.RunTask_EnvironmentRef_EnvironmentKey:
+		if value != nil {
+			out.EnvironmentKey = new(value.EnvironmentKey)
+		}
+	}
+	out.Disabled = v.Disabled
+	conv402, err := ComputeFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Compute", err)
+	}
+	out.Compute = conv402
+	out.EnvironmentVariablesKey = v.EnvironmentVariablesKey
+	switch value := v.Task.(type) {
+	case *sdk.RunTask_Task_NotebookTask:
+		if value != nil {
+			conv403, err := NotebookTaskFromSDK(&value.NotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.NotebookTask = conv403
+		}
+	case *sdk.RunTask_Task_SparkJarTask:
+		if value != nil {
+			conv404, err := SparkJarTaskFromSDK(&value.SparkJarTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.SparkJarTask = conv404
+		}
+	case *sdk.RunTask_Task_SparkPythonTask:
+		if value != nil {
+			conv405, err := SparkPythonTaskFromSDK(&value.SparkPythonTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.SparkPythonTask = conv405
+		}
+	case *sdk.RunTask_Task_SparkSubmitTask:
+		if value != nil {
+			conv406, err := SparkSubmitTaskFromSDK(&value.SparkSubmitTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.SparkSubmitTask = conv406
+		}
+	case *sdk.RunTask_Task_PipelineTask:
+		if value != nil {
+			conv407, err := PipelineTaskFromSDK(&value.PipelineTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.PipelineTask = conv407
+		}
+	case *sdk.RunTask_Task_PythonWheelTask:
+		if value != nil {
+			conv408, err := PythonWheelTaskFromSDK(&value.PythonWheelTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.PythonWheelTask = conv408
+		}
+	case *sdk.RunTask_Task_DbtTask:
+		if value != nil {
+			conv409, err := DbtTaskFromSDK(&value.DbtTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.DbtTask = conv409
+		}
+	case *sdk.RunTask_Task_SqlTask:
+		if value != nil {
+			conv410, err := SqlTaskFromSDK(&value.SqlTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.SqlTask = conv410
+		}
+	case *sdk.RunTask_Task_RunJobTask:
+		if value != nil {
+			conv411, err := RunJobTaskFromSDK(&value.RunJobTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.RunJobTask = conv411
+		}
+	case *sdk.RunTask_Task_ConditionTask:
+		if value != nil {
+			conv412, err := ConditionTaskFromSDK(&value.ConditionTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.ConditionTask = conv412
+		}
+	case *sdk.RunTask_Task_ForEachTask:
+		if value != nil {
+			conv413, err := ForEachTaskFromSDK(&value.ForEachTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.ForEachTask = conv413
+		}
+	case *sdk.RunTask_Task_CleanRoomsNotebookTask:
+		if value != nil {
+			conv414, err := CleanRoomsNotebookTaskFromSDK(&value.CleanRoomsNotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.CleanRoomsNotebookTask = conv414
+		}
+	case *sdk.RunTask_Task_GenAiComputeTask:
+		if value != nil {
+			conv415, err := GenAiComputeTaskFromSDK(&value.GenAiComputeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.GenAiComputeTask = conv415
+		}
+	case *sdk.RunTask_Task_AlertTask:
+		if value != nil {
+			conv416, err := AlertTaskFromSDK(&value.AlertTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.AlertTask = conv416
+		}
+	case *sdk.RunTask_Task_PowerBiTask:
+		if value != nil {
+			conv417, err := PowerBiTaskFromSDK(&value.PowerBiTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.PowerBiTask = conv417
+		}
+	case *sdk.RunTask_Task_DashboardTask:
+		if value != nil {
+			conv418, err := DashboardTaskFromSDK(&value.DashboardTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.DashboardTask = conv418
+		}
+	case *sdk.RunTask_Task_DbtCloudTask:
+		if value != nil {
+			conv419, err := DbtCloudTaskFromSDK(&value.DbtCloudTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.DbtCloudTask = conv419
+		}
+	case *sdk.RunTask_Task_DbtPlatformTask:
+		if value != nil {
+			conv420, err := DbtPlatformTaskFromSDK(&value.DbtPlatformTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.DbtPlatformTask = conv420
+		}
+	case *sdk.RunTask_Task_PythonOperatorTask:
+		if value != nil {
+			conv421, err := PythonOperatorTaskFromSDK(&value.PythonOperatorTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.PythonOperatorTask = conv421
+		}
+	case *sdk.RunTask_Task_AiRuntimeTask:
+		if value != nil {
+			conv422, err := AiRuntimeTaskFromSDK(&value.AiRuntimeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Task", err)
+			}
+			out.AiRuntimeTask = conv422
+		}
+	}
+	switch value := v.Spec.(type) {
+	case *sdk.RunTask_Spec_ExistingClusterId:
+		if value != nil {
+			out.ExistingClusterId = new(value.ExistingClusterId)
+		}
+	case *sdk.RunTask_Spec_NewCluster:
+		if value != nil {
+			conv423, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTask.Spec", err)
+			}
+			out.NewCluster = conv423
+		}
+	case *sdk.RunTask_Spec_JobClusterKey:
+		if value != nil {
+			out.JobClusterKey = new(value.JobClusterKey)
+		}
+	}
+	conv424, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTask.Libraries", err)
+	}
+	out.Libraries = conv424
+	out.MaxRetries = v.MaxRetries
+	out.MinRetryIntervalMillis = v.MinRetryIntervalMillis
+	out.RetryOnTimeout = v.RetryOnTimeout
+	out.DisableAutoOptimization = v.DisableAutoOptimization
+	out.StartTime = v.StartTime
+	out.SetupDuration = v.SetupDuration
+	out.ExecutionDuration = v.ExecutionDuration
+	out.CleanupDuration = v.CleanupDuration
+	out.EndTime = v.EndTime
+	out.RunDuration = v.RunDuration
+	out.QueueDuration = v.QueueDuration
+	return out, nil
+}
+
+// RunTaskSettingsToSDK converts the mirror to the sdk-go type.
+func RunTaskSettingsToSDK(w *RunTaskSettings) (*sdk.RunTaskSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunTaskSettings{}
+	out.TaskKey = w.TaskKey
+	out.Description = w.Description
+	conv425, err := convertSlice(w.DependsOn, TaskDependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.DependsOn", err)
+	}
+	out.DependsOn = conv425
+	out.RunIf = w.RunIf
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv426, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv426
+	conv427, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Health", err)
+	}
+	out.Health = conv427
+	conv428, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv428
+	conv429, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv429
+	{
+		members := 0
+		if w.EnvironmentKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.EnvironmentRef")
+		}
+	}
+	switch {
+	case w.EnvironmentKey != nil:
+		out.EnvironmentRef = &sdk.RunTaskSettings_EnvironmentRef_EnvironmentKey{EnvironmentKey: *w.EnvironmentKey}
+	}
+	out.Disabled = w.Disabled
+	conv430, err := ComputeToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Compute", err)
+	}
+	out.Compute = conv430
+	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
+	{
+		members := 0
+		if w.NotebookTask != nil {
+			members++
+		}
+		if w.SparkJarTask != nil {
+			members++
+		}
+		if w.SparkPythonTask != nil {
+			members++
+		}
+		if w.SparkSubmitTask != nil {
+			members++
+		}
+		if w.PipelineTask != nil {
+			members++
+		}
+		if w.PythonWheelTask != nil {
+			members++
+		}
+		if w.DbtTask != nil {
+			members++
+		}
+		if w.SqlTask != nil {
+			members++
+		}
+		if w.RunJobTask != nil {
+			members++
+		}
+		if w.ConditionTask != nil {
+			members++
+		}
+		if w.ForEachTask != nil {
+			members++
+		}
+		if w.CleanRoomsNotebookTask != nil {
+			members++
+		}
+		if w.GenAiComputeTask != nil {
+			members++
+		}
+		if w.AlertTask != nil {
+			members++
+		}
+		if w.PowerBiTask != nil {
+			members++
+		}
+		if w.DashboardTask != nil {
+			members++
+		}
+		if w.DbtCloudTask != nil {
+			members++
+		}
+		if w.DbtPlatformTask != nil {
+			members++
+		}
+		if w.PythonOperatorTask != nil {
+			members++
+		}
+		if w.AiRuntimeTask != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.Task")
+		}
+	}
+	switch {
+	case w.NotebookTask != nil:
+		conv431, err := NotebookTaskToSDK(w.NotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_NotebookTask{NotebookTask: *conv431}
+	case w.SparkJarTask != nil:
+		conv432, err := SparkJarTaskToSDK(w.SparkJarTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_SparkJarTask{SparkJarTask: *conv432}
+	case w.SparkPythonTask != nil:
+		conv433, err := SparkPythonTaskToSDK(w.SparkPythonTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_SparkPythonTask{SparkPythonTask: *conv433}
+	case w.SparkSubmitTask != nil:
+		conv434, err := SparkSubmitTaskToSDK(w.SparkSubmitTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_SparkSubmitTask{SparkSubmitTask: *conv434}
+	case w.PipelineTask != nil:
+		conv435, err := PipelineTaskToSDK(w.PipelineTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_PipelineTask{PipelineTask: *conv435}
+	case w.PythonWheelTask != nil:
+		conv436, err := PythonWheelTaskToSDK(w.PythonWheelTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_PythonWheelTask{PythonWheelTask: *conv436}
+	case w.DbtTask != nil:
+		conv437, err := DbtTaskToSDK(w.DbtTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_DbtTask{DbtTask: *conv437}
+	case w.SqlTask != nil:
+		conv438, err := SqlTaskToSDK(w.SqlTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_SqlTask{SqlTask: *conv438}
+	case w.RunJobTask != nil:
+		conv439, err := RunJobTaskToSDK(w.RunJobTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_RunJobTask{RunJobTask: *conv439}
+	case w.ConditionTask != nil:
+		conv440, err := ConditionTaskToSDK(w.ConditionTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_ConditionTask{ConditionTask: *conv440}
+	case w.ForEachTask != nil:
+		conv441, err := ForEachTaskToSDK(w.ForEachTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_ForEachTask{ForEachTask: *conv441}
+	case w.CleanRoomsNotebookTask != nil:
+		conv442, err := CleanRoomsNotebookTaskToSDK(w.CleanRoomsNotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_CleanRoomsNotebookTask{CleanRoomsNotebookTask: *conv442}
+	case w.GenAiComputeTask != nil:
+		conv443, err := GenAiComputeTaskToSDK(w.GenAiComputeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_GenAiComputeTask{GenAiComputeTask: *conv443}
+	case w.AlertTask != nil:
+		conv444, err := AlertTaskToSDK(w.AlertTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_AlertTask{AlertTask: *conv444}
+	case w.PowerBiTask != nil:
+		conv445, err := PowerBiTaskToSDK(w.PowerBiTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_PowerBiTask{PowerBiTask: *conv445}
+	case w.DashboardTask != nil:
+		conv446, err := DashboardTaskToSDK(w.DashboardTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_DashboardTask{DashboardTask: *conv446}
+	case w.DbtCloudTask != nil:
+		conv447, err := DbtCloudTaskToSDK(w.DbtCloudTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_DbtCloudTask{DbtCloudTask: *conv447}
+	case w.DbtPlatformTask != nil:
+		conv448, err := DbtPlatformTaskToSDK(w.DbtPlatformTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_DbtPlatformTask{DbtPlatformTask: *conv448}
+	case w.PythonOperatorTask != nil:
+		conv449, err := PythonOperatorTaskToSDK(w.PythonOperatorTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_PythonOperatorTask{PythonOperatorTask: *conv449}
+	case w.AiRuntimeTask != nil:
+		conv450, err := AiRuntimeTaskToSDK(w.AiRuntimeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+		}
+		out.Task = &sdk.RunTaskSettings_Task_AiRuntimeTask{AiRuntimeTask: *conv450}
+	}
+	{
+		members := 0
+		if w.ExistingClusterId != nil {
+			members++
+		}
+		if w.NewCluster != nil {
+			members++
+		}
+		if w.JobClusterKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RunTaskSettings.Spec")
+		}
+	}
+	switch {
+	case w.ExistingClusterId != nil:
+		out.Spec = &sdk.RunTaskSettings_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
+	case w.NewCluster != nil:
+		conv451, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Spec", err)
+		}
+		out.Spec = &sdk.RunTaskSettings_Spec_NewCluster{NewCluster: *conv451}
+	case w.JobClusterKey != nil:
+		out.Spec = &sdk.RunTaskSettings_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
+	}
+	conv452, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Libraries", err)
+	}
+	out.Libraries = conv452
+	out.MaxRetries = w.MaxRetries
+	out.MinRetryIntervalMillis = w.MinRetryIntervalMillis
+	out.RetryOnTimeout = w.RetryOnTimeout
+	out.DisableAutoOptimization = w.DisableAutoOptimization
+	return out, nil
+}
+
+// RunTaskSettingsFromSDK converts the sdk-go type to the mirror.
+func RunTaskSettingsFromSDK(v *sdk.RunTaskSettings) (*RunTaskSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunTaskSettings{}
+	out.TaskKey = v.TaskKey
+	out.Description = v.Description
+	conv453, err := convertSlice(v.DependsOn, TaskDependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.DependsOn", err)
+	}
+	out.DependsOn = conv453
+	out.RunIf = v.RunIf
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv454, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv454
+	conv455, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Health", err)
+	}
+	out.Health = conv455
+	conv456, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv456
+	conv457, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv457
+	switch value := v.EnvironmentRef.(type) {
+	case *sdk.RunTaskSettings_EnvironmentRef_EnvironmentKey:
+		if value != nil {
+			out.EnvironmentKey = new(value.EnvironmentKey)
+		}
+	}
+	out.Disabled = v.Disabled
+	conv458, err := ComputeFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Compute", err)
+	}
+	out.Compute = conv458
+	out.EnvironmentVariablesKey = v.EnvironmentVariablesKey
+	switch value := v.Task.(type) {
+	case *sdk.RunTaskSettings_Task_NotebookTask:
+		if value != nil {
+			conv459, err := NotebookTaskFromSDK(&value.NotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.NotebookTask = conv459
+		}
+	case *sdk.RunTaskSettings_Task_SparkJarTask:
+		if value != nil {
+			conv460, err := SparkJarTaskFromSDK(&value.SparkJarTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.SparkJarTask = conv460
+		}
+	case *sdk.RunTaskSettings_Task_SparkPythonTask:
+		if value != nil {
+			conv461, err := SparkPythonTaskFromSDK(&value.SparkPythonTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.SparkPythonTask = conv461
+		}
+	case *sdk.RunTaskSettings_Task_SparkSubmitTask:
+		if value != nil {
+			conv462, err := SparkSubmitTaskFromSDK(&value.SparkSubmitTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.SparkSubmitTask = conv462
+		}
+	case *sdk.RunTaskSettings_Task_PipelineTask:
+		if value != nil {
+			conv463, err := PipelineTaskFromSDK(&value.PipelineTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.PipelineTask = conv463
+		}
+	case *sdk.RunTaskSettings_Task_PythonWheelTask:
+		if value != nil {
+			conv464, err := PythonWheelTaskFromSDK(&value.PythonWheelTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.PythonWheelTask = conv464
+		}
+	case *sdk.RunTaskSettings_Task_DbtTask:
+		if value != nil {
+			conv465, err := DbtTaskFromSDK(&value.DbtTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.DbtTask = conv465
+		}
+	case *sdk.RunTaskSettings_Task_SqlTask:
+		if value != nil {
+			conv466, err := SqlTaskFromSDK(&value.SqlTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.SqlTask = conv466
+		}
+	case *sdk.RunTaskSettings_Task_RunJobTask:
+		if value != nil {
+			conv467, err := RunJobTaskFromSDK(&value.RunJobTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.RunJobTask = conv467
+		}
+	case *sdk.RunTaskSettings_Task_ConditionTask:
+		if value != nil {
+			conv468, err := ConditionTaskFromSDK(&value.ConditionTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.ConditionTask = conv468
+		}
+	case *sdk.RunTaskSettings_Task_ForEachTask:
+		if value != nil {
+			conv469, err := ForEachTaskFromSDK(&value.ForEachTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.ForEachTask = conv469
+		}
+	case *sdk.RunTaskSettings_Task_CleanRoomsNotebookTask:
+		if value != nil {
+			conv470, err := CleanRoomsNotebookTaskFromSDK(&value.CleanRoomsNotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.CleanRoomsNotebookTask = conv470
+		}
+	case *sdk.RunTaskSettings_Task_GenAiComputeTask:
+		if value != nil {
+			conv471, err := GenAiComputeTaskFromSDK(&value.GenAiComputeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.GenAiComputeTask = conv471
+		}
+	case *sdk.RunTaskSettings_Task_AlertTask:
+		if value != nil {
+			conv472, err := AlertTaskFromSDK(&value.AlertTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.AlertTask = conv472
+		}
+	case *sdk.RunTaskSettings_Task_PowerBiTask:
+		if value != nil {
+			conv473, err := PowerBiTaskFromSDK(&value.PowerBiTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.PowerBiTask = conv473
+		}
+	case *sdk.RunTaskSettings_Task_DashboardTask:
+		if value != nil {
+			conv474, err := DashboardTaskFromSDK(&value.DashboardTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.DashboardTask = conv474
+		}
+	case *sdk.RunTaskSettings_Task_DbtCloudTask:
+		if value != nil {
+			conv475, err := DbtCloudTaskFromSDK(&value.DbtCloudTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.DbtCloudTask = conv475
+		}
+	case *sdk.RunTaskSettings_Task_DbtPlatformTask:
+		if value != nil {
+			conv476, err := DbtPlatformTaskFromSDK(&value.DbtPlatformTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.DbtPlatformTask = conv476
+		}
+	case *sdk.RunTaskSettings_Task_PythonOperatorTask:
+		if value != nil {
+			conv477, err := PythonOperatorTaskFromSDK(&value.PythonOperatorTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.PythonOperatorTask = conv477
+		}
+	case *sdk.RunTaskSettings_Task_AiRuntimeTask:
+		if value != nil {
+			conv478, err := AiRuntimeTaskFromSDK(&value.AiRuntimeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Task", err)
+			}
+			out.AiRuntimeTask = conv478
+		}
+	}
+	switch value := v.Spec.(type) {
+	case *sdk.RunTaskSettings_Spec_ExistingClusterId:
+		if value != nil {
+			out.ExistingClusterId = new(value.ExistingClusterId)
+		}
+	case *sdk.RunTaskSettings_Spec_NewCluster:
+		if value != nil {
+			conv479, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Spec", err)
+			}
+			out.NewCluster = conv479
+		}
+	case *sdk.RunTaskSettings_Spec_JobClusterKey:
+		if value != nil {
+			out.JobClusterKey = new(value.JobClusterKey)
+		}
+	}
+	conv480, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTaskSettings.Libraries", err)
+	}
+	out.Libraries = conv480
+	out.MaxRetries = v.MaxRetries
+	out.MinRetryIntervalMillis = v.MinRetryIntervalMillis
+	out.RetryOnTimeout = v.RetryOnTimeout
+	out.DisableAutoOptimization = v.DisableAutoOptimization
+	return out, nil
+}
+
+// RunTriggerInfoToSDK converts the mirror to the sdk-go type.
+func RunTriggerInfoToSDK(w *RunTriggerInfo) (*sdk.RunTriggerInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RunTriggerInfo{}
+	conv481, err := SqlConditionRunInfoDetailsToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTriggerInfo.SqlCondition", err)
+	}
+	out.SqlCondition = conv481
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// RunTriggerInfoFromSDK converts the sdk-go type to the mirror.
+func RunTriggerInfoFromSDK(v *sdk.RunTriggerInfo) (*RunTriggerInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RunTriggerInfo{}
+	conv482, err := SqlConditionRunInfoDetailsFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RunTriggerInfo.SqlCondition", err)
+	}
+	out.SqlCondition = conv482
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// Run_JobLevelParametersToSDK converts the mirror to the sdk-go type.
+func Run_JobLevelParametersToSDK(w *Run_JobLevelParameters) (*sdk.Run_JobLevelParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Run_JobLevelParameters{}
+	out.Name = w.Name
+	out.Default = w.Default
+	out.Value = w.Value
+	return out, nil
+}
+
+// Run_JobLevelParametersFromSDK converts the sdk-go type to the mirror.
+func Run_JobLevelParametersFromSDK(v *sdk.Run_JobLevelParameters) (*Run_JobLevelParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Run_JobLevelParameters{}
+	out.Name = v.Name
+	out.Default = v.Default
+	out.Value = v.Value
+	return out, nil
+}
+
+// S3StorageInfoToSDK converts the mirror to the sdk-go type.
+func S3StorageInfoToSDK(w *S3StorageInfo) (*sdk.S3StorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.S3StorageInfo{}
+	out.Destination = w.Destination
+	out.Region = w.Region
+	out.Endpoint = w.Endpoint
+	out.EnableEncryption = w.EnableEncryption
+	out.EncryptionType = w.EncryptionType
+	out.KmsKey = w.KmsKey
+	out.CannedAcl = w.CannedAcl
+	return out, nil
+}
+
+// S3StorageInfoFromSDK converts the sdk-go type to the mirror.
+func S3StorageInfoFromSDK(v *sdk.S3StorageInfo) (*S3StorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &S3StorageInfo{}
+	out.Destination = v.Destination
+	out.Region = v.Region
+	out.Endpoint = v.Endpoint
+	out.EnableEncryption = v.EnableEncryption
+	out.EncryptionType = v.EncryptionType
+	out.KmsKey = v.KmsKey
+	out.CannedAcl = v.CannedAcl
+	return out, nil
+}
+
+// ScheduleTriggerStateToSDK converts the mirror to the sdk-go type.
+func ScheduleTriggerStateToSDK(w *ScheduleTriggerState) (*sdk.ScheduleTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScheduleTriggerState{}
+	return out, nil
+}
+
+// ScheduleTriggerStateFromSDK converts the sdk-go type to the mirror.
+func ScheduleTriggerStateFromSDK(v *sdk.ScheduleTriggerState) (*ScheduleTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScheduleTriggerState{}
+	return out, nil
+}
+
+// SparkJarTaskToSDK converts the mirror to the sdk-go type.
+func SparkJarTaskToSDK(w *SparkJarTask) (*sdk.SparkJarTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkJarTask{}
+	out.JarUri = w.JarUri
+	out.MainClassName = w.MainClassName
+	out.Parameters = w.Parameters
+	out.RunAsRepl = w.RunAsRepl
+	return out, nil
+}
+
+// SparkJarTaskFromSDK converts the sdk-go type to the mirror.
+func SparkJarTaskFromSDK(v *sdk.SparkJarTask) (*SparkJarTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkJarTask{}
+	out.JarUri = v.JarUri
+	out.MainClassName = v.MainClassName
+	out.Parameters = v.Parameters
+	out.RunAsRepl = v.RunAsRepl
+	return out, nil
+}
+
+// SparkPythonTaskToSDK converts the mirror to the sdk-go type.
+func SparkPythonTaskToSDK(w *SparkPythonTask) (*sdk.SparkPythonTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkPythonTask{}
+	out.PythonFile = w.PythonFile
+	out.Parameters = w.Parameters
+	out.Source = w.Source
+	return out, nil
+}
+
+// SparkPythonTaskFromSDK converts the sdk-go type to the mirror.
+func SparkPythonTaskFromSDK(v *sdk.SparkPythonTask) (*SparkPythonTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkPythonTask{}
+	out.PythonFile = v.PythonFile
+	out.Parameters = v.Parameters
+	out.Source = v.Source
+	return out, nil
+}
+
+// SparkSubmitTaskToSDK converts the mirror to the sdk-go type.
+func SparkSubmitTaskToSDK(w *SparkSubmitTask) (*sdk.SparkSubmitTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparkSubmitTask{}
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// SparkSubmitTaskFromSDK converts the sdk-go type to the mirror.
+func SparkSubmitTaskFromSDK(v *sdk.SparkSubmitTask) (*SparkSubmitTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparkSubmitTask{}
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// SparseCheckoutToSDK converts the mirror to the sdk-go type.
+func SparseCheckoutToSDK(w *SparseCheckout) (*sdk.SparseCheckout, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparseCheckout{}
+	out.Patterns = w.Patterns
+	return out, nil
+}
+
+// SparseCheckoutFromSDK converts the sdk-go type to the mirror.
+func SparseCheckoutFromSDK(v *sdk.SparseCheckout) (*SparseCheckout, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparseCheckout{}
+	out.Patterns = v.Patterns
+	return out, nil
+}
+
+// SqlConditionConfigurationToSDK converts the mirror to the sdk-go type.
+func SqlConditionConfigurationToSDK(w *SqlConditionConfiguration) (*sdk.SqlConditionConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlConditionConfiguration{}
+	out.SqlQueryId = w.SqlQueryId
+	out.WarehouseId = w.WarehouseId
+	out.TriggerMode = w.TriggerMode
+	return out, nil
+}
+
+// SqlConditionConfigurationFromSDK converts the sdk-go type to the mirror.
+func SqlConditionConfigurationFromSDK(v *sdk.SqlConditionConfiguration) (*SqlConditionConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlConditionConfiguration{}
+	out.SqlQueryId = v.SqlQueryId
+	out.WarehouseId = v.WarehouseId
+	out.TriggerMode = v.TriggerMode
+	return out, nil
+}
+
+// SqlConditionRunInfoDetailsToSDK converts the mirror to the sdk-go type.
+func SqlConditionRunInfoDetailsToSDK(w *SqlConditionRunInfoDetails) (*sdk.SqlConditionRunInfoDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlConditionRunInfoDetails{}
+	out.ConditionEvaluationSqlStatementId = w.ConditionEvaluationSqlStatementId
+	out.ConditionEvaluationSatisfied = w.ConditionEvaluationSatisfied
+	out.ConditionEvaluationSqlSessionId = w.ConditionEvaluationSqlSessionId
+	return out, nil
+}
+
+// SqlConditionRunInfoDetailsFromSDK converts the sdk-go type to the mirror.
+func SqlConditionRunInfoDetailsFromSDK(v *sdk.SqlConditionRunInfoDetails) (*SqlConditionRunInfoDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlConditionRunInfoDetails{}
+	out.ConditionEvaluationSqlStatementId = v.ConditionEvaluationSqlStatementId
+	out.ConditionEvaluationSatisfied = v.ConditionEvaluationSatisfied
+	out.ConditionEvaluationSqlSessionId = v.ConditionEvaluationSqlSessionId
+	return out, nil
+}
+
+// SqlConditionStateToSDK converts the mirror to the sdk-go type.
+func SqlConditionStateToSDK(w *SqlConditionState) (*sdk.SqlConditionState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlConditionState{}
+	out.LatestConditionEvaluationSqlStatementId = w.LatestConditionEvaluationSqlStatementId
+	out.LatestConditionEvaluationSatisfied = w.LatestConditionEvaluationSatisfied
+	out.LatestConditionEvaluationSqlSessionId = w.LatestConditionEvaluationSqlSessionId
+	return out, nil
+}
+
+// SqlConditionStateFromSDK converts the sdk-go type to the mirror.
+func SqlConditionStateFromSDK(v *sdk.SqlConditionState) (*SqlConditionState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlConditionState{}
+	out.LatestConditionEvaluationSqlStatementId = v.LatestConditionEvaluationSqlStatementId
+	out.LatestConditionEvaluationSatisfied = v.LatestConditionEvaluationSatisfied
+	out.LatestConditionEvaluationSqlSessionId = v.LatestConditionEvaluationSqlSessionId
+	return out, nil
+}
+
+// SqlTaskToSDK converts the mirror to the sdk-go type.
+func SqlTaskToSDK(w *SqlTask) (*sdk.SqlTask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask{}
+	out.Parameters = w.Parameters
+	{
+		members := 0
+		if w.Query != nil {
+			members++
+		}
+		if w.Dashboard != nil {
+			members++
+		}
+		if w.Alert != nil {
+			members++
+		}
+		if w.File != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask.SqlTaskType")
+		}
+	}
+	switch {
+	case w.Query != nil:
+		conv483, err := SqlTaskQueryToSDK(w.Query)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+		}
+		out.SqlTaskType = &sdk.SqlTask_SqlTaskType_Query{Query: *conv483}
+	case w.Dashboard != nil:
+		conv484, err := SqlTaskDashboardToSDK(w.Dashboard)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+		}
+		out.SqlTaskType = &sdk.SqlTask_SqlTaskType_Dashboard{Dashboard: *conv484}
+	case w.Alert != nil:
+		conv485, err := SqlTaskAlertToSDK(w.Alert)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+		}
+		out.SqlTaskType = &sdk.SqlTask_SqlTaskType_Alert{Alert: *conv485}
+	case w.File != nil:
+		conv486, err := SqlTaskFileToSDK(w.File)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+		}
+		out.SqlTaskType = &sdk.SqlTask_SqlTaskType_File{File: *conv486}
+	}
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// SqlTaskFromSDK converts the sdk-go type to the mirror.
+func SqlTaskFromSDK(v *sdk.SqlTask) (*SqlTask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask{}
+	out.Parameters = v.Parameters
+	switch value := v.SqlTaskType.(type) {
+	case *sdk.SqlTask_SqlTaskType_Query:
+		if value != nil {
+			conv487, err := SqlTaskQueryFromSDK(&value.Query)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+			}
+			out.Query = conv487
+		}
+	case *sdk.SqlTask_SqlTaskType_Dashboard:
+		if value != nil {
+			conv488, err := SqlTaskDashboardFromSDK(&value.Dashboard)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+			}
+			out.Dashboard = conv488
+		}
+	case *sdk.SqlTask_SqlTaskType_Alert:
+		if value != nil {
+			conv489, err := SqlTaskAlertFromSDK(&value.Alert)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+			}
+			out.Alert = conv489
+		}
+	case *sdk.SqlTask_SqlTaskType_File:
+		if value != nil {
+			conv490, err := SqlTaskFileFromSDK(&value.File)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask.SqlTaskType", err)
+			}
+			out.File = conv490
+		}
+	}
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// SqlTaskAlertToSDK converts the mirror to the sdk-go type.
+func SqlTaskAlertToSDK(w *SqlTaskAlert) (*sdk.SqlTaskAlert, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTaskAlert{}
+	out.AlertId = w.AlertId
+	conv491, err := convertSlice(w.Subscriptions, SqlTaskSubscriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTaskAlert.Subscriptions", err)
+	}
+	out.Subscriptions = conv491
+	out.PauseSubscriptions = w.PauseSubscriptions
+	return out, nil
+}
+
+// SqlTaskAlertFromSDK converts the sdk-go type to the mirror.
+func SqlTaskAlertFromSDK(v *sdk.SqlTaskAlert) (*SqlTaskAlert, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTaskAlert{}
+	out.AlertId = v.AlertId
+	conv492, err := convertSlice(v.Subscriptions, SqlTaskSubscriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTaskAlert.Subscriptions", err)
+	}
+	out.Subscriptions = conv492
+	out.PauseSubscriptions = v.PauseSubscriptions
+	return out, nil
+}
+
+// SqlTaskDashboardToSDK converts the mirror to the sdk-go type.
+func SqlTaskDashboardToSDK(w *SqlTaskDashboard) (*sdk.SqlTaskDashboard, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTaskDashboard{}
+	out.DashboardId = w.DashboardId
+	conv493, err := convertSlice(w.Subscriptions, SqlTaskSubscriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTaskDashboard.Subscriptions", err)
+	}
+	out.Subscriptions = conv493
+	out.CustomSubject = w.CustomSubject
+	out.PauseSubscriptions = w.PauseSubscriptions
+	return out, nil
+}
+
+// SqlTaskDashboardFromSDK converts the sdk-go type to the mirror.
+func SqlTaskDashboardFromSDK(v *sdk.SqlTaskDashboard) (*SqlTaskDashboard, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTaskDashboard{}
+	out.DashboardId = v.DashboardId
+	conv494, err := convertSlice(v.Subscriptions, SqlTaskSubscriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTaskDashboard.Subscriptions", err)
+	}
+	out.Subscriptions = conv494
+	out.CustomSubject = v.CustomSubject
+	out.PauseSubscriptions = v.PauseSubscriptions
+	return out, nil
+}
+
+// SqlTaskFileToSDK converts the mirror to the sdk-go type.
+func SqlTaskFileToSDK(w *SqlTaskFile) (*sdk.SqlTaskFile, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTaskFile{}
+	out.Path = w.Path
+	out.Source = w.Source
+	return out, nil
+}
+
+// SqlTaskFileFromSDK converts the sdk-go type to the mirror.
+func SqlTaskFileFromSDK(v *sdk.SqlTaskFile) (*SqlTaskFile, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTaskFile{}
+	out.Path = v.Path
+	out.Source = v.Source
+	return out, nil
+}
+
+// SqlTaskQueryToSDK converts the mirror to the sdk-go type.
+func SqlTaskQueryToSDK(w *SqlTaskQuery) (*sdk.SqlTaskQuery, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTaskQuery{}
+	{
+		members := 0
+		if w.QueryId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskQuery.QueryType")
+		}
+	}
+	switch {
+	case w.QueryId != nil:
+		out.QueryType = &sdk.SqlTaskQuery_QueryType_QueryId{QueryId: *w.QueryId}
+	}
+	return out, nil
+}
+
+// SqlTaskQueryFromSDK converts the sdk-go type to the mirror.
+func SqlTaskQueryFromSDK(v *sdk.SqlTaskQuery) (*SqlTaskQuery, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTaskQuery{}
+	switch value := v.QueryType.(type) {
+	case *sdk.SqlTaskQuery_QueryType_QueryId:
+		if value != nil {
+			out.QueryId = new(value.QueryId)
+		}
+	}
+	return out, nil
+}
+
+// SqlTaskSubscriptionToSDK converts the mirror to the sdk-go type.
+func SqlTaskSubscriptionToSDK(w *SqlTaskSubscription) (*sdk.SqlTaskSubscription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTaskSubscription{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.DestinationId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTaskSubscription.SubscriptionType")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.SubscriptionType = &sdk.SqlTaskSubscription_SubscriptionType_UserName{UserName: *w.UserName}
+	case w.DestinationId != nil:
+		out.SubscriptionType = &sdk.SqlTaskSubscription_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
+	}
+	return out, nil
+}
+
+// SqlTaskSubscriptionFromSDK converts the sdk-go type to the mirror.
+func SqlTaskSubscriptionFromSDK(v *sdk.SqlTaskSubscription) (*SqlTaskSubscription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTaskSubscription{}
+	switch value := v.SubscriptionType.(type) {
+	case *sdk.SqlTaskSubscription_SubscriptionType_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.SqlTaskSubscription_SubscriptionType_DestinationId:
+		if value != nil {
+			out.DestinationId = new(value.DestinationId)
+		}
+	}
+	return out, nil
+}
+
+// SqlTask_SqlAlertOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlAlertOutputToSDK(w *SqlTask_SqlAlertOutput) (*sdk.SqlTask_SqlAlertOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlAlertOutput{}
+	out.QueryText = w.QueryText
+	conv495, err := convertSlice(w.SqlStatements, SqlTask_SqlStatementOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlAlertOutput.SqlStatements", err)
+	}
+	out.SqlStatements = conv495
+	out.OutputLink = w.OutputLink
+	out.WarehouseId = w.WarehouseId
+	out.AlertState = w.AlertState
+	return out, nil
+}
+
+// SqlTask_SqlAlertOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlAlertOutputFromSDK(v *sdk.SqlTask_SqlAlertOutput) (*SqlTask_SqlAlertOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlAlertOutput{}
+	out.QueryText = v.QueryText
+	conv496, err := convertSlice(v.SqlStatements, SqlTask_SqlStatementOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlAlertOutput.SqlStatements", err)
+	}
+	out.SqlStatements = conv496
+	out.OutputLink = v.OutputLink
+	out.WarehouseId = v.WarehouseId
+	out.AlertState = v.AlertState
+	return out, nil
+}
+
+// SqlTask_SqlDashboardOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlDashboardOutputToSDK(w *SqlTask_SqlDashboardOutput) (*sdk.SqlTask_SqlDashboardOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlDashboardOutput{}
+	conv497, err := convertSlice(w.Widgets, SqlTask_SqlDashboardWidgetOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardOutput.Widgets", err)
+	}
+	out.Widgets = conv497
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// SqlTask_SqlDashboardOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlDashboardOutputFromSDK(v *sdk.SqlTask_SqlDashboardOutput) (*SqlTask_SqlDashboardOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlDashboardOutput{}
+	conv498, err := convertSlice(v.Widgets, SqlTask_SqlDashboardWidgetOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardOutput.Widgets", err)
+	}
+	out.Widgets = conv498
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// SqlTask_SqlDashboardWidgetOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlDashboardWidgetOutputToSDK(w *SqlTask_SqlDashboardWidgetOutput) (*sdk.SqlTask_SqlDashboardWidgetOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlDashboardWidgetOutput{}
+	out.WidgetId = w.WidgetId
+	out.WidgetTitle = w.WidgetTitle
+	out.OutputLink = w.OutputLink
+	out.Status = w.Status
+	conv499, err := SqlTask_SqlOutputErrorToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardWidgetOutput.Error", err)
+	}
+	out.Error = conv499
+	out.StartTime = w.StartTime
+	out.EndTime = w.EndTime
+	return out, nil
+}
+
+// SqlTask_SqlDashboardWidgetOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlDashboardWidgetOutputFromSDK(v *sdk.SqlTask_SqlDashboardWidgetOutput) (*SqlTask_SqlDashboardWidgetOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlDashboardWidgetOutput{}
+	out.WidgetId = v.WidgetId
+	out.WidgetTitle = v.WidgetTitle
+	out.OutputLink = v.OutputLink
+	out.Status = v.Status
+	conv500, err := SqlTask_SqlOutputErrorFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlDashboardWidgetOutput.Error", err)
+	}
+	out.Error = conv500
+	out.StartTime = v.StartTime
+	out.EndTime = v.EndTime
+	return out, nil
+}
+
+// SqlTask_SqlOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlOutputToSDK(w *SqlTask_SqlOutput) (*sdk.SqlTask_SqlOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlOutput{}
+	{
+		members := 0
+		if w.QueryOutput != nil {
+			members++
+		}
+		if w.DashboardOutput != nil {
+			members++
+		}
+		if w.AlertOutput != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SqlTask_SqlOutput.SqlOutputType")
+		}
+	}
+	switch {
+	case w.QueryOutput != nil:
+		conv501, err := SqlTask_SqlQueryOutputToSDK(w.QueryOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+		}
+		out.SqlOutputType = &sdk.SqlTask_SqlOutput_SqlOutputType_QueryOutput{QueryOutput: *conv501}
+	case w.DashboardOutput != nil:
+		conv502, err := SqlTask_SqlDashboardOutputToSDK(w.DashboardOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+		}
+		out.SqlOutputType = &sdk.SqlTask_SqlOutput_SqlOutputType_DashboardOutput{DashboardOutput: *conv502}
+	case w.AlertOutput != nil:
+		conv503, err := SqlTask_SqlAlertOutputToSDK(w.AlertOutput)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+		}
+		out.SqlOutputType = &sdk.SqlTask_SqlOutput_SqlOutputType_AlertOutput{AlertOutput: *conv503}
+	}
+	return out, nil
+}
+
+// SqlTask_SqlOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlOutputFromSDK(v *sdk.SqlTask_SqlOutput) (*SqlTask_SqlOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlOutput{}
+	switch value := v.SqlOutputType.(type) {
+	case *sdk.SqlTask_SqlOutput_SqlOutputType_QueryOutput:
+		if value != nil {
+			conv504, err := SqlTask_SqlQueryOutputFromSDK(&value.QueryOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+			}
+			out.QueryOutput = conv504
+		}
+	case *sdk.SqlTask_SqlOutput_SqlOutputType_DashboardOutput:
+		if value != nil {
+			conv505, err := SqlTask_SqlDashboardOutputFromSDK(&value.DashboardOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+			}
+			out.DashboardOutput = conv505
+		}
+	case *sdk.SqlTask_SqlOutput_SqlOutputType_AlertOutput:
+		if value != nil {
+			conv506, err := SqlTask_SqlAlertOutputFromSDK(&value.AlertOutput)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SqlTask_SqlOutput.SqlOutputType", err)
+			}
+			out.AlertOutput = conv506
+		}
+	}
+	return out, nil
+}
+
+// SqlTask_SqlOutputErrorToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlOutputErrorToSDK(w *SqlTask_SqlOutputError) (*sdk.SqlTask_SqlOutputError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlOutputError{}
+	out.Message = w.Message
+	return out, nil
+}
+
+// SqlTask_SqlOutputErrorFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlOutputErrorFromSDK(v *sdk.SqlTask_SqlOutputError) (*SqlTask_SqlOutputError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlOutputError{}
+	out.Message = v.Message
+	return out, nil
+}
+
+// SqlTask_SqlQueryOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlQueryOutputToSDK(w *SqlTask_SqlQueryOutput) (*sdk.SqlTask_SqlQueryOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlQueryOutput{}
+	out.QueryText = w.QueryText
+	out.EndpointId = w.EndpointId
+	conv507, err := convertSlice(w.SqlStatements, SqlTask_SqlStatementOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlQueryOutput.SqlStatements", err)
+	}
+	out.SqlStatements = conv507
+	out.OutputLink = w.OutputLink
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// SqlTask_SqlQueryOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlQueryOutputFromSDK(v *sdk.SqlTask_SqlQueryOutput) (*SqlTask_SqlQueryOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlQueryOutput{}
+	out.QueryText = v.QueryText
+	out.EndpointId = v.EndpointId
+	conv508, err := convertSlice(v.SqlStatements, SqlTask_SqlStatementOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SqlTask_SqlQueryOutput.SqlStatements", err)
+	}
+	out.SqlStatements = conv508
+	out.OutputLink = v.OutputLink
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// SqlTask_SqlStatementOutputToSDK converts the mirror to the sdk-go type.
+func SqlTask_SqlStatementOutputToSDK(w *SqlTask_SqlStatementOutput) (*sdk.SqlTask_SqlStatementOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SqlTask_SqlStatementOutput{}
+	out.LookupKey = w.LookupKey
+	return out, nil
+}
+
+// SqlTask_SqlStatementOutputFromSDK converts the sdk-go type to the mirror.
+func SqlTask_SqlStatementOutputFromSDK(v *sdk.SqlTask_SqlStatementOutput) (*SqlTask_SqlStatementOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SqlTask_SqlStatementOutput{}
+	out.LookupKey = v.LookupKey
+	return out, nil
+}
+
+// SubmitRunRequestToSDK converts the mirror to the sdk-go type.
+func SubmitRunRequestToSDK(w *SubmitRunRequest) (*sdk.SubmitRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SubmitRunRequest{}
+	conv509, err := convertSlice(w.AccessControlList, AccessControlRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv509
+	conv510, err := QueueSettingsToSDK(w.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Queue", err)
+	}
+	out.Queue = conv510
+	conv511, err := JobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.RunAs", err)
+	}
+	out.RunAs = conv511
+	out.RunName = w.RunName
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv512, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Health", err)
+	}
+	out.Health = conv512
+	out.IdempotencyToken = w.IdempotencyToken
+	conv513, err := convertSlice(w.Tasks, RunTaskSettingsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Tasks", err)
+	}
+	out.Tasks = conv513
+	conv514, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.GitSource", err)
+	}
+	out.GitSource = conv514
+	conv515, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv515
+	conv516, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv516
+	conv517, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv517
+	conv518, err := convertSlice(w.Environments, JobEnvironmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Environments", err)
+	}
+	out.Environments = conv518
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.UsagePolicyId = w.UsagePolicyId
+	conv519, err := convertSlice(w.EnvironmentVariables, JobEnvironmentVariablesToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv519
+	out.PerformanceTarget = w.PerformanceTarget
+	return out, nil
+}
+
+// SubmitRunRequestFromSDK converts the sdk-go type to the mirror.
+func SubmitRunRequestFromSDK(v *sdk.SubmitRunRequest) (*SubmitRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SubmitRunRequest{}
+	conv520, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv520
+	conv521, err := QueueSettingsFromSDK(v.Queue)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Queue", err)
+	}
+	out.Queue = conv521
+	conv522, err := JobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.RunAs", err)
+	}
+	out.RunAs = conv522
+	out.RunName = v.RunName
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv523, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Health", err)
+	}
+	out.Health = conv523
+	out.IdempotencyToken = v.IdempotencyToken
+	conv524, err := convertSlice(v.Tasks, RunTaskSettingsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Tasks", err)
+	}
+	out.Tasks = conv524
+	conv525, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.GitSource", err)
+	}
+	out.GitSource = conv525
+	conv526, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv526
+	conv527, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv527
+	conv528, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv528
+	conv529, err := convertSlice(v.Environments, JobEnvironmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.Environments", err)
+	}
+	out.Environments = conv529
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.UsagePolicyId = v.UsagePolicyId
+	conv530, err := convertSlice(v.EnvironmentVariables, JobEnvironmentVariablesFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubmitRunRequest.EnvironmentVariables", err)
+	}
+	out.EnvironmentVariables = conv530
+	out.PerformanceTarget = v.PerformanceTarget
+	return out, nil
+}
+
+// SubmitRunResponseToSDK converts the mirror to the sdk-go type.
+func SubmitRunResponseToSDK(w *SubmitRunResponse) (*sdk.SubmitRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SubmitRunResponse{}
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// SubmitRunResponseFromSDK converts the sdk-go type to the mirror.
+func SubmitRunResponseFromSDK(v *sdk.SubmitRunResponse) (*SubmitRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SubmitRunResponse{}
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// SubscriptionToSDK converts the mirror to the sdk-go type.
+func SubscriptionToSDK(w *Subscription) (*sdk.Subscription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription{}
+	conv531, err := convertSlice(w.Subscribers, Subscription_SubscriberToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription.Subscribers", err)
+	}
+	out.Subscribers = conv531
+	out.Paused = w.Paused
+	out.CustomSubject = w.CustomSubject
+	return out, nil
+}
+
+// SubscriptionFromSDK converts the sdk-go type to the mirror.
+func SubscriptionFromSDK(v *sdk.Subscription) (*Subscription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription{}
+	conv532, err := convertSlice(v.Subscribers, Subscription_SubscriberFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription.Subscribers", err)
+	}
+	out.Subscribers = conv532
+	out.Paused = v.Paused
+	out.CustomSubject = v.CustomSubject
+	return out, nil
+}
+
+// Subscription_SubscriberToSDK converts the mirror to the sdk-go type.
+func Subscription_SubscriberToSDK(w *Subscription_Subscriber) (*sdk.Subscription_Subscriber, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription_Subscriber{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.DestinationId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Subscription_Subscriber.SubscriptionType")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.SubscriptionType = &sdk.Subscription_Subscriber_SubscriptionType_UserName{UserName: *w.UserName}
+	case w.DestinationId != nil:
+		out.SubscriptionType = &sdk.Subscription_Subscriber_SubscriptionType_DestinationId{DestinationId: *w.DestinationId}
+	}
+	return out, nil
+}
+
+// Subscription_SubscriberFromSDK converts the sdk-go type to the mirror.
+func Subscription_SubscriberFromSDK(v *sdk.Subscription_Subscriber) (*Subscription_Subscriber, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription_Subscriber{}
+	switch value := v.SubscriptionType.(type) {
+	case *sdk.Subscription_Subscriber_SubscriptionType_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.Subscription_Subscriber_SubscriptionType_DestinationId:
+		if value != nil {
+			out.DestinationId = new(value.DestinationId)
+		}
+	}
+	return out, nil
+}
+
+// TableStateToSDK converts the mirror to the sdk-go type.
+func TableStateToSDK(w *TableState) (*sdk.TableState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableState{}
+	out.TableName = w.TableName
+	out.HasSeenUpdates = w.HasSeenUpdates
+	return out, nil
+}
+
+// TableStateFromSDK converts the sdk-go type to the mirror.
+func TableStateFromSDK(v *sdk.TableState) (*TableState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableState{}
+	out.TableName = v.TableName
+	out.HasSeenUpdates = v.HasSeenUpdates
+	return out, nil
+}
+
+// TableTriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func TableTriggerConfigurationToSDK(w *TableTriggerConfiguration) (*sdk.TableTriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableTriggerConfiguration{}
+	out.TableNames = w.TableNames
+	out.MinTimeBetweenTriggersSeconds = w.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = w.WaitAfterLastChangeSeconds
+	out.Condition = w.Condition
+	return out, nil
+}
+
+// TableTriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func TableTriggerConfigurationFromSDK(v *sdk.TableTriggerConfiguration) (*TableTriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableTriggerConfiguration{}
+	out.TableNames = v.TableNames
+	out.MinTimeBetweenTriggersSeconds = v.MinTimeBetweenTriggersSeconds
+	out.WaitAfterLastChangeSeconds = v.WaitAfterLastChangeSeconds
+	out.Condition = v.Condition
+	return out, nil
+}
+
+// TableTriggerStateToSDK converts the mirror to the sdk-go type.
+func TableTriggerStateToSDK(w *TableTriggerState) (*sdk.TableTriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TableTriggerState{}
+	conv533, err := convertSlice(w.LastSeenTableStates, TableStateToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableTriggerState.LastSeenTableStates", err)
+	}
+	out.LastSeenTableStates = conv533
+	out.UsingScalableMonitoring = w.UsingScalableMonitoring
+	return out, nil
+}
+
+// TableTriggerStateFromSDK converts the sdk-go type to the mirror.
+func TableTriggerStateFromSDK(v *sdk.TableTriggerState) (*TableTriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TableTriggerState{}
+	conv534, err := convertSlice(v.LastSeenTableStates, TableStateFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TableTriggerState.LastSeenTableStates", err)
+	}
+	out.LastSeenTableStates = conv534
+	out.UsingScalableMonitoring = v.UsingScalableMonitoring
+	return out, nil
+}
+
+// TaskDependencyToSDK converts the mirror to the sdk-go type.
+func TaskDependencyToSDK(w *TaskDependency) (*sdk.TaskDependency, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TaskDependency{}
+	out.TaskKey = w.TaskKey
+	out.Outcome = w.Outcome
+	return out, nil
+}
+
+// TaskDependencyFromSDK converts the sdk-go type to the mirror.
+func TaskDependencyFromSDK(v *sdk.TaskDependency) (*TaskDependency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TaskDependency{}
+	out.TaskKey = v.TaskKey
+	out.Outcome = v.Outcome
+	return out, nil
+}
+
+// TaskSettingsToSDK converts the mirror to the sdk-go type.
+func TaskSettingsToSDK(w *TaskSettings) (*sdk.TaskSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TaskSettings{}
+	out.TaskKey = w.TaskKey
+	conv535, err := convertSlice(w.DependsOn, TaskDependencyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.DependsOn", err)
+	}
+	out.DependsOn = conv535
+	out.RunIf = w.RunIf
+	out.TimeoutSeconds = w.TimeoutSeconds
+	conv536, err := JobsHealthRulesToSDK(w.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Health", err)
+	}
+	out.Health = conv536
+	conv537, err := JobEmailNotificationsToSDK(w.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv537
+	conv538, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv538
+	conv539, err := WebhookNotificationsToSDK(w.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv539
+	out.Description = w.Description
+	{
+		members := 0
+		if w.EnvironmentKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.EnvironmentRef")
+		}
+	}
+	switch {
+	case w.EnvironmentKey != nil:
+		out.EnvironmentRef = &sdk.TaskSettings_EnvironmentRef_EnvironmentKey{EnvironmentKey: *w.EnvironmentKey}
+	}
+	out.Disabled = w.Disabled
+	conv540, err := ComputeToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Compute", err)
+	}
+	out.Compute = conv540
+	out.EnvironmentVariablesKey = w.EnvironmentVariablesKey
+	{
+		members := 0
+		if w.NotebookTask != nil {
+			members++
+		}
+		if w.SparkJarTask != nil {
+			members++
+		}
+		if w.SparkPythonTask != nil {
+			members++
+		}
+		if w.SparkSubmitTask != nil {
+			members++
+		}
+		if w.PipelineTask != nil {
+			members++
+		}
+		if w.PythonWheelTask != nil {
+			members++
+		}
+		if w.DbtTask != nil {
+			members++
+		}
+		if w.SqlTask != nil {
+			members++
+		}
+		if w.RunJobTask != nil {
+			members++
+		}
+		if w.ConditionTask != nil {
+			members++
+		}
+		if w.ForEachTask != nil {
+			members++
+		}
+		if w.CleanRoomsNotebookTask != nil {
+			members++
+		}
+		if w.GenAiComputeTask != nil {
+			members++
+		}
+		if w.AlertTask != nil {
+			members++
+		}
+		if w.PowerBiTask != nil {
+			members++
+		}
+		if w.DashboardTask != nil {
+			members++
+		}
+		if w.DbtCloudTask != nil {
+			members++
+		}
+		if w.DbtPlatformTask != nil {
+			members++
+		}
+		if w.PythonOperatorTask != nil {
+			members++
+		}
+		if w.AiRuntimeTask != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Task")
+		}
+	}
+	switch {
+	case w.NotebookTask != nil:
+		conv541, err := NotebookTaskToSDK(w.NotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_NotebookTask{NotebookTask: *conv541}
+	case w.SparkJarTask != nil:
+		conv542, err := SparkJarTaskToSDK(w.SparkJarTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_SparkJarTask{SparkJarTask: *conv542}
+	case w.SparkPythonTask != nil:
+		conv543, err := SparkPythonTaskToSDK(w.SparkPythonTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_SparkPythonTask{SparkPythonTask: *conv543}
+	case w.SparkSubmitTask != nil:
+		conv544, err := SparkSubmitTaskToSDK(w.SparkSubmitTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_SparkSubmitTask{SparkSubmitTask: *conv544}
+	case w.PipelineTask != nil:
+		conv545, err := PipelineTaskToSDK(w.PipelineTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_PipelineTask{PipelineTask: *conv545}
+	case w.PythonWheelTask != nil:
+		conv546, err := PythonWheelTaskToSDK(w.PythonWheelTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_PythonWheelTask{PythonWheelTask: *conv546}
+	case w.DbtTask != nil:
+		conv547, err := DbtTaskToSDK(w.DbtTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_DbtTask{DbtTask: *conv547}
+	case w.SqlTask != nil:
+		conv548, err := SqlTaskToSDK(w.SqlTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_SqlTask{SqlTask: *conv548}
+	case w.RunJobTask != nil:
+		conv549, err := RunJobTaskToSDK(w.RunJobTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_RunJobTask{RunJobTask: *conv549}
+	case w.ConditionTask != nil:
+		conv550, err := ConditionTaskToSDK(w.ConditionTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_ConditionTask{ConditionTask: *conv550}
+	case w.ForEachTask != nil:
+		conv551, err := ForEachTaskToSDK(w.ForEachTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_ForEachTask{ForEachTask: *conv551}
+	case w.CleanRoomsNotebookTask != nil:
+		conv552, err := CleanRoomsNotebookTaskToSDK(w.CleanRoomsNotebookTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_CleanRoomsNotebookTask{CleanRoomsNotebookTask: *conv552}
+	case w.GenAiComputeTask != nil:
+		conv553, err := GenAiComputeTaskToSDK(w.GenAiComputeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_GenAiComputeTask{GenAiComputeTask: *conv553}
+	case w.AlertTask != nil:
+		conv554, err := AlertTaskToSDK(w.AlertTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_AlertTask{AlertTask: *conv554}
+	case w.PowerBiTask != nil:
+		conv555, err := PowerBiTaskToSDK(w.PowerBiTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_PowerBiTask{PowerBiTask: *conv555}
+	case w.DashboardTask != nil:
+		conv556, err := DashboardTaskToSDK(w.DashboardTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_DashboardTask{DashboardTask: *conv556}
+	case w.DbtCloudTask != nil:
+		conv557, err := DbtCloudTaskToSDK(w.DbtCloudTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_DbtCloudTask{DbtCloudTask: *conv557}
+	case w.DbtPlatformTask != nil:
+		conv558, err := DbtPlatformTaskToSDK(w.DbtPlatformTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_DbtPlatformTask{DbtPlatformTask: *conv558}
+	case w.PythonOperatorTask != nil:
+		conv559, err := PythonOperatorTaskToSDK(w.PythonOperatorTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_PythonOperatorTask{PythonOperatorTask: *conv559}
+	case w.AiRuntimeTask != nil:
+		conv560, err := AiRuntimeTaskToSDK(w.AiRuntimeTask)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+		}
+		out.Task = &sdk.TaskSettings_Task_AiRuntimeTask{AiRuntimeTask: *conv560}
+	}
+	{
+		members := 0
+		if w.ExistingClusterId != nil {
+			members++
+		}
+		if w.NewCluster != nil {
+			members++
+		}
+		if w.JobClusterKey != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TaskSettings.Spec")
+		}
+	}
+	switch {
+	case w.ExistingClusterId != nil:
+		out.Spec = &sdk.TaskSettings_Spec_ExistingClusterId{ExistingClusterId: *w.ExistingClusterId}
+	case w.NewCluster != nil:
+		conv561, err := ClusterSpec_NewClusterToSDK(w.NewCluster)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TaskSettings.Spec", err)
+		}
+		out.Spec = &sdk.TaskSettings_Spec_NewCluster{NewCluster: *conv561}
+	case w.JobClusterKey != nil:
+		out.Spec = &sdk.TaskSettings_Spec_JobClusterKey{JobClusterKey: *w.JobClusterKey}
+	}
+	conv562, err := convertSlice(w.Libraries, LibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Libraries", err)
+	}
+	out.Libraries = conv562
+	out.MaxRetries = w.MaxRetries
+	out.MinRetryIntervalMillis = w.MinRetryIntervalMillis
+	out.RetryOnTimeout = w.RetryOnTimeout
+	out.DisableAutoOptimization = w.DisableAutoOptimization
+	return out, nil
+}
+
+// TaskSettingsFromSDK converts the sdk-go type to the mirror.
+func TaskSettingsFromSDK(v *sdk.TaskSettings) (*TaskSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TaskSettings{}
+	out.TaskKey = v.TaskKey
+	conv563, err := convertSlice(v.DependsOn, TaskDependencyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.DependsOn", err)
+	}
+	out.DependsOn = conv563
+	out.RunIf = v.RunIf
+	out.TimeoutSeconds = v.TimeoutSeconds
+	conv564, err := JobsHealthRulesFromSDK(v.Health)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Health", err)
+	}
+	out.Health = conv564
+	conv565, err := JobEmailNotificationsFromSDK(v.EmailNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.EmailNotifications", err)
+	}
+	out.EmailNotifications = conv565
+	conv566, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv566
+	conv567, err := WebhookNotificationsFromSDK(v.WebhookNotifications)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.WebhookNotifications", err)
+	}
+	out.WebhookNotifications = conv567
+	out.Description = v.Description
+	switch value := v.EnvironmentRef.(type) {
+	case *sdk.TaskSettings_EnvironmentRef_EnvironmentKey:
+		if value != nil {
+			out.EnvironmentKey = new(value.EnvironmentKey)
+		}
+	}
+	out.Disabled = v.Disabled
+	conv568, err := ComputeFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Compute", err)
+	}
+	out.Compute = conv568
+	out.EnvironmentVariablesKey = v.EnvironmentVariablesKey
+	switch value := v.Task.(type) {
+	case *sdk.TaskSettings_Task_NotebookTask:
+		if value != nil {
+			conv569, err := NotebookTaskFromSDK(&value.NotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.NotebookTask = conv569
+		}
+	case *sdk.TaskSettings_Task_SparkJarTask:
+		if value != nil {
+			conv570, err := SparkJarTaskFromSDK(&value.SparkJarTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.SparkJarTask = conv570
+		}
+	case *sdk.TaskSettings_Task_SparkPythonTask:
+		if value != nil {
+			conv571, err := SparkPythonTaskFromSDK(&value.SparkPythonTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.SparkPythonTask = conv571
+		}
+	case *sdk.TaskSettings_Task_SparkSubmitTask:
+		if value != nil {
+			conv572, err := SparkSubmitTaskFromSDK(&value.SparkSubmitTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.SparkSubmitTask = conv572
+		}
+	case *sdk.TaskSettings_Task_PipelineTask:
+		if value != nil {
+			conv573, err := PipelineTaskFromSDK(&value.PipelineTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.PipelineTask = conv573
+		}
+	case *sdk.TaskSettings_Task_PythonWheelTask:
+		if value != nil {
+			conv574, err := PythonWheelTaskFromSDK(&value.PythonWheelTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.PythonWheelTask = conv574
+		}
+	case *sdk.TaskSettings_Task_DbtTask:
+		if value != nil {
+			conv575, err := DbtTaskFromSDK(&value.DbtTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.DbtTask = conv575
+		}
+	case *sdk.TaskSettings_Task_SqlTask:
+		if value != nil {
+			conv576, err := SqlTaskFromSDK(&value.SqlTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.SqlTask = conv576
+		}
+	case *sdk.TaskSettings_Task_RunJobTask:
+		if value != nil {
+			conv577, err := RunJobTaskFromSDK(&value.RunJobTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.RunJobTask = conv577
+		}
+	case *sdk.TaskSettings_Task_ConditionTask:
+		if value != nil {
+			conv578, err := ConditionTaskFromSDK(&value.ConditionTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.ConditionTask = conv578
+		}
+	case *sdk.TaskSettings_Task_ForEachTask:
+		if value != nil {
+			conv579, err := ForEachTaskFromSDK(&value.ForEachTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.ForEachTask = conv579
+		}
+	case *sdk.TaskSettings_Task_CleanRoomsNotebookTask:
+		if value != nil {
+			conv580, err := CleanRoomsNotebookTaskFromSDK(&value.CleanRoomsNotebookTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.CleanRoomsNotebookTask = conv580
+		}
+	case *sdk.TaskSettings_Task_GenAiComputeTask:
+		if value != nil {
+			conv581, err := GenAiComputeTaskFromSDK(&value.GenAiComputeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.GenAiComputeTask = conv581
+		}
+	case *sdk.TaskSettings_Task_AlertTask:
+		if value != nil {
+			conv582, err := AlertTaskFromSDK(&value.AlertTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.AlertTask = conv582
+		}
+	case *sdk.TaskSettings_Task_PowerBiTask:
+		if value != nil {
+			conv583, err := PowerBiTaskFromSDK(&value.PowerBiTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.PowerBiTask = conv583
+		}
+	case *sdk.TaskSettings_Task_DashboardTask:
+		if value != nil {
+			conv584, err := DashboardTaskFromSDK(&value.DashboardTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.DashboardTask = conv584
+		}
+	case *sdk.TaskSettings_Task_DbtCloudTask:
+		if value != nil {
+			conv585, err := DbtCloudTaskFromSDK(&value.DbtCloudTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.DbtCloudTask = conv585
+		}
+	case *sdk.TaskSettings_Task_DbtPlatformTask:
+		if value != nil {
+			conv586, err := DbtPlatformTaskFromSDK(&value.DbtPlatformTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.DbtPlatformTask = conv586
+		}
+	case *sdk.TaskSettings_Task_PythonOperatorTask:
+		if value != nil {
+			conv587, err := PythonOperatorTaskFromSDK(&value.PythonOperatorTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.PythonOperatorTask = conv587
+		}
+	case *sdk.TaskSettings_Task_AiRuntimeTask:
+		if value != nil {
+			conv588, err := AiRuntimeTaskFromSDK(&value.AiRuntimeTask)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Task", err)
+			}
+			out.AiRuntimeTask = conv588
+		}
+	}
+	switch value := v.Spec.(type) {
+	case *sdk.TaskSettings_Spec_ExistingClusterId:
+		if value != nil {
+			out.ExistingClusterId = new(value.ExistingClusterId)
+		}
+	case *sdk.TaskSettings_Spec_NewCluster:
+		if value != nil {
+			conv589, err := ClusterSpec_NewClusterFromSDK(&value.NewCluster)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TaskSettings.Spec", err)
+			}
+			out.NewCluster = conv589
+		}
+	case *sdk.TaskSettings_Spec_JobClusterKey:
+		if value != nil {
+			out.JobClusterKey = new(value.JobClusterKey)
+		}
+	}
+	conv590, err := convertSlice(v.Libraries, LibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TaskSettings.Libraries", err)
+	}
+	out.Libraries = conv590
+	out.MaxRetries = v.MaxRetries
+	out.MinRetryIntervalMillis = v.MinRetryIntervalMillis
+	out.RetryOnTimeout = v.RetryOnTimeout
+	out.DisableAutoOptimization = v.DisableAutoOptimization
+	return out, nil
+}
+
+// TerminationDetailsToSDK converts the mirror to the sdk-go type.
+func TerminationDetailsToSDK(w *TerminationDetails) (*sdk.TerminationDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TerminationDetails{}
+	out.Code = w.Code
+	out.Type = w.Type
+	out.Message = w.Message
+	return out, nil
+}
+
+// TerminationDetailsFromSDK converts the sdk-go type to the mirror.
+func TerminationDetailsFromSDK(v *sdk.TerminationDetails) (*TerminationDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TerminationDetails{}
+	out.Code = v.Code
+	out.Type = v.Type
+	out.Message = v.Message
+	return out, nil
+}
+
+// TriggerConfigurationToSDK converts the mirror to the sdk-go type.
+func TriggerConfigurationToSDK(w *TriggerConfiguration) (*sdk.TriggerConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerConfiguration{}
+	out.PauseStatus = w.PauseStatus
+	conv591, err := PeriodicTriggerConfigurationToSDK(w.Periodic)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Periodic", err)
+	}
+	out.Periodic = conv591
+	conv592, err := CronTriggerConfigurationToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Schedule", err)
+	}
+	out.Schedule = conv592
+	conv593, err := ContinuousTriggerConfigurationToSDK(w.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Continuous", err)
+	}
+	out.Continuous = conv593
+	conv594, err := FileArrivalTriggerConfigurationToSDK(w.FileArrival)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.FileArrival", err)
+	}
+	out.FileArrival = conv594
+	conv595, err := TableTriggerConfigurationToSDK(w.TableUpdate)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.TableUpdate", err)
+	}
+	out.TableUpdate = conv595
+	conv596, err := ModelTriggerConfigurationToSDK(w.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Model", err)
+	}
+	out.Model = conv596
+	conv597, err := SqlConditionConfigurationToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.SqlCondition", err)
+	}
+	out.SqlCondition = conv597
+	return out, nil
+}
+
+// TriggerConfigurationFromSDK converts the sdk-go type to the mirror.
+func TriggerConfigurationFromSDK(v *sdk.TriggerConfiguration) (*TriggerConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerConfiguration{}
+	out.PauseStatus = v.PauseStatus
+	conv598, err := PeriodicTriggerConfigurationFromSDK(v.Periodic)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Periodic", err)
+	}
+	out.Periodic = conv598
+	conv599, err := CronTriggerConfigurationFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Schedule", err)
+	}
+	out.Schedule = conv599
+	conv600, err := ContinuousTriggerConfigurationFromSDK(v.Continuous)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Continuous", err)
+	}
+	out.Continuous = conv600
+	conv601, err := FileArrivalTriggerConfigurationFromSDK(v.FileArrival)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.FileArrival", err)
+	}
+	out.FileArrival = conv601
+	conv602, err := TableTriggerConfigurationFromSDK(v.TableUpdate)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.TableUpdate", err)
+	}
+	out.TableUpdate = conv602
+	conv603, err := ModelTriggerConfigurationFromSDK(v.Model)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.Model", err)
+	}
+	out.Model = conv603
+	conv604, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerConfiguration.SqlCondition", err)
+	}
+	out.SqlCondition = conv604
+	return out, nil
+}
+
+// TriggerDetailsToSDK converts the mirror to the sdk-go type.
+func TriggerDetailsToSDK(w *TriggerDetails) (*sdk.TriggerDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerDetails{}
+	conv605, err := PerTriggerStateToSDK(w.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerDetails.State", err)
+	}
+	out.State = conv605
+	conv606, err := TriggerHistoryToSDK(w.History)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerDetails.History", err)
+	}
+	out.History = conv606
+	return out, nil
+}
+
+// TriggerDetailsFromSDK converts the sdk-go type to the mirror.
+func TriggerDetailsFromSDK(v *sdk.TriggerDetails) (*TriggerDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerDetails{}
+	conv607, err := PerTriggerStateFromSDK(v.State)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerDetails.State", err)
+	}
+	out.State = conv607
+	conv608, err := TriggerHistoryFromSDK(v.History)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerDetails.History", err)
+	}
+	out.History = conv608
+	return out, nil
+}
+
+// TriggerEvaluationToSDK converts the mirror to the sdk-go type.
+func TriggerEvaluationToSDK(w *TriggerEvaluation) (*sdk.TriggerEvaluation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerEvaluation{}
+	out.Timestamp = w.Timestamp
+	out.Description = w.Description
+	out.RunId = w.RunId
+	return out, nil
+}
+
+// TriggerEvaluationFromSDK converts the sdk-go type to the mirror.
+func TriggerEvaluationFromSDK(v *sdk.TriggerEvaluation) (*TriggerEvaluation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerEvaluation{}
+	out.Timestamp = v.Timestamp
+	out.Description = v.Description
+	out.RunId = v.RunId
+	return out, nil
+}
+
+// TriggerHistoryToSDK converts the mirror to the sdk-go type.
+func TriggerHistoryToSDK(w *TriggerHistory) (*sdk.TriggerHistory, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerHistory{}
+	conv609, err := TriggerEvaluationToSDK(w.LastTriggered)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastTriggered", err)
+	}
+	out.LastTriggered = conv609
+	conv610, err := TriggerEvaluationToSDK(w.LastNotTriggered)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastNotTriggered", err)
+	}
+	out.LastNotTriggered = conv610
+	conv611, err := TriggerEvaluationToSDK(w.LastFailed)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastFailed", err)
+	}
+	out.LastFailed = conv611
+	return out, nil
+}
+
+// TriggerHistoryFromSDK converts the sdk-go type to the mirror.
+func TriggerHistoryFromSDK(v *sdk.TriggerHistory) (*TriggerHistory, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerHistory{}
+	conv612, err := TriggerEvaluationFromSDK(v.LastTriggered)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastTriggered", err)
+	}
+	out.LastTriggered = conv612
+	conv613, err := TriggerEvaluationFromSDK(v.LastNotTriggered)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastNotTriggered", err)
+	}
+	out.LastNotTriggered = conv613
+	conv614, err := TriggerEvaluationFromSDK(v.LastFailed)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerHistory.LastFailed", err)
+	}
+	out.LastFailed = conv614
+	return out, nil
+}
+
+// TriggerSettingsToSDK converts the mirror to the sdk-go type.
+func TriggerSettingsToSDK(w *TriggerSettings) (*sdk.TriggerSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerSettings{}
+	out.PauseStatus = w.PauseStatus
+	{
+		members := 0
+		if w.FileArrival != nil {
+			members++
+		}
+		if w.Periodic != nil {
+			members++
+		}
+		if w.TableUpdate != nil {
+			members++
+		}
+		if w.Model != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerSettings.Configuration")
+		}
+	}
+	switch {
+	case w.FileArrival != nil:
+		conv615, err := FileArrivalTriggerConfigurationToSDK(w.FileArrival)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+		}
+		out.Configuration = &sdk.TriggerSettings_Configuration_FileArrival{FileArrival: *conv615}
+	case w.Periodic != nil:
+		conv616, err := PeriodicTriggerConfigurationToSDK(w.Periodic)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+		}
+		out.Configuration = &sdk.TriggerSettings_Configuration_Periodic{Periodic: *conv616}
+	case w.TableUpdate != nil:
+		conv617, err := TableTriggerConfigurationToSDK(w.TableUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+		}
+		out.Configuration = &sdk.TriggerSettings_Configuration_TableUpdate{TableUpdate: *conv617}
+	case w.Model != nil:
+		conv618, err := ModelTriggerConfigurationToSDK(w.Model)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+		}
+		out.Configuration = &sdk.TriggerSettings_Configuration_Model{Model: *conv618}
+	}
+	conv619, err := SqlConditionConfigurationToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerSettings.SqlCondition", err)
+	}
+	out.SqlCondition = conv619
+	return out, nil
+}
+
+// TriggerSettingsFromSDK converts the sdk-go type to the mirror.
+func TriggerSettingsFromSDK(v *sdk.TriggerSettings) (*TriggerSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerSettings{}
+	out.PauseStatus = v.PauseStatus
+	switch value := v.Configuration.(type) {
+	case *sdk.TriggerSettings_Configuration_FileArrival:
+		if value != nil {
+			conv620, err := FileArrivalTriggerConfigurationFromSDK(&value.FileArrival)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+			}
+			out.FileArrival = conv620
+		}
+	case *sdk.TriggerSettings_Configuration_Periodic:
+		if value != nil {
+			conv621, err := PeriodicTriggerConfigurationFromSDK(&value.Periodic)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+			}
+			out.Periodic = conv621
+		}
+	case *sdk.TriggerSettings_Configuration_TableUpdate:
+		if value != nil {
+			conv622, err := TableTriggerConfigurationFromSDK(&value.TableUpdate)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+			}
+			out.TableUpdate = conv622
+		}
+	case *sdk.TriggerSettings_Configuration_Model:
+		if value != nil {
+			conv623, err := ModelTriggerConfigurationFromSDK(&value.Model)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerSettings.Configuration", err)
+			}
+			out.Model = conv623
+		}
+	}
+	conv624, err := SqlConditionConfigurationFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerSettings.SqlCondition", err)
+	}
+	out.SqlCondition = conv624
+	return out, nil
+}
+
+// TriggerStateToSDK converts the mirror to the sdk-go type.
+func TriggerStateToSDK(w *TriggerState) (*sdk.TriggerState, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TriggerState{}
+	{
+		members := 0
+		if w.Table != nil {
+			members++
+		}
+		if w.FileArrival != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TriggerState.TriggerType")
+		}
+	}
+	switch {
+	case w.Table != nil:
+		conv625, err := TableTriggerStateToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.TriggerState_TriggerType_Table{Table: *conv625}
+	case w.FileArrival != nil:
+		conv626, err := FileArrivalTriggerStateToSDK(w.FileArrival)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType", err)
+		}
+		out.TriggerType = &sdk.TriggerState_TriggerType_FileArrival{FileArrival: *conv626}
+	}
+	conv627, err := SqlConditionStateToSDK(w.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerState.SqlCondition", err)
+	}
+	out.SqlCondition = conv627
+	out.PauseStatus = w.PauseStatus
+	return out, nil
+}
+
+// TriggerStateFromSDK converts the sdk-go type to the mirror.
+func TriggerStateFromSDK(v *sdk.TriggerState) (*TriggerState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TriggerState{}
+	switch value := v.TriggerType.(type) {
+	case *sdk.TriggerState_TriggerType_Table:
+		if value != nil {
+			conv628, err := TableTriggerStateFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType", err)
+			}
+			out.Table = conv628
+		}
+	case *sdk.TriggerState_TriggerType_FileArrival:
+		if value != nil {
+			conv629, err := FileArrivalTriggerStateFromSDK(&value.FileArrival)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TriggerState.TriggerType", err)
+			}
+			out.FileArrival = conv629
+		}
+	}
+	conv630, err := SqlConditionStateFromSDK(v.SqlCondition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TriggerState.SqlCondition", err)
+	}
+	out.SqlCondition = conv630
+	out.PauseStatus = v.PauseStatus
+	return out, nil
+}
+
+// UpdateJobRequestToSDK converts the mirror to the sdk-go type.
+func UpdateJobRequestToSDK(w *UpdateJobRequest) (*sdk.UpdateJobRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateJobRequest{}
+	out.JobId = w.JobId
+	conv631, err := JobSettingsToSDK(w.NewSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateJobRequest.NewSettings", err)
+	}
+	out.NewSettings = conv631
+	out.FieldsToRemove = w.FieldsToRemove
+	return out, nil
+}
+
+// UpdateJobRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateJobRequestFromSDK(v *sdk.UpdateJobRequest) (*UpdateJobRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateJobRequest{}
+	out.JobId = v.JobId
+	conv632, err := JobSettingsFromSDK(v.NewSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateJobRequest.NewSettings", err)
+	}
+	out.NewSettings = conv632
+	out.FieldsToRemove = v.FieldsToRemove
+	return out, nil
+}
+
+// ViewItemToSDK converts the mirror to the sdk-go type.
+func ViewItemToSDK(w *ViewItem) (*sdk.ViewItem, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ViewItem{}
+	out.Content = w.Content
+	out.Name = w.Name
+	out.Type = w.Type
+	return out, nil
+}
+
+// ViewItemFromSDK converts the sdk-go type to the mirror.
+func ViewItemFromSDK(v *sdk.ViewItem) (*ViewItem, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ViewItem{}
+	out.Content = v.Content
+	out.Name = v.Name
+	out.Type = v.Type
+	return out, nil
+}
+
+// VolumesStorageInfoToSDK converts the mirror to the sdk-go type.
+func VolumesStorageInfoToSDK(w *VolumesStorageInfo) (*sdk.VolumesStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.VolumesStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// VolumesStorageInfoFromSDK converts the sdk-go type to the mirror.
+func VolumesStorageInfoFromSDK(v *sdk.VolumesStorageInfo) (*VolumesStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VolumesStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// WebhookToSDK converts the mirror to the sdk-go type.
+func WebhookToSDK(w *Webhook) (*sdk.Webhook, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Webhook{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// WebhookFromSDK converts the sdk-go type to the mirror.
+func WebhookFromSDK(v *sdk.Webhook) (*Webhook, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Webhook{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// WebhookNotificationsToSDK converts the mirror to the sdk-go type.
+func WebhookNotificationsToSDK(w *WebhookNotifications) (*sdk.WebhookNotifications, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WebhookNotifications{}
+	conv633, err := convertSlice(w.OnStart, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStart", err)
+	}
+	out.OnStart = conv633
+	conv634, err := convertSlice(w.OnSuccess, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnSuccess", err)
+	}
+	out.OnSuccess = conv634
+	conv635, err := convertSlice(w.OnFailure, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnFailure", err)
+	}
+	out.OnFailure = conv635
+	conv636, err := convertSlice(w.OnDurationWarningThresholdExceeded, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnDurationWarningThresholdExceeded", err)
+	}
+	out.OnDurationWarningThresholdExceeded = conv636
+	conv637, err := convertSlice(w.OnStreamingBacklogExceeded, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStreamingBacklogExceeded", err)
+	}
+	out.OnStreamingBacklogExceeded = conv637
+	conv638, err := convertSlice(w.OnMaintenanceStart, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceStart", err)
+	}
+	out.OnMaintenanceStart = conv638
+	conv639, err := convertSlice(w.OnMaintenanceComplete, WebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceComplete", err)
+	}
+	out.OnMaintenanceComplete = conv639
+	return out, nil
+}
+
+// WebhookNotificationsFromSDK converts the sdk-go type to the mirror.
+func WebhookNotificationsFromSDK(v *sdk.WebhookNotifications) (*WebhookNotifications, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WebhookNotifications{}
+	conv640, err := convertSlice(v.OnStart, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStart", err)
+	}
+	out.OnStart = conv640
+	conv641, err := convertSlice(v.OnSuccess, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnSuccess", err)
+	}
+	out.OnSuccess = conv641
+	conv642, err := convertSlice(v.OnFailure, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnFailure", err)
+	}
+	out.OnFailure = conv642
+	conv643, err := convertSlice(v.OnDurationWarningThresholdExceeded, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnDurationWarningThresholdExceeded", err)
+	}
+	out.OnDurationWarningThresholdExceeded = conv643
+	conv644, err := convertSlice(v.OnStreamingBacklogExceeded, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnStreamingBacklogExceeded", err)
+	}
+	out.OnStreamingBacklogExceeded = conv644
+	conv645, err := convertSlice(v.OnMaintenanceStart, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceStart", err)
+	}
+	out.OnMaintenanceStart = conv645
+	conv646, err := convertSlice(v.OnMaintenanceComplete, WebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WebhookNotifications.OnMaintenanceComplete", err)
+	}
+	out.OnMaintenanceComplete = conv646
+	return out, nil
+}
+
+// WidgetErrorDetailToSDK converts the mirror to the sdk-go type.
+func WidgetErrorDetailToSDK(w *WidgetErrorDetail) (*sdk.WidgetErrorDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WidgetErrorDetail{}
+	out.Message = w.Message
+	return out, nil
+}
+
+// WidgetErrorDetailFromSDK converts the sdk-go type to the mirror.
+func WidgetErrorDetailFromSDK(v *sdk.WidgetErrorDetail) (*WidgetErrorDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WidgetErrorDetail{}
+	out.Message = v.Message
+	return out, nil
+}
+
+// WorkloadTypeToSDK converts the mirror to the sdk-go type.
+func WorkloadTypeToSDK(w *WorkloadType) (*sdk.WorkloadType, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WorkloadType{}
+	conv647, err := WorkloadType_ClientsTypesToSDK(w.Clients)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
+	}
+	out.Clients = conv647
+	return out, nil
+}
+
+// WorkloadTypeFromSDK converts the sdk-go type to the mirror.
+func WorkloadTypeFromSDK(v *sdk.WorkloadType) (*WorkloadType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkloadType{}
+	conv648, err := WorkloadType_ClientsTypesFromSDK(v.Clients)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkloadType.Clients", err)
+	}
+	out.Clients = conv648
+	return out, nil
+}
+
+// WorkloadType_ClientsTypesToSDK converts the mirror to the sdk-go type.
+func WorkloadType_ClientsTypesToSDK(w *WorkloadType_ClientsTypes) (*sdk.WorkloadType_ClientsTypes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.WorkloadType_ClientsTypes{}
+	out.Notebooks = w.Notebooks
+	out.Jobs = w.Jobs
+	return out, nil
+}
+
+// WorkloadType_ClientsTypesFromSDK converts the sdk-go type to the mirror.
+func WorkloadType_ClientsTypesFromSDK(v *sdk.WorkloadType_ClientsTypes) (*WorkloadType_ClientsTypes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkloadType_ClientsTypes{}
+	out.Notebooks = v.Notebooks
+	out.Jobs = v.Jobs
+	return out, nil
+}
+
+// WorkspaceStorageInfoToSDK converts the mirror to the sdk-go type.
 func WorkspaceStorageInfoToSDK(w *WorkspaceStorageInfo) (*sdk.WorkspaceStorageInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WorkspaceStorageInfo{
-		Destination: w.Destination,
-	}, nil
+	out := &sdk.WorkspaceStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// WorkspaceStorageInfoFromSDK converts the sdk-go type to the mirror.
+func WorkspaceStorageInfoFromSDK(v *sdk.WorkspaceStorageInfo) (*WorkspaceStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

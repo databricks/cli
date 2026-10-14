@@ -214,45 +214,11 @@ const (
 	Transformer_Format_Protobuf                                                                  = sdk.Transformer_Format_Protobuf
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // Top-level configuration for API Source connectors with arbitrary
 // configuration..
 type ApiSourceConnectorConfig struct {
 	// Arbitrary key-value configuration values for the API Source connector.
 	Configs map[string]string `json:"configs,omitempty"`
-}
-
-func ApiSourceConnectorConfigFromSDK(v *sdk.ApiSourceConnectorConfig) (*ApiSourceConnectorConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApiSourceConnectorConfig{
-		Configs: v.Configs,
-	}, nil
-}
-
-func ApiSourceConnectorConfigToSDK(w *ApiSourceConnectorConfig) (*sdk.ApiSourceConnectorConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiSourceConnectorConfig{
-		Configs: w.Configs,
-	}, nil
 }
 
 // Options for API Source connectors with arbitrary configuration..
@@ -261,35 +227,8 @@ type ApiSourceConnectorOptions struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-func ApiSourceConnectorOptionsFromSDK(v *sdk.ApiSourceConnectorOptions) (*ApiSourceConnectorOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApiSourceConnectorOptions{
-		Options: v.Options,
-	}, nil
-}
-
-func ApiSourceConnectorOptionsToSDK(w *ApiSourceConnectorOptions) (*sdk.ApiSourceConnectorOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiSourceConnectorOptions{
-		Options: w.Options,
-	}, nil
-}
-
 type ApplyEnvironmentRequest struct {
 	PipelineId *string `json:"pipeline_id,omitempty"`
-}
-
-func ApplyEnvironmentRequestFromSDK(v *sdk.ApplyEnvironmentRequest) (*ApplyEnvironmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApplyEnvironmentRequest{
-		PipelineId: v.PipelineId,
-	}, nil
 }
 
 // Policy for auto full refresh..
@@ -303,26 +242,6 @@ type AutoFullRefreshPolicy struct {
 	MinIntervalHours *int `json:"min_interval_hours,omitempty"`
 }
 
-func AutoFullRefreshPolicyFromSDK(v *sdk.AutoFullRefreshPolicy) (*AutoFullRefreshPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AutoFullRefreshPolicy{
-		Enabled:          v.Enabled,
-		MinIntervalHours: v.MinIntervalHours,
-	}, nil
-}
-
-func AutoFullRefreshPolicyToSDK(w *AutoFullRefreshPolicy) (*sdk.AutoFullRefreshPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AutoFullRefreshPolicy{
-		Enabled:          w.Enabled,
-		MinIntervalHours: w.MinIntervalHours,
-	}, nil
-}
-
 type AvroTransformerOptions struct {
 	// Inline Avro JSON schema string.
 	Schema *string `json:"schema,omitempty"`
@@ -334,38 +253,6 @@ type AvroTransformerOptions struct {
 	// (Optional) Schema registry to resolve the Avro schema at runtime instead of
 	// providing it inline or via a file path.
 	SchemaRegistry *SchemaRegistryConfig `json:"schema_registry,omitempty"`
-}
-
-func AvroTransformerOptionsFromSDK(v *sdk.AvroTransformerOptions) (*AvroTransformerOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	schemaRegistryWireValue, err := SchemaRegistryConfigFromSDK(v.SchemaRegistry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AvroTransformerOptions.SchemaRegistry", err)
-	}
-	return &AvroTransformerOptions{
-		Schema:         v.Schema,
-		SchemaFilePath: v.SchemaFilePath,
-		ParseMode:      v.ParseMode,
-		SchemaRegistry: schemaRegistryWireValue,
-	}, nil
-}
-
-func AvroTransformerOptionsToSDK(w *AvroTransformerOptions) (*sdk.AvroTransformerOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaRegistryPublicValue, err := SchemaRegistryConfigToSDK(w.SchemaRegistry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AvroTransformerOptions.SchemaRegistry", err)
-	}
-	return &sdk.AvroTransformerOptions{
-		Schema:         w.Schema,
-		SchemaFilePath: w.SchemaFilePath,
-		ParseMode:      w.ParseMode,
-		SchemaRegistry: schemaRegistryPublicValue,
-	}, nil
 }
 
 type ClonePipelineRequest struct {
@@ -467,108 +354,9 @@ type ClonePipelineRequest struct {
 	CloneMode CloneMode `json:"clone_mode,omitempty"`
 }
 
-func ClonePipelineRequestFromSDK(v *sdk.ClonePipelineRequest) (*ClonePipelineRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	expectedLastModifiedWireValue, err := int64ToWire(v.ExpectedLastModified)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.ExpectedLastModified", err)
-	}
-	clustersWireValue, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Clusters", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Libraries", err)
-	}
-	ingestionDefinitionWireValue, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.IngestionDefinition", err)
-	}
-	gatewayDefinitionWireValue, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.GatewayDefinition", err)
-	}
-	triggerWireValue, err := PipelineTriggerFromSDK(v.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Trigger", err)
-	}
-	filtersWireValue, err := FiltersFromSDK(v.Filters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Filters", err)
-	}
-	notificationsWireValue, err := convertSlice(v.Notifications, NotificationsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Notifications", err)
-	}
-	deploymentWireValue, err := PipelineDeploymentFromSDK(v.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Deployment", err)
-	}
-	restartWindowWireValue, err := RestartWindowFromSDK(v.RestartWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.RestartWindow", err)
-	}
-	eventLogWireValue, err := EventLogSpecFromSDK(v.EventLog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.EventLog", err)
-	}
-	environmentWireValue, err := PipelinesEnvironmentFromSDK(v.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Environment", err)
-	}
-	return &ClonePipelineRequest{
-		PipelineId:           v.PipelineId,
-		ExpectedLastModified: expectedLastModifiedWireValue,
-		AllowDuplicateNames:  v.AllowDuplicateNames,
-		Id:                   v.Id,
-		Name:                 v.Name,
-		Storage:              v.Storage,
-		Configuration:        v.Configuration,
-		Clusters:             clustersWireValue,
-		Libraries:            librariesWireValue,
-		IngestionDefinition:  ingestionDefinitionWireValue,
-		GatewayDefinition:    gatewayDefinitionWireValue,
-		Trigger:              triggerWireValue,
-		Target:               v.Target,
-		Schema:               v.Schema,
-		Filters:              filtersWireValue,
-		Continuous:           v.Continuous,
-		Development:          v.Development,
-		Photon:               v.Photon,
-		Edition:              v.Edition,
-		Channel:              v.Channel,
-		Catalog:              v.Catalog,
-		Notifications:        notificationsWireValue,
-		Serverless:           v.Serverless,
-		Deployment:           deploymentWireValue,
-		RestartWindow:        restartWindowWireValue,
-		BudgetPolicyId:       v.BudgetPolicyId,
-		Tags:                 v.Tags,
-		EventLog:             eventLogWireValue,
-		RootPath:             v.RootPath,
-		Environment:          environmentWireValue,
-		ParentPath:           v.ParentPath,
-		UsagePolicyId:        v.UsagePolicyId,
-		ServerlessComputeId:  v.ServerlessComputeId,
-		CloneMode:            v.CloneMode,
-	}, nil
-}
-
 type ClonePipelineResponse struct {
 	// The pipeline id of the cloned pipeline
 	PipelineId *string `json:"pipeline_id,omitempty"`
-}
-
-func ClonePipelineResponseToSDK(w *ClonePipelineResponse) (*sdk.ClonePipelineResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ClonePipelineResponse{
-		PipelineId: w.PipelineId,
-	}, nil
 }
 
 // Confluence specific options for ingestion.
@@ -577,45 +365,9 @@ type ConfluenceConnectorOptions struct {
 	IncludeConfluenceSpaces []string `json:"include_confluence_spaces,omitempty"`
 }
 
-func ConfluenceConnectorOptionsFromSDK(v *sdk.ConfluenceConnectorOptions) (*ConfluenceConnectorOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConfluenceConnectorOptions{
-		IncludeConfluenceSpaces: v.IncludeConfluenceSpaces,
-	}, nil
-}
-
-func ConfluenceConnectorOptionsToSDK(w *ConfluenceConnectorOptions) (*sdk.ConfluenceConnectorOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConfluenceConnectorOptions{
-		IncludeConfluenceSpaces: w.IncludeConfluenceSpaces,
-	}, nil
-}
-
 type ConfluentSchemaRegistryOptions struct {
 	// Required: subject name to resolve in the registry.
 	Subject *string `json:"subject,omitempty"`
-}
-
-func ConfluentSchemaRegistryOptionsFromSDK(v *sdk.ConfluentSchemaRegistryOptions) (*ConfluentSchemaRegistryOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConfluentSchemaRegistryOptions{
-		Subject: v.Subject,
-	}, nil
-}
-
-func ConfluentSchemaRegistryOptionsToSDK(w *ConfluentSchemaRegistryOptions) (*sdk.ConfluentSchemaRegistryOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConfluentSchemaRegistryOptions{
-		Subject: w.Subject,
-	}, nil
 }
 
 type ConnectionParameters struct {
@@ -624,24 +376,6 @@ type ConnectionParameters struct {
 	// nice-to-have in some other database systems like Postgres. For Oracle
 	// databases, this maps to a service name.
 	SourceCatalog *string `json:"source_catalog,omitempty"`
-}
-
-func ConnectionParametersFromSDK(v *sdk.ConnectionParameters) (*ConnectionParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConnectionParameters{
-		SourceCatalog: v.SourceCatalog,
-	}, nil
-}
-
-func ConnectionParametersToSDK(w *ConnectionParameters) (*sdk.ConnectionParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConnectionParameters{
-		SourceCatalog: w.SourceCatalog,
-	}, nil
 }
 
 // Wrapper message for source-specific options to support multiple connector
@@ -663,339 +397,6 @@ type ConnectorOptions struct {
 	LinkedinAdsOptions        *LinkedInAdsOptions         `json:"linkedin_ads_options,omitempty"`
 	RedditAdsOptions          *RedditAdsOptions           `json:"reddit_ads_options,omitempty"`
 	ApiSourceConnectorOptions *ApiSourceConnectorOptions  `json:"api_source_connector_options,omitempty"`
-}
-
-func ConnectorOptionsFromSDK(v *sdk.ConnectorOptions) (*ConnectorOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var connectorOptionsGoogleAdsOptionsWire *GoogleAdsOptions
-	var connectorOptionsTiktokAdsOptionsWire *TikTokAdsOptions
-	var connectorOptionsSharepointOptionsWire *SharepointOptions
-	var connectorOptionsGdriveOptionsWire *GoogleDriveOptions
-	var connectorOptionsOutlookOptionsWire *OutlookOptions
-	var connectorOptionsSmartsheetOptionsWire *SmartsheetOptions
-	var connectorOptionsJiraOptionsWire *JiraConnectorOptions
-	var connectorOptionsConfluenceOptionsWire *ConfluenceConnectorOptions
-	var connectorOptionsMetaAdsOptionsWire *MetaMarketingOptions
-	var connectorOptionsZendeskSupportOptionsWire *ZendeskSupportOptions
-	var connectorOptionsKafkaOptionsWire *KafkaOptions
-	var connectorOptionsRabbitmqOptionsWire *RabbitmqOptions
-	var connectorOptionsMarketoOptionsWire *MarketoOptions
-	var connectorOptionsLinkedinAdsOptionsWire *LinkedInAdsOptions
-	var connectorOptionsRedditAdsOptionsWire *RedditAdsOptions
-	var connectorOptionsApiSourceConnectorOptionsWire *ApiSourceConnectorOptions
-	switch value := v.ConnectorOptions.(type) {
-	case nil:
-	case *sdk.ConnectorOptions_ConnectorOptions_GoogleAdsOptions:
-		if value != nil {
-			connectorOptionsGoogleAdsOptionsConverted, err := GoogleAdsOptionsFromSDK(&value.GoogleAdsOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.GoogleAdsOptions", err)
-			}
-			connectorOptionsGoogleAdsOptionsWire = connectorOptionsGoogleAdsOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_TiktokAdsOptions:
-		if value != nil {
-			connectorOptionsTiktokAdsOptionsConverted, err := TikTokAdsOptionsFromSDK(&value.TiktokAdsOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.TiktokAdsOptions", err)
-			}
-			connectorOptionsTiktokAdsOptionsWire = connectorOptionsTiktokAdsOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_SharepointOptions:
-		if value != nil {
-			connectorOptionsSharepointOptionsConverted, err := SharepointOptionsFromSDK(&value.SharepointOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.SharepointOptions", err)
-			}
-			connectorOptionsSharepointOptionsWire = connectorOptionsSharepointOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_GdriveOptions:
-		if value != nil {
-			connectorOptionsGdriveOptionsConverted, err := GoogleDriveOptionsFromSDK(&value.GdriveOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.GdriveOptions", err)
-			}
-			connectorOptionsGdriveOptionsWire = connectorOptionsGdriveOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_OutlookOptions:
-		if value != nil {
-			connectorOptionsOutlookOptionsConverted, err := OutlookOptionsFromSDK(&value.OutlookOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.OutlookOptions", err)
-			}
-			connectorOptionsOutlookOptionsWire = connectorOptionsOutlookOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_SmartsheetOptions:
-		if value != nil {
-			connectorOptionsSmartsheetOptionsConverted, err := SmartsheetOptionsFromSDK(&value.SmartsheetOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.SmartsheetOptions", err)
-			}
-			connectorOptionsSmartsheetOptionsWire = connectorOptionsSmartsheetOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_JiraOptions:
-		if value != nil {
-			connectorOptionsJiraOptionsConverted, err := JiraConnectorOptionsFromSDK(&value.JiraOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.JiraOptions", err)
-			}
-			connectorOptionsJiraOptionsWire = connectorOptionsJiraOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_ConfluenceOptions:
-		if value != nil {
-			connectorOptionsConfluenceOptionsConverted, err := ConfluenceConnectorOptionsFromSDK(&value.ConfluenceOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ConfluenceOptions", err)
-			}
-			connectorOptionsConfluenceOptionsWire = connectorOptionsConfluenceOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_MetaAdsOptions:
-		if value != nil {
-			connectorOptionsMetaAdsOptionsConverted, err := MetaMarketingOptionsFromSDK(&value.MetaAdsOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.MetaAdsOptions", err)
-			}
-			connectorOptionsMetaAdsOptionsWire = connectorOptionsMetaAdsOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_ZendeskSupportOptions:
-		if value != nil {
-			connectorOptionsZendeskSupportOptionsConverted, err := ZendeskSupportOptionsFromSDK(&value.ZendeskSupportOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ZendeskSupportOptions", err)
-			}
-			connectorOptionsZendeskSupportOptionsWire = connectorOptionsZendeskSupportOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_KafkaOptions:
-		if value != nil {
-			connectorOptionsKafkaOptionsConverted, err := KafkaOptionsFromSDK(&value.KafkaOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.KafkaOptions", err)
-			}
-			connectorOptionsKafkaOptionsWire = connectorOptionsKafkaOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_RabbitmqOptions:
-		if value != nil {
-			connectorOptionsRabbitmqOptionsConverted, err := RabbitmqOptionsFromSDK(&value.RabbitmqOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.RabbitmqOptions", err)
-			}
-			connectorOptionsRabbitmqOptionsWire = connectorOptionsRabbitmqOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_MarketoOptions:
-		if value != nil {
-			connectorOptionsMarketoOptionsConverted, err := MarketoOptionsFromSDK(&value.MarketoOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.MarketoOptions", err)
-			}
-			connectorOptionsMarketoOptionsWire = connectorOptionsMarketoOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_LinkedinAdsOptions:
-		if value != nil {
-			connectorOptionsLinkedinAdsOptionsConverted, err := LinkedInAdsOptionsFromSDK(&value.LinkedinAdsOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.LinkedinAdsOptions", err)
-			}
-			connectorOptionsLinkedinAdsOptionsWire = connectorOptionsLinkedinAdsOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_RedditAdsOptions:
-		if value != nil {
-			connectorOptionsRedditAdsOptionsConverted, err := RedditAdsOptionsFromSDK(&value.RedditAdsOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.RedditAdsOptions", err)
-			}
-			connectorOptionsRedditAdsOptionsWire = connectorOptionsRedditAdsOptionsConverted
-		}
-	case *sdk.ConnectorOptions_ConnectorOptions_ApiSourceConnectorOptions:
-		if value != nil {
-			connectorOptionsApiSourceConnectorOptionsConverted, err := ApiSourceConnectorOptionsFromSDK(&value.ApiSourceConnectorOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ApiSourceConnectorOptions", err)
-			}
-			connectorOptionsApiSourceConnectorOptionsWire = connectorOptionsApiSourceConnectorOptionsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "ConnectorOptions.ConnectorOptions", value)
-	}
-	return &ConnectorOptions{
-		GoogleAdsOptions:          connectorOptionsGoogleAdsOptionsWire,
-		TiktokAdsOptions:          connectorOptionsTiktokAdsOptionsWire,
-		SharepointOptions:         connectorOptionsSharepointOptionsWire,
-		GdriveOptions:             connectorOptionsGdriveOptionsWire,
-		OutlookOptions:            connectorOptionsOutlookOptionsWire,
-		SmartsheetOptions:         connectorOptionsSmartsheetOptionsWire,
-		JiraOptions:               connectorOptionsJiraOptionsWire,
-		ConfluenceOptions:         connectorOptionsConfluenceOptionsWire,
-		MetaAdsOptions:            connectorOptionsMetaAdsOptionsWire,
-		ZendeskSupportOptions:     connectorOptionsZendeskSupportOptionsWire,
-		KafkaOptions:              connectorOptionsKafkaOptionsWire,
-		RabbitmqOptions:           connectorOptionsRabbitmqOptionsWire,
-		MarketoOptions:            connectorOptionsMarketoOptionsWire,
-		LinkedinAdsOptions:        connectorOptionsLinkedinAdsOptionsWire,
-		RedditAdsOptions:          connectorOptionsRedditAdsOptionsWire,
-		ApiSourceConnectorOptions: connectorOptionsApiSourceConnectorOptionsWire,
-	}, nil
-}
-
-func ConnectorOptionsToSDK(w *ConnectorOptions) (*sdk.ConnectorOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	connectorOptionsMembers := 0
-	if w.GoogleAdsOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.TiktokAdsOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.SharepointOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.GdriveOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.OutlookOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.SmartsheetOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.JiraOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.ConfluenceOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.MetaAdsOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.ZendeskSupportOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.KafkaOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.RabbitmqOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.MarketoOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.LinkedinAdsOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.RedditAdsOptions != nil {
-		connectorOptionsMembers++
-	}
-	if w.ApiSourceConnectorOptions != nil {
-		connectorOptionsMembers++
-	}
-	if connectorOptionsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "ConnectorOptions.ConnectorOptions")
-	}
-	connectorOptionsSelection := (&sdk.ConnectorOptions{}).ConnectorOptions
-	switch {
-	case w.GoogleAdsOptions != nil:
-		connectorOptionsGoogleAdsOptionsConverted, err := GoogleAdsOptionsToSDK(w.GoogleAdsOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.GoogleAdsOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_GoogleAdsOptions{GoogleAdsOptions: *connectorOptionsGoogleAdsOptionsConverted}
-	case w.TiktokAdsOptions != nil:
-		connectorOptionsTiktokAdsOptionsConverted, err := TikTokAdsOptionsToSDK(w.TiktokAdsOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.TiktokAdsOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_TiktokAdsOptions{TiktokAdsOptions: *connectorOptionsTiktokAdsOptionsConverted}
-	case w.SharepointOptions != nil:
-		connectorOptionsSharepointOptionsConverted, err := SharepointOptionsToSDK(w.SharepointOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.SharepointOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_SharepointOptions{SharepointOptions: *connectorOptionsSharepointOptionsConverted}
-	case w.GdriveOptions != nil:
-		connectorOptionsGdriveOptionsConverted, err := GoogleDriveOptionsToSDK(w.GdriveOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.GdriveOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_GdriveOptions{GdriveOptions: *connectorOptionsGdriveOptionsConverted}
-	case w.OutlookOptions != nil:
-		connectorOptionsOutlookOptionsConverted, err := OutlookOptionsToSDK(w.OutlookOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.OutlookOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_OutlookOptions{OutlookOptions: *connectorOptionsOutlookOptionsConverted}
-	case w.SmartsheetOptions != nil:
-		connectorOptionsSmartsheetOptionsConverted, err := SmartsheetOptionsToSDK(w.SmartsheetOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.SmartsheetOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_SmartsheetOptions{SmartsheetOptions: *connectorOptionsSmartsheetOptionsConverted}
-	case w.JiraOptions != nil:
-		connectorOptionsJiraOptionsConverted, err := JiraConnectorOptionsToSDK(w.JiraOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.JiraOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_JiraOptions{JiraOptions: *connectorOptionsJiraOptionsConverted}
-	case w.ConfluenceOptions != nil:
-		connectorOptionsConfluenceOptionsConverted, err := ConfluenceConnectorOptionsToSDK(w.ConfluenceOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ConfluenceOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_ConfluenceOptions{ConfluenceOptions: *connectorOptionsConfluenceOptionsConverted}
-	case w.MetaAdsOptions != nil:
-		connectorOptionsMetaAdsOptionsConverted, err := MetaMarketingOptionsToSDK(w.MetaAdsOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.MetaAdsOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_MetaAdsOptions{MetaAdsOptions: *connectorOptionsMetaAdsOptionsConverted}
-	case w.ZendeskSupportOptions != nil:
-		connectorOptionsZendeskSupportOptionsConverted, err := ZendeskSupportOptionsToSDK(w.ZendeskSupportOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ZendeskSupportOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_ZendeskSupportOptions{ZendeskSupportOptions: *connectorOptionsZendeskSupportOptionsConverted}
-	case w.KafkaOptions != nil:
-		connectorOptionsKafkaOptionsConverted, err := KafkaOptionsToSDK(w.KafkaOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.KafkaOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_KafkaOptions{KafkaOptions: *connectorOptionsKafkaOptionsConverted}
-	case w.RabbitmqOptions != nil:
-		connectorOptionsRabbitmqOptionsConverted, err := RabbitmqOptionsToSDK(w.RabbitmqOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.RabbitmqOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_RabbitmqOptions{RabbitmqOptions: *connectorOptionsRabbitmqOptionsConverted}
-	case w.MarketoOptions != nil:
-		connectorOptionsMarketoOptionsConverted, err := MarketoOptionsToSDK(w.MarketoOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.MarketoOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_MarketoOptions{MarketoOptions: *connectorOptionsMarketoOptionsConverted}
-	case w.LinkedinAdsOptions != nil:
-		connectorOptionsLinkedinAdsOptionsConverted, err := LinkedInAdsOptionsToSDK(w.LinkedinAdsOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.LinkedinAdsOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_LinkedinAdsOptions{LinkedinAdsOptions: *connectorOptionsLinkedinAdsOptionsConverted}
-	case w.RedditAdsOptions != nil:
-		connectorOptionsRedditAdsOptionsConverted, err := RedditAdsOptionsToSDK(w.RedditAdsOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.RedditAdsOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_RedditAdsOptions{RedditAdsOptions: *connectorOptionsRedditAdsOptionsConverted}
-	case w.ApiSourceConnectorOptions != nil:
-		connectorOptionsApiSourceConnectorOptionsConverted, err := ApiSourceConnectorOptionsToSDK(w.ApiSourceConnectorOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions.ApiSourceConnectorOptions", err)
-		}
-		connectorOptionsSelection = &sdk.ConnectorOptions_ConnectorOptions_ApiSourceConnectorOptions{ApiSourceConnectorOptions: *connectorOptionsApiSourceConnectorOptionsConverted}
-	}
-	return &sdk.ConnectorOptions{
-		ConnectorOptions: connectorOptionsSelection,
-	}, nil
 }
 
 type CreatePipelineRequest struct {
@@ -1094,96 +495,6 @@ type CreatePipelineRequest struct {
 	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
-func CreatePipelineRequestFromSDK(v *sdk.CreatePipelineRequest) (*CreatePipelineRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	runAsWireValue, err := PipelinesJobRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RunAs", err)
-	}
-	clustersWireValue, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Clusters", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Libraries", err)
-	}
-	ingestionDefinitionWireValue, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.IngestionDefinition", err)
-	}
-	gatewayDefinitionWireValue, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.GatewayDefinition", err)
-	}
-	triggerWireValue, err := PipelineTriggerFromSDK(v.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Trigger", err)
-	}
-	filtersWireValue, err := FiltersFromSDK(v.Filters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Filters", err)
-	}
-	notificationsWireValue, err := convertSlice(v.Notifications, NotificationsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Notifications", err)
-	}
-	deploymentWireValue, err := PipelineDeploymentFromSDK(v.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Deployment", err)
-	}
-	restartWindowWireValue, err := RestartWindowFromSDK(v.RestartWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RestartWindow", err)
-	}
-	eventLogWireValue, err := EventLogSpecFromSDK(v.EventLog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.EventLog", err)
-	}
-	environmentWireValue, err := PipelinesEnvironmentFromSDK(v.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Environment", err)
-	}
-	return &CreatePipelineRequest{
-		AllowDuplicateNames: v.AllowDuplicateNames,
-		DryRun:              v.DryRun,
-		RunAs:               runAsWireValue,
-		Parameters:          v.Parameters,
-		Id:                  v.Id,
-		Name:                v.Name,
-		Storage:             v.Storage,
-		Configuration:       v.Configuration,
-		Clusters:            clustersWireValue,
-		Libraries:           librariesWireValue,
-		IngestionDefinition: ingestionDefinitionWireValue,
-		GatewayDefinition:   gatewayDefinitionWireValue,
-		Trigger:             triggerWireValue,
-		Target:              v.Target,
-		Schema:              v.Schema,
-		Filters:             filtersWireValue,
-		Continuous:          v.Continuous,
-		Development:         v.Development,
-		Photon:              v.Photon,
-		Edition:             v.Edition,
-		Channel:             v.Channel,
-		Catalog:             v.Catalog,
-		Notifications:       notificationsWireValue,
-		Serverless:          v.Serverless,
-		Deployment:          deploymentWireValue,
-		RestartWindow:       restartWindowWireValue,
-		BudgetPolicyId:      v.BudgetPolicyId,
-		Tags:                v.Tags,
-		EventLog:            eventLogWireValue,
-		RootPath:            v.RootPath,
-		Environment:         environmentWireValue,
-		ParentPath:          v.ParentPath,
-		UsagePolicyId:       v.UsagePolicyId,
-		ServerlessComputeId: v.ServerlessComputeId,
-	}, nil
-}
-
 type CreatePipelineResponse struct {
 	// The unique identifier for the newly created pipeline. Only returned when
 	// dry_run is false.
@@ -1192,43 +503,9 @@ type CreatePipelineResponse struct {
 	EffectiveSettings *PipelineSpec `json:"effective_settings,omitempty"`
 }
 
-func CreatePipelineResponseToSDK(w *CreatePipelineResponse) (*sdk.CreatePipelineResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	effectiveSettingsPublicValue, err := PipelineSpecToSDK(w.EffectiveSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePipelineResponse.EffectiveSettings", err)
-	}
-	return &sdk.CreatePipelineResponse{
-		PipelineId:        w.PipelineId,
-		EffectiveSettings: effectiveSettingsPublicValue,
-	}, nil
-}
-
 type CronTrigger struct {
 	QuartzCronSchedule *string `json:"quartz_cron_schedule,omitempty"`
 	TimezoneId         *string `json:"timezone_id,omitempty"`
-}
-
-func CronTriggerFromSDK(v *sdk.CronTrigger) (*CronTrigger, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronTrigger{
-		QuartzCronSchedule: v.QuartzCronSchedule,
-		TimezoneId:         v.TimezoneId,
-	}, nil
-}
-
-func CronTriggerToSDK(w *CronTrigger) (*sdk.CronTrigger, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronTrigger{
-		QuartzCronSchedule: w.QuartzCronSchedule,
-		TimezoneId:         w.TimezoneId,
-	}, nil
 }
 
 type DataPlaneId struct {
@@ -1236,20 +513,6 @@ type DataPlaneId struct {
 	Instance *string `json:"instance,omitempty"`
 	// A sequence number, unique and increasing within the data plane instance.
 	SeqNo *int64 `json:"seq_no,omitempty"`
-}
-
-func DataPlaneIdToSDK(w *DataPlaneId) (*sdk.DataPlaneId, error) {
-	if w == nil {
-		return nil, nil
-	}
-	seqNoPublicValue, err := int64FromWire(w.SeqNo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataPlaneId.SeqNo", err)
-	}
-	return &sdk.DataPlaneId{
-		Instance: w.Instance,
-		SeqNo:    seqNoPublicValue,
-	}, nil
 }
 
 // Location of staged data storage.
@@ -1269,28 +532,6 @@ type DataStagingOptions struct {
 	VolumeName *string `json:"volume_name,omitempty"`
 }
 
-func DataStagingOptionsFromSDK(v *sdk.DataStagingOptions) (*DataStagingOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DataStagingOptions{
-		CatalogName: v.CatalogName,
-		SchemaName:  v.SchemaName,
-		VolumeName:  v.VolumeName,
-	}, nil
-}
-
-func DataStagingOptionsToSDK(w *DataStagingOptions) (*sdk.DataStagingOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataStagingOptions{
-		CatalogName: w.CatalogName,
-		SchemaName:  w.SchemaName,
-		VolumeName:  w.VolumeName,
-	}, nil
-}
-
 type DeletePipelineRequest struct {
 	PipelineId *string `json:"pipeline_id,omitempty"`
 	// If true, deletion will proceed even if resource cleanup fails. By default,
@@ -1300,17 +541,6 @@ type DeletePipelineRequest struct {
 	// Views). By default, this parameter will be true and all tables will be
 	// deleted with the pipeline.
 	Cascade *bool `json:"cascade,omitempty"`
-}
-
-func DeletePipelineRequestFromSDK(v *sdk.DeletePipelineRequest) (*DeletePipelineRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeletePipelineRequest{
-		PipelineId: v.PipelineId,
-		Force:      v.Force,
-		Cascade:    v.Cascade,
-	}, nil
 }
 
 type EditPipelineRequest struct {
@@ -1414,120 +644,11 @@ type EditPipelineRequest struct {
 	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
-func EditPipelineRequestFromSDK(v *sdk.EditPipelineRequest) (*EditPipelineRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	expectedLastModifiedWireValue, err := int64ToWire(v.ExpectedLastModified)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.ExpectedLastModified", err)
-	}
-	runAsWireValue, err := PipelinesJobRunAsFromSDK(v.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RunAs", err)
-	}
-	clustersWireValue, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Clusters", err)
-	}
-	librariesWireValue, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Libraries", err)
-	}
-	ingestionDefinitionWireValue, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.IngestionDefinition", err)
-	}
-	gatewayDefinitionWireValue, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.GatewayDefinition", err)
-	}
-	triggerWireValue, err := PipelineTriggerFromSDK(v.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Trigger", err)
-	}
-	filtersWireValue, err := FiltersFromSDK(v.Filters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Filters", err)
-	}
-	notificationsWireValue, err := convertSlice(v.Notifications, NotificationsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Notifications", err)
-	}
-	deploymentWireValue, err := PipelineDeploymentFromSDK(v.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Deployment", err)
-	}
-	restartWindowWireValue, err := RestartWindowFromSDK(v.RestartWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RestartWindow", err)
-	}
-	eventLogWireValue, err := EventLogSpecFromSDK(v.EventLog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.EventLog", err)
-	}
-	environmentWireValue, err := PipelinesEnvironmentFromSDK(v.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Environment", err)
-	}
-	return &EditPipelineRequest{
-		PipelineId:           v.PipelineId,
-		AllowDuplicateNames:  v.AllowDuplicateNames,
-		ExpectedLastModified: expectedLastModifiedWireValue,
-		RunAs:                runAsWireValue,
-		Parameters:           v.Parameters,
-		Id:                   v.Id,
-		Name:                 v.Name,
-		Storage:              v.Storage,
-		Configuration:        v.Configuration,
-		Clusters:             clustersWireValue,
-		Libraries:            librariesWireValue,
-		IngestionDefinition:  ingestionDefinitionWireValue,
-		GatewayDefinition:    gatewayDefinitionWireValue,
-		Trigger:              triggerWireValue,
-		Target:               v.Target,
-		Schema:               v.Schema,
-		Filters:              filtersWireValue,
-		Continuous:           v.Continuous,
-		Development:          v.Development,
-		Photon:               v.Photon,
-		Edition:              v.Edition,
-		Channel:              v.Channel,
-		Catalog:              v.Catalog,
-		Notifications:        notificationsWireValue,
-		Serverless:           v.Serverless,
-		Deployment:           deploymentWireValue,
-		RestartWindow:        restartWindowWireValue,
-		BudgetPolicyId:       v.BudgetPolicyId,
-		Tags:                 v.Tags,
-		EventLog:             eventLogWireValue,
-		RootPath:             v.RootPath,
-		Environment:          environmentWireValue,
-		ParentPath:           v.ParentPath,
-		UsagePolicyId:        v.UsagePolicyId,
-		ServerlessComputeId:  v.ServerlessComputeId,
-	}, nil
-}
-
 type ErrorDetail struct {
 	// The exception thrown for this error, with its chain of cause.
 	Exceptions []SerializedException `json:"exceptions,omitempty"`
 	// Whether this error is considered fatal, that is, unrecoverable.
 	Fatal *bool `json:"fatal,omitempty"`
-}
-
-func ErrorDetailToSDK(w *ErrorDetail) (*sdk.ErrorDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exceptionsPublicValue, err := convertSlice(w.Exceptions, SerializedExceptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ErrorDetail.Exceptions", err)
-	}
-	return &sdk.ErrorDetail{
-		Exceptions: exceptionsPublicValue,
-		Fatal:      w.Fatal,
-	}, nil
 }
 
 // Configurable event log parameters..
@@ -1540,94 +661,10 @@ type EventLogSpec struct {
 	Catalog *string `json:"catalog,omitempty"`
 }
 
-func EventLogSpecFromSDK(v *sdk.EventLogSpec) (*EventLogSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EventLogSpec{
-		Name:    v.Name,
-		Schema:  v.Schema,
-		Catalog: v.Catalog,
-	}, nil
-}
-
-func EventLogSpecToSDK(w *EventLogSpec) (*sdk.EventLogSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EventLogSpec{
-		Name:    w.Name,
-		Schema:  w.Schema,
-		Catalog: w.Catalog,
-	}, nil
-}
-
 type FileFilter struct {
 	PathFilter     *string `json:"path_filter,omitempty"`
 	ModifiedBefore *string `json:"modified_before,omitempty"`
 	ModifiedAfter  *string `json:"modified_after,omitempty"`
-}
-
-func FileFilterFromSDK(v *sdk.FileFilter) (*FileFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var filterPathFilterWire *string
-	var filterModifiedBeforeWire *string
-	var filterModifiedAfterWire *string
-	switch value := v.Filter.(type) {
-	case nil:
-	case *sdk.FileFilter_Filter_PathFilter:
-		if value != nil {
-			filterPathFilterWire = new(value.PathFilter)
-		}
-	case *sdk.FileFilter_Filter_ModifiedBefore:
-		if value != nil {
-			filterModifiedBeforeWire = new(value.ModifiedBefore)
-		}
-	case *sdk.FileFilter_Filter_ModifiedAfter:
-		if value != nil {
-			filterModifiedAfterWire = new(value.ModifiedAfter)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "FileFilter.Filter", value)
-	}
-	return &FileFilter{
-		PathFilter:     filterPathFilterWire,
-		ModifiedBefore: filterModifiedBeforeWire,
-		ModifiedAfter:  filterModifiedAfterWire,
-	}, nil
-}
-
-func FileFilterToSDK(w *FileFilter) (*sdk.FileFilter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filterMembers := 0
-	if w.PathFilter != nil {
-		filterMembers++
-	}
-	if w.ModifiedBefore != nil {
-		filterMembers++
-	}
-	if w.ModifiedAfter != nil {
-		filterMembers++
-	}
-	if filterMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "FileFilter.Filter")
-	}
-	filterSelection := (&sdk.FileFilter{}).Filter
-	switch {
-	case w.PathFilter != nil:
-		filterSelection = &sdk.FileFilter_Filter_PathFilter{PathFilter: *w.PathFilter}
-	case w.ModifiedBefore != nil:
-		filterSelection = &sdk.FileFilter_Filter_ModifiedBefore{ModifiedBefore: *w.ModifiedBefore}
-	case w.ModifiedAfter != nil:
-		filterSelection = &sdk.FileFilter_Filter_ModifiedAfter{ModifiedAfter: *w.ModifiedAfter}
-	}
-	return &sdk.FileFilter{
-		Filter: filterSelection,
-	}, nil
 }
 
 type FileIngestionOptions struct {
@@ -1652,77 +689,11 @@ type FileIngestionOptions struct {
 	FormatOptions map[string]string `json:"format_options,omitempty"`
 }
 
-func FileIngestionOptionsFromSDK(v *sdk.FileIngestionOptions) (*FileIngestionOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileFiltersWireValue, err := convertSlice(v.FileFilters, FileFilterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileIngestionOptions.FileFilters", err)
-	}
-	return &FileIngestionOptions{
-		Format:              v.Format,
-		FileFilters:         fileFiltersWireValue,
-		InferColumnTypes:    v.InferColumnTypes,
-		SchemaEvolutionMode: v.SchemaEvolutionMode,
-		SchemaHints:         v.SchemaHints,
-		IgnoreCorruptFiles:  v.IgnoreCorruptFiles,
-		CorruptRecordColumn: v.CorruptRecordColumn,
-		RescuedDataColumn:   v.RescuedDataColumn,
-		SingleVariantColumn: v.SingleVariantColumn,
-		ReaderCaseSensitive: v.ReaderCaseSensitive,
-		FormatOptions:       v.FormatOptions,
-	}, nil
-}
-
-func FileIngestionOptionsToSDK(w *FileIngestionOptions) (*sdk.FileIngestionOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileFiltersPublicValue, err := convertSlice(w.FileFilters, FileFilterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileIngestionOptions.FileFilters", err)
-	}
-	return &sdk.FileIngestionOptions{
-		Format:              w.Format,
-		FileFilters:         fileFiltersPublicValue,
-		InferColumnTypes:    w.InferColumnTypes,
-		SchemaEvolutionMode: w.SchemaEvolutionMode,
-		SchemaHints:         w.SchemaHints,
-		IgnoreCorruptFiles:  w.IgnoreCorruptFiles,
-		CorruptRecordColumn: w.CorruptRecordColumn,
-		RescuedDataColumn:   w.RescuedDataColumn,
-		SingleVariantColumn: w.SingleVariantColumn,
-		ReaderCaseSensitive: w.ReaderCaseSensitive,
-		FormatOptions:       w.FormatOptions,
-	}, nil
-}
-
 type Filters struct {
 	// Paths to include.
 	Include []string `json:"include,omitempty"`
 	// Paths to exclude.
 	Exclude []string `json:"exclude,omitempty"`
-}
-
-func FiltersFromSDK(v *sdk.Filters) (*Filters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Filters{
-		Include: v.Include,
-		Exclude: v.Exclude,
-	}, nil
-}
-
-func FiltersToSDK(w *Filters) (*sdk.Filters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Filters{
-		Include: w.Include,
-		Exclude: w.Exclude,
-	}, nil
 }
 
 type GetPipelineResponse struct {
@@ -1766,62 +737,9 @@ type GetPipelineResponse struct {
 	EffectiveServerlessComputeId *string `json:"effective_serverless_compute_id,omitempty"`
 }
 
-func GetPipelineResponseToSDK(w *GetPipelineResponse) (*sdk.GetPipelineResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := PipelineSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.Spec", err)
-	}
-	latestUpdatesPublicValue, err := convertSlice(w.LatestUpdates, UpdateStateInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.LatestUpdates", err)
-	}
-	lastModifiedPublicValue, err := int64FromWire(w.LastModified)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.LastModified", err)
-	}
-	runAsPublicValue, err := PipelinesJobRunAsToSDK(w.RunAs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.RunAs", err)
-	}
-	return &sdk.GetPipelineResponse{
-		PipelineId:                   w.PipelineId,
-		Spec:                         specPublicValue,
-		State:                        w.State,
-		Cause:                        w.Cause,
-		ClusterId:                    w.ClusterId,
-		Name:                         w.Name,
-		Health:                       w.Health,
-		CreatorUserName:              w.CreatorUserName,
-		LatestUpdates:                latestUpdatesPublicValue,
-		LastModified:                 lastModifiedPublicValue,
-		RunAsUserName:                w.RunAsUserName,
-		EffectiveBudgetPolicyId:      w.EffectiveBudgetPolicyId,
-		EffectivePublishingMode:      w.EffectivePublishingMode,
-		RunAs:                        runAsPublicValue,
-		Parameters:                   w.Parameters,
-		EffectiveServerlessComputeId: w.EffectiveServerlessComputeId,
-	}, nil
-}
-
 type GetUpdateResponse struct {
 	// The current update info.
 	Update *UpdateInfo `json:"update,omitempty"`
-}
-
-func GetUpdateResponseToSDK(w *GetUpdateResponse) (*sdk.GetUpdateResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	updatePublicValue, err := UpdateInfoToSDK(w.Update)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetUpdateResponse.Update", err)
-	}
-	return &sdk.GetUpdateResponse{
-		Update: updatePublicValue,
-	}, nil
 }
 
 type GoogleAdsConfig struct {
@@ -1831,24 +749,6 @@ type GoogleAdsConfig struct {
 	// field is also set in the object-level GoogleAdsOptions (connector_options),
 	// the object-level value takes precedence over this top-level config.
 	ManagerAccountId *string `json:"manager_account_id,omitempty"`
-}
-
-func GoogleAdsConfigFromSDK(v *sdk.GoogleAdsConfig) (*GoogleAdsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GoogleAdsConfig{
-		ManagerAccountId: v.ManagerAccountId,
-	}, nil
-}
-
-func GoogleAdsConfigToSDK(w *GoogleAdsConfig) (*sdk.GoogleAdsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GoogleAdsConfig{
-		ManagerAccountId: w.ManagerAccountId,
-	}, nil
 }
 
 // User-defined custom report for the Google Ads connector. Mirrors the resource
@@ -1879,30 +779,6 @@ type GoogleAdsCustomReportOptions struct {
 	Metrics []string `json:"metrics,omitempty"`
 }
 
-func GoogleAdsCustomReportOptionsFromSDK(v *sdk.GoogleAdsCustomReportOptions) (*GoogleAdsCustomReportOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GoogleAdsCustomReportOptions{
-		Resource:       v.Resource,
-		ResourceFields: v.ResourceFields,
-		Segments:       v.Segments,
-		Metrics:        v.Metrics,
-	}, nil
-}
-
-func GoogleAdsCustomReportOptionsToSDK(w *GoogleAdsCustomReportOptions) (*sdk.GoogleAdsCustomReportOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GoogleAdsCustomReportOptions{
-		Resource:       w.Resource,
-		ResourceFields: w.ResourceFields,
-		Segments:       w.Segments,
-		Metrics:        w.Metrics,
-	}, nil
-}
-
 // Google Ads specific options for ingestion (object-level). When set, these
 // values override the corresponding fields in GoogleAdsConfig
 // (source_configurations)..
@@ -1925,73 +801,11 @@ type GoogleAdsOptions struct {
 	CustomReportOptions *GoogleAdsCustomReportOptions `json:"custom_report_options,omitempty"`
 }
 
-func GoogleAdsOptionsFromSDK(v *sdk.GoogleAdsOptions) (*GoogleAdsOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customReportOptionsWireValue, err := GoogleAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GoogleAdsOptions.CustomReportOptions", err)
-	}
-	return &GoogleAdsOptions{
-		ManagerAccountId:    v.ManagerAccountId,
-		LookbackWindowDays:  v.LookbackWindowDays,
-		SyncStartDate:       v.SyncStartDate,
-		CustomReportOptions: customReportOptionsWireValue,
-	}, nil
-}
-
-func GoogleAdsOptionsToSDK(w *GoogleAdsOptions) (*sdk.GoogleAdsOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customReportOptionsPublicValue, err := GoogleAdsCustomReportOptionsToSDK(w.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GoogleAdsOptions.CustomReportOptions", err)
-	}
-	return &sdk.GoogleAdsOptions{
-		ManagerAccountId:    w.ManagerAccountId,
-		LookbackWindowDays:  w.LookbackWindowDays,
-		SyncStartDate:       w.SyncStartDate,
-		CustomReportOptions: customReportOptionsPublicValue,
-	}, nil
-}
-
 type GoogleDriveOptions struct {
 	// Google Drive URL.
 	Url                  *string                                  `json:"url,omitempty"`
 	EntityType           GoogleDriveOptions_GoogleDriveEntityType `json:"entity_type,omitempty"`
 	FileIngestionOptions *FileIngestionOptions                    `json:"file_ingestion_options,omitempty"`
-}
-
-func GoogleDriveOptionsFromSDK(v *sdk.GoogleDriveOptions) (*GoogleDriveOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileIngestionOptionsWireValue, err := FileIngestionOptionsFromSDK(v.FileIngestionOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GoogleDriveOptions.FileIngestionOptions", err)
-	}
-	return &GoogleDriveOptions{
-		Url:                  v.Url,
-		EntityType:           v.EntityType,
-		FileIngestionOptions: fileIngestionOptionsWireValue,
-	}, nil
-}
-
-func GoogleDriveOptionsToSDK(w *GoogleDriveOptions) (*sdk.GoogleDriveOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileIngestionOptionsPublicValue, err := FileIngestionOptionsToSDK(w.FileIngestionOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GoogleDriveOptions.FileIngestionOptions", err)
-	}
-	return &sdk.GoogleDriveOptions{
-		Url:                  w.Url,
-		EntityType:           w.EntityType,
-		FileIngestionOptions: fileIngestionOptionsPublicValue,
-	}, nil
 }
 
 type IngestionGatewayPipelineDefinition struct {
@@ -2015,42 +829,6 @@ type IngestionGatewayPipelineDefinition struct {
 	// Optional, Internal. Parameters required to establish an initial connection
 	// with the source.
 	ConnectionParameters *ConnectionParameters `json:"connection_parameters,omitempty"`
-}
-
-func IngestionGatewayPipelineDefinitionFromSDK(v *sdk.IngestionGatewayPipelineDefinition) (*IngestionGatewayPipelineDefinition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	connectionParametersWireValue, err := ConnectionParametersFromSDK(v.ConnectionParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionGatewayPipelineDefinition.ConnectionParameters", err)
-	}
-	return &IngestionGatewayPipelineDefinition{
-		ConnectionName:        v.ConnectionName,
-		ConnectionId:          v.ConnectionId,
-		GatewayStorageCatalog: v.GatewayStorageCatalog,
-		GatewayStorageSchema:  v.GatewayStorageSchema,
-		GatewayStorageName:    v.GatewayStorageName,
-		ConnectionParameters:  connectionParametersWireValue,
-	}, nil
-}
-
-func IngestionGatewayPipelineDefinitionToSDK(w *IngestionGatewayPipelineDefinition) (*sdk.IngestionGatewayPipelineDefinition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	connectionParametersPublicValue, err := ConnectionParametersToSDK(w.ConnectionParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionGatewayPipelineDefinition.ConnectionParameters", err)
-	}
-	return &sdk.IngestionGatewayPipelineDefinition{
-		ConnectionName:        w.ConnectionName,
-		ConnectionId:          w.ConnectionId,
-		GatewayStorageCatalog: w.GatewayStorageCatalog,
-		GatewayStorageSchema:  w.GatewayStorageSchema,
-		GatewayStorageName:    w.GatewayStorageName,
-		ConnectionParameters:  connectionParametersPublicValue,
-	}, nil
 }
 
 type IngestionPipelineDefinition struct {
@@ -2086,124 +864,6 @@ type IngestionPipelineDefinition struct {
 	DataStagingOptions *DataStagingOptions `json:"data_staging_options,omitempty"`
 }
 
-func IngestionPipelineDefinitionFromSDK(v *sdk.IngestionPipelineDefinition) (*IngestionPipelineDefinition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	objectsWireValue, err := convertSlice(v.Objects, IngestionPipelineDefinition_IngestionConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.Objects", err)
-	}
-	tableConfigurationWireValue, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.TableConfiguration", err)
-	}
-	sourceConfigurationsWireValue, err := convertSlice(v.SourceConfigurations, SourceConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.SourceConfigurations", err)
-	}
-	fullRefreshWindowWireValue, err := OperationTimeWindowFromSDK(v.FullRefreshWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.FullRefreshWindow", err)
-	}
-	dataStagingOptionsWireValue, err := DataStagingOptionsFromSDK(v.DataStagingOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.DataStagingOptions", err)
-	}
-	var sourceConnectionNameWire *string
-	var sourceIngestionGatewayIdWire *string
-	var sourceIngestFromUcForeignCatalogWire *bool
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.IngestionPipelineDefinition_Source_ConnectionName:
-		if value != nil {
-			sourceConnectionNameWire = new(value.ConnectionName)
-		}
-	case *sdk.IngestionPipelineDefinition_Source_IngestionGatewayId:
-		if value != nil {
-			sourceIngestionGatewayIdWire = new(value.IngestionGatewayId)
-		}
-	case *sdk.IngestionPipelineDefinition_Source_IngestFromUcForeignCatalog:
-		if value != nil {
-			sourceIngestFromUcForeignCatalogWire = new(value.IngestFromUcForeignCatalog)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngestionPipelineDefinition.Source", value)
-	}
-	return &IngestionPipelineDefinition{
-		ConnectionName:             sourceConnectionNameWire,
-		IngestionGatewayId:         sourceIngestionGatewayIdWire,
-		IngestFromUcForeignCatalog: sourceIngestFromUcForeignCatalogWire,
-		Objects:                    objectsWireValue,
-		SourceType:                 v.SourceType,
-		TableConfiguration:         tableConfigurationWireValue,
-		NetsuiteJarPath:            v.NetsuiteJarPath,
-		SourceConfigurations:       sourceConfigurationsWireValue,
-		FullRefreshWindow:          fullRefreshWindowWireValue,
-		ConnectorType:              v.ConnectorType,
-		DataStagingOptions:         dataStagingOptionsWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinitionToSDK(w *IngestionPipelineDefinition) (*sdk.IngestionPipelineDefinition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.ConnectionName != nil {
-		sourceMembers++
-	}
-	if w.IngestionGatewayId != nil {
-		sourceMembers++
-	}
-	if w.IngestFromUcForeignCatalog != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition.Source")
-	}
-	objectsPublicValue, err := convertSlice(w.Objects, IngestionPipelineDefinition_IngestionConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.Objects", err)
-	}
-	tableConfigurationPublicValue, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.TableConfiguration", err)
-	}
-	sourceConfigurationsPublicValue, err := convertSlice(w.SourceConfigurations, SourceConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.SourceConfigurations", err)
-	}
-	fullRefreshWindowPublicValue, err := OperationTimeWindowToSDK(w.FullRefreshWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.FullRefreshWindow", err)
-	}
-	dataStagingOptionsPublicValue, err := DataStagingOptionsToSDK(w.DataStagingOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.DataStagingOptions", err)
-	}
-	sourceSelection := (&sdk.IngestionPipelineDefinition{}).Source
-	switch {
-	case w.ConnectionName != nil:
-		sourceSelection = &sdk.IngestionPipelineDefinition_Source_ConnectionName{ConnectionName: *w.ConnectionName}
-	case w.IngestionGatewayId != nil:
-		sourceSelection = &sdk.IngestionPipelineDefinition_Source_IngestionGatewayId{IngestionGatewayId: *w.IngestionGatewayId}
-	case w.IngestFromUcForeignCatalog != nil:
-		sourceSelection = &sdk.IngestionPipelineDefinition_Source_IngestFromUcForeignCatalog{IngestFromUcForeignCatalog: *w.IngestFromUcForeignCatalog}
-	}
-	return &sdk.IngestionPipelineDefinition{
-		Objects:              objectsPublicValue,
-		SourceType:           w.SourceType,
-		TableConfiguration:   tableConfigurationPublicValue,
-		NetsuiteJarPath:      w.NetsuiteJarPath,
-		SourceConfigurations: sourceConfigurationsPublicValue,
-		FullRefreshWindow:    fullRefreshWindowPublicValue,
-		ConnectorType:        w.ConnectorType,
-		DataStagingOptions:   dataStagingOptionsPublicValue,
-		Source:               sourceSelection,
-	}, nil
-}
-
 // Fanout configuration for multi-table routing from streaming sources. Routes
 // each input record to a destination table based on a routing key derived from
 // the record. The key value becomes the table name suffix:
@@ -2218,124 +878,10 @@ type IngestionPipelineDefinition_FanoutOptions struct {
 	Transforms []Transformer `json:"transforms,omitempty"`
 }
 
-func IngestionPipelineDefinition_FanoutOptionsFromSDK(v *sdk.IngestionPipelineDefinition_FanoutOptions) (*IngestionPipelineDefinition_FanoutOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	transformsWireValue, err := convertSlice(v.Transforms, TransformerFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_FanoutOptions.Transforms", err)
-	}
-	return &IngestionPipelineDefinition_FanoutOptions{
-		FanoutBy:   v.FanoutBy,
-		Transforms: transformsWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinition_FanoutOptionsToSDK(w *IngestionPipelineDefinition_FanoutOptions) (*sdk.IngestionPipelineDefinition_FanoutOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	transformsPublicValue, err := convertSlice(w.Transforms, TransformerToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_FanoutOptions.Transforms", err)
-	}
-	return &sdk.IngestionPipelineDefinition_FanoutOptions{
-		FanoutBy:   w.FanoutBy,
-		Transforms: transformsPublicValue,
-	}, nil
-}
-
 type IngestionPipelineDefinition_IngestionConfig struct {
 	Schema *IngestionPipelineDefinition_SchemaSpec `json:"schema,omitempty"`
 	Table  *IngestionPipelineDefinition_TableSpec  `json:"table,omitempty"`
 	Report *IngestionPipelineDefinition_ReportSpec `json:"report,omitempty"`
-}
-
-func IngestionPipelineDefinition_IngestionConfigFromSDK(v *sdk.IngestionPipelineDefinition_IngestionConfig) (*IngestionPipelineDefinition_IngestionConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceTablesSchemaWire *IngestionPipelineDefinition_SchemaSpec
-	var sourceTablesTableWire *IngestionPipelineDefinition_TableSpec
-	var sourceTablesReportWire *IngestionPipelineDefinition_ReportSpec
-	switch value := v.SourceTables.(type) {
-	case nil:
-	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Schema:
-		if value != nil {
-			sourceTablesSchemaConverted, err := IngestionPipelineDefinition_SchemaSpecFromSDK(&value.Schema)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Schema", err)
-			}
-			sourceTablesSchemaWire = sourceTablesSchemaConverted
-		}
-	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Table:
-		if value != nil {
-			sourceTablesTableConverted, err := IngestionPipelineDefinition_TableSpecFromSDK(&value.Table)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Table", err)
-			}
-			sourceTablesTableWire = sourceTablesTableConverted
-		}
-	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Report:
-		if value != nil {
-			sourceTablesReportConverted, err := IngestionPipelineDefinition_ReportSpecFromSDK(&value.Report)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Report", err)
-			}
-			sourceTablesReportWire = sourceTablesReportConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngestionPipelineDefinition_IngestionConfig.SourceTables", value)
-	}
-	return &IngestionPipelineDefinition_IngestionConfig{
-		Schema: sourceTablesSchemaWire,
-		Table:  sourceTablesTableWire,
-		Report: sourceTablesReportWire,
-	}, nil
-}
-
-func IngestionPipelineDefinition_IngestionConfigToSDK(w *IngestionPipelineDefinition_IngestionConfig) (*sdk.IngestionPipelineDefinition_IngestionConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceTablesMembers := 0
-	if w.Schema != nil {
-		sourceTablesMembers++
-	}
-	if w.Table != nil {
-		sourceTablesMembers++
-	}
-	if w.Report != nil {
-		sourceTablesMembers++
-	}
-	if sourceTablesMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition_IngestionConfig.SourceTables")
-	}
-	sourceTablesSelection := (&sdk.IngestionPipelineDefinition_IngestionConfig{}).SourceTables
-	switch {
-	case w.Schema != nil:
-		sourceTablesSchemaConverted, err := IngestionPipelineDefinition_SchemaSpecToSDK(w.Schema)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Schema", err)
-		}
-		sourceTablesSelection = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Schema{Schema: *sourceTablesSchemaConverted}
-	case w.Table != nil:
-		sourceTablesTableConverted, err := IngestionPipelineDefinition_TableSpecToSDK(w.Table)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Table", err)
-		}
-		sourceTablesSelection = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Table{Table: *sourceTablesTableConverted}
-	case w.Report != nil:
-		sourceTablesReportConverted, err := IngestionPipelineDefinition_ReportSpecToSDK(w.Report)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables.Report", err)
-		}
-		sourceTablesSelection = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Report{Report: *sourceTablesReportConverted}
-	}
-	return &sdk.IngestionPipelineDefinition_IngestionConfig{
-		SourceTables: sourceTablesSelection,
-	}, nil
 }
 
 type IngestionPipelineDefinition_ReportSpec struct {
@@ -2352,40 +898,6 @@ type IngestionPipelineDefinition_ReportSpec struct {
 	// override the table_configuration defined in the IngestionPipelineDefinition
 	// object.
 	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
-}
-
-func IngestionPipelineDefinition_ReportSpecFromSDK(v *sdk.IngestionPipelineDefinition_ReportSpec) (*IngestionPipelineDefinition_ReportSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableConfigurationWireValue, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_ReportSpec.TableConfiguration", err)
-	}
-	return &IngestionPipelineDefinition_ReportSpec{
-		SourceUrl:          v.SourceUrl,
-		DestinationCatalog: v.DestinationCatalog,
-		DestinationSchema:  v.DestinationSchema,
-		DestinationTable:   v.DestinationTable,
-		TableConfiguration: tableConfigurationWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinition_ReportSpecToSDK(w *IngestionPipelineDefinition_ReportSpec) (*sdk.IngestionPipelineDefinition_ReportSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tableConfigurationPublicValue, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_ReportSpec.TableConfiguration", err)
-	}
-	return &sdk.IngestionPipelineDefinition_ReportSpec{
-		SourceUrl:          w.SourceUrl,
-		DestinationCatalog: w.DestinationCatalog,
-		DestinationSchema:  w.DestinationSchema,
-		DestinationTable:   w.DestinationTable,
-		TableConfiguration: tableConfigurationPublicValue,
-	}, nil
 }
 
 type IngestionPipelineDefinition_SchemaSpec struct {
@@ -2415,60 +927,6 @@ type IngestionPipelineDefinition_SchemaSpec struct {
 	FanoutOptions *IngestionPipelineDefinition_FanoutOptions `json:"fanout_options,omitempty"`
 }
 
-func IngestionPipelineDefinition_SchemaSpecFromSDK(v *sdk.IngestionPipelineDefinition_SchemaSpec) (*IngestionPipelineDefinition_SchemaSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableConfigurationWireValue, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.TableConfiguration", err)
-	}
-	connectorOptionsWireValue, err := ConnectorOptionsFromSDK(v.ConnectorOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.ConnectorOptions", err)
-	}
-	fanoutOptionsWireValue, err := IngestionPipelineDefinition_FanoutOptionsFromSDK(v.FanoutOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.FanoutOptions", err)
-	}
-	return &IngestionPipelineDefinition_SchemaSpec{
-		SourceCatalog:      v.SourceCatalog,
-		SourceSchema:       v.SourceSchema,
-		DestinationCatalog: v.DestinationCatalog,
-		DestinationSchema:  v.DestinationSchema,
-		TableConfiguration: tableConfigurationWireValue,
-		ConnectorOptions:   connectorOptionsWireValue,
-		FanoutOptions:      fanoutOptionsWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinition_SchemaSpecToSDK(w *IngestionPipelineDefinition_SchemaSpec) (*sdk.IngestionPipelineDefinition_SchemaSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tableConfigurationPublicValue, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.TableConfiguration", err)
-	}
-	connectorOptionsPublicValue, err := ConnectorOptionsToSDK(w.ConnectorOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.ConnectorOptions", err)
-	}
-	fanoutOptionsPublicValue, err := IngestionPipelineDefinition_FanoutOptionsToSDK(w.FanoutOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.FanoutOptions", err)
-	}
-	return &sdk.IngestionPipelineDefinition_SchemaSpec{
-		SourceCatalog:      w.SourceCatalog,
-		SourceSchema:       w.SourceSchema,
-		DestinationCatalog: w.DestinationCatalog,
-		DestinationSchema:  w.DestinationSchema,
-		TableConfiguration: tableConfigurationPublicValue,
-		ConnectorOptions:   connectorOptionsPublicValue,
-		FanoutOptions:      fanoutOptionsPublicValue,
-	}, nil
-}
-
 type IngestionPipelineDefinition_TableSpec struct {
 	// Source catalog name. Might be optional depending on the type of source.
 	SourceCatalog *string `json:"source_catalog,omitempty"`
@@ -2493,54 +951,6 @@ type IngestionPipelineDefinition_TableSpec struct {
 	TableConfiguration *IngestionPipelineDefinition_TableSpecificConfig `json:"table_configuration,omitempty"`
 	// (Optional) Source Specific Connector Options
 	ConnectorOptions *ConnectorOptions `json:"connector_options,omitempty"`
-}
-
-func IngestionPipelineDefinition_TableSpecFromSDK(v *sdk.IngestionPipelineDefinition_TableSpec) (*IngestionPipelineDefinition_TableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableConfigurationWireValue, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.TableConfiguration", err)
-	}
-	connectorOptionsWireValue, err := ConnectorOptionsFromSDK(v.ConnectorOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.ConnectorOptions", err)
-	}
-	return &IngestionPipelineDefinition_TableSpec{
-		SourceCatalog:      v.SourceCatalog,
-		SourceSchema:       v.SourceSchema,
-		SourceTable:        v.SourceTable,
-		DestinationCatalog: v.DestinationCatalog,
-		DestinationSchema:  v.DestinationSchema,
-		DestinationTable:   v.DestinationTable,
-		TableConfiguration: tableConfigurationWireValue,
-		ConnectorOptions:   connectorOptionsWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinition_TableSpecToSDK(w *IngestionPipelineDefinition_TableSpec) (*sdk.IngestionPipelineDefinition_TableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tableConfigurationPublicValue, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.TableConfiguration", err)
-	}
-	connectorOptionsPublicValue, err := ConnectorOptionsToSDK(w.ConnectorOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.ConnectorOptions", err)
-	}
-	return &sdk.IngestionPipelineDefinition_TableSpec{
-		SourceCatalog:      w.SourceCatalog,
-		SourceSchema:       w.SourceSchema,
-		SourceTable:        w.SourceTable,
-		DestinationCatalog: w.DestinationCatalog,
-		DestinationSchema:  w.DestinationSchema,
-		DestinationTable:   w.DestinationTable,
-		TableConfiguration: tableConfigurationPublicValue,
-		ConnectorOptions:   connectorOptionsPublicValue,
-	}, nil
 }
 
 type IngestionPipelineDefinition_TableSpecificConfig struct {
@@ -2605,74 +1015,6 @@ type IngestionPipelineDefinition_TableSpecificConfig struct {
 	SourceMetadataColumn *string `json:"source_metadata_column,omitempty"`
 }
 
-func IngestionPipelineDefinition_TableSpecificConfigFromSDK(v *sdk.IngestionPipelineDefinition_TableSpecificConfig) (*IngestionPipelineDefinition_TableSpecificConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workdayReportParametersWireValue, err := IngestionPipelineDefinition_WorkdayReportParametersFromSDK(v.WorkdayReportParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.WorkdayReportParameters", err)
-	}
-	queryBasedConnectorConfigWireValue, err := IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigFromSDK(v.QueryBasedConnectorConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.QueryBasedConnectorConfig", err)
-	}
-	autoFullRefreshPolicyWireValue, err := AutoFullRefreshPolicyFromSDK(v.AutoFullRefreshPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.AutoFullRefreshPolicy", err)
-	}
-	return &IngestionPipelineDefinition_TableSpecificConfig{
-		ScdType:                        v.ScdType,
-		PrimaryKeys:                    v.PrimaryKeys,
-		SequenceBy:                     v.SequenceBy,
-		IncludeColumns:                 v.IncludeColumns,
-		ExcludeColumns:                 v.ExcludeColumns,
-		SalesforceIncludeFormulaFields: v.SalesforceIncludeFormulaFields,
-		WorkdayReportParameters:        workdayReportParametersWireValue,
-		RowFilter:                      v.RowFilter,
-		QueryBasedConnectorConfig:      queryBasedConnectorConfigWireValue,
-		AutoFullRefreshPolicy:          autoFullRefreshPolicyWireValue,
-		TableProperties:                v.TableProperties,
-		EnableAutoClustering:           v.EnableAutoClustering,
-		ClusteringColumns:              v.ClusteringColumns,
-		SourceMetadataColumn:           v.SourceMetadataColumn,
-	}, nil
-}
-
-func IngestionPipelineDefinition_TableSpecificConfigToSDK(w *IngestionPipelineDefinition_TableSpecificConfig) (*sdk.IngestionPipelineDefinition_TableSpecificConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workdayReportParametersPublicValue, err := IngestionPipelineDefinition_WorkdayReportParametersToSDK(w.WorkdayReportParameters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.WorkdayReportParameters", err)
-	}
-	queryBasedConnectorConfigPublicValue, err := IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigToSDK(w.QueryBasedConnectorConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.QueryBasedConnectorConfig", err)
-	}
-	autoFullRefreshPolicyPublicValue, err := AutoFullRefreshPolicyToSDK(w.AutoFullRefreshPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.AutoFullRefreshPolicy", err)
-	}
-	return &sdk.IngestionPipelineDefinition_TableSpecificConfig{
-		ScdType:                        w.ScdType,
-		PrimaryKeys:                    w.PrimaryKeys,
-		SequenceBy:                     w.SequenceBy,
-		IncludeColumns:                 w.IncludeColumns,
-		ExcludeColumns:                 w.ExcludeColumns,
-		SalesforceIncludeFormulaFields: w.SalesforceIncludeFormulaFields,
-		WorkdayReportParameters:        workdayReportParametersPublicValue,
-		RowFilter:                      w.RowFilter,
-		QueryBasedConnectorConfig:      queryBasedConnectorConfigPublicValue,
-		AutoFullRefreshPolicy:          autoFullRefreshPolicyPublicValue,
-		TableProperties:                w.TableProperties,
-		EnableAutoClustering:           w.EnableAutoClustering,
-		ClusteringColumns:              w.ClusteringColumns,
-		SourceMetadataColumn:           w.SourceMetadataColumn,
-	}, nil
-}
-
 // Configurations that are only applicable for query-based ingestion connectors..
 type IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig struct {
 	// The names of the monotonically increasing columns in the source table that
@@ -2702,36 +1044,6 @@ type IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig s
 	HardDeletionSyncMinIntervalInSeconds *int64 `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
-func IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigFromSDK(v *sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig) (*IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	hardDeletionSyncMinIntervalInSecondsWireValue, err := int64ToWire(v.HardDeletionSyncMinIntervalInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig.HardDeletionSyncMinIntervalInSeconds", err)
-	}
-	return &IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig{
-		CursorColumns:                        v.CursorColumns,
-		DeletionCondition:                    v.DeletionCondition,
-		HardDeletionSyncMinIntervalInSeconds: hardDeletionSyncMinIntervalInSecondsWireValue,
-	}, nil
-}
-
-func IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigToSDK(w *IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig) (*sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	hardDeletionSyncMinIntervalInSecondsPublicValue, err := int64FromWire(w.HardDeletionSyncMinIntervalInSeconds)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig.HardDeletionSyncMinIntervalInSeconds", err)
-	}
-	return &sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig{
-		CursorColumns:                        w.CursorColumns,
-		DeletionCondition:                    w.DeletionCondition,
-		HardDeletionSyncMinIntervalInSeconds: hardDeletionSyncMinIntervalInSecondsPublicValue,
-	}, nil
-}
-
 type IngestionPipelineDefinition_WorkdayReportParameters struct {
 	// (Optional) Marks the report as incremental. This field is deprecated and
 	// should not be used. Use `parameters` instead. The incremental behavior is now
@@ -2748,36 +1060,6 @@ type IngestionPipelineDefinition_WorkdayReportParameters struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
 }
 
-func IngestionPipelineDefinition_WorkdayReportParametersFromSDK(v *sdk.IngestionPipelineDefinition_WorkdayReportParameters) (*IngestionPipelineDefinition_WorkdayReportParameters, error) {
-	if v == nil {
-		return nil, nil
-	}
-	reportParametersWireValue, err := convertSlice(v.ReportParameters, IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_WorkdayReportParameters.ReportParameters", err)
-	}
-	return &IngestionPipelineDefinition_WorkdayReportParameters{
-		Incremental:      v.Incremental,
-		ReportParameters: reportParametersWireValue,
-		Parameters:       v.Parameters,
-	}, nil
-}
-
-func IngestionPipelineDefinition_WorkdayReportParametersToSDK(w *IngestionPipelineDefinition_WorkdayReportParameters) (*sdk.IngestionPipelineDefinition_WorkdayReportParameters, error) {
-	if w == nil {
-		return nil, nil
-	}
-	reportParametersPublicValue, err := convertSlice(w.ReportParameters, IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_WorkdayReportParameters.ReportParameters", err)
-	}
-	return &sdk.IngestionPipelineDefinition_WorkdayReportParameters{
-		Incremental:      w.Incremental,
-		ReportParameters: reportParametersPublicValue,
-		Parameters:       w.Parameters,
-	}, nil
-}
-
 type IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue struct {
 	// Key for the report parameter, can be a column name or other metadata
 	Key *string `json:"key,omitempty"`
@@ -2789,48 +1071,10 @@ type IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueFromSDK(v *sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue) (*IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueToSDK(w *IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue) (*sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
-}
-
 // Jira specific options for ingestion.
 type JiraConnectorOptions struct {
 	// (Optional) Projects to filter Jira data on
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
-}
-
-func JiraConnectorOptionsFromSDK(v *sdk.JiraConnectorOptions) (*JiraConnectorOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JiraConnectorOptions{
-		IncludeJiraSpaces: v.IncludeJiraSpaces,
-	}, nil
-}
-
-func JiraConnectorOptionsToSDK(w *JiraConnectorOptions) (*sdk.JiraConnectorOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JiraConnectorOptions{
-		IncludeJiraSpaces: w.IncludeJiraSpaces,
-	}, nil
 }
 
 type JsonTransformerOptions struct {
@@ -2845,32 +1089,6 @@ type JsonTransformerOptions struct {
 	// (Optional) Schema hints as a comma-separated string of "column_name type"
 	// pairs.
 	SchemaHints *string `json:"schema_hints,omitempty"`
-}
-
-func JsonTransformerOptionsFromSDK(v *sdk.JsonTransformerOptions) (*JsonTransformerOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JsonTransformerOptions{
-		AsVariant:           v.AsVariant,
-		Schema:              v.Schema,
-		SchemaFilePath:      v.SchemaFilePath,
-		SchemaEvolutionMode: v.SchemaEvolutionMode,
-		SchemaHints:         v.SchemaHints,
-	}, nil
-}
-
-func JsonTransformerOptionsToSDK(w *JsonTransformerOptions) (*sdk.JsonTransformerOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JsonTransformerOptions{
-		AsVariant:           w.AsVariant,
-		Schema:              w.Schema,
-		SchemaFilePath:      w.SchemaFilePath,
-		SchemaEvolutionMode: w.SchemaEvolutionMode,
-		SchemaHints:         w.SchemaHints,
-	}, nil
 }
 
 type KafkaOptions struct {
@@ -2897,60 +1115,6 @@ type KafkaOptions struct {
 	ClientConfig map[string]string `json:"client_config,omitempty"`
 }
 
-func KafkaOptionsFromSDK(v *sdk.KafkaOptions) (*KafkaOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	keyTransformerWireValue, err := TransformerFromSDK(v.KeyTransformer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.KeyTransformer", err)
-	}
-	valueTransformerWireValue, err := TransformerFromSDK(v.ValueTransformer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.ValueTransformer", err)
-	}
-	maxOffsetsPerTriggerWireValue, err := int64ToWire(v.MaxOffsetsPerTrigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.MaxOffsetsPerTrigger", err)
-	}
-	return &KafkaOptions{
-		Topics:               v.Topics,
-		TopicPattern:         v.TopicPattern,
-		KeyTransformer:       keyTransformerWireValue,
-		ValueTransformer:     valueTransformerWireValue,
-		StartingOffset:       v.StartingOffset,
-		MaxOffsetsPerTrigger: maxOffsetsPerTriggerWireValue,
-		ClientConfig:         v.ClientConfig,
-	}, nil
-}
-
-func KafkaOptionsToSDK(w *KafkaOptions) (*sdk.KafkaOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	keyTransformerPublicValue, err := TransformerToSDK(w.KeyTransformer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.KeyTransformer", err)
-	}
-	valueTransformerPublicValue, err := TransformerToSDK(w.ValueTransformer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.ValueTransformer", err)
-	}
-	maxOffsetsPerTriggerPublicValue, err := int64FromWire(w.MaxOffsetsPerTrigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "KafkaOptions.MaxOffsetsPerTrigger", err)
-	}
-	return &sdk.KafkaOptions{
-		Topics:               w.Topics,
-		TopicPattern:         w.TopicPattern,
-		KeyTransformer:       keyTransformerPublicValue,
-		ValueTransformer:     valueTransformerPublicValue,
-		StartingOffset:       w.StartingOffset,
-		MaxOffsetsPerTrigger: maxOffsetsPerTriggerPublicValue,
-		ClientConfig:         w.ClientConfig,
-	}, nil
-}
-
 // LinkedIn Ads specific options for ingestion. sync_start_date and
 // lookback_window_days apply to both the prebuilt analytics tables and custom
 // reports. custom_report_options defines a custom (user-defined) adAnalytics
@@ -2969,36 +1133,6 @@ type LinkedInAdsOptions struct {
 	// time granularity and metrics here. When unset, the table must match one of
 	// the connector's prebuilt sources.
 	CustomReportOptions *LinkedInAdsOptions_LinkedInAdsCustomReportOptions `json:"custom_report_options,omitempty"`
-}
-
-func LinkedInAdsOptionsFromSDK(v *sdk.LinkedInAdsOptions) (*LinkedInAdsOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customReportOptionsWireValue, err := LinkedInAdsOptions_LinkedInAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LinkedInAdsOptions.CustomReportOptions", err)
-	}
-	return &LinkedInAdsOptions{
-		SyncStartDate:       v.SyncStartDate,
-		LookbackWindowDays:  v.LookbackWindowDays,
-		CustomReportOptions: customReportOptionsWireValue,
-	}, nil
-}
-
-func LinkedInAdsOptionsToSDK(w *LinkedInAdsOptions) (*sdk.LinkedInAdsOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customReportOptionsPublicValue, err := LinkedInAdsOptions_LinkedInAdsCustomReportOptionsToSDK(w.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LinkedInAdsOptions.CustomReportOptions", err)
-	}
-	return &sdk.LinkedInAdsOptions{
-		SyncStartDate:       w.SyncStartDate,
-		LookbackWindowDays:  w.LookbackWindowDays,
-		CustomReportOptions: customReportOptionsPublicValue,
-	}, nil
 }
 
 // User-defined custom report for the LinkedIn Ads connector. The destination
@@ -3021,30 +1155,6 @@ type LinkedInAdsOptions_LinkedInAdsCustomReportOptions struct {
 	// Ignored for attributedRevenueMetrics (always returns the full
 	// RevenueAttributionMetrics struct).
 	Metrics []string `json:"metrics,omitempty"`
-}
-
-func LinkedInAdsOptions_LinkedInAdsCustomReportOptionsFromSDK(v *sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions) (*LinkedInAdsOptions_LinkedInAdsCustomReportOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LinkedInAdsOptions_LinkedInAdsCustomReportOptions{
-		Finder:            v.Finder,
-		EntityGranularity: v.EntityGranularity,
-		TimeGranularity:   v.TimeGranularity,
-		Metrics:           v.Metrics,
-	}, nil
-}
-
-func LinkedInAdsOptions_LinkedInAdsCustomReportOptionsToSDK(w *LinkedInAdsOptions_LinkedInAdsCustomReportOptions) (*sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions{
-		Finder:            w.Finder,
-		EntityGranularity: w.EntityGranularity,
-		TimeGranularity:   w.TimeGranularity,
-		Metrics:           w.Metrics,
-	}, nil
 }
 
 // The request/response messages for the ListPipelines API. The default behavior
@@ -3074,19 +1184,6 @@ type ListPipelineEventsRequest struct {
 	Filter *string `json:"filter,omitempty"`
 }
 
-func ListPipelineEventsRequestFromSDK(v *sdk.ListPipelineEventsRequest) (*ListPipelineEventsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPipelineEventsRequest{
-		PipelineId: v.PipelineId,
-		PageToken:  v.PageToken,
-		MaxResults: v.MaxResults,
-		OrderBy:    v.OrderBy,
-		Filter:     v.Filter,
-	}, nil
-}
-
 type ListPipelineEventsResponse struct {
 	// The list of events matching the request criteria.
 	Events []PipelineEvent `json:"events,omitempty"`
@@ -3094,21 +1191,6 @@ type ListPipelineEventsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// If present, a token to fetch the previous page of events.
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
-}
-
-func ListPipelineEventsResponseToSDK(w *ListPipelineEventsResponse) (*sdk.ListPipelineEventsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	eventsPublicValue, err := convertSlice(w.Events, PipelineEventToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPipelineEventsResponse.Events", err)
-	}
-	return &sdk.ListPipelineEventsResponse{
-		Events:        eventsPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
 }
 
 // The request/response messages for the ListPipelines API. The default behavior
@@ -3137,37 +1219,11 @@ type ListPipelinesRequest struct {
 	Filter *string `json:"filter,omitempty"`
 }
 
-func ListPipelinesRequestFromSDK(v *sdk.ListPipelinesRequest) (*ListPipelinesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPipelinesRequest{
-		PageToken:  v.PageToken,
-		MaxResults: v.MaxResults,
-		OrderBy:    v.OrderBy,
-		Filter:     v.Filter,
-	}, nil
-}
-
 type ListPipelinesResponse struct {
 	// The list of pipelines matching the request criteria.
 	Statuses []PipelineStateInfo `json:"statuses,omitempty"`
 	// If present, a token to fetch the next page of pipelines.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListPipelinesResponseToSDK(w *ListPipelinesResponse) (*sdk.ListPipelinesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusesPublicValue, err := convertSlice(w.Statuses, PipelineStateInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPipelinesResponse.Statuses", err)
-	}
-	return &sdk.ListPipelinesResponse{
-		Statuses:      statusesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // The request/response messages for the ListUpdates API. The default behavior
@@ -3184,18 +1240,6 @@ type ListUpdatesRequest struct {
 	UntilUpdateId *string `json:"until_update_id,omitempty"`
 }
 
-func ListUpdatesRequestFromSDK(v *sdk.ListUpdatesRequest) (*ListUpdatesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListUpdatesRequest{
-		PipelineId:    v.PipelineId,
-		PageToken:     v.PageToken,
-		MaxResults:    v.MaxResults,
-		UntilUpdateId: v.UntilUpdateId,
-	}, nil
-}
-
 type ListUpdatesResponse struct {
 	Updates []UpdateInfo `json:"updates,omitempty"`
 	// If present, then there are more results, and this a token to be used in a
@@ -3206,36 +1250,7 @@ type ListUpdatesResponse struct {
 	PrevPageToken *string `json:"prev_page_token,omitempty"`
 }
 
-func ListUpdatesResponseToSDK(w *ListUpdatesResponse) (*sdk.ListUpdatesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	updatesPublicValue, err := convertSlice(w.Updates, UpdateInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListUpdatesResponse.Updates", err)
-	}
-	return &sdk.ListUpdatesResponse{
-		Updates:       updatesPublicValue,
-		NextPageToken: w.NextPageToken,
-		PrevPageToken: w.PrevPageToken,
-	}, nil
-}
-
 type ManualTrigger struct {
-}
-
-func ManualTriggerFromSDK(v *sdk.ManualTrigger) (*ManualTrigger, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ManualTrigger{}, nil
-}
-
-func ManualTriggerToSDK(w *ManualTrigger) (*sdk.ManualTrigger, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ManualTrigger{}, nil
 }
 
 // Marketo specific options for ingestion.
@@ -3244,24 +1259,6 @@ type MarketoOptions struct {
 	// determines the earliest date from which to sync historical data. If not
 	// specified, complete history is ingested.
 	SyncStartDate *string `json:"sync_start_date,omitempty"`
-}
-
-func MarketoOptionsFromSDK(v *sdk.MarketoOptions) (*MarketoOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MarketoOptions{
-		SyncStartDate: v.SyncStartDate,
-	}, nil
-}
-
-func MarketoOptionsToSDK(w *MarketoOptions) (*sdk.MarketoOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MarketoOptions{
-		SyncStartDate: w.SyncStartDate,
-	}, nil
 }
 
 // Meta Marketing (Meta Ads) specific options for ingestion.
@@ -3300,48 +1297,6 @@ type MetaMarketingOptions struct {
 	CustomReportOptions *MetaMarketingOptions_MetaMarketingCustomReportOptions `json:"custom_report_options,omitempty"`
 }
 
-func MetaMarketingOptionsFromSDK(v *sdk.MetaMarketingOptions) (*MetaMarketingOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customReportOptionsWireValue, err := MetaMarketingOptions_MetaMarketingCustomReportOptionsFromSDK(v.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetaMarketingOptions.CustomReportOptions", err)
-	}
-	return &MetaMarketingOptions{
-		Level:                        v.Level,
-		Breakdowns:                   v.Breakdowns,
-		ActionBreakdowns:             v.ActionBreakdowns,
-		ActionReportTime:             v.ActionReportTime,
-		StartDate:                    v.StartDate,
-		CustomInsightsLookbackWindow: v.CustomInsightsLookbackWindow,
-		TimeIncrement:                v.TimeIncrement,
-		ActionAttributionWindows:     v.ActionAttributionWindows,
-		CustomReportOptions:          customReportOptionsWireValue,
-	}, nil
-}
-
-func MetaMarketingOptionsToSDK(w *MetaMarketingOptions) (*sdk.MetaMarketingOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customReportOptionsPublicValue, err := MetaMarketingOptions_MetaMarketingCustomReportOptionsToSDK(w.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MetaMarketingOptions.CustomReportOptions", err)
-	}
-	return &sdk.MetaMarketingOptions{
-		Level:                        w.Level,
-		Breakdowns:                   w.Breakdowns,
-		ActionBreakdowns:             w.ActionBreakdowns,
-		ActionReportTime:             w.ActionReportTime,
-		StartDate:                    w.StartDate,
-		CustomInsightsLookbackWindow: w.CustomInsightsLookbackWindow,
-		TimeIncrement:                w.TimeIncrement,
-		ActionAttributionWindows:     w.ActionAttributionWindows,
-		CustomReportOptions:          customReportOptionsPublicValue,
-	}, nil
-}
-
 // Defines the shape of a single Meta Ads custom report (one /insights call
 // shape). start_date, custom_insights_lookback_window live on
 // MetaMarketingOptions, not here. Metrics are not customer-selectable; the
@@ -3364,55 +1319,9 @@ type MetaMarketingOptions_MetaMarketingCustomReportOptions struct {
 	ActionAttributionWindows []string `json:"action_attribution_windows,omitempty"`
 }
 
-func MetaMarketingOptions_MetaMarketingCustomReportOptionsFromSDK(v *sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions) (*MetaMarketingOptions_MetaMarketingCustomReportOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MetaMarketingOptions_MetaMarketingCustomReportOptions{
-		Level:                    v.Level,
-		Breakdowns:               v.Breakdowns,
-		ActionBreakdowns:         v.ActionBreakdowns,
-		ActionReportTime:         v.ActionReportTime,
-		TimeIncrement:            v.TimeIncrement,
-		ActionAttributionWindows: v.ActionAttributionWindows,
-	}, nil
-}
-
-func MetaMarketingOptions_MetaMarketingCustomReportOptionsToSDK(w *MetaMarketingOptions_MetaMarketingCustomReportOptions) (*sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions{
-		Level:                    w.Level,
-		Breakdowns:               w.Breakdowns,
-		ActionBreakdowns:         w.ActionBreakdowns,
-		ActionReportTime:         w.ActionReportTime,
-		TimeIncrement:            w.TimeIncrement,
-		ActionAttributionWindows: w.ActionAttributionWindows,
-	}, nil
-}
-
 type NotebookLibrary struct {
 	// The absolute path of the source code.
 	Path *string `json:"path,omitempty"`
-}
-
-func NotebookLibraryFromSDK(v *sdk.NotebookLibrary) (*NotebookLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotebookLibrary{
-		Path: v.Path,
-	}, nil
-}
-
-func NotebookLibraryToSDK(w *NotebookLibrary) (*sdk.NotebookLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotebookLibrary{
-		Path: w.Path,
-	}, nil
 }
 
 type Notifications struct {
@@ -3428,26 +1337,6 @@ type Notifications struct {
 	Alerts []string `json:"alerts,omitempty"`
 }
 
-func NotificationsFromSDK(v *sdk.Notifications) (*Notifications, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Notifications{
-		EmailRecipients: v.EmailRecipients,
-		Alerts:          v.Alerts,
-	}, nil
-}
-
-func NotificationsToSDK(w *Notifications) (*sdk.Notifications, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Notifications{
-		EmailRecipients: w.EmailRecipients,
-		Alerts:          w.Alerts,
-	}, nil
-}
-
 // Proto representing a window.
 type OperationTimeWindow struct {
 	// An integer between 0 and 23 denoting the start hour for the window in the
@@ -3460,28 +1349,6 @@ type OperationTimeWindow struct {
 	// https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html
 	// for details. If not specified, UTC will be used.
 	TimeZoneId *string `json:"time_zone_id,omitempty"`
-}
-
-func OperationTimeWindowFromSDK(v *sdk.OperationTimeWindow) (*OperationTimeWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OperationTimeWindow{
-		StartHour:  v.StartHour,
-		DaysOfWeek: v.DaysOfWeek,
-		TimeZoneId: v.TimeZoneId,
-	}, nil
-}
-
-func OperationTimeWindowToSDK(w *OperationTimeWindow) (*sdk.OperationTimeWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OperationTimeWindow{
-		StartHour:  w.StartHour,
-		DaysOfWeek: w.DaysOfWeek,
-		TimeZoneId: w.TimeZoneId,
-	}, nil
 }
 
 type Origin struct {
@@ -3537,44 +1404,6 @@ type Origin struct {
 	IngestionSourceTableVersion *string `json:"ingestion_source_table_version,omitempty"`
 }
 
-func OriginToSDK(w *Origin) (*sdk.Origin, error) {
-	if w == nil {
-		return nil, nil
-	}
-	orgIdPublicValue, err := int64FromWire(w.OrgId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Origin.OrgId", err)
-	}
-	batchIdPublicValue, err := int64FromWire(w.BatchId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Origin.BatchId", err)
-	}
-	return &sdk.Origin{
-		Cloud:                         w.Cloud,
-		Region:                        w.Region,
-		OrgId:                         orgIdPublicValue,
-		PipelineId:                    w.PipelineId,
-		PipelineName:                  w.PipelineName,
-		ClusterId:                     w.ClusterId,
-		UpdateId:                      w.UpdateId,
-		MaintenanceId:                 w.MaintenanceId,
-		TableId:                       w.TableId,
-		DatasetName:                   w.DatasetName,
-		FlowId:                        w.FlowId,
-		FlowName:                      w.FlowName,
-		BatchId:                       batchIdPublicValue,
-		RequestId:                     w.RequestId,
-		UcResourceId:                  w.UcResourceId,
-		Host:                          w.Host,
-		MaterializationName:           w.MaterializationName,
-		IngestionSourceConnectionName: w.IngestionSourceConnectionName,
-		IngestionSourceCatalogName:    w.IngestionSourceCatalogName,
-		IngestionSourceSchemaName:     w.IngestionSourceSchemaName,
-		IngestionSourceTableName:      w.IngestionSourceTableName,
-		IngestionSourceTableVersion:   w.IngestionSourceTableVersion,
-	}, nil
-}
-
 // Outlook specific options for ingestion.
 type OutlookOptions struct {
 	// Deprecated. Use include_folders instead.
@@ -3615,63 +1444,9 @@ type OutlookOptions struct {
 	IncludeSubjects []string `json:"include_subjects,omitempty"`
 }
 
-func OutlookOptionsFromSDK(v *sdk.OutlookOptions) (*OutlookOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &OutlookOptions{
-		FolderFilter:     v.FolderFilter,
-		SenderFilter:     v.SenderFilter,
-		SubjectFilter:    v.SubjectFilter,
-		StartDate:        v.StartDate,
-		BodyFormat:       v.BodyFormat,
-		AttachmentMode:   v.AttachmentMode,
-		IncludeMailboxes: v.IncludeMailboxes,
-		IncludeFolders:   v.IncludeFolders,
-		IncludeSenders:   v.IncludeSenders,
-		IncludeSubjects:  v.IncludeSubjects,
-	}, nil
-}
-
-func OutlookOptionsToSDK(w *OutlookOptions) (*sdk.OutlookOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.OutlookOptions{
-		FolderFilter:     w.FolderFilter,
-		SenderFilter:     w.SenderFilter,
-		SubjectFilter:    w.SubjectFilter,
-		StartDate:        w.StartDate,
-		BodyFormat:       w.BodyFormat,
-		AttachmentMode:   w.AttachmentMode,
-		IncludeMailboxes: w.IncludeMailboxes,
-		IncludeFolders:   w.IncludeFolders,
-		IncludeSenders:   w.IncludeSenders,
-		IncludeSubjects:  w.IncludeSubjects,
-	}, nil
-}
-
 type PathPattern struct {
 	// The source code to include for pipelines
 	Include *string `json:"include,omitempty"`
-}
-
-func PathPatternFromSDK(v *sdk.PathPattern) (*PathPattern, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PathPattern{
-		Include: v.Include,
-	}, nil
-}
-
-func PathPatternToSDK(w *PathPattern) (*sdk.PathPattern, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PathPattern{
-		Include: w.Include,
-	}, nil
 }
 
 type PipelineCluster struct {
@@ -3756,139 +1531,6 @@ type PipelineCluster struct {
 	Autoscale            *PipelinesAutoScale `json:"autoscale,omitempty"`
 }
 
-func PipelineClusterFromSDK(v *sdk.PipelineCluster) (*PipelineCluster, error) {
-	if v == nil {
-		return nil, nil
-	}
-	awsAttributesWireValue, err := PipelinesAwsAttributesFromSDK(v.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AwsAttributes", err)
-	}
-	azureAttributesWireValue, err := PipelinesAzureAttributesFromSDK(v.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AzureAttributes", err)
-	}
-	gcpAttributesWireValue, err := PipelinesGcpAttributesFromSDK(v.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.GcpAttributes", err)
-	}
-	clusterLogConfWireValue, err := PipelinesClusterLogConfFromSDK(v.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.ClusterLogConf", err)
-	}
-	initScriptsWireValue, err := convertSlice(v.InitScripts, PipelinesInitScriptInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.InitScripts", err)
-	}
-	var sizeNumWorkersWire *int
-	var sizeAutoscaleWire *PipelinesAutoScale
-	switch value := v.Size.(type) {
-	case nil:
-	case *sdk.PipelineCluster_Size_NumWorkers:
-		if value != nil {
-			sizeNumWorkersWire = new(value.NumWorkers)
-		}
-	case *sdk.PipelineCluster_Size_Autoscale:
-		if value != nil {
-			sizeAutoscaleConverted, err := PipelinesAutoScaleFromSDK(&value.Autoscale)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineCluster.Size.Autoscale", err)
-			}
-			sizeAutoscaleWire = sizeAutoscaleConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelineCluster.Size", value)
-	}
-	return &PipelineCluster{
-		Label:                     v.Label,
-		ApplyPolicyDefaultValues:  v.ApplyPolicyDefaultValues,
-		SparkConf:                 v.SparkConf,
-		AwsAttributes:             awsAttributesWireValue,
-		AzureAttributes:           azureAttributesWireValue,
-		GcpAttributes:             gcpAttributesWireValue,
-		NodeTypeId:                v.NodeTypeId,
-		DriverNodeTypeId:          v.DriverNodeTypeId,
-		SshPublicKeys:             v.SshPublicKeys,
-		CustomTags:                v.CustomTags,
-		ClusterLogConf:            clusterLogConfWireValue,
-		SparkEnvVars:              v.SparkEnvVars,
-		InitScripts:               initScriptsWireValue,
-		InstancePoolId:            v.InstancePoolId,
-		PolicyId:                  v.PolicyId,
-		EnableLocalDiskEncryption: v.EnableLocalDiskEncryption,
-		DriverInstancePoolId:      v.DriverInstancePoolId,
-		NumWorkers:                sizeNumWorkersWire,
-		Autoscale:                 sizeAutoscaleWire,
-	}, nil
-}
-
-func PipelineClusterToSDK(w *PipelineCluster) (*sdk.PipelineCluster, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sizeMembers := 0
-	if w.NumWorkers != nil {
-		sizeMembers++
-	}
-	if w.Autoscale != nil {
-		sizeMembers++
-	}
-	if sizeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineCluster.Size")
-	}
-	awsAttributesPublicValue, err := PipelinesAwsAttributesToSDK(w.AwsAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AwsAttributes", err)
-	}
-	azureAttributesPublicValue, err := PipelinesAzureAttributesToSDK(w.AzureAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AzureAttributes", err)
-	}
-	gcpAttributesPublicValue, err := PipelinesGcpAttributesToSDK(w.GcpAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.GcpAttributes", err)
-	}
-	clusterLogConfPublicValue, err := PipelinesClusterLogConfToSDK(w.ClusterLogConf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.ClusterLogConf", err)
-	}
-	initScriptsPublicValue, err := convertSlice(w.InitScripts, PipelinesInitScriptInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineCluster.InitScripts", err)
-	}
-	sizeSelection := (&sdk.PipelineCluster{}).Size
-	switch {
-	case w.NumWorkers != nil:
-		sizeSelection = &sdk.PipelineCluster_Size_NumWorkers{NumWorkers: *w.NumWorkers}
-	case w.Autoscale != nil:
-		sizeAutoscaleConverted, err := PipelinesAutoScaleToSDK(w.Autoscale)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineCluster.Size.Autoscale", err)
-		}
-		sizeSelection = &sdk.PipelineCluster_Size_Autoscale{Autoscale: *sizeAutoscaleConverted}
-	}
-	return &sdk.PipelineCluster{
-		Label:                     w.Label,
-		ApplyPolicyDefaultValues:  w.ApplyPolicyDefaultValues,
-		SparkConf:                 w.SparkConf,
-		AwsAttributes:             awsAttributesPublicValue,
-		AzureAttributes:           azureAttributesPublicValue,
-		GcpAttributes:             gcpAttributesPublicValue,
-		NodeTypeId:                w.NodeTypeId,
-		DriverNodeTypeId:          w.DriverNodeTypeId,
-		SshPublicKeys:             w.SshPublicKeys,
-		CustomTags:                w.CustomTags,
-		ClusterLogConf:            clusterLogConfPublicValue,
-		SparkEnvVars:              w.SparkEnvVars,
-		InitScripts:               initScriptsPublicValue,
-		InstancePoolId:            w.InstancePoolId,
-		PolicyId:                  w.PolicyId,
-		EnableLocalDiskEncryption: w.EnableLocalDiskEncryption,
-		DriverInstancePoolId:      w.DriverInstancePoolId,
-		Size:                      sizeSelection,
-	}, nil
-}
-
 type PipelineDeployment struct {
 	// The deployment method that manages the pipeline.
 	Kind DeploymentKind `json:"kind,omitempty"`
@@ -3902,30 +1544,6 @@ type PipelineDeployment struct {
 	// when `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment in
 	// the Deployment Metadata service.
 	VersionId *string `json:"version_id,omitempty"`
-}
-
-func PipelineDeploymentFromSDK(v *sdk.PipelineDeployment) (*PipelineDeployment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelineDeployment{
-		Kind:             v.Kind,
-		MetadataFilePath: v.MetadataFilePath,
-		DeploymentId:     v.DeploymentId,
-		VersionId:        v.VersionId,
-	}, nil
-}
-
-func PipelineDeploymentToSDK(w *PipelineDeployment) (*sdk.PipelineDeployment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelineDeployment{
-		Kind:             w.Kind,
-		MetadataFilePath: w.MetadataFilePath,
-		DeploymentId:     w.DeploymentId,
-		VersionId:        w.VersionId,
-	}, nil
 }
 
 type PipelineEvent struct {
@@ -3954,40 +1572,6 @@ type PipelineEvent struct {
 	Truncation *Truncation `json:"truncation,omitempty"`
 }
 
-func PipelineEventToSDK(w *PipelineEvent) (*sdk.PipelineEvent, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sequencePublicValue, err := SequencingToSDK(w.Sequence)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Sequence", err)
-	}
-	originPublicValue, err := OriginToSDK(w.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Origin", err)
-	}
-	errorPublicValue, err := ErrorDetailToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Error", err)
-	}
-	truncationPublicValue, err := TruncationToSDK(w.Truncation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Truncation", err)
-	}
-	return &sdk.PipelineEvent{
-		Id:            w.Id,
-		Sequence:      sequencePublicValue,
-		Origin:        originPublicValue,
-		Timestamp:     w.Timestamp,
-		Message:       w.Message,
-		Level:         w.Level,
-		Error:         errorPublicValue,
-		EventType:     w.EventType,
-		MaturityLevel: w.MaturityLevel,
-		Truncation:    truncationPublicValue,
-	}, nil
-}
-
 type PipelineLibrary struct {
 	Jar      *string                `json:"jar,omitempty"`
 	Maven    *PipelinesMavenLibrary `json:"maven,omitempty"`
@@ -3995,133 +1579,6 @@ type PipelineLibrary struct {
 	Notebook *NotebookLibrary       `json:"notebook,omitempty"`
 	File     *NotebookLibrary       `json:"file,omitempty"`
 	Glob     *PathPattern           `json:"glob,omitempty"`
-}
-
-func PipelineLibraryFromSDK(v *sdk.PipelineLibrary) (*PipelineLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var libJarWire *string
-	var libMavenWire *PipelinesMavenLibrary
-	var libWhlWire *string
-	var libNotebookWire *NotebookLibrary
-	var libFileWire *NotebookLibrary
-	var libGlobWire *PathPattern
-	switch value := v.Lib.(type) {
-	case nil:
-	case *sdk.PipelineLibrary_Lib_Jar:
-		if value != nil {
-			libJarWire = new(value.Jar)
-		}
-	case *sdk.PipelineLibrary_Lib_Maven:
-		if value != nil {
-			libMavenConverted, err := PipelinesMavenLibraryFromSDK(&value.Maven)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Maven", err)
-			}
-			libMavenWire = libMavenConverted
-		}
-	case *sdk.PipelineLibrary_Lib_Whl:
-		if value != nil {
-			libWhlWire = new(value.Whl)
-		}
-	case *sdk.PipelineLibrary_Lib_Notebook:
-		if value != nil {
-			libNotebookConverted, err := NotebookLibraryFromSDK(&value.Notebook)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Notebook", err)
-			}
-			libNotebookWire = libNotebookConverted
-		}
-	case *sdk.PipelineLibrary_Lib_File:
-		if value != nil {
-			libFileConverted, err := NotebookLibraryFromSDK(&value.File)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.File", err)
-			}
-			libFileWire = libFileConverted
-		}
-	case *sdk.PipelineLibrary_Lib_Glob:
-		if value != nil {
-			libGlobConverted, err := PathPatternFromSDK(&value.Glob)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Glob", err)
-			}
-			libGlobWire = libGlobConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelineLibrary.Lib", value)
-	}
-	return &PipelineLibrary{
-		Jar:      libJarWire,
-		Maven:    libMavenWire,
-		Whl:      libWhlWire,
-		Notebook: libNotebookWire,
-		File:     libFileWire,
-		Glob:     libGlobWire,
-	}, nil
-}
-
-func PipelineLibraryToSDK(w *PipelineLibrary) (*sdk.PipelineLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	libMembers := 0
-	if w.Jar != nil {
-		libMembers++
-	}
-	if w.Maven != nil {
-		libMembers++
-	}
-	if w.Whl != nil {
-		libMembers++
-	}
-	if w.Notebook != nil {
-		libMembers++
-	}
-	if w.File != nil {
-		libMembers++
-	}
-	if w.Glob != nil {
-		libMembers++
-	}
-	if libMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineLibrary.Lib")
-	}
-	libSelection := (&sdk.PipelineLibrary{}).Lib
-	switch {
-	case w.Jar != nil:
-		libSelection = &sdk.PipelineLibrary_Lib_Jar{Jar: *w.Jar}
-	case w.Maven != nil:
-		libMavenConverted, err := PipelinesMavenLibraryToSDK(w.Maven)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Maven", err)
-		}
-		libSelection = &sdk.PipelineLibrary_Lib_Maven{Maven: *libMavenConverted}
-	case w.Whl != nil:
-		libSelection = &sdk.PipelineLibrary_Lib_Whl{Whl: *w.Whl}
-	case w.Notebook != nil:
-		libNotebookConverted, err := NotebookLibraryToSDK(w.Notebook)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Notebook", err)
-		}
-		libSelection = &sdk.PipelineLibrary_Lib_Notebook{Notebook: *libNotebookConverted}
-	case w.File != nil:
-		libFileConverted, err := NotebookLibraryToSDK(w.File)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.File", err)
-		}
-		libSelection = &sdk.PipelineLibrary_Lib_File{File: *libFileConverted}
-	case w.Glob != nil:
-		libGlobConverted, err := PathPatternToSDK(w.Glob)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib.Glob", err)
-		}
-		libSelection = &sdk.PipelineLibrary_Lib_Glob{Glob: *libGlobConverted}
-	}
-	return &sdk.PipelineLibrary{
-		Lib: libSelection,
-	}, nil
 }
 
 type PipelineSpec struct {
@@ -4212,88 +1669,6 @@ type PipelineSpec struct {
 	ServerlessComputeId *string `json:"serverless_compute_id,omitempty"`
 }
 
-func PipelineSpecToSDK(w *PipelineSpec) (*sdk.PipelineSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	clustersPublicValue, err := convertSlice(w.Clusters, PipelineClusterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Clusters", err)
-	}
-	librariesPublicValue, err := convertSlice(w.Libraries, PipelineLibraryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Libraries", err)
-	}
-	ingestionDefinitionPublicValue, err := IngestionPipelineDefinitionToSDK(w.IngestionDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.IngestionDefinition", err)
-	}
-	gatewayDefinitionPublicValue, err := IngestionGatewayPipelineDefinitionToSDK(w.GatewayDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.GatewayDefinition", err)
-	}
-	triggerPublicValue, err := PipelineTriggerToSDK(w.Trigger)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Trigger", err)
-	}
-	filtersPublicValue, err := FiltersToSDK(w.Filters)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Filters", err)
-	}
-	notificationsPublicValue, err := convertSlice(w.Notifications, NotificationsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Notifications", err)
-	}
-	deploymentPublicValue, err := PipelineDeploymentToSDK(w.Deployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Deployment", err)
-	}
-	restartWindowPublicValue, err := RestartWindowToSDK(w.RestartWindow)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.RestartWindow", err)
-	}
-	eventLogPublicValue, err := EventLogSpecToSDK(w.EventLog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.EventLog", err)
-	}
-	environmentPublicValue, err := PipelinesEnvironmentToSDK(w.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Environment", err)
-	}
-	return &sdk.PipelineSpec{
-		Id:                  w.Id,
-		Name:                w.Name,
-		Storage:             w.Storage,
-		Configuration:       w.Configuration,
-		Clusters:            clustersPublicValue,
-		Libraries:           librariesPublicValue,
-		IngestionDefinition: ingestionDefinitionPublicValue,
-		GatewayDefinition:   gatewayDefinitionPublicValue,
-		Trigger:             triggerPublicValue,
-		Target:              w.Target,
-		Schema:              w.Schema,
-		Filters:             filtersPublicValue,
-		Continuous:          w.Continuous,
-		Development:         w.Development,
-		Photon:              w.Photon,
-		Edition:             w.Edition,
-		Channel:             w.Channel,
-		Catalog:             w.Catalog,
-		Notifications:       notificationsPublicValue,
-		Serverless:          w.Serverless,
-		Deployment:          deploymentPublicValue,
-		RestartWindow:       restartWindowPublicValue,
-		BudgetPolicyId:      w.BudgetPolicyId,
-		Tags:                w.Tags,
-		EventLog:            eventLogPublicValue,
-		RootPath:            w.RootPath,
-		Environment:         environmentPublicValue,
-		ParentPath:          w.ParentPath,
-		UsagePolicyId:       w.UsagePolicyId,
-		ServerlessComputeId: w.ServerlessComputeId,
-	}, nil
-}
-
 type PipelineStateInfo struct {
 	// The unique identifier of the pipeline.
 	PipelineId *string                     `json:"pipeline_id,omitempty"`
@@ -4314,96 +1689,9 @@ type PipelineStateInfo struct {
 	Health PipelineHealthStatus `json:"health,omitempty"`
 }
 
-func PipelineStateInfoToSDK(w *PipelineStateInfo) (*sdk.PipelineStateInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	latestUpdatesPublicValue, err := convertSlice(w.LatestUpdates, UpdateStateInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PipelineStateInfo.LatestUpdates", err)
-	}
-	return &sdk.PipelineStateInfo{
-		PipelineId:      w.PipelineId,
-		State:           w.State,
-		ClusterId:       w.ClusterId,
-		Name:            w.Name,
-		LatestUpdates:   latestUpdatesPublicValue,
-		CreatorUserName: w.CreatorUserName,
-		RunAsUserName:   w.RunAsUserName,
-		Health:          w.Health,
-	}, nil
-}
-
 type PipelineTrigger struct {
 	Manual *ManualTrigger `json:"manual,omitempty"`
 	Cron   *CronTrigger   `json:"cron,omitempty"`
-}
-
-func PipelineTriggerFromSDK(v *sdk.PipelineTrigger) (*PipelineTrigger, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var triggerManualWire *ManualTrigger
-	var triggerCronWire *CronTrigger
-	switch value := v.Trigger.(type) {
-	case nil:
-	case *sdk.PipelineTrigger_Trigger_Manual:
-		if value != nil {
-			triggerManualConverted, err := ManualTriggerFromSDK(&value.Manual)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger.Manual", err)
-			}
-			triggerManualWire = triggerManualConverted
-		}
-	case *sdk.PipelineTrigger_Trigger_Cron:
-		if value != nil {
-			triggerCronConverted, err := CronTriggerFromSDK(&value.Cron)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger.Cron", err)
-			}
-			triggerCronWire = triggerCronConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelineTrigger.Trigger", value)
-	}
-	return &PipelineTrigger{
-		Manual: triggerManualWire,
-		Cron:   triggerCronWire,
-	}, nil
-}
-
-func PipelineTriggerToSDK(w *PipelineTrigger) (*sdk.PipelineTrigger, error) {
-	if w == nil {
-		return nil, nil
-	}
-	triggerMembers := 0
-	if w.Manual != nil {
-		triggerMembers++
-	}
-	if w.Cron != nil {
-		triggerMembers++
-	}
-	if triggerMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineTrigger.Trigger")
-	}
-	triggerSelection := (&sdk.PipelineTrigger{}).Trigger
-	switch {
-	case w.Manual != nil:
-		triggerManualConverted, err := ManualTriggerToSDK(w.Manual)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger.Manual", err)
-		}
-		triggerSelection = &sdk.PipelineTrigger_Trigger_Manual{Manual: *triggerManualConverted}
-	case w.Cron != nil:
-		triggerCronConverted, err := CronTriggerToSDK(w.Cron)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger.Cron", err)
-		}
-		triggerSelection = &sdk.PipelineTrigger_Trigger_Cron{Cron: *triggerCronConverted}
-	}
-	return &sdk.PipelineTrigger{
-		Trigger: triggerSelection,
-	}, nil
 }
 
 type PipelinesAutoScale struct {
@@ -4420,28 +1708,6 @@ type PipelinesAutoScale struct {
 	// Autoscaling is available for `updates` clusters only. The legacy autoscaling
 	// feature is used for `maintenance` clusters.
 	Mode *string `json:"mode,omitempty"`
-}
-
-func PipelinesAutoScaleFromSDK(v *sdk.PipelinesAutoScale) (*PipelinesAutoScale, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesAutoScale{
-		MinWorkers: v.MinWorkers,
-		MaxWorkers: v.MaxWorkers,
-		Mode:       v.Mode,
-	}, nil
-}
-
-func PipelinesAutoScaleToSDK(w *PipelinesAutoScale) (*sdk.PipelinesAutoScale, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesAutoScale{
-		MinWorkers: w.MinWorkers,
-		MaxWorkers: w.MaxWorkers,
-		Mode:       w.Mode,
-	}, nil
 }
 
 // Attributes set during cluster creation which are related to Amazon Web
@@ -4516,42 +1782,6 @@ type PipelinesAwsAttributes struct {
 	EbsVolumeThroughput *int `json:"ebs_volume_throughput,omitempty"`
 }
 
-func PipelinesAwsAttributesFromSDK(v *sdk.PipelinesAwsAttributes) (*PipelinesAwsAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesAwsAttributes{
-		FirstOnDemand:       v.FirstOnDemand,
-		Availability:        v.Availability,
-		ZoneId:              v.ZoneId,
-		InstanceProfileArn:  v.InstanceProfileArn,
-		SpotBidPricePercent: v.SpotBidPricePercent,
-		EbsVolumeType:       v.EbsVolumeType,
-		EbsVolumeCount:      v.EbsVolumeCount,
-		EbsVolumeSize:       v.EbsVolumeSize,
-		EbsVolumeIops:       v.EbsVolumeIops,
-		EbsVolumeThroughput: v.EbsVolumeThroughput,
-	}, nil
-}
-
-func PipelinesAwsAttributesToSDK(w *PipelinesAwsAttributes) (*sdk.PipelinesAwsAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesAwsAttributes{
-		FirstOnDemand:       w.FirstOnDemand,
-		Availability:        w.Availability,
-		ZoneId:              w.ZoneId,
-		InstanceProfileArn:  w.InstanceProfileArn,
-		SpotBidPricePercent: w.SpotBidPricePercent,
-		EbsVolumeType:       w.EbsVolumeType,
-		EbsVolumeCount:      w.EbsVolumeCount,
-		EbsVolumeSize:       w.EbsVolumeSize,
-		EbsVolumeIops:       w.EbsVolumeIops,
-		EbsVolumeThroughput: w.EbsVolumeThroughput,
-	}, nil
-}
-
 // Attributes set during cluster creation which are related to Azure..
 type PipelinesAzureAttributes struct {
 	// The first ``first_on_demand`` nodes of the cluster will be placed on
@@ -4576,103 +1806,15 @@ type PipelinesAzureAttributes struct {
 	SpotBidMaxPrice *float64 `json:"spot_bid_max_price,omitempty"`
 }
 
-func PipelinesAzureAttributesFromSDK(v *sdk.PipelinesAzureAttributes) (*PipelinesAzureAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesAzureAttributes{
-		FirstOnDemand:   v.FirstOnDemand,
-		Availability:    v.Availability,
-		SpotBidMaxPrice: v.SpotBidMaxPrice,
-	}, nil
-}
-
-func PipelinesAzureAttributesToSDK(w *PipelinesAzureAttributes) (*sdk.PipelinesAzureAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesAzureAttributes{
-		FirstOnDemand:   w.FirstOnDemand,
-		Availability:    w.Availability,
-		SpotBidMaxPrice: w.SpotBidMaxPrice,
-	}, nil
-}
-
 // Cluster log delivery config.
 type PipelinesClusterLogConf struct {
 	Dbfs *PipelinesDbfsStorageInfo `json:"dbfs,omitempty"`
-}
-
-func PipelinesClusterLogConfFromSDK(v *sdk.PipelinesClusterLogConf) (*PipelinesClusterLogConf, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *PipelinesDbfsStorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.PipelinesClusterLogConf_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := PipelinesDbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelinesClusterLogConf.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelinesClusterLogConf.StorageInfo", value)
-	}
-	return &PipelinesClusterLogConf{
-		Dbfs: storageInfoDbfsWire,
-	}, nil
-}
-
-func PipelinesClusterLogConfToSDK(w *PipelinesClusterLogConf) (*sdk.PipelinesClusterLogConf, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesClusterLogConf.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.PipelinesClusterLogConf{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := PipelinesDbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelinesClusterLogConf.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.PipelinesClusterLogConf_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	}
-	return &sdk.PipelinesClusterLogConf{
-		StorageInfo: storageInfoSelection,
-	}, nil
 }
 
 // A storage location in DBFS.
 type PipelinesDbfsStorageInfo struct {
 	// dbfs destination, e.g. ``dbfs:/my/path``
 	Destination *string `json:"destination,omitempty"`
-}
-
-func PipelinesDbfsStorageInfoFromSDK(v *sdk.PipelinesDbfsStorageInfo) (*PipelinesDbfsStorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesDbfsStorageInfo{
-		Destination: v.Destination,
-	}, nil
-}
-
-func PipelinesDbfsStorageInfoToSDK(w *PipelinesDbfsStorageInfo) (*sdk.PipelinesDbfsStorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesDbfsStorageInfo{
-		Destination: w.Destination,
-	}, nil
 }
 
 // The environment entity used to preserve serverless environment side panel,
@@ -4698,26 +1840,6 @@ type PipelinesEnvironment struct {
 	// The value should be a string representing the environment version number, for
 	// example: `"4"`.
 	EnvironmentVersion *string `json:"environment_version,omitempty"`
-}
-
-func PipelinesEnvironmentFromSDK(v *sdk.PipelinesEnvironment) (*PipelinesEnvironment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesEnvironment{
-		Dependencies:       v.Dependencies,
-		EnvironmentVersion: v.EnvironmentVersion,
-	}, nil
-}
-
-func PipelinesEnvironmentToSDK(w *PipelinesEnvironment) (*sdk.PipelinesEnvironment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesEnvironment{
-		Dependencies:       w.Dependencies,
-		EnvironmentVersion: w.EnvironmentVersion,
-	}, nil
 }
 
 // Attributes set during cluster creation which are related to Gcp..
@@ -4754,103 +1876,10 @@ type PipelinesGcpAttributes struct {
 	LocalSsdCount *int `json:"local_ssd_count,omitempty"`
 }
 
-func PipelinesGcpAttributesFromSDK(v *sdk.PipelinesGcpAttributes) (*PipelinesGcpAttributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesGcpAttributes{
-		GoogleServiceAccount: v.GoogleServiceAccount,
-		BootDiskSize:         v.BootDiskSize,
-		Availability:         v.Availability,
-		ZoneId:               v.ZoneId,
-		LocalSsdCount:        v.LocalSsdCount,
-	}, nil
-}
-
-func PipelinesGcpAttributesToSDK(w *PipelinesGcpAttributes) (*sdk.PipelinesGcpAttributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesGcpAttributes{
-		GoogleServiceAccount: w.GoogleServiceAccount,
-		BootDiskSize:         w.BootDiskSize,
-		Availability:         w.Availability,
-		ZoneId:               w.ZoneId,
-		LocalSsdCount:        w.LocalSsdCount,
-	}, nil
-}
-
 // Config for an individual init script.
 type PipelinesInitScriptInfo struct {
 	Dbfs *PipelinesDbfsStorageInfo `json:"dbfs,omitempty"`
 	S3   *PipelinesS3StorageInfo   `json:"s3,omitempty"`
-}
-
-func PipelinesInitScriptInfoFromSDK(v *sdk.PipelinesInitScriptInfo) (*PipelinesInitScriptInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var storageInfoDbfsWire *PipelinesDbfsStorageInfo
-	var storageInfoS3Wire *PipelinesS3StorageInfo
-	switch value := v.StorageInfo.(type) {
-	case nil:
-	case *sdk.PipelinesInitScriptInfo_StorageInfo_Dbfs:
-		if value != nil {
-			storageInfoDbfsConverted, err := PipelinesDbfsStorageInfoFromSDK(&value.Dbfs)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo.Dbfs", err)
-			}
-			storageInfoDbfsWire = storageInfoDbfsConverted
-		}
-	case *sdk.PipelinesInitScriptInfo_StorageInfo_S3:
-		if value != nil {
-			storageInfoS3Converted, err := PipelinesS3StorageInfoFromSDK(&value.S3)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo.S3", err)
-			}
-			storageInfoS3Wire = storageInfoS3Converted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelinesInitScriptInfo.StorageInfo", value)
-	}
-	return &PipelinesInitScriptInfo{
-		Dbfs: storageInfoDbfsWire,
-		S3:   storageInfoS3Wire,
-	}, nil
-}
-
-func PipelinesInitScriptInfoToSDK(w *PipelinesInitScriptInfo) (*sdk.PipelinesInitScriptInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	storageInfoMembers := 0
-	if w.Dbfs != nil {
-		storageInfoMembers++
-	}
-	if w.S3 != nil {
-		storageInfoMembers++
-	}
-	if storageInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesInitScriptInfo.StorageInfo")
-	}
-	storageInfoSelection := (&sdk.PipelinesInitScriptInfo{}).StorageInfo
-	switch {
-	case w.Dbfs != nil:
-		storageInfoDbfsConverted, err := PipelinesDbfsStorageInfoToSDK(w.Dbfs)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo.Dbfs", err)
-		}
-		storageInfoSelection = &sdk.PipelinesInitScriptInfo_StorageInfo_Dbfs{Dbfs: *storageInfoDbfsConverted}
-	case w.S3 != nil:
-		storageInfoS3Converted, err := PipelinesS3StorageInfoToSDK(w.S3)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo.S3", err)
-		}
-		storageInfoSelection = &sdk.PipelinesInitScriptInfo_StorageInfo_S3{S3: *storageInfoS3Converted}
-	}
-	return &sdk.PipelinesInitScriptInfo{
-		StorageInfo: storageInfoSelection,
-	}, nil
 }
 
 // Write-only setting, available only in Create/Update calls. Specifies the user
@@ -4865,68 +1894,6 @@ type PipelinesJobRunAs struct {
 	GroupName            *string `json:"group_name,omitempty"`
 }
 
-func PipelinesJobRunAsFromSDK(v *sdk.PipelinesJobRunAs) (*PipelinesJobRunAs, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var identityUserNameWire *string
-	var identityServicePrincipalNameWire *string
-	var identityGroupNameWire *string
-	switch value := v.Identity.(type) {
-	case nil:
-	case *sdk.PipelinesJobRunAs_Identity_UserName:
-		if value != nil {
-			identityUserNameWire = new(value.UserName)
-		}
-	case *sdk.PipelinesJobRunAs_Identity_ServicePrincipalName:
-		if value != nil {
-			identityServicePrincipalNameWire = new(value.ServicePrincipalName)
-		}
-	case *sdk.PipelinesJobRunAs_Identity_GroupName:
-		if value != nil {
-			identityGroupNameWire = new(value.GroupName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "PipelinesJobRunAs.Identity", value)
-	}
-	return &PipelinesJobRunAs{
-		UserName:             identityUserNameWire,
-		ServicePrincipalName: identityServicePrincipalNameWire,
-		GroupName:            identityGroupNameWire,
-	}, nil
-}
-
-func PipelinesJobRunAsToSDK(w *PipelinesJobRunAs) (*sdk.PipelinesJobRunAs, error) {
-	if w == nil {
-		return nil, nil
-	}
-	identityMembers := 0
-	if w.UserName != nil {
-		identityMembers++
-	}
-	if w.ServicePrincipalName != nil {
-		identityMembers++
-	}
-	if w.GroupName != nil {
-		identityMembers++
-	}
-	if identityMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesJobRunAs.Identity")
-	}
-	identitySelection := (&sdk.PipelinesJobRunAs{}).Identity
-	switch {
-	case w.UserName != nil:
-		identitySelection = &sdk.PipelinesJobRunAs_Identity_UserName{UserName: *w.UserName}
-	case w.ServicePrincipalName != nil:
-		identitySelection = &sdk.PipelinesJobRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
-	case w.GroupName != nil:
-		identitySelection = &sdk.PipelinesJobRunAs_Identity_GroupName{GroupName: *w.GroupName}
-	}
-	return &sdk.PipelinesJobRunAs{
-		Identity: identitySelection,
-	}, nil
-}
-
 type PipelinesMavenLibrary struct {
 	// Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
 	Coordinates *string `json:"coordinates,omitempty"`
@@ -4939,28 +1906,6 @@ type PipelinesMavenLibrary struct {
 	// Maven dependency exclusions:
 	// https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
 	Exclusions []string `json:"exclusions,omitempty"`
-}
-
-func PipelinesMavenLibraryFromSDK(v *sdk.PipelinesMavenLibrary) (*PipelinesMavenLibrary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesMavenLibrary{
-		Coordinates: v.Coordinates,
-		Repo:        v.Repo,
-		Exclusions:  v.Exclusions,
-	}, nil
-}
-
-func PipelinesMavenLibraryToSDK(w *PipelinesMavenLibrary) (*sdk.PipelinesMavenLibrary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesMavenLibrary{
-		Coordinates: w.Coordinates,
-		Repo:        w.Repo,
-		Exclusions:  w.Exclusions,
-	}, nil
 }
 
 // A storage location in Amazon S3.
@@ -4995,66 +1940,10 @@ type PipelinesS3StorageInfo struct {
 	CannedAcl *string `json:"canned_acl,omitempty"`
 }
 
-func PipelinesS3StorageInfoFromSDK(v *sdk.PipelinesS3StorageInfo) (*PipelinesS3StorageInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PipelinesS3StorageInfo{
-		Destination:      v.Destination,
-		Region:           v.Region,
-		Endpoint:         v.Endpoint,
-		EnableEncryption: v.EnableEncryption,
-		EncryptionType:   v.EncryptionType,
-		KmsKey:           v.KmsKey,
-		CannedAcl:        v.CannedAcl,
-	}, nil
-}
-
-func PipelinesS3StorageInfoToSDK(w *PipelinesS3StorageInfo) (*sdk.PipelinesS3StorageInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PipelinesS3StorageInfo{
-		Destination:      w.Destination,
-		Region:           w.Region,
-		Endpoint:         w.Endpoint,
-		EnableEncryption: w.EnableEncryption,
-		EncryptionType:   w.EncryptionType,
-		KmsKey:           w.KmsKey,
-		CannedAcl:        w.CannedAcl,
-	}, nil
-}
-
 // PG-specific catalog-level configuration parameters.
 type PostgresCatalogConfig struct {
 	// Optional. The Postgres slot configuration to use for logical replication
 	SlotConfig *PostgresSlotConfig `json:"slot_config,omitempty"`
-}
-
-func PostgresCatalogConfigFromSDK(v *sdk.PostgresCatalogConfig) (*PostgresCatalogConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	slotConfigWireValue, err := PostgresSlotConfigFromSDK(v.SlotConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PostgresCatalogConfig.SlotConfig", err)
-	}
-	return &PostgresCatalogConfig{
-		SlotConfig: slotConfigWireValue,
-	}, nil
-}
-
-func PostgresCatalogConfigToSDK(w *PostgresCatalogConfig) (*sdk.PostgresCatalogConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	slotConfigPublicValue, err := PostgresSlotConfigToSDK(w.SlotConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PostgresCatalogConfig.SlotConfig", err)
-	}
-	return &sdk.PostgresCatalogConfig{
-		SlotConfig: slotConfigPublicValue,
-	}, nil
 }
 
 // PostgresSlotConfig contains the configuration for a Postgres logical
@@ -5064,26 +1953,6 @@ type PostgresSlotConfig struct {
 	SlotName *string `json:"slot_name,omitempty"`
 	// The name of the publication to use for the Postgres source
 	PublicationName *string `json:"publication_name,omitempty"`
-}
-
-func PostgresSlotConfigFromSDK(v *sdk.PostgresSlotConfig) (*PostgresSlotConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PostgresSlotConfig{
-		SlotName:        v.SlotName,
-		PublicationName: v.PublicationName,
-	}, nil
-}
-
-func PostgresSlotConfigToSDK(w *PostgresSlotConfig) (*sdk.PostgresSlotConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PostgresSlotConfig{
-		SlotName:        w.SlotName,
-		PublicationName: w.PublicationName,
-	}, nil
 }
 
 type ProtobufTransformerOptions struct {
@@ -5104,40 +1973,6 @@ type ProtobufTransformerOptions struct {
 	SchemaRegistry *SchemaRegistryConfig `json:"schema_registry,omitempty"`
 }
 
-func ProtobufTransformerOptionsFromSDK(v *sdk.ProtobufTransformerOptions) (*ProtobufTransformerOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	schemaRegistryWireValue, err := SchemaRegistryConfigFromSDK(v.SchemaRegistry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProtobufTransformerOptions.SchemaRegistry", err)
-	}
-	return &ProtobufTransformerOptions{
-		DescFilePath:            v.DescFilePath,
-		MessageName:             v.MessageName,
-		RecursiveFieldsMaxDepth: v.RecursiveFieldsMaxDepth,
-		ParseMode:               v.ParseMode,
-		SchemaRegistry:          schemaRegistryWireValue,
-	}, nil
-}
-
-func ProtobufTransformerOptionsToSDK(w *ProtobufTransformerOptions) (*sdk.ProtobufTransformerOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaRegistryPublicValue, err := SchemaRegistryConfigToSDK(w.SchemaRegistry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ProtobufTransformerOptions.SchemaRegistry", err)
-	}
-	return &sdk.ProtobufTransformerOptions{
-		DescFilePath:            w.DescFilePath,
-		MessageName:             w.MessageName,
-		RecursiveFieldsMaxDepth: w.RecursiveFieldsMaxDepth,
-		ParseMode:               w.ParseMode,
-		SchemaRegistry:          schemaRegistryPublicValue,
-	}, nil
-}
-
 // RabbitMQ specific options for ingestion. Performance tuning options
 // (consumers_per_task, max_messages_per_fetch, etc.) are intentionally not
 // exposed in the public API. The managed connector uses sensible defaults
@@ -5145,24 +1980,6 @@ func ProtobufTransformerOptionsToSDK(w *ProtobufTransformerOptions) (*sdk.Protob
 type RabbitmqOptions struct {
 	// (Required) RabbitMQ queue name to consume from.
 	Queue *string `json:"queue,omitempty"`
-}
-
-func RabbitmqOptionsFromSDK(v *sdk.RabbitmqOptions) (*RabbitmqOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RabbitmqOptions{
-		Queue: v.Queue,
-	}, nil
-}
-
-func RabbitmqOptionsToSDK(w *RabbitmqOptions) (*sdk.RabbitmqOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RabbitmqOptions{
-		Queue: w.Queue,
-	}, nil
 }
 
 // Reddit Ads specific options for ingestion.
@@ -5181,36 +1998,6 @@ type RedditAdsOptions struct {
 	CustomReportOptions *RedditAdsOptions_RedditAdsCustomReportOptions `json:"custom_report_options,omitempty"`
 }
 
-func RedditAdsOptionsFromSDK(v *sdk.RedditAdsOptions) (*RedditAdsOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customReportOptionsWireValue, err := RedditAdsOptions_RedditAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RedditAdsOptions.CustomReportOptions", err)
-	}
-	return &RedditAdsOptions{
-		SyncStartDate:       v.SyncStartDate,
-		LookbackWindowDays:  v.LookbackWindowDays,
-		CustomReportOptions: customReportOptionsWireValue,
-	}, nil
-}
-
-func RedditAdsOptionsToSDK(w *RedditAdsOptions) (*sdk.RedditAdsOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customReportOptionsPublicValue, err := RedditAdsOptions_RedditAdsCustomReportOptionsToSDK(w.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RedditAdsOptions.CustomReportOptions", err)
-	}
-	return &sdk.RedditAdsOptions{
-		SyncStartDate:       w.SyncStartDate,
-		LookbackWindowDays:  w.LookbackWindowDays,
-		CustomReportOptions: customReportOptionsPublicValue,
-	}, nil
-}
-
 // User-defined custom report for the Reddit Ads connector. Applies only to the
 // custom_report table — prebuilt tables ignore this..
 type RedditAdsOptions_RedditAdsCustomReportOptions struct {
@@ -5223,26 +2010,6 @@ type RedditAdsOptions_RedditAdsCustomReportOptions struct {
 	Breakdowns []string `json:"breakdowns,omitempty"`
 }
 
-func RedditAdsOptions_RedditAdsCustomReportOptionsFromSDK(v *sdk.RedditAdsOptions_RedditAdsCustomReportOptions) (*RedditAdsOptions_RedditAdsCustomReportOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RedditAdsOptions_RedditAdsCustomReportOptions{
-		Fields:     v.Fields,
-		Breakdowns: v.Breakdowns,
-	}, nil
-}
-
-func RedditAdsOptions_RedditAdsCustomReportOptionsToSDK(w *RedditAdsOptions_RedditAdsCustomReportOptions) (*sdk.RedditAdsOptions_RedditAdsCustomReportOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RedditAdsOptions_RedditAdsCustomReportOptions{
-		Fields:     w.Fields,
-		Breakdowns: w.Breakdowns,
-	}, nil
-}
-
 // Specifies a replace_where predicate override for a replace where flow..
 type ReplaceWhereOverride struct {
 	// Name of the flow to apply this override to.
@@ -5250,16 +2017,6 @@ type ReplaceWhereOverride struct {
 	// SQL predicate string to use as replace_where condition. Example: `date =
 	// '2024-10-10' AND city = 'xyz'`
 	PredicateOverride *string `json:"predicate_override,omitempty"`
-}
-
-func ReplaceWhereOverrideFromSDK(v *sdk.ReplaceWhereOverride) (*ReplaceWhereOverride, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ReplaceWhereOverride{
-		FlowName:          v.FlowName,
-		PredicateOverride: v.PredicateOverride,
-	}, nil
 }
 
 type RestartWindow struct {
@@ -5277,28 +2034,6 @@ type RestartWindow struct {
 	TimeZoneId *string `json:"time_zone_id,omitempty"`
 }
 
-func RestartWindowFromSDK(v *sdk.RestartWindow) (*RestartWindow, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RestartWindow{
-		StartHour:  v.StartHour,
-		DaysOfWeek: v.DaysOfWeek,
-		TimeZoneId: v.TimeZoneId,
-	}, nil
-}
-
-func RestartWindowToSDK(w *RestartWindow) (*sdk.RestartWindow, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RestartWindow{
-		StartHour:  w.StartHour,
-		DaysOfWeek: w.DaysOfWeek,
-		TimeZoneId: w.TimeZoneId,
-	}, nil
-}
-
 // Configuration for rewinding a specific dataset..
 type RewindDatasetSpec struct {
 	// The identifier of the dataset (e.g., "main.foo.tbl1").
@@ -5307,17 +2042,6 @@ type RewindDatasetSpec struct {
 	Cascade *bool `json:"cascade,omitempty"`
 	// Whether to reset checkpoints for this dataset.
 	ResetCheckpoints *bool `json:"reset_checkpoints,omitempty"`
-}
-
-func RewindDatasetSpecFromSDK(v *sdk.RewindDatasetSpec) (*RewindDatasetSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RewindDatasetSpec{
-		Identifier:       v.Identifier,
-		Cascade:          v.Cascade,
-		ResetCheckpoints: v.ResetCheckpoints,
-	}, nil
 }
 
 // Information about a rewind being requested for this pipeline or some of the
@@ -5335,21 +2059,6 @@ type RewindSpec struct {
 	Datasets []RewindDatasetSpec `json:"datasets,omitempty"`
 }
 
-func RewindSpecFromSDK(v *sdk.RewindSpec) (*RewindSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	datasetsWireValue, err := convertSlice(v.Datasets, RewindDatasetSpecFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RewindSpec.Datasets", err)
-	}
-	return &RewindSpec{
-		RewindTimestamp: v.RewindTimestamp,
-		DryRun:          v.DryRun,
-		Datasets:        datasetsWireValue,
-	}, nil
-}
-
 type SchemaRegistryConfig struct {
 	// Required: Confluent-compatible schema registry options.
 	ConfluentOptions *ConfluentSchemaRegistryOptions `json:"confluent_options,omitempty"`
@@ -5362,59 +2071,11 @@ type SchemaRegistryConfig struct {
 	ConnectionName *string `json:"connection_name,omitempty"`
 }
 
-func SchemaRegistryConfigFromSDK(v *sdk.SchemaRegistryConfig) (*SchemaRegistryConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	confluentOptionsWireValue, err := ConfluentSchemaRegistryOptionsFromSDK(v.ConfluentOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ConfluentOptions", err)
-	}
-	return &SchemaRegistryConfig{
-		ConfluentOptions:    confluentOptionsWireValue,
-		ProtobufMessageName: v.ProtobufMessageName,
-		ConnectionName:      v.ConnectionName,
-	}, nil
-}
-
-func SchemaRegistryConfigToSDK(w *SchemaRegistryConfig) (*sdk.SchemaRegistryConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	confluentOptionsPublicValue, err := ConfluentSchemaRegistryOptionsToSDK(w.ConfluentOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ConfluentOptions", err)
-	}
-	return &sdk.SchemaRegistryConfig{
-		ConfluentOptions:    confluentOptionsPublicValue,
-		ProtobufMessageName: w.ProtobufMessageName,
-		ConnectionName:      w.ConnectionName,
-	}, nil
-}
-
 type Sequencing struct {
 	// the ID assigned by the data plane.
 	DataPlaneId *DataPlaneId `json:"data_plane_id,omitempty"`
 	// A sequence number, unique and increasing per pipeline.
 	ControlPlaneSeqNo *int64 `json:"control_plane_seq_no,omitempty"`
-}
-
-func SequencingToSDK(w *Sequencing) (*sdk.Sequencing, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dataPlaneIdPublicValue, err := DataPlaneIdToSDK(w.DataPlaneId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sequencing.DataPlaneId", err)
-	}
-	controlPlaneSeqNoPublicValue, err := int64FromWire(w.ControlPlaneSeqNo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sequencing.ControlPlaneSeqNo", err)
-	}
-	return &sdk.Sequencing{
-		DataPlaneId:       dataPlaneIdPublicValue,
-		ControlPlaneSeqNo: controlPlaneSeqNoPublicValue,
-	}, nil
 }
 
 type SerializedException struct {
@@ -5424,21 +2085,6 @@ type SerializedException struct {
 	Message *string `json:"message,omitempty"`
 	// Stack trace consisting of a list of stack frames
 	Stack []StackFrame `json:"stack,omitempty"`
-}
-
-func SerializedExceptionToSDK(w *SerializedException) (*sdk.SerializedException, error) {
-	if w == nil {
-		return nil, nil
-	}
-	stackPublicValue, err := convertSlice(w.Stack, StackFrameToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SerializedException.Stack", err)
-	}
-	return &sdk.SerializedException{
-		ClassName: w.ClassName,
-		Message:   w.Message,
-		Stack:     stackPublicValue,
-	}, nil
 }
 
 type SharepointOptions struct {
@@ -5451,36 +2097,6 @@ type SharepointOptions struct {
 	FileIngestionOptions *FileIngestionOptions `json:"file_ingestion_options,omitempty"`
 }
 
-func SharepointOptionsFromSDK(v *sdk.SharepointOptions) (*SharepointOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileIngestionOptionsWireValue, err := FileIngestionOptionsFromSDK(v.FileIngestionOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharepointOptions.FileIngestionOptions", err)
-	}
-	return &SharepointOptions{
-		Url:                  v.Url,
-		EntityType:           v.EntityType,
-		FileIngestionOptions: fileIngestionOptionsWireValue,
-	}, nil
-}
-
-func SharepointOptionsToSDK(w *SharepointOptions) (*sdk.SharepointOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileIngestionOptionsPublicValue, err := FileIngestionOptionsToSDK(w.FileIngestionOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SharepointOptions.FileIngestionOptions", err)
-	}
-	return &sdk.SharepointOptions{
-		Url:                  w.Url,
-		EntityType:           w.EntityType,
-		FileIngestionOptions: fileIngestionOptionsPublicValue,
-	}, nil
-}
-
 // Smartsheet specific options for ingestion.
 type SmartsheetOptions struct {
 	// (Optional) When true, maps each column to its Smartsheet-declared type
@@ -5491,24 +2107,6 @@ type SmartsheetOptions struct {
 	EnforceSchema *bool `json:"enforce_schema,omitempty"`
 }
 
-func SmartsheetOptionsFromSDK(v *sdk.SmartsheetOptions) (*SmartsheetOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SmartsheetOptions{
-		EnforceSchema: v.EnforceSchema,
-	}, nil
-}
-
-func SmartsheetOptionsToSDK(w *SmartsheetOptions) (*sdk.SmartsheetOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SmartsheetOptions{
-		EnforceSchema: w.EnforceSchema,
-	}, nil
-}
-
 // SourceCatalogConfig contains catalog-level custom configuration parameters
 // for each source.
 type SourceCatalogConfig struct {
@@ -5517,138 +2115,11 @@ type SourceCatalogConfig struct {
 	Postgres      *PostgresCatalogConfig `json:"postgres,omitempty"`
 }
 
-func SourceCatalogConfigFromSDK(v *sdk.SourceCatalogConfig) (*SourceCatalogConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var optionsPostgresWire *PostgresCatalogConfig
-	switch value := v.Options.(type) {
-	case nil:
-	case *sdk.SourceCatalogConfig_Options_Postgres:
-		if value != nil {
-			optionsPostgresConverted, err := PostgresCatalogConfigFromSDK(&value.Postgres)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SourceCatalogConfig.Options.Postgres", err)
-			}
-			optionsPostgresWire = optionsPostgresConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SourceCatalogConfig.Options", value)
-	}
-	return &SourceCatalogConfig{
-		SourceCatalog: v.SourceCatalog,
-		Postgres:      optionsPostgresWire,
-	}, nil
-}
-
-func SourceCatalogConfigToSDK(w *SourceCatalogConfig) (*sdk.SourceCatalogConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	optionsMembers := 0
-	if w.Postgres != nil {
-		optionsMembers++
-	}
-	if optionsMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SourceCatalogConfig.Options")
-	}
-	optionsSelection := (&sdk.SourceCatalogConfig{}).Options
-	switch {
-	case w.Postgres != nil:
-		optionsPostgresConverted, err := PostgresCatalogConfigToSDK(w.Postgres)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SourceCatalogConfig.Options.Postgres", err)
-		}
-		optionsSelection = &sdk.SourceCatalogConfig_Options_Postgres{Postgres: *optionsPostgresConverted}
-	}
-	return &sdk.SourceCatalogConfig{
-		SourceCatalog: w.SourceCatalog,
-		Options:       optionsSelection,
-	}, nil
-}
-
 type SourceConfig struct {
 	// Catalog-level source configuration parameters
 	Catalog                  *SourceCatalogConfig      `json:"catalog,omitempty"`
 	GoogleAdsConfig          *GoogleAdsConfig          `json:"google_ads_config,omitempty"`
 	ApiSourceConnectorConfig *ApiSourceConnectorConfig `json:"api_source_connector_config,omitempty"`
-}
-
-func SourceConfigFromSDK(v *sdk.SourceConfig) (*SourceConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	catalogWireValue, err := SourceCatalogConfigFromSDK(v.Catalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SourceConfig.Catalog", err)
-	}
-	var connectorConfigGoogleAdsConfigWire *GoogleAdsConfig
-	var connectorConfigApiSourceConnectorConfigWire *ApiSourceConnectorConfig
-	switch value := v.ConnectorConfig.(type) {
-	case nil:
-	case *sdk.SourceConfig_ConnectorConfig_GoogleAdsConfig:
-		if value != nil {
-			connectorConfigGoogleAdsConfigConverted, err := GoogleAdsConfigFromSDK(&value.GoogleAdsConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig.GoogleAdsConfig", err)
-			}
-			connectorConfigGoogleAdsConfigWire = connectorConfigGoogleAdsConfigConverted
-		}
-	case *sdk.SourceConfig_ConnectorConfig_ApiSourceConnectorConfig:
-		if value != nil {
-			connectorConfigApiSourceConnectorConfigConverted, err := ApiSourceConnectorConfigFromSDK(&value.ApiSourceConnectorConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig.ApiSourceConnectorConfig", err)
-			}
-			connectorConfigApiSourceConnectorConfigWire = connectorConfigApiSourceConnectorConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SourceConfig.ConnectorConfig", value)
-	}
-	return &SourceConfig{
-		Catalog:                  catalogWireValue,
-		GoogleAdsConfig:          connectorConfigGoogleAdsConfigWire,
-		ApiSourceConnectorConfig: connectorConfigApiSourceConnectorConfigWire,
-	}, nil
-}
-
-func SourceConfigToSDK(w *SourceConfig) (*sdk.SourceConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	connectorConfigMembers := 0
-	if w.GoogleAdsConfig != nil {
-		connectorConfigMembers++
-	}
-	if w.ApiSourceConnectorConfig != nil {
-		connectorConfigMembers++
-	}
-	if connectorConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SourceConfig.ConnectorConfig")
-	}
-	catalogPublicValue, err := SourceCatalogConfigToSDK(w.Catalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SourceConfig.Catalog", err)
-	}
-	connectorConfigSelection := (&sdk.SourceConfig{}).ConnectorConfig
-	switch {
-	case w.GoogleAdsConfig != nil:
-		connectorConfigGoogleAdsConfigConverted, err := GoogleAdsConfigToSDK(w.GoogleAdsConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig.GoogleAdsConfig", err)
-		}
-		connectorConfigSelection = &sdk.SourceConfig_ConnectorConfig_GoogleAdsConfig{GoogleAdsConfig: *connectorConfigGoogleAdsConfigConverted}
-	case w.ApiSourceConnectorConfig != nil:
-		connectorConfigApiSourceConnectorConfigConverted, err := ApiSourceConnectorConfigToSDK(w.ApiSourceConnectorConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig.ApiSourceConnectorConfig", err)
-		}
-		connectorConfigSelection = &sdk.SourceConfig_ConnectorConfig_ApiSourceConnectorConfig{ApiSourceConnectorConfig: *connectorConfigApiSourceConnectorConfigConverted}
-	}
-	return &sdk.SourceConfig{
-		Catalog:         catalogPublicValue,
-		ConnectorConfig: connectorConfigSelection,
-	}, nil
 }
 
 type StackFrame struct {
@@ -5660,18 +2131,6 @@ type StackFrame struct {
 	FileName *string `json:"file_name,omitempty"`
 	// Line from which the method was called
 	LineNumber *int `json:"line_number,omitempty"`
-}
-
-func StackFrameToSDK(w *StackFrame) (*sdk.StackFrame, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StackFrame{
-		DeclaringClass: w.DeclaringClass,
-		MethodName:     w.MethodName,
-		FileName:       w.FileName,
-		LineNumber:     w.LineNumber,
-	}, nil
 }
 
 type StartUpdateRequest struct {
@@ -5711,57 +2170,12 @@ type StartUpdateRequest struct {
 	ReplaceWhereOverrides []ReplaceWhereOverride `json:"replace_where_overrides,omitempty"`
 }
 
-func StartUpdateRequestFromSDK(v *sdk.StartUpdateRequest) (*StartUpdateRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	rewindSpecWireValue, err := RewindSpecFromSDK(v.RewindSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.RewindSpec", err)
-	}
-	replaceWhereOverridesWireValue, err := convertSlice(v.ReplaceWhereOverrides, ReplaceWhereOverrideFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.ReplaceWhereOverrides", err)
-	}
-	return &StartUpdateRequest{
-		PipelineId:               v.PipelineId,
-		FullRefresh:              v.FullRefresh,
-		Cause:                    v.Cause,
-		RefreshSelection:         v.RefreshSelection,
-		FullRefreshSelection:     v.FullRefreshSelection,
-		ResetCheckpointSelection: v.ResetCheckpointSelection,
-		ValidateOnly:             v.ValidateOnly,
-		Development:              v.Development,
-		RewindSpec:               rewindSpecWireValue,
-		Parameters:               v.Parameters,
-		ReplaceWhereOverrides:    replaceWhereOverridesWireValue,
-	}, nil
-}
-
 type StartUpdateResponse struct {
 	UpdateId *string `json:"update_id,omitempty"`
 }
 
-func StartUpdateResponseToSDK(w *StartUpdateResponse) (*sdk.StartUpdateResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StartUpdateResponse{
-		UpdateId: w.UpdateId,
-	}, nil
-}
-
 type StopPipelineRequest struct {
 	PipelineId *string `json:"pipeline_id,omitempty"`
-}
-
-func StopPipelineRequestFromSDK(v *sdk.StopPipelineRequest) (*StopPipelineRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StopPipelineRequest{
-		PipelineId: v.PipelineId,
-	}, nil
 }
 
 // TikTok Ads specific options for ingestion.
@@ -5790,46 +2204,6 @@ type TikTokAdsOptions struct {
 	CustomReportOptions *TikTokAdsOptions_TikTokAdsCustomReportOptions `json:"custom_report_options,omitempty"`
 }
 
-func TikTokAdsOptionsFromSDK(v *sdk.TikTokAdsOptions) (*TikTokAdsOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customReportOptionsWireValue, err := TikTokAdsOptions_TikTokAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TikTokAdsOptions.CustomReportOptions", err)
-	}
-	return &TikTokAdsOptions{
-		LookbackWindowDays:  v.LookbackWindowDays,
-		SyncStartDate:       v.SyncStartDate,
-		Dimensions:          v.Dimensions,
-		Metrics:             v.Metrics,
-		ReportType:          v.ReportType,
-		DataLevel:           v.DataLevel,
-		QueryLifetime:       v.QueryLifetime,
-		CustomReportOptions: customReportOptionsWireValue,
-	}, nil
-}
-
-func TikTokAdsOptionsToSDK(w *TikTokAdsOptions) (*sdk.TikTokAdsOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	customReportOptionsPublicValue, err := TikTokAdsOptions_TikTokAdsCustomReportOptionsToSDK(w.CustomReportOptions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TikTokAdsOptions.CustomReportOptions", err)
-	}
-	return &sdk.TikTokAdsOptions{
-		LookbackWindowDays:  w.LookbackWindowDays,
-		SyncStartDate:       w.SyncStartDate,
-		Dimensions:          w.Dimensions,
-		Metrics:             w.Metrics,
-		ReportType:          w.ReportType,
-		DataLevel:           w.DataLevel,
-		QueryLifetime:       w.QueryLifetime,
-		CustomReportOptions: customReportOptionsPublicValue,
-	}, nil
-}
-
 // User-defined custom report for the TikTok Ads connector. Groups the
 // dimensions + metrics + report type + data level that define a TikTok Ads
 // custom report request..
@@ -5852,32 +2226,6 @@ type TikTokAdsOptions_TikTokAdsCustomReportOptions struct {
 	QueryLifetime *bool `json:"query_lifetime,omitempty"`
 }
 
-func TikTokAdsOptions_TikTokAdsCustomReportOptionsFromSDK(v *sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions) (*TikTokAdsOptions_TikTokAdsCustomReportOptions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TikTokAdsOptions_TikTokAdsCustomReportOptions{
-		Dimensions:    v.Dimensions,
-		Metrics:       v.Metrics,
-		ReportType:    v.ReportType,
-		DataLevel:     v.DataLevel,
-		QueryLifetime: v.QueryLifetime,
-	}, nil
-}
-
-func TikTokAdsOptions_TikTokAdsCustomReportOptionsToSDK(w *TikTokAdsOptions_TikTokAdsCustomReportOptions) (*sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions{
-		Dimensions:    w.Dimensions,
-		Metrics:       w.Metrics,
-		ReportType:    w.ReportType,
-		DataLevel:     w.DataLevel,
-		QueryLifetime: w.QueryLifetime,
-	}, nil
-}
-
 // Specifies how to transform binary data into structured data..
 type Transformer struct {
 	// Required: the wire format of the data.
@@ -5893,98 +2241,6 @@ type Transformer struct {
 	OutputColumn *string `json:"output_column,omitempty"`
 }
 
-func TransformerFromSDK(v *sdk.Transformer) (*Transformer, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var configJsonOptionsWire *JsonTransformerOptions
-	var configAvroOptionsWire *AvroTransformerOptions
-	var configProtobufOptionsWire *ProtobufTransformerOptions
-	switch value := v.Config.(type) {
-	case nil:
-	case *sdk.Transformer_Config_JsonOptions:
-		if value != nil {
-			configJsonOptionsConverted, err := JsonTransformerOptionsFromSDK(&value.JsonOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Transformer.Config.JsonOptions", err)
-			}
-			configJsonOptionsWire = configJsonOptionsConverted
-		}
-	case *sdk.Transformer_Config_AvroOptions:
-		if value != nil {
-			configAvroOptionsConverted, err := AvroTransformerOptionsFromSDK(&value.AvroOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Transformer.Config.AvroOptions", err)
-			}
-			configAvroOptionsWire = configAvroOptionsConverted
-		}
-	case *sdk.Transformer_Config_ProtobufOptions:
-		if value != nil {
-			configProtobufOptionsConverted, err := ProtobufTransformerOptionsFromSDK(&value.ProtobufOptions)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Transformer.Config.ProtobufOptions", err)
-			}
-			configProtobufOptionsWire = configProtobufOptionsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Transformer.Config", value)
-	}
-	return &Transformer{
-		Format:          v.Format,
-		JsonOptions:     configJsonOptionsWire,
-		AvroOptions:     configAvroOptionsWire,
-		ProtobufOptions: configProtobufOptionsWire,
-		InputColumn:     v.InputColumn,
-		OutputColumn:    v.OutputColumn,
-	}, nil
-}
-
-func TransformerToSDK(w *Transformer) (*sdk.Transformer, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configMembers := 0
-	if w.JsonOptions != nil {
-		configMembers++
-	}
-	if w.AvroOptions != nil {
-		configMembers++
-	}
-	if w.ProtobufOptions != nil {
-		configMembers++
-	}
-	if configMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Transformer.Config")
-	}
-	configSelection := (&sdk.Transformer{}).Config
-	switch {
-	case w.JsonOptions != nil:
-		configJsonOptionsConverted, err := JsonTransformerOptionsToSDK(w.JsonOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Transformer.Config.JsonOptions", err)
-		}
-		configSelection = &sdk.Transformer_Config_JsonOptions{JsonOptions: *configJsonOptionsConverted}
-	case w.AvroOptions != nil:
-		configAvroOptionsConverted, err := AvroTransformerOptionsToSDK(w.AvroOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Transformer.Config.AvroOptions", err)
-		}
-		configSelection = &sdk.Transformer_Config_AvroOptions{AvroOptions: *configAvroOptionsConverted}
-	case w.ProtobufOptions != nil:
-		configProtobufOptionsConverted, err := ProtobufTransformerOptionsToSDK(w.ProtobufOptions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Transformer.Config.ProtobufOptions", err)
-		}
-		configSelection = &sdk.Transformer_Config_ProtobufOptions{ProtobufOptions: *configProtobufOptionsConverted}
-	}
-	return &sdk.Transformer{
-		Format:       w.Format,
-		InputColumn:  w.InputColumn,
-		OutputColumn: w.OutputColumn,
-		Config:       configSelection,
-	}, nil
-}
-
 // Information about truncations applied to this event..
 type Truncation struct {
 	// List of fields that were truncated from this event. If empty or absent, no
@@ -5992,33 +2248,11 @@ type Truncation struct {
 	TruncatedFields []Truncation_TruncationDetail `json:"truncated_fields,omitempty"`
 }
 
-func TruncationToSDK(w *Truncation) (*sdk.Truncation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	truncatedFieldsPublicValue, err := convertSlice(w.TruncatedFields, Truncation_TruncationDetailToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Truncation.TruncatedFields", err)
-	}
-	return &sdk.Truncation{
-		TruncatedFields: truncatedFieldsPublicValue,
-	}, nil
-}
-
 // Details about a specific field that was truncated..
 type Truncation_TruncationDetail struct {
 	// The name of the truncated field (e.g., "error"). Corresponds to field names
 	// in PipelineEvent.
 	FieldName *string `json:"field_name,omitempty"`
-}
-
-func Truncation_TruncationDetailToSDK(w *Truncation_TruncationDetail) (*sdk.Truncation_TruncationDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Truncation_TruncationDetail{
-		FieldName: w.FieldName,
-	}, nil
 }
 
 type UpdateInfo struct {
@@ -6060,50 +2294,10 @@ type UpdateInfo struct {
 	Parameters map[string]string `json:"parameters,omitempty"`
 }
 
-func UpdateInfoToSDK(w *UpdateInfo) (*sdk.UpdateInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := PipelineSpecToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInfo.Config", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInfo.CreationTime", err)
-	}
-	return &sdk.UpdateInfo{
-		PipelineId:           w.PipelineId,
-		UpdateId:             w.UpdateId,
-		Config:               configPublicValue,
-		Cause:                w.Cause,
-		State:                w.State,
-		ClusterId:            w.ClusterId,
-		CreationTime:         creationTimePublicValue,
-		FullRefresh:          w.FullRefresh,
-		RefreshSelection:     w.RefreshSelection,
-		FullRefreshSelection: w.FullRefreshSelection,
-		ValidateOnly:         w.ValidateOnly,
-		Mode:                 w.Mode,
-		Parameters:           w.Parameters,
-	}, nil
-}
-
 type UpdateStateInfo struct {
 	UpdateId     *string     `json:"update_id,omitempty"`
 	State        UpdateState `json:"state,omitempty"`
 	CreationTime *string     `json:"creation_time,omitempty"`
-}
-
-func UpdateStateInfoToSDK(w *UpdateStateInfo) (*sdk.UpdateStateInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UpdateStateInfo{
-		UpdateId:     w.UpdateId,
-		State:        w.State,
-		CreationTime: w.CreationTime,
-	}, nil
 }
 
 // Zendesk Support specific options for ingestion.
@@ -6113,22 +2307,4659 @@ type ZendeskSupportOptions struct {
 	StartDate *string `json:"start_date,omitempty"`
 }
 
-func ZendeskSupportOptionsFromSDK(v *sdk.ZendeskSupportOptions) (*ZendeskSupportOptions, error) {
+// ApiSourceConnectorConfigToSDK converts the mirror to the sdk-go type.
+func ApiSourceConnectorConfigToSDK(w *ApiSourceConnectorConfig) (*sdk.ApiSourceConnectorConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiSourceConnectorConfig{}
+	out.Configs = w.Configs
+	return out, nil
+}
+
+// ApiSourceConnectorConfigFromSDK converts the sdk-go type to the mirror.
+func ApiSourceConnectorConfigFromSDK(v *sdk.ApiSourceConnectorConfig) (*ApiSourceConnectorConfig, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &ZendeskSupportOptions{
-		StartDate: v.StartDate,
-	}, nil
+	out := &ApiSourceConnectorConfig{}
+	out.Configs = v.Configs
+	return out, nil
 }
 
+// ApiSourceConnectorOptionsToSDK converts the mirror to the sdk-go type.
+func ApiSourceConnectorOptionsToSDK(w *ApiSourceConnectorOptions) (*sdk.ApiSourceConnectorOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiSourceConnectorOptions{}
+	out.Options = w.Options
+	return out, nil
+}
+
+// ApiSourceConnectorOptionsFromSDK converts the sdk-go type to the mirror.
+func ApiSourceConnectorOptionsFromSDK(v *sdk.ApiSourceConnectorOptions) (*ApiSourceConnectorOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApiSourceConnectorOptions{}
+	out.Options = v.Options
+	return out, nil
+}
+
+// ApplyEnvironmentRequestToSDK converts the mirror to the sdk-go type.
+func ApplyEnvironmentRequestToSDK(w *ApplyEnvironmentRequest) (*sdk.ApplyEnvironmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApplyEnvironmentRequest{}
+	out.PipelineId = w.PipelineId
+	return out, nil
+}
+
+// ApplyEnvironmentRequestFromSDK converts the sdk-go type to the mirror.
+func ApplyEnvironmentRequestFromSDK(v *sdk.ApplyEnvironmentRequest) (*ApplyEnvironmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApplyEnvironmentRequest{}
+	out.PipelineId = v.PipelineId
+	return out, nil
+}
+
+// AutoFullRefreshPolicyToSDK converts the mirror to the sdk-go type.
+func AutoFullRefreshPolicyToSDK(w *AutoFullRefreshPolicy) (*sdk.AutoFullRefreshPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoFullRefreshPolicy{}
+	out.Enabled = w.Enabled
+	out.MinIntervalHours = w.MinIntervalHours
+	return out, nil
+}
+
+// AutoFullRefreshPolicyFromSDK converts the sdk-go type to the mirror.
+func AutoFullRefreshPolicyFromSDK(v *sdk.AutoFullRefreshPolicy) (*AutoFullRefreshPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoFullRefreshPolicy{}
+	out.Enabled = v.Enabled
+	out.MinIntervalHours = v.MinIntervalHours
+	return out, nil
+}
+
+// AvroTransformerOptionsToSDK converts the mirror to the sdk-go type.
+func AvroTransformerOptionsToSDK(w *AvroTransformerOptions) (*sdk.AvroTransformerOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AvroTransformerOptions{}
+	out.Schema = w.Schema
+	out.SchemaFilePath = w.SchemaFilePath
+	out.ParseMode = w.ParseMode
+	conv1, err := SchemaRegistryConfigToSDK(w.SchemaRegistry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AvroTransformerOptions.SchemaRegistry", err)
+	}
+	out.SchemaRegistry = conv1
+	return out, nil
+}
+
+// AvroTransformerOptionsFromSDK converts the sdk-go type to the mirror.
+func AvroTransformerOptionsFromSDK(v *sdk.AvroTransformerOptions) (*AvroTransformerOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AvroTransformerOptions{}
+	out.Schema = v.Schema
+	out.SchemaFilePath = v.SchemaFilePath
+	out.ParseMode = v.ParseMode
+	conv2, err := SchemaRegistryConfigFromSDK(v.SchemaRegistry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AvroTransformerOptions.SchemaRegistry", err)
+	}
+	out.SchemaRegistry = conv2
+	return out, nil
+}
+
+// ClonePipelineRequestToSDK converts the mirror to the sdk-go type.
+func ClonePipelineRequestToSDK(w *ClonePipelineRequest) (*sdk.ClonePipelineRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClonePipelineRequest{}
+	out.PipelineId = w.PipelineId
+	out.ExpectedLastModified = w.ExpectedLastModified
+	out.AllowDuplicateNames = w.AllowDuplicateNames
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Storage = w.Storage
+	out.Configuration = w.Configuration
+	conv3, err := convertSlice(w.Clusters, PipelineClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv3
+	conv4, err := convertSlice(w.Libraries, PipelineLibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv4
+	conv5, err := IngestionPipelineDefinitionToSDK(w.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv5
+	conv6, err := IngestionGatewayPipelineDefinitionToSDK(w.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv6
+	conv7, err := PipelineTriggerToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv7
+	out.Target = w.Target
+	out.Schema = w.Schema
+	conv8, err := FiltersToSDK(w.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Filters", err)
+	}
+	out.Filters = conv8
+	out.Continuous = w.Continuous
+	out.Development = w.Development
+	out.Photon = w.Photon
+	out.Edition = w.Edition
+	out.Channel = w.Channel
+	out.Catalog = w.Catalog
+	conv9, err := convertSlice(w.Notifications, NotificationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv9
+	out.Serverless = w.Serverless
+	conv10, err := PipelineDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv10
+	conv11, err := RestartWindowToSDK(w.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv11
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.Tags = w.Tags
+	conv12, err := EventLogSpecToSDK(w.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv12
+	out.RootPath = w.RootPath
+	conv13, err := PipelinesEnvironmentToSDK(w.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Environment", err)
+	}
+	out.Environment = conv13
+	out.ParentPath = w.ParentPath
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ServerlessComputeId = w.ServerlessComputeId
+	out.CloneMode = w.CloneMode
+	return out, nil
+}
+
+// ClonePipelineRequestFromSDK converts the sdk-go type to the mirror.
+func ClonePipelineRequestFromSDK(v *sdk.ClonePipelineRequest) (*ClonePipelineRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClonePipelineRequest{}
+	out.PipelineId = v.PipelineId
+	out.ExpectedLastModified = v.ExpectedLastModified
+	out.AllowDuplicateNames = v.AllowDuplicateNames
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Storage = v.Storage
+	out.Configuration = v.Configuration
+	conv14, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv14
+	conv15, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv15
+	conv16, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv16
+	conv17, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv17
+	conv18, err := PipelineTriggerFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv18
+	out.Target = v.Target
+	out.Schema = v.Schema
+	conv19, err := FiltersFromSDK(v.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Filters", err)
+	}
+	out.Filters = conv19
+	out.Continuous = v.Continuous
+	out.Development = v.Development
+	out.Photon = v.Photon
+	out.Edition = v.Edition
+	out.Channel = v.Channel
+	out.Catalog = v.Catalog
+	conv20, err := convertSlice(v.Notifications, NotificationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv20
+	out.Serverless = v.Serverless
+	conv21, err := PipelineDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv21
+	conv22, err := RestartWindowFromSDK(v.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv22
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.Tags = v.Tags
+	conv23, err := EventLogSpecFromSDK(v.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv23
+	out.RootPath = v.RootPath
+	conv24, err := PipelinesEnvironmentFromSDK(v.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ClonePipelineRequest.Environment", err)
+	}
+	out.Environment = conv24
+	out.ParentPath = v.ParentPath
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ServerlessComputeId = v.ServerlessComputeId
+	out.CloneMode = v.CloneMode
+	return out, nil
+}
+
+// ClonePipelineResponseToSDK converts the mirror to the sdk-go type.
+func ClonePipelineResponseToSDK(w *ClonePipelineResponse) (*sdk.ClonePipelineResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClonePipelineResponse{}
+	out.PipelineId = w.PipelineId
+	return out, nil
+}
+
+// ClonePipelineResponseFromSDK converts the sdk-go type to the mirror.
+func ClonePipelineResponseFromSDK(v *sdk.ClonePipelineResponse) (*ClonePipelineResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClonePipelineResponse{}
+	out.PipelineId = v.PipelineId
+	return out, nil
+}
+
+// ConfluenceConnectorOptionsToSDK converts the mirror to the sdk-go type.
+func ConfluenceConnectorOptionsToSDK(w *ConfluenceConnectorOptions) (*sdk.ConfluenceConnectorOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConfluenceConnectorOptions{}
+	out.IncludeConfluenceSpaces = w.IncludeConfluenceSpaces
+	return out, nil
+}
+
+// ConfluenceConnectorOptionsFromSDK converts the sdk-go type to the mirror.
+func ConfluenceConnectorOptionsFromSDK(v *sdk.ConfluenceConnectorOptions) (*ConfluenceConnectorOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConfluenceConnectorOptions{}
+	out.IncludeConfluenceSpaces = v.IncludeConfluenceSpaces
+	return out, nil
+}
+
+// ConfluentSchemaRegistryOptionsToSDK converts the mirror to the sdk-go type.
+func ConfluentSchemaRegistryOptionsToSDK(w *ConfluentSchemaRegistryOptions) (*sdk.ConfluentSchemaRegistryOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConfluentSchemaRegistryOptions{}
+	out.Subject = w.Subject
+	return out, nil
+}
+
+// ConfluentSchemaRegistryOptionsFromSDK converts the sdk-go type to the mirror.
+func ConfluentSchemaRegistryOptionsFromSDK(v *sdk.ConfluentSchemaRegistryOptions) (*ConfluentSchemaRegistryOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConfluentSchemaRegistryOptions{}
+	out.Subject = v.Subject
+	return out, nil
+}
+
+// ConnectionParametersToSDK converts the mirror to the sdk-go type.
+func ConnectionParametersToSDK(w *ConnectionParameters) (*sdk.ConnectionParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectionParameters{}
+	out.SourceCatalog = w.SourceCatalog
+	return out, nil
+}
+
+// ConnectionParametersFromSDK converts the sdk-go type to the mirror.
+func ConnectionParametersFromSDK(v *sdk.ConnectionParameters) (*ConnectionParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectionParameters{}
+	out.SourceCatalog = v.SourceCatalog
+	return out, nil
+}
+
+// ConnectorOptionsToSDK converts the mirror to the sdk-go type.
+func ConnectorOptionsToSDK(w *ConnectorOptions) (*sdk.ConnectorOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConnectorOptions{}
+	{
+		members := 0
+		if w.GoogleAdsOptions != nil {
+			members++
+		}
+		if w.TiktokAdsOptions != nil {
+			members++
+		}
+		if w.SharepointOptions != nil {
+			members++
+		}
+		if w.GdriveOptions != nil {
+			members++
+		}
+		if w.OutlookOptions != nil {
+			members++
+		}
+		if w.SmartsheetOptions != nil {
+			members++
+		}
+		if w.JiraOptions != nil {
+			members++
+		}
+		if w.ConfluenceOptions != nil {
+			members++
+		}
+		if w.MetaAdsOptions != nil {
+			members++
+		}
+		if w.ZendeskSupportOptions != nil {
+			members++
+		}
+		if w.KafkaOptions != nil {
+			members++
+		}
+		if w.RabbitmqOptions != nil {
+			members++
+		}
+		if w.MarketoOptions != nil {
+			members++
+		}
+		if w.LinkedinAdsOptions != nil {
+			members++
+		}
+		if w.RedditAdsOptions != nil {
+			members++
+		}
+		if w.ApiSourceConnectorOptions != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "ConnectorOptions.ConnectorOptions")
+		}
+	}
+	switch {
+	case w.GoogleAdsOptions != nil:
+		conv25, err := GoogleAdsOptionsToSDK(w.GoogleAdsOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_GoogleAdsOptions{GoogleAdsOptions: *conv25}
+	case w.TiktokAdsOptions != nil:
+		conv26, err := TikTokAdsOptionsToSDK(w.TiktokAdsOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_TiktokAdsOptions{TiktokAdsOptions: *conv26}
+	case w.SharepointOptions != nil:
+		conv27, err := SharepointOptionsToSDK(w.SharepointOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_SharepointOptions{SharepointOptions: *conv27}
+	case w.GdriveOptions != nil:
+		conv28, err := GoogleDriveOptionsToSDK(w.GdriveOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_GdriveOptions{GdriveOptions: *conv28}
+	case w.OutlookOptions != nil:
+		conv29, err := OutlookOptionsToSDK(w.OutlookOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_OutlookOptions{OutlookOptions: *conv29}
+	case w.SmartsheetOptions != nil:
+		conv30, err := SmartsheetOptionsToSDK(w.SmartsheetOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_SmartsheetOptions{SmartsheetOptions: *conv30}
+	case w.JiraOptions != nil:
+		conv31, err := JiraConnectorOptionsToSDK(w.JiraOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_JiraOptions{JiraOptions: *conv31}
+	case w.ConfluenceOptions != nil:
+		conv32, err := ConfluenceConnectorOptionsToSDK(w.ConfluenceOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_ConfluenceOptions{ConfluenceOptions: *conv32}
+	case w.MetaAdsOptions != nil:
+		conv33, err := MetaMarketingOptionsToSDK(w.MetaAdsOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_MetaAdsOptions{MetaAdsOptions: *conv33}
+	case w.ZendeskSupportOptions != nil:
+		conv34, err := ZendeskSupportOptionsToSDK(w.ZendeskSupportOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_ZendeskSupportOptions{ZendeskSupportOptions: *conv34}
+	case w.KafkaOptions != nil:
+		conv35, err := KafkaOptionsToSDK(w.KafkaOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_KafkaOptions{KafkaOptions: *conv35}
+	case w.RabbitmqOptions != nil:
+		conv36, err := RabbitmqOptionsToSDK(w.RabbitmqOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_RabbitmqOptions{RabbitmqOptions: *conv36}
+	case w.MarketoOptions != nil:
+		conv37, err := MarketoOptionsToSDK(w.MarketoOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_MarketoOptions{MarketoOptions: *conv37}
+	case w.LinkedinAdsOptions != nil:
+		conv38, err := LinkedInAdsOptionsToSDK(w.LinkedinAdsOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_LinkedinAdsOptions{LinkedinAdsOptions: *conv38}
+	case w.RedditAdsOptions != nil:
+		conv39, err := RedditAdsOptionsToSDK(w.RedditAdsOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_RedditAdsOptions{RedditAdsOptions: *conv39}
+	case w.ApiSourceConnectorOptions != nil:
+		conv40, err := ApiSourceConnectorOptionsToSDK(w.ApiSourceConnectorOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+		}
+		out.ConnectorOptions = &sdk.ConnectorOptions_ConnectorOptions_ApiSourceConnectorOptions{ApiSourceConnectorOptions: *conv40}
+	}
+	return out, nil
+}
+
+// ConnectorOptionsFromSDK converts the sdk-go type to the mirror.
+func ConnectorOptionsFromSDK(v *sdk.ConnectorOptions) (*ConnectorOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConnectorOptions{}
+	switch value := v.ConnectorOptions.(type) {
+	case *sdk.ConnectorOptions_ConnectorOptions_GoogleAdsOptions:
+		if value != nil {
+			conv41, err := GoogleAdsOptionsFromSDK(&value.GoogleAdsOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.GoogleAdsOptions = conv41
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_TiktokAdsOptions:
+		if value != nil {
+			conv42, err := TikTokAdsOptionsFromSDK(&value.TiktokAdsOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.TiktokAdsOptions = conv42
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_SharepointOptions:
+		if value != nil {
+			conv43, err := SharepointOptionsFromSDK(&value.SharepointOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.SharepointOptions = conv43
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_GdriveOptions:
+		if value != nil {
+			conv44, err := GoogleDriveOptionsFromSDK(&value.GdriveOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.GdriveOptions = conv44
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_OutlookOptions:
+		if value != nil {
+			conv45, err := OutlookOptionsFromSDK(&value.OutlookOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.OutlookOptions = conv45
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_SmartsheetOptions:
+		if value != nil {
+			conv46, err := SmartsheetOptionsFromSDK(&value.SmartsheetOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.SmartsheetOptions = conv46
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_JiraOptions:
+		if value != nil {
+			conv47, err := JiraConnectorOptionsFromSDK(&value.JiraOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.JiraOptions = conv47
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_ConfluenceOptions:
+		if value != nil {
+			conv48, err := ConfluenceConnectorOptionsFromSDK(&value.ConfluenceOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.ConfluenceOptions = conv48
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_MetaAdsOptions:
+		if value != nil {
+			conv49, err := MetaMarketingOptionsFromSDK(&value.MetaAdsOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.MetaAdsOptions = conv49
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_ZendeskSupportOptions:
+		if value != nil {
+			conv50, err := ZendeskSupportOptionsFromSDK(&value.ZendeskSupportOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.ZendeskSupportOptions = conv50
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_KafkaOptions:
+		if value != nil {
+			conv51, err := KafkaOptionsFromSDK(&value.KafkaOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.KafkaOptions = conv51
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_RabbitmqOptions:
+		if value != nil {
+			conv52, err := RabbitmqOptionsFromSDK(&value.RabbitmqOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.RabbitmqOptions = conv52
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_MarketoOptions:
+		if value != nil {
+			conv53, err := MarketoOptionsFromSDK(&value.MarketoOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.MarketoOptions = conv53
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_LinkedinAdsOptions:
+		if value != nil {
+			conv54, err := LinkedInAdsOptionsFromSDK(&value.LinkedinAdsOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.LinkedinAdsOptions = conv54
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_RedditAdsOptions:
+		if value != nil {
+			conv55, err := RedditAdsOptionsFromSDK(&value.RedditAdsOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.RedditAdsOptions = conv55
+		}
+	case *sdk.ConnectorOptions_ConnectorOptions_ApiSourceConnectorOptions:
+		if value != nil {
+			conv56, err := ApiSourceConnectorOptionsFromSDK(&value.ApiSourceConnectorOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "ConnectorOptions.ConnectorOptions", err)
+			}
+			out.ApiSourceConnectorOptions = conv56
+		}
+	}
+	return out, nil
+}
+
+// CreatePipelineRequestToSDK converts the mirror to the sdk-go type.
+func CreatePipelineRequestToSDK(w *CreatePipelineRequest) (*sdk.CreatePipelineRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePipelineRequest{}
+	out.AllowDuplicateNames = w.AllowDuplicateNames
+	out.DryRun = w.DryRun
+	conv57, err := PipelinesJobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RunAs", err)
+	}
+	out.RunAs = conv57
+	out.Parameters = w.Parameters
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Storage = w.Storage
+	out.Configuration = w.Configuration
+	conv58, err := convertSlice(w.Clusters, PipelineClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv58
+	conv59, err := convertSlice(w.Libraries, PipelineLibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv59
+	conv60, err := IngestionPipelineDefinitionToSDK(w.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv60
+	conv61, err := IngestionGatewayPipelineDefinitionToSDK(w.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv61
+	conv62, err := PipelineTriggerToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv62
+	out.Target = w.Target
+	out.Schema = w.Schema
+	conv63, err := FiltersToSDK(w.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Filters", err)
+	}
+	out.Filters = conv63
+	out.Continuous = w.Continuous
+	out.Development = w.Development
+	out.Photon = w.Photon
+	out.Edition = w.Edition
+	out.Channel = w.Channel
+	out.Catalog = w.Catalog
+	conv64, err := convertSlice(w.Notifications, NotificationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv64
+	out.Serverless = w.Serverless
+	conv65, err := PipelineDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv65
+	conv66, err := RestartWindowToSDK(w.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv66
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.Tags = w.Tags
+	conv67, err := EventLogSpecToSDK(w.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv67
+	out.RootPath = w.RootPath
+	conv68, err := PipelinesEnvironmentToSDK(w.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Environment", err)
+	}
+	out.Environment = conv68
+	out.ParentPath = w.ParentPath
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ServerlessComputeId = w.ServerlessComputeId
+	return out, nil
+}
+
+// CreatePipelineRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePipelineRequestFromSDK(v *sdk.CreatePipelineRequest) (*CreatePipelineRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePipelineRequest{}
+	out.AllowDuplicateNames = v.AllowDuplicateNames
+	out.DryRun = v.DryRun
+	conv69, err := PipelinesJobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RunAs", err)
+	}
+	out.RunAs = conv69
+	out.Parameters = v.Parameters
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Storage = v.Storage
+	out.Configuration = v.Configuration
+	conv70, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv70
+	conv71, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv71
+	conv72, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv72
+	conv73, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv73
+	conv74, err := PipelineTriggerFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv74
+	out.Target = v.Target
+	out.Schema = v.Schema
+	conv75, err := FiltersFromSDK(v.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Filters", err)
+	}
+	out.Filters = conv75
+	out.Continuous = v.Continuous
+	out.Development = v.Development
+	out.Photon = v.Photon
+	out.Edition = v.Edition
+	out.Channel = v.Channel
+	out.Catalog = v.Catalog
+	conv76, err := convertSlice(v.Notifications, NotificationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv76
+	out.Serverless = v.Serverless
+	conv77, err := PipelineDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv77
+	conv78, err := RestartWindowFromSDK(v.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv78
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.Tags = v.Tags
+	conv79, err := EventLogSpecFromSDK(v.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv79
+	out.RootPath = v.RootPath
+	conv80, err := PipelinesEnvironmentFromSDK(v.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineRequest.Environment", err)
+	}
+	out.Environment = conv80
+	out.ParentPath = v.ParentPath
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ServerlessComputeId = v.ServerlessComputeId
+	return out, nil
+}
+
+// CreatePipelineResponseToSDK converts the mirror to the sdk-go type.
+func CreatePipelineResponseToSDK(w *CreatePipelineResponse) (*sdk.CreatePipelineResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePipelineResponse{}
+	out.PipelineId = w.PipelineId
+	conv81, err := PipelineSpecToSDK(w.EffectiveSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineResponse.EffectiveSettings", err)
+	}
+	out.EffectiveSettings = conv81
+	return out, nil
+}
+
+// CreatePipelineResponseFromSDK converts the sdk-go type to the mirror.
+func CreatePipelineResponseFromSDK(v *sdk.CreatePipelineResponse) (*CreatePipelineResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePipelineResponse{}
+	out.PipelineId = v.PipelineId
+	conv82, err := PipelineSpecFromSDK(v.EffectiveSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePipelineResponse.EffectiveSettings", err)
+	}
+	out.EffectiveSettings = conv82
+	return out, nil
+}
+
+// CronTriggerToSDK converts the mirror to the sdk-go type.
+func CronTriggerToSDK(w *CronTrigger) (*sdk.CronTrigger, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronTrigger{}
+	out.QuartzCronSchedule = w.QuartzCronSchedule
+	out.TimezoneId = w.TimezoneId
+	return out, nil
+}
+
+// CronTriggerFromSDK converts the sdk-go type to the mirror.
+func CronTriggerFromSDK(v *sdk.CronTrigger) (*CronTrigger, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronTrigger{}
+	out.QuartzCronSchedule = v.QuartzCronSchedule
+	out.TimezoneId = v.TimezoneId
+	return out, nil
+}
+
+// DataPlaneIdToSDK converts the mirror to the sdk-go type.
+func DataPlaneIdToSDK(w *DataPlaneId) (*sdk.DataPlaneId, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataPlaneId{}
+	out.Instance = w.Instance
+	out.SeqNo = w.SeqNo
+	return out, nil
+}
+
+// DataPlaneIdFromSDK converts the sdk-go type to the mirror.
+func DataPlaneIdFromSDK(v *sdk.DataPlaneId) (*DataPlaneId, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataPlaneId{}
+	out.Instance = v.Instance
+	out.SeqNo = v.SeqNo
+	return out, nil
+}
+
+// DataStagingOptionsToSDK converts the mirror to the sdk-go type.
+func DataStagingOptionsToSDK(w *DataStagingOptions) (*sdk.DataStagingOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataStagingOptions{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.VolumeName = w.VolumeName
+	return out, nil
+}
+
+// DataStagingOptionsFromSDK converts the sdk-go type to the mirror.
+func DataStagingOptionsFromSDK(v *sdk.DataStagingOptions) (*DataStagingOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataStagingOptions{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.VolumeName = v.VolumeName
+	return out, nil
+}
+
+// DeletePipelineRequestToSDK converts the mirror to the sdk-go type.
+func DeletePipelineRequestToSDK(w *DeletePipelineRequest) (*sdk.DeletePipelineRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeletePipelineRequest{}
+	out.PipelineId = w.PipelineId
+	out.Force = w.Force
+	out.Cascade = w.Cascade
+	return out, nil
+}
+
+// DeletePipelineRequestFromSDK converts the sdk-go type to the mirror.
+func DeletePipelineRequestFromSDK(v *sdk.DeletePipelineRequest) (*DeletePipelineRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeletePipelineRequest{}
+	out.PipelineId = v.PipelineId
+	out.Force = v.Force
+	out.Cascade = v.Cascade
+	return out, nil
+}
+
+// EditPipelineRequestToSDK converts the mirror to the sdk-go type.
+func EditPipelineRequestToSDK(w *EditPipelineRequest) (*sdk.EditPipelineRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditPipelineRequest{}
+	out.PipelineId = w.PipelineId
+	out.AllowDuplicateNames = w.AllowDuplicateNames
+	out.ExpectedLastModified = w.ExpectedLastModified
+	conv83, err := PipelinesJobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RunAs", err)
+	}
+	out.RunAs = conv83
+	out.Parameters = w.Parameters
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Storage = w.Storage
+	out.Configuration = w.Configuration
+	conv84, err := convertSlice(w.Clusters, PipelineClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv84
+	conv85, err := convertSlice(w.Libraries, PipelineLibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv85
+	conv86, err := IngestionPipelineDefinitionToSDK(w.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv86
+	conv87, err := IngestionGatewayPipelineDefinitionToSDK(w.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv87
+	conv88, err := PipelineTriggerToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv88
+	out.Target = w.Target
+	out.Schema = w.Schema
+	conv89, err := FiltersToSDK(w.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Filters", err)
+	}
+	out.Filters = conv89
+	out.Continuous = w.Continuous
+	out.Development = w.Development
+	out.Photon = w.Photon
+	out.Edition = w.Edition
+	out.Channel = w.Channel
+	out.Catalog = w.Catalog
+	conv90, err := convertSlice(w.Notifications, NotificationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv90
+	out.Serverless = w.Serverless
+	conv91, err := PipelineDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv91
+	conv92, err := RestartWindowToSDK(w.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv92
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.Tags = w.Tags
+	conv93, err := EventLogSpecToSDK(w.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv93
+	out.RootPath = w.RootPath
+	conv94, err := PipelinesEnvironmentToSDK(w.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Environment", err)
+	}
+	out.Environment = conv94
+	out.ParentPath = w.ParentPath
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ServerlessComputeId = w.ServerlessComputeId
+	return out, nil
+}
+
+// EditPipelineRequestFromSDK converts the sdk-go type to the mirror.
+func EditPipelineRequestFromSDK(v *sdk.EditPipelineRequest) (*EditPipelineRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditPipelineRequest{}
+	out.PipelineId = v.PipelineId
+	out.AllowDuplicateNames = v.AllowDuplicateNames
+	out.ExpectedLastModified = v.ExpectedLastModified
+	conv95, err := PipelinesJobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RunAs", err)
+	}
+	out.RunAs = conv95
+	out.Parameters = v.Parameters
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Storage = v.Storage
+	out.Configuration = v.Configuration
+	conv96, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Clusters", err)
+	}
+	out.Clusters = conv96
+	conv97, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Libraries", err)
+	}
+	out.Libraries = conv97
+	conv98, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv98
+	conv99, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv99
+	conv100, err := PipelineTriggerFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Trigger", err)
+	}
+	out.Trigger = conv100
+	out.Target = v.Target
+	out.Schema = v.Schema
+	conv101, err := FiltersFromSDK(v.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Filters", err)
+	}
+	out.Filters = conv101
+	out.Continuous = v.Continuous
+	out.Development = v.Development
+	out.Photon = v.Photon
+	out.Edition = v.Edition
+	out.Channel = v.Channel
+	out.Catalog = v.Catalog
+	conv102, err := convertSlice(v.Notifications, NotificationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Notifications", err)
+	}
+	out.Notifications = conv102
+	out.Serverless = v.Serverless
+	conv103, err := PipelineDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Deployment", err)
+	}
+	out.Deployment = conv103
+	conv104, err := RestartWindowFromSDK(v.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.RestartWindow", err)
+	}
+	out.RestartWindow = conv104
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.Tags = v.Tags
+	conv105, err := EventLogSpecFromSDK(v.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.EventLog", err)
+	}
+	out.EventLog = conv105
+	out.RootPath = v.RootPath
+	conv106, err := PipelinesEnvironmentFromSDK(v.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EditPipelineRequest.Environment", err)
+	}
+	out.Environment = conv106
+	out.ParentPath = v.ParentPath
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ServerlessComputeId = v.ServerlessComputeId
+	return out, nil
+}
+
+// ErrorDetailToSDK converts the mirror to the sdk-go type.
+func ErrorDetailToSDK(w *ErrorDetail) (*sdk.ErrorDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ErrorDetail{}
+	conv107, err := convertSlice(w.Exceptions, SerializedExceptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ErrorDetail.Exceptions", err)
+	}
+	out.Exceptions = conv107
+	out.Fatal = w.Fatal
+	return out, nil
+}
+
+// ErrorDetailFromSDK converts the sdk-go type to the mirror.
+func ErrorDetailFromSDK(v *sdk.ErrorDetail) (*ErrorDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ErrorDetail{}
+	conv108, err := convertSlice(v.Exceptions, SerializedExceptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ErrorDetail.Exceptions", err)
+	}
+	out.Exceptions = conv108
+	out.Fatal = v.Fatal
+	return out, nil
+}
+
+// EventLogSpecToSDK converts the mirror to the sdk-go type.
+func EventLogSpecToSDK(w *EventLogSpec) (*sdk.EventLogSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EventLogSpec{}
+	out.Name = w.Name
+	out.Schema = w.Schema
+	out.Catalog = w.Catalog
+	return out, nil
+}
+
+// EventLogSpecFromSDK converts the sdk-go type to the mirror.
+func EventLogSpecFromSDK(v *sdk.EventLogSpec) (*EventLogSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EventLogSpec{}
+	out.Name = v.Name
+	out.Schema = v.Schema
+	out.Catalog = v.Catalog
+	return out, nil
+}
+
+// FileFilterToSDK converts the mirror to the sdk-go type.
+func FileFilterToSDK(w *FileFilter) (*sdk.FileFilter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileFilter{}
+	{
+		members := 0
+		if w.PathFilter != nil {
+			members++
+		}
+		if w.ModifiedBefore != nil {
+			members++
+		}
+		if w.ModifiedAfter != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "FileFilter.Filter")
+		}
+	}
+	switch {
+	case w.PathFilter != nil:
+		out.Filter = &sdk.FileFilter_Filter_PathFilter{PathFilter: *w.PathFilter}
+	case w.ModifiedBefore != nil:
+		out.Filter = &sdk.FileFilter_Filter_ModifiedBefore{ModifiedBefore: *w.ModifiedBefore}
+	case w.ModifiedAfter != nil:
+		out.Filter = &sdk.FileFilter_Filter_ModifiedAfter{ModifiedAfter: *w.ModifiedAfter}
+	}
+	return out, nil
+}
+
+// FileFilterFromSDK converts the sdk-go type to the mirror.
+func FileFilterFromSDK(v *sdk.FileFilter) (*FileFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileFilter{}
+	switch value := v.Filter.(type) {
+	case *sdk.FileFilter_Filter_PathFilter:
+		if value != nil {
+			out.PathFilter = new(value.PathFilter)
+		}
+	case *sdk.FileFilter_Filter_ModifiedBefore:
+		if value != nil {
+			out.ModifiedBefore = new(value.ModifiedBefore)
+		}
+	case *sdk.FileFilter_Filter_ModifiedAfter:
+		if value != nil {
+			out.ModifiedAfter = new(value.ModifiedAfter)
+		}
+	}
+	return out, nil
+}
+
+// FileIngestionOptionsToSDK converts the mirror to the sdk-go type.
+func FileIngestionOptionsToSDK(w *FileIngestionOptions) (*sdk.FileIngestionOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileIngestionOptions{}
+	out.Format = w.Format
+	conv109, err := convertSlice(w.FileFilters, FileFilterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FileIngestionOptions.FileFilters", err)
+	}
+	out.FileFilters = conv109
+	out.InferColumnTypes = w.InferColumnTypes
+	out.SchemaEvolutionMode = w.SchemaEvolutionMode
+	out.SchemaHints = w.SchemaHints
+	out.IgnoreCorruptFiles = w.IgnoreCorruptFiles
+	out.CorruptRecordColumn = w.CorruptRecordColumn
+	out.RescuedDataColumn = w.RescuedDataColumn
+	out.SingleVariantColumn = w.SingleVariantColumn
+	out.ReaderCaseSensitive = w.ReaderCaseSensitive
+	out.FormatOptions = w.FormatOptions
+	return out, nil
+}
+
+// FileIngestionOptionsFromSDK converts the sdk-go type to the mirror.
+func FileIngestionOptionsFromSDK(v *sdk.FileIngestionOptions) (*FileIngestionOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileIngestionOptions{}
+	out.Format = v.Format
+	conv110, err := convertSlice(v.FileFilters, FileFilterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FileIngestionOptions.FileFilters", err)
+	}
+	out.FileFilters = conv110
+	out.InferColumnTypes = v.InferColumnTypes
+	out.SchemaEvolutionMode = v.SchemaEvolutionMode
+	out.SchemaHints = v.SchemaHints
+	out.IgnoreCorruptFiles = v.IgnoreCorruptFiles
+	out.CorruptRecordColumn = v.CorruptRecordColumn
+	out.RescuedDataColumn = v.RescuedDataColumn
+	out.SingleVariantColumn = v.SingleVariantColumn
+	out.ReaderCaseSensitive = v.ReaderCaseSensitive
+	out.FormatOptions = v.FormatOptions
+	return out, nil
+}
+
+// FiltersToSDK converts the mirror to the sdk-go type.
+func FiltersToSDK(w *Filters) (*sdk.Filters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Filters{}
+	out.Include = w.Include
+	out.Exclude = w.Exclude
+	return out, nil
+}
+
+// FiltersFromSDK converts the sdk-go type to the mirror.
+func FiltersFromSDK(v *sdk.Filters) (*Filters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Filters{}
+	out.Include = v.Include
+	out.Exclude = v.Exclude
+	return out, nil
+}
+
+// GetPipelineResponseToSDK converts the mirror to the sdk-go type.
+func GetPipelineResponseToSDK(w *GetPipelineResponse) (*sdk.GetPipelineResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPipelineResponse{}
+	out.PipelineId = w.PipelineId
+	conv111, err := PipelineSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.Spec", err)
+	}
+	out.Spec = conv111
+	out.State = w.State
+	out.Cause = w.Cause
+	out.ClusterId = w.ClusterId
+	out.Name = w.Name
+	out.Health = w.Health
+	out.CreatorUserName = w.CreatorUserName
+	conv112, err := convertSlice(w.LatestUpdates, UpdateStateInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.LatestUpdates", err)
+	}
+	out.LatestUpdates = conv112
+	out.LastModified = w.LastModified
+	out.RunAsUserName = w.RunAsUserName
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	out.EffectivePublishingMode = w.EffectivePublishingMode
+	conv113, err := PipelinesJobRunAsToSDK(w.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.RunAs", err)
+	}
+	out.RunAs = conv113
+	out.Parameters = w.Parameters
+	out.EffectiveServerlessComputeId = w.EffectiveServerlessComputeId
+	return out, nil
+}
+
+// GetPipelineResponseFromSDK converts the sdk-go type to the mirror.
+func GetPipelineResponseFromSDK(v *sdk.GetPipelineResponse) (*GetPipelineResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPipelineResponse{}
+	out.PipelineId = v.PipelineId
+	conv114, err := PipelineSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.Spec", err)
+	}
+	out.Spec = conv114
+	out.State = v.State
+	out.Cause = v.Cause
+	out.ClusterId = v.ClusterId
+	out.Name = v.Name
+	out.Health = v.Health
+	out.CreatorUserName = v.CreatorUserName
+	conv115, err := convertSlice(v.LatestUpdates, UpdateStateInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.LatestUpdates", err)
+	}
+	out.LatestUpdates = conv115
+	out.LastModified = v.LastModified
+	out.RunAsUserName = v.RunAsUserName
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	out.EffectivePublishingMode = v.EffectivePublishingMode
+	conv116, err := PipelinesJobRunAsFromSDK(v.RunAs)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPipelineResponse.RunAs", err)
+	}
+	out.RunAs = conv116
+	out.Parameters = v.Parameters
+	out.EffectiveServerlessComputeId = v.EffectiveServerlessComputeId
+	return out, nil
+}
+
+// GetUpdateResponseToSDK converts the mirror to the sdk-go type.
+func GetUpdateResponseToSDK(w *GetUpdateResponse) (*sdk.GetUpdateResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetUpdateResponse{}
+	conv117, err := UpdateInfoToSDK(w.Update)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetUpdateResponse.Update", err)
+	}
+	out.Update = conv117
+	return out, nil
+}
+
+// GetUpdateResponseFromSDK converts the sdk-go type to the mirror.
+func GetUpdateResponseFromSDK(v *sdk.GetUpdateResponse) (*GetUpdateResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetUpdateResponse{}
+	conv118, err := UpdateInfoFromSDK(v.Update)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetUpdateResponse.Update", err)
+	}
+	out.Update = conv118
+	return out, nil
+}
+
+// GoogleAdsConfigToSDK converts the mirror to the sdk-go type.
+func GoogleAdsConfigToSDK(w *GoogleAdsConfig) (*sdk.GoogleAdsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleAdsConfig{}
+	out.ManagerAccountId = w.ManagerAccountId
+	return out, nil
+}
+
+// GoogleAdsConfigFromSDK converts the sdk-go type to the mirror.
+func GoogleAdsConfigFromSDK(v *sdk.GoogleAdsConfig) (*GoogleAdsConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleAdsConfig{}
+	out.ManagerAccountId = v.ManagerAccountId
+	return out, nil
+}
+
+// GoogleAdsCustomReportOptionsToSDK converts the mirror to the sdk-go type.
+func GoogleAdsCustomReportOptionsToSDK(w *GoogleAdsCustomReportOptions) (*sdk.GoogleAdsCustomReportOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleAdsCustomReportOptions{}
+	out.Resource = w.Resource
+	out.ResourceFields = w.ResourceFields
+	out.Segments = w.Segments
+	out.Metrics = w.Metrics
+	return out, nil
+}
+
+// GoogleAdsCustomReportOptionsFromSDK converts the sdk-go type to the mirror.
+func GoogleAdsCustomReportOptionsFromSDK(v *sdk.GoogleAdsCustomReportOptions) (*GoogleAdsCustomReportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleAdsCustomReportOptions{}
+	out.Resource = v.Resource
+	out.ResourceFields = v.ResourceFields
+	out.Segments = v.Segments
+	out.Metrics = v.Metrics
+	return out, nil
+}
+
+// GoogleAdsOptionsToSDK converts the mirror to the sdk-go type.
+func GoogleAdsOptionsToSDK(w *GoogleAdsOptions) (*sdk.GoogleAdsOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleAdsOptions{}
+	out.ManagerAccountId = w.ManagerAccountId
+	out.LookbackWindowDays = w.LookbackWindowDays
+	out.SyncStartDate = w.SyncStartDate
+	conv119, err := GoogleAdsCustomReportOptionsToSDK(w.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GoogleAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv119
+	return out, nil
+}
+
+// GoogleAdsOptionsFromSDK converts the sdk-go type to the mirror.
+func GoogleAdsOptionsFromSDK(v *sdk.GoogleAdsOptions) (*GoogleAdsOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleAdsOptions{}
+	out.ManagerAccountId = v.ManagerAccountId
+	out.LookbackWindowDays = v.LookbackWindowDays
+	out.SyncStartDate = v.SyncStartDate
+	conv120, err := GoogleAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GoogleAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv120
+	return out, nil
+}
+
+// GoogleDriveOptionsToSDK converts the mirror to the sdk-go type.
+func GoogleDriveOptionsToSDK(w *GoogleDriveOptions) (*sdk.GoogleDriveOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleDriveOptions{}
+	out.Url = w.Url
+	out.EntityType = w.EntityType
+	conv121, err := FileIngestionOptionsToSDK(w.FileIngestionOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GoogleDriveOptions.FileIngestionOptions", err)
+	}
+	out.FileIngestionOptions = conv121
+	return out, nil
+}
+
+// GoogleDriveOptionsFromSDK converts the sdk-go type to the mirror.
+func GoogleDriveOptionsFromSDK(v *sdk.GoogleDriveOptions) (*GoogleDriveOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleDriveOptions{}
+	out.Url = v.Url
+	out.EntityType = v.EntityType
+	conv122, err := FileIngestionOptionsFromSDK(v.FileIngestionOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GoogleDriveOptions.FileIngestionOptions", err)
+	}
+	out.FileIngestionOptions = conv122
+	return out, nil
+}
+
+// IngestionGatewayPipelineDefinitionToSDK converts the mirror to the sdk-go type.
+func IngestionGatewayPipelineDefinitionToSDK(w *IngestionGatewayPipelineDefinition) (*sdk.IngestionGatewayPipelineDefinition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionGatewayPipelineDefinition{}
+	out.ConnectionName = w.ConnectionName
+	out.ConnectionId = w.ConnectionId
+	out.GatewayStorageCatalog = w.GatewayStorageCatalog
+	out.GatewayStorageSchema = w.GatewayStorageSchema
+	out.GatewayStorageName = w.GatewayStorageName
+	conv123, err := ConnectionParametersToSDK(w.ConnectionParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionGatewayPipelineDefinition.ConnectionParameters", err)
+	}
+	out.ConnectionParameters = conv123
+	return out, nil
+}
+
+// IngestionGatewayPipelineDefinitionFromSDK converts the sdk-go type to the mirror.
+func IngestionGatewayPipelineDefinitionFromSDK(v *sdk.IngestionGatewayPipelineDefinition) (*IngestionGatewayPipelineDefinition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionGatewayPipelineDefinition{}
+	out.ConnectionName = v.ConnectionName
+	out.ConnectionId = v.ConnectionId
+	out.GatewayStorageCatalog = v.GatewayStorageCatalog
+	out.GatewayStorageSchema = v.GatewayStorageSchema
+	out.GatewayStorageName = v.GatewayStorageName
+	conv124, err := ConnectionParametersFromSDK(v.ConnectionParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionGatewayPipelineDefinition.ConnectionParameters", err)
+	}
+	out.ConnectionParameters = conv124
+	return out, nil
+}
+
+// IngestionPipelineDefinitionToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinitionToSDK(w *IngestionPipelineDefinition) (*sdk.IngestionPipelineDefinition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition{}
+	{
+		members := 0
+		if w.ConnectionName != nil {
+			members++
+		}
+		if w.IngestionGatewayId != nil {
+			members++
+		}
+		if w.IngestFromUcForeignCatalog != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition.Source")
+		}
+	}
+	switch {
+	case w.ConnectionName != nil:
+		out.Source = &sdk.IngestionPipelineDefinition_Source_ConnectionName{ConnectionName: *w.ConnectionName}
+	case w.IngestionGatewayId != nil:
+		out.Source = &sdk.IngestionPipelineDefinition_Source_IngestionGatewayId{IngestionGatewayId: *w.IngestionGatewayId}
+	case w.IngestFromUcForeignCatalog != nil:
+		out.Source = &sdk.IngestionPipelineDefinition_Source_IngestFromUcForeignCatalog{IngestFromUcForeignCatalog: *w.IngestFromUcForeignCatalog}
+	}
+	conv125, err := convertSlice(w.Objects, IngestionPipelineDefinition_IngestionConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.Objects", err)
+	}
+	out.Objects = conv125
+	out.SourceType = w.SourceType
+	conv126, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv126
+	out.NetsuiteJarPath = w.NetsuiteJarPath
+	conv127, err := convertSlice(w.SourceConfigurations, SourceConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.SourceConfigurations", err)
+	}
+	out.SourceConfigurations = conv127
+	conv128, err := OperationTimeWindowToSDK(w.FullRefreshWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.FullRefreshWindow", err)
+	}
+	out.FullRefreshWindow = conv128
+	out.ConnectorType = w.ConnectorType
+	conv129, err := DataStagingOptionsToSDK(w.DataStagingOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.DataStagingOptions", err)
+	}
+	out.DataStagingOptions = conv129
+	return out, nil
+}
+
+// IngestionPipelineDefinitionFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinitionFromSDK(v *sdk.IngestionPipelineDefinition) (*IngestionPipelineDefinition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition{}
+	switch value := v.Source.(type) {
+	case *sdk.IngestionPipelineDefinition_Source_ConnectionName:
+		if value != nil {
+			out.ConnectionName = new(value.ConnectionName)
+		}
+	case *sdk.IngestionPipelineDefinition_Source_IngestionGatewayId:
+		if value != nil {
+			out.IngestionGatewayId = new(value.IngestionGatewayId)
+		}
+	case *sdk.IngestionPipelineDefinition_Source_IngestFromUcForeignCatalog:
+		if value != nil {
+			out.IngestFromUcForeignCatalog = new(value.IngestFromUcForeignCatalog)
+		}
+	}
+	conv130, err := convertSlice(v.Objects, IngestionPipelineDefinition_IngestionConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.Objects", err)
+	}
+	out.Objects = conv130
+	out.SourceType = v.SourceType
+	conv131, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv131
+	out.NetsuiteJarPath = v.NetsuiteJarPath
+	conv132, err := convertSlice(v.SourceConfigurations, SourceConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.SourceConfigurations", err)
+	}
+	out.SourceConfigurations = conv132
+	conv133, err := OperationTimeWindowFromSDK(v.FullRefreshWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.FullRefreshWindow", err)
+	}
+	out.FullRefreshWindow = conv133
+	out.ConnectorType = v.ConnectorType
+	conv134, err := DataStagingOptionsFromSDK(v.DataStagingOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition.DataStagingOptions", err)
+	}
+	out.DataStagingOptions = conv134
+	return out, nil
+}
+
+// IngestionPipelineDefinition_FanoutOptionsToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_FanoutOptionsToSDK(w *IngestionPipelineDefinition_FanoutOptions) (*sdk.IngestionPipelineDefinition_FanoutOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_FanoutOptions{}
+	out.FanoutBy = w.FanoutBy
+	conv135, err := convertSlice(w.Transforms, TransformerToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_FanoutOptions.Transforms", err)
+	}
+	out.Transforms = conv135
+	return out, nil
+}
+
+// IngestionPipelineDefinition_FanoutOptionsFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_FanoutOptionsFromSDK(v *sdk.IngestionPipelineDefinition_FanoutOptions) (*IngestionPipelineDefinition_FanoutOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_FanoutOptions{}
+	out.FanoutBy = v.FanoutBy
+	conv136, err := convertSlice(v.Transforms, TransformerFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_FanoutOptions.Transforms", err)
+	}
+	out.Transforms = conv136
+	return out, nil
+}
+
+// IngestionPipelineDefinition_IngestionConfigToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_IngestionConfigToSDK(w *IngestionPipelineDefinition_IngestionConfig) (*sdk.IngestionPipelineDefinition_IngestionConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_IngestionConfig{}
+	{
+		members := 0
+		if w.Schema != nil {
+			members++
+		}
+		if w.Table != nil {
+			members++
+		}
+		if w.Report != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngestionPipelineDefinition_IngestionConfig.SourceTables")
+		}
+	}
+	switch {
+	case w.Schema != nil:
+		conv137, err := IngestionPipelineDefinition_SchemaSpecToSDK(w.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+		}
+		out.SourceTables = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Schema{Schema: *conv137}
+	case w.Table != nil:
+		conv138, err := IngestionPipelineDefinition_TableSpecToSDK(w.Table)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+		}
+		out.SourceTables = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Table{Table: *conv138}
+	case w.Report != nil:
+		conv139, err := IngestionPipelineDefinition_ReportSpecToSDK(w.Report)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+		}
+		out.SourceTables = &sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Report{Report: *conv139}
+	}
+	return out, nil
+}
+
+// IngestionPipelineDefinition_IngestionConfigFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_IngestionConfigFromSDK(v *sdk.IngestionPipelineDefinition_IngestionConfig) (*IngestionPipelineDefinition_IngestionConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_IngestionConfig{}
+	switch value := v.SourceTables.(type) {
+	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Schema:
+		if value != nil {
+			conv140, err := IngestionPipelineDefinition_SchemaSpecFromSDK(&value.Schema)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+			}
+			out.Schema = conv140
+		}
+	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Table:
+		if value != nil {
+			conv141, err := IngestionPipelineDefinition_TableSpecFromSDK(&value.Table)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+			}
+			out.Table = conv141
+		}
+	case *sdk.IngestionPipelineDefinition_IngestionConfig_SourceTables_Report:
+		if value != nil {
+			conv142, err := IngestionPipelineDefinition_ReportSpecFromSDK(&value.Report)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_IngestionConfig.SourceTables", err)
+			}
+			out.Report = conv142
+		}
+	}
+	return out, nil
+}
+
+// IngestionPipelineDefinition_ReportSpecToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_ReportSpecToSDK(w *IngestionPipelineDefinition_ReportSpec) (*sdk.IngestionPipelineDefinition_ReportSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_ReportSpec{}
+	out.SourceUrl = w.SourceUrl
+	out.DestinationCatalog = w.DestinationCatalog
+	out.DestinationSchema = w.DestinationSchema
+	out.DestinationTable = w.DestinationTable
+	conv143, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_ReportSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv143
+	return out, nil
+}
+
+// IngestionPipelineDefinition_ReportSpecFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_ReportSpecFromSDK(v *sdk.IngestionPipelineDefinition_ReportSpec) (*IngestionPipelineDefinition_ReportSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_ReportSpec{}
+	out.SourceUrl = v.SourceUrl
+	out.DestinationCatalog = v.DestinationCatalog
+	out.DestinationSchema = v.DestinationSchema
+	out.DestinationTable = v.DestinationTable
+	conv144, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_ReportSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv144
+	return out, nil
+}
+
+// IngestionPipelineDefinition_SchemaSpecToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_SchemaSpecToSDK(w *IngestionPipelineDefinition_SchemaSpec) (*sdk.IngestionPipelineDefinition_SchemaSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_SchemaSpec{}
+	out.SourceCatalog = w.SourceCatalog
+	out.SourceSchema = w.SourceSchema
+	out.DestinationCatalog = w.DestinationCatalog
+	out.DestinationSchema = w.DestinationSchema
+	conv145, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv145
+	conv146, err := ConnectorOptionsToSDK(w.ConnectorOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.ConnectorOptions", err)
+	}
+	out.ConnectorOptions = conv146
+	conv147, err := IngestionPipelineDefinition_FanoutOptionsToSDK(w.FanoutOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.FanoutOptions", err)
+	}
+	out.FanoutOptions = conv147
+	return out, nil
+}
+
+// IngestionPipelineDefinition_SchemaSpecFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_SchemaSpecFromSDK(v *sdk.IngestionPipelineDefinition_SchemaSpec) (*IngestionPipelineDefinition_SchemaSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_SchemaSpec{}
+	out.SourceCatalog = v.SourceCatalog
+	out.SourceSchema = v.SourceSchema
+	out.DestinationCatalog = v.DestinationCatalog
+	out.DestinationSchema = v.DestinationSchema
+	conv148, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv148
+	conv149, err := ConnectorOptionsFromSDK(v.ConnectorOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.ConnectorOptions", err)
+	}
+	out.ConnectorOptions = conv149
+	conv150, err := IngestionPipelineDefinition_FanoutOptionsFromSDK(v.FanoutOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_SchemaSpec.FanoutOptions", err)
+	}
+	out.FanoutOptions = conv150
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_TableSpecToSDK(w *IngestionPipelineDefinition_TableSpec) (*sdk.IngestionPipelineDefinition_TableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_TableSpec{}
+	out.SourceCatalog = w.SourceCatalog
+	out.SourceSchema = w.SourceSchema
+	out.SourceTable = w.SourceTable
+	out.DestinationCatalog = w.DestinationCatalog
+	out.DestinationSchema = w.DestinationSchema
+	out.DestinationTable = w.DestinationTable
+	conv151, err := IngestionPipelineDefinition_TableSpecificConfigToSDK(w.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv151
+	conv152, err := ConnectorOptionsToSDK(w.ConnectorOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.ConnectorOptions", err)
+	}
+	out.ConnectorOptions = conv152
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_TableSpecFromSDK(v *sdk.IngestionPipelineDefinition_TableSpec) (*IngestionPipelineDefinition_TableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_TableSpec{}
+	out.SourceCatalog = v.SourceCatalog
+	out.SourceSchema = v.SourceSchema
+	out.SourceTable = v.SourceTable
+	out.DestinationCatalog = v.DestinationCatalog
+	out.DestinationSchema = v.DestinationSchema
+	out.DestinationTable = v.DestinationTable
+	conv153, err := IngestionPipelineDefinition_TableSpecificConfigFromSDK(v.TableConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.TableConfiguration", err)
+	}
+	out.TableConfiguration = conv153
+	conv154, err := ConnectorOptionsFromSDK(v.ConnectorOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpec.ConnectorOptions", err)
+	}
+	out.ConnectorOptions = conv154
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecificConfigToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_TableSpecificConfigToSDK(w *IngestionPipelineDefinition_TableSpecificConfig) (*sdk.IngestionPipelineDefinition_TableSpecificConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_TableSpecificConfig{}
+	out.ScdType = w.ScdType
+	out.PrimaryKeys = w.PrimaryKeys
+	out.SequenceBy = w.SequenceBy
+	out.IncludeColumns = w.IncludeColumns
+	out.ExcludeColumns = w.ExcludeColumns
+	out.SalesforceIncludeFormulaFields = w.SalesforceIncludeFormulaFields
+	conv155, err := IngestionPipelineDefinition_WorkdayReportParametersToSDK(w.WorkdayReportParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.WorkdayReportParameters", err)
+	}
+	out.WorkdayReportParameters = conv155
+	out.RowFilter = w.RowFilter
+	conv156, err := IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigToSDK(w.QueryBasedConnectorConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.QueryBasedConnectorConfig", err)
+	}
+	out.QueryBasedConnectorConfig = conv156
+	conv157, err := AutoFullRefreshPolicyToSDK(w.AutoFullRefreshPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.AutoFullRefreshPolicy", err)
+	}
+	out.AutoFullRefreshPolicy = conv157
+	out.TableProperties = w.TableProperties
+	out.EnableAutoClustering = w.EnableAutoClustering
+	out.ClusteringColumns = w.ClusteringColumns
+	out.SourceMetadataColumn = w.SourceMetadataColumn
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecificConfigFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_TableSpecificConfigFromSDK(v *sdk.IngestionPipelineDefinition_TableSpecificConfig) (*IngestionPipelineDefinition_TableSpecificConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_TableSpecificConfig{}
+	out.ScdType = v.ScdType
+	out.PrimaryKeys = v.PrimaryKeys
+	out.SequenceBy = v.SequenceBy
+	out.IncludeColumns = v.IncludeColumns
+	out.ExcludeColumns = v.ExcludeColumns
+	out.SalesforceIncludeFormulaFields = v.SalesforceIncludeFormulaFields
+	conv158, err := IngestionPipelineDefinition_WorkdayReportParametersFromSDK(v.WorkdayReportParameters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.WorkdayReportParameters", err)
+	}
+	out.WorkdayReportParameters = conv158
+	out.RowFilter = v.RowFilter
+	conv159, err := IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigFromSDK(v.QueryBasedConnectorConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.QueryBasedConnectorConfig", err)
+	}
+	out.QueryBasedConnectorConfig = conv159
+	conv160, err := AutoFullRefreshPolicyFromSDK(v.AutoFullRefreshPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_TableSpecificConfig.AutoFullRefreshPolicy", err)
+	}
+	out.AutoFullRefreshPolicy = conv160
+	out.TableProperties = v.TableProperties
+	out.EnableAutoClustering = v.EnableAutoClustering
+	out.ClusteringColumns = v.ClusteringColumns
+	out.SourceMetadataColumn = v.SourceMetadataColumn
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigToSDK(w *IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig) (*sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig{}
+	out.CursorColumns = w.CursorColumns
+	out.DeletionCondition = w.DeletionCondition
+	out.HardDeletionSyncMinIntervalInSeconds = w.HardDeletionSyncMinIntervalInSeconds
+	return out, nil
+}
+
+// IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfigFromSDK(v *sdk.IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig) (*IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_TableSpecificConfig_QueryBasedConnectorConfig{}
+	out.CursorColumns = v.CursorColumns
+	out.DeletionCondition = v.DeletionCondition
+	out.HardDeletionSyncMinIntervalInSeconds = v.HardDeletionSyncMinIntervalInSeconds
+	return out, nil
+}
+
+// IngestionPipelineDefinition_WorkdayReportParametersToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_WorkdayReportParametersToSDK(w *IngestionPipelineDefinition_WorkdayReportParameters) (*sdk.IngestionPipelineDefinition_WorkdayReportParameters, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_WorkdayReportParameters{}
+	out.Incremental = w.Incremental
+	conv161, err := convertSlice(w.ReportParameters, IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_WorkdayReportParameters.ReportParameters", err)
+	}
+	out.ReportParameters = conv161
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// IngestionPipelineDefinition_WorkdayReportParametersFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_WorkdayReportParametersFromSDK(v *sdk.IngestionPipelineDefinition_WorkdayReportParameters) (*IngestionPipelineDefinition_WorkdayReportParameters, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_WorkdayReportParameters{}
+	out.Incremental = v.Incremental
+	conv162, err := convertSlice(v.ReportParameters, IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngestionPipelineDefinition_WorkdayReportParameters.ReportParameters", err)
+	}
+	out.ReportParameters = conv162
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueToSDK converts the mirror to the sdk-go type.
+func IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueToSDK(w *IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue) (*sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueFromSDK converts the sdk-go type to the mirror.
+func IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValueFromSDK(v *sdk.IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue) (*IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngestionPipelineDefinition_WorkdayReportParameters_QueryKeyValue{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// JiraConnectorOptionsToSDK converts the mirror to the sdk-go type.
+func JiraConnectorOptionsToSDK(w *JiraConnectorOptions) (*sdk.JiraConnectorOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JiraConnectorOptions{}
+	out.IncludeJiraSpaces = w.IncludeJiraSpaces
+	return out, nil
+}
+
+// JiraConnectorOptionsFromSDK converts the sdk-go type to the mirror.
+func JiraConnectorOptionsFromSDK(v *sdk.JiraConnectorOptions) (*JiraConnectorOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JiraConnectorOptions{}
+	out.IncludeJiraSpaces = v.IncludeJiraSpaces
+	return out, nil
+}
+
+// JsonTransformerOptionsToSDK converts the mirror to the sdk-go type.
+func JsonTransformerOptionsToSDK(w *JsonTransformerOptions) (*sdk.JsonTransformerOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JsonTransformerOptions{}
+	out.AsVariant = w.AsVariant
+	out.Schema = w.Schema
+	out.SchemaFilePath = w.SchemaFilePath
+	out.SchemaEvolutionMode = w.SchemaEvolutionMode
+	out.SchemaHints = w.SchemaHints
+	return out, nil
+}
+
+// JsonTransformerOptionsFromSDK converts the sdk-go type to the mirror.
+func JsonTransformerOptionsFromSDK(v *sdk.JsonTransformerOptions) (*JsonTransformerOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JsonTransformerOptions{}
+	out.AsVariant = v.AsVariant
+	out.Schema = v.Schema
+	out.SchemaFilePath = v.SchemaFilePath
+	out.SchemaEvolutionMode = v.SchemaEvolutionMode
+	out.SchemaHints = v.SchemaHints
+	return out, nil
+}
+
+// KafkaOptionsToSDK converts the mirror to the sdk-go type.
+func KafkaOptionsToSDK(w *KafkaOptions) (*sdk.KafkaOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KafkaOptions{}
+	out.Topics = w.Topics
+	out.TopicPattern = w.TopicPattern
+	conv163, err := TransformerToSDK(w.KeyTransformer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaOptions.KeyTransformer", err)
+	}
+	out.KeyTransformer = conv163
+	conv164, err := TransformerToSDK(w.ValueTransformer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaOptions.ValueTransformer", err)
+	}
+	out.ValueTransformer = conv164
+	out.StartingOffset = w.StartingOffset
+	out.MaxOffsetsPerTrigger = w.MaxOffsetsPerTrigger
+	out.ClientConfig = w.ClientConfig
+	return out, nil
+}
+
+// KafkaOptionsFromSDK converts the sdk-go type to the mirror.
+func KafkaOptionsFromSDK(v *sdk.KafkaOptions) (*KafkaOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KafkaOptions{}
+	out.Topics = v.Topics
+	out.TopicPattern = v.TopicPattern
+	conv165, err := TransformerFromSDK(v.KeyTransformer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaOptions.KeyTransformer", err)
+	}
+	out.KeyTransformer = conv165
+	conv166, err := TransformerFromSDK(v.ValueTransformer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "KafkaOptions.ValueTransformer", err)
+	}
+	out.ValueTransformer = conv166
+	out.StartingOffset = v.StartingOffset
+	out.MaxOffsetsPerTrigger = v.MaxOffsetsPerTrigger
+	out.ClientConfig = v.ClientConfig
+	return out, nil
+}
+
+// LinkedInAdsOptionsToSDK converts the mirror to the sdk-go type.
+func LinkedInAdsOptionsToSDK(w *LinkedInAdsOptions) (*sdk.LinkedInAdsOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LinkedInAdsOptions{}
+	out.SyncStartDate = w.SyncStartDate
+	out.LookbackWindowDays = w.LookbackWindowDays
+	conv167, err := LinkedInAdsOptions_LinkedInAdsCustomReportOptionsToSDK(w.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LinkedInAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv167
+	return out, nil
+}
+
+// LinkedInAdsOptionsFromSDK converts the sdk-go type to the mirror.
+func LinkedInAdsOptionsFromSDK(v *sdk.LinkedInAdsOptions) (*LinkedInAdsOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LinkedInAdsOptions{}
+	out.SyncStartDate = v.SyncStartDate
+	out.LookbackWindowDays = v.LookbackWindowDays
+	conv168, err := LinkedInAdsOptions_LinkedInAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LinkedInAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv168
+	return out, nil
+}
+
+// LinkedInAdsOptions_LinkedInAdsCustomReportOptionsToSDK converts the mirror to the sdk-go type.
+func LinkedInAdsOptions_LinkedInAdsCustomReportOptionsToSDK(w *LinkedInAdsOptions_LinkedInAdsCustomReportOptions) (*sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions{}
+	out.Finder = w.Finder
+	out.EntityGranularity = w.EntityGranularity
+	out.TimeGranularity = w.TimeGranularity
+	out.Metrics = w.Metrics
+	return out, nil
+}
+
+// LinkedInAdsOptions_LinkedInAdsCustomReportOptionsFromSDK converts the sdk-go type to the mirror.
+func LinkedInAdsOptions_LinkedInAdsCustomReportOptionsFromSDK(v *sdk.LinkedInAdsOptions_LinkedInAdsCustomReportOptions) (*LinkedInAdsOptions_LinkedInAdsCustomReportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LinkedInAdsOptions_LinkedInAdsCustomReportOptions{}
+	out.Finder = v.Finder
+	out.EntityGranularity = v.EntityGranularity
+	out.TimeGranularity = v.TimeGranularity
+	out.Metrics = v.Metrics
+	return out, nil
+}
+
+// ListPipelineEventsRequestToSDK converts the mirror to the sdk-go type.
+func ListPipelineEventsRequestToSDK(w *ListPipelineEventsRequest) (*sdk.ListPipelineEventsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPipelineEventsRequest{}
+	out.PipelineId = w.PipelineId
+	out.PageToken = w.PageToken
+	out.MaxResults = w.MaxResults
+	out.OrderBy = w.OrderBy
+	out.Filter = w.Filter
+	return out, nil
+}
+
+// ListPipelineEventsRequestFromSDK converts the sdk-go type to the mirror.
+func ListPipelineEventsRequestFromSDK(v *sdk.ListPipelineEventsRequest) (*ListPipelineEventsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPipelineEventsRequest{}
+	out.PipelineId = v.PipelineId
+	out.PageToken = v.PageToken
+	out.MaxResults = v.MaxResults
+	out.OrderBy = v.OrderBy
+	out.Filter = v.Filter
+	return out, nil
+}
+
+// ListPipelineEventsResponseToSDK converts the mirror to the sdk-go type.
+func ListPipelineEventsResponseToSDK(w *ListPipelineEventsResponse) (*sdk.ListPipelineEventsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPipelineEventsResponse{}
+	conv169, err := convertSlice(w.Events, PipelineEventToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPipelineEventsResponse.Events", err)
+	}
+	out.Events = conv169
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListPipelineEventsResponseFromSDK converts the sdk-go type to the mirror.
+func ListPipelineEventsResponseFromSDK(v *sdk.ListPipelineEventsResponse) (*ListPipelineEventsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPipelineEventsResponse{}
+	conv170, err := convertSlice(v.Events, PipelineEventFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPipelineEventsResponse.Events", err)
+	}
+	out.Events = conv170
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ListPipelinesRequestToSDK converts the mirror to the sdk-go type.
+func ListPipelinesRequestToSDK(w *ListPipelinesRequest) (*sdk.ListPipelinesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPipelinesRequest{}
+	out.PageToken = w.PageToken
+	out.MaxResults = w.MaxResults
+	out.OrderBy = w.OrderBy
+	out.Filter = w.Filter
+	return out, nil
+}
+
+// ListPipelinesRequestFromSDK converts the sdk-go type to the mirror.
+func ListPipelinesRequestFromSDK(v *sdk.ListPipelinesRequest) (*ListPipelinesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPipelinesRequest{}
+	out.PageToken = v.PageToken
+	out.MaxResults = v.MaxResults
+	out.OrderBy = v.OrderBy
+	out.Filter = v.Filter
+	return out, nil
+}
+
+// ListPipelinesResponseToSDK converts the mirror to the sdk-go type.
+func ListPipelinesResponseToSDK(w *ListPipelinesResponse) (*sdk.ListPipelinesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPipelinesResponse{}
+	conv171, err := convertSlice(w.Statuses, PipelineStateInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPipelinesResponse.Statuses", err)
+	}
+	out.Statuses = conv171
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPipelinesResponseFromSDK converts the sdk-go type to the mirror.
+func ListPipelinesResponseFromSDK(v *sdk.ListPipelinesResponse) (*ListPipelinesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPipelinesResponse{}
+	conv172, err := convertSlice(v.Statuses, PipelineStateInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPipelinesResponse.Statuses", err)
+	}
+	out.Statuses = conv172
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListUpdatesRequestToSDK converts the mirror to the sdk-go type.
+func ListUpdatesRequestToSDK(w *ListUpdatesRequest) (*sdk.ListUpdatesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListUpdatesRequest{}
+	out.PipelineId = w.PipelineId
+	out.PageToken = w.PageToken
+	out.MaxResults = w.MaxResults
+	out.UntilUpdateId = w.UntilUpdateId
+	return out, nil
+}
+
+// ListUpdatesRequestFromSDK converts the sdk-go type to the mirror.
+func ListUpdatesRequestFromSDK(v *sdk.ListUpdatesRequest) (*ListUpdatesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListUpdatesRequest{}
+	out.PipelineId = v.PipelineId
+	out.PageToken = v.PageToken
+	out.MaxResults = v.MaxResults
+	out.UntilUpdateId = v.UntilUpdateId
+	return out, nil
+}
+
+// ListUpdatesResponseToSDK converts the mirror to the sdk-go type.
+func ListUpdatesResponseToSDK(w *ListUpdatesResponse) (*sdk.ListUpdatesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListUpdatesResponse{}
+	conv173, err := convertSlice(w.Updates, UpdateInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListUpdatesResponse.Updates", err)
+	}
+	out.Updates = conv173
+	out.NextPageToken = w.NextPageToken
+	out.PrevPageToken = w.PrevPageToken
+	return out, nil
+}
+
+// ListUpdatesResponseFromSDK converts the sdk-go type to the mirror.
+func ListUpdatesResponseFromSDK(v *sdk.ListUpdatesResponse) (*ListUpdatesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListUpdatesResponse{}
+	conv174, err := convertSlice(v.Updates, UpdateInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListUpdatesResponse.Updates", err)
+	}
+	out.Updates = conv174
+	out.NextPageToken = v.NextPageToken
+	out.PrevPageToken = v.PrevPageToken
+	return out, nil
+}
+
+// ManualTriggerToSDK converts the mirror to the sdk-go type.
+func ManualTriggerToSDK(w *ManualTrigger) (*sdk.ManualTrigger, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ManualTrigger{}
+	return out, nil
+}
+
+// ManualTriggerFromSDK converts the sdk-go type to the mirror.
+func ManualTriggerFromSDK(v *sdk.ManualTrigger) (*ManualTrigger, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ManualTrigger{}
+	return out, nil
+}
+
+// MarketoOptionsToSDK converts the mirror to the sdk-go type.
+func MarketoOptionsToSDK(w *MarketoOptions) (*sdk.MarketoOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MarketoOptions{}
+	out.SyncStartDate = w.SyncStartDate
+	return out, nil
+}
+
+// MarketoOptionsFromSDK converts the sdk-go type to the mirror.
+func MarketoOptionsFromSDK(v *sdk.MarketoOptions) (*MarketoOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MarketoOptions{}
+	out.SyncStartDate = v.SyncStartDate
+	return out, nil
+}
+
+// MetaMarketingOptionsToSDK converts the mirror to the sdk-go type.
+func MetaMarketingOptionsToSDK(w *MetaMarketingOptions) (*sdk.MetaMarketingOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetaMarketingOptions{}
+	out.Level = w.Level
+	out.Breakdowns = w.Breakdowns
+	out.ActionBreakdowns = w.ActionBreakdowns
+	out.ActionReportTime = w.ActionReportTime
+	out.StartDate = w.StartDate
+	out.CustomInsightsLookbackWindow = w.CustomInsightsLookbackWindow
+	out.TimeIncrement = w.TimeIncrement
+	out.ActionAttributionWindows = w.ActionAttributionWindows
+	conv175, err := MetaMarketingOptions_MetaMarketingCustomReportOptionsToSDK(w.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetaMarketingOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv175
+	return out, nil
+}
+
+// MetaMarketingOptionsFromSDK converts the sdk-go type to the mirror.
+func MetaMarketingOptionsFromSDK(v *sdk.MetaMarketingOptions) (*MetaMarketingOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetaMarketingOptions{}
+	out.Level = v.Level
+	out.Breakdowns = v.Breakdowns
+	out.ActionBreakdowns = v.ActionBreakdowns
+	out.ActionReportTime = v.ActionReportTime
+	out.StartDate = v.StartDate
+	out.CustomInsightsLookbackWindow = v.CustomInsightsLookbackWindow
+	out.TimeIncrement = v.TimeIncrement
+	out.ActionAttributionWindows = v.ActionAttributionWindows
+	conv176, err := MetaMarketingOptions_MetaMarketingCustomReportOptionsFromSDK(v.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MetaMarketingOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv176
+	return out, nil
+}
+
+// MetaMarketingOptions_MetaMarketingCustomReportOptionsToSDK converts the mirror to the sdk-go type.
+func MetaMarketingOptions_MetaMarketingCustomReportOptionsToSDK(w *MetaMarketingOptions_MetaMarketingCustomReportOptions) (*sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions{}
+	out.Level = w.Level
+	out.Breakdowns = w.Breakdowns
+	out.ActionBreakdowns = w.ActionBreakdowns
+	out.ActionReportTime = w.ActionReportTime
+	out.TimeIncrement = w.TimeIncrement
+	out.ActionAttributionWindows = w.ActionAttributionWindows
+	return out, nil
+}
+
+// MetaMarketingOptions_MetaMarketingCustomReportOptionsFromSDK converts the sdk-go type to the mirror.
+func MetaMarketingOptions_MetaMarketingCustomReportOptionsFromSDK(v *sdk.MetaMarketingOptions_MetaMarketingCustomReportOptions) (*MetaMarketingOptions_MetaMarketingCustomReportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MetaMarketingOptions_MetaMarketingCustomReportOptions{}
+	out.Level = v.Level
+	out.Breakdowns = v.Breakdowns
+	out.ActionBreakdowns = v.ActionBreakdowns
+	out.ActionReportTime = v.ActionReportTime
+	out.TimeIncrement = v.TimeIncrement
+	out.ActionAttributionWindows = v.ActionAttributionWindows
+	return out, nil
+}
+
+// NotebookLibraryToSDK converts the mirror to the sdk-go type.
+func NotebookLibraryToSDK(w *NotebookLibrary) (*sdk.NotebookLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotebookLibrary{}
+	out.Path = w.Path
+	return out, nil
+}
+
+// NotebookLibraryFromSDK converts the sdk-go type to the mirror.
+func NotebookLibraryFromSDK(v *sdk.NotebookLibrary) (*NotebookLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotebookLibrary{}
+	out.Path = v.Path
+	return out, nil
+}
+
+// NotificationsToSDK converts the mirror to the sdk-go type.
+func NotificationsToSDK(w *Notifications) (*sdk.Notifications, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Notifications{}
+	out.EmailRecipients = w.EmailRecipients
+	out.Alerts = w.Alerts
+	return out, nil
+}
+
+// NotificationsFromSDK converts the sdk-go type to the mirror.
+func NotificationsFromSDK(v *sdk.Notifications) (*Notifications, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Notifications{}
+	out.EmailRecipients = v.EmailRecipients
+	out.Alerts = v.Alerts
+	return out, nil
+}
+
+// OperationTimeWindowToSDK converts the mirror to the sdk-go type.
+func OperationTimeWindowToSDK(w *OperationTimeWindow) (*sdk.OperationTimeWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OperationTimeWindow{}
+	out.StartHour = w.StartHour
+	out.DaysOfWeek = w.DaysOfWeek
+	out.TimeZoneId = w.TimeZoneId
+	return out, nil
+}
+
+// OperationTimeWindowFromSDK converts the sdk-go type to the mirror.
+func OperationTimeWindowFromSDK(v *sdk.OperationTimeWindow) (*OperationTimeWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OperationTimeWindow{}
+	out.StartHour = v.StartHour
+	out.DaysOfWeek = v.DaysOfWeek
+	out.TimeZoneId = v.TimeZoneId
+	return out, nil
+}
+
+// OriginToSDK converts the mirror to the sdk-go type.
+func OriginToSDK(w *Origin) (*sdk.Origin, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Origin{}
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	out.OrgId = w.OrgId
+	out.PipelineId = w.PipelineId
+	out.PipelineName = w.PipelineName
+	out.ClusterId = w.ClusterId
+	out.UpdateId = w.UpdateId
+	out.MaintenanceId = w.MaintenanceId
+	out.TableId = w.TableId
+	out.DatasetName = w.DatasetName
+	out.FlowId = w.FlowId
+	out.FlowName = w.FlowName
+	out.BatchId = w.BatchId
+	out.RequestId = w.RequestId
+	out.UcResourceId = w.UcResourceId
+	out.Host = w.Host
+	out.MaterializationName = w.MaterializationName
+	out.IngestionSourceConnectionName = w.IngestionSourceConnectionName
+	out.IngestionSourceCatalogName = w.IngestionSourceCatalogName
+	out.IngestionSourceSchemaName = w.IngestionSourceSchemaName
+	out.IngestionSourceTableName = w.IngestionSourceTableName
+	out.IngestionSourceTableVersion = w.IngestionSourceTableVersion
+	return out, nil
+}
+
+// OriginFromSDK converts the sdk-go type to the mirror.
+func OriginFromSDK(v *sdk.Origin) (*Origin, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Origin{}
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	out.OrgId = v.OrgId
+	out.PipelineId = v.PipelineId
+	out.PipelineName = v.PipelineName
+	out.ClusterId = v.ClusterId
+	out.UpdateId = v.UpdateId
+	out.MaintenanceId = v.MaintenanceId
+	out.TableId = v.TableId
+	out.DatasetName = v.DatasetName
+	out.FlowId = v.FlowId
+	out.FlowName = v.FlowName
+	out.BatchId = v.BatchId
+	out.RequestId = v.RequestId
+	out.UcResourceId = v.UcResourceId
+	out.Host = v.Host
+	out.MaterializationName = v.MaterializationName
+	out.IngestionSourceConnectionName = v.IngestionSourceConnectionName
+	out.IngestionSourceCatalogName = v.IngestionSourceCatalogName
+	out.IngestionSourceSchemaName = v.IngestionSourceSchemaName
+	out.IngestionSourceTableName = v.IngestionSourceTableName
+	out.IngestionSourceTableVersion = v.IngestionSourceTableVersion
+	return out, nil
+}
+
+// OutlookOptionsToSDK converts the mirror to the sdk-go type.
+func OutlookOptionsToSDK(w *OutlookOptions) (*sdk.OutlookOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.OutlookOptions{}
+	out.FolderFilter = w.FolderFilter
+	out.SenderFilter = w.SenderFilter
+	out.SubjectFilter = w.SubjectFilter
+	out.StartDate = w.StartDate
+	out.BodyFormat = w.BodyFormat
+	out.AttachmentMode = w.AttachmentMode
+	out.IncludeMailboxes = w.IncludeMailboxes
+	out.IncludeFolders = w.IncludeFolders
+	out.IncludeSenders = w.IncludeSenders
+	out.IncludeSubjects = w.IncludeSubjects
+	return out, nil
+}
+
+// OutlookOptionsFromSDK converts the sdk-go type to the mirror.
+func OutlookOptionsFromSDK(v *sdk.OutlookOptions) (*OutlookOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &OutlookOptions{}
+	out.FolderFilter = v.FolderFilter
+	out.SenderFilter = v.SenderFilter
+	out.SubjectFilter = v.SubjectFilter
+	out.StartDate = v.StartDate
+	out.BodyFormat = v.BodyFormat
+	out.AttachmentMode = v.AttachmentMode
+	out.IncludeMailboxes = v.IncludeMailboxes
+	out.IncludeFolders = v.IncludeFolders
+	out.IncludeSenders = v.IncludeSenders
+	out.IncludeSubjects = v.IncludeSubjects
+	return out, nil
+}
+
+// PathPatternToSDK converts the mirror to the sdk-go type.
+func PathPatternToSDK(w *PathPattern) (*sdk.PathPattern, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PathPattern{}
+	out.Include = w.Include
+	return out, nil
+}
+
+// PathPatternFromSDK converts the sdk-go type to the mirror.
+func PathPatternFromSDK(v *sdk.PathPattern) (*PathPattern, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PathPattern{}
+	out.Include = v.Include
+	return out, nil
+}
+
+// PipelineClusterToSDK converts the mirror to the sdk-go type.
+func PipelineClusterToSDK(w *PipelineCluster) (*sdk.PipelineCluster, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineCluster{}
+	out.Label = w.Label
+	out.ApplyPolicyDefaultValues = w.ApplyPolicyDefaultValues
+	out.SparkConf = w.SparkConf
+	conv177, err := PipelinesAwsAttributesToSDK(w.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv177
+	conv178, err := PipelinesAzureAttributesToSDK(w.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv178
+	conv179, err := PipelinesGcpAttributesToSDK(w.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv179
+	out.NodeTypeId = w.NodeTypeId
+	out.DriverNodeTypeId = w.DriverNodeTypeId
+	out.SshPublicKeys = w.SshPublicKeys
+	out.CustomTags = w.CustomTags
+	conv180, err := PipelinesClusterLogConfToSDK(w.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv180
+	out.SparkEnvVars = w.SparkEnvVars
+	conv181, err := convertSlice(w.InitScripts, PipelinesInitScriptInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.InitScripts", err)
+	}
+	out.InitScripts = conv181
+	out.InstancePoolId = w.InstancePoolId
+	out.PolicyId = w.PolicyId
+	out.EnableLocalDiskEncryption = w.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = w.DriverInstancePoolId
+	{
+		members := 0
+		if w.NumWorkers != nil {
+			members++
+		}
+		if w.Autoscale != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineCluster.Size")
+		}
+	}
+	switch {
+	case w.NumWorkers != nil:
+		out.Size = &sdk.PipelineCluster_Size_NumWorkers{NumWorkers: *w.NumWorkers}
+	case w.Autoscale != nil:
+		conv182, err := PipelinesAutoScaleToSDK(w.Autoscale)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineCluster.Size", err)
+		}
+		out.Size = &sdk.PipelineCluster_Size_Autoscale{Autoscale: *conv182}
+	}
+	return out, nil
+}
+
+// PipelineClusterFromSDK converts the sdk-go type to the mirror.
+func PipelineClusterFromSDK(v *sdk.PipelineCluster) (*PipelineCluster, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineCluster{}
+	out.Label = v.Label
+	out.ApplyPolicyDefaultValues = v.ApplyPolicyDefaultValues
+	out.SparkConf = v.SparkConf
+	conv183, err := PipelinesAwsAttributesFromSDK(v.AwsAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AwsAttributes", err)
+	}
+	out.AwsAttributes = conv183
+	conv184, err := PipelinesAzureAttributesFromSDK(v.AzureAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.AzureAttributes", err)
+	}
+	out.AzureAttributes = conv184
+	conv185, err := PipelinesGcpAttributesFromSDK(v.GcpAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.GcpAttributes", err)
+	}
+	out.GcpAttributes = conv185
+	out.NodeTypeId = v.NodeTypeId
+	out.DriverNodeTypeId = v.DriverNodeTypeId
+	out.SshPublicKeys = v.SshPublicKeys
+	out.CustomTags = v.CustomTags
+	conv186, err := PipelinesClusterLogConfFromSDK(v.ClusterLogConf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.ClusterLogConf", err)
+	}
+	out.ClusterLogConf = conv186
+	out.SparkEnvVars = v.SparkEnvVars
+	conv187, err := convertSlice(v.InitScripts, PipelinesInitScriptInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineCluster.InitScripts", err)
+	}
+	out.InitScripts = conv187
+	out.InstancePoolId = v.InstancePoolId
+	out.PolicyId = v.PolicyId
+	out.EnableLocalDiskEncryption = v.EnableLocalDiskEncryption
+	out.DriverInstancePoolId = v.DriverInstancePoolId
+	switch value := v.Size.(type) {
+	case *sdk.PipelineCluster_Size_NumWorkers:
+		if value != nil {
+			out.NumWorkers = new(value.NumWorkers)
+		}
+	case *sdk.PipelineCluster_Size_Autoscale:
+		if value != nil {
+			conv188, err := PipelinesAutoScaleFromSDK(&value.Autoscale)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineCluster.Size", err)
+			}
+			out.Autoscale = conv188
+		}
+	}
+	return out, nil
+}
+
+// PipelineDeploymentToSDK converts the mirror to the sdk-go type.
+func PipelineDeploymentToSDK(w *PipelineDeployment) (*sdk.PipelineDeployment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineDeployment{}
+	out.Kind = w.Kind
+	out.MetadataFilePath = w.MetadataFilePath
+	out.DeploymentId = w.DeploymentId
+	out.VersionId = w.VersionId
+	return out, nil
+}
+
+// PipelineDeploymentFromSDK converts the sdk-go type to the mirror.
+func PipelineDeploymentFromSDK(v *sdk.PipelineDeployment) (*PipelineDeployment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineDeployment{}
+	out.Kind = v.Kind
+	out.MetadataFilePath = v.MetadataFilePath
+	out.DeploymentId = v.DeploymentId
+	out.VersionId = v.VersionId
+	return out, nil
+}
+
+// PipelineEventToSDK converts the mirror to the sdk-go type.
+func PipelineEventToSDK(w *PipelineEvent) (*sdk.PipelineEvent, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineEvent{}
+	out.Id = w.Id
+	conv189, err := SequencingToSDK(w.Sequence)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Sequence", err)
+	}
+	out.Sequence = conv189
+	conv190, err := OriginToSDK(w.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Origin", err)
+	}
+	out.Origin = conv190
+	out.Timestamp = w.Timestamp
+	out.Message = w.Message
+	out.Level = w.Level
+	conv191, err := ErrorDetailToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Error", err)
+	}
+	out.Error = conv191
+	out.EventType = w.EventType
+	out.MaturityLevel = w.MaturityLevel
+	conv192, err := TruncationToSDK(w.Truncation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Truncation", err)
+	}
+	out.Truncation = conv192
+	return out, nil
+}
+
+// PipelineEventFromSDK converts the sdk-go type to the mirror.
+func PipelineEventFromSDK(v *sdk.PipelineEvent) (*PipelineEvent, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineEvent{}
+	out.Id = v.Id
+	conv193, err := SequencingFromSDK(v.Sequence)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Sequence", err)
+	}
+	out.Sequence = conv193
+	conv194, err := OriginFromSDK(v.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Origin", err)
+	}
+	out.Origin = conv194
+	out.Timestamp = v.Timestamp
+	out.Message = v.Message
+	out.Level = v.Level
+	conv195, err := ErrorDetailFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Error", err)
+	}
+	out.Error = conv195
+	out.EventType = v.EventType
+	out.MaturityLevel = v.MaturityLevel
+	conv196, err := TruncationFromSDK(v.Truncation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineEvent.Truncation", err)
+	}
+	out.Truncation = conv196
+	return out, nil
+}
+
+// PipelineLibraryToSDK converts the mirror to the sdk-go type.
+func PipelineLibraryToSDK(w *PipelineLibrary) (*sdk.PipelineLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineLibrary{}
+	{
+		members := 0
+		if w.Jar != nil {
+			members++
+		}
+		if w.Maven != nil {
+			members++
+		}
+		if w.Whl != nil {
+			members++
+		}
+		if w.Notebook != nil {
+			members++
+		}
+		if w.File != nil {
+			members++
+		}
+		if w.Glob != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineLibrary.Lib")
+		}
+	}
+	switch {
+	case w.Jar != nil:
+		out.Lib = &sdk.PipelineLibrary_Lib_Jar{Jar: *w.Jar}
+	case w.Maven != nil:
+		conv197, err := PipelinesMavenLibraryToSDK(w.Maven)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+		}
+		out.Lib = &sdk.PipelineLibrary_Lib_Maven{Maven: *conv197}
+	case w.Whl != nil:
+		out.Lib = &sdk.PipelineLibrary_Lib_Whl{Whl: *w.Whl}
+	case w.Notebook != nil:
+		conv198, err := NotebookLibraryToSDK(w.Notebook)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+		}
+		out.Lib = &sdk.PipelineLibrary_Lib_Notebook{Notebook: *conv198}
+	case w.File != nil:
+		conv199, err := NotebookLibraryToSDK(w.File)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+		}
+		out.Lib = &sdk.PipelineLibrary_Lib_File{File: *conv199}
+	case w.Glob != nil:
+		conv200, err := PathPatternToSDK(w.Glob)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+		}
+		out.Lib = &sdk.PipelineLibrary_Lib_Glob{Glob: *conv200}
+	}
+	return out, nil
+}
+
+// PipelineLibraryFromSDK converts the sdk-go type to the mirror.
+func PipelineLibraryFromSDK(v *sdk.PipelineLibrary) (*PipelineLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineLibrary{}
+	switch value := v.Lib.(type) {
+	case *sdk.PipelineLibrary_Lib_Jar:
+		if value != nil {
+			out.Jar = new(value.Jar)
+		}
+	case *sdk.PipelineLibrary_Lib_Maven:
+		if value != nil {
+			conv201, err := PipelinesMavenLibraryFromSDK(&value.Maven)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+			}
+			out.Maven = conv201
+		}
+	case *sdk.PipelineLibrary_Lib_Whl:
+		if value != nil {
+			out.Whl = new(value.Whl)
+		}
+	case *sdk.PipelineLibrary_Lib_Notebook:
+		if value != nil {
+			conv202, err := NotebookLibraryFromSDK(&value.Notebook)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+			}
+			out.Notebook = conv202
+		}
+	case *sdk.PipelineLibrary_Lib_File:
+		if value != nil {
+			conv203, err := NotebookLibraryFromSDK(&value.File)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+			}
+			out.File = conv203
+		}
+	case *sdk.PipelineLibrary_Lib_Glob:
+		if value != nil {
+			conv204, err := PathPatternFromSDK(&value.Glob)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineLibrary.Lib", err)
+			}
+			out.Glob = conv204
+		}
+	}
+	return out, nil
+}
+
+// PipelineSpecToSDK converts the mirror to the sdk-go type.
+func PipelineSpecToSDK(w *PipelineSpec) (*sdk.PipelineSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineSpec{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Storage = w.Storage
+	out.Configuration = w.Configuration
+	conv205, err := convertSlice(w.Clusters, PipelineClusterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Clusters", err)
+	}
+	out.Clusters = conv205
+	conv206, err := convertSlice(w.Libraries, PipelineLibraryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Libraries", err)
+	}
+	out.Libraries = conv206
+	conv207, err := IngestionPipelineDefinitionToSDK(w.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv207
+	conv208, err := IngestionGatewayPipelineDefinitionToSDK(w.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv208
+	conv209, err := PipelineTriggerToSDK(w.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Trigger", err)
+	}
+	out.Trigger = conv209
+	out.Target = w.Target
+	out.Schema = w.Schema
+	conv210, err := FiltersToSDK(w.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Filters", err)
+	}
+	out.Filters = conv210
+	out.Continuous = w.Continuous
+	out.Development = w.Development
+	out.Photon = w.Photon
+	out.Edition = w.Edition
+	out.Channel = w.Channel
+	out.Catalog = w.Catalog
+	conv211, err := convertSlice(w.Notifications, NotificationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Notifications", err)
+	}
+	out.Notifications = conv211
+	out.Serverless = w.Serverless
+	conv212, err := PipelineDeploymentToSDK(w.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Deployment", err)
+	}
+	out.Deployment = conv212
+	conv213, err := RestartWindowToSDK(w.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.RestartWindow", err)
+	}
+	out.RestartWindow = conv213
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.Tags = w.Tags
+	conv214, err := EventLogSpecToSDK(w.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.EventLog", err)
+	}
+	out.EventLog = conv214
+	out.RootPath = w.RootPath
+	conv215, err := PipelinesEnvironmentToSDK(w.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Environment", err)
+	}
+	out.Environment = conv215
+	out.ParentPath = w.ParentPath
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ServerlessComputeId = w.ServerlessComputeId
+	return out, nil
+}
+
+// PipelineSpecFromSDK converts the sdk-go type to the mirror.
+func PipelineSpecFromSDK(v *sdk.PipelineSpec) (*PipelineSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineSpec{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Storage = v.Storage
+	out.Configuration = v.Configuration
+	conv216, err := convertSlice(v.Clusters, PipelineClusterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Clusters", err)
+	}
+	out.Clusters = conv216
+	conv217, err := convertSlice(v.Libraries, PipelineLibraryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Libraries", err)
+	}
+	out.Libraries = conv217
+	conv218, err := IngestionPipelineDefinitionFromSDK(v.IngestionDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.IngestionDefinition", err)
+	}
+	out.IngestionDefinition = conv218
+	conv219, err := IngestionGatewayPipelineDefinitionFromSDK(v.GatewayDefinition)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.GatewayDefinition", err)
+	}
+	out.GatewayDefinition = conv219
+	conv220, err := PipelineTriggerFromSDK(v.Trigger)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Trigger", err)
+	}
+	out.Trigger = conv220
+	out.Target = v.Target
+	out.Schema = v.Schema
+	conv221, err := FiltersFromSDK(v.Filters)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Filters", err)
+	}
+	out.Filters = conv221
+	out.Continuous = v.Continuous
+	out.Development = v.Development
+	out.Photon = v.Photon
+	out.Edition = v.Edition
+	out.Channel = v.Channel
+	out.Catalog = v.Catalog
+	conv222, err := convertSlice(v.Notifications, NotificationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Notifications", err)
+	}
+	out.Notifications = conv222
+	out.Serverless = v.Serverless
+	conv223, err := PipelineDeploymentFromSDK(v.Deployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Deployment", err)
+	}
+	out.Deployment = conv223
+	conv224, err := RestartWindowFromSDK(v.RestartWindow)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.RestartWindow", err)
+	}
+	out.RestartWindow = conv224
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.Tags = v.Tags
+	conv225, err := EventLogSpecFromSDK(v.EventLog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.EventLog", err)
+	}
+	out.EventLog = conv225
+	out.RootPath = v.RootPath
+	conv226, err := PipelinesEnvironmentFromSDK(v.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineSpec.Environment", err)
+	}
+	out.Environment = conv226
+	out.ParentPath = v.ParentPath
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ServerlessComputeId = v.ServerlessComputeId
+	return out, nil
+}
+
+// PipelineStateInfoToSDK converts the mirror to the sdk-go type.
+func PipelineStateInfoToSDK(w *PipelineStateInfo) (*sdk.PipelineStateInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineStateInfo{}
+	out.PipelineId = w.PipelineId
+	out.State = w.State
+	out.ClusterId = w.ClusterId
+	out.Name = w.Name
+	conv227, err := convertSlice(w.LatestUpdates, UpdateStateInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineStateInfo.LatestUpdates", err)
+	}
+	out.LatestUpdates = conv227
+	out.CreatorUserName = w.CreatorUserName
+	out.RunAsUserName = w.RunAsUserName
+	out.Health = w.Health
+	return out, nil
+}
+
+// PipelineStateInfoFromSDK converts the sdk-go type to the mirror.
+func PipelineStateInfoFromSDK(v *sdk.PipelineStateInfo) (*PipelineStateInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineStateInfo{}
+	out.PipelineId = v.PipelineId
+	out.State = v.State
+	out.ClusterId = v.ClusterId
+	out.Name = v.Name
+	conv228, err := convertSlice(v.LatestUpdates, UpdateStateInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PipelineStateInfo.LatestUpdates", err)
+	}
+	out.LatestUpdates = conv228
+	out.CreatorUserName = v.CreatorUserName
+	out.RunAsUserName = v.RunAsUserName
+	out.Health = v.Health
+	return out, nil
+}
+
+// PipelineTriggerToSDK converts the mirror to the sdk-go type.
+func PipelineTriggerToSDK(w *PipelineTrigger) (*sdk.PipelineTrigger, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelineTrigger{}
+	{
+		members := 0
+		if w.Manual != nil {
+			members++
+		}
+		if w.Cron != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelineTrigger.Trigger")
+		}
+	}
+	switch {
+	case w.Manual != nil:
+		conv229, err := ManualTriggerToSDK(w.Manual)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger", err)
+		}
+		out.Trigger = &sdk.PipelineTrigger_Trigger_Manual{Manual: *conv229}
+	case w.Cron != nil:
+		conv230, err := CronTriggerToSDK(w.Cron)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger", err)
+		}
+		out.Trigger = &sdk.PipelineTrigger_Trigger_Cron{Cron: *conv230}
+	}
+	return out, nil
+}
+
+// PipelineTriggerFromSDK converts the sdk-go type to the mirror.
+func PipelineTriggerFromSDK(v *sdk.PipelineTrigger) (*PipelineTrigger, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelineTrigger{}
+	switch value := v.Trigger.(type) {
+	case *sdk.PipelineTrigger_Trigger_Manual:
+		if value != nil {
+			conv231, err := ManualTriggerFromSDK(&value.Manual)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger", err)
+			}
+			out.Manual = conv231
+		}
+	case *sdk.PipelineTrigger_Trigger_Cron:
+		if value != nil {
+			conv232, err := CronTriggerFromSDK(&value.Cron)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelineTrigger.Trigger", err)
+			}
+			out.Cron = conv232
+		}
+	}
+	return out, nil
+}
+
+// PipelinesAutoScaleToSDK converts the mirror to the sdk-go type.
+func PipelinesAutoScaleToSDK(w *PipelinesAutoScale) (*sdk.PipelinesAutoScale, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesAutoScale{}
+	out.MinWorkers = w.MinWorkers
+	out.MaxWorkers = w.MaxWorkers
+	out.Mode = w.Mode
+	return out, nil
+}
+
+// PipelinesAutoScaleFromSDK converts the sdk-go type to the mirror.
+func PipelinesAutoScaleFromSDK(v *sdk.PipelinesAutoScale) (*PipelinesAutoScale, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesAutoScale{}
+	out.MinWorkers = v.MinWorkers
+	out.MaxWorkers = v.MaxWorkers
+	out.Mode = v.Mode
+	return out, nil
+}
+
+// PipelinesAwsAttributesToSDK converts the mirror to the sdk-go type.
+func PipelinesAwsAttributesToSDK(w *PipelinesAwsAttributes) (*sdk.PipelinesAwsAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesAwsAttributes{}
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.SpotBidPricePercent = w.SpotBidPricePercent
+	out.EbsVolumeType = w.EbsVolumeType
+	out.EbsVolumeCount = w.EbsVolumeCount
+	out.EbsVolumeSize = w.EbsVolumeSize
+	out.EbsVolumeIops = w.EbsVolumeIops
+	out.EbsVolumeThroughput = w.EbsVolumeThroughput
+	return out, nil
+}
+
+// PipelinesAwsAttributesFromSDK converts the sdk-go type to the mirror.
+func PipelinesAwsAttributesFromSDK(v *sdk.PipelinesAwsAttributes) (*PipelinesAwsAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesAwsAttributes{}
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.SpotBidPricePercent = v.SpotBidPricePercent
+	out.EbsVolumeType = v.EbsVolumeType
+	out.EbsVolumeCount = v.EbsVolumeCount
+	out.EbsVolumeSize = v.EbsVolumeSize
+	out.EbsVolumeIops = v.EbsVolumeIops
+	out.EbsVolumeThroughput = v.EbsVolumeThroughput
+	return out, nil
+}
+
+// PipelinesAzureAttributesToSDK converts the mirror to the sdk-go type.
+func PipelinesAzureAttributesToSDK(w *PipelinesAzureAttributes) (*sdk.PipelinesAzureAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesAzureAttributes{}
+	out.FirstOnDemand = w.FirstOnDemand
+	out.Availability = w.Availability
+	out.SpotBidMaxPrice = w.SpotBidMaxPrice
+	return out, nil
+}
+
+// PipelinesAzureAttributesFromSDK converts the sdk-go type to the mirror.
+func PipelinesAzureAttributesFromSDK(v *sdk.PipelinesAzureAttributes) (*PipelinesAzureAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesAzureAttributes{}
+	out.FirstOnDemand = v.FirstOnDemand
+	out.Availability = v.Availability
+	out.SpotBidMaxPrice = v.SpotBidMaxPrice
+	return out, nil
+}
+
+// PipelinesClusterLogConfToSDK converts the mirror to the sdk-go type.
+func PipelinesClusterLogConfToSDK(w *PipelinesClusterLogConf) (*sdk.PipelinesClusterLogConf, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesClusterLogConf{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesClusterLogConf.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv233, err := PipelinesDbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelinesClusterLogConf.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.PipelinesClusterLogConf_StorageInfo_Dbfs{Dbfs: *conv233}
+	}
+	return out, nil
+}
+
+// PipelinesClusterLogConfFromSDK converts the sdk-go type to the mirror.
+func PipelinesClusterLogConfFromSDK(v *sdk.PipelinesClusterLogConf) (*PipelinesClusterLogConf, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesClusterLogConf{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.PipelinesClusterLogConf_StorageInfo_Dbfs:
+		if value != nil {
+			conv234, err := PipelinesDbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelinesClusterLogConf.StorageInfo", err)
+			}
+			out.Dbfs = conv234
+		}
+	}
+	return out, nil
+}
+
+// PipelinesDbfsStorageInfoToSDK converts the mirror to the sdk-go type.
+func PipelinesDbfsStorageInfoToSDK(w *PipelinesDbfsStorageInfo) (*sdk.PipelinesDbfsStorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesDbfsStorageInfo{}
+	out.Destination = w.Destination
+	return out, nil
+}
+
+// PipelinesDbfsStorageInfoFromSDK converts the sdk-go type to the mirror.
+func PipelinesDbfsStorageInfoFromSDK(v *sdk.PipelinesDbfsStorageInfo) (*PipelinesDbfsStorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesDbfsStorageInfo{}
+	out.Destination = v.Destination
+	return out, nil
+}
+
+// PipelinesEnvironmentToSDK converts the mirror to the sdk-go type.
+func PipelinesEnvironmentToSDK(w *PipelinesEnvironment) (*sdk.PipelinesEnvironment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesEnvironment{}
+	out.Dependencies = w.Dependencies
+	out.EnvironmentVersion = w.EnvironmentVersion
+	return out, nil
+}
+
+// PipelinesEnvironmentFromSDK converts the sdk-go type to the mirror.
+func PipelinesEnvironmentFromSDK(v *sdk.PipelinesEnvironment) (*PipelinesEnvironment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesEnvironment{}
+	out.Dependencies = v.Dependencies
+	out.EnvironmentVersion = v.EnvironmentVersion
+	return out, nil
+}
+
+// PipelinesGcpAttributesToSDK converts the mirror to the sdk-go type.
+func PipelinesGcpAttributesToSDK(w *PipelinesGcpAttributes) (*sdk.PipelinesGcpAttributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesGcpAttributes{}
+	out.GoogleServiceAccount = w.GoogleServiceAccount
+	out.BootDiskSize = w.BootDiskSize
+	out.Availability = w.Availability
+	out.ZoneId = w.ZoneId
+	out.LocalSsdCount = w.LocalSsdCount
+	return out, nil
+}
+
+// PipelinesGcpAttributesFromSDK converts the sdk-go type to the mirror.
+func PipelinesGcpAttributesFromSDK(v *sdk.PipelinesGcpAttributes) (*PipelinesGcpAttributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesGcpAttributes{}
+	out.GoogleServiceAccount = v.GoogleServiceAccount
+	out.BootDiskSize = v.BootDiskSize
+	out.Availability = v.Availability
+	out.ZoneId = v.ZoneId
+	out.LocalSsdCount = v.LocalSsdCount
+	return out, nil
+}
+
+// PipelinesInitScriptInfoToSDK converts the mirror to the sdk-go type.
+func PipelinesInitScriptInfoToSDK(w *PipelinesInitScriptInfo) (*sdk.PipelinesInitScriptInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesInitScriptInfo{}
+	{
+		members := 0
+		if w.Dbfs != nil {
+			members++
+		}
+		if w.S3 != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesInitScriptInfo.StorageInfo")
+		}
+	}
+	switch {
+	case w.Dbfs != nil:
+		conv235, err := PipelinesDbfsStorageInfoToSDK(w.Dbfs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.PipelinesInitScriptInfo_StorageInfo_Dbfs{Dbfs: *conv235}
+	case w.S3 != nil:
+		conv236, err := PipelinesS3StorageInfoToSDK(w.S3)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo", err)
+		}
+		out.StorageInfo = &sdk.PipelinesInitScriptInfo_StorageInfo_S3{S3: *conv236}
+	}
+	return out, nil
+}
+
+// PipelinesInitScriptInfoFromSDK converts the sdk-go type to the mirror.
+func PipelinesInitScriptInfoFromSDK(v *sdk.PipelinesInitScriptInfo) (*PipelinesInitScriptInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesInitScriptInfo{}
+	switch value := v.StorageInfo.(type) {
+	case *sdk.PipelinesInitScriptInfo_StorageInfo_Dbfs:
+		if value != nil {
+			conv237, err := PipelinesDbfsStorageInfoFromSDK(&value.Dbfs)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo", err)
+			}
+			out.Dbfs = conv237
+		}
+	case *sdk.PipelinesInitScriptInfo_StorageInfo_S3:
+		if value != nil {
+			conv238, err := PipelinesS3StorageInfoFromSDK(&value.S3)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "PipelinesInitScriptInfo.StorageInfo", err)
+			}
+			out.S3 = conv238
+		}
+	}
+	return out, nil
+}
+
+// PipelinesJobRunAsToSDK converts the mirror to the sdk-go type.
+func PipelinesJobRunAsToSDK(w *PipelinesJobRunAs) (*sdk.PipelinesJobRunAs, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesJobRunAs{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PipelinesJobRunAs.Identity")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.Identity = &sdk.PipelinesJobRunAs_Identity_UserName{UserName: *w.UserName}
+	case w.ServicePrincipalName != nil:
+		out.Identity = &sdk.PipelinesJobRunAs_Identity_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	case w.GroupName != nil:
+		out.Identity = &sdk.PipelinesJobRunAs_Identity_GroupName{GroupName: *w.GroupName}
+	}
+	return out, nil
+}
+
+// PipelinesJobRunAsFromSDK converts the sdk-go type to the mirror.
+func PipelinesJobRunAsFromSDK(v *sdk.PipelinesJobRunAs) (*PipelinesJobRunAs, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesJobRunAs{}
+	switch value := v.Identity.(type) {
+	case *sdk.PipelinesJobRunAs_Identity_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.PipelinesJobRunAs_Identity_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	case *sdk.PipelinesJobRunAs_Identity_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	}
+	return out, nil
+}
+
+// PipelinesMavenLibraryToSDK converts the mirror to the sdk-go type.
+func PipelinesMavenLibraryToSDK(w *PipelinesMavenLibrary) (*sdk.PipelinesMavenLibrary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesMavenLibrary{}
+	out.Coordinates = w.Coordinates
+	out.Repo = w.Repo
+	out.Exclusions = w.Exclusions
+	return out, nil
+}
+
+// PipelinesMavenLibraryFromSDK converts the sdk-go type to the mirror.
+func PipelinesMavenLibraryFromSDK(v *sdk.PipelinesMavenLibrary) (*PipelinesMavenLibrary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesMavenLibrary{}
+	out.Coordinates = v.Coordinates
+	out.Repo = v.Repo
+	out.Exclusions = v.Exclusions
+	return out, nil
+}
+
+// PipelinesS3StorageInfoToSDK converts the mirror to the sdk-go type.
+func PipelinesS3StorageInfoToSDK(w *PipelinesS3StorageInfo) (*sdk.PipelinesS3StorageInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PipelinesS3StorageInfo{}
+	out.Destination = w.Destination
+	out.Region = w.Region
+	out.Endpoint = w.Endpoint
+	out.EnableEncryption = w.EnableEncryption
+	out.EncryptionType = w.EncryptionType
+	out.KmsKey = w.KmsKey
+	out.CannedAcl = w.CannedAcl
+	return out, nil
+}
+
+// PipelinesS3StorageInfoFromSDK converts the sdk-go type to the mirror.
+func PipelinesS3StorageInfoFromSDK(v *sdk.PipelinesS3StorageInfo) (*PipelinesS3StorageInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PipelinesS3StorageInfo{}
+	out.Destination = v.Destination
+	out.Region = v.Region
+	out.Endpoint = v.Endpoint
+	out.EnableEncryption = v.EnableEncryption
+	out.EncryptionType = v.EncryptionType
+	out.KmsKey = v.KmsKey
+	out.CannedAcl = v.CannedAcl
+	return out, nil
+}
+
+// PostgresCatalogConfigToSDK converts the mirror to the sdk-go type.
+func PostgresCatalogConfigToSDK(w *PostgresCatalogConfig) (*sdk.PostgresCatalogConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PostgresCatalogConfig{}
+	conv239, err := PostgresSlotConfigToSDK(w.SlotConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PostgresCatalogConfig.SlotConfig", err)
+	}
+	out.SlotConfig = conv239
+	return out, nil
+}
+
+// PostgresCatalogConfigFromSDK converts the sdk-go type to the mirror.
+func PostgresCatalogConfigFromSDK(v *sdk.PostgresCatalogConfig) (*PostgresCatalogConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PostgresCatalogConfig{}
+	conv240, err := PostgresSlotConfigFromSDK(v.SlotConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PostgresCatalogConfig.SlotConfig", err)
+	}
+	out.SlotConfig = conv240
+	return out, nil
+}
+
+// PostgresSlotConfigToSDK converts the mirror to the sdk-go type.
+func PostgresSlotConfigToSDK(w *PostgresSlotConfig) (*sdk.PostgresSlotConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PostgresSlotConfig{}
+	out.SlotName = w.SlotName
+	out.PublicationName = w.PublicationName
+	return out, nil
+}
+
+// PostgresSlotConfigFromSDK converts the sdk-go type to the mirror.
+func PostgresSlotConfigFromSDK(v *sdk.PostgresSlotConfig) (*PostgresSlotConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PostgresSlotConfig{}
+	out.SlotName = v.SlotName
+	out.PublicationName = v.PublicationName
+	return out, nil
+}
+
+// ProtobufTransformerOptionsToSDK converts the mirror to the sdk-go type.
+func ProtobufTransformerOptionsToSDK(w *ProtobufTransformerOptions) (*sdk.ProtobufTransformerOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProtobufTransformerOptions{}
+	out.DescFilePath = w.DescFilePath
+	out.MessageName = w.MessageName
+	out.RecursiveFieldsMaxDepth = w.RecursiveFieldsMaxDepth
+	out.ParseMode = w.ParseMode
+	conv241, err := SchemaRegistryConfigToSDK(w.SchemaRegistry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProtobufTransformerOptions.SchemaRegistry", err)
+	}
+	out.SchemaRegistry = conv241
+	return out, nil
+}
+
+// ProtobufTransformerOptionsFromSDK converts the sdk-go type to the mirror.
+func ProtobufTransformerOptionsFromSDK(v *sdk.ProtobufTransformerOptions) (*ProtobufTransformerOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProtobufTransformerOptions{}
+	out.DescFilePath = v.DescFilePath
+	out.MessageName = v.MessageName
+	out.RecursiveFieldsMaxDepth = v.RecursiveFieldsMaxDepth
+	out.ParseMode = v.ParseMode
+	conv242, err := SchemaRegistryConfigFromSDK(v.SchemaRegistry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ProtobufTransformerOptions.SchemaRegistry", err)
+	}
+	out.SchemaRegistry = conv242
+	return out, nil
+}
+
+// RabbitmqOptionsToSDK converts the mirror to the sdk-go type.
+func RabbitmqOptionsToSDK(w *RabbitmqOptions) (*sdk.RabbitmqOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RabbitmqOptions{}
+	out.Queue = w.Queue
+	return out, nil
+}
+
+// RabbitmqOptionsFromSDK converts the sdk-go type to the mirror.
+func RabbitmqOptionsFromSDK(v *sdk.RabbitmqOptions) (*RabbitmqOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RabbitmqOptions{}
+	out.Queue = v.Queue
+	return out, nil
+}
+
+// RedditAdsOptionsToSDK converts the mirror to the sdk-go type.
+func RedditAdsOptionsToSDK(w *RedditAdsOptions) (*sdk.RedditAdsOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RedditAdsOptions{}
+	out.SyncStartDate = w.SyncStartDate
+	out.LookbackWindowDays = w.LookbackWindowDays
+	conv243, err := RedditAdsOptions_RedditAdsCustomReportOptionsToSDK(w.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RedditAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv243
+	return out, nil
+}
+
+// RedditAdsOptionsFromSDK converts the sdk-go type to the mirror.
+func RedditAdsOptionsFromSDK(v *sdk.RedditAdsOptions) (*RedditAdsOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RedditAdsOptions{}
+	out.SyncStartDate = v.SyncStartDate
+	out.LookbackWindowDays = v.LookbackWindowDays
+	conv244, err := RedditAdsOptions_RedditAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RedditAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv244
+	return out, nil
+}
+
+// RedditAdsOptions_RedditAdsCustomReportOptionsToSDK converts the mirror to the sdk-go type.
+func RedditAdsOptions_RedditAdsCustomReportOptionsToSDK(w *RedditAdsOptions_RedditAdsCustomReportOptions) (*sdk.RedditAdsOptions_RedditAdsCustomReportOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RedditAdsOptions_RedditAdsCustomReportOptions{}
+	out.Fields = w.Fields
+	out.Breakdowns = w.Breakdowns
+	return out, nil
+}
+
+// RedditAdsOptions_RedditAdsCustomReportOptionsFromSDK converts the sdk-go type to the mirror.
+func RedditAdsOptions_RedditAdsCustomReportOptionsFromSDK(v *sdk.RedditAdsOptions_RedditAdsCustomReportOptions) (*RedditAdsOptions_RedditAdsCustomReportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RedditAdsOptions_RedditAdsCustomReportOptions{}
+	out.Fields = v.Fields
+	out.Breakdowns = v.Breakdowns
+	return out, nil
+}
+
+// ReplaceWhereOverrideToSDK converts the mirror to the sdk-go type.
+func ReplaceWhereOverrideToSDK(w *ReplaceWhereOverride) (*sdk.ReplaceWhereOverride, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplaceWhereOverride{}
+	out.FlowName = w.FlowName
+	out.PredicateOverride = w.PredicateOverride
+	return out, nil
+}
+
+// ReplaceWhereOverrideFromSDK converts the sdk-go type to the mirror.
+func ReplaceWhereOverrideFromSDK(v *sdk.ReplaceWhereOverride) (*ReplaceWhereOverride, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplaceWhereOverride{}
+	out.FlowName = v.FlowName
+	out.PredicateOverride = v.PredicateOverride
+	return out, nil
+}
+
+// RestartWindowToSDK converts the mirror to the sdk-go type.
+func RestartWindowToSDK(w *RestartWindow) (*sdk.RestartWindow, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RestartWindow{}
+	out.StartHour = w.StartHour
+	out.DaysOfWeek = w.DaysOfWeek
+	out.TimeZoneId = w.TimeZoneId
+	return out, nil
+}
+
+// RestartWindowFromSDK converts the sdk-go type to the mirror.
+func RestartWindowFromSDK(v *sdk.RestartWindow) (*RestartWindow, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RestartWindow{}
+	out.StartHour = v.StartHour
+	out.DaysOfWeek = v.DaysOfWeek
+	out.TimeZoneId = v.TimeZoneId
+	return out, nil
+}
+
+// RewindDatasetSpecToSDK converts the mirror to the sdk-go type.
+func RewindDatasetSpecToSDK(w *RewindDatasetSpec) (*sdk.RewindDatasetSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RewindDatasetSpec{}
+	out.Identifier = w.Identifier
+	out.Cascade = w.Cascade
+	out.ResetCheckpoints = w.ResetCheckpoints
+	return out, nil
+}
+
+// RewindDatasetSpecFromSDK converts the sdk-go type to the mirror.
+func RewindDatasetSpecFromSDK(v *sdk.RewindDatasetSpec) (*RewindDatasetSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RewindDatasetSpec{}
+	out.Identifier = v.Identifier
+	out.Cascade = v.Cascade
+	out.ResetCheckpoints = v.ResetCheckpoints
+	return out, nil
+}
+
+// RewindSpecToSDK converts the mirror to the sdk-go type.
+func RewindSpecToSDK(w *RewindSpec) (*sdk.RewindSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RewindSpec{}
+	out.RewindTimestamp = w.RewindTimestamp
+	out.DryRun = w.DryRun
+	conv245, err := convertSlice(w.Datasets, RewindDatasetSpecToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RewindSpec.Datasets", err)
+	}
+	out.Datasets = conv245
+	return out, nil
+}
+
+// RewindSpecFromSDK converts the sdk-go type to the mirror.
+func RewindSpecFromSDK(v *sdk.RewindSpec) (*RewindSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RewindSpec{}
+	out.RewindTimestamp = v.RewindTimestamp
+	out.DryRun = v.DryRun
+	conv246, err := convertSlice(v.Datasets, RewindDatasetSpecFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RewindSpec.Datasets", err)
+	}
+	out.Datasets = conv246
+	return out, nil
+}
+
+// SchemaRegistryConfigToSDK converts the mirror to the sdk-go type.
+func SchemaRegistryConfigToSDK(w *SchemaRegistryConfig) (*sdk.SchemaRegistryConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SchemaRegistryConfig{}
+	conv247, err := ConfluentSchemaRegistryOptionsToSDK(w.ConfluentOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ConfluentOptions", err)
+	}
+	out.ConfluentOptions = conv247
+	out.ProtobufMessageName = w.ProtobufMessageName
+	out.ConnectionName = w.ConnectionName
+	return out, nil
+}
+
+// SchemaRegistryConfigFromSDK converts the sdk-go type to the mirror.
+func SchemaRegistryConfigFromSDK(v *sdk.SchemaRegistryConfig) (*SchemaRegistryConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SchemaRegistryConfig{}
+	conv248, err := ConfluentSchemaRegistryOptionsFromSDK(v.ConfluentOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SchemaRegistryConfig.ConfluentOptions", err)
+	}
+	out.ConfluentOptions = conv248
+	out.ProtobufMessageName = v.ProtobufMessageName
+	out.ConnectionName = v.ConnectionName
+	return out, nil
+}
+
+// SequencingToSDK converts the mirror to the sdk-go type.
+func SequencingToSDK(w *Sequencing) (*sdk.Sequencing, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Sequencing{}
+	conv249, err := DataPlaneIdToSDK(w.DataPlaneId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sequencing.DataPlaneId", err)
+	}
+	out.DataPlaneId = conv249
+	out.ControlPlaneSeqNo = w.ControlPlaneSeqNo
+	return out, nil
+}
+
+// SequencingFromSDK converts the sdk-go type to the mirror.
+func SequencingFromSDK(v *sdk.Sequencing) (*Sequencing, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Sequencing{}
+	conv250, err := DataPlaneIdFromSDK(v.DataPlaneId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sequencing.DataPlaneId", err)
+	}
+	out.DataPlaneId = conv250
+	out.ControlPlaneSeqNo = v.ControlPlaneSeqNo
+	return out, nil
+}
+
+// SerializedExceptionToSDK converts the mirror to the sdk-go type.
+func SerializedExceptionToSDK(w *SerializedException) (*sdk.SerializedException, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SerializedException{}
+	out.ClassName = w.ClassName
+	out.Message = w.Message
+	conv251, err := convertSlice(w.Stack, StackFrameToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SerializedException.Stack", err)
+	}
+	out.Stack = conv251
+	return out, nil
+}
+
+// SerializedExceptionFromSDK converts the sdk-go type to the mirror.
+func SerializedExceptionFromSDK(v *sdk.SerializedException) (*SerializedException, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SerializedException{}
+	out.ClassName = v.ClassName
+	out.Message = v.Message
+	conv252, err := convertSlice(v.Stack, StackFrameFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SerializedException.Stack", err)
+	}
+	out.Stack = conv252
+	return out, nil
+}
+
+// SharepointOptionsToSDK converts the mirror to the sdk-go type.
+func SharepointOptionsToSDK(w *SharepointOptions) (*sdk.SharepointOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SharepointOptions{}
+	out.Url = w.Url
+	out.EntityType = w.EntityType
+	conv253, err := FileIngestionOptionsToSDK(w.FileIngestionOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SharepointOptions.FileIngestionOptions", err)
+	}
+	out.FileIngestionOptions = conv253
+	return out, nil
+}
+
+// SharepointOptionsFromSDK converts the sdk-go type to the mirror.
+func SharepointOptionsFromSDK(v *sdk.SharepointOptions) (*SharepointOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SharepointOptions{}
+	out.Url = v.Url
+	out.EntityType = v.EntityType
+	conv254, err := FileIngestionOptionsFromSDK(v.FileIngestionOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SharepointOptions.FileIngestionOptions", err)
+	}
+	out.FileIngestionOptions = conv254
+	return out, nil
+}
+
+// SmartsheetOptionsToSDK converts the mirror to the sdk-go type.
+func SmartsheetOptionsToSDK(w *SmartsheetOptions) (*sdk.SmartsheetOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SmartsheetOptions{}
+	out.EnforceSchema = w.EnforceSchema
+	return out, nil
+}
+
+// SmartsheetOptionsFromSDK converts the sdk-go type to the mirror.
+func SmartsheetOptionsFromSDK(v *sdk.SmartsheetOptions) (*SmartsheetOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SmartsheetOptions{}
+	out.EnforceSchema = v.EnforceSchema
+	return out, nil
+}
+
+// SourceCatalogConfigToSDK converts the mirror to the sdk-go type.
+func SourceCatalogConfigToSDK(w *SourceCatalogConfig) (*sdk.SourceCatalogConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SourceCatalogConfig{}
+	out.SourceCatalog = w.SourceCatalog
+	{
+		members := 0
+		if w.Postgres != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SourceCatalogConfig.Options")
+		}
+	}
+	switch {
+	case w.Postgres != nil:
+		conv255, err := PostgresCatalogConfigToSDK(w.Postgres)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SourceCatalogConfig.Options", err)
+		}
+		out.Options = &sdk.SourceCatalogConfig_Options_Postgres{Postgres: *conv255}
+	}
+	return out, nil
+}
+
+// SourceCatalogConfigFromSDK converts the sdk-go type to the mirror.
+func SourceCatalogConfigFromSDK(v *sdk.SourceCatalogConfig) (*SourceCatalogConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SourceCatalogConfig{}
+	out.SourceCatalog = v.SourceCatalog
+	switch value := v.Options.(type) {
+	case *sdk.SourceCatalogConfig_Options_Postgres:
+		if value != nil {
+			conv256, err := PostgresCatalogConfigFromSDK(&value.Postgres)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SourceCatalogConfig.Options", err)
+			}
+			out.Postgres = conv256
+		}
+	}
+	return out, nil
+}
+
+// SourceConfigToSDK converts the mirror to the sdk-go type.
+func SourceConfigToSDK(w *SourceConfig) (*sdk.SourceConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SourceConfig{}
+	conv257, err := SourceCatalogConfigToSDK(w.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SourceConfig.Catalog", err)
+	}
+	out.Catalog = conv257
+	{
+		members := 0
+		if w.GoogleAdsConfig != nil {
+			members++
+		}
+		if w.ApiSourceConnectorConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SourceConfig.ConnectorConfig")
+		}
+	}
+	switch {
+	case w.GoogleAdsConfig != nil:
+		conv258, err := GoogleAdsConfigToSDK(w.GoogleAdsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig", err)
+		}
+		out.ConnectorConfig = &sdk.SourceConfig_ConnectorConfig_GoogleAdsConfig{GoogleAdsConfig: *conv258}
+	case w.ApiSourceConnectorConfig != nil:
+		conv259, err := ApiSourceConnectorConfigToSDK(w.ApiSourceConnectorConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig", err)
+		}
+		out.ConnectorConfig = &sdk.SourceConfig_ConnectorConfig_ApiSourceConnectorConfig{ApiSourceConnectorConfig: *conv259}
+	}
+	return out, nil
+}
+
+// SourceConfigFromSDK converts the sdk-go type to the mirror.
+func SourceConfigFromSDK(v *sdk.SourceConfig) (*SourceConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SourceConfig{}
+	conv260, err := SourceCatalogConfigFromSDK(v.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SourceConfig.Catalog", err)
+	}
+	out.Catalog = conv260
+	switch value := v.ConnectorConfig.(type) {
+	case *sdk.SourceConfig_ConnectorConfig_GoogleAdsConfig:
+		if value != nil {
+			conv261, err := GoogleAdsConfigFromSDK(&value.GoogleAdsConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig", err)
+			}
+			out.GoogleAdsConfig = conv261
+		}
+	case *sdk.SourceConfig_ConnectorConfig_ApiSourceConnectorConfig:
+		if value != nil {
+			conv262, err := ApiSourceConnectorConfigFromSDK(&value.ApiSourceConnectorConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SourceConfig.ConnectorConfig", err)
+			}
+			out.ApiSourceConnectorConfig = conv262
+		}
+	}
+	return out, nil
+}
+
+// StackFrameToSDK converts the mirror to the sdk-go type.
+func StackFrameToSDK(w *StackFrame) (*sdk.StackFrame, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StackFrame{}
+	out.DeclaringClass = w.DeclaringClass
+	out.MethodName = w.MethodName
+	out.FileName = w.FileName
+	out.LineNumber = w.LineNumber
+	return out, nil
+}
+
+// StackFrameFromSDK converts the sdk-go type to the mirror.
+func StackFrameFromSDK(v *sdk.StackFrame) (*StackFrame, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StackFrame{}
+	out.DeclaringClass = v.DeclaringClass
+	out.MethodName = v.MethodName
+	out.FileName = v.FileName
+	out.LineNumber = v.LineNumber
+	return out, nil
+}
+
+// StartUpdateRequestToSDK converts the mirror to the sdk-go type.
+func StartUpdateRequestToSDK(w *StartUpdateRequest) (*sdk.StartUpdateRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartUpdateRequest{}
+	out.PipelineId = w.PipelineId
+	out.FullRefresh = w.FullRefresh
+	out.Cause = w.Cause
+	out.RefreshSelection = w.RefreshSelection
+	out.FullRefreshSelection = w.FullRefreshSelection
+	out.ResetCheckpointSelection = w.ResetCheckpointSelection
+	out.ValidateOnly = w.ValidateOnly
+	out.Development = w.Development
+	conv263, err := RewindSpecToSDK(w.RewindSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.RewindSpec", err)
+	}
+	out.RewindSpec = conv263
+	out.Parameters = w.Parameters
+	conv264, err := convertSlice(w.ReplaceWhereOverrides, ReplaceWhereOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.ReplaceWhereOverrides", err)
+	}
+	out.ReplaceWhereOverrides = conv264
+	return out, nil
+}
+
+// StartUpdateRequestFromSDK converts the sdk-go type to the mirror.
+func StartUpdateRequestFromSDK(v *sdk.StartUpdateRequest) (*StartUpdateRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartUpdateRequest{}
+	out.PipelineId = v.PipelineId
+	out.FullRefresh = v.FullRefresh
+	out.Cause = v.Cause
+	out.RefreshSelection = v.RefreshSelection
+	out.FullRefreshSelection = v.FullRefreshSelection
+	out.ResetCheckpointSelection = v.ResetCheckpointSelection
+	out.ValidateOnly = v.ValidateOnly
+	out.Development = v.Development
+	conv265, err := RewindSpecFromSDK(v.RewindSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.RewindSpec", err)
+	}
+	out.RewindSpec = conv265
+	out.Parameters = v.Parameters
+	conv266, err := convertSlice(v.ReplaceWhereOverrides, ReplaceWhereOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StartUpdateRequest.ReplaceWhereOverrides", err)
+	}
+	out.ReplaceWhereOverrides = conv266
+	return out, nil
+}
+
+// StartUpdateResponseToSDK converts the mirror to the sdk-go type.
+func StartUpdateResponseToSDK(w *StartUpdateResponse) (*sdk.StartUpdateResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartUpdateResponse{}
+	out.UpdateId = w.UpdateId
+	return out, nil
+}
+
+// StartUpdateResponseFromSDK converts the sdk-go type to the mirror.
+func StartUpdateResponseFromSDK(v *sdk.StartUpdateResponse) (*StartUpdateResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartUpdateResponse{}
+	out.UpdateId = v.UpdateId
+	return out, nil
+}
+
+// StopPipelineRequestToSDK converts the mirror to the sdk-go type.
+func StopPipelineRequestToSDK(w *StopPipelineRequest) (*sdk.StopPipelineRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StopPipelineRequest{}
+	out.PipelineId = w.PipelineId
+	return out, nil
+}
+
+// StopPipelineRequestFromSDK converts the sdk-go type to the mirror.
+func StopPipelineRequestFromSDK(v *sdk.StopPipelineRequest) (*StopPipelineRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StopPipelineRequest{}
+	out.PipelineId = v.PipelineId
+	return out, nil
+}
+
+// TikTokAdsOptionsToSDK converts the mirror to the sdk-go type.
+func TikTokAdsOptionsToSDK(w *TikTokAdsOptions) (*sdk.TikTokAdsOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TikTokAdsOptions{}
+	out.LookbackWindowDays = w.LookbackWindowDays
+	out.SyncStartDate = w.SyncStartDate
+	out.Dimensions = w.Dimensions
+	out.Metrics = w.Metrics
+	out.ReportType = w.ReportType
+	out.DataLevel = w.DataLevel
+	out.QueryLifetime = w.QueryLifetime
+	conv267, err := TikTokAdsOptions_TikTokAdsCustomReportOptionsToSDK(w.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TikTokAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv267
+	return out, nil
+}
+
+// TikTokAdsOptionsFromSDK converts the sdk-go type to the mirror.
+func TikTokAdsOptionsFromSDK(v *sdk.TikTokAdsOptions) (*TikTokAdsOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TikTokAdsOptions{}
+	out.LookbackWindowDays = v.LookbackWindowDays
+	out.SyncStartDate = v.SyncStartDate
+	out.Dimensions = v.Dimensions
+	out.Metrics = v.Metrics
+	out.ReportType = v.ReportType
+	out.DataLevel = v.DataLevel
+	out.QueryLifetime = v.QueryLifetime
+	conv268, err := TikTokAdsOptions_TikTokAdsCustomReportOptionsFromSDK(v.CustomReportOptions)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TikTokAdsOptions.CustomReportOptions", err)
+	}
+	out.CustomReportOptions = conv268
+	return out, nil
+}
+
+// TikTokAdsOptions_TikTokAdsCustomReportOptionsToSDK converts the mirror to the sdk-go type.
+func TikTokAdsOptions_TikTokAdsCustomReportOptionsToSDK(w *TikTokAdsOptions_TikTokAdsCustomReportOptions) (*sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions{}
+	out.Dimensions = w.Dimensions
+	out.Metrics = w.Metrics
+	out.ReportType = w.ReportType
+	out.DataLevel = w.DataLevel
+	out.QueryLifetime = w.QueryLifetime
+	return out, nil
+}
+
+// TikTokAdsOptions_TikTokAdsCustomReportOptionsFromSDK converts the sdk-go type to the mirror.
+func TikTokAdsOptions_TikTokAdsCustomReportOptionsFromSDK(v *sdk.TikTokAdsOptions_TikTokAdsCustomReportOptions) (*TikTokAdsOptions_TikTokAdsCustomReportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TikTokAdsOptions_TikTokAdsCustomReportOptions{}
+	out.Dimensions = v.Dimensions
+	out.Metrics = v.Metrics
+	out.ReportType = v.ReportType
+	out.DataLevel = v.DataLevel
+	out.QueryLifetime = v.QueryLifetime
+	return out, nil
+}
+
+// TransformerToSDK converts the mirror to the sdk-go type.
+func TransformerToSDK(w *Transformer) (*sdk.Transformer, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Transformer{}
+	out.Format = w.Format
+	{
+		members := 0
+		if w.JsonOptions != nil {
+			members++
+		}
+		if w.AvroOptions != nil {
+			members++
+		}
+		if w.ProtobufOptions != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Transformer.Config")
+		}
+	}
+	switch {
+	case w.JsonOptions != nil:
+		conv269, err := JsonTransformerOptionsToSDK(w.JsonOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+		}
+		out.Config = &sdk.Transformer_Config_JsonOptions{JsonOptions: *conv269}
+	case w.AvroOptions != nil:
+		conv270, err := AvroTransformerOptionsToSDK(w.AvroOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+		}
+		out.Config = &sdk.Transformer_Config_AvroOptions{AvroOptions: *conv270}
+	case w.ProtobufOptions != nil:
+		conv271, err := ProtobufTransformerOptionsToSDK(w.ProtobufOptions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+		}
+		out.Config = &sdk.Transformer_Config_ProtobufOptions{ProtobufOptions: *conv271}
+	}
+	out.InputColumn = w.InputColumn
+	out.OutputColumn = w.OutputColumn
+	return out, nil
+}
+
+// TransformerFromSDK converts the sdk-go type to the mirror.
+func TransformerFromSDK(v *sdk.Transformer) (*Transformer, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Transformer{}
+	out.Format = v.Format
+	switch value := v.Config.(type) {
+	case *sdk.Transformer_Config_JsonOptions:
+		if value != nil {
+			conv272, err := JsonTransformerOptionsFromSDK(&value.JsonOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+			}
+			out.JsonOptions = conv272
+		}
+	case *sdk.Transformer_Config_AvroOptions:
+		if value != nil {
+			conv273, err := AvroTransformerOptionsFromSDK(&value.AvroOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+			}
+			out.AvroOptions = conv273
+		}
+	case *sdk.Transformer_Config_ProtobufOptions:
+		if value != nil {
+			conv274, err := ProtobufTransformerOptionsFromSDK(&value.ProtobufOptions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Transformer.Config", err)
+			}
+			out.ProtobufOptions = conv274
+		}
+	}
+	out.InputColumn = v.InputColumn
+	out.OutputColumn = v.OutputColumn
+	return out, nil
+}
+
+// TruncationToSDK converts the mirror to the sdk-go type.
+func TruncationToSDK(w *Truncation) (*sdk.Truncation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Truncation{}
+	conv275, err := convertSlice(w.TruncatedFields, Truncation_TruncationDetailToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Truncation.TruncatedFields", err)
+	}
+	out.TruncatedFields = conv275
+	return out, nil
+}
+
+// TruncationFromSDK converts the sdk-go type to the mirror.
+func TruncationFromSDK(v *sdk.Truncation) (*Truncation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Truncation{}
+	conv276, err := convertSlice(v.TruncatedFields, Truncation_TruncationDetailFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Truncation.TruncatedFields", err)
+	}
+	out.TruncatedFields = conv276
+	return out, nil
+}
+
+// Truncation_TruncationDetailToSDK converts the mirror to the sdk-go type.
+func Truncation_TruncationDetailToSDK(w *Truncation_TruncationDetail) (*sdk.Truncation_TruncationDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Truncation_TruncationDetail{}
+	out.FieldName = w.FieldName
+	return out, nil
+}
+
+// Truncation_TruncationDetailFromSDK converts the sdk-go type to the mirror.
+func Truncation_TruncationDetailFromSDK(v *sdk.Truncation_TruncationDetail) (*Truncation_TruncationDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Truncation_TruncationDetail{}
+	out.FieldName = v.FieldName
+	return out, nil
+}
+
+// UpdateInfoToSDK converts the mirror to the sdk-go type.
+func UpdateInfoToSDK(w *UpdateInfo) (*sdk.UpdateInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateInfo{}
+	out.PipelineId = w.PipelineId
+	out.UpdateId = w.UpdateId
+	conv277, err := PipelineSpecToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInfo.Config", err)
+	}
+	out.Config = conv277
+	out.Cause = w.Cause
+	out.State = w.State
+	out.ClusterId = w.ClusterId
+	out.CreationTime = w.CreationTime
+	out.FullRefresh = w.FullRefresh
+	out.RefreshSelection = w.RefreshSelection
+	out.FullRefreshSelection = w.FullRefreshSelection
+	out.ValidateOnly = w.ValidateOnly
+	out.Mode = w.Mode
+	out.Parameters = w.Parameters
+	return out, nil
+}
+
+// UpdateInfoFromSDK converts the sdk-go type to the mirror.
+func UpdateInfoFromSDK(v *sdk.UpdateInfo) (*UpdateInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateInfo{}
+	out.PipelineId = v.PipelineId
+	out.UpdateId = v.UpdateId
+	conv278, err := PipelineSpecFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInfo.Config", err)
+	}
+	out.Config = conv278
+	out.Cause = v.Cause
+	out.State = v.State
+	out.ClusterId = v.ClusterId
+	out.CreationTime = v.CreationTime
+	out.FullRefresh = v.FullRefresh
+	out.RefreshSelection = v.RefreshSelection
+	out.FullRefreshSelection = v.FullRefreshSelection
+	out.ValidateOnly = v.ValidateOnly
+	out.Mode = v.Mode
+	out.Parameters = v.Parameters
+	return out, nil
+}
+
+// UpdateStateInfoToSDK converts the mirror to the sdk-go type.
+func UpdateStateInfoToSDK(w *UpdateStateInfo) (*sdk.UpdateStateInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateStateInfo{}
+	out.UpdateId = w.UpdateId
+	out.State = w.State
+	out.CreationTime = w.CreationTime
+	return out, nil
+}
+
+// UpdateStateInfoFromSDK converts the sdk-go type to the mirror.
+func UpdateStateInfoFromSDK(v *sdk.UpdateStateInfo) (*UpdateStateInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateStateInfo{}
+	out.UpdateId = v.UpdateId
+	out.State = v.State
+	out.CreationTime = v.CreationTime
+	return out, nil
+}
+
+// ZendeskSupportOptionsToSDK converts the mirror to the sdk-go type.
 func ZendeskSupportOptionsToSDK(w *ZendeskSupportOptions) (*sdk.ZendeskSupportOptions, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.ZendeskSupportOptions{
-		StartDate: w.StartDate,
-	}, nil
+	out := &sdk.ZendeskSupportOptions{}
+	out.StartDate = w.StartDate
+	return out, nil
+}
+
+// ZendeskSupportOptionsFromSDK converts the sdk-go type to the mirror.
+func ZendeskSupportOptionsFromSDK(v *sdk.ZendeskSupportOptions) (*ZendeskSupportOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ZendeskSupportOptions{}
+	out.StartDate = v.StartDate
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

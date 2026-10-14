@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/agentkit/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -27,30 +28,6 @@ const (
 	StorageBackendType_StorageBackendTypeLakebase                    = sdk.StorageBackendType_StorageBackendTypeLakebase
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Request to append items to a session..
 type AppendSessionItemsRequest struct {
 	// Items to append atomically in request order. Concurrent append requests are
@@ -62,37 +39,10 @@ type AppendSessionItemsRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func AppendSessionItemsRequestFromSDK(v *sdk.AppendSessionItemsRequest) (*AppendSessionItemsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	itemsWireValue, err := convertSlice(v.Items, SessionItemFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsRequest.Items", err)
-	}
-	return &AppendSessionItemsRequest{
-		Items:  itemsWireValue,
-		Parent: v.Parent,
-	}, nil
-}
-
 // Response containing appended items..
 type AppendSessionItemsResponse struct {
 	// Persisted session items with service-assigned fields.
 	SessionItems []SessionItem `json:"session_items,omitempty"`
-}
-
-func AppendSessionItemsResponseToSDK(w *AppendSessionItemsResponse) (*sdk.AppendSessionItemsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sessionItemsPublicValue, err := convertSlice(w.SessionItems, SessionItemToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsResponse.SessionItems", err)
-	}
-	return &sdk.AppendSessionItemsResponse{
-		SessionItems: sessionItemsPublicValue,
-	}, nil
 }
 
 // Request to clear all items from a session..
@@ -100,15 +50,6 @@ type ClearSessionItemsRequest struct {
 	// Resource name of the containing session, in the form
 	// `session-stores/{session_store_id}/sessions/{session_id}`.
 	Parent *string `json:"parent,omitempty"`
-}
-
-func ClearSessionItemsRequestFromSDK(v *sdk.ClearSessionItemsRequest) (*ClearSessionItemsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ClearSessionItemsRequest{
-		Parent: v.Parent,
-	}, nil
 }
 
 // Request to create a managed memory entry..
@@ -123,21 +64,6 @@ type CreateManagedMemoryEntryRequest struct {
 	ManagedMemoryEntryId *string `json:"managed_memory_entry_id,omitempty"`
 }
 
-func CreateManagedMemoryEntryRequestFromSDK(v *sdk.CreateManagedMemoryEntryRequest) (*CreateManagedMemoryEntryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	managedMemoryEntryWireValue, err := ManagedMemoryEntryFromSDK(v.ManagedMemoryEntry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
-	}
-	return &CreateManagedMemoryEntryRequest{
-		Parent:               v.Parent,
-		ManagedMemoryEntry:   managedMemoryEntryWireValue,
-		ManagedMemoryEntryId: v.ManagedMemoryEntryId,
-	}, nil
-}
-
 // Request to create a managed memory store..
 type CreateManagedMemoryStoreRequest struct {
 	// The managed memory store to create.
@@ -146,20 +72,6 @@ type CreateManagedMemoryStoreRequest struct {
 	// characters, begin with a lowercase letter, contain only lowercase letters,
 	// digits, and hyphens, and end with a letter or digit.
 	ManagedMemoryStoreId *string `json:"managed_memory_store_id,omitempty"`
-}
-
-func CreateManagedMemoryStoreRequestFromSDK(v *sdk.CreateManagedMemoryStoreRequest) (*CreateManagedMemoryStoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	managedMemoryStoreWireValue, err := ManagedMemoryStoreFromSDK(v.ManagedMemoryStore)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryStoreRequest.ManagedMemoryStore", err)
-	}
-	return &CreateManagedMemoryStoreRequest{
-		ManagedMemoryStore:   managedMemoryStoreWireValue,
-		ManagedMemoryStoreId: v.ManagedMemoryStoreId,
-	}, nil
 }
 
 // Request to create a session..
@@ -177,21 +89,6 @@ type CreateSessionRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func CreateSessionRequestFromSDK(v *sdk.CreateSessionRequest) (*CreateSessionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sessionWireValue, err := SessionFromSDK(v.Session)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSessionRequest.Session", err)
-	}
-	return &CreateSessionRequest{
-		Session:   sessionWireValue,
-		SessionId: v.SessionId,
-		Parent:    v.Parent,
-	}, nil
-}
-
 // Request to create a session store..
 type CreateSessionStoreRequest struct {
 	// The session store to create.
@@ -200,20 +97,6 @@ type CreateSessionStoreRequest struct {
 	// characters, begin with a lowercase letter, and contain only lowercase
 	// letters, digits, and hyphens.
 	SessionStoreId *string `json:"session_store_id,omitempty"`
-}
-
-func CreateSessionStoreRequestFromSDK(v *sdk.CreateSessionStoreRequest) (*CreateSessionStoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sessionStoreWireValue, err := SessionStoreFromSDK(v.SessionStore)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSessionStoreRequest.SessionStore", err)
-	}
-	return &CreateSessionStoreRequest{
-		SessionStore:   sessionStoreWireValue,
-		SessionStoreId: v.SessionStoreId,
-	}, nil
 }
 
 // Request to synchronously extract memories from a single session..
@@ -234,19 +117,6 @@ type ExtractMemoriesRequest struct {
 	DryRun *bool `json:"dry_run,omitempty"`
 }
 
-func ExtractMemoriesRequestFromSDK(v *sdk.ExtractMemoriesRequest) (*ExtractMemoriesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExtractMemoriesRequest{
-		MemoryStore:  v.MemoryStore,
-		SessionStore: v.SessionStore,
-		SessionId:    v.SessionId,
-		Instructions: v.Instructions,
-		DryRun:       v.DryRun,
-	}, nil
-}
-
 // Result of a single-session memory extraction..
 type ExtractMemoriesResponse struct {
 	// Correlation identifier for this extraction, for logging and tracing. Not a
@@ -254,20 +124,6 @@ type ExtractMemoriesResponse struct {
 	Name *string `json:"name,omitempty"`
 	// The memory entries written by this extraction.
 	Entries []ManagedMemoryEntry `json:"entries,omitempty"`
-}
-
-func ExtractMemoriesResponseToSDK(w *ExtractMemoriesResponse) (*sdk.ExtractMemoriesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	entriesPublicValue, err := convertSlice(w.Entries, ManagedMemoryEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExtractMemoriesResponse.Entries", err)
-	}
-	return &sdk.ExtractMemoriesResponse{
-		Name:    w.Name,
-		Entries: entriesPublicValue,
-	}, nil
 }
 
 // Request to fork a session..
@@ -290,37 +146,10 @@ type ForkSessionRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func ForkSessionRequestFromSDK(v *sdk.ForkSessionRequest) (*ForkSessionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ForkSessionRequest{
-		SourceSessionId: v.SourceSessionId,
-		UpToItemId:      v.UpToItemId,
-		SessionId:       v.SessionId,
-		ActorId:         v.ActorId,
-		Metadata:        v.Metadata,
-		Parent:          v.Parent,
-	}, nil
-}
-
 // Response from forking a session..
 type ForkSessionResponse struct {
 	// The newly-created independent top-level session.
 	Session *Session `json:"session,omitempty"`
-}
-
-func ForkSessionResponseToSDK(w *ForkSessionResponse) (*sdk.ForkSessionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sessionPublicValue, err := SessionToSDK(w.Session)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ForkSessionResponse.Session", err)
-	}
-	return &sdk.ForkSessionResponse{
-		Session: sessionPublicValue,
-	}, nil
 }
 
 // Request to retrieve a managed memory entry by resource name..
@@ -330,16 +159,6 @@ type GetManagedMemoryEntryRequest struct {
 	Name *string `json:"name,omitempty"`
 	// Controls whether the response includes memory content. Defaults to `FULL`.
 	View ManagedMemoryEntryView `json:"view,omitempty"`
-}
-
-func GetManagedMemoryEntryRequestFromSDK(v *sdk.GetManagedMemoryEntryRequest) (*GetManagedMemoryEntryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetManagedMemoryEntryRequest{
-		Name: v.Name,
-		View: v.View,
-	}, nil
 }
 
 // Request to list managed memory entries for one actor, optionally restricted
@@ -366,21 +185,6 @@ type ListManagedMemoryEntriesRequest struct {
 	View ManagedMemoryEntryView `json:"view,omitempty"`
 }
 
-func ListManagedMemoryEntriesRequestFromSDK(v *sdk.ListManagedMemoryEntriesRequest) (*ListManagedMemoryEntriesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListManagedMemoryEntriesRequest{
-		Parent:     v.Parent,
-		PageSize:   v.PageSize,
-		PageToken:  v.PageToken,
-		ActorId:    v.ActorId,
-		PathPrefix: v.PathPrefix,
-		SessionId:  v.SessionId,
-		View:       v.View,
-	}, nil
-}
-
 // Response containing managed memory entries..
 type ListManagedMemoryEntriesResponse struct {
 	// Managed memory entries matching the request and selected response view.
@@ -388,20 +192,6 @@ type ListManagedMemoryEntriesResponse struct {
 	// Opaque pagination token. This field is omitted when there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListManagedMemoryEntriesResponseToSDK(w *ListManagedMemoryEntriesResponse) (*sdk.ListManagedMemoryEntriesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	managedMemoryEntriesPublicValue, err := convertSlice(w.ManagedMemoryEntries, ManagedMemoryEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
-	}
-	return &sdk.ListManagedMemoryEntriesResponse{
-		ManagedMemoryEntries: managedMemoryEntriesPublicValue,
-		NextPageToken:        w.NextPageToken,
-	}, nil
 }
 
 // Request to list managed memory stores in the caller's workspace..
@@ -413,16 +203,6 @@ type ListManagedMemoryStoresRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListManagedMemoryStoresRequestFromSDK(v *sdk.ListManagedMemoryStoresRequest) (*ListManagedMemoryStoresRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListManagedMemoryStoresRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response containing managed memory stores in the caller's workspace..
 type ListManagedMemoryStoresResponse struct {
 	// Managed memory stores in the caller's workspace.
@@ -430,20 +210,6 @@ type ListManagedMemoryStoresResponse struct {
 	// Opaque pagination token. This field is omitted when there are no more
 	// results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListManagedMemoryStoresResponseToSDK(w *ListManagedMemoryStoresResponse) (*sdk.ListManagedMemoryStoresResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	managedMemoryStoresPublicValue, err := convertSlice(w.ManagedMemoryStores, ManagedMemoryStoreToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryStoresResponse.ManagedMemoryStores", err)
-	}
-	return &sdk.ListManagedMemoryStoresResponse{
-		ManagedMemoryStores: managedMemoryStoresPublicValue,
-		NextPageToken:       w.NextPageToken,
-	}, nil
 }
 
 // Request to list items in a session..
@@ -462,38 +228,12 @@ type ListSessionItemsRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func ListSessionItemsRequestFromSDK(v *sdk.ListSessionItemsRequest) (*ListSessionItemsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSessionItemsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		OrderBy:   v.OrderBy,
-		Parent:    v.Parent,
-	}, nil
-}
-
 // Response containing a page of session items..
 type ListSessionItemsResponse struct {
 	// Session items in the requested page.
 	SessionItems []SessionItem `json:"session_items,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSessionItemsResponseToSDK(w *ListSessionItemsResponse) (*sdk.ListSessionItemsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sessionItemsPublicValue, err := convertSlice(w.SessionItems, SessionItemToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSessionItemsResponse.SessionItems", err)
-	}
-	return &sdk.ListSessionItemsResponse{
-		SessionItems:  sessionItemsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list session stores..
@@ -505,36 +245,12 @@ type ListSessionStoresRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSessionStoresRequestFromSDK(v *sdk.ListSessionStoresRequest) (*ListSessionStoresRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSessionStoresRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response containing a page of session stores..
 type ListSessionStoresResponse struct {
 	// Session stores in the requested page.
 	SessionStores []SessionStore `json:"session_stores,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSessionStoresResponseToSDK(w *ListSessionStoresResponse) (*sdk.ListSessionStoresResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sessionStoresPublicValue, err := convertSlice(w.SessionStores, SessionStoreToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSessionStoresResponse.SessionStores", err)
-	}
-	return &sdk.ListSessionStoresResponse{
-		SessionStores: sessionStoresPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list sessions..
@@ -558,39 +274,12 @@ type ListSessionsRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func ListSessionsRequestFromSDK(v *sdk.ListSessionsRequest) (*ListSessionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSessionsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		Filter:    v.Filter,
-		OrderBy:   v.OrderBy,
-		Parent:    v.Parent,
-	}, nil
-}
-
 // Response containing a page of sessions..
 type ListSessionsResponse struct {
 	// Sessions in the requested page.
 	Sessions []Session `json:"sessions,omitempty"`
 	// Token to retrieve the next page.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSessionsResponseToSDK(w *ListSessionsResponse) (*sdk.ListSessionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sessionsPublicValue, err := convertSlice(w.Sessions, SessionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSessionsResponse.Sessions", err)
-	}
-	return &sdk.ListSessionsResponse{
-		Sessions:      sessionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A workspace-scoped entry in a managed memory store..
@@ -621,60 +310,12 @@ type ManagedMemoryEntry struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func ManagedMemoryEntryFromSDK(v *sdk.ManagedMemoryEntry) (*ManagedMemoryEntry, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ManagedMemoryEntry{
-		Name:        v.Name,
-		ActorId:     v.ActorId,
-		SessionId:   v.SessionId,
-		Path:        v.Path,
-		Content:     v.Content,
-		Description: v.Description,
-		SourceType:  v.SourceType,
-		CreateTime:  v.CreateTime,
-		UpdateTime:  v.UpdateTime,
-	}, nil
-}
-
-func ManagedMemoryEntryToSDK(w *ManagedMemoryEntry) (*sdk.ManagedMemoryEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ManagedMemoryEntry{
-		Name:        w.Name,
-		ActorId:     w.ActorId,
-		SessionId:   w.SessionId,
-		Path:        w.Path,
-		Content:     w.Content,
-		Description: w.Description,
-		SourceType:  w.SourceType,
-		CreateTime:  w.CreateTime,
-		UpdateTime:  w.UpdateTime,
-	}, nil
-}
-
 // One relevance-ranked managed memory search result..
 type ManagedMemoryEntrySearchResult struct {
 	// Managed memory entry matching the query.
 	ManagedMemoryEntry *ManagedMemoryEntry `json:"managed_memory_entry,omitempty"`
 	// Relevance score for the result. Higher scores are more relevant.
 	Score *float64 `json:"score,omitempty"`
-}
-
-func ManagedMemoryEntrySearchResultToSDK(w *ManagedMemoryEntrySearchResult) (*sdk.ManagedMemoryEntrySearchResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	managedMemoryEntryPublicValue, err := ManagedMemoryEntryToSDK(w.ManagedMemoryEntry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ManagedMemoryEntrySearchResult.ManagedMemoryEntry", err)
-	}
-	return &sdk.ManagedMemoryEntrySearchResult{
-		ManagedMemoryEntry: managedMemoryEntryPublicValue,
-		Score:              w.Score,
-	}, nil
 }
 
 // A workspace-scoped managed memory store backed by service-managed storage..
@@ -705,56 +346,6 @@ type ManagedMemoryStore struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func ManagedMemoryStoreFromSDK(v *sdk.ManagedMemoryStore) (*ManagedMemoryStore, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.WorkspaceId", err)
-	}
-	storageBackendWireValue, err := StorageBackendFromSDK(v.StorageBackend)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.StorageBackend", err)
-	}
-	return &ManagedMemoryStore{
-		Name:           v.Name,
-		DisplayName:    v.DisplayName,
-		WorkspaceId:    workspaceIdWireValue,
-		StorageBackend: storageBackendWireValue,
-		OwnerUserId:    v.OwnerUserId,
-		CreatorUserId:  v.CreatorUserId,
-		Description:    v.Description,
-		CreateTime:     v.CreateTime,
-		UpdateTime:     v.UpdateTime,
-	}, nil
-}
-
-func ManagedMemoryStoreToSDK(w *ManagedMemoryStore) (*sdk.ManagedMemoryStore, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.WorkspaceId", err)
-	}
-	storageBackendPublicValue, err := StorageBackendToSDK(w.StorageBackend)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.StorageBackend", err)
-	}
-	return &sdk.ManagedMemoryStore{
-		Name:           w.Name,
-		DisplayName:    w.DisplayName,
-		WorkspaceId:    workspaceIdPublicValue,
-		StorageBackend: storageBackendPublicValue,
-		OwnerUserId:    w.OwnerUserId,
-		CreatorUserId:  w.CreatorUserId,
-		Description:    w.Description,
-		CreateTime:     w.CreateTime,
-		UpdateTime:     w.UpdateTime,
-	}, nil
-}
-
 // Request to pop an item from a session..
 type PopSessionItemRequest struct {
 	// Resource name of the containing session, in the form
@@ -762,32 +353,10 @@ type PopSessionItemRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func PopSessionItemRequestFromSDK(v *sdk.PopSessionItemRequest) (*PopSessionItemRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PopSessionItemRequest{
-		Parent: v.Parent,
-	}, nil
-}
-
 // Response containing the popped item..
 type PopSessionItemResponse struct {
 	// Removed item, if any.
 	Item *SessionItem `json:"item,omitempty"`
-}
-
-func PopSessionItemResponseToSDK(w *PopSessionItemResponse) (*sdk.PopSessionItemResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemPublicValue, err := SessionItemToSDK(w.Item)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PopSessionItemResponse.Item", err)
-	}
-	return &sdk.PopSessionItemResponse{
-		Item: itemPublicValue,
-	}, nil
 }
 
 // Request to search managed memory entries by text query for one actor. Search
@@ -822,23 +391,6 @@ type SearchManagedMemoryEntriesRequest struct {
 	View ManagedMemoryEntryView `json:"view,omitempty"`
 }
 
-func SearchManagedMemoryEntriesRequestFromSDK(v *sdk.SearchManagedMemoryEntriesRequest) (*SearchManagedMemoryEntriesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SearchManagedMemoryEntriesRequest{
-		Parent:     v.Parent,
-		ActorId:    v.ActorId,
-		Query:      v.Query,
-		Limit:      v.Limit,
-		PageSize:   v.PageSize,
-		PageToken:  v.PageToken,
-		SessionId:  v.SessionId,
-		PathPrefix: v.PathPrefix,
-		View:       v.View,
-	}, nil
-}
-
 // Response containing managed memory entries ranked by relevance..
 type SearchManagedMemoryEntriesResponse struct {
 	// Deprecated compatibility alias for clients migrating to `results`. This
@@ -850,25 +402,6 @@ type SearchManagedMemoryEntriesResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 	// Canonical matching entries and relevance scores, ordered most relevant first.
 	Results []ManagedMemoryEntrySearchResult `json:"results,omitempty"`
-}
-
-func SearchManagedMemoryEntriesResponseToSDK(w *SearchManagedMemoryEntriesResponse) (*sdk.SearchManagedMemoryEntriesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	managedMemoryEntriesPublicValue, err := convertSlice(w.ManagedMemoryEntries, ManagedMemoryEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
-	}
-	resultsPublicValue, err := convertSlice(w.Results, ManagedMemoryEntrySearchResultToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.Results", err)
-	}
-	return &sdk.SearchManagedMemoryEntriesResponse{
-		ManagedMemoryEntries: managedMemoryEntriesPublicValue,
-		NextPageToken:        w.NextPageToken,
-		Results:              resultsPublicValue,
-	}, nil
 }
 
 // A durable logical interaction stored within a Session Store..
@@ -903,40 +436,6 @@ type Session struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func SessionFromSDK(v *sdk.Session) (*Session, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Session{
-		SessionId:        v.SessionId,
-		ActorId:          v.ActorId,
-		ParentSessionId:  v.ParentSessionId,
-		RootSessionId:    v.RootSessionId,
-		Metadata:         v.Metadata,
-		CreateTime:       v.CreateTime,
-		UpdateTime:       v.UpdateTime,
-		LastActivityTime: v.LastActivityTime,
-		Name:             v.Name,
-	}, nil
-}
-
-func SessionToSDK(w *Session) (*sdk.Session, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Session{
-		SessionId:        w.SessionId,
-		ActorId:          w.ActorId,
-		ParentSessionId:  w.ParentSessionId,
-		RootSessionId:    w.RootSessionId,
-		Metadata:         w.Metadata,
-		CreateTime:       w.CreateTime,
-		UpdateTime:       w.UpdateTime,
-		LastActivityTime: w.LastActivityTime,
-		Name:             w.Name,
-	}, nil
-}
-
 // A transcript entry in a session's history..
 type SessionItem struct {
 	// Stable service-generated item ID.
@@ -949,28 +448,6 @@ type SessionItem struct {
 	// a session. Item listing orders by this timestamp; equal timestamps are
 	// resolved by committed append order.
 	CreateTime *types.Time `json:"create_time,omitempty"`
-}
-
-func SessionItemFromSDK(v *sdk.SessionItem) (*SessionItem, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SessionItem{
-		ItemId:     v.ItemId,
-		Data:       v.Data,
-		CreateTime: v.CreateTime,
-	}, nil
-}
-
-func SessionItemToSDK(w *SessionItem) (*sdk.SessionItem, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SessionItem{
-		ItemId:     w.ItemId,
-		Data:       w.Data,
-		CreateTime: w.CreateTime,
-	}, nil
 }
 
 // A workspace-scoped session store..
@@ -991,34 +468,6 @@ type SessionStore struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func SessionStoreFromSDK(v *sdk.SessionStore) (*SessionStore, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SessionStore{
-		CreatorUserId: v.CreatorUserId,
-		CreateTime:    v.CreateTime,
-		UpdateTime:    v.UpdateTime,
-		Description:   v.Description,
-		Metadata:      v.Metadata,
-		Name:          v.Name,
-	}, nil
-}
-
-func SessionStoreToSDK(w *SessionStore) (*sdk.SessionStore, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SessionStore{
-		CreatorUserId: w.CreatorUserId,
-		CreateTime:    w.CreateTime,
-		UpdateTime:    w.UpdateTime,
-		Description:   w.Description,
-		Metadata:      w.Metadata,
-		Name:          w.Name,
-	}, nil
-}
-
 // Service-managed storage backing a managed memory store..
 type StorageBackend struct {
 	// Type of the storage backend.
@@ -1027,46 +476,12 @@ type StorageBackend struct {
 	BackendId *string `json:"backend_id,omitempty"`
 }
 
-func StorageBackendFromSDK(v *sdk.StorageBackend) (*StorageBackend, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StorageBackend{
-		BackendType: v.BackendType,
-		BackendId:   v.BackendId,
-	}, nil
-}
-
-func StorageBackendToSDK(w *StorageBackend) (*sdk.StorageBackend, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StorageBackend{
-		BackendType: w.BackendType,
-		BackendId:   w.BackendId,
-	}, nil
-}
-
 // Request to update a managed memory entry..
 type UpdateManagedMemoryEntryRequest struct {
 	// The managed memory entry to update.
 	ManagedMemoryEntry *ManagedMemoryEntry `json:"managed_memory_entry,omitempty"`
 	// Fields to update. Only `content` and `description` may be updated.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateManagedMemoryEntryRequestFromSDK(v *sdk.UpdateManagedMemoryEntryRequest) (*UpdateManagedMemoryEntryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	managedMemoryEntryWireValue, err := ManagedMemoryEntryFromSDK(v.ManagedMemoryEntry)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
-	}
-	return &UpdateManagedMemoryEntryRequest{
-		ManagedMemoryEntry: managedMemoryEntryWireValue,
-		UpdateMask:         fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 // Request to update the description and metadata on a managed memory store..
@@ -1078,20 +493,6 @@ type UpdateManagedMemoryStoreRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateManagedMemoryStoreRequestFromSDK(v *sdk.UpdateManagedMemoryStoreRequest) (*UpdateManagedMemoryStoreRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	managedMemoryStoreWireValue, err := ManagedMemoryStoreFromSDK(v.ManagedMemoryStore)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryStoreRequest.ManagedMemoryStore", err)
-	}
-	return &UpdateManagedMemoryStoreRequest{
-		ManagedMemoryStore: managedMemoryStoreWireValue,
-		UpdateMask:         fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Request to update a session..
 type UpdateSessionRequest struct {
 	// Session to update.
@@ -1099,20 +500,6 @@ type UpdateSessionRequest struct {
 	// Fields to update. Only `metadata` is mutable; any other path returns
 	// `INVALID_PARAMETER_VALUE`.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateSessionRequestFromSDK(v *sdk.UpdateSessionRequest) (*UpdateSessionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sessionWireValue, err := SessionFromSDK(v.Session)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateSessionRequest.Session", err)
-	}
-	return &UpdateSessionRequest{
-		Session:    sessionWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 // Request to update a session store..
@@ -1124,18 +511,1106 @@ type UpdateSessionStoreRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// AppendSessionItemsRequestToSDK converts the mirror to the sdk-go type.
+func AppendSessionItemsRequestToSDK(w *AppendSessionItemsRequest) (*sdk.AppendSessionItemsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppendSessionItemsRequest{}
+	conv1, err := convertSlice(w.Items, SessionItemToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsRequest.Items", err)
+	}
+	out.Items = conv1
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// AppendSessionItemsRequestFromSDK converts the sdk-go type to the mirror.
+func AppendSessionItemsRequestFromSDK(v *sdk.AppendSessionItemsRequest) (*AppendSessionItemsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppendSessionItemsRequest{}
+	conv2, err := convertSlice(v.Items, SessionItemFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsRequest.Items", err)
+	}
+	out.Items = conv2
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// AppendSessionItemsResponseToSDK converts the mirror to the sdk-go type.
+func AppendSessionItemsResponseToSDK(w *AppendSessionItemsResponse) (*sdk.AppendSessionItemsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppendSessionItemsResponse{}
+	conv3, err := convertSlice(w.SessionItems, SessionItemToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsResponse.SessionItems", err)
+	}
+	out.SessionItems = conv3
+	return out, nil
+}
+
+// AppendSessionItemsResponseFromSDK converts the sdk-go type to the mirror.
+func AppendSessionItemsResponseFromSDK(v *sdk.AppendSessionItemsResponse) (*AppendSessionItemsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppendSessionItemsResponse{}
+	conv4, err := convertSlice(v.SessionItems, SessionItemFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppendSessionItemsResponse.SessionItems", err)
+	}
+	out.SessionItems = conv4
+	return out, nil
+}
+
+// ClearSessionItemsRequestToSDK converts the mirror to the sdk-go type.
+func ClearSessionItemsRequestToSDK(w *ClearSessionItemsRequest) (*sdk.ClearSessionItemsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ClearSessionItemsRequest{}
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ClearSessionItemsRequestFromSDK converts the sdk-go type to the mirror.
+func ClearSessionItemsRequestFromSDK(v *sdk.ClearSessionItemsRequest) (*ClearSessionItemsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ClearSessionItemsRequest{}
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// CreateManagedMemoryEntryRequestToSDK converts the mirror to the sdk-go type.
+func CreateManagedMemoryEntryRequestToSDK(w *CreateManagedMemoryEntryRequest) (*sdk.CreateManagedMemoryEntryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateManagedMemoryEntryRequest{}
+	out.Parent = w.Parent
+	conv5, err := ManagedMemoryEntryToSDK(w.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv5
+	out.ManagedMemoryEntryId = w.ManagedMemoryEntryId
+	return out, nil
+}
+
+// CreateManagedMemoryEntryRequestFromSDK converts the sdk-go type to the mirror.
+func CreateManagedMemoryEntryRequestFromSDK(v *sdk.CreateManagedMemoryEntryRequest) (*CreateManagedMemoryEntryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateManagedMemoryEntryRequest{}
+	out.Parent = v.Parent
+	conv6, err := ManagedMemoryEntryFromSDK(v.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv6
+	out.ManagedMemoryEntryId = v.ManagedMemoryEntryId
+	return out, nil
+}
+
+// CreateManagedMemoryStoreRequestToSDK converts the mirror to the sdk-go type.
+func CreateManagedMemoryStoreRequestToSDK(w *CreateManagedMemoryStoreRequest) (*sdk.CreateManagedMemoryStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateManagedMemoryStoreRequest{}
+	conv7, err := ManagedMemoryStoreToSDK(w.ManagedMemoryStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryStoreRequest.ManagedMemoryStore", err)
+	}
+	out.ManagedMemoryStore = conv7
+	out.ManagedMemoryStoreId = w.ManagedMemoryStoreId
+	return out, nil
+}
+
+// CreateManagedMemoryStoreRequestFromSDK converts the sdk-go type to the mirror.
+func CreateManagedMemoryStoreRequestFromSDK(v *sdk.CreateManagedMemoryStoreRequest) (*CreateManagedMemoryStoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateManagedMemoryStoreRequest{}
+	conv8, err := ManagedMemoryStoreFromSDK(v.ManagedMemoryStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateManagedMemoryStoreRequest.ManagedMemoryStore", err)
+	}
+	out.ManagedMemoryStore = conv8
+	out.ManagedMemoryStoreId = v.ManagedMemoryStoreId
+	return out, nil
+}
+
+// CreateSessionRequestToSDK converts the mirror to the sdk-go type.
+func CreateSessionRequestToSDK(w *CreateSessionRequest) (*sdk.CreateSessionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSessionRequest{}
+	conv9, err := SessionToSDK(w.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSessionRequest.Session", err)
+	}
+	out.Session = conv9
+	out.SessionId = w.SessionId
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// CreateSessionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSessionRequestFromSDK(v *sdk.CreateSessionRequest) (*CreateSessionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSessionRequest{}
+	conv10, err := SessionFromSDK(v.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSessionRequest.Session", err)
+	}
+	out.Session = conv10
+	out.SessionId = v.SessionId
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// CreateSessionStoreRequestToSDK converts the mirror to the sdk-go type.
+func CreateSessionStoreRequestToSDK(w *CreateSessionStoreRequest) (*sdk.CreateSessionStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSessionStoreRequest{}
+	conv11, err := SessionStoreToSDK(w.SessionStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSessionStoreRequest.SessionStore", err)
+	}
+	out.SessionStore = conv11
+	out.SessionStoreId = w.SessionStoreId
+	return out, nil
+}
+
+// CreateSessionStoreRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSessionStoreRequestFromSDK(v *sdk.CreateSessionStoreRequest) (*CreateSessionStoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSessionStoreRequest{}
+	conv12, err := SessionStoreFromSDK(v.SessionStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSessionStoreRequest.SessionStore", err)
+	}
+	out.SessionStore = conv12
+	out.SessionStoreId = v.SessionStoreId
+	return out, nil
+}
+
+// ExtractMemoriesRequestToSDK converts the mirror to the sdk-go type.
+func ExtractMemoriesRequestToSDK(w *ExtractMemoriesRequest) (*sdk.ExtractMemoriesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExtractMemoriesRequest{}
+	out.MemoryStore = w.MemoryStore
+	out.SessionStore = w.SessionStore
+	out.SessionId = w.SessionId
+	out.Instructions = w.Instructions
+	out.DryRun = w.DryRun
+	return out, nil
+}
+
+// ExtractMemoriesRequestFromSDK converts the sdk-go type to the mirror.
+func ExtractMemoriesRequestFromSDK(v *sdk.ExtractMemoriesRequest) (*ExtractMemoriesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExtractMemoriesRequest{}
+	out.MemoryStore = v.MemoryStore
+	out.SessionStore = v.SessionStore
+	out.SessionId = v.SessionId
+	out.Instructions = v.Instructions
+	out.DryRun = v.DryRun
+	return out, nil
+}
+
+// ExtractMemoriesResponseToSDK converts the mirror to the sdk-go type.
+func ExtractMemoriesResponseToSDK(w *ExtractMemoriesResponse) (*sdk.ExtractMemoriesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExtractMemoriesResponse{}
+	out.Name = w.Name
+	conv13, err := convertSlice(w.Entries, ManagedMemoryEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExtractMemoriesResponse.Entries", err)
+	}
+	out.Entries = conv13
+	return out, nil
+}
+
+// ExtractMemoriesResponseFromSDK converts the sdk-go type to the mirror.
+func ExtractMemoriesResponseFromSDK(v *sdk.ExtractMemoriesResponse) (*ExtractMemoriesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExtractMemoriesResponse{}
+	out.Name = v.Name
+	conv14, err := convertSlice(v.Entries, ManagedMemoryEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ExtractMemoriesResponse.Entries", err)
+	}
+	out.Entries = conv14
+	return out, nil
+}
+
+// ForkSessionRequestToSDK converts the mirror to the sdk-go type.
+func ForkSessionRequestToSDK(w *ForkSessionRequest) (*sdk.ForkSessionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ForkSessionRequest{}
+	out.SourceSessionId = w.SourceSessionId
+	out.UpToItemId = w.UpToItemId
+	out.SessionId = w.SessionId
+	out.ActorId = w.ActorId
+	out.Metadata = w.Metadata
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ForkSessionRequestFromSDK converts the sdk-go type to the mirror.
+func ForkSessionRequestFromSDK(v *sdk.ForkSessionRequest) (*ForkSessionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ForkSessionRequest{}
+	out.SourceSessionId = v.SourceSessionId
+	out.UpToItemId = v.UpToItemId
+	out.SessionId = v.SessionId
+	out.ActorId = v.ActorId
+	out.Metadata = v.Metadata
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// ForkSessionResponseToSDK converts the mirror to the sdk-go type.
+func ForkSessionResponseToSDK(w *ForkSessionResponse) (*sdk.ForkSessionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ForkSessionResponse{}
+	conv15, err := SessionToSDK(w.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ForkSessionResponse.Session", err)
+	}
+	out.Session = conv15
+	return out, nil
+}
+
+// ForkSessionResponseFromSDK converts the sdk-go type to the mirror.
+func ForkSessionResponseFromSDK(v *sdk.ForkSessionResponse) (*ForkSessionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ForkSessionResponse{}
+	conv16, err := SessionFromSDK(v.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ForkSessionResponse.Session", err)
+	}
+	out.Session = conv16
+	return out, nil
+}
+
+// GetManagedMemoryEntryRequestToSDK converts the mirror to the sdk-go type.
+func GetManagedMemoryEntryRequestToSDK(w *GetManagedMemoryEntryRequest) (*sdk.GetManagedMemoryEntryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetManagedMemoryEntryRequest{}
+	out.Name = w.Name
+	out.View = w.View
+	return out, nil
+}
+
+// GetManagedMemoryEntryRequestFromSDK converts the sdk-go type to the mirror.
+func GetManagedMemoryEntryRequestFromSDK(v *sdk.GetManagedMemoryEntryRequest) (*GetManagedMemoryEntryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetManagedMemoryEntryRequest{}
+	out.Name = v.Name
+	out.View = v.View
+	return out, nil
+}
+
+// ListManagedMemoryEntriesRequestToSDK converts the mirror to the sdk-go type.
+func ListManagedMemoryEntriesRequestToSDK(w *ListManagedMemoryEntriesRequest) (*sdk.ListManagedMemoryEntriesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListManagedMemoryEntriesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.ActorId = w.ActorId
+	out.PathPrefix = w.PathPrefix
+	out.SessionId = w.SessionId
+	out.View = w.View
+	return out, nil
+}
+
+// ListManagedMemoryEntriesRequestFromSDK converts the sdk-go type to the mirror.
+func ListManagedMemoryEntriesRequestFromSDK(v *sdk.ListManagedMemoryEntriesRequest) (*ListManagedMemoryEntriesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListManagedMemoryEntriesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.ActorId = v.ActorId
+	out.PathPrefix = v.PathPrefix
+	out.SessionId = v.SessionId
+	out.View = v.View
+	return out, nil
+}
+
+// ListManagedMemoryEntriesResponseToSDK converts the mirror to the sdk-go type.
+func ListManagedMemoryEntriesResponseToSDK(w *ListManagedMemoryEntriesResponse) (*sdk.ListManagedMemoryEntriesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListManagedMemoryEntriesResponse{}
+	conv17, err := convertSlice(w.ManagedMemoryEntries, ManagedMemoryEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
+	}
+	out.ManagedMemoryEntries = conv17
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListManagedMemoryEntriesResponseFromSDK converts the sdk-go type to the mirror.
+func ListManagedMemoryEntriesResponseFromSDK(v *sdk.ListManagedMemoryEntriesResponse) (*ListManagedMemoryEntriesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListManagedMemoryEntriesResponse{}
+	conv18, err := convertSlice(v.ManagedMemoryEntries, ManagedMemoryEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
+	}
+	out.ManagedMemoryEntries = conv18
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListManagedMemoryStoresRequestToSDK converts the mirror to the sdk-go type.
+func ListManagedMemoryStoresRequestToSDK(w *ListManagedMemoryStoresRequest) (*sdk.ListManagedMemoryStoresRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListManagedMemoryStoresRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListManagedMemoryStoresRequestFromSDK converts the sdk-go type to the mirror.
+func ListManagedMemoryStoresRequestFromSDK(v *sdk.ListManagedMemoryStoresRequest) (*ListManagedMemoryStoresRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListManagedMemoryStoresRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListManagedMemoryStoresResponseToSDK converts the mirror to the sdk-go type.
+func ListManagedMemoryStoresResponseToSDK(w *ListManagedMemoryStoresResponse) (*sdk.ListManagedMemoryStoresResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListManagedMemoryStoresResponse{}
+	conv19, err := convertSlice(w.ManagedMemoryStores, ManagedMemoryStoreToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryStoresResponse.ManagedMemoryStores", err)
+	}
+	out.ManagedMemoryStores = conv19
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListManagedMemoryStoresResponseFromSDK converts the sdk-go type to the mirror.
+func ListManagedMemoryStoresResponseFromSDK(v *sdk.ListManagedMemoryStoresResponse) (*ListManagedMemoryStoresResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListManagedMemoryStoresResponse{}
+	conv20, err := convertSlice(v.ManagedMemoryStores, ManagedMemoryStoreFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListManagedMemoryStoresResponse.ManagedMemoryStores", err)
+	}
+	out.ManagedMemoryStores = conv20
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSessionItemsRequestToSDK converts the mirror to the sdk-go type.
+func ListSessionItemsRequestToSDK(w *ListSessionItemsRequest) (*sdk.ListSessionItemsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionItemsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.OrderBy = w.OrderBy
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ListSessionItemsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSessionItemsRequestFromSDK(v *sdk.ListSessionItemsRequest) (*ListSessionItemsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionItemsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.OrderBy = v.OrderBy
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// ListSessionItemsResponseToSDK converts the mirror to the sdk-go type.
+func ListSessionItemsResponseToSDK(w *ListSessionItemsResponse) (*sdk.ListSessionItemsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionItemsResponse{}
+	conv21, err := convertSlice(w.SessionItems, SessionItemToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionItemsResponse.SessionItems", err)
+	}
+	out.SessionItems = conv21
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSessionItemsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSessionItemsResponseFromSDK(v *sdk.ListSessionItemsResponse) (*ListSessionItemsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionItemsResponse{}
+	conv22, err := convertSlice(v.SessionItems, SessionItemFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionItemsResponse.SessionItems", err)
+	}
+	out.SessionItems = conv22
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSessionStoresRequestToSDK converts the mirror to the sdk-go type.
+func ListSessionStoresRequestToSDK(w *ListSessionStoresRequest) (*sdk.ListSessionStoresRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionStoresRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSessionStoresRequestFromSDK converts the sdk-go type to the mirror.
+func ListSessionStoresRequestFromSDK(v *sdk.ListSessionStoresRequest) (*ListSessionStoresRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionStoresRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSessionStoresResponseToSDK converts the mirror to the sdk-go type.
+func ListSessionStoresResponseToSDK(w *ListSessionStoresResponse) (*sdk.ListSessionStoresResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionStoresResponse{}
+	conv23, err := convertSlice(w.SessionStores, SessionStoreToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionStoresResponse.SessionStores", err)
+	}
+	out.SessionStores = conv23
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSessionStoresResponseFromSDK converts the sdk-go type to the mirror.
+func ListSessionStoresResponseFromSDK(v *sdk.ListSessionStoresResponse) (*ListSessionStoresResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionStoresResponse{}
+	conv24, err := convertSlice(v.SessionStores, SessionStoreFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionStoresResponse.SessionStores", err)
+	}
+	out.SessionStores = conv24
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSessionsRequestToSDK converts the mirror to the sdk-go type.
+func ListSessionsRequestToSDK(w *ListSessionsRequest) (*sdk.ListSessionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.Filter = w.Filter
+	out.OrderBy = w.OrderBy
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ListSessionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSessionsRequestFromSDK(v *sdk.ListSessionsRequest) (*ListSessionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.Filter = v.Filter
+	out.OrderBy = v.OrderBy
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// ListSessionsResponseToSDK converts the mirror to the sdk-go type.
+func ListSessionsResponseToSDK(w *ListSessionsResponse) (*sdk.ListSessionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSessionsResponse{}
+	conv25, err := convertSlice(w.Sessions, SessionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionsResponse.Sessions", err)
+	}
+	out.Sessions = conv25
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSessionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSessionsResponseFromSDK(v *sdk.ListSessionsResponse) (*ListSessionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSessionsResponse{}
+	conv26, err := convertSlice(v.Sessions, SessionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSessionsResponse.Sessions", err)
+	}
+	out.Sessions = conv26
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ManagedMemoryEntryToSDK converts the mirror to the sdk-go type.
+func ManagedMemoryEntryToSDK(w *ManagedMemoryEntry) (*sdk.ManagedMemoryEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ManagedMemoryEntry{}
+	out.Name = w.Name
+	out.ActorId = w.ActorId
+	out.SessionId = w.SessionId
+	out.Path = w.Path
+	out.Content = w.Content
+	out.Description = w.Description
+	out.SourceType = w.SourceType
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// ManagedMemoryEntryFromSDK converts the sdk-go type to the mirror.
+func ManagedMemoryEntryFromSDK(v *sdk.ManagedMemoryEntry) (*ManagedMemoryEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ManagedMemoryEntry{}
+	out.Name = v.Name
+	out.ActorId = v.ActorId
+	out.SessionId = v.SessionId
+	out.Path = v.Path
+	out.Content = v.Content
+	out.Description = v.Description
+	out.SourceType = v.SourceType
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// ManagedMemoryEntrySearchResultToSDK converts the mirror to the sdk-go type.
+func ManagedMemoryEntrySearchResultToSDK(w *ManagedMemoryEntrySearchResult) (*sdk.ManagedMemoryEntrySearchResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ManagedMemoryEntrySearchResult{}
+	conv27, err := ManagedMemoryEntryToSDK(w.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ManagedMemoryEntrySearchResult.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv27
+	out.Score = w.Score
+	return out, nil
+}
+
+// ManagedMemoryEntrySearchResultFromSDK converts the sdk-go type to the mirror.
+func ManagedMemoryEntrySearchResultFromSDK(v *sdk.ManagedMemoryEntrySearchResult) (*ManagedMemoryEntrySearchResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ManagedMemoryEntrySearchResult{}
+	conv28, err := ManagedMemoryEntryFromSDK(v.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ManagedMemoryEntrySearchResult.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv28
+	out.Score = v.Score
+	return out, nil
+}
+
+// ManagedMemoryStoreToSDK converts the mirror to the sdk-go type.
+func ManagedMemoryStoreToSDK(w *ManagedMemoryStore) (*sdk.ManagedMemoryStore, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ManagedMemoryStore{}
+	out.Name = w.Name
+	out.DisplayName = w.DisplayName
+	out.WorkspaceId = w.WorkspaceId
+	conv29, err := StorageBackendToSDK(w.StorageBackend)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.StorageBackend", err)
+	}
+	out.StorageBackend = conv29
+	out.OwnerUserId = w.OwnerUserId
+	out.CreatorUserId = w.CreatorUserId
+	out.Description = w.Description
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// ManagedMemoryStoreFromSDK converts the sdk-go type to the mirror.
+func ManagedMemoryStoreFromSDK(v *sdk.ManagedMemoryStore) (*ManagedMemoryStore, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ManagedMemoryStore{}
+	out.Name = v.Name
+	out.DisplayName = v.DisplayName
+	out.WorkspaceId = v.WorkspaceId
+	conv30, err := StorageBackendFromSDK(v.StorageBackend)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ManagedMemoryStore.StorageBackend", err)
+	}
+	out.StorageBackend = conv30
+	out.OwnerUserId = v.OwnerUserId
+	out.CreatorUserId = v.CreatorUserId
+	out.Description = v.Description
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// PopSessionItemRequestToSDK converts the mirror to the sdk-go type.
+func PopSessionItemRequestToSDK(w *PopSessionItemRequest) (*sdk.PopSessionItemRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PopSessionItemRequest{}
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// PopSessionItemRequestFromSDK converts the sdk-go type to the mirror.
+func PopSessionItemRequestFromSDK(v *sdk.PopSessionItemRequest) (*PopSessionItemRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PopSessionItemRequest{}
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// PopSessionItemResponseToSDK converts the mirror to the sdk-go type.
+func PopSessionItemResponseToSDK(w *PopSessionItemResponse) (*sdk.PopSessionItemResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PopSessionItemResponse{}
+	conv31, err := SessionItemToSDK(w.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PopSessionItemResponse.Item", err)
+	}
+	out.Item = conv31
+	return out, nil
+}
+
+// PopSessionItemResponseFromSDK converts the sdk-go type to the mirror.
+func PopSessionItemResponseFromSDK(v *sdk.PopSessionItemResponse) (*PopSessionItemResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PopSessionItemResponse{}
+	conv32, err := SessionItemFromSDK(v.Item)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PopSessionItemResponse.Item", err)
+	}
+	out.Item = conv32
+	return out, nil
+}
+
+// SearchManagedMemoryEntriesRequestToSDK converts the mirror to the sdk-go type.
+func SearchManagedMemoryEntriesRequestToSDK(w *SearchManagedMemoryEntriesRequest) (*sdk.SearchManagedMemoryEntriesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchManagedMemoryEntriesRequest{}
+	out.Parent = w.Parent
+	out.ActorId = w.ActorId
+	out.Query = w.Query
+	out.Limit = w.Limit
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.SessionId = w.SessionId
+	out.PathPrefix = w.PathPrefix
+	out.View = w.View
+	return out, nil
+}
+
+// SearchManagedMemoryEntriesRequestFromSDK converts the sdk-go type to the mirror.
+func SearchManagedMemoryEntriesRequestFromSDK(v *sdk.SearchManagedMemoryEntriesRequest) (*SearchManagedMemoryEntriesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchManagedMemoryEntriesRequest{}
+	out.Parent = v.Parent
+	out.ActorId = v.ActorId
+	out.Query = v.Query
+	out.Limit = v.Limit
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.SessionId = v.SessionId
+	out.PathPrefix = v.PathPrefix
+	out.View = v.View
+	return out, nil
+}
+
+// SearchManagedMemoryEntriesResponseToSDK converts the mirror to the sdk-go type.
+func SearchManagedMemoryEntriesResponseToSDK(w *SearchManagedMemoryEntriesResponse) (*sdk.SearchManagedMemoryEntriesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchManagedMemoryEntriesResponse{}
+	conv33, err := convertSlice(w.ManagedMemoryEntries, ManagedMemoryEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
+	}
+	out.ManagedMemoryEntries = conv33
+	out.NextPageToken = w.NextPageToken
+	conv34, err := convertSlice(w.Results, ManagedMemoryEntrySearchResultToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.Results", err)
+	}
+	out.Results = conv34
+	return out, nil
+}
+
+// SearchManagedMemoryEntriesResponseFromSDK converts the sdk-go type to the mirror.
+func SearchManagedMemoryEntriesResponseFromSDK(v *sdk.SearchManagedMemoryEntriesResponse) (*SearchManagedMemoryEntriesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchManagedMemoryEntriesResponse{}
+	conv35, err := convertSlice(v.ManagedMemoryEntries, ManagedMemoryEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.ManagedMemoryEntries", err)
+	}
+	out.ManagedMemoryEntries = conv35
+	out.NextPageToken = v.NextPageToken
+	conv36, err := convertSlice(v.Results, ManagedMemoryEntrySearchResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchManagedMemoryEntriesResponse.Results", err)
+	}
+	out.Results = conv36
+	return out, nil
+}
+
+// SessionToSDK converts the mirror to the sdk-go type.
+func SessionToSDK(w *Session) (*sdk.Session, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Session{}
+	out.SessionId = w.SessionId
+	out.ActorId = w.ActorId
+	out.ParentSessionId = w.ParentSessionId
+	out.RootSessionId = w.RootSessionId
+	out.Metadata = w.Metadata
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.LastActivityTime = w.LastActivityTime
+	out.Name = w.Name
+	return out, nil
+}
+
+// SessionFromSDK converts the sdk-go type to the mirror.
+func SessionFromSDK(v *sdk.Session) (*Session, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Session{}
+	out.SessionId = v.SessionId
+	out.ActorId = v.ActorId
+	out.ParentSessionId = v.ParentSessionId
+	out.RootSessionId = v.RootSessionId
+	out.Metadata = v.Metadata
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.LastActivityTime = v.LastActivityTime
+	out.Name = v.Name
+	return out, nil
+}
+
+// SessionItemToSDK converts the mirror to the sdk-go type.
+func SessionItemToSDK(w *SessionItem) (*sdk.SessionItem, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SessionItem{}
+	out.ItemId = w.ItemId
+	out.Data = w.Data
+	out.CreateTime = w.CreateTime
+	return out, nil
+}
+
+// SessionItemFromSDK converts the sdk-go type to the mirror.
+func SessionItemFromSDK(v *sdk.SessionItem) (*SessionItem, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SessionItem{}
+	out.ItemId = v.ItemId
+	out.Data = v.Data
+	out.CreateTime = v.CreateTime
+	return out, nil
+}
+
+// SessionStoreToSDK converts the mirror to the sdk-go type.
+func SessionStoreToSDK(w *SessionStore) (*sdk.SessionStore, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SessionStore{}
+	out.CreatorUserId = w.CreatorUserId
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.Description = w.Description
+	out.Metadata = w.Metadata
+	out.Name = w.Name
+	return out, nil
+}
+
+// SessionStoreFromSDK converts the sdk-go type to the mirror.
+func SessionStoreFromSDK(v *sdk.SessionStore) (*SessionStore, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SessionStore{}
+	out.CreatorUserId = v.CreatorUserId
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.Description = v.Description
+	out.Metadata = v.Metadata
+	out.Name = v.Name
+	return out, nil
+}
+
+// StorageBackendToSDK converts the mirror to the sdk-go type.
+func StorageBackendToSDK(w *StorageBackend) (*sdk.StorageBackend, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StorageBackend{}
+	out.BackendType = w.BackendType
+	out.BackendId = w.BackendId
+	return out, nil
+}
+
+// StorageBackendFromSDK converts the sdk-go type to the mirror.
+func StorageBackendFromSDK(v *sdk.StorageBackend) (*StorageBackend, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StorageBackend{}
+	out.BackendType = v.BackendType
+	out.BackendId = v.BackendId
+	return out, nil
+}
+
+// UpdateManagedMemoryEntryRequestToSDK converts the mirror to the sdk-go type.
+func UpdateManagedMemoryEntryRequestToSDK(w *UpdateManagedMemoryEntryRequest) (*sdk.UpdateManagedMemoryEntryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateManagedMemoryEntryRequest{}
+	conv37, err := ManagedMemoryEntryToSDK(w.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv37
+	mask38, err := fieldMaskFromString[sdk.ManagedMemoryEntry](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryEntryRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask38
+	return out, nil
+}
+
+// UpdateManagedMemoryEntryRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateManagedMemoryEntryRequestFromSDK(v *sdk.UpdateManagedMemoryEntryRequest) (*UpdateManagedMemoryEntryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateManagedMemoryEntryRequest{}
+	conv39, err := ManagedMemoryEntryFromSDK(v.ManagedMemoryEntry)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryEntryRequest.ManagedMemoryEntry", err)
+	}
+	out.ManagedMemoryEntry = conv39
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateManagedMemoryStoreRequestToSDK converts the mirror to the sdk-go type.
+func UpdateManagedMemoryStoreRequestToSDK(w *UpdateManagedMemoryStoreRequest) (*sdk.UpdateManagedMemoryStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateManagedMemoryStoreRequest{}
+	conv40, err := ManagedMemoryStoreToSDK(w.ManagedMemoryStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryStoreRequest.ManagedMemoryStore", err)
+	}
+	out.ManagedMemoryStore = conv40
+	mask41, err := fieldMaskFromString[sdk.ManagedMemoryStore](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryStoreRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask41
+	return out, nil
+}
+
+// UpdateManagedMemoryStoreRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateManagedMemoryStoreRequestFromSDK(v *sdk.UpdateManagedMemoryStoreRequest) (*UpdateManagedMemoryStoreRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateManagedMemoryStoreRequest{}
+	conv42, err := ManagedMemoryStoreFromSDK(v.ManagedMemoryStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateManagedMemoryStoreRequest.ManagedMemoryStore", err)
+	}
+	out.ManagedMemoryStore = conv42
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateSessionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSessionRequestToSDK(w *UpdateSessionRequest) (*sdk.UpdateSessionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSessionRequest{}
+	conv43, err := SessionToSDK(w.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSessionRequest.Session", err)
+	}
+	out.Session = conv43
+	mask44, err := fieldMaskFromString[sdk.Session](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSessionRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask44
+	return out, nil
+}
+
+// UpdateSessionRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateSessionRequestFromSDK(v *sdk.UpdateSessionRequest) (*UpdateSessionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateSessionRequest{}
+	conv45, err := SessionFromSDK(v.Session)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSessionRequest.Session", err)
+	}
+	out.Session = conv45
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateSessionStoreRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSessionStoreRequestToSDK(w *UpdateSessionStoreRequest) (*sdk.UpdateSessionStoreRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSessionStoreRequest{}
+	conv46, err := SessionStoreToSDK(w.SessionStore)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSessionStoreRequest.SessionStore", err)
+	}
+	out.SessionStore = conv46
+	mask47, err := fieldMaskFromString[sdk.SessionStore](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSessionStoreRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask47
+	return out, nil
+}
+
+// UpdateSessionStoreRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSessionStoreRequestFromSDK(v *sdk.UpdateSessionStoreRequest) (*UpdateSessionStoreRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	sessionStoreWireValue, err := SessionStoreFromSDK(v.SessionStore)
+	out := &UpdateSessionStoreRequest{}
+	conv48, err := SessionStoreFromSDK(v.SessionStore)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSessionStoreRequest.SessionStore", err)
 	}
-	return &UpdateSessionStoreRequest{
-		SessionStore: sessionStoreWireValue,
-		UpdateMask:   fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.SessionStore = conv48
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -1151,4 +1626,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

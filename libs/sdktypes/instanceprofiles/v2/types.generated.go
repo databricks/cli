@@ -34,18 +34,6 @@ type AddInstanceProfileRequest struct {
 	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 }
 
-func AddInstanceProfileRequestFromSDK(v *sdk.AddInstanceProfileRequest) (*AddInstanceProfileRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AddInstanceProfileRequest{
-		SkipValidation:        v.SkipValidation,
-		InstanceProfileArn:    v.InstanceProfileArn,
-		IsMetaInstanceProfile: v.IsMetaInstanceProfile,
-		IamRoleArn:            v.IamRoleArn,
-	}, nil
-}
-
 type EditInstanceProfileRequest struct {
 	// The AWS ARN of the instance profile to register with <Databricks>. This field
 	// is required.
@@ -63,17 +51,6 @@ type EditInstanceProfileRequest struct {
 	//
 	// Otherwise, this field is optional.
 	IamRoleArn *string `json:"iam_role_arn,omitempty"`
-}
-
-func EditInstanceProfileRequestFromSDK(v *sdk.EditInstanceProfileRequest) (*EditInstanceProfileRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EditInstanceProfileRequest{
-		InstanceProfileArn:    v.InstanceProfileArn,
-		IsMetaInstanceProfile: v.IsMetaInstanceProfile,
-		IamRoleArn:            v.IamRoleArn,
-	}, nil
 }
 
 type InstanceProfile struct {
@@ -95,33 +72,9 @@ type InstanceProfile struct {
 	IamRoleArn *string `json:"iam_role_arn,omitempty"`
 }
 
-func InstanceProfileToSDK(w *InstanceProfile) (*sdk.InstanceProfile, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InstanceProfile{
-		InstanceProfileArn:    w.InstanceProfileArn,
-		IsMetaInstanceProfile: w.IsMetaInstanceProfile,
-		IamRoleArn:            w.IamRoleArn,
-	}, nil
-}
-
 type ListInstanceProfilesResponse struct {
 	// A list of instance profiles that the user can access.
 	InstanceProfiles []InstanceProfile `json:"instance_profiles,omitempty"`
-}
-
-func ListInstanceProfilesResponseToSDK(w *ListInstanceProfilesResponse) (*sdk.ListInstanceProfilesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	instanceProfilesPublicValue, err := convertSlice(w.InstanceProfiles, InstanceProfileToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListInstanceProfilesResponse.InstanceProfiles", err)
-	}
-	return &sdk.ListInstanceProfilesResponse{
-		InstanceProfiles: instanceProfilesPublicValue,
-	}, nil
 }
 
 type RemoveInstanceProfileRequest struct {
@@ -129,13 +82,126 @@ type RemoveInstanceProfileRequest struct {
 	InstanceProfileArn *string `json:"instance_profile_arn,omitempty"`
 }
 
+// AddInstanceProfileRequestToSDK converts the mirror to the sdk-go type.
+func AddInstanceProfileRequestToSDK(w *AddInstanceProfileRequest) (*sdk.AddInstanceProfileRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AddInstanceProfileRequest{}
+	out.SkipValidation = w.SkipValidation
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.IsMetaInstanceProfile = w.IsMetaInstanceProfile
+	out.IamRoleArn = w.IamRoleArn
+	return out, nil
+}
+
+// AddInstanceProfileRequestFromSDK converts the sdk-go type to the mirror.
+func AddInstanceProfileRequestFromSDK(v *sdk.AddInstanceProfileRequest) (*AddInstanceProfileRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AddInstanceProfileRequest{}
+	out.SkipValidation = v.SkipValidation
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.IsMetaInstanceProfile = v.IsMetaInstanceProfile
+	out.IamRoleArn = v.IamRoleArn
+	return out, nil
+}
+
+// EditInstanceProfileRequestToSDK converts the mirror to the sdk-go type.
+func EditInstanceProfileRequestToSDK(w *EditInstanceProfileRequest) (*sdk.EditInstanceProfileRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EditInstanceProfileRequest{}
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.IsMetaInstanceProfile = w.IsMetaInstanceProfile
+	out.IamRoleArn = w.IamRoleArn
+	return out, nil
+}
+
+// EditInstanceProfileRequestFromSDK converts the sdk-go type to the mirror.
+func EditInstanceProfileRequestFromSDK(v *sdk.EditInstanceProfileRequest) (*EditInstanceProfileRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EditInstanceProfileRequest{}
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.IsMetaInstanceProfile = v.IsMetaInstanceProfile
+	out.IamRoleArn = v.IamRoleArn
+	return out, nil
+}
+
+// InstanceProfileToSDK converts the mirror to the sdk-go type.
+func InstanceProfileToSDK(w *InstanceProfile) (*sdk.InstanceProfile, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstanceProfile{}
+	out.InstanceProfileArn = w.InstanceProfileArn
+	out.IsMetaInstanceProfile = w.IsMetaInstanceProfile
+	out.IamRoleArn = w.IamRoleArn
+	return out, nil
+}
+
+// InstanceProfileFromSDK converts the sdk-go type to the mirror.
+func InstanceProfileFromSDK(v *sdk.InstanceProfile) (*InstanceProfile, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstanceProfile{}
+	out.InstanceProfileArn = v.InstanceProfileArn
+	out.IsMetaInstanceProfile = v.IsMetaInstanceProfile
+	out.IamRoleArn = v.IamRoleArn
+	return out, nil
+}
+
+// ListInstanceProfilesResponseToSDK converts the mirror to the sdk-go type.
+func ListInstanceProfilesResponseToSDK(w *ListInstanceProfilesResponse) (*sdk.ListInstanceProfilesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListInstanceProfilesResponse{}
+	conv1, err := convertSlice(w.InstanceProfiles, InstanceProfileToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstanceProfilesResponse.InstanceProfiles", err)
+	}
+	out.InstanceProfiles = conv1
+	return out, nil
+}
+
+// ListInstanceProfilesResponseFromSDK converts the sdk-go type to the mirror.
+func ListInstanceProfilesResponseFromSDK(v *sdk.ListInstanceProfilesResponse) (*ListInstanceProfilesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListInstanceProfilesResponse{}
+	conv2, err := convertSlice(v.InstanceProfiles, InstanceProfileFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstanceProfilesResponse.InstanceProfiles", err)
+	}
+	out.InstanceProfiles = conv2
+	return out, nil
+}
+
+// RemoveInstanceProfileRequestToSDK converts the mirror to the sdk-go type.
+func RemoveInstanceProfileRequestToSDK(w *RemoveInstanceProfileRequest) (*sdk.RemoveInstanceProfileRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RemoveInstanceProfileRequest{}
+	out.InstanceProfileArn = w.InstanceProfileArn
+	return out, nil
+}
+
+// RemoveInstanceProfileRequestFromSDK converts the sdk-go type to the mirror.
 func RemoveInstanceProfileRequestFromSDK(v *sdk.RemoveInstanceProfileRequest) (*RemoveInstanceProfileRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &RemoveInstanceProfileRequest{
-		InstanceProfileArn: v.InstanceProfileArn,
-	}, nil
+	out := &RemoveInstanceProfileRequest{}
+	out.InstanceProfileArn = v.InstanceProfileArn
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

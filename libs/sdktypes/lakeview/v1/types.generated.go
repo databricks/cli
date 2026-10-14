@@ -27,22 +27,6 @@ const (
 	SchedulePauseStatus_Paused       = sdk.SchedulePauseStatus_Paused
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AuthorizationDetails struct {
 	// The type of authorization downscoping policy. Ex: `workspace_rule_set`
 	// defines access rules for a specific workspace resource
@@ -58,36 +42,11 @@ type AuthorizationDetails struct {
 	GrantRules []AuthorizationDetails_GrantRule `json:"grant_rules,omitempty"`
 }
 
-func AuthorizationDetailsToSDK(w *AuthorizationDetails) (*sdk.AuthorizationDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	grantRulesPublicValue, err := convertSlice(w.GrantRules, AuthorizationDetails_GrantRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AuthorizationDetails.GrantRules", err)
-	}
-	return &sdk.AuthorizationDetails{
-		Type:                  w.Type,
-		ResourceName:          w.ResourceName,
-		ResourceLegacyAclPath: w.ResourceLegacyAclPath,
-		GrantRules:            grantRulesPublicValue,
-	}, nil
-}
-
 type AuthorizationDetails_GrantRule struct {
 	// Permission sets for dashboard are defined in
 	// iam-common/rbac-common/permission-sets/definitions/TreeStoreBasePermissionSets
 	// Ex: `permissionSets/dashboard.runner`
 	PermissionSet *string `json:"permission_set,omitempty"`
-}
-
-func AuthorizationDetails_GrantRuleToSDK(w *AuthorizationDetails_GrantRule) (*sdk.AuthorizationDetails_GrantRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AuthorizationDetails_GrantRule{
-		PermissionSet: w.PermissionSet,
-	}, nil
 }
 
 type CreateDashboardRequest struct {
@@ -103,55 +62,14 @@ type CreateDashboardRequest struct {
 	DatasetSchema *string `json:"dataset_schema,omitempty"`
 }
 
-func CreateDashboardRequestFromSDK(v *sdk.CreateDashboardRequest) (*CreateDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dashboardWireValue, err := DashboardCreateFromSDK(v.Dashboard)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDashboardRequest.Dashboard", err)
-	}
-	return &CreateDashboardRequest{
-		Dashboard:      dashboardWireValue,
-		DatasetCatalog: v.DatasetCatalog,
-		DatasetSchema:  v.DatasetSchema,
-	}, nil
-}
-
 type CreateScheduleRequest struct {
 	// The schedule to create. A dashboard is limited to 10 schedules.
 	Schedule *ScheduleCreate `json:"schedule,omitempty"`
 }
 
-func CreateScheduleRequestFromSDK(v *sdk.CreateScheduleRequest) (*CreateScheduleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	scheduleWireValue, err := ScheduleCreateFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateScheduleRequest.Schedule", err)
-	}
-	return &CreateScheduleRequest{
-		Schedule: scheduleWireValue,
-	}, nil
-}
-
 type CreateSubscriptionRequest struct {
 	// The subscription to create. A schedule is limited to 100 subscriptions.
 	Subscription *SubscriptionCreate `json:"subscription,omitempty"`
-}
-
-func CreateSubscriptionRequestFromSDK(v *sdk.CreateSubscriptionRequest) (*CreateSubscriptionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriptionWireValue, err := SubscriptionCreateFromSDK(v.Subscription)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSubscriptionRequest.Subscription", err)
-	}
-	return &CreateSubscriptionRequest{
-		Subscription: subscriptionWireValue,
-	}, nil
 }
 
 type CronSchedule struct {
@@ -165,26 +83,6 @@ type CronSchedule struct {
 	//
 	// [Java TimeZone]: https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html
 	TimezoneId *string `json:"timezone_id,omitempty"`
-}
-
-func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronSchedule{
-		QuartzCronExpression: v.QuartzCronExpression,
-		TimezoneId:           v.TimezoneId,
-	}, nil
-}
-
-func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronSchedule{
-		QuartzCronExpression: w.QuartzCronExpression,
-		TimezoneId:           w.TimezoneId,
-	}, nil
 }
 
 type Dashboard struct {
@@ -223,42 +121,6 @@ type Dashboard struct {
 	ParentPath *string `json:"parent_path,omitempty"`
 }
 
-func DashboardFromSDK(v *sdk.Dashboard) (*Dashboard, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Dashboard{
-		DashboardId:         v.DashboardId,
-		DisplayName:         v.DisplayName,
-		Path:                v.Path,
-		CreateTime:          v.CreateTime,
-		UpdateTime:          v.UpdateTime,
-		WarehouseId:         v.WarehouseId,
-		Etag:                v.Etag,
-		SerializedDashboard: v.SerializedDashboard,
-		LifecycleState:      v.LifecycleState,
-		ParentPath:          v.ParentPath,
-	}, nil
-}
-
-func DashboardToSDK(w *Dashboard) (*sdk.Dashboard, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Dashboard{
-		DashboardId:         w.DashboardId,
-		DisplayName:         w.DisplayName,
-		Path:                w.Path,
-		CreateTime:          w.CreateTime,
-		UpdateTime:          w.UpdateTime,
-		WarehouseId:         w.WarehouseId,
-		Etag:                w.Etag,
-		SerializedDashboard: w.SerializedDashboard,
-		LifecycleState:      w.LifecycleState,
-		ParentPath:          w.ParentPath,
-	}, nil
-}
-
 type DashboardCreate struct {
 	// UUID identifying the dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
@@ -291,23 +153,6 @@ type DashboardCreate struct {
 	ParentPath *string `json:"parent_path,omitempty"`
 }
 
-func DashboardCreateFromSDK(v *sdk.DashboardCreate) (*DashboardCreate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DashboardCreate{
-		DashboardId:         v.DashboardId,
-		DisplayName:         v.DisplayName,
-		Path:                v.Path,
-		CreateTime:          v.CreateTime,
-		UpdateTime:          v.UpdateTime,
-		WarehouseId:         v.WarehouseId,
-		SerializedDashboard: v.SerializedDashboard,
-		LifecycleState:      v.LifecycleState,
-		ParentPath:          v.ParentPath,
-	}, nil
-}
-
 type DeleteScheduleRequest struct {
 	// UUID identifying the schedule.
 	ScheduleId *string `json:"schedule_id,omitempty"`
@@ -316,17 +161,6 @@ type DeleteScheduleRequest struct {
 	// The etag for the schedule. Optionally, it can be provided to verify that the
 	// schedule has not been modified from its last retrieval.
 	Etag *string `json:"etag,omitempty"`
-}
-
-func DeleteScheduleRequestFromSDK(v *sdk.DeleteScheduleRequest) (*DeleteScheduleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteScheduleRequest{
-		ScheduleId:  v.ScheduleId,
-		DashboardId: v.DashboardId,
-		Etag:        v.Etag,
-	}, nil
 }
 
 type DeleteSubscriptionRequest struct {
@@ -341,18 +175,6 @@ type DeleteSubscriptionRequest struct {
 	Etag *string `json:"etag,omitempty"`
 }
 
-func DeleteSubscriptionRequestFromSDK(v *sdk.DeleteSubscriptionRequest) (*DeleteSubscriptionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteSubscriptionRequest{
-		SubscriptionId: v.SubscriptionId,
-		ScheduleId:     v.ScheduleId,
-		DashboardId:    v.DashboardId,
-		Etag:           v.Etag,
-	}, nil
-}
-
 type GetPublishedDashboardTokenInfoRequest struct {
 	// UUID identifying the published dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
@@ -360,17 +182,6 @@ type GetPublishedDashboardTokenInfoRequest struct {
 	ExternalValue *string `json:"external_value,omitempty"`
 	// Provided external viewer id to be included in the custom claim.
 	ExternalViewerId *string `json:"external_viewer_id,omitempty"`
-}
-
-func GetPublishedDashboardTokenInfoRequestFromSDK(v *sdk.GetPublishedDashboardTokenInfoRequest) (*GetPublishedDashboardTokenInfoRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetPublishedDashboardTokenInfoRequest{
-		DashboardId:      v.DashboardId,
-		ExternalValue:    v.ExternalValue,
-		ExternalViewerId: v.ExternalViewerId,
-	}, nil
 }
 
 type GetPublishedDashboardTokenInfoResponse struct {
@@ -383,21 +194,6 @@ type GetPublishedDashboardTokenInfoResponse struct {
 	// includes `workspace_rule_set` and could be enriched with
 	// `unity_catalog_privileges` before oAuth token generation.
 	AuthorizationDetails []AuthorizationDetails `json:"authorization_details,omitempty"`
-}
-
-func GetPublishedDashboardTokenInfoResponseToSDK(w *GetPublishedDashboardTokenInfoResponse) (*sdk.GetPublishedDashboardTokenInfoResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	authorizationDetailsPublicValue, err := convertSlice(w.AuthorizationDetails, AuthorizationDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPublishedDashboardTokenInfoResponse.AuthorizationDetails", err)
-	}
-	return &sdk.GetPublishedDashboardTokenInfoResponse{
-		CustomClaim:          w.CustomClaim,
-		Scope:                w.Scope,
-		AuthorizationDetails: authorizationDetailsPublicValue,
-	}, nil
 }
 
 type ListDashboardsRequest struct {
@@ -413,37 +209,11 @@ type ListDashboardsRequest struct {
 	View DashboardView `json:"view,omitempty"`
 }
 
-func ListDashboardsRequestFromSDK(v *sdk.ListDashboardsRequest) (*ListDashboardsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDashboardsRequest{
-		PageSize:    v.PageSize,
-		PageToken:   v.PageToken,
-		ShowTrashed: v.ShowTrashed,
-		View:        v.View,
-	}, nil
-}
-
 type ListDashboardsResponse struct {
 	Dashboards []Dashboard `json:"dashboards,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent dashboards.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDashboardsResponseToSDK(w *ListDashboardsResponse) (*sdk.ListDashboardsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dashboardsPublicValue, err := convertSlice(w.Dashboards, DashboardToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDashboardsResponse.Dashboards", err)
-	}
-	return &sdk.ListDashboardsResponse{
-		Dashboards:    dashboardsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSchedulesRequest struct {
@@ -456,37 +226,12 @@ type ListSchedulesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSchedulesRequestFromSDK(v *sdk.ListSchedulesRequest) (*ListSchedulesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSchedulesRequest{
-		DashboardId: v.DashboardId,
-		PageSize:    v.PageSize,
-		PageToken:   v.PageToken,
-	}, nil
-}
-
 type ListSchedulesResponse struct {
 	Schedules []Schedule `json:"schedules,omitempty"`
 	// A token that can be used as a `page_token` in subsequent requests to retrieve
 	// the next page of results. If this field is omitted, there are no subsequent
 	// schedules.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSchedulesResponseToSDK(w *ListSchedulesResponse) (*sdk.ListSchedulesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schedulesPublicValue, err := convertSlice(w.Schedules, ScheduleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSchedulesResponse.Schedules", err)
-	}
-	return &sdk.ListSchedulesResponse{
-		Schedules:     schedulesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSubscriptionsRequest struct {
@@ -501,38 +246,12 @@ type ListSubscriptionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSubscriptionsRequestFromSDK(v *sdk.ListSubscriptionsRequest) (*ListSubscriptionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSubscriptionsRequest{
-		DashboardId: v.DashboardId,
-		ScheduleId:  v.ScheduleId,
-		PageSize:    v.PageSize,
-		PageToken:   v.PageToken,
-	}, nil
-}
-
 type ListSubscriptionsResponse struct {
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 	// A token that can be used as a `page_token` in subsequent requests to retrieve
 	// the next page of results. If this field is omitted, there are no subsequent
 	// subscriptions.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSubscriptionsResponseToSDK(w *ListSubscriptionsResponse) (*sdk.ListSubscriptionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriptionsPublicValue, err := convertSlice(w.Subscriptions, SubscriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSubscriptionsResponse.Subscriptions", err)
-	}
-	return &sdk.ListSubscriptionsResponse{
-		Subscriptions: subscriptionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type MigrateDashboardRequest struct {
@@ -548,18 +267,6 @@ type MigrateDashboardRequest struct {
 	UpdateParameterSyntax *bool `json:"update_parameter_syntax,omitempty"`
 }
 
-func MigrateDashboardRequestFromSDK(v *sdk.MigrateDashboardRequest) (*MigrateDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MigrateDashboardRequest{
-		SourceDashboardId:     v.SourceDashboardId,
-		DisplayName:           v.DisplayName,
-		ParentPath:            v.ParentPath,
-		UpdateParameterSyntax: v.UpdateParameterSyntax,
-	}, nil
-}
-
 type PublishDashboardRequest struct {
 	// UUID identifying the dashboard to be published.
 	DashboardId *string `json:"dashboard_id,omitempty"`
@@ -570,17 +277,6 @@ type PublishDashboardRequest struct {
 	// The ID of the warehouse that can be used to override the warehouse which was
 	// set in the draft.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func PublishDashboardRequestFromSDK(v *sdk.PublishDashboardRequest) (*PublishDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PublishDashboardRequest{
-		DashboardId:      v.DashboardId,
-		EmbedCredentials: v.EmbedCredentials,
-		WarehouseId:      v.WarehouseId,
-	}, nil
 }
 
 type PublishedDashboard struct {
@@ -594,18 +290,6 @@ type PublishedDashboard struct {
 	RevisionCreateTime *types.Time `json:"revision_create_time,omitempty"`
 }
 
-func PublishedDashboardToSDK(w *PublishedDashboard) (*sdk.PublishedDashboard, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PublishedDashboard{
-		DisplayName:        w.DisplayName,
-		WarehouseId:        w.WarehouseId,
-		EmbedCredentials:   w.EmbedCredentials,
-		RevisionCreateTime: w.RevisionCreateTime,
-	}, nil
-}
-
 // Request to revert a dashboard draft to its last published state..
 type RevertDashboardRequest struct {
 	// UUID identifying the dashboard.
@@ -615,33 +299,10 @@ type RevertDashboardRequest struct {
 	Etag *string `json:"etag,omitempty"`
 }
 
-func RevertDashboardRequestFromSDK(v *sdk.RevertDashboardRequest) (*RevertDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RevertDashboardRequest{
-		DashboardId: v.DashboardId,
-		Etag:        v.Etag,
-	}, nil
-}
-
 // Response to revert a dashboard draft to its last published state..
 type RevertDashboardResponse struct {
 	// The reverted dashboard.
 	Dashboard *Dashboard `json:"dashboard,omitempty"`
-}
-
-func RevertDashboardResponseToSDK(w *RevertDashboardResponse) (*sdk.RevertDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	dashboardPublicValue, err := DashboardToSDK(w.Dashboard)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RevertDashboardResponse.Dashboard", err)
-	}
-	return &sdk.RevertDashboardResponse{
-		Dashboard: dashboardPublicValue,
-	}, nil
 }
 
 type Schedule struct {
@@ -668,48 +329,6 @@ type Schedule struct {
 	WarehouseId *string `json:"warehouse_id,omitempty"`
 }
 
-func ScheduleFromSDK(v *sdk.Schedule) (*Schedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cronScheduleWireValue, err := CronScheduleFromSDK(v.CronSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Schedule.CronSchedule", err)
-	}
-	return &Schedule{
-		ScheduleId:   v.ScheduleId,
-		DashboardId:  v.DashboardId,
-		CronSchedule: cronScheduleWireValue,
-		PauseStatus:  v.PauseStatus,
-		DisplayName:  v.DisplayName,
-		Etag:         v.Etag,
-		CreateTime:   v.CreateTime,
-		UpdateTime:   v.UpdateTime,
-		WarehouseId:  v.WarehouseId,
-	}, nil
-}
-
-func ScheduleToSDK(w *Schedule) (*sdk.Schedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cronSchedulePublicValue, err := CronScheduleToSDK(w.CronSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Schedule.CronSchedule", err)
-	}
-	return &sdk.Schedule{
-		ScheduleId:   w.ScheduleId,
-		DashboardId:  w.DashboardId,
-		CronSchedule: cronSchedulePublicValue,
-		PauseStatus:  w.PauseStatus,
-		DisplayName:  w.DisplayName,
-		Etag:         w.Etag,
-		CreateTime:   w.CreateTime,
-		UpdateTime:   w.UpdateTime,
-		WarehouseId:  w.WarehouseId,
-	}, nil
-}
-
 type ScheduleCreate struct {
 	// UUID identifying the schedule.
 	ScheduleId *string `json:"schedule_id,omitempty"`
@@ -728,26 +347,6 @@ type ScheduleCreate struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 	// The warehouse id to run the dashboard with for the schedule.
 	WarehouseId *string `json:"warehouse_id,omitempty"`
-}
-
-func ScheduleCreateFromSDK(v *sdk.ScheduleCreate) (*ScheduleCreate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cronScheduleWireValue, err := CronScheduleFromSDK(v.CronSchedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ScheduleCreate.CronSchedule", err)
-	}
-	return &ScheduleCreate{
-		ScheduleId:   v.ScheduleId,
-		DashboardId:  v.DashboardId,
-		CronSchedule: cronScheduleWireValue,
-		PauseStatus:  v.PauseStatus,
-		DisplayName:  v.DisplayName,
-		CreateTime:   v.CreateTime,
-		UpdateTime:   v.UpdateTime,
-		WarehouseId:  v.WarehouseId,
-	}, nil
 }
 
 type Subscription struct {
@@ -777,31 +376,6 @@ type Subscription struct {
 	SkipNotify *bool `json:"skip_notify,omitempty"`
 }
 
-func SubscriptionToSDK(w *Subscription) (*sdk.Subscription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	subscriberPublicValue, err := Subscription_SubscriberToSDK(w.Subscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription.Subscriber", err)
-	}
-	createdByUserIdPublicValue, err := int64FromWire(w.CreatedByUserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription.CreatedByUserId", err)
-	}
-	return &sdk.Subscription{
-		SubscriptionId:  w.SubscriptionId,
-		ScheduleId:      w.ScheduleId,
-		DashboardId:     w.DashboardId,
-		Subscriber:      subscriberPublicValue,
-		CreatedByUserId: createdByUserIdPublicValue,
-		Etag:            w.Etag,
-		CreateTime:      w.CreateTime,
-		UpdateTime:      w.UpdateTime,
-		SkipNotify:      w.SkipNotify,
-	}, nil
-}
-
 type Subscription_Subscriber struct {
 	// The user to receive the subscription email. This parameter is mutually
 	// exclusive with `destination_subscriber`.
@@ -811,94 +385,14 @@ type Subscription_Subscriber struct {
 	DestinationSubscriber *Subscription_Subscriber_Destination `json:"destination_subscriber,omitempty"`
 }
 
-func Subscription_SubscriberFromSDK(v *sdk.Subscription_Subscriber) (*Subscription_Subscriber, error) {
-	if v == nil {
-		return nil, nil
-	}
-	userSubscriberWireValue, err := Subscription_Subscriber_UserFromSDK(v.UserSubscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.UserSubscriber", err)
-	}
-	destinationSubscriberWireValue, err := Subscription_Subscriber_DestinationFromSDK(v.DestinationSubscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.DestinationSubscriber", err)
-	}
-	return &Subscription_Subscriber{
-		UserSubscriber:        userSubscriberWireValue,
-		DestinationSubscriber: destinationSubscriberWireValue,
-	}, nil
-}
-
-func Subscription_SubscriberToSDK(w *Subscription_Subscriber) (*sdk.Subscription_Subscriber, error) {
-	if w == nil {
-		return nil, nil
-	}
-	userSubscriberPublicValue, err := Subscription_Subscriber_UserToSDK(w.UserSubscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.UserSubscriber", err)
-	}
-	destinationSubscriberPublicValue, err := Subscription_Subscriber_DestinationToSDK(w.DestinationSubscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.DestinationSubscriber", err)
-	}
-	return &sdk.Subscription_Subscriber{
-		UserSubscriber:        userSubscriberPublicValue,
-		DestinationSubscriber: destinationSubscriberPublicValue,
-	}, nil
-}
-
 type Subscription_Subscriber_Destination struct {
 	// The canonical identifier of the destination to receive email notification.
 	DestinationId *string `json:"destination_id,omitempty"`
 }
 
-func Subscription_Subscriber_DestinationFromSDK(v *sdk.Subscription_Subscriber_Destination) (*Subscription_Subscriber_Destination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Subscription_Subscriber_Destination{
-		DestinationId: v.DestinationId,
-	}, nil
-}
-
-func Subscription_Subscriber_DestinationToSDK(w *Subscription_Subscriber_Destination) (*sdk.Subscription_Subscriber_Destination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Subscription_Subscriber_Destination{
-		DestinationId: w.DestinationId,
-	}, nil
-}
-
 type Subscription_Subscriber_User struct {
 	// UserId of the subscriber.
 	UserId *int64 `json:"user_id,omitempty"`
-}
-
-func Subscription_Subscriber_UserFromSDK(v *sdk.Subscription_Subscriber_User) (*Subscription_Subscriber_User, error) {
-	if v == nil {
-		return nil, nil
-	}
-	userIdWireValue, err := int64ToWire(v.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber_User.UserId", err)
-	}
-	return &Subscription_Subscriber_User{
-		UserId: userIdWireValue,
-	}, nil
-}
-
-func Subscription_Subscriber_UserToSDK(w *Subscription_Subscriber_User) (*sdk.Subscription_Subscriber_User, error) {
-	if w == nil {
-		return nil, nil
-	}
-	userIdPublicValue, err := int64FromWire(w.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber_User.UserId", err)
-	}
-	return &sdk.Subscription_Subscriber_User{
-		UserId: userIdPublicValue,
-	}, nil
 }
 
 type SubscriptionCreate struct {
@@ -924,30 +418,6 @@ type SubscriptionCreate struct {
 	SkipNotify *bool `json:"skip_notify,omitempty"`
 }
 
-func SubscriptionCreateFromSDK(v *sdk.SubscriptionCreate) (*SubscriptionCreate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	subscriberWireValue, err := Subscription_SubscriberFromSDK(v.Subscriber)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubscriptionCreate.Subscriber", err)
-	}
-	createdByUserIdWireValue, err := int64ToWire(v.CreatedByUserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SubscriptionCreate.CreatedByUserId", err)
-	}
-	return &SubscriptionCreate{
-		SubscriptionId:  v.SubscriptionId,
-		ScheduleId:      v.ScheduleId,
-		DashboardId:     v.DashboardId,
-		Subscriber:      subscriberWireValue,
-		CreatedByUserId: createdByUserIdWireValue,
-		CreateTime:      v.CreateTime,
-		UpdateTime:      v.UpdateTime,
-		SkipNotify:      v.SkipNotify,
-	}, nil
-}
-
 type UpdateDashboardRequest struct {
 	Dashboard *Dashboard `json:"dashboard,omitempty"`
 	// Sets the default catalog for all datasets in this dashboard. Does not impact
@@ -961,37 +431,955 @@ type UpdateDashboardRequest struct {
 	DatasetSchema *string `json:"dataset_schema,omitempty"`
 }
 
-func UpdateDashboardRequestFromSDK(v *sdk.UpdateDashboardRequest) (*UpdateDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	dashboardWireValue, err := DashboardFromSDK(v.Dashboard)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDashboardRequest.Dashboard", err)
-	}
-	return &UpdateDashboardRequest{
-		Dashboard:      dashboardWireValue,
-		DatasetCatalog: v.DatasetCatalog,
-		DatasetSchema:  v.DatasetSchema,
-	}, nil
-}
-
 type UpdateScheduleRequest struct {
 	// The schedule to update.
 	Schedule *Schedule `json:"schedule,omitempty"`
 }
 
+// AuthorizationDetailsToSDK converts the mirror to the sdk-go type.
+func AuthorizationDetailsToSDK(w *AuthorizationDetails) (*sdk.AuthorizationDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AuthorizationDetails{}
+	out.Type = w.Type
+	out.ResourceName = w.ResourceName
+	out.ResourceLegacyAclPath = w.ResourceLegacyAclPath
+	conv1, err := convertSlice(w.GrantRules, AuthorizationDetails_GrantRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AuthorizationDetails.GrantRules", err)
+	}
+	out.GrantRules = conv1
+	return out, nil
+}
+
+// AuthorizationDetailsFromSDK converts the sdk-go type to the mirror.
+func AuthorizationDetailsFromSDK(v *sdk.AuthorizationDetails) (*AuthorizationDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AuthorizationDetails{}
+	out.Type = v.Type
+	out.ResourceName = v.ResourceName
+	out.ResourceLegacyAclPath = v.ResourceLegacyAclPath
+	conv2, err := convertSlice(v.GrantRules, AuthorizationDetails_GrantRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AuthorizationDetails.GrantRules", err)
+	}
+	out.GrantRules = conv2
+	return out, nil
+}
+
+// AuthorizationDetails_GrantRuleToSDK converts the mirror to the sdk-go type.
+func AuthorizationDetails_GrantRuleToSDK(w *AuthorizationDetails_GrantRule) (*sdk.AuthorizationDetails_GrantRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AuthorizationDetails_GrantRule{}
+	out.PermissionSet = w.PermissionSet
+	return out, nil
+}
+
+// AuthorizationDetails_GrantRuleFromSDK converts the sdk-go type to the mirror.
+func AuthorizationDetails_GrantRuleFromSDK(v *sdk.AuthorizationDetails_GrantRule) (*AuthorizationDetails_GrantRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AuthorizationDetails_GrantRule{}
+	out.PermissionSet = v.PermissionSet
+	return out, nil
+}
+
+// CreateDashboardRequestToSDK converts the mirror to the sdk-go type.
+func CreateDashboardRequestToSDK(w *CreateDashboardRequest) (*sdk.CreateDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDashboardRequest{}
+	conv3, err := DashboardCreateToSDK(w.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDashboardRequest.Dashboard", err)
+	}
+	out.Dashboard = conv3
+	out.DatasetCatalog = w.DatasetCatalog
+	out.DatasetSchema = w.DatasetSchema
+	return out, nil
+}
+
+// CreateDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDashboardRequestFromSDK(v *sdk.CreateDashboardRequest) (*CreateDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDashboardRequest{}
+	conv4, err := DashboardCreateFromSDK(v.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDashboardRequest.Dashboard", err)
+	}
+	out.Dashboard = conv4
+	out.DatasetCatalog = v.DatasetCatalog
+	out.DatasetSchema = v.DatasetSchema
+	return out, nil
+}
+
+// CreateScheduleRequestToSDK converts the mirror to the sdk-go type.
+func CreateScheduleRequestToSDK(w *CreateScheduleRequest) (*sdk.CreateScheduleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateScheduleRequest{}
+	conv5, err := ScheduleCreateToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateScheduleRequest.Schedule", err)
+	}
+	out.Schedule = conv5
+	return out, nil
+}
+
+// CreateScheduleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateScheduleRequestFromSDK(v *sdk.CreateScheduleRequest) (*CreateScheduleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateScheduleRequest{}
+	conv6, err := ScheduleCreateFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateScheduleRequest.Schedule", err)
+	}
+	out.Schedule = conv6
+	return out, nil
+}
+
+// CreateSubscriptionRequestToSDK converts the mirror to the sdk-go type.
+func CreateSubscriptionRequestToSDK(w *CreateSubscriptionRequest) (*sdk.CreateSubscriptionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSubscriptionRequest{}
+	conv7, err := SubscriptionCreateToSDK(w.Subscription)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSubscriptionRequest.Subscription", err)
+	}
+	out.Subscription = conv7
+	return out, nil
+}
+
+// CreateSubscriptionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSubscriptionRequestFromSDK(v *sdk.CreateSubscriptionRequest) (*CreateSubscriptionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSubscriptionRequest{}
+	conv8, err := SubscriptionCreateFromSDK(v.Subscription)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSubscriptionRequest.Subscription", err)
+	}
+	out.Subscription = conv8
+	return out, nil
+}
+
+// CronScheduleToSDK converts the mirror to the sdk-go type.
+func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronSchedule{}
+	out.QuartzCronExpression = w.QuartzCronExpression
+	out.TimezoneId = w.TimezoneId
+	return out, nil
+}
+
+// CronScheduleFromSDK converts the sdk-go type to the mirror.
+func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronSchedule{}
+	out.QuartzCronExpression = v.QuartzCronExpression
+	out.TimezoneId = v.TimezoneId
+	return out, nil
+}
+
+// DashboardToSDK converts the mirror to the sdk-go type.
+func DashboardToSDK(w *Dashboard) (*sdk.Dashboard, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Dashboard{}
+	out.DashboardId = w.DashboardId
+	out.DisplayName = w.DisplayName
+	out.Path = w.Path
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.WarehouseId = w.WarehouseId
+	out.Etag = w.Etag
+	out.SerializedDashboard = w.SerializedDashboard
+	out.LifecycleState = w.LifecycleState
+	out.ParentPath = w.ParentPath
+	return out, nil
+}
+
+// DashboardFromSDK converts the sdk-go type to the mirror.
+func DashboardFromSDK(v *sdk.Dashboard) (*Dashboard, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Dashboard{}
+	out.DashboardId = v.DashboardId
+	out.DisplayName = v.DisplayName
+	out.Path = v.Path
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.WarehouseId = v.WarehouseId
+	out.Etag = v.Etag
+	out.SerializedDashboard = v.SerializedDashboard
+	out.LifecycleState = v.LifecycleState
+	out.ParentPath = v.ParentPath
+	return out, nil
+}
+
+// DashboardCreateToSDK converts the mirror to the sdk-go type.
+func DashboardCreateToSDK(w *DashboardCreate) (*sdk.DashboardCreate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DashboardCreate{}
+	out.DashboardId = w.DashboardId
+	out.DisplayName = w.DisplayName
+	out.Path = w.Path
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.WarehouseId = w.WarehouseId
+	out.SerializedDashboard = w.SerializedDashboard
+	out.LifecycleState = w.LifecycleState
+	out.ParentPath = w.ParentPath
+	return out, nil
+}
+
+// DashboardCreateFromSDK converts the sdk-go type to the mirror.
+func DashboardCreateFromSDK(v *sdk.DashboardCreate) (*DashboardCreate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DashboardCreate{}
+	out.DashboardId = v.DashboardId
+	out.DisplayName = v.DisplayName
+	out.Path = v.Path
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.WarehouseId = v.WarehouseId
+	out.SerializedDashboard = v.SerializedDashboard
+	out.LifecycleState = v.LifecycleState
+	out.ParentPath = v.ParentPath
+	return out, nil
+}
+
+// DeleteScheduleRequestToSDK converts the mirror to the sdk-go type.
+func DeleteScheduleRequestToSDK(w *DeleteScheduleRequest) (*sdk.DeleteScheduleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteScheduleRequest{}
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteScheduleRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteScheduleRequestFromSDK(v *sdk.DeleteScheduleRequest) (*DeleteScheduleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteScheduleRequest{}
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// DeleteSubscriptionRequestToSDK converts the mirror to the sdk-go type.
+func DeleteSubscriptionRequestToSDK(w *DeleteSubscriptionRequest) (*sdk.DeleteSubscriptionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteSubscriptionRequest{}
+	out.SubscriptionId = w.SubscriptionId
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteSubscriptionRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteSubscriptionRequestFromSDK(v *sdk.DeleteSubscriptionRequest) (*DeleteSubscriptionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteSubscriptionRequest{}
+	out.SubscriptionId = v.SubscriptionId
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// GetPublishedDashboardTokenInfoRequestToSDK converts the mirror to the sdk-go type.
+func GetPublishedDashboardTokenInfoRequestToSDK(w *GetPublishedDashboardTokenInfoRequest) (*sdk.GetPublishedDashboardTokenInfoRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPublishedDashboardTokenInfoRequest{}
+	out.DashboardId = w.DashboardId
+	out.ExternalValue = w.ExternalValue
+	out.ExternalViewerId = w.ExternalViewerId
+	return out, nil
+}
+
+// GetPublishedDashboardTokenInfoRequestFromSDK converts the sdk-go type to the mirror.
+func GetPublishedDashboardTokenInfoRequestFromSDK(v *sdk.GetPublishedDashboardTokenInfoRequest) (*GetPublishedDashboardTokenInfoRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPublishedDashboardTokenInfoRequest{}
+	out.DashboardId = v.DashboardId
+	out.ExternalValue = v.ExternalValue
+	out.ExternalViewerId = v.ExternalViewerId
+	return out, nil
+}
+
+// GetPublishedDashboardTokenInfoResponseToSDK converts the mirror to the sdk-go type.
+func GetPublishedDashboardTokenInfoResponseToSDK(w *GetPublishedDashboardTokenInfoResponse) (*sdk.GetPublishedDashboardTokenInfoResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPublishedDashboardTokenInfoResponse{}
+	out.CustomClaim = w.CustomClaim
+	out.Scope = w.Scope
+	conv9, err := convertSlice(w.AuthorizationDetails, AuthorizationDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedDashboardTokenInfoResponse.AuthorizationDetails", err)
+	}
+	out.AuthorizationDetails = conv9
+	return out, nil
+}
+
+// GetPublishedDashboardTokenInfoResponseFromSDK converts the sdk-go type to the mirror.
+func GetPublishedDashboardTokenInfoResponseFromSDK(v *sdk.GetPublishedDashboardTokenInfoResponse) (*GetPublishedDashboardTokenInfoResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPublishedDashboardTokenInfoResponse{}
+	out.CustomClaim = v.CustomClaim
+	out.Scope = v.Scope
+	conv10, err := convertSlice(v.AuthorizationDetails, AuthorizationDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedDashboardTokenInfoResponse.AuthorizationDetails", err)
+	}
+	out.AuthorizationDetails = conv10
+	return out, nil
+}
+
+// ListDashboardsRequestToSDK converts the mirror to the sdk-go type.
+func ListDashboardsRequestToSDK(w *ListDashboardsRequest) (*sdk.ListDashboardsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDashboardsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.ShowTrashed = w.ShowTrashed
+	out.View = w.View
+	return out, nil
+}
+
+// ListDashboardsRequestFromSDK converts the sdk-go type to the mirror.
+func ListDashboardsRequestFromSDK(v *sdk.ListDashboardsRequest) (*ListDashboardsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDashboardsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.ShowTrashed = v.ShowTrashed
+	out.View = v.View
+	return out, nil
+}
+
+// ListDashboardsResponseToSDK converts the mirror to the sdk-go type.
+func ListDashboardsResponseToSDK(w *ListDashboardsResponse) (*sdk.ListDashboardsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDashboardsResponse{}
+	conv11, err := convertSlice(w.Dashboards, DashboardToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDashboardsResponse.Dashboards", err)
+	}
+	out.Dashboards = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDashboardsResponseFromSDK converts the sdk-go type to the mirror.
+func ListDashboardsResponseFromSDK(v *sdk.ListDashboardsResponse) (*ListDashboardsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDashboardsResponse{}
+	conv12, err := convertSlice(v.Dashboards, DashboardFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDashboardsResponse.Dashboards", err)
+	}
+	out.Dashboards = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSchedulesRequestToSDK converts the mirror to the sdk-go type.
+func ListSchedulesRequestToSDK(w *ListSchedulesRequest) (*sdk.ListSchedulesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSchedulesRequest{}
+	out.DashboardId = w.DashboardId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSchedulesRequestFromSDK converts the sdk-go type to the mirror.
+func ListSchedulesRequestFromSDK(v *sdk.ListSchedulesRequest) (*ListSchedulesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSchedulesRequest{}
+	out.DashboardId = v.DashboardId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSchedulesResponseToSDK converts the mirror to the sdk-go type.
+func ListSchedulesResponseToSDK(w *ListSchedulesResponse) (*sdk.ListSchedulesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSchedulesResponse{}
+	conv13, err := convertSlice(w.Schedules, ScheduleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSchedulesResponse.Schedules", err)
+	}
+	out.Schedules = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSchedulesResponseFromSDK converts the sdk-go type to the mirror.
+func ListSchedulesResponseFromSDK(v *sdk.ListSchedulesResponse) (*ListSchedulesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSchedulesResponse{}
+	conv14, err := convertSlice(v.Schedules, ScheduleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSchedulesResponse.Schedules", err)
+	}
+	out.Schedules = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSubscriptionsRequestToSDK converts the mirror to the sdk-go type.
+func ListSubscriptionsRequestToSDK(w *ListSubscriptionsRequest) (*sdk.ListSubscriptionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSubscriptionsRequest{}
+	out.DashboardId = w.DashboardId
+	out.ScheduleId = w.ScheduleId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSubscriptionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListSubscriptionsRequestFromSDK(v *sdk.ListSubscriptionsRequest) (*ListSubscriptionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSubscriptionsRequest{}
+	out.DashboardId = v.DashboardId
+	out.ScheduleId = v.ScheduleId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSubscriptionsResponseToSDK converts the mirror to the sdk-go type.
+func ListSubscriptionsResponseToSDK(w *ListSubscriptionsResponse) (*sdk.ListSubscriptionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSubscriptionsResponse{}
+	conv15, err := convertSlice(w.Subscriptions, SubscriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSubscriptionsResponse.Subscriptions", err)
+	}
+	out.Subscriptions = conv15
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSubscriptionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListSubscriptionsResponseFromSDK(v *sdk.ListSubscriptionsResponse) (*ListSubscriptionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSubscriptionsResponse{}
+	conv16, err := convertSlice(v.Subscriptions, SubscriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSubscriptionsResponse.Subscriptions", err)
+	}
+	out.Subscriptions = conv16
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MigrateDashboardRequestToSDK converts the mirror to the sdk-go type.
+func MigrateDashboardRequestToSDK(w *MigrateDashboardRequest) (*sdk.MigrateDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MigrateDashboardRequest{}
+	out.SourceDashboardId = w.SourceDashboardId
+	out.DisplayName = w.DisplayName
+	out.ParentPath = w.ParentPath
+	out.UpdateParameterSyntax = w.UpdateParameterSyntax
+	return out, nil
+}
+
+// MigrateDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func MigrateDashboardRequestFromSDK(v *sdk.MigrateDashboardRequest) (*MigrateDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MigrateDashboardRequest{}
+	out.SourceDashboardId = v.SourceDashboardId
+	out.DisplayName = v.DisplayName
+	out.ParentPath = v.ParentPath
+	out.UpdateParameterSyntax = v.UpdateParameterSyntax
+	return out, nil
+}
+
+// PublishDashboardRequestToSDK converts the mirror to the sdk-go type.
+func PublishDashboardRequestToSDK(w *PublishDashboardRequest) (*sdk.PublishDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishDashboardRequest{}
+	out.DashboardId = w.DashboardId
+	out.EmbedCredentials = w.EmbedCredentials
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// PublishDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func PublishDashboardRequestFromSDK(v *sdk.PublishDashboardRequest) (*PublishDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishDashboardRequest{}
+	out.DashboardId = v.DashboardId
+	out.EmbedCredentials = v.EmbedCredentials
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// PublishedDashboardToSDK converts the mirror to the sdk-go type.
+func PublishedDashboardToSDK(w *PublishedDashboard) (*sdk.PublishedDashboard, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishedDashboard{}
+	out.DisplayName = w.DisplayName
+	out.WarehouseId = w.WarehouseId
+	out.EmbedCredentials = w.EmbedCredentials
+	out.RevisionCreateTime = w.RevisionCreateTime
+	return out, nil
+}
+
+// PublishedDashboardFromSDK converts the sdk-go type to the mirror.
+func PublishedDashboardFromSDK(v *sdk.PublishedDashboard) (*PublishedDashboard, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishedDashboard{}
+	out.DisplayName = v.DisplayName
+	out.WarehouseId = v.WarehouseId
+	out.EmbedCredentials = v.EmbedCredentials
+	out.RevisionCreateTime = v.RevisionCreateTime
+	return out, nil
+}
+
+// RevertDashboardRequestToSDK converts the mirror to the sdk-go type.
+func RevertDashboardRequestToSDK(w *RevertDashboardRequest) (*sdk.RevertDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RevertDashboardRequest{}
+	out.DashboardId = w.DashboardId
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// RevertDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func RevertDashboardRequestFromSDK(v *sdk.RevertDashboardRequest) (*RevertDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RevertDashboardRequest{}
+	out.DashboardId = v.DashboardId
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// RevertDashboardResponseToSDK converts the mirror to the sdk-go type.
+func RevertDashboardResponseToSDK(w *RevertDashboardResponse) (*sdk.RevertDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RevertDashboardResponse{}
+	conv17, err := DashboardToSDK(w.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RevertDashboardResponse.Dashboard", err)
+	}
+	out.Dashboard = conv17
+	return out, nil
+}
+
+// RevertDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func RevertDashboardResponseFromSDK(v *sdk.RevertDashboardResponse) (*RevertDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RevertDashboardResponse{}
+	conv18, err := DashboardFromSDK(v.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RevertDashboardResponse.Dashboard", err)
+	}
+	out.Dashboard = conv18
+	return out, nil
+}
+
+// ScheduleToSDK converts the mirror to the sdk-go type.
+func ScheduleToSDK(w *Schedule) (*sdk.Schedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Schedule{}
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	conv19, err := CronScheduleToSDK(w.CronSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schedule.CronSchedule", err)
+	}
+	out.CronSchedule = conv19
+	out.PauseStatus = w.PauseStatus
+	out.DisplayName = w.DisplayName
+	out.Etag = w.Etag
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// ScheduleFromSDK converts the sdk-go type to the mirror.
+func ScheduleFromSDK(v *sdk.Schedule) (*Schedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Schedule{}
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	conv20, err := CronScheduleFromSDK(v.CronSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schedule.CronSchedule", err)
+	}
+	out.CronSchedule = conv20
+	out.PauseStatus = v.PauseStatus
+	out.DisplayName = v.DisplayName
+	out.Etag = v.Etag
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// ScheduleCreateToSDK converts the mirror to the sdk-go type.
+func ScheduleCreateToSDK(w *ScheduleCreate) (*sdk.ScheduleCreate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ScheduleCreate{}
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	conv21, err := CronScheduleToSDK(w.CronSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ScheduleCreate.CronSchedule", err)
+	}
+	out.CronSchedule = conv21
+	out.PauseStatus = w.PauseStatus
+	out.DisplayName = w.DisplayName
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.WarehouseId = w.WarehouseId
+	return out, nil
+}
+
+// ScheduleCreateFromSDK converts the sdk-go type to the mirror.
+func ScheduleCreateFromSDK(v *sdk.ScheduleCreate) (*ScheduleCreate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ScheduleCreate{}
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	conv22, err := CronScheduleFromSDK(v.CronSchedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ScheduleCreate.CronSchedule", err)
+	}
+	out.CronSchedule = conv22
+	out.PauseStatus = v.PauseStatus
+	out.DisplayName = v.DisplayName
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.WarehouseId = v.WarehouseId
+	return out, nil
+}
+
+// SubscriptionToSDK converts the mirror to the sdk-go type.
+func SubscriptionToSDK(w *Subscription) (*sdk.Subscription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription{}
+	out.SubscriptionId = w.SubscriptionId
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	conv23, err := Subscription_SubscriberToSDK(w.Subscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription.Subscriber", err)
+	}
+	out.Subscriber = conv23
+	out.CreatedByUserId = w.CreatedByUserId
+	out.Etag = w.Etag
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.SkipNotify = w.SkipNotify
+	return out, nil
+}
+
+// SubscriptionFromSDK converts the sdk-go type to the mirror.
+func SubscriptionFromSDK(v *sdk.Subscription) (*Subscription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription{}
+	out.SubscriptionId = v.SubscriptionId
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	conv24, err := Subscription_SubscriberFromSDK(v.Subscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription.Subscriber", err)
+	}
+	out.Subscriber = conv24
+	out.CreatedByUserId = v.CreatedByUserId
+	out.Etag = v.Etag
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.SkipNotify = v.SkipNotify
+	return out, nil
+}
+
+// SubscriptionCreateToSDK converts the mirror to the sdk-go type.
+func SubscriptionCreateToSDK(w *SubscriptionCreate) (*sdk.SubscriptionCreate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SubscriptionCreate{}
+	out.SubscriptionId = w.SubscriptionId
+	out.ScheduleId = w.ScheduleId
+	out.DashboardId = w.DashboardId
+	conv25, err := Subscription_SubscriberToSDK(w.Subscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubscriptionCreate.Subscriber", err)
+	}
+	out.Subscriber = conv25
+	out.CreatedByUserId = w.CreatedByUserId
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.SkipNotify = w.SkipNotify
+	return out, nil
+}
+
+// SubscriptionCreateFromSDK converts the sdk-go type to the mirror.
+func SubscriptionCreateFromSDK(v *sdk.SubscriptionCreate) (*SubscriptionCreate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SubscriptionCreate{}
+	out.SubscriptionId = v.SubscriptionId
+	out.ScheduleId = v.ScheduleId
+	out.DashboardId = v.DashboardId
+	conv26, err := Subscription_SubscriberFromSDK(v.Subscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SubscriptionCreate.Subscriber", err)
+	}
+	out.Subscriber = conv26
+	out.CreatedByUserId = v.CreatedByUserId
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.SkipNotify = v.SkipNotify
+	return out, nil
+}
+
+// Subscription_SubscriberToSDK converts the mirror to the sdk-go type.
+func Subscription_SubscriberToSDK(w *Subscription_Subscriber) (*sdk.Subscription_Subscriber, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription_Subscriber{}
+	conv27, err := Subscription_Subscriber_UserToSDK(w.UserSubscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.UserSubscriber", err)
+	}
+	out.UserSubscriber = conv27
+	conv28, err := Subscription_Subscriber_DestinationToSDK(w.DestinationSubscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.DestinationSubscriber", err)
+	}
+	out.DestinationSubscriber = conv28
+	return out, nil
+}
+
+// Subscription_SubscriberFromSDK converts the sdk-go type to the mirror.
+func Subscription_SubscriberFromSDK(v *sdk.Subscription_Subscriber) (*Subscription_Subscriber, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription_Subscriber{}
+	conv29, err := Subscription_Subscriber_UserFromSDK(v.UserSubscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.UserSubscriber", err)
+	}
+	out.UserSubscriber = conv29
+	conv30, err := Subscription_Subscriber_DestinationFromSDK(v.DestinationSubscriber)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Subscription_Subscriber.DestinationSubscriber", err)
+	}
+	out.DestinationSubscriber = conv30
+	return out, nil
+}
+
+// Subscription_Subscriber_DestinationToSDK converts the mirror to the sdk-go type.
+func Subscription_Subscriber_DestinationToSDK(w *Subscription_Subscriber_Destination) (*sdk.Subscription_Subscriber_Destination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription_Subscriber_Destination{}
+	out.DestinationId = w.DestinationId
+	return out, nil
+}
+
+// Subscription_Subscriber_DestinationFromSDK converts the sdk-go type to the mirror.
+func Subscription_Subscriber_DestinationFromSDK(v *sdk.Subscription_Subscriber_Destination) (*Subscription_Subscriber_Destination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription_Subscriber_Destination{}
+	out.DestinationId = v.DestinationId
+	return out, nil
+}
+
+// Subscription_Subscriber_UserToSDK converts the mirror to the sdk-go type.
+func Subscription_Subscriber_UserToSDK(w *Subscription_Subscriber_User) (*sdk.Subscription_Subscriber_User, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Subscription_Subscriber_User{}
+	out.UserId = w.UserId
+	return out, nil
+}
+
+// Subscription_Subscriber_UserFromSDK converts the sdk-go type to the mirror.
+func Subscription_Subscriber_UserFromSDK(v *sdk.Subscription_Subscriber_User) (*Subscription_Subscriber_User, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Subscription_Subscriber_User{}
+	out.UserId = v.UserId
+	return out, nil
+}
+
+// UpdateDashboardRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDashboardRequestToSDK(w *UpdateDashboardRequest) (*sdk.UpdateDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDashboardRequest{}
+	conv31, err := DashboardToSDK(w.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDashboardRequest.Dashboard", err)
+	}
+	out.Dashboard = conv31
+	out.DatasetCatalog = w.DatasetCatalog
+	out.DatasetSchema = w.DatasetSchema
+	return out, nil
+}
+
+// UpdateDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDashboardRequestFromSDK(v *sdk.UpdateDashboardRequest) (*UpdateDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDashboardRequest{}
+	conv32, err := DashboardFromSDK(v.Dashboard)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDashboardRequest.Dashboard", err)
+	}
+	out.Dashboard = conv32
+	out.DatasetCatalog = v.DatasetCatalog
+	out.DatasetSchema = v.DatasetSchema
+	return out, nil
+}
+
+// UpdateScheduleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateScheduleRequestToSDK(w *UpdateScheduleRequest) (*sdk.UpdateScheduleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateScheduleRequest{}
+	conv33, err := ScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateScheduleRequest.Schedule", err)
+	}
+	out.Schedule = conv33
+	return out, nil
+}
+
+// UpdateScheduleRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateScheduleRequestFromSDK(v *sdk.UpdateScheduleRequest) (*UpdateScheduleRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	scheduleWireValue, err := ScheduleFromSDK(v.Schedule)
+	out := &UpdateScheduleRequest{}
+	conv34, err := ScheduleFromSDK(v.Schedule)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateScheduleRequest.Schedule", err)
 	}
-	return &UpdateScheduleRequest{
-		Schedule: scheduleWireValue,
-	}, nil
+	out.Schedule = conv34
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

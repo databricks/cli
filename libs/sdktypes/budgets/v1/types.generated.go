@@ -38,22 +38,6 @@ const (
 	BudgetConfigurationFilter_Operator_In                          = sdk.BudgetConfigurationFilter_Operator_In
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ActionConfiguration struct {
 	// <Databricks> action configuration ID.
 	ActionConfigurationId *string `json:"action_configuration_id,omitempty"`
@@ -61,28 +45,6 @@ type ActionConfiguration struct {
 	ActionType ActionConfigurationType `json:"action_type,omitempty"`
 	// Target for the action. For example, an email address.
 	Target *string `json:"target,omitempty"`
-}
-
-func ActionConfigurationFromSDK(v *sdk.ActionConfiguration) (*ActionConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ActionConfiguration{
-		ActionConfigurationId: v.ActionConfigurationId,
-		ActionType:            v.ActionType,
-		Target:                v.Target,
-	}, nil
-}
-
-func ActionConfigurationToSDK(w *ActionConfiguration) (*sdk.ActionConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ActionConfiguration{
-		ActionConfigurationId: w.ActionConfigurationId,
-		ActionType:            w.ActionType,
-		Target:                w.Target,
-	}, nil
 }
 
 type AlertConfiguration struct {
@@ -111,54 +73,6 @@ type AlertConfiguration struct {
 	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
 }
 
-func AlertConfigurationFromSDK(v *sdk.AlertConfiguration) (*AlertConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	actionConfigurationsWireValue, err := convertSlice(v.ActionConfigurations, ActionConfigurationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.ActionConfigurations", err)
-	}
-	principalOverridesWireValue, err := convertSlice(v.PrincipalOverrides, PrincipalOverrideFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.PrincipalOverrides", err)
-	}
-	return &AlertConfiguration{
-		AlertConfigurationId: v.AlertConfigurationId,
-		TimePeriod:           v.TimePeriod,
-		TriggerType:          v.TriggerType,
-		QuantityType:         v.QuantityType,
-		QuantityThreshold:    v.QuantityThreshold,
-		ActionConfigurations: actionConfigurationsWireValue,
-		ScopeType:            v.ScopeType,
-		PrincipalOverrides:   principalOverridesWireValue,
-	}, nil
-}
-
-func AlertConfigurationToSDK(w *AlertConfiguration) (*sdk.AlertConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	actionConfigurationsPublicValue, err := convertSlice(w.ActionConfigurations, ActionConfigurationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.ActionConfigurations", err)
-	}
-	principalOverridesPublicValue, err := convertSlice(w.PrincipalOverrides, PrincipalOverrideToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.PrincipalOverrides", err)
-	}
-	return &sdk.AlertConfiguration{
-		AlertConfigurationId: w.AlertConfigurationId,
-		TimePeriod:           w.TimePeriod,
-		TriggerType:          w.TriggerType,
-		QuantityType:         w.QuantityType,
-		QuantityThreshold:    w.QuantityThreshold,
-		ActionConfigurations: actionConfigurationsPublicValue,
-		ScopeType:            w.ScopeType,
-		PrincipalOverrides:   principalOverridesPublicValue,
-	}, nil
-}
-
 type BudgetConfiguration struct {
 	// <Databricks> budget configuration ID.
 	BudgetConfigurationId *string `json:"budget_configuration_id,omitempty"`
@@ -183,38 +97,6 @@ type BudgetConfiguration struct {
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
 }
 
-func BudgetConfigurationToSDK(w *BudgetConfiguration) (*sdk.BudgetConfiguration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createTimePublicValue, err := int64FromWire(w.CreateTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.CreateTime", err)
-	}
-	updateTimePublicValue, err := int64FromWire(w.UpdateTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.UpdateTime", err)
-	}
-	alertConfigurationsPublicValue, err := convertSlice(w.AlertConfigurations, AlertConfigurationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.AlertConfigurations", err)
-	}
-	filterPublicValue, err := BudgetConfigurationFilterToSDK(w.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.Filter", err)
-	}
-	return &sdk.BudgetConfiguration{
-		BudgetConfigurationId: w.BudgetConfigurationId,
-		AccountId:             w.AccountId,
-		CreateTime:            createTimePublicValue,
-		UpdateTime:            updateTimePublicValue,
-		AlertConfigurations:   alertConfigurationsPublicValue,
-		Filter:                filterPublicValue,
-		DisplayName:           w.DisplayName,
-		ResourceType:          w.ResourceType,
-	}, nil
-}
-
 type BudgetConfigurationFilter struct {
 	// If provided, usage must match with the provided <Databricks> workspace IDs.
 	WorkspaceId *BudgetConfigurationFilter_WorkspaceIdClause `json:"workspace_id,omitempty"`
@@ -224,65 +106,9 @@ type BudgetConfigurationFilter struct {
 	Tags []BudgetConfigurationFilter_TagClause `json:"tags,omitempty"`
 }
 
-func BudgetConfigurationFilterFromSDK(v *sdk.BudgetConfigurationFilter) (*BudgetConfigurationFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := BudgetConfigurationFilter_WorkspaceIdClauseFromSDK(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.WorkspaceId", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, BudgetConfigurationFilter_TagClauseFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.Tags", err)
-	}
-	return &BudgetConfigurationFilter{
-		WorkspaceId: workspaceIdWireValue,
-		Tags:        tagsWireValue,
-	}, nil
-}
-
-func BudgetConfigurationFilterToSDK(w *BudgetConfigurationFilter) (*sdk.BudgetConfigurationFilter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdPublicValue, err := BudgetConfigurationFilter_WorkspaceIdClauseToSDK(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.WorkspaceId", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, BudgetConfigurationFilter_TagClauseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.Tags", err)
-	}
-	return &sdk.BudgetConfigurationFilter{
-		WorkspaceId: workspaceIdPublicValue,
-		Tags:        tagsPublicValue,
-	}, nil
-}
-
 type BudgetConfigurationFilter_Clause struct {
 	Operator BudgetConfigurationFilter_Operator `json:"operator,omitempty"`
 	Values   []string                           `json:"values,omitempty"`
-}
-
-func BudgetConfigurationFilter_ClauseFromSDK(v *sdk.BudgetConfigurationFilter_Clause) (*BudgetConfigurationFilter_Clause, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BudgetConfigurationFilter_Clause{
-		Operator: v.Operator,
-		Values:   v.Values,
-	}, nil
-}
-
-func BudgetConfigurationFilter_ClauseToSDK(w *BudgetConfigurationFilter_Clause) (*sdk.BudgetConfigurationFilter_Clause, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.BudgetConfigurationFilter_Clause{
-		Operator: w.Operator,
-		Values:   w.Values,
-	}, nil
 }
 
 type BudgetConfigurationFilter_TagClause struct {
@@ -290,65 +116,9 @@ type BudgetConfigurationFilter_TagClause struct {
 	Value *BudgetConfigurationFilter_Clause `json:"value,omitempty"`
 }
 
-func BudgetConfigurationFilter_TagClauseFromSDK(v *sdk.BudgetConfigurationFilter_TagClause) (*BudgetConfigurationFilter_TagClause, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valueWireValue, err := BudgetConfigurationFilter_ClauseFromSDK(v.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_TagClause.Value", err)
-	}
-	return &BudgetConfigurationFilter_TagClause{
-		Key:   v.Key,
-		Value: valueWireValue,
-	}, nil
-}
-
-func BudgetConfigurationFilter_TagClauseToSDK(w *BudgetConfigurationFilter_TagClause) (*sdk.BudgetConfigurationFilter_TagClause, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuePublicValue, err := BudgetConfigurationFilter_ClauseToSDK(w.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_TagClause.Value", err)
-	}
-	return &sdk.BudgetConfigurationFilter_TagClause{
-		Key:   w.Key,
-		Value: valuePublicValue,
-	}, nil
-}
-
 type BudgetConfigurationFilter_WorkspaceIdClause struct {
 	Operator BudgetConfigurationFilter_Operator `json:"operator,omitempty"`
 	Values   []int64                            `json:"values,omitempty"`
-}
-
-func BudgetConfigurationFilter_WorkspaceIdClauseFromSDK(v *sdk.BudgetConfigurationFilter_WorkspaceIdClause) (*BudgetConfigurationFilter_WorkspaceIdClause, error) {
-	if v == nil {
-		return nil, nil
-	}
-	valuesWireValue, err := convertSlice(v.Values, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_WorkspaceIdClause.Values", err)
-	}
-	return &BudgetConfigurationFilter_WorkspaceIdClause{
-		Operator: v.Operator,
-		Values:   valuesWireValue,
-	}, nil
-}
-
-func BudgetConfigurationFilter_WorkspaceIdClauseToSDK(w *BudgetConfigurationFilter_WorkspaceIdClause) (*sdk.BudgetConfigurationFilter_WorkspaceIdClause, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_WorkspaceIdClause.Values", err)
-	}
-	return &sdk.BudgetConfigurationFilter_WorkspaceIdClause{
-		Operator: w.Operator,
-		Values:   valuesPublicValue,
-	}, nil
 }
 
 type CreateBudgetConfigurationBudget struct {
@@ -369,42 +139,11 @@ type CreateBudgetConfigurationBudget struct {
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
 }
 
-func CreateBudgetConfigurationBudgetFromSDK(v *sdk.CreateBudgetConfigurationBudget) (*CreateBudgetConfigurationBudget, error) {
-	if v == nil {
-		return nil, nil
-	}
-	alertConfigurationsWireValue, err := convertSlice(v.AlertConfigurations, CreateBudgetConfigurationBudgetAlertConfigurationsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.AlertConfigurations", err)
-	}
-	filterWireValue, err := BudgetConfigurationFilterFromSDK(v.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.Filter", err)
-	}
-	return &CreateBudgetConfigurationBudget{
-		AccountId:           v.AccountId,
-		AlertConfigurations: alertConfigurationsWireValue,
-		Filter:              filterWireValue,
-		DisplayName:         v.DisplayName,
-		ResourceType:        v.ResourceType,
-	}, nil
-}
-
 type CreateBudgetConfigurationBudgetActionConfigurations struct {
 	// The type of the action.
 	ActionType ActionConfigurationType `json:"action_type,omitempty"`
 	// Target for the action. For example, an email address.
 	Target *string `json:"target,omitempty"`
-}
-
-func CreateBudgetConfigurationBudgetActionConfigurationsFromSDK(v *sdk.CreateBudgetConfigurationBudgetActionConfigurations) (*CreateBudgetConfigurationBudgetActionConfigurations, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateBudgetConfigurationBudgetActionConfigurations{
-		ActionType: v.ActionType,
-		Target:     v.Target,
-	}, nil
 }
 
 type CreateBudgetConfigurationBudgetAlertConfigurations struct {
@@ -431,45 +170,9 @@ type CreateBudgetConfigurationBudgetAlertConfigurations struct {
 	PrincipalOverrides []PrincipalOverride `json:"principal_overrides,omitempty"`
 }
 
-func CreateBudgetConfigurationBudgetAlertConfigurationsFromSDK(v *sdk.CreateBudgetConfigurationBudgetAlertConfigurations) (*CreateBudgetConfigurationBudgetAlertConfigurations, error) {
-	if v == nil {
-		return nil, nil
-	}
-	actionConfigurationsWireValue, err := convertSlice(v.ActionConfigurations, CreateBudgetConfigurationBudgetActionConfigurationsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.ActionConfigurations", err)
-	}
-	principalOverridesWireValue, err := convertSlice(v.PrincipalOverrides, PrincipalOverrideFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.PrincipalOverrides", err)
-	}
-	return &CreateBudgetConfigurationBudgetAlertConfigurations{
-		TimePeriod:           v.TimePeriod,
-		TriggerType:          v.TriggerType,
-		QuantityType:         v.QuantityType,
-		QuantityThreshold:    v.QuantityThreshold,
-		ActionConfigurations: actionConfigurationsWireValue,
-		ScopeType:            v.ScopeType,
-		PrincipalOverrides:   principalOverridesWireValue,
-	}, nil
-}
-
 type CreateBudgetConfigurationRequest struct {
 	// Properties of the new budget configuration.
 	Budget *CreateBudgetConfigurationBudget `json:"budget,omitempty"`
-}
-
-func CreateBudgetConfigurationRequestFromSDK(v *sdk.CreateBudgetConfigurationRequest) (*CreateBudgetConfigurationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	budgetWireValue, err := CreateBudgetConfigurationBudgetFromSDK(v.Budget)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationRequest.Budget", err)
-	}
-	return &CreateBudgetConfigurationRequest{
-		Budget: budgetWireValue,
-	}, nil
 }
 
 type CreateBudgetConfigurationResponse struct {
@@ -477,34 +180,8 @@ type CreateBudgetConfigurationResponse struct {
 	Budget *BudgetConfiguration `json:"budget,omitempty"`
 }
 
-func CreateBudgetConfigurationResponseToSDK(w *CreateBudgetConfigurationResponse) (*sdk.CreateBudgetConfigurationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	budgetPublicValue, err := BudgetConfigurationToSDK(w.Budget)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationResponse.Budget", err)
-	}
-	return &sdk.CreateBudgetConfigurationResponse{
-		Budget: budgetPublicValue,
-	}, nil
-}
-
 type GetBudgetConfigurationResponse struct {
 	Budget *BudgetConfiguration `json:"budget,omitempty"`
-}
-
-func GetBudgetConfigurationResponseToSDK(w *GetBudgetConfigurationResponse) (*sdk.GetBudgetConfigurationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	budgetPublicValue, err := BudgetConfigurationToSDK(w.Budget)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetBudgetConfigurationResponse.Budget", err)
-	}
-	return &sdk.GetBudgetConfigurationResponse{
-		Budget: budgetPublicValue,
-	}, nil
 }
 
 type ListBudgetConfigurationsRequest struct {
@@ -516,35 +193,11 @@ type ListBudgetConfigurationsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListBudgetConfigurationsRequestFromSDK(v *sdk.ListBudgetConfigurationsRequest) (*ListBudgetConfigurationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListBudgetConfigurationsRequest{
-		AccountId: v.AccountId,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListBudgetConfigurationsResponse struct {
 	Budgets []BudgetConfiguration `json:"budgets,omitempty"`
 	// Token which can be sent as `page_token` to retrieve the next page of results.
 	// If this field is omitted, there are no subsequent budgets.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListBudgetConfigurationsResponseToSDK(w *ListBudgetConfigurationsResponse) (*sdk.ListBudgetConfigurationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	budgetsPublicValue, err := convertSlice(w.Budgets, BudgetConfigurationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListBudgetConfigurationsResponse.Budgets", err)
-	}
-	return &sdk.ListBudgetConfigurationsResponse{
-		Budgets:       budgetsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Per-principal threshold override on a PER_USER alert: bumps the alert's
@@ -555,34 +208,6 @@ type PrincipalOverride struct {
 	// Dollar amount that overrides the parent alert's quantity_threshold for this
 	// principal.
 	OverrideThreshold *string `json:"override_threshold,omitempty"`
-}
-
-func PrincipalOverrideFromSDK(v *sdk.PrincipalOverride) (*PrincipalOverride, error) {
-	if v == nil {
-		return nil, nil
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PrincipalOverride.PrincipalId", err)
-	}
-	return &PrincipalOverride{
-		PrincipalId:       principalIdWireValue,
-		OverrideThreshold: v.OverrideThreshold,
-	}, nil
-}
-
-func PrincipalOverrideToSDK(w *PrincipalOverride) (*sdk.PrincipalOverride, error) {
-	if w == nil {
-		return nil, nil
-	}
-	principalIdPublicValue, err := int64FromWire(w.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PrincipalOverride.PrincipalId", err)
-	}
-	return &sdk.PrincipalOverride{
-		PrincipalId:       principalIdPublicValue,
-		OverrideThreshold: w.OverrideThreshold,
-	}, nil
 }
 
 type UpdateBudgetConfigurationBudget struct {
@@ -605,28 +230,6 @@ type UpdateBudgetConfigurationBudget struct {
 	ResourceType BudgetResourceType `json:"resource_type,omitempty"`
 }
 
-func UpdateBudgetConfigurationBudgetFromSDK(v *sdk.UpdateBudgetConfigurationBudget) (*UpdateBudgetConfigurationBudget, error) {
-	if v == nil {
-		return nil, nil
-	}
-	alertConfigurationsWireValue, err := convertSlice(v.AlertConfigurations, AlertConfigurationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.AlertConfigurations", err)
-	}
-	filterWireValue, err := BudgetConfigurationFilterFromSDK(v.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.Filter", err)
-	}
-	return &UpdateBudgetConfigurationBudget{
-		BudgetConfigurationId: v.BudgetConfigurationId,
-		AccountId:             v.AccountId,
-		AlertConfigurations:   alertConfigurationsWireValue,
-		Filter:                filterWireValue,
-		DisplayName:           v.DisplayName,
-		ResourceType:          v.ResourceType,
-	}, nil
-}
-
 type UpdateBudgetConfigurationRequest struct {
 	// The <Databricks> budget configuration ID.
 	BudgetId *string `json:"budget_id,omitempty"`
@@ -635,36 +238,621 @@ type UpdateBudgetConfigurationRequest struct {
 	Budget *UpdateBudgetConfigurationBudget `json:"budget,omitempty"`
 }
 
-func UpdateBudgetConfigurationRequestFromSDK(v *sdk.UpdateBudgetConfigurationRequest) (*UpdateBudgetConfigurationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	budgetWireValue, err := UpdateBudgetConfigurationBudgetFromSDK(v.Budget)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationRequest.Budget", err)
-	}
-	return &UpdateBudgetConfigurationRequest{
-		BudgetId: v.BudgetId,
-		Budget:   budgetWireValue,
-	}, nil
-}
-
 type UpdateBudgetConfigurationResponse struct {
 	// The updated budget.
 	Budget *BudgetConfiguration `json:"budget,omitempty"`
 }
 
+// ActionConfigurationToSDK converts the mirror to the sdk-go type.
+func ActionConfigurationToSDK(w *ActionConfiguration) (*sdk.ActionConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ActionConfiguration{}
+	out.ActionConfigurationId = w.ActionConfigurationId
+	out.ActionType = w.ActionType
+	out.Target = w.Target
+	return out, nil
+}
+
+// ActionConfigurationFromSDK converts the sdk-go type to the mirror.
+func ActionConfigurationFromSDK(v *sdk.ActionConfiguration) (*ActionConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ActionConfiguration{}
+	out.ActionConfigurationId = v.ActionConfigurationId
+	out.ActionType = v.ActionType
+	out.Target = v.Target
+	return out, nil
+}
+
+// AlertConfigurationToSDK converts the mirror to the sdk-go type.
+func AlertConfigurationToSDK(w *AlertConfiguration) (*sdk.AlertConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AlertConfiguration{}
+	out.AlertConfigurationId = w.AlertConfigurationId
+	out.TimePeriod = w.TimePeriod
+	out.TriggerType = w.TriggerType
+	out.QuantityType = w.QuantityType
+	out.QuantityThreshold = w.QuantityThreshold
+	conv1, err := convertSlice(w.ActionConfigurations, ActionConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.ActionConfigurations", err)
+	}
+	out.ActionConfigurations = conv1
+	out.ScopeType = w.ScopeType
+	conv2, err := convertSlice(w.PrincipalOverrides, PrincipalOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.PrincipalOverrides", err)
+	}
+	out.PrincipalOverrides = conv2
+	return out, nil
+}
+
+// AlertConfigurationFromSDK converts the sdk-go type to the mirror.
+func AlertConfigurationFromSDK(v *sdk.AlertConfiguration) (*AlertConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AlertConfiguration{}
+	out.AlertConfigurationId = v.AlertConfigurationId
+	out.TimePeriod = v.TimePeriod
+	out.TriggerType = v.TriggerType
+	out.QuantityType = v.QuantityType
+	out.QuantityThreshold = v.QuantityThreshold
+	conv3, err := convertSlice(v.ActionConfigurations, ActionConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.ActionConfigurations", err)
+	}
+	out.ActionConfigurations = conv3
+	out.ScopeType = v.ScopeType
+	conv4, err := convertSlice(v.PrincipalOverrides, PrincipalOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AlertConfiguration.PrincipalOverrides", err)
+	}
+	out.PrincipalOverrides = conv4
+	return out, nil
+}
+
+// BudgetConfigurationToSDK converts the mirror to the sdk-go type.
+func BudgetConfigurationToSDK(w *BudgetConfiguration) (*sdk.BudgetConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BudgetConfiguration{}
+	out.BudgetConfigurationId = w.BudgetConfigurationId
+	out.AccountId = w.AccountId
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	conv5, err := convertSlice(w.AlertConfigurations, AlertConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv5
+	conv6, err := BudgetConfigurationFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.Filter", err)
+	}
+	out.Filter = conv6
+	out.DisplayName = w.DisplayName
+	out.ResourceType = w.ResourceType
+	return out, nil
+}
+
+// BudgetConfigurationFromSDK converts the sdk-go type to the mirror.
+func BudgetConfigurationFromSDK(v *sdk.BudgetConfiguration) (*BudgetConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BudgetConfiguration{}
+	out.BudgetConfigurationId = v.BudgetConfigurationId
+	out.AccountId = v.AccountId
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	conv7, err := convertSlice(v.AlertConfigurations, AlertConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv7
+	conv8, err := BudgetConfigurationFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfiguration.Filter", err)
+	}
+	out.Filter = conv8
+	out.DisplayName = v.DisplayName
+	out.ResourceType = v.ResourceType
+	return out, nil
+}
+
+// BudgetConfigurationFilterToSDK converts the mirror to the sdk-go type.
+func BudgetConfigurationFilterToSDK(w *BudgetConfigurationFilter) (*sdk.BudgetConfigurationFilter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BudgetConfigurationFilter{}
+	conv9, err := BudgetConfigurationFilter_WorkspaceIdClauseToSDK(w.WorkspaceId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.WorkspaceId", err)
+	}
+	out.WorkspaceId = conv9
+	conv10, err := convertSlice(w.Tags, BudgetConfigurationFilter_TagClauseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.Tags", err)
+	}
+	out.Tags = conv10
+	return out, nil
+}
+
+// BudgetConfigurationFilterFromSDK converts the sdk-go type to the mirror.
+func BudgetConfigurationFilterFromSDK(v *sdk.BudgetConfigurationFilter) (*BudgetConfigurationFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BudgetConfigurationFilter{}
+	conv11, err := BudgetConfigurationFilter_WorkspaceIdClauseFromSDK(v.WorkspaceId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.WorkspaceId", err)
+	}
+	out.WorkspaceId = conv11
+	conv12, err := convertSlice(v.Tags, BudgetConfigurationFilter_TagClauseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter.Tags", err)
+	}
+	out.Tags = conv12
+	return out, nil
+}
+
+// BudgetConfigurationFilter_ClauseToSDK converts the mirror to the sdk-go type.
+func BudgetConfigurationFilter_ClauseToSDK(w *BudgetConfigurationFilter_Clause) (*sdk.BudgetConfigurationFilter_Clause, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BudgetConfigurationFilter_Clause{}
+	out.Operator = w.Operator
+	out.Values = w.Values
+	return out, nil
+}
+
+// BudgetConfigurationFilter_ClauseFromSDK converts the sdk-go type to the mirror.
+func BudgetConfigurationFilter_ClauseFromSDK(v *sdk.BudgetConfigurationFilter_Clause) (*BudgetConfigurationFilter_Clause, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BudgetConfigurationFilter_Clause{}
+	out.Operator = v.Operator
+	out.Values = v.Values
+	return out, nil
+}
+
+// BudgetConfigurationFilter_TagClauseToSDK converts the mirror to the sdk-go type.
+func BudgetConfigurationFilter_TagClauseToSDK(w *BudgetConfigurationFilter_TagClause) (*sdk.BudgetConfigurationFilter_TagClause, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BudgetConfigurationFilter_TagClause{}
+	out.Key = w.Key
+	conv13, err := BudgetConfigurationFilter_ClauseToSDK(w.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_TagClause.Value", err)
+	}
+	out.Value = conv13
+	return out, nil
+}
+
+// BudgetConfigurationFilter_TagClauseFromSDK converts the sdk-go type to the mirror.
+func BudgetConfigurationFilter_TagClauseFromSDK(v *sdk.BudgetConfigurationFilter_TagClause) (*BudgetConfigurationFilter_TagClause, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BudgetConfigurationFilter_TagClause{}
+	out.Key = v.Key
+	conv14, err := BudgetConfigurationFilter_ClauseFromSDK(v.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BudgetConfigurationFilter_TagClause.Value", err)
+	}
+	out.Value = conv14
+	return out, nil
+}
+
+// BudgetConfigurationFilter_WorkspaceIdClauseToSDK converts the mirror to the sdk-go type.
+func BudgetConfigurationFilter_WorkspaceIdClauseToSDK(w *BudgetConfigurationFilter_WorkspaceIdClause) (*sdk.BudgetConfigurationFilter_WorkspaceIdClause, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BudgetConfigurationFilter_WorkspaceIdClause{}
+	out.Operator = w.Operator
+	out.Values = w.Values
+	return out, nil
+}
+
+// BudgetConfigurationFilter_WorkspaceIdClauseFromSDK converts the sdk-go type to the mirror.
+func BudgetConfigurationFilter_WorkspaceIdClauseFromSDK(v *sdk.BudgetConfigurationFilter_WorkspaceIdClause) (*BudgetConfigurationFilter_WorkspaceIdClause, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BudgetConfigurationFilter_WorkspaceIdClause{}
+	out.Operator = v.Operator
+	out.Values = v.Values
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetToSDK converts the mirror to the sdk-go type.
+func CreateBudgetConfigurationBudgetToSDK(w *CreateBudgetConfigurationBudget) (*sdk.CreateBudgetConfigurationBudget, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBudgetConfigurationBudget{}
+	out.AccountId = w.AccountId
+	conv15, err := convertSlice(w.AlertConfigurations, CreateBudgetConfigurationBudgetAlertConfigurationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv15
+	conv16, err := BudgetConfigurationFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.Filter", err)
+	}
+	out.Filter = conv16
+	out.DisplayName = w.DisplayName
+	out.ResourceType = w.ResourceType
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetFromSDK converts the sdk-go type to the mirror.
+func CreateBudgetConfigurationBudgetFromSDK(v *sdk.CreateBudgetConfigurationBudget) (*CreateBudgetConfigurationBudget, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBudgetConfigurationBudget{}
+	out.AccountId = v.AccountId
+	conv17, err := convertSlice(v.AlertConfigurations, CreateBudgetConfigurationBudgetAlertConfigurationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv17
+	conv18, err := BudgetConfigurationFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudget.Filter", err)
+	}
+	out.Filter = conv18
+	out.DisplayName = v.DisplayName
+	out.ResourceType = v.ResourceType
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetActionConfigurationsToSDK converts the mirror to the sdk-go type.
+func CreateBudgetConfigurationBudgetActionConfigurationsToSDK(w *CreateBudgetConfigurationBudgetActionConfigurations) (*sdk.CreateBudgetConfigurationBudgetActionConfigurations, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBudgetConfigurationBudgetActionConfigurations{}
+	out.ActionType = w.ActionType
+	out.Target = w.Target
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetActionConfigurationsFromSDK converts the sdk-go type to the mirror.
+func CreateBudgetConfigurationBudgetActionConfigurationsFromSDK(v *sdk.CreateBudgetConfigurationBudgetActionConfigurations) (*CreateBudgetConfigurationBudgetActionConfigurations, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBudgetConfigurationBudgetActionConfigurations{}
+	out.ActionType = v.ActionType
+	out.Target = v.Target
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetAlertConfigurationsToSDK converts the mirror to the sdk-go type.
+func CreateBudgetConfigurationBudgetAlertConfigurationsToSDK(w *CreateBudgetConfigurationBudgetAlertConfigurations) (*sdk.CreateBudgetConfigurationBudgetAlertConfigurations, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBudgetConfigurationBudgetAlertConfigurations{}
+	out.TimePeriod = w.TimePeriod
+	out.TriggerType = w.TriggerType
+	out.QuantityType = w.QuantityType
+	out.QuantityThreshold = w.QuantityThreshold
+	conv19, err := convertSlice(w.ActionConfigurations, CreateBudgetConfigurationBudgetActionConfigurationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.ActionConfigurations", err)
+	}
+	out.ActionConfigurations = conv19
+	out.ScopeType = w.ScopeType
+	conv20, err := convertSlice(w.PrincipalOverrides, PrincipalOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.PrincipalOverrides", err)
+	}
+	out.PrincipalOverrides = conv20
+	return out, nil
+}
+
+// CreateBudgetConfigurationBudgetAlertConfigurationsFromSDK converts the sdk-go type to the mirror.
+func CreateBudgetConfigurationBudgetAlertConfigurationsFromSDK(v *sdk.CreateBudgetConfigurationBudgetAlertConfigurations) (*CreateBudgetConfigurationBudgetAlertConfigurations, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBudgetConfigurationBudgetAlertConfigurations{}
+	out.TimePeriod = v.TimePeriod
+	out.TriggerType = v.TriggerType
+	out.QuantityType = v.QuantityType
+	out.QuantityThreshold = v.QuantityThreshold
+	conv21, err := convertSlice(v.ActionConfigurations, CreateBudgetConfigurationBudgetActionConfigurationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.ActionConfigurations", err)
+	}
+	out.ActionConfigurations = conv21
+	out.ScopeType = v.ScopeType
+	conv22, err := convertSlice(v.PrincipalOverrides, PrincipalOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationBudgetAlertConfigurations.PrincipalOverrides", err)
+	}
+	out.PrincipalOverrides = conv22
+	return out, nil
+}
+
+// CreateBudgetConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func CreateBudgetConfigurationRequestToSDK(w *CreateBudgetConfigurationRequest) (*sdk.CreateBudgetConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBudgetConfigurationRequest{}
+	conv23, err := CreateBudgetConfigurationBudgetToSDK(w.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationRequest.Budget", err)
+	}
+	out.Budget = conv23
+	return out, nil
+}
+
+// CreateBudgetConfigurationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateBudgetConfigurationRequestFromSDK(v *sdk.CreateBudgetConfigurationRequest) (*CreateBudgetConfigurationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBudgetConfigurationRequest{}
+	conv24, err := CreateBudgetConfigurationBudgetFromSDK(v.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationRequest.Budget", err)
+	}
+	out.Budget = conv24
+	return out, nil
+}
+
+// CreateBudgetConfigurationResponseToSDK converts the mirror to the sdk-go type.
+func CreateBudgetConfigurationResponseToSDK(w *CreateBudgetConfigurationResponse) (*sdk.CreateBudgetConfigurationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBudgetConfigurationResponse{}
+	conv25, err := BudgetConfigurationToSDK(w.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationResponse.Budget", err)
+	}
+	out.Budget = conv25
+	return out, nil
+}
+
+// CreateBudgetConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func CreateBudgetConfigurationResponseFromSDK(v *sdk.CreateBudgetConfigurationResponse) (*CreateBudgetConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBudgetConfigurationResponse{}
+	conv26, err := BudgetConfigurationFromSDK(v.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateBudgetConfigurationResponse.Budget", err)
+	}
+	out.Budget = conv26
+	return out, nil
+}
+
+// GetBudgetConfigurationResponseToSDK converts the mirror to the sdk-go type.
+func GetBudgetConfigurationResponseToSDK(w *GetBudgetConfigurationResponse) (*sdk.GetBudgetConfigurationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetBudgetConfigurationResponse{}
+	conv27, err := BudgetConfigurationToSDK(w.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetBudgetConfigurationResponse.Budget", err)
+	}
+	out.Budget = conv27
+	return out, nil
+}
+
+// GetBudgetConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func GetBudgetConfigurationResponseFromSDK(v *sdk.GetBudgetConfigurationResponse) (*GetBudgetConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetBudgetConfigurationResponse{}
+	conv28, err := BudgetConfigurationFromSDK(v.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetBudgetConfigurationResponse.Budget", err)
+	}
+	out.Budget = conv28
+	return out, nil
+}
+
+// ListBudgetConfigurationsRequestToSDK converts the mirror to the sdk-go type.
+func ListBudgetConfigurationsRequestToSDK(w *ListBudgetConfigurationsRequest) (*sdk.ListBudgetConfigurationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListBudgetConfigurationsRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListBudgetConfigurationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListBudgetConfigurationsRequestFromSDK(v *sdk.ListBudgetConfigurationsRequest) (*ListBudgetConfigurationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListBudgetConfigurationsRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListBudgetConfigurationsResponseToSDK converts the mirror to the sdk-go type.
+func ListBudgetConfigurationsResponseToSDK(w *ListBudgetConfigurationsResponse) (*sdk.ListBudgetConfigurationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListBudgetConfigurationsResponse{}
+	conv29, err := convertSlice(w.Budgets, BudgetConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListBudgetConfigurationsResponse.Budgets", err)
+	}
+	out.Budgets = conv29
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListBudgetConfigurationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListBudgetConfigurationsResponseFromSDK(v *sdk.ListBudgetConfigurationsResponse) (*ListBudgetConfigurationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListBudgetConfigurationsResponse{}
+	conv30, err := convertSlice(v.Budgets, BudgetConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListBudgetConfigurationsResponse.Budgets", err)
+	}
+	out.Budgets = conv30
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// PrincipalOverrideToSDK converts the mirror to the sdk-go type.
+func PrincipalOverrideToSDK(w *PrincipalOverride) (*sdk.PrincipalOverride, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrincipalOverride{}
+	out.PrincipalId = w.PrincipalId
+	out.OverrideThreshold = w.OverrideThreshold
+	return out, nil
+}
+
+// PrincipalOverrideFromSDK converts the sdk-go type to the mirror.
+func PrincipalOverrideFromSDK(v *sdk.PrincipalOverride) (*PrincipalOverride, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrincipalOverride{}
+	out.PrincipalId = v.PrincipalId
+	out.OverrideThreshold = v.OverrideThreshold
+	return out, nil
+}
+
+// UpdateBudgetConfigurationBudgetToSDK converts the mirror to the sdk-go type.
+func UpdateBudgetConfigurationBudgetToSDK(w *UpdateBudgetConfigurationBudget) (*sdk.UpdateBudgetConfigurationBudget, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateBudgetConfigurationBudget{}
+	out.BudgetConfigurationId = w.BudgetConfigurationId
+	out.AccountId = w.AccountId
+	conv31, err := convertSlice(w.AlertConfigurations, AlertConfigurationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv31
+	conv32, err := BudgetConfigurationFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.Filter", err)
+	}
+	out.Filter = conv32
+	out.DisplayName = w.DisplayName
+	out.ResourceType = w.ResourceType
+	return out, nil
+}
+
+// UpdateBudgetConfigurationBudgetFromSDK converts the sdk-go type to the mirror.
+func UpdateBudgetConfigurationBudgetFromSDK(v *sdk.UpdateBudgetConfigurationBudget) (*UpdateBudgetConfigurationBudget, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateBudgetConfigurationBudget{}
+	out.BudgetConfigurationId = v.BudgetConfigurationId
+	out.AccountId = v.AccountId
+	conv33, err := convertSlice(v.AlertConfigurations, AlertConfigurationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.AlertConfigurations", err)
+	}
+	out.AlertConfigurations = conv33
+	conv34, err := BudgetConfigurationFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationBudget.Filter", err)
+	}
+	out.Filter = conv34
+	out.DisplayName = v.DisplayName
+	out.ResourceType = v.ResourceType
+	return out, nil
+}
+
+// UpdateBudgetConfigurationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateBudgetConfigurationRequestToSDK(w *UpdateBudgetConfigurationRequest) (*sdk.UpdateBudgetConfigurationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateBudgetConfigurationRequest{}
+	out.BudgetId = w.BudgetId
+	conv35, err := UpdateBudgetConfigurationBudgetToSDK(w.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationRequest.Budget", err)
+	}
+	out.Budget = conv35
+	return out, nil
+}
+
+// UpdateBudgetConfigurationRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateBudgetConfigurationRequestFromSDK(v *sdk.UpdateBudgetConfigurationRequest) (*UpdateBudgetConfigurationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateBudgetConfigurationRequest{}
+	out.BudgetId = v.BudgetId
+	conv36, err := UpdateBudgetConfigurationBudgetFromSDK(v.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationRequest.Budget", err)
+	}
+	out.Budget = conv36
+	return out, nil
+}
+
+// UpdateBudgetConfigurationResponseToSDK converts the mirror to the sdk-go type.
 func UpdateBudgetConfigurationResponseToSDK(w *UpdateBudgetConfigurationResponse) (*sdk.UpdateBudgetConfigurationResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	budgetPublicValue, err := BudgetConfigurationToSDK(w.Budget)
+	out := &sdk.UpdateBudgetConfigurationResponse{}
+	conv37, err := BudgetConfigurationToSDK(w.Budget)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationResponse.Budget", err)
 	}
-	return &sdk.UpdateBudgetConfigurationResponse{
-		Budget: budgetPublicValue,
-	}, nil
+	out.Budget = conv37
+	return out, nil
+}
+
+// UpdateBudgetConfigurationResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateBudgetConfigurationResponseFromSDK(v *sdk.UpdateBudgetConfigurationResponse) (*UpdateBudgetConfigurationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateBudgetConfigurationResponse{}
+	conv38, err := BudgetConfigurationFromSDK(v.Budget)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateBudgetConfigurationResponse.Budget", err)
+	}
+	out.Budget = conv38
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

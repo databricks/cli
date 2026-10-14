@@ -22,22 +22,6 @@ const (
 	VolumeType_External                = sdk.VolumeType_External
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateVolumeRequest struct {
 	// The name of the volume
 	Name *string `json:"name,omitempty"`
@@ -79,94 +63,9 @@ type CreateVolumeRequest struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func CreateVolumeRequestFromSDK(v *sdk.CreateVolumeRequest) (*CreateVolumeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateVolumeRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateVolumeRequest.UpdatedAt", err)
-	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateVolumeRequest.EncryptionDetails", err)
-	}
-	return &CreateVolumeRequest{
-		Name:              v.Name,
-		CatalogName:       v.CatalogName,
-		SchemaName:        v.SchemaName,
-		VolumeType:        v.VolumeType,
-		StorageLocation:   v.StorageLocation,
-		Owner:             v.Owner,
-		Comment:           v.Comment,
-		FullName:          v.FullName,
-		VolumeId:          v.VolumeId,
-		MetastoreId:       v.MetastoreId,
-		CreatedAt:         createdAtWireValue,
-		CreatedBy:         v.CreatedBy,
-		UpdatedAt:         updatedAtWireValue,
-		UpdatedBy:         v.UpdatedBy,
-		AccessPoint:       v.AccessPoint,
-		EncryptionDetails: encryptionDetailsWireValue,
-		BrowseOnly:        v.BrowseOnly,
-	}, nil
-}
-
 // Encryption options that apply to clients connecting to cloud storage..
 type EncryptionDetails struct {
 	SseEncryptionDetails *SseEncryptionDetails `json:"sse_encryption_details,omitempty"`
-}
-
-func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var encryptionDetailsTypeSseEncryptionDetailsWire *SseEncryptionDetails
-	switch value := v.EncryptionDetailsType.(type) {
-	case nil:
-	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
-		if value != nil {
-			encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-			}
-			encryptionDetailsTypeSseEncryptionDetailsWire = encryptionDetailsTypeSseEncryptionDetailsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EncryptionDetails.EncryptionDetailsType", value)
-	}
-	return &EncryptionDetails{
-		SseEncryptionDetails: encryptionDetailsTypeSseEncryptionDetailsWire,
-	}, nil
-}
-
-func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	encryptionDetailsTypeMembers := 0
-	if w.SseEncryptionDetails != nil {
-		encryptionDetailsTypeMembers++
-	}
-	if encryptionDetailsTypeMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
-	}
-	encryptionDetailsTypeSelection := (&sdk.EncryptionDetails{}).EncryptionDetailsType
-	switch {
-	case w.SseEncryptionDetails != nil:
-		encryptionDetailsTypeSseEncryptionDetailsConverted, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType.SseEncryptionDetails", err)
-		}
-		encryptionDetailsTypeSelection = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *encryptionDetailsTypeSseEncryptionDetailsConverted}
-	}
-	return &sdk.EncryptionDetails{
-		EncryptionDetailsType: encryptionDetailsTypeSelection,
-	}, nil
 }
 
 type GetVolumeRequest struct {
@@ -175,16 +74,6 @@ type GetVolumeRequest struct {
 	// Whether to include volumes in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetVolumeRequestFromSDK(v *sdk.GetVolumeRequest) (*GetVolumeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetVolumeRequest{
-		FullNameArg:   v.FullNameArg,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
 }
 
 type ListVolumesRequest struct {
@@ -213,39 +102,12 @@ type ListVolumesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListVolumesRequestFromSDK(v *sdk.ListVolumesRequest) (*ListVolumesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListVolumesRequest{
-		CatalogName:   v.CatalogName,
-		SchemaName:    v.SchemaName,
-		IncludeBrowse: v.IncludeBrowse,
-		MaxResults:    v.MaxResults,
-		PageToken:     v.PageToken,
-	}, nil
-}
-
 type ListVolumesResponse struct {
 	Volumes []VolumeInfo `json:"volumes,omitempty"`
 	// Opaque token to retrieve the next page of results. Absent if there are no
 	// more pages. __page_token__ should be set to this value for the next request
 	// to retrieve the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListVolumesResponseToSDK(w *ListVolumesResponse) (*sdk.ListVolumesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	volumesPublicValue, err := convertSlice(w.Volumes, VolumeInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListVolumesResponse.Volumes", err)
-	}
-	return &sdk.ListVolumesResponse{
-		Volumes:       volumesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Server-Side Encryption properties for clients communicating with AWS s3..
@@ -256,26 +118,6 @@ type SseEncryptionDetails struct {
 	// algorithm = "SSE-KMS". Sets the value of the
 	// 'x-amz-server-side-encryption-aws-kms-key-id' header.
 	AwsKmsKeyArn *string `json:"aws_kms_key_arn,omitempty"`
-}
-
-func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SseEncryptionDetails{
-		Algorithm:    v.Algorithm,
-		AwsKmsKeyArn: v.AwsKmsKeyArn,
-	}, nil
-}
-
-func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SseEncryptionDetails{
-		Algorithm:    w.Algorithm,
-		AwsKmsKeyArn: w.AwsKmsKeyArn,
-	}, nil
 }
 
 type UpdateVolumeRequest struct {
@@ -323,45 +165,6 @@ type UpdateVolumeRequest struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
-func UpdateVolumeRequestFromSDK(v *sdk.UpdateVolumeRequest) (*UpdateVolumeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateVolumeRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateVolumeRequest.UpdatedAt", err)
-	}
-	encryptionDetailsWireValue, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateVolumeRequest.EncryptionDetails", err)
-	}
-	return &UpdateVolumeRequest{
-		FullNameArg:       v.FullNameArg,
-		NewName:           v.NewName,
-		Name:              v.Name,
-		CatalogName:       v.CatalogName,
-		SchemaName:        v.SchemaName,
-		VolumeType:        v.VolumeType,
-		StorageLocation:   v.StorageLocation,
-		Owner:             v.Owner,
-		Comment:           v.Comment,
-		FullName:          v.FullName,
-		VolumeId:          v.VolumeId,
-		MetastoreId:       v.MetastoreId,
-		CreatedAt:         createdAtWireValue,
-		CreatedBy:         v.CreatedBy,
-		UpdatedAt:         updatedAtWireValue,
-		UpdatedBy:         v.UpdatedBy,
-		AccessPoint:       v.AccessPoint,
-		EncryptionDetails: encryptionDetailsWireValue,
-		BrowseOnly:        v.BrowseOnly,
-	}, nil
-}
-
 type VolumeInfo struct {
 	// The name of the volume
 	Name *string `json:"name,omitempty"`
@@ -403,41 +206,335 @@ type VolumeInfo struct {
 	BrowseOnly *bool `json:"browse_only,omitempty"`
 }
 
+// CreateVolumeRequestToSDK converts the mirror to the sdk-go type.
+func CreateVolumeRequestToSDK(w *CreateVolumeRequest) (*sdk.CreateVolumeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateVolumeRequest{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.VolumeType = w.VolumeType
+	out.StorageLocation = w.StorageLocation
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.FullName = w.FullName
+	out.VolumeId = w.VolumeId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.AccessPoint = w.AccessPoint
+	conv1, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateVolumeRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv1
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// CreateVolumeRequestFromSDK converts the sdk-go type to the mirror.
+func CreateVolumeRequestFromSDK(v *sdk.CreateVolumeRequest) (*CreateVolumeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateVolumeRequest{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.VolumeType = v.VolumeType
+	out.StorageLocation = v.StorageLocation
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.FullName = v.FullName
+	out.VolumeId = v.VolumeId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.AccessPoint = v.AccessPoint
+	conv2, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateVolumeRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv2
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// EncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func EncryptionDetailsToSDK(w *EncryptionDetails) (*sdk.EncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EncryptionDetails{}
+	{
+		members := 0
+		if w.SseEncryptionDetails != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EncryptionDetails.EncryptionDetailsType")
+		}
+	}
+	switch {
+	case w.SseEncryptionDetails != nil:
+		conv3, err := SseEncryptionDetailsToSDK(w.SseEncryptionDetails)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+		}
+		out.EncryptionDetailsType = &sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails{SseEncryptionDetails: *conv3}
+	}
+	return out, nil
+}
+
+// EncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func EncryptionDetailsFromSDK(v *sdk.EncryptionDetails) (*EncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EncryptionDetails{}
+	switch value := v.EncryptionDetailsType.(type) {
+	case *sdk.EncryptionDetails_EncryptionDetailsType_SseEncryptionDetails:
+		if value != nil {
+			conv4, err := SseEncryptionDetailsFromSDK(&value.SseEncryptionDetails)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "EncryptionDetails.EncryptionDetailsType", err)
+			}
+			out.SseEncryptionDetails = conv4
+		}
+	}
+	return out, nil
+}
+
+// GetVolumeRequestToSDK converts the mirror to the sdk-go type.
+func GetVolumeRequestToSDK(w *GetVolumeRequest) (*sdk.GetVolumeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetVolumeRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetVolumeRequestFromSDK converts the sdk-go type to the mirror.
+func GetVolumeRequestFromSDK(v *sdk.GetVolumeRequest) (*GetVolumeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetVolumeRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListVolumesRequestToSDK converts the mirror to the sdk-go type.
+func ListVolumesRequestToSDK(w *ListVolumesRequest) (*sdk.ListVolumesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVolumesRequest{}
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.IncludeBrowse = w.IncludeBrowse
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListVolumesRequestFromSDK converts the sdk-go type to the mirror.
+func ListVolumesRequestFromSDK(v *sdk.ListVolumesRequest) (*ListVolumesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVolumesRequest{}
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.IncludeBrowse = v.IncludeBrowse
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListVolumesResponseToSDK converts the mirror to the sdk-go type.
+func ListVolumesResponseToSDK(w *ListVolumesResponse) (*sdk.ListVolumesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListVolumesResponse{}
+	conv5, err := convertSlice(w.Volumes, VolumeInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVolumesResponse.Volumes", err)
+	}
+	out.Volumes = conv5
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListVolumesResponseFromSDK converts the sdk-go type to the mirror.
+func ListVolumesResponseFromSDK(v *sdk.ListVolumesResponse) (*ListVolumesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListVolumesResponse{}
+	conv6, err := convertSlice(v.Volumes, VolumeInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListVolumesResponse.Volumes", err)
+	}
+	out.Volumes = conv6
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SseEncryptionDetailsToSDK converts the mirror to the sdk-go type.
+func SseEncryptionDetailsToSDK(w *SseEncryptionDetails) (*sdk.SseEncryptionDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SseEncryptionDetails{}
+	out.Algorithm = w.Algorithm
+	out.AwsKmsKeyArn = w.AwsKmsKeyArn
+	return out, nil
+}
+
+// SseEncryptionDetailsFromSDK converts the sdk-go type to the mirror.
+func SseEncryptionDetailsFromSDK(v *sdk.SseEncryptionDetails) (*SseEncryptionDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SseEncryptionDetails{}
+	out.Algorithm = v.Algorithm
+	out.AwsKmsKeyArn = v.AwsKmsKeyArn
+	return out, nil
+}
+
+// UpdateVolumeRequestToSDK converts the mirror to the sdk-go type.
+func UpdateVolumeRequestToSDK(w *UpdateVolumeRequest) (*sdk.UpdateVolumeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateVolumeRequest{}
+	out.FullNameArg = w.FullNameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.VolumeType = w.VolumeType
+	out.StorageLocation = w.StorageLocation
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.FullName = w.FullName
+	out.VolumeId = w.VolumeId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.AccessPoint = w.AccessPoint
+	conv7, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateVolumeRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv7
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// UpdateVolumeRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateVolumeRequestFromSDK(v *sdk.UpdateVolumeRequest) (*UpdateVolumeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateVolumeRequest{}
+	out.FullNameArg = v.FullNameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.VolumeType = v.VolumeType
+	out.StorageLocation = v.StorageLocation
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.FullName = v.FullName
+	out.VolumeId = v.VolumeId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.AccessPoint = v.AccessPoint
+	conv8, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateVolumeRequest.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv8
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
+}
+
+// VolumeInfoToSDK converts the mirror to the sdk-go type.
 func VolumeInfoToSDK(w *VolumeInfo) (*sdk.VolumeInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "VolumeInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "VolumeInfo.UpdatedAt", err)
-	}
-	encryptionDetailsPublicValue, err := EncryptionDetailsToSDK(w.EncryptionDetails)
+	out := &sdk.VolumeInfo{}
+	out.Name = w.Name
+	out.CatalogName = w.CatalogName
+	out.SchemaName = w.SchemaName
+	out.VolumeType = w.VolumeType
+	out.StorageLocation = w.StorageLocation
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.FullName = w.FullName
+	out.VolumeId = w.VolumeId
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.AccessPoint = w.AccessPoint
+	conv9, err := EncryptionDetailsToSDK(w.EncryptionDetails)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "VolumeInfo.EncryptionDetails", err)
 	}
-	return &sdk.VolumeInfo{
-		Name:              w.Name,
-		CatalogName:       w.CatalogName,
-		SchemaName:        w.SchemaName,
-		VolumeType:        w.VolumeType,
-		StorageLocation:   w.StorageLocation,
-		Owner:             w.Owner,
-		Comment:           w.Comment,
-		FullName:          w.FullName,
-		VolumeId:          w.VolumeId,
-		MetastoreId:       w.MetastoreId,
-		CreatedAt:         createdAtPublicValue,
-		CreatedBy:         w.CreatedBy,
-		UpdatedAt:         updatedAtPublicValue,
-		UpdatedBy:         w.UpdatedBy,
-		AccessPoint:       w.AccessPoint,
-		EncryptionDetails: encryptionDetailsPublicValue,
-		BrowseOnly:        w.BrowseOnly,
-	}, nil
+	out.EncryptionDetails = conv9
+	out.BrowseOnly = w.BrowseOnly
+	return out, nil
+}
+
+// VolumeInfoFromSDK converts the sdk-go type to the mirror.
+func VolumeInfoFromSDK(v *sdk.VolumeInfo) (*VolumeInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VolumeInfo{}
+	out.Name = v.Name
+	out.CatalogName = v.CatalogName
+	out.SchemaName = v.SchemaName
+	out.VolumeType = v.VolumeType
+	out.StorageLocation = v.StorageLocation
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.FullName = v.FullName
+	out.VolumeId = v.VolumeId
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.AccessPoint = v.AccessPoint
+	conv10, err := EncryptionDetailsFromSDK(v.EncryptionDetails)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "VolumeInfo.EncryptionDetails", err)
+	}
+	out.EncryptionDetails = conv10
+	out.BrowseOnly = v.BrowseOnly
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

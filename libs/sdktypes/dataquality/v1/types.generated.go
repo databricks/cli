@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/dataquality/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -60,52 +61,10 @@ const (
 	RefreshTrigger_MonitorRefreshTriggerDataChange                       = sdk.RefreshTrigger_MonitorRefreshTriggerDataChange
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Anomaly Detection Configurations..
 type AnomalyDetectionConfig struct {
 	// List of fully qualified table names to exclude from anomaly detection.
 	ExcludedTableFullNames []string `json:"excluded_table_full_names,omitempty"`
-}
-
-func AnomalyDetectionConfigFromSDK(v *sdk.AnomalyDetectionConfig) (*AnomalyDetectionConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AnomalyDetectionConfig{
-		ExcludedTableFullNames: v.ExcludedTableFullNames,
-	}, nil
-}
-
-func AnomalyDetectionConfigToSDK(w *AnomalyDetectionConfig) (*sdk.AnomalyDetectionConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AnomalyDetectionConfig{
-		ExcludedTableFullNames: w.ExcludedTableFullNames,
-	}, nil
 }
 
 // Request to cancel a refresh..
@@ -132,38 +91,10 @@ type CancelRefreshRequest struct {
 	RefreshId *int64 `json:"refresh_id,omitempty"`
 }
 
-func CancelRefreshRequestFromSDK(v *sdk.CancelRefreshRequest) (*CancelRefreshRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	refreshIdWireValue, err := int64ToWire(v.RefreshId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CancelRefreshRequest.RefreshId", err)
-	}
-	return &CancelRefreshRequest{
-		ObjectType: v.ObjectType,
-		ObjectId:   v.ObjectId,
-		RefreshId:  refreshIdWireValue,
-	}, nil
-}
-
 // Response to cancelling a refresh..
 type CancelRefreshResponse struct {
 	// The refresh to cancel.
 	Refresh *Refresh `json:"refresh,omitempty"`
-}
-
-func CancelRefreshResponseToSDK(w *CancelRefreshResponse) (*sdk.CancelRefreshResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	refreshPublicValue, err := RefreshToSDK(w.Refresh)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CancelRefreshResponse.Refresh", err)
-	}
-	return &sdk.CancelRefreshResponse{
-		Refresh: refreshPublicValue,
-	}, nil
 }
 
 // Request to create a Monitor..
@@ -172,36 +103,10 @@ type CreateMonitorRequest struct {
 	Monitor *Monitor `json:"monitor,omitempty"`
 }
 
-func CreateMonitorRequestFromSDK(v *sdk.CreateMonitorRequest) (*CreateMonitorRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	monitorWireValue, err := MonitorFromSDK(v.Monitor)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateMonitorRequest.Monitor", err)
-	}
-	return &CreateMonitorRequest{
-		Monitor: monitorWireValue,
-	}, nil
-}
-
 // Request to create a refresh..
 type CreateRefreshRequest struct {
 	// The refresh to create
 	Refresh *Refresh `json:"refresh,omitempty"`
-}
-
-func CreateRefreshRequestFromSDK(v *sdk.CreateRefreshRequest) (*CreateRefreshRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	refreshWireValue, err := RefreshFromSDK(v.Refresh)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRefreshRequest.Refresh", err)
-	}
-	return &CreateRefreshRequest{
-		Refresh: refreshWireValue,
-	}, nil
 }
 
 // The data quality monitoring workflow cron schedule..
@@ -218,28 +123,6 @@ type CronSchedule struct {
 	TimezoneId *string `json:"timezone_id,omitempty"`
 	// Read only field that indicates whether the schedule is paused or not.
 	PauseStatus CronSchedulePauseStatus `json:"pause_status,omitempty"`
-}
-
-func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CronSchedule{
-		QuartzCronExpression: v.QuartzCronExpression,
-		TimezoneId:           v.TimezoneId,
-		PauseStatus:          v.PauseStatus,
-	}, nil
-}
-
-func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CronSchedule{
-		QuartzCronExpression: w.QuartzCronExpression,
-		TimezoneId:           w.TimezoneId,
-		PauseStatus:          w.PauseStatus,
-	}, nil
 }
 
 // Data Profiling Configurations..
@@ -299,158 +182,6 @@ type DataProfilingConfig struct {
 	EffectiveWarehouseId *string `json:"effective_warehouse_id,omitempty"`
 }
 
-func DataProfilingConfigFromSDK(v *sdk.DataProfilingConfig) (*DataProfilingConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customMetricsWireValue, err := convertSlice(v.CustomMetrics, DataProfilingCustomMetricFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.CustomMetrics", err)
-	}
-	scheduleWireValue, err := CronScheduleFromSDK(v.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.Schedule", err)
-	}
-	notificationSettingsWireValue, err := NotificationSettingsFromSDK(v.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.NotificationSettings", err)
-	}
-	monitorVersionWireValue, err := int64ToWire(v.MonitorVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.MonitorVersion", err)
-	}
-	var analysisConfigInferenceLogWire *InferenceLogConfig
-	var analysisConfigTimeSeriesWire *TimeSeriesConfig
-	var analysisConfigSnapshotWire *SnapshotConfig
-	switch value := v.AnalysisConfig.(type) {
-	case nil:
-	case *sdk.DataProfilingConfig_AnalysisConfig_InferenceLog:
-		if value != nil {
-			analysisConfigInferenceLogConverted, err := InferenceLogConfigFromSDK(&value.InferenceLog)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.InferenceLog", err)
-			}
-			analysisConfigInferenceLogWire = analysisConfigInferenceLogConverted
-		}
-	case *sdk.DataProfilingConfig_AnalysisConfig_TimeSeries:
-		if value != nil {
-			analysisConfigTimeSeriesConverted, err := TimeSeriesConfigFromSDK(&value.TimeSeries)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.TimeSeries", err)
-			}
-			analysisConfigTimeSeriesWire = analysisConfigTimeSeriesConverted
-		}
-	case *sdk.DataProfilingConfig_AnalysisConfig_Snapshot:
-		if value != nil {
-			analysisConfigSnapshotConverted, err := SnapshotConfigFromSDK(&value.Snapshot)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.Snapshot", err)
-			}
-			analysisConfigSnapshotWire = analysisConfigSnapshotConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "DataProfilingConfig.AnalysisConfig", value)
-	}
-	return &DataProfilingConfig{
-		OutputSchemaId:              v.OutputSchemaId,
-		AssetsDir:                   v.AssetsDir,
-		InferenceLog:                analysisConfigInferenceLogWire,
-		TimeSeries:                  analysisConfigTimeSeriesWire,
-		Snapshot:                    analysisConfigSnapshotWire,
-		SlicingExprs:                v.SlicingExprs,
-		CustomMetrics:               customMetricsWireValue,
-		BaselineTableName:           v.BaselineTableName,
-		Schedule:                    scheduleWireValue,
-		NotificationSettings:        notificationSettingsWireValue,
-		SkipBuiltinDashboard:        v.SkipBuiltinDashboard,
-		WarehouseId:                 v.WarehouseId,
-		MonitoredTableName:          v.MonitoredTableName,
-		Status:                      v.Status,
-		LatestMonitorFailureMessage: v.LatestMonitorFailureMessage,
-		ProfileMetricsTableName:     v.ProfileMetricsTableName,
-		DriftMetricsTableName:       v.DriftMetricsTableName,
-		DashboardId:                 v.DashboardId,
-		MonitorVersion:              monitorVersionWireValue,
-		EffectiveWarehouseId:        v.EffectiveWarehouseId,
-	}, nil
-}
-
-func DataProfilingConfigToSDK(w *DataProfilingConfig) (*sdk.DataProfilingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	analysisConfigMembers := 0
-	if w.InferenceLog != nil {
-		analysisConfigMembers++
-	}
-	if w.TimeSeries != nil {
-		analysisConfigMembers++
-	}
-	if w.Snapshot != nil {
-		analysisConfigMembers++
-	}
-	if analysisConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "DataProfilingConfig.AnalysisConfig")
-	}
-	customMetricsPublicValue, err := convertSlice(w.CustomMetrics, DataProfilingCustomMetricToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.CustomMetrics", err)
-	}
-	schedulePublicValue, err := CronScheduleToSDK(w.Schedule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.Schedule", err)
-	}
-	notificationSettingsPublicValue, err := NotificationSettingsToSDK(w.NotificationSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.NotificationSettings", err)
-	}
-	monitorVersionPublicValue, err := int64FromWire(w.MonitorVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.MonitorVersion", err)
-	}
-	analysisConfigSelection := (&sdk.DataProfilingConfig{}).AnalysisConfig
-	switch {
-	case w.InferenceLog != nil:
-		analysisConfigInferenceLogConverted, err := InferenceLogConfigToSDK(w.InferenceLog)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.InferenceLog", err)
-		}
-		analysisConfigSelection = &sdk.DataProfilingConfig_AnalysisConfig_InferenceLog{InferenceLog: *analysisConfigInferenceLogConverted}
-	case w.TimeSeries != nil:
-		analysisConfigTimeSeriesConverted, err := TimeSeriesConfigToSDK(w.TimeSeries)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.TimeSeries", err)
-		}
-		analysisConfigSelection = &sdk.DataProfilingConfig_AnalysisConfig_TimeSeries{TimeSeries: *analysisConfigTimeSeriesConverted}
-	case w.Snapshot != nil:
-		analysisConfigSnapshotConverted, err := SnapshotConfigToSDK(w.Snapshot)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig.Snapshot", err)
-		}
-		analysisConfigSelection = &sdk.DataProfilingConfig_AnalysisConfig_Snapshot{Snapshot: *analysisConfigSnapshotConverted}
-	}
-	return &sdk.DataProfilingConfig{
-		OutputSchemaId:              w.OutputSchemaId,
-		AssetsDir:                   w.AssetsDir,
-		SlicingExprs:                w.SlicingExprs,
-		CustomMetrics:               customMetricsPublicValue,
-		BaselineTableName:           w.BaselineTableName,
-		Schedule:                    schedulePublicValue,
-		NotificationSettings:        notificationSettingsPublicValue,
-		SkipBuiltinDashboard:        w.SkipBuiltinDashboard,
-		WarehouseId:                 w.WarehouseId,
-		MonitoredTableName:          w.MonitoredTableName,
-		Status:                      w.Status,
-		LatestMonitorFailureMessage: w.LatestMonitorFailureMessage,
-		ProfileMetricsTableName:     w.ProfileMetricsTableName,
-		DriftMetricsTableName:       w.DriftMetricsTableName,
-		DashboardId:                 w.DashboardId,
-		MonitorVersion:              monitorVersionPublicValue,
-		EffectiveWarehouseId:        w.EffectiveWarehouseId,
-		AnalysisConfig:              analysisConfigSelection,
-	}, nil
-}
-
 // Custom metric definition..
 type DataProfilingCustomMetric struct {
 	// Name of the metric in the output tables.
@@ -470,32 +201,6 @@ type DataProfilingCustomMetric struct {
 	Type DataProfilingCustomMetricType `json:"type,omitempty"`
 }
 
-func DataProfilingCustomMetricFromSDK(v *sdk.DataProfilingCustomMetric) (*DataProfilingCustomMetric, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DataProfilingCustomMetric{
-		Name:           v.Name,
-		Definition:     v.Definition,
-		InputColumns:   v.InputColumns,
-		OutputDataType: v.OutputDataType,
-		Type:           v.Type,
-	}, nil
-}
-
-func DataProfilingCustomMetricToSDK(w *DataProfilingCustomMetric) (*sdk.DataProfilingCustomMetric, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DataProfilingCustomMetric{
-		Name:           w.Name,
-		Definition:     w.Definition,
-		InputColumns:   w.InputColumns,
-		OutputDataType: w.OutputDataType,
-		Type:           w.Type,
-	}, nil
-}
-
 // Inference log configuration..
 type InferenceLogConfig struct {
 	// Problem type the model aims to solve.
@@ -513,68 +218,16 @@ type InferenceLogConfig struct {
 	ModelIdColumn *string `json:"model_id_column,omitempty"`
 }
 
-func InferenceLogConfigFromSDK(v *sdk.InferenceLogConfig) (*InferenceLogConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &InferenceLogConfig{
-		ProblemType:      v.ProblemType,
-		TimestampColumn:  v.TimestampColumn,
-		Granularities:    v.Granularities,
-		PredictionColumn: v.PredictionColumn,
-		LabelColumn:      v.LabelColumn,
-		ModelIdColumn:    v.ModelIdColumn,
-	}, nil
-}
-
-func InferenceLogConfigToSDK(w *InferenceLogConfig) (*sdk.InferenceLogConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.InferenceLogConfig{
-		ProblemType:      w.ProblemType,
-		TimestampColumn:  w.TimestampColumn,
-		Granularities:    w.Granularities,
-		PredictionColumn: w.PredictionColumn,
-		LabelColumn:      w.LabelColumn,
-		ModelIdColumn:    w.ModelIdColumn,
-	}, nil
-}
-
 // Request to list Monitors..
 type ListMonitorRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListMonitorRequestFromSDK(v *sdk.ListMonitorRequest) (*ListMonitorRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListMonitorRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 // Response for listing Monitors..
 type ListMonitorResponse struct {
 	Monitors      []Monitor `json:"monitors,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-func ListMonitorResponseToSDK(w *ListMonitorResponse) (*sdk.ListMonitorResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	monitorsPublicValue, err := convertSlice(w.Monitors, MonitorToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListMonitorResponse.Monitors", err)
-	}
-	return &sdk.ListMonitorResponse{
-		Monitors:      monitorsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Request to list refreshes..
@@ -601,36 +254,10 @@ type ListRefreshRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListRefreshRequestFromSDK(v *sdk.ListRefreshRequest) (*ListRefreshRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListRefreshRequest{
-		ObjectType: v.ObjectType,
-		ObjectId:   v.ObjectId,
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-	}, nil
-}
-
 // Response for listing refreshes..
 type ListRefreshResponse struct {
 	Refreshes     []Refresh `json:"refreshes,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-func ListRefreshResponseToSDK(w *ListRefreshResponse) (*sdk.ListRefreshResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	refreshesPublicValue, err := convertSlice(w.Refreshes, RefreshToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRefreshResponse.Refreshes", err)
-	}
-	return &sdk.ListRefreshResponse{
-		Refreshes:     refreshesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Monitor for the data quality of unity catalog entities such as schema or
@@ -661,46 +288,6 @@ type Monitor struct {
 	DataProfilingConfig *DataProfilingConfig `json:"data_profiling_config,omitempty"`
 }
 
-func MonitorFromSDK(v *sdk.Monitor) (*Monitor, error) {
-	if v == nil {
-		return nil, nil
-	}
-	anomalyDetectionConfigWireValue, err := AnomalyDetectionConfigFromSDK(v.AnomalyDetectionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Monitor.AnomalyDetectionConfig", err)
-	}
-	dataProfilingConfigWireValue, err := DataProfilingConfigFromSDK(v.DataProfilingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Monitor.DataProfilingConfig", err)
-	}
-	return &Monitor{
-		ObjectType:             v.ObjectType,
-		ObjectId:               v.ObjectId,
-		AnomalyDetectionConfig: anomalyDetectionConfigWireValue,
-		DataProfilingConfig:    dataProfilingConfigWireValue,
-	}, nil
-}
-
-func MonitorToSDK(w *Monitor) (*sdk.Monitor, error) {
-	if w == nil {
-		return nil, nil
-	}
-	anomalyDetectionConfigPublicValue, err := AnomalyDetectionConfigToSDK(w.AnomalyDetectionConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Monitor.AnomalyDetectionConfig", err)
-	}
-	dataProfilingConfigPublicValue, err := DataProfilingConfigToSDK(w.DataProfilingConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Monitor.DataProfilingConfig", err)
-	}
-	return &sdk.Monitor{
-		ObjectType:             w.ObjectType,
-		ObjectId:               w.ObjectId,
-		AnomalyDetectionConfig: anomalyDetectionConfigPublicValue,
-		DataProfilingConfig:    dataProfilingConfigPublicValue,
-	}, nil
-}
-
 // Destination of the data quality monitoring notification..
 type NotificationDestination struct {
 	// The list of email addresses to send the notification to. A maximum of 5 email
@@ -708,54 +295,10 @@ type NotificationDestination struct {
 	EmailAddresses []string `json:"email_addresses,omitempty"`
 }
 
-func NotificationDestinationFromSDK(v *sdk.NotificationDestination) (*NotificationDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotificationDestination{
-		EmailAddresses: v.EmailAddresses,
-	}, nil
-}
-
-func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotificationDestination{
-		EmailAddresses: w.EmailAddresses,
-	}, nil
-}
-
 // Settings for sending notifications on the data quality monitoring..
 type NotificationSettings struct {
 	// Destinations to send notifications on failure/timeout.
 	OnFailure *NotificationDestination `json:"on_failure,omitempty"`
-}
-
-func NotificationSettingsFromSDK(v *sdk.NotificationSettings) (*NotificationSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	onFailureWireValue, err := NotificationDestinationFromSDK(v.OnFailure)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NotificationSettings.OnFailure", err)
-	}
-	return &NotificationSettings{
-		OnFailure: onFailureWireValue,
-	}, nil
-}
-
-func NotificationSettingsToSDK(w *NotificationSettings) (*sdk.NotificationSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	onFailurePublicValue, err := NotificationDestinationToSDK(w.OnFailure)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NotificationSettings.OnFailure", err)
-	}
-	return &sdk.NotificationSettings{
-		OnFailure: onFailurePublicValue,
-	}, nil
 }
 
 // The Refresh object gives information on a refresh of the data quality
@@ -794,78 +337,8 @@ type Refresh struct {
 	Trigger RefreshTrigger `json:"trigger,omitempty"`
 }
 
-func RefreshFromSDK(v *sdk.Refresh) (*Refresh, error) {
-	if v == nil {
-		return nil, nil
-	}
-	refreshIdWireValue, err := int64ToWire(v.RefreshId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.RefreshId", err)
-	}
-	startTimeMsWireValue, err := int64ToWire(v.StartTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.StartTimeMs", err)
-	}
-	endTimeMsWireValue, err := int64ToWire(v.EndTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.EndTimeMs", err)
-	}
-	return &Refresh{
-		ObjectType:  v.ObjectType,
-		ObjectId:    v.ObjectId,
-		RefreshId:   refreshIdWireValue,
-		State:       v.State,
-		Message:     v.Message,
-		StartTimeMs: startTimeMsWireValue,
-		EndTimeMs:   endTimeMsWireValue,
-		Trigger:     v.Trigger,
-	}, nil
-}
-
-func RefreshToSDK(w *Refresh) (*sdk.Refresh, error) {
-	if w == nil {
-		return nil, nil
-	}
-	refreshIdPublicValue, err := int64FromWire(w.RefreshId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.RefreshId", err)
-	}
-	startTimeMsPublicValue, err := int64FromWire(w.StartTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.StartTimeMs", err)
-	}
-	endTimeMsPublicValue, err := int64FromWire(w.EndTimeMs)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Refresh.EndTimeMs", err)
-	}
-	return &sdk.Refresh{
-		ObjectType:  w.ObjectType,
-		ObjectId:    w.ObjectId,
-		RefreshId:   refreshIdPublicValue,
-		State:       w.State,
-		Message:     w.Message,
-		StartTimeMs: startTimeMsPublicValue,
-		EndTimeMs:   endTimeMsPublicValue,
-		Trigger:     w.Trigger,
-	}, nil
-}
-
 // Snapshot analysis configuration..
 type SnapshotConfig struct {
-}
-
-func SnapshotConfigFromSDK(v *sdk.SnapshotConfig) (*SnapshotConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SnapshotConfig{}, nil
-}
-
-func SnapshotConfigToSDK(w *SnapshotConfig) (*sdk.SnapshotConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SnapshotConfig{}, nil
 }
 
 // Time series analysis configuration..
@@ -875,26 +348,6 @@ type TimeSeriesConfig struct {
 	// List of granularities to use when aggregating data into time windows based on
 	// their timestamp.
 	Granularities []AggregationGranularity `json:"granularities,omitempty"`
-}
-
-func TimeSeriesConfigFromSDK(v *sdk.TimeSeriesConfig) (*TimeSeriesConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TimeSeriesConfig{
-		TimestampColumn: v.TimestampColumn,
-		Granularities:   v.Granularities,
-	}, nil
-}
-
-func TimeSeriesConfigToSDK(w *TimeSeriesConfig) (*sdk.TimeSeriesConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TimeSeriesConfig{
-		TimestampColumn: w.TimestampColumn,
-		Granularities:   w.Granularities,
-	}, nil
 }
 
 // Request to update a Monitor..
@@ -925,22 +378,6 @@ type UpdateMonitorRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateMonitorRequestFromSDK(v *sdk.UpdateMonitorRequest) (*UpdateMonitorRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	monitorWireValue, err := MonitorFromSDK(v.Monitor)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateMonitorRequest.Monitor", err)
-	}
-	return &UpdateMonitorRequest{
-		ObjectType: v.ObjectType,
-		ObjectId:   v.ObjectId,
-		Monitor:    monitorWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 // Request to update a refresh..
 type UpdateRefreshRequest struct {
 	// The type of the monitored object. Can be one of the following: `schema` or
@@ -969,25 +406,701 @@ type UpdateRefreshRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// AnomalyDetectionConfigToSDK converts the mirror to the sdk-go type.
+func AnomalyDetectionConfigToSDK(w *AnomalyDetectionConfig) (*sdk.AnomalyDetectionConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AnomalyDetectionConfig{}
+	out.ExcludedTableFullNames = w.ExcludedTableFullNames
+	return out, nil
+}
+
+// AnomalyDetectionConfigFromSDK converts the sdk-go type to the mirror.
+func AnomalyDetectionConfigFromSDK(v *sdk.AnomalyDetectionConfig) (*AnomalyDetectionConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AnomalyDetectionConfig{}
+	out.ExcludedTableFullNames = v.ExcludedTableFullNames
+	return out, nil
+}
+
+// CancelRefreshRequestToSDK converts the mirror to the sdk-go type.
+func CancelRefreshRequestToSDK(w *CancelRefreshRequest) (*sdk.CancelRefreshRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelRefreshRequest{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	out.RefreshId = w.RefreshId
+	return out, nil
+}
+
+// CancelRefreshRequestFromSDK converts the sdk-go type to the mirror.
+func CancelRefreshRequestFromSDK(v *sdk.CancelRefreshRequest) (*CancelRefreshRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelRefreshRequest{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	out.RefreshId = v.RefreshId
+	return out, nil
+}
+
+// CancelRefreshResponseToSDK converts the mirror to the sdk-go type.
+func CancelRefreshResponseToSDK(w *CancelRefreshResponse) (*sdk.CancelRefreshResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CancelRefreshResponse{}
+	conv1, err := RefreshToSDK(w.Refresh)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CancelRefreshResponse.Refresh", err)
+	}
+	out.Refresh = conv1
+	return out, nil
+}
+
+// CancelRefreshResponseFromSDK converts the sdk-go type to the mirror.
+func CancelRefreshResponseFromSDK(v *sdk.CancelRefreshResponse) (*CancelRefreshResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CancelRefreshResponse{}
+	conv2, err := RefreshFromSDK(v.Refresh)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CancelRefreshResponse.Refresh", err)
+	}
+	out.Refresh = conv2
+	return out, nil
+}
+
+// CreateMonitorRequestToSDK converts the mirror to the sdk-go type.
+func CreateMonitorRequestToSDK(w *CreateMonitorRequest) (*sdk.CreateMonitorRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateMonitorRequest{}
+	conv3, err := MonitorToSDK(w.Monitor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMonitorRequest.Monitor", err)
+	}
+	out.Monitor = conv3
+	return out, nil
+}
+
+// CreateMonitorRequestFromSDK converts the sdk-go type to the mirror.
+func CreateMonitorRequestFromSDK(v *sdk.CreateMonitorRequest) (*CreateMonitorRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateMonitorRequest{}
+	conv4, err := MonitorFromSDK(v.Monitor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateMonitorRequest.Monitor", err)
+	}
+	out.Monitor = conv4
+	return out, nil
+}
+
+// CreateRefreshRequestToSDK converts the mirror to the sdk-go type.
+func CreateRefreshRequestToSDK(w *CreateRefreshRequest) (*sdk.CreateRefreshRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRefreshRequest{}
+	conv5, err := RefreshToSDK(w.Refresh)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRefreshRequest.Refresh", err)
+	}
+	out.Refresh = conv5
+	return out, nil
+}
+
+// CreateRefreshRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRefreshRequestFromSDK(v *sdk.CreateRefreshRequest) (*CreateRefreshRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRefreshRequest{}
+	conv6, err := RefreshFromSDK(v.Refresh)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRefreshRequest.Refresh", err)
+	}
+	out.Refresh = conv6
+	return out, nil
+}
+
+// CronScheduleToSDK converts the mirror to the sdk-go type.
+func CronScheduleToSDK(w *CronSchedule) (*sdk.CronSchedule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CronSchedule{}
+	out.QuartzCronExpression = w.QuartzCronExpression
+	out.TimezoneId = w.TimezoneId
+	out.PauseStatus = w.PauseStatus
+	return out, nil
+}
+
+// CronScheduleFromSDK converts the sdk-go type to the mirror.
+func CronScheduleFromSDK(v *sdk.CronSchedule) (*CronSchedule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CronSchedule{}
+	out.QuartzCronExpression = v.QuartzCronExpression
+	out.TimezoneId = v.TimezoneId
+	out.PauseStatus = v.PauseStatus
+	return out, nil
+}
+
+// DataProfilingConfigToSDK converts the mirror to the sdk-go type.
+func DataProfilingConfigToSDK(w *DataProfilingConfig) (*sdk.DataProfilingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataProfilingConfig{}
+	out.OutputSchemaId = w.OutputSchemaId
+	out.AssetsDir = w.AssetsDir
+	{
+		members := 0
+		if w.InferenceLog != nil {
+			members++
+		}
+		if w.TimeSeries != nil {
+			members++
+		}
+		if w.Snapshot != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "DataProfilingConfig.AnalysisConfig")
+		}
+	}
+	switch {
+	case w.InferenceLog != nil:
+		conv7, err := InferenceLogConfigToSDK(w.InferenceLog)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+		}
+		out.AnalysisConfig = &sdk.DataProfilingConfig_AnalysisConfig_InferenceLog{InferenceLog: *conv7}
+	case w.TimeSeries != nil:
+		conv8, err := TimeSeriesConfigToSDK(w.TimeSeries)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+		}
+		out.AnalysisConfig = &sdk.DataProfilingConfig_AnalysisConfig_TimeSeries{TimeSeries: *conv8}
+	case w.Snapshot != nil:
+		conv9, err := SnapshotConfigToSDK(w.Snapshot)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+		}
+		out.AnalysisConfig = &sdk.DataProfilingConfig_AnalysisConfig_Snapshot{Snapshot: *conv9}
+	}
+	out.SlicingExprs = w.SlicingExprs
+	conv10, err := convertSlice(w.CustomMetrics, DataProfilingCustomMetricToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.CustomMetrics", err)
+	}
+	out.CustomMetrics = conv10
+	out.BaselineTableName = w.BaselineTableName
+	conv11, err := CronScheduleToSDK(w.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.Schedule", err)
+	}
+	out.Schedule = conv11
+	conv12, err := NotificationSettingsToSDK(w.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv12
+	out.SkipBuiltinDashboard = w.SkipBuiltinDashboard
+	out.WarehouseId = w.WarehouseId
+	out.MonitoredTableName = w.MonitoredTableName
+	out.Status = w.Status
+	out.LatestMonitorFailureMessage = w.LatestMonitorFailureMessage
+	out.ProfileMetricsTableName = w.ProfileMetricsTableName
+	out.DriftMetricsTableName = w.DriftMetricsTableName
+	out.DashboardId = w.DashboardId
+	out.MonitorVersion = w.MonitorVersion
+	out.EffectiveWarehouseId = w.EffectiveWarehouseId
+	return out, nil
+}
+
+// DataProfilingConfigFromSDK converts the sdk-go type to the mirror.
+func DataProfilingConfigFromSDK(v *sdk.DataProfilingConfig) (*DataProfilingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataProfilingConfig{}
+	out.OutputSchemaId = v.OutputSchemaId
+	out.AssetsDir = v.AssetsDir
+	switch value := v.AnalysisConfig.(type) {
+	case *sdk.DataProfilingConfig_AnalysisConfig_InferenceLog:
+		if value != nil {
+			conv13, err := InferenceLogConfigFromSDK(&value.InferenceLog)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+			}
+			out.InferenceLog = conv13
+		}
+	case *sdk.DataProfilingConfig_AnalysisConfig_TimeSeries:
+		if value != nil {
+			conv14, err := TimeSeriesConfigFromSDK(&value.TimeSeries)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+			}
+			out.TimeSeries = conv14
+		}
+	case *sdk.DataProfilingConfig_AnalysisConfig_Snapshot:
+		if value != nil {
+			conv15, err := SnapshotConfigFromSDK(&value.Snapshot)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.AnalysisConfig", err)
+			}
+			out.Snapshot = conv15
+		}
+	}
+	out.SlicingExprs = v.SlicingExprs
+	conv16, err := convertSlice(v.CustomMetrics, DataProfilingCustomMetricFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.CustomMetrics", err)
+	}
+	out.CustomMetrics = conv16
+	out.BaselineTableName = v.BaselineTableName
+	conv17, err := CronScheduleFromSDK(v.Schedule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.Schedule", err)
+	}
+	out.Schedule = conv17
+	conv18, err := NotificationSettingsFromSDK(v.NotificationSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DataProfilingConfig.NotificationSettings", err)
+	}
+	out.NotificationSettings = conv18
+	out.SkipBuiltinDashboard = v.SkipBuiltinDashboard
+	out.WarehouseId = v.WarehouseId
+	out.MonitoredTableName = v.MonitoredTableName
+	out.Status = v.Status
+	out.LatestMonitorFailureMessage = v.LatestMonitorFailureMessage
+	out.ProfileMetricsTableName = v.ProfileMetricsTableName
+	out.DriftMetricsTableName = v.DriftMetricsTableName
+	out.DashboardId = v.DashboardId
+	out.MonitorVersion = v.MonitorVersion
+	out.EffectiveWarehouseId = v.EffectiveWarehouseId
+	return out, nil
+}
+
+// DataProfilingCustomMetricToSDK converts the mirror to the sdk-go type.
+func DataProfilingCustomMetricToSDK(w *DataProfilingCustomMetric) (*sdk.DataProfilingCustomMetric, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataProfilingCustomMetric{}
+	out.Name = w.Name
+	out.Definition = w.Definition
+	out.InputColumns = w.InputColumns
+	out.OutputDataType = w.OutputDataType
+	out.Type = w.Type
+	return out, nil
+}
+
+// DataProfilingCustomMetricFromSDK converts the sdk-go type to the mirror.
+func DataProfilingCustomMetricFromSDK(v *sdk.DataProfilingCustomMetric) (*DataProfilingCustomMetric, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataProfilingCustomMetric{}
+	out.Name = v.Name
+	out.Definition = v.Definition
+	out.InputColumns = v.InputColumns
+	out.OutputDataType = v.OutputDataType
+	out.Type = v.Type
+	return out, nil
+}
+
+// InferenceLogConfigToSDK converts the mirror to the sdk-go type.
+func InferenceLogConfigToSDK(w *InferenceLogConfig) (*sdk.InferenceLogConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InferenceLogConfig{}
+	out.ProblemType = w.ProblemType
+	out.TimestampColumn = w.TimestampColumn
+	out.Granularities = w.Granularities
+	out.PredictionColumn = w.PredictionColumn
+	out.LabelColumn = w.LabelColumn
+	out.ModelIdColumn = w.ModelIdColumn
+	return out, nil
+}
+
+// InferenceLogConfigFromSDK converts the sdk-go type to the mirror.
+func InferenceLogConfigFromSDK(v *sdk.InferenceLogConfig) (*InferenceLogConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InferenceLogConfig{}
+	out.ProblemType = v.ProblemType
+	out.TimestampColumn = v.TimestampColumn
+	out.Granularities = v.Granularities
+	out.PredictionColumn = v.PredictionColumn
+	out.LabelColumn = v.LabelColumn
+	out.ModelIdColumn = v.ModelIdColumn
+	return out, nil
+}
+
+// ListMonitorRequestToSDK converts the mirror to the sdk-go type.
+func ListMonitorRequestToSDK(w *ListMonitorRequest) (*sdk.ListMonitorRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMonitorRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListMonitorRequestFromSDK converts the sdk-go type to the mirror.
+func ListMonitorRequestFromSDK(v *sdk.ListMonitorRequest) (*ListMonitorRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMonitorRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListMonitorResponseToSDK converts the mirror to the sdk-go type.
+func ListMonitorResponseToSDK(w *ListMonitorResponse) (*sdk.ListMonitorResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListMonitorResponse{}
+	conv19, err := convertSlice(w.Monitors, MonitorToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMonitorResponse.Monitors", err)
+	}
+	out.Monitors = conv19
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListMonitorResponseFromSDK converts the sdk-go type to the mirror.
+func ListMonitorResponseFromSDK(v *sdk.ListMonitorResponse) (*ListMonitorResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListMonitorResponse{}
+	conv20, err := convertSlice(v.Monitors, MonitorFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListMonitorResponse.Monitors", err)
+	}
+	out.Monitors = conv20
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListRefreshRequestToSDK converts the mirror to the sdk-go type.
+func ListRefreshRequestToSDK(w *ListRefreshRequest) (*sdk.ListRefreshRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRefreshRequest{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListRefreshRequestFromSDK converts the sdk-go type to the mirror.
+func ListRefreshRequestFromSDK(v *sdk.ListRefreshRequest) (*ListRefreshRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRefreshRequest{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListRefreshResponseToSDK converts the mirror to the sdk-go type.
+func ListRefreshResponseToSDK(w *ListRefreshResponse) (*sdk.ListRefreshResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRefreshResponse{}
+	conv21, err := convertSlice(w.Refreshes, RefreshToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRefreshResponse.Refreshes", err)
+	}
+	out.Refreshes = conv21
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRefreshResponseFromSDK converts the sdk-go type to the mirror.
+func ListRefreshResponseFromSDK(v *sdk.ListRefreshResponse) (*ListRefreshResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRefreshResponse{}
+	conv22, err := convertSlice(v.Refreshes, RefreshFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRefreshResponse.Refreshes", err)
+	}
+	out.Refreshes = conv22
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// MonitorToSDK converts the mirror to the sdk-go type.
+func MonitorToSDK(w *Monitor) (*sdk.Monitor, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Monitor{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	conv23, err := AnomalyDetectionConfigToSDK(w.AnomalyDetectionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Monitor.AnomalyDetectionConfig", err)
+	}
+	out.AnomalyDetectionConfig = conv23
+	conv24, err := DataProfilingConfigToSDK(w.DataProfilingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Monitor.DataProfilingConfig", err)
+	}
+	out.DataProfilingConfig = conv24
+	return out, nil
+}
+
+// MonitorFromSDK converts the sdk-go type to the mirror.
+func MonitorFromSDK(v *sdk.Monitor) (*Monitor, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Monitor{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	conv25, err := AnomalyDetectionConfigFromSDK(v.AnomalyDetectionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Monitor.AnomalyDetectionConfig", err)
+	}
+	out.AnomalyDetectionConfig = conv25
+	conv26, err := DataProfilingConfigFromSDK(v.DataProfilingConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Monitor.DataProfilingConfig", err)
+	}
+	out.DataProfilingConfig = conv26
+	return out, nil
+}
+
+// NotificationDestinationToSDK converts the mirror to the sdk-go type.
+func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotificationDestination{}
+	out.EmailAddresses = w.EmailAddresses
+	return out, nil
+}
+
+// NotificationDestinationFromSDK converts the sdk-go type to the mirror.
+func NotificationDestinationFromSDK(v *sdk.NotificationDestination) (*NotificationDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotificationDestination{}
+	out.EmailAddresses = v.EmailAddresses
+	return out, nil
+}
+
+// NotificationSettingsToSDK converts the mirror to the sdk-go type.
+func NotificationSettingsToSDK(w *NotificationSettings) (*sdk.NotificationSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotificationSettings{}
+	conv27, err := NotificationDestinationToSDK(w.OnFailure)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotificationSettings.OnFailure", err)
+	}
+	out.OnFailure = conv27
+	return out, nil
+}
+
+// NotificationSettingsFromSDK converts the sdk-go type to the mirror.
+func NotificationSettingsFromSDK(v *sdk.NotificationSettings) (*NotificationSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotificationSettings{}
+	conv28, err := NotificationDestinationFromSDK(v.OnFailure)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotificationSettings.OnFailure", err)
+	}
+	out.OnFailure = conv28
+	return out, nil
+}
+
+// RefreshToSDK converts the mirror to the sdk-go type.
+func RefreshToSDK(w *Refresh) (*sdk.Refresh, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Refresh{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	out.RefreshId = w.RefreshId
+	out.State = w.State
+	out.Message = w.Message
+	out.StartTimeMs = w.StartTimeMs
+	out.EndTimeMs = w.EndTimeMs
+	out.Trigger = w.Trigger
+	return out, nil
+}
+
+// RefreshFromSDK converts the sdk-go type to the mirror.
+func RefreshFromSDK(v *sdk.Refresh) (*Refresh, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Refresh{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	out.RefreshId = v.RefreshId
+	out.State = v.State
+	out.Message = v.Message
+	out.StartTimeMs = v.StartTimeMs
+	out.EndTimeMs = v.EndTimeMs
+	out.Trigger = v.Trigger
+	return out, nil
+}
+
+// SnapshotConfigToSDK converts the mirror to the sdk-go type.
+func SnapshotConfigToSDK(w *SnapshotConfig) (*sdk.SnapshotConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SnapshotConfig{}
+	return out, nil
+}
+
+// SnapshotConfigFromSDK converts the sdk-go type to the mirror.
+func SnapshotConfigFromSDK(v *sdk.SnapshotConfig) (*SnapshotConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SnapshotConfig{}
+	return out, nil
+}
+
+// TimeSeriesConfigToSDK converts the mirror to the sdk-go type.
+func TimeSeriesConfigToSDK(w *TimeSeriesConfig) (*sdk.TimeSeriesConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TimeSeriesConfig{}
+	out.TimestampColumn = w.TimestampColumn
+	out.Granularities = w.Granularities
+	return out, nil
+}
+
+// TimeSeriesConfigFromSDK converts the sdk-go type to the mirror.
+func TimeSeriesConfigFromSDK(v *sdk.TimeSeriesConfig) (*TimeSeriesConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TimeSeriesConfig{}
+	out.TimestampColumn = v.TimestampColumn
+	out.Granularities = v.Granularities
+	return out, nil
+}
+
+// UpdateMonitorRequestToSDK converts the mirror to the sdk-go type.
+func UpdateMonitorRequestToSDK(w *UpdateMonitorRequest) (*sdk.UpdateMonitorRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateMonitorRequest{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	conv29, err := MonitorToSDK(w.Monitor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMonitorRequest.Monitor", err)
+	}
+	out.Monitor = conv29
+	mask30, err := fieldMaskFromString[sdk.Monitor](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMonitorRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask30
+	return out, nil
+}
+
+// UpdateMonitorRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateMonitorRequestFromSDK(v *sdk.UpdateMonitorRequest) (*UpdateMonitorRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateMonitorRequest{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	conv31, err := MonitorFromSDK(v.Monitor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateMonitorRequest.Monitor", err)
+	}
+	out.Monitor = conv31
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateRefreshRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRefreshRequestToSDK(w *UpdateRefreshRequest) (*sdk.UpdateRefreshRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRefreshRequest{}
+	out.ObjectType = w.ObjectType
+	out.ObjectId = w.ObjectId
+	out.RefreshId = w.RefreshId
+	conv32, err := RefreshToSDK(w.Refresh)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRefreshRequest.Refresh", err)
+	}
+	out.Refresh = conv32
+	mask33, err := fieldMaskFromString[sdk.Refresh](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRefreshRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask33
+	return out, nil
+}
+
+// UpdateRefreshRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateRefreshRequestFromSDK(v *sdk.UpdateRefreshRequest) (*UpdateRefreshRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	refreshIdWireValue, err := int64ToWire(v.RefreshId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRefreshRequest.RefreshId", err)
-	}
-	refreshWireValue, err := RefreshFromSDK(v.Refresh)
+	out := &UpdateRefreshRequest{}
+	out.ObjectType = v.ObjectType
+	out.ObjectId = v.ObjectId
+	out.RefreshId = v.RefreshId
+	conv34, err := RefreshFromSDK(v.Refresh)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRefreshRequest.Refresh", err)
 	}
-	return &UpdateRefreshRequest{
-		ObjectType: v.ObjectType,
-		ObjectId:   v.ObjectId,
-		RefreshId:  refreshIdWireValue,
-		Refresh:    refreshWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Refresh = conv34
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -1003,4 +1116,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

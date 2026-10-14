@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/workspaces/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -42,30 +43,6 @@ const (
 	WorkspaceStatus_Cancelling                  = sdk.WorkspaceStatus_Cancelling
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type AzureWorkspaceInfo struct {
 	// Azure Resource Group name
 	ResourceGroup *string `json:"resource_group,omitempty"`
@@ -73,76 +50,8 @@ type AzureWorkspaceInfo struct {
 	SubscriptionId *string `json:"subscription_id,omitempty"`
 }
 
-func AzureWorkspaceInfoFromSDK(v *sdk.AzureWorkspaceInfo) (*AzureWorkspaceInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureWorkspaceInfo{
-		ResourceGroup:  v.ResourceGroup,
-		SubscriptionId: v.SubscriptionId,
-	}, nil
-}
-
-func AzureWorkspaceInfoToSDK(w *AzureWorkspaceInfo) (*sdk.AzureWorkspaceInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureWorkspaceInfo{
-		ResourceGroup:  w.ResourceGroup,
-		SubscriptionId: w.SubscriptionId,
-	}, nil
-}
-
 type CloudResourceContainer struct {
 	Gcp *GcpCloudResourceContainer `json:"gcp,omitempty"`
-}
-
-func CloudResourceContainerFromSDK(v *sdk.CloudResourceContainer) (*CloudResourceContainer, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var cloudResourceContainerGcpWire *GcpCloudResourceContainer
-	switch value := v.CloudResourceContainer.(type) {
-	case nil:
-	case *sdk.CloudResourceContainer_CloudResourceContainer_Gcp:
-		if value != nil {
-			cloudResourceContainerGcpConverted, err := GcpCloudResourceContainerFromSDK(&value.Gcp)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CloudResourceContainer.CloudResourceContainer.Gcp", err)
-			}
-			cloudResourceContainerGcpWire = cloudResourceContainerGcpConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CloudResourceContainer.CloudResourceContainer", value)
-	}
-	return &CloudResourceContainer{
-		Gcp: cloudResourceContainerGcpWire,
-	}, nil
-}
-
-func CloudResourceContainerToSDK(w *CloudResourceContainer) (*sdk.CloudResourceContainer, error) {
-	if w == nil {
-		return nil, nil
-	}
-	cloudResourceContainerMembers := 0
-	if w.Gcp != nil {
-		cloudResourceContainerMembers++
-	}
-	if cloudResourceContainerMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CloudResourceContainer.CloudResourceContainer")
-	}
-	cloudResourceContainerSelection := (&sdk.CloudResourceContainer{}).CloudResourceContainer
-	switch {
-	case w.Gcp != nil:
-		cloudResourceContainerGcpConverted, err := GcpCloudResourceContainerToSDK(w.Gcp)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CloudResourceContainer.CloudResourceContainer.Gcp", err)
-		}
-		cloudResourceContainerSelection = &sdk.CloudResourceContainer_CloudResourceContainer_Gcp{Gcp: *cloudResourceContainerGcpConverted}
-	}
-	return &sdk.CloudResourceContainer{
-		CloudResourceContainer: cloudResourceContainerSelection,
-	}, nil
 }
 
 type CreateWorkspaceRequest struct {
@@ -225,65 +134,8 @@ type CreateWorkspaceRequest struct {
 	NetworkConnectivityConfigId *string `json:"network_connectivity_config_id,omitempty"`
 }
 
-func CreateWorkspaceRequestFromSDK(v *sdk.CreateWorkspaceRequest) (*CreateWorkspaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	cloudResourceContainerWireValue, err := CloudResourceContainerFromSDK(v.CloudResourceContainer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.CloudResourceContainer", err)
-	}
-	gcpManagedNetworkConfigWireValue, err := GcpManagedNetworkConfigFromSDK(v.GcpManagedNetworkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GcpManagedNetworkConfig", err)
-	}
-	gkeConfigWireValue, err := GkeConfigFromSDK(v.GkeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GkeConfig", err)
-	}
-	return &CreateWorkspaceRequest{
-		AccountId:                           v.AccountId,
-		WorkspaceName:                       v.WorkspaceName,
-		DeploymentName:                      v.DeploymentName,
-		AwsRegion:                           v.AwsRegion,
-		Location:                            v.Location,
-		Cloud:                               v.Cloud,
-		PricingTier:                         v.PricingTier,
-		CloudResourceContainer:              cloudResourceContainerWireValue,
-		CredentialsId:                       v.CredentialsId,
-		StorageConfigurationId:              v.StorageConfigurationId,
-		NetworkId:                           v.NetworkId,
-		GcpManagedNetworkConfig:             gcpManagedNetworkConfigWireValue,
-		GkeConfig:                           gkeConfigWireValue,
-		PrivateAccessSettingsId:             v.PrivateAccessSettingsId,
-		ManagedServicesCustomerManagedKeyId: v.ManagedServicesCustomerManagedKeyId,
-		StorageCustomerManagedKeyId:         v.StorageCustomerManagedKeyId,
-		CustomTags:                          v.CustomTags,
-		ComputeMode:                         v.ComputeMode,
-		NetworkConnectivityConfigId:         v.NetworkConnectivityConfigId,
-	}, nil
-}
-
 type GcpCloudResourceContainer struct {
 	ProjectId *string `json:"project_id,omitempty"`
-}
-
-func GcpCloudResourceContainerFromSDK(v *sdk.GcpCloudResourceContainer) (*GcpCloudResourceContainer, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpCloudResourceContainer{
-		ProjectId: v.ProjectId,
-	}, nil
-}
-
-func GcpCloudResourceContainerToSDK(w *GcpCloudResourceContainer) (*sdk.GcpCloudResourceContainer, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpCloudResourceContainer{
-		ProjectId: w.ProjectId,
-	}, nil
 }
 
 // The shared network config for GCP workspace. This object has common network
@@ -297,26 +149,6 @@ type GcpCommonNetworkConfig struct {
 	GkeClusterMasterIpRange *string `json:"gke_cluster_master_ip_range,omitempty"`
 }
 
-func GcpCommonNetworkConfigFromSDK(v *sdk.GcpCommonNetworkConfig) (*GcpCommonNetworkConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpCommonNetworkConfig{
-		GkeConnectivityType:     v.GkeConnectivityType,
-		GkeClusterMasterIpRange: v.GkeClusterMasterIpRange,
-	}, nil
-}
-
-func GcpCommonNetworkConfigToSDK(w *GcpCommonNetworkConfig) (*sdk.GcpCommonNetworkConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpCommonNetworkConfig{
-		GkeConnectivityType:     w.GkeConnectivityType,
-		GkeClusterMasterIpRange: w.GkeClusterMasterIpRange,
-	}, nil
-}
-
 // The network configuration for the workspace..
 type GcpManagedNetworkConfig struct {
 	// The IP range which will be used to allocate GKE cluster nodes from. Note:
@@ -328,28 +160,6 @@ type GcpManagedNetworkConfig struct {
 	GkeClusterServiceIpRange *string `json:"gke_cluster_service_ip_range,omitempty"`
 }
 
-func GcpManagedNetworkConfigFromSDK(v *sdk.GcpManagedNetworkConfig) (*GcpManagedNetworkConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpManagedNetworkConfig{
-		SubnetCidr:               v.SubnetCidr,
-		GkeClusterPodIpRange:     v.GkeClusterPodIpRange,
-		GkeClusterServiceIpRange: v.GkeClusterServiceIpRange,
-	}, nil
-}
-
-func GcpManagedNetworkConfigToSDK(w *GcpManagedNetworkConfig) (*sdk.GcpManagedNetworkConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpManagedNetworkConfig{
-		SubnetCidr:               w.SubnetCidr,
-		GkeClusterPodIpRange:     w.GkeClusterPodIpRange,
-		GkeClusterServiceIpRange: w.GkeClusterServiceIpRange,
-	}, nil
-}
-
 // The configurations of the GKE cluster used by the GCP workspace..
 type GkeConfig struct {
 	// The type of network connectivity of the GKE cluster.
@@ -359,43 +169,9 @@ type GkeConfig struct {
 	MasterIpRange *string `json:"master_ip_range,omitempty"`
 }
 
-func GkeConfigFromSDK(v *sdk.GkeConfig) (*GkeConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GkeConfig{
-		ConnectivityType: v.ConnectivityType,
-		MasterIpRange:    v.MasterIpRange,
-	}, nil
-}
-
-func GkeConfigToSDK(w *GkeConfig) (*sdk.GkeConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GkeConfig{
-		ConnectivityType: w.ConnectivityType,
-		MasterIpRange:    w.MasterIpRange,
-	}, nil
-}
-
 type UpdateWorkspaceRequest struct {
 	CustomerFacingWorkspace *Workspace `json:"customer_facing_workspace,omitempty"`
 	UpdateMask              *string    `json:"update_mask,omitempty"`
-}
-
-func UpdateWorkspaceRequestFromSDK(v *sdk.UpdateWorkspaceRequest) (*UpdateWorkspaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customerFacingWorkspaceWireValue, err := WorkspaceFromSDK(v.CustomerFacingWorkspace)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceRequest.CustomerFacingWorkspace", err)
-	}
-	return &UpdateWorkspaceRequest{
-		CustomerFacingWorkspace: customerFacingWorkspaceWireValue,
-		UpdateMask:              fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type Workspace struct {
@@ -463,163 +239,6 @@ type Workspace struct {
 	ExpectedWorkspaceStatus WorkspaceStatus `json:"expected_workspace_status,omitempty"`
 }
 
-func WorkspaceFromSDK(v *sdk.Workspace) (*Workspace, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.WorkspaceId", err)
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.CreationTime", err)
-	}
-	networkWireValue, err := WorkspaceNetworkFromSDK(v.Network)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.Network", err)
-	}
-	azureWorkspaceInfoWireValue, err := AzureWorkspaceInfoFromSDK(v.AzureWorkspaceInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.AzureWorkspaceInfo", err)
-	}
-	gkeConfigWireValue, err := GkeConfigFromSDK(v.GkeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.GkeConfig", err)
-	}
-	cloudResourceContainerWireValue, err := CloudResourceContainerFromSDK(v.CloudResourceContainer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.CloudResourceContainer", err)
-	}
-	var networkConfigNetworkIdWire *string
-	var networkConfigGcpManagedNetworkConfigWire *GcpManagedNetworkConfig
-	switch value := v.NetworkConfig.(type) {
-	case nil:
-	case *sdk.Workspace_NetworkConfig_NetworkId:
-		if value != nil {
-			networkConfigNetworkIdWire = new(value.NetworkId)
-		}
-	case *sdk.Workspace_NetworkConfig_GcpManagedNetworkConfig:
-		if value != nil {
-			networkConfigGcpManagedNetworkConfigConverted, err := GcpManagedNetworkConfigFromSDK(&value.GcpManagedNetworkConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Workspace.NetworkConfig.GcpManagedNetworkConfig", err)
-			}
-			networkConfigGcpManagedNetworkConfigWire = networkConfigGcpManagedNetworkConfigConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Workspace.NetworkConfig", value)
-	}
-	return &Workspace{
-		WorkspaceId:                         workspaceIdWireValue,
-		WorkspaceName:                       v.WorkspaceName,
-		AwsRegion:                           v.AwsRegion,
-		CreationTime:                        creationTimeWireValue,
-		DeploymentName:                      v.DeploymentName,
-		WorkspaceStatus:                     v.WorkspaceStatus,
-		AccountId:                           v.AccountId,
-		CredentialsId:                       v.CredentialsId,
-		StorageConfigurationId:              v.StorageConfigurationId,
-		WorkspaceStatusMessage:              v.WorkspaceStatusMessage,
-		NetworkId:                           networkConfigNetworkIdWire,
-		GcpManagedNetworkConfig:             networkConfigGcpManagedNetworkConfigWire,
-		PricingTier:                         v.PricingTier,
-		PrivateAccessSettingsId:             v.PrivateAccessSettingsId,
-		ManagedServicesCustomerManagedKeyId: v.ManagedServicesCustomerManagedKeyId,
-		StorageCustomerManagedKeyId:         v.StorageCustomerManagedKeyId,
-		Location:                            v.Location,
-		Cloud:                               v.Cloud,
-		Network:                             networkWireValue,
-		AzureWorkspaceInfo:                  azureWorkspaceInfoWireValue,
-		GkeConfig:                           gkeConfigWireValue,
-		CloudResourceContainer:              cloudResourceContainerWireValue,
-		CustomTags:                          v.CustomTags,
-		NetworkConnectivityConfigId:         v.NetworkConnectivityConfigId,
-		StorageMode:                         v.StorageMode,
-		ComputeMode:                         v.ComputeMode,
-		ExpectedWorkspaceStatus:             v.ExpectedWorkspaceStatus,
-	}, nil
-}
-
-func WorkspaceToSDK(w *Workspace) (*sdk.Workspace, error) {
-	if w == nil {
-		return nil, nil
-	}
-	networkConfigMembers := 0
-	if w.NetworkId != nil {
-		networkConfigMembers++
-	}
-	if w.GcpManagedNetworkConfig != nil {
-		networkConfigMembers++
-	}
-	if networkConfigMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Workspace.NetworkConfig")
-	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.WorkspaceId", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.CreationTime", err)
-	}
-	networkPublicValue, err := WorkspaceNetworkToSDK(w.Network)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.Network", err)
-	}
-	azureWorkspaceInfoPublicValue, err := AzureWorkspaceInfoToSDK(w.AzureWorkspaceInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.AzureWorkspaceInfo", err)
-	}
-	gkeConfigPublicValue, err := GkeConfigToSDK(w.GkeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.GkeConfig", err)
-	}
-	cloudResourceContainerPublicValue, err := CloudResourceContainerToSDK(w.CloudResourceContainer)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Workspace.CloudResourceContainer", err)
-	}
-	networkConfigSelection := (&sdk.Workspace{}).NetworkConfig
-	switch {
-	case w.NetworkId != nil:
-		networkConfigSelection = &sdk.Workspace_NetworkConfig_NetworkId{NetworkId: *w.NetworkId}
-	case w.GcpManagedNetworkConfig != nil:
-		networkConfigGcpManagedNetworkConfigConverted, err := GcpManagedNetworkConfigToSDK(w.GcpManagedNetworkConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Workspace.NetworkConfig.GcpManagedNetworkConfig", err)
-		}
-		networkConfigSelection = &sdk.Workspace_NetworkConfig_GcpManagedNetworkConfig{GcpManagedNetworkConfig: *networkConfigGcpManagedNetworkConfigConverted}
-	}
-	return &sdk.Workspace{
-		WorkspaceId:                         workspaceIdPublicValue,
-		WorkspaceName:                       w.WorkspaceName,
-		AwsRegion:                           w.AwsRegion,
-		CreationTime:                        creationTimePublicValue,
-		DeploymentName:                      w.DeploymentName,
-		WorkspaceStatus:                     w.WorkspaceStatus,
-		AccountId:                           w.AccountId,
-		CredentialsId:                       w.CredentialsId,
-		StorageConfigurationId:              w.StorageConfigurationId,
-		WorkspaceStatusMessage:              w.WorkspaceStatusMessage,
-		PricingTier:                         w.PricingTier,
-		PrivateAccessSettingsId:             w.PrivateAccessSettingsId,
-		ManagedServicesCustomerManagedKeyId: w.ManagedServicesCustomerManagedKeyId,
-		StorageCustomerManagedKeyId:         w.StorageCustomerManagedKeyId,
-		Location:                            w.Location,
-		Cloud:                               w.Cloud,
-		Network:                             networkPublicValue,
-		AzureWorkspaceInfo:                  azureWorkspaceInfoPublicValue,
-		GkeConfig:                           gkeConfigPublicValue,
-		CloudResourceContainer:              cloudResourceContainerPublicValue,
-		CustomTags:                          w.CustomTags,
-		NetworkConnectivityConfigId:         w.NetworkConnectivityConfigId,
-		StorageMode:                         w.StorageMode,
-		ComputeMode:                         w.ComputeMode,
-		ExpectedWorkspaceStatus:             w.ExpectedWorkspaceStatus,
-		NetworkConfig:                       networkConfigSelection,
-	}, nil
-}
-
 // The network configuration for workspaces..
 type WorkspaceNetwork struct {
 	GcpManagedNetworkConfig *GcpManagedNetworkConfig `json:"gcp_managed_network_config,omitempty"`
@@ -630,86 +249,490 @@ type WorkspaceNetwork struct {
 	GcpCommonNetworkConfig *GcpCommonNetworkConfig `json:"gcp_common_network_config,omitempty"`
 }
 
-func WorkspaceNetworkFromSDK(v *sdk.WorkspaceNetwork) (*WorkspaceNetwork, error) {
+// AzureWorkspaceInfoToSDK converts the mirror to the sdk-go type.
+func AzureWorkspaceInfoToSDK(w *AzureWorkspaceInfo) (*sdk.AzureWorkspaceInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureWorkspaceInfo{}
+	out.ResourceGroup = w.ResourceGroup
+	out.SubscriptionId = w.SubscriptionId
+	return out, nil
+}
+
+// AzureWorkspaceInfoFromSDK converts the sdk-go type to the mirror.
+func AzureWorkspaceInfoFromSDK(v *sdk.AzureWorkspaceInfo) (*AzureWorkspaceInfo, error) {
 	if v == nil {
 		return nil, nil
 	}
-	gcpCommonNetworkConfigWireValue, err := GcpCommonNetworkConfigFromSDK(v.GcpCommonNetworkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.GcpCommonNetworkConfig", err)
-	}
-	var networkGcpManagedNetworkConfigWire *GcpManagedNetworkConfig
-	var networkNetworkIdWire *string
-	switch value := v.Network.(type) {
-	case nil:
-	case *sdk.WorkspaceNetwork_Network_GcpManagedNetworkConfig:
-		if value != nil {
-			networkGcpManagedNetworkConfigConverted, err := GcpManagedNetworkConfigFromSDK(&value.GcpManagedNetworkConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.Network.GcpManagedNetworkConfig", err)
-			}
-			networkGcpManagedNetworkConfigWire = networkGcpManagedNetworkConfigConverted
-		}
-	case *sdk.WorkspaceNetwork_Network_NetworkId:
-		if value != nil {
-			networkNetworkIdWire = new(value.NetworkId)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "WorkspaceNetwork.Network", value)
-	}
-	return &WorkspaceNetwork{
-		GcpManagedNetworkConfig: networkGcpManagedNetworkConfigWire,
-		NetworkId:               networkNetworkIdWire,
-		GcpCommonNetworkConfig:  gcpCommonNetworkConfigWireValue,
-	}, nil
+	out := &AzureWorkspaceInfo{}
+	out.ResourceGroup = v.ResourceGroup
+	out.SubscriptionId = v.SubscriptionId
+	return out, nil
 }
 
+// CloudResourceContainerToSDK converts the mirror to the sdk-go type.
+func CloudResourceContainerToSDK(w *CloudResourceContainer) (*sdk.CloudResourceContainer, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CloudResourceContainer{}
+	{
+		members := 0
+		if w.Gcp != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CloudResourceContainer.CloudResourceContainer")
+		}
+	}
+	switch {
+	case w.Gcp != nil:
+		conv1, err := GcpCloudResourceContainerToSDK(w.Gcp)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CloudResourceContainer.CloudResourceContainer", err)
+		}
+		out.CloudResourceContainer = &sdk.CloudResourceContainer_CloudResourceContainer_Gcp{Gcp: *conv1}
+	}
+	return out, nil
+}
+
+// CloudResourceContainerFromSDK converts the sdk-go type to the mirror.
+func CloudResourceContainerFromSDK(v *sdk.CloudResourceContainer) (*CloudResourceContainer, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CloudResourceContainer{}
+	switch value := v.CloudResourceContainer.(type) {
+	case *sdk.CloudResourceContainer_CloudResourceContainer_Gcp:
+		if value != nil {
+			conv2, err := GcpCloudResourceContainerFromSDK(&value.Gcp)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CloudResourceContainer.CloudResourceContainer", err)
+			}
+			out.Gcp = conv2
+		}
+	}
+	return out, nil
+}
+
+// CreateWorkspaceRequestToSDK converts the mirror to the sdk-go type.
+func CreateWorkspaceRequestToSDK(w *CreateWorkspaceRequest) (*sdk.CreateWorkspaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateWorkspaceRequest{}
+	out.AccountId = w.AccountId
+	out.WorkspaceName = w.WorkspaceName
+	out.DeploymentName = w.DeploymentName
+	out.AwsRegion = w.AwsRegion
+	out.Location = w.Location
+	out.Cloud = w.Cloud
+	out.PricingTier = w.PricingTier
+	conv3, err := CloudResourceContainerToSDK(w.CloudResourceContainer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.CloudResourceContainer", err)
+	}
+	out.CloudResourceContainer = conv3
+	out.CredentialsId = w.CredentialsId
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.NetworkId = w.NetworkId
+	conv4, err := GcpManagedNetworkConfigToSDK(w.GcpManagedNetworkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GcpManagedNetworkConfig", err)
+	}
+	out.GcpManagedNetworkConfig = conv4
+	conv5, err := GkeConfigToSDK(w.GkeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GkeConfig", err)
+	}
+	out.GkeConfig = conv5
+	out.PrivateAccessSettingsId = w.PrivateAccessSettingsId
+	out.ManagedServicesCustomerManagedKeyId = w.ManagedServicesCustomerManagedKeyId
+	out.StorageCustomerManagedKeyId = w.StorageCustomerManagedKeyId
+	out.CustomTags = w.CustomTags
+	out.ComputeMode = w.ComputeMode
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	return out, nil
+}
+
+// CreateWorkspaceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateWorkspaceRequestFromSDK(v *sdk.CreateWorkspaceRequest) (*CreateWorkspaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateWorkspaceRequest{}
+	out.AccountId = v.AccountId
+	out.WorkspaceName = v.WorkspaceName
+	out.DeploymentName = v.DeploymentName
+	out.AwsRegion = v.AwsRegion
+	out.Location = v.Location
+	out.Cloud = v.Cloud
+	out.PricingTier = v.PricingTier
+	conv6, err := CloudResourceContainerFromSDK(v.CloudResourceContainer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.CloudResourceContainer", err)
+	}
+	out.CloudResourceContainer = conv6
+	out.CredentialsId = v.CredentialsId
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.NetworkId = v.NetworkId
+	conv7, err := GcpManagedNetworkConfigFromSDK(v.GcpManagedNetworkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GcpManagedNetworkConfig", err)
+	}
+	out.GcpManagedNetworkConfig = conv7
+	conv8, err := GkeConfigFromSDK(v.GkeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateWorkspaceRequest.GkeConfig", err)
+	}
+	out.GkeConfig = conv8
+	out.PrivateAccessSettingsId = v.PrivateAccessSettingsId
+	out.ManagedServicesCustomerManagedKeyId = v.ManagedServicesCustomerManagedKeyId
+	out.StorageCustomerManagedKeyId = v.StorageCustomerManagedKeyId
+	out.CustomTags = v.CustomTags
+	out.ComputeMode = v.ComputeMode
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	return out, nil
+}
+
+// GcpCloudResourceContainerToSDK converts the mirror to the sdk-go type.
+func GcpCloudResourceContainerToSDK(w *GcpCloudResourceContainer) (*sdk.GcpCloudResourceContainer, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpCloudResourceContainer{}
+	out.ProjectId = w.ProjectId
+	return out, nil
+}
+
+// GcpCloudResourceContainerFromSDK converts the sdk-go type to the mirror.
+func GcpCloudResourceContainerFromSDK(v *sdk.GcpCloudResourceContainer) (*GcpCloudResourceContainer, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpCloudResourceContainer{}
+	out.ProjectId = v.ProjectId
+	return out, nil
+}
+
+// GcpCommonNetworkConfigToSDK converts the mirror to the sdk-go type.
+func GcpCommonNetworkConfigToSDK(w *GcpCommonNetworkConfig) (*sdk.GcpCommonNetworkConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpCommonNetworkConfig{}
+	out.GkeConnectivityType = w.GkeConnectivityType
+	out.GkeClusterMasterIpRange = w.GkeClusterMasterIpRange
+	return out, nil
+}
+
+// GcpCommonNetworkConfigFromSDK converts the sdk-go type to the mirror.
+func GcpCommonNetworkConfigFromSDK(v *sdk.GcpCommonNetworkConfig) (*GcpCommonNetworkConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpCommonNetworkConfig{}
+	out.GkeConnectivityType = v.GkeConnectivityType
+	out.GkeClusterMasterIpRange = v.GkeClusterMasterIpRange
+	return out, nil
+}
+
+// GcpManagedNetworkConfigToSDK converts the mirror to the sdk-go type.
+func GcpManagedNetworkConfigToSDK(w *GcpManagedNetworkConfig) (*sdk.GcpManagedNetworkConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpManagedNetworkConfig{}
+	out.SubnetCidr = w.SubnetCidr
+	out.GkeClusterPodIpRange = w.GkeClusterPodIpRange
+	out.GkeClusterServiceIpRange = w.GkeClusterServiceIpRange
+	return out, nil
+}
+
+// GcpManagedNetworkConfigFromSDK converts the sdk-go type to the mirror.
+func GcpManagedNetworkConfigFromSDK(v *sdk.GcpManagedNetworkConfig) (*GcpManagedNetworkConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpManagedNetworkConfig{}
+	out.SubnetCidr = v.SubnetCidr
+	out.GkeClusterPodIpRange = v.GkeClusterPodIpRange
+	out.GkeClusterServiceIpRange = v.GkeClusterServiceIpRange
+	return out, nil
+}
+
+// GkeConfigToSDK converts the mirror to the sdk-go type.
+func GkeConfigToSDK(w *GkeConfig) (*sdk.GkeConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GkeConfig{}
+	out.ConnectivityType = w.ConnectivityType
+	out.MasterIpRange = w.MasterIpRange
+	return out, nil
+}
+
+// GkeConfigFromSDK converts the sdk-go type to the mirror.
+func GkeConfigFromSDK(v *sdk.GkeConfig) (*GkeConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GkeConfig{}
+	out.ConnectivityType = v.ConnectivityType
+	out.MasterIpRange = v.MasterIpRange
+	return out, nil
+}
+
+// UpdateWorkspaceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspaceRequestToSDK(w *UpdateWorkspaceRequest) (*sdk.UpdateWorkspaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspaceRequest{}
+	conv9, err := WorkspaceToSDK(w.CustomerFacingWorkspace)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceRequest.CustomerFacingWorkspace", err)
+	}
+	out.CustomerFacingWorkspace = conv9
+	mask10, err := fieldMaskFromString[sdk.Workspace](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask10
+	return out, nil
+}
+
+// UpdateWorkspaceRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspaceRequestFromSDK(v *sdk.UpdateWorkspaceRequest) (*UpdateWorkspaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspaceRequest{}
+	conv11, err := WorkspaceFromSDK(v.CustomerFacingWorkspace)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceRequest.CustomerFacingWorkspace", err)
+	}
+	out.CustomerFacingWorkspace = conv11
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// WorkspaceToSDK converts the mirror to the sdk-go type.
+func WorkspaceToSDK(w *Workspace) (*sdk.Workspace, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Workspace{}
+	out.WorkspaceId = w.WorkspaceId
+	out.WorkspaceName = w.WorkspaceName
+	out.AwsRegion = w.AwsRegion
+	out.CreationTime = w.CreationTime
+	out.DeploymentName = w.DeploymentName
+	out.WorkspaceStatus = w.WorkspaceStatus
+	out.AccountId = w.AccountId
+	out.CredentialsId = w.CredentialsId
+	out.StorageConfigurationId = w.StorageConfigurationId
+	out.WorkspaceStatusMessage = w.WorkspaceStatusMessage
+	{
+		members := 0
+		if w.NetworkId != nil {
+			members++
+		}
+		if w.GcpManagedNetworkConfig != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Workspace.NetworkConfig")
+		}
+	}
+	switch {
+	case w.NetworkId != nil:
+		out.NetworkConfig = &sdk.Workspace_NetworkConfig_NetworkId{NetworkId: *w.NetworkId}
+	case w.GcpManagedNetworkConfig != nil:
+		conv12, err := GcpManagedNetworkConfigToSDK(w.GcpManagedNetworkConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Workspace.NetworkConfig", err)
+		}
+		out.NetworkConfig = &sdk.Workspace_NetworkConfig_GcpManagedNetworkConfig{GcpManagedNetworkConfig: *conv12}
+	}
+	out.PricingTier = w.PricingTier
+	out.PrivateAccessSettingsId = w.PrivateAccessSettingsId
+	out.ManagedServicesCustomerManagedKeyId = w.ManagedServicesCustomerManagedKeyId
+	out.StorageCustomerManagedKeyId = w.StorageCustomerManagedKeyId
+	out.Location = w.Location
+	out.Cloud = w.Cloud
+	conv13, err := WorkspaceNetworkToSDK(w.Network)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.Network", err)
+	}
+	out.Network = conv13
+	conv14, err := AzureWorkspaceInfoToSDK(w.AzureWorkspaceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.AzureWorkspaceInfo", err)
+	}
+	out.AzureWorkspaceInfo = conv14
+	conv15, err := GkeConfigToSDK(w.GkeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.GkeConfig", err)
+	}
+	out.GkeConfig = conv15
+	conv16, err := CloudResourceContainerToSDK(w.CloudResourceContainer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.CloudResourceContainer", err)
+	}
+	out.CloudResourceContainer = conv16
+	out.CustomTags = w.CustomTags
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.StorageMode = w.StorageMode
+	out.ComputeMode = w.ComputeMode
+	out.ExpectedWorkspaceStatus = w.ExpectedWorkspaceStatus
+	return out, nil
+}
+
+// WorkspaceFromSDK converts the sdk-go type to the mirror.
+func WorkspaceFromSDK(v *sdk.Workspace) (*Workspace, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Workspace{}
+	out.WorkspaceId = v.WorkspaceId
+	out.WorkspaceName = v.WorkspaceName
+	out.AwsRegion = v.AwsRegion
+	out.CreationTime = v.CreationTime
+	out.DeploymentName = v.DeploymentName
+	out.WorkspaceStatus = v.WorkspaceStatus
+	out.AccountId = v.AccountId
+	out.CredentialsId = v.CredentialsId
+	out.StorageConfigurationId = v.StorageConfigurationId
+	out.WorkspaceStatusMessage = v.WorkspaceStatusMessage
+	switch value := v.NetworkConfig.(type) {
+	case *sdk.Workspace_NetworkConfig_NetworkId:
+		if value != nil {
+			out.NetworkId = new(value.NetworkId)
+		}
+	case *sdk.Workspace_NetworkConfig_GcpManagedNetworkConfig:
+		if value != nil {
+			conv17, err := GcpManagedNetworkConfigFromSDK(&value.GcpManagedNetworkConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Workspace.NetworkConfig", err)
+			}
+			out.GcpManagedNetworkConfig = conv17
+		}
+	}
+	out.PricingTier = v.PricingTier
+	out.PrivateAccessSettingsId = v.PrivateAccessSettingsId
+	out.ManagedServicesCustomerManagedKeyId = v.ManagedServicesCustomerManagedKeyId
+	out.StorageCustomerManagedKeyId = v.StorageCustomerManagedKeyId
+	out.Location = v.Location
+	out.Cloud = v.Cloud
+	conv18, err := WorkspaceNetworkFromSDK(v.Network)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.Network", err)
+	}
+	out.Network = conv18
+	conv19, err := AzureWorkspaceInfoFromSDK(v.AzureWorkspaceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.AzureWorkspaceInfo", err)
+	}
+	out.AzureWorkspaceInfo = conv19
+	conv20, err := GkeConfigFromSDK(v.GkeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.GkeConfig", err)
+	}
+	out.GkeConfig = conv20
+	conv21, err := CloudResourceContainerFromSDK(v.CloudResourceContainer)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Workspace.CloudResourceContainer", err)
+	}
+	out.CloudResourceContainer = conv21
+	out.CustomTags = v.CustomTags
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.StorageMode = v.StorageMode
+	out.ComputeMode = v.ComputeMode
+	out.ExpectedWorkspaceStatus = v.ExpectedWorkspaceStatus
+	return out, nil
+}
+
+// WorkspaceNetworkToSDK converts the mirror to the sdk-go type.
 func WorkspaceNetworkToSDK(w *WorkspaceNetwork) (*sdk.WorkspaceNetwork, error) {
 	if w == nil {
 		return nil, nil
 	}
-	networkMembers := 0
-	if w.GcpManagedNetworkConfig != nil {
-		networkMembers++
+	out := &sdk.WorkspaceNetwork{}
+	{
+		members := 0
+		if w.GcpManagedNetworkConfig != nil {
+			members++
+		}
+		if w.NetworkId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "WorkspaceNetwork.Network")
+		}
 	}
-	if w.NetworkId != nil {
-		networkMembers++
+	switch {
+	case w.GcpManagedNetworkConfig != nil:
+		conv22, err := GcpManagedNetworkConfigToSDK(w.GcpManagedNetworkConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.Network", err)
+		}
+		out.Network = &sdk.WorkspaceNetwork_Network_GcpManagedNetworkConfig{GcpManagedNetworkConfig: *conv22}
+	case w.NetworkId != nil:
+		out.Network = &sdk.WorkspaceNetwork_Network_NetworkId{NetworkId: *w.NetworkId}
 	}
-	if networkMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "WorkspaceNetwork.Network")
-	}
-	gcpCommonNetworkConfigPublicValue, err := GcpCommonNetworkConfigToSDK(w.GcpCommonNetworkConfig)
+	conv23, err := GcpCommonNetworkConfigToSDK(w.GcpCommonNetworkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.GcpCommonNetworkConfig", err)
 	}
-	networkSelection := (&sdk.WorkspaceNetwork{}).Network
-	switch {
-	case w.GcpManagedNetworkConfig != nil:
-		networkGcpManagedNetworkConfigConverted, err := GcpManagedNetworkConfigToSDK(w.GcpManagedNetworkConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.Network.GcpManagedNetworkConfig", err)
-		}
-		networkSelection = &sdk.WorkspaceNetwork_Network_GcpManagedNetworkConfig{GcpManagedNetworkConfig: *networkGcpManagedNetworkConfigConverted}
-	case w.NetworkId != nil:
-		networkSelection = &sdk.WorkspaceNetwork_Network_NetworkId{NetworkId: *w.NetworkId}
-	}
-	return &sdk.WorkspaceNetwork{
-		GcpCommonNetworkConfig: gcpCommonNetworkConfigPublicValue,
-		Network:                networkSelection,
-	}, nil
+	out.GcpCommonNetworkConfig = conv23
+	return out, nil
 }
 
-func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
+// WorkspaceNetworkFromSDK converts the sdk-go type to the mirror.
+func WorkspaceNetworkFromSDK(v *sdk.WorkspaceNetwork) (*WorkspaceNetwork, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceNetwork{}
+	switch value := v.Network.(type) {
+	case *sdk.WorkspaceNetwork_Network_GcpManagedNetworkConfig:
+		if value != nil {
+			conv24, err := GcpManagedNetworkConfigFromSDK(&value.GcpManagedNetworkConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.Network", err)
+			}
+			out.GcpManagedNetworkConfig = conv24
+		}
+	case *sdk.WorkspaceNetwork_Network_NetworkId:
+		if value != nil {
+			out.NetworkId = new(value.NetworkId)
+		}
+	}
+	conv25, err := GcpCommonNetworkConfigFromSDK(v.GcpCommonNetworkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkspaceNetwork.GcpCommonNetworkConfig", err)
+	}
+	out.GcpCommonNetworkConfig = conv25
+	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
 	if s == nil {
 		return nil, nil
 	}
-	out := make([]W, len(s))
-	for i := range s {
-		converted, err := conv(&s[i])
-		if err != nil {
-			return nil, fmt.Errorf("element %d: %w", i, err)
-		}
-		out[i] = *converted
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
 	}
-	return out, nil
+	return types.NewFieldMask[T](paths...)
 }

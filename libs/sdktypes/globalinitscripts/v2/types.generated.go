@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/globalinitscripts/v2"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateGlobalInitScriptRequest struct {
 	// The name of the script
 	Name *string `json:"name,omitempty"`
@@ -45,30 +29,9 @@ type CreateGlobalInitScriptRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func CreateGlobalInitScriptRequestFromSDK(v *sdk.CreateGlobalInitScriptRequest) (*CreateGlobalInitScriptRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateGlobalInitScriptRequest{
-		Name:     v.Name,
-		Script:   v.Script,
-		Position: v.Position,
-		Enabled:  v.Enabled,
-	}, nil
-}
-
 type CreateGlobalInitScriptResponse struct {
 	// The global init script ID.
 	ScriptId *string `json:"script_id,omitempty"`
-}
-
-func CreateGlobalInitScriptResponseToSDK(w *CreateGlobalInitScriptResponse) (*sdk.CreateGlobalInitScriptResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateGlobalInitScriptResponse{
-		ScriptId: w.ScriptId,
-	}, nil
 }
 
 type GlobalInitScriptDetails struct {
@@ -93,45 +56,8 @@ type GlobalInitScriptDetails struct {
 	UpdatedAt *int64 `json:"updated_at,omitempty"`
 }
 
-func GlobalInitScriptDetailsToSDK(w *GlobalInitScriptDetails) (*sdk.GlobalInitScriptDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GlobalInitScriptDetails.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GlobalInitScriptDetails.UpdatedAt", err)
-	}
-	return &sdk.GlobalInitScriptDetails{
-		ScriptId:  w.ScriptId,
-		Name:      w.Name,
-		Position:  w.Position,
-		Enabled:   w.Enabled,
-		CreatedBy: w.CreatedBy,
-		CreatedAt: createdAtPublicValue,
-		UpdatedBy: w.UpdatedBy,
-		UpdatedAt: updatedAtPublicValue,
-	}, nil
-}
-
 type ListGlobalInitScriptsResponse struct {
 	Scripts []GlobalInitScriptDetails `json:"scripts,omitempty"`
-}
-
-func ListGlobalInitScriptsResponseToSDK(w *ListGlobalInitScriptsResponse) (*sdk.ListGlobalInitScriptsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	scriptsPublicValue, err := convertSlice(w.Scripts, GlobalInitScriptDetailsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListGlobalInitScriptsResponse.Scripts", err)
-	}
-	return &sdk.ListGlobalInitScriptsResponse{
-		Scripts: scriptsPublicValue,
-	}, nil
 }
 
 type UpdateGlobalInitScriptRequest struct {
@@ -158,17 +84,140 @@ type UpdateGlobalInitScriptRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+// CreateGlobalInitScriptRequestToSDK converts the mirror to the sdk-go type.
+func CreateGlobalInitScriptRequestToSDK(w *CreateGlobalInitScriptRequest) (*sdk.CreateGlobalInitScriptRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateGlobalInitScriptRequest{}
+	out.Name = w.Name
+	out.Script = w.Script
+	out.Position = w.Position
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// CreateGlobalInitScriptRequestFromSDK converts the sdk-go type to the mirror.
+func CreateGlobalInitScriptRequestFromSDK(v *sdk.CreateGlobalInitScriptRequest) (*CreateGlobalInitScriptRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateGlobalInitScriptRequest{}
+	out.Name = v.Name
+	out.Script = v.Script
+	out.Position = v.Position
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// CreateGlobalInitScriptResponseToSDK converts the mirror to the sdk-go type.
+func CreateGlobalInitScriptResponseToSDK(w *CreateGlobalInitScriptResponse) (*sdk.CreateGlobalInitScriptResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateGlobalInitScriptResponse{}
+	out.ScriptId = w.ScriptId
+	return out, nil
+}
+
+// CreateGlobalInitScriptResponseFromSDK converts the sdk-go type to the mirror.
+func CreateGlobalInitScriptResponseFromSDK(v *sdk.CreateGlobalInitScriptResponse) (*CreateGlobalInitScriptResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateGlobalInitScriptResponse{}
+	out.ScriptId = v.ScriptId
+	return out, nil
+}
+
+// GlobalInitScriptDetailsToSDK converts the mirror to the sdk-go type.
+func GlobalInitScriptDetailsToSDK(w *GlobalInitScriptDetails) (*sdk.GlobalInitScriptDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GlobalInitScriptDetails{}
+	out.ScriptId = w.ScriptId
+	out.Name = w.Name
+	out.Position = w.Position
+	out.Enabled = w.Enabled
+	out.CreatedBy = w.CreatedBy
+	out.CreatedAt = w.CreatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.UpdatedAt = w.UpdatedAt
+	return out, nil
+}
+
+// GlobalInitScriptDetailsFromSDK converts the sdk-go type to the mirror.
+func GlobalInitScriptDetailsFromSDK(v *sdk.GlobalInitScriptDetails) (*GlobalInitScriptDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GlobalInitScriptDetails{}
+	out.ScriptId = v.ScriptId
+	out.Name = v.Name
+	out.Position = v.Position
+	out.Enabled = v.Enabled
+	out.CreatedBy = v.CreatedBy
+	out.CreatedAt = v.CreatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.UpdatedAt = v.UpdatedAt
+	return out, nil
+}
+
+// ListGlobalInitScriptsResponseToSDK converts the mirror to the sdk-go type.
+func ListGlobalInitScriptsResponseToSDK(w *ListGlobalInitScriptsResponse) (*sdk.ListGlobalInitScriptsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListGlobalInitScriptsResponse{}
+	conv1, err := convertSlice(w.Scripts, GlobalInitScriptDetailsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListGlobalInitScriptsResponse.Scripts", err)
+	}
+	out.Scripts = conv1
+	return out, nil
+}
+
+// ListGlobalInitScriptsResponseFromSDK converts the sdk-go type to the mirror.
+func ListGlobalInitScriptsResponseFromSDK(v *sdk.ListGlobalInitScriptsResponse) (*ListGlobalInitScriptsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListGlobalInitScriptsResponse{}
+	conv2, err := convertSlice(v.Scripts, GlobalInitScriptDetailsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListGlobalInitScriptsResponse.Scripts", err)
+	}
+	out.Scripts = conv2
+	return out, nil
+}
+
+// UpdateGlobalInitScriptRequestToSDK converts the mirror to the sdk-go type.
+func UpdateGlobalInitScriptRequestToSDK(w *UpdateGlobalInitScriptRequest) (*sdk.UpdateGlobalInitScriptRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateGlobalInitScriptRequest{}
+	out.ScriptId = w.ScriptId
+	out.Name = w.Name
+	out.Script = w.Script
+	out.Position = w.Position
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// UpdateGlobalInitScriptRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateGlobalInitScriptRequestFromSDK(v *sdk.UpdateGlobalInitScriptRequest) (*UpdateGlobalInitScriptRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &UpdateGlobalInitScriptRequest{
-		ScriptId: v.ScriptId,
-		Name:     v.Name,
-		Script:   v.Script,
-		Position: v.Position,
-		Enabled:  v.Enabled,
-	}, nil
+	out := &UpdateGlobalInitScriptRequest{}
+	out.ScriptId = v.ScriptId
+	out.Name = v.Name
+	out.Script = v.Script
+	out.Position = v.Position
+	out.Enabled = v.Enabled
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

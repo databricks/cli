@@ -122,125 +122,33 @@ const (
 	Visibility_Private                                            = sdk.Visibility_Private
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AddExchangeForListingRequest struct {
 	ListingId  *string `json:"listing_id,omitempty"`
 	ExchangeId *string `json:"exchange_id,omitempty"`
-}
-
-func AddExchangeForListingRequestFromSDK(v *sdk.AddExchangeForListingRequest) (*AddExchangeForListingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AddExchangeForListingRequest{
-		ListingId:  v.ListingId,
-		ExchangeId: v.ExchangeId,
-	}, nil
 }
 
 type AddExchangeForListingResponse struct {
 	ExchangeForListing *ExchangeListing `json:"exchange_for_listing,omitempty"`
 }
 
-func AddExchangeForListingResponseToSDK(w *AddExchangeForListingResponse) (*sdk.AddExchangeForListingResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangeForListingPublicValue, err := ExchangeListingToSDK(w.ExchangeForListing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AddExchangeForListingResponse.ExchangeForListing", err)
-	}
-	return &sdk.AddExchangeForListingResponse{
-		ExchangeForListing: exchangeForListingPublicValue,
-	}, nil
-}
-
 type BatchGetListingsRequest struct {
 	Ids []string `json:"ids,omitempty"`
-}
-
-func BatchGetListingsRequestFromSDK(v *sdk.BatchGetListingsRequest) (*BatchGetListingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BatchGetListingsRequest{
-		Ids: v.Ids,
-	}, nil
 }
 
 type BatchGetListingsResponse struct {
 	Listings []Listing `json:"listings,omitempty"`
 }
 
-func BatchGetListingsResponseToSDK(w *BatchGetListingsResponse) (*sdk.BatchGetListingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingsPublicValue, err := convertSlice(w.Listings, ListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchGetListingsResponse.Listings", err)
-	}
-	return &sdk.BatchGetListingsResponse{
-		Listings: listingsPublicValue,
-	}, nil
-}
-
 type BatchGetProvidersRequest struct {
 	Ids []string `json:"ids,omitempty"`
-}
-
-func BatchGetProvidersRequestFromSDK(v *sdk.BatchGetProvidersRequest) (*BatchGetProvidersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &BatchGetProvidersRequest{
-		Ids: v.Ids,
-	}, nil
 }
 
 type BatchGetProvidersResponse struct {
 	Providers []ProviderInfo `json:"providers,omitempty"`
 }
 
-func BatchGetProvidersResponseToSDK(w *BatchGetProvidersResponse) (*sdk.BatchGetProvidersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providersPublicValue, err := convertSlice(w.Providers, ProviderInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchGetProvidersResponse.Providers", err)
-	}
-	return &sdk.BatchGetProvidersResponse{
-		Providers: providersPublicValue,
-	}, nil
-}
-
 type ConsumerTerms struct {
 	Version *string `json:"version,omitempty"`
-}
-
-func ConsumerTermsFromSDK(v *sdk.ConsumerTerms) (*ConsumerTerms, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConsumerTerms{
-		Version: v.Version,
-	}, nil
 }
 
 // contact info for the consumer requesting data or performing a listing
@@ -252,76 +160,20 @@ type ContactInfo struct {
 	Company   *string `json:"company,omitempty"`
 }
 
-func ContactInfoToSDK(w *ContactInfo) (*sdk.ContactInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ContactInfo{
-		FirstName: w.FirstName,
-		LastName:  w.LastName,
-		Email:     w.Email,
-		Company:   w.Company,
-	}, nil
-}
-
 type CreateExchangeFilterRequest struct {
 	Filter *ExchangeFilter `json:"filter,omitempty"`
-}
-
-func CreateExchangeFilterRequestFromSDK(v *sdk.CreateExchangeFilterRequest) (*CreateExchangeFilterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	filterWireValue, err := ExchangeFilterFromSDK(v.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExchangeFilterRequest.Filter", err)
-	}
-	return &CreateExchangeFilterRequest{
-		Filter: filterWireValue,
-	}, nil
 }
 
 type CreateExchangeFilterResponse struct {
 	FilterId *string `json:"filter_id,omitempty"`
 }
 
-func CreateExchangeFilterResponseToSDK(w *CreateExchangeFilterResponse) (*sdk.CreateExchangeFilterResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateExchangeFilterResponse{
-		FilterId: w.FilterId,
-	}, nil
-}
-
 type CreateExchangeRequest struct {
 	Exchange *Exchange `json:"exchange,omitempty"`
 }
 
-func CreateExchangeRequestFromSDK(v *sdk.CreateExchangeRequest) (*CreateExchangeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exchangeWireValue, err := ExchangeFromSDK(v.Exchange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExchangeRequest.Exchange", err)
-	}
-	return &CreateExchangeRequest{
-		Exchange: exchangeWireValue,
-	}, nil
-}
-
 type CreateExchangeResponse struct {
 	ExchangeId *string `json:"exchange_id,omitempty"`
-}
-
-func CreateExchangeResponseToSDK(w *CreateExchangeResponse) (*sdk.CreateExchangeResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateExchangeResponse{
-		ExchangeId: w.ExchangeId,
-	}, nil
 }
 
 type CreateFileRequest struct {
@@ -331,40 +183,10 @@ type CreateFileRequest struct {
 	DisplayName         *string             `json:"display_name,omitempty"`
 }
 
-func CreateFileRequestFromSDK(v *sdk.CreateFileRequest) (*CreateFileRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileParentWireValue, err := FileParentFromSDK(v.FileParent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFileRequest.FileParent", err)
-	}
-	return &CreateFileRequest{
-		FileParent:          fileParentWireValue,
-		MarketplaceFileType: v.MarketplaceFileType,
-		MimeType:            v.MimeType,
-		DisplayName:         v.DisplayName,
-	}, nil
-}
-
 type CreateFileResponse struct {
 	// Pre-signed POST URL to blob storage
 	UploadUrl *string   `json:"upload_url,omitempty"`
 	FileInfo  *FileInfo `json:"file_info,omitempty"`
-}
-
-func CreateFileResponseToSDK(w *CreateFileResponse) (*sdk.CreateFileResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileInfoPublicValue, err := FileInfoToSDK(w.FileInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFileResponse.FileInfo", err)
-	}
-	return &sdk.CreateFileResponse{
-		UploadUrl: w.UploadUrl,
-		FileInfo:  fileInfoPublicValue,
-	}, nil
 }
 
 type CreateInstallationRequest struct {
@@ -377,73 +199,16 @@ type CreateInstallationRequest struct {
 	AcceptedConsumerTerms *ConsumerTerms            `json:"accepted_consumer_terms,omitempty"`
 }
 
-func CreateInstallationRequestFromSDK(v *sdk.CreateInstallationRequest) (*CreateInstallationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	repoDetailWireValue, err := RepoInstallationFromSDK(v.RepoDetail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.RepoDetail", err)
-	}
-	acceptedConsumerTermsWireValue, err := ConsumerTermsFromSDK(v.AcceptedConsumerTerms)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.AcceptedConsumerTerms", err)
-	}
-	return &CreateInstallationRequest{
-		ListingId:             v.ListingId,
-		ShareName:             v.ShareName,
-		CatalogName:           v.CatalogName,
-		RepoDetail:            repoDetailWireValue,
-		RecipientType:         v.RecipientType,
-		AcceptedConsumerTerms: acceptedConsumerTermsWireValue,
-	}, nil
-}
-
 type CreateInstallationResponse struct {
 	Installation *InstallationDetail `json:"installation,omitempty"`
-}
-
-func CreateInstallationResponseToSDK(w *CreateInstallationResponse) (*sdk.CreateInstallationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	installationPublicValue, err := InstallationDetailToSDK(w.Installation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateInstallationResponse.Installation", err)
-	}
-	return &sdk.CreateInstallationResponse{
-		Installation: installationPublicValue,
-	}, nil
 }
 
 type CreateListingRequest struct {
 	Listing *Listing `json:"listing,omitempty"`
 }
 
-func CreateListingRequestFromSDK(v *sdk.CreateListingRequest) (*CreateListingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	listingWireValue, err := ListingFromSDK(v.Listing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateListingRequest.Listing", err)
-	}
-	return &CreateListingRequest{
-		Listing: listingWireValue,
-	}, nil
-}
-
 type CreateListingResponse struct {
 	ListingId *string `json:"listing_id,omitempty"`
-}
-
-func CreateListingResponseToSDK(w *CreateListingResponse) (*sdk.CreateListingResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateListingResponse{
-		ListingId: w.ListingId,
-	}, nil
 }
 
 // Data request messages also creates a lead (maybe).
@@ -459,124 +224,28 @@ type CreatePersonalizationRequest struct {
 	AcceptedConsumerTerms *ConsumerTerms            `json:"accepted_consumer_terms,omitempty"`
 }
 
-func CreatePersonalizationRequestFromSDK(v *sdk.CreatePersonalizationRequest) (*CreatePersonalizationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	acceptedConsumerTermsWireValue, err := ConsumerTermsFromSDK(v.AcceptedConsumerTerms)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePersonalizationRequest.AcceptedConsumerTerms", err)
-	}
-	return &CreatePersonalizationRequest{
-		ListingId:             v.ListingId,
-		Comment:               v.Comment,
-		IntendedUse:           v.IntendedUse,
-		FirstName:             v.FirstName,
-		LastName:              v.LastName,
-		Company:               v.Company,
-		IsFromLighthouse:      v.IsFromLighthouse,
-		RecipientType:         v.RecipientType,
-		AcceptedConsumerTerms: acceptedConsumerTermsWireValue,
-	}, nil
-}
-
 type CreatePersonalizationResponse struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func CreatePersonalizationResponseToSDK(w *CreatePersonalizationResponse) (*sdk.CreatePersonalizationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreatePersonalizationResponse{
-		Id: w.Id,
-	}, nil
-}
-
 type CreateProviderAnalyticsDashboardRequest struct {
-}
-
-func CreateProviderAnalyticsDashboardRequestFromSDK(v *sdk.CreateProviderAnalyticsDashboardRequest) (*CreateProviderAnalyticsDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateProviderAnalyticsDashboardRequest{}, nil
 }
 
 type CreateProviderAnalyticsDashboardResponse struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func CreateProviderAnalyticsDashboardResponseToSDK(w *CreateProviderAnalyticsDashboardResponse) (*sdk.CreateProviderAnalyticsDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateProviderAnalyticsDashboardResponse{
-		Id: w.Id,
-	}, nil
-}
-
 type CreateProviderRequest struct {
 	Provider *ProviderInfo `json:"provider,omitempty"`
-}
-
-func CreateProviderRequestFromSDK(v *sdk.CreateProviderRequest) (*CreateProviderRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	providerWireValue, err := ProviderInfoFromSDK(v.Provider)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.Provider", err)
-	}
-	return &CreateProviderRequest{
-		Provider: providerWireValue,
-	}, nil
 }
 
 type CreateProviderResponse struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func CreateProviderResponseToSDK(w *CreateProviderResponse) (*sdk.CreateProviderResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateProviderResponse{
-		Id: w.Id,
-	}, nil
-}
-
 type DataRefreshInfo struct {
 	Interval *int64      `json:"interval,omitempty"`
 	Unit     DataRefresh `json:"unit,omitempty"`
-}
-
-func DataRefreshInfoFromSDK(v *sdk.DataRefreshInfo) (*DataRefreshInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	intervalWireValue, err := int64ToWire(v.Interval)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataRefreshInfo.Interval", err)
-	}
-	return &DataRefreshInfo{
-		Interval: intervalWireValue,
-		Unit:     v.Unit,
-	}, nil
-}
-
-func DataRefreshInfoToSDK(w *DataRefreshInfo) (*sdk.DataRefreshInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	intervalPublicValue, err := int64FromWire(w.Interval)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DataRefreshInfo.Interval", err)
-	}
-	return &sdk.DataRefreshInfo{
-		Interval: intervalPublicValue,
-		Unit:     w.Unit,
-	}, nil
 }
 
 type Exchange struct {
@@ -591,72 +260,6 @@ type Exchange struct {
 	LinkedListings []ExchangeListing `json:"linked_listings,omitempty"`
 }
 
-func ExchangeFromSDK(v *sdk.Exchange) (*Exchange, error) {
-	if v == nil {
-		return nil, nil
-	}
-	filtersWireValue, err := convertSlice(v.Filters, ExchangeFilterFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.Filters", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.UpdatedAt", err)
-	}
-	linkedListingsWireValue, err := convertSlice(v.LinkedListings, ExchangeListingFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.LinkedListings", err)
-	}
-	return &Exchange{
-		Id:             v.Id,
-		Name:           v.Name,
-		Comment:        v.Comment,
-		Filters:        filtersWireValue,
-		CreatedAt:      createdAtWireValue,
-		CreatedBy:      v.CreatedBy,
-		UpdatedAt:      updatedAtWireValue,
-		UpdatedBy:      v.UpdatedBy,
-		LinkedListings: linkedListingsWireValue,
-	}, nil
-}
-
-func ExchangeToSDK(w *Exchange) (*sdk.Exchange, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filtersPublicValue, err := convertSlice(w.Filters, ExchangeFilterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.Filters", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.UpdatedAt", err)
-	}
-	linkedListingsPublicValue, err := convertSlice(w.LinkedListings, ExchangeListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Exchange.LinkedListings", err)
-	}
-	return &sdk.Exchange{
-		Id:             w.Id,
-		Name:           w.Name,
-		Comment:        w.Comment,
-		Filters:        filtersPublicValue,
-		CreatedAt:      createdAtPublicValue,
-		CreatedBy:      w.CreatedBy,
-		UpdatedAt:      updatedAtPublicValue,
-		UpdatedBy:      w.UpdatedBy,
-		LinkedListings: linkedListingsPublicValue,
-	}, nil
-}
-
 type ExchangeFilter struct {
 	Id          *string            `json:"id,omitempty"`
 	ExchangeId  *string            `json:"exchange_id,omitempty"`
@@ -669,56 +272,6 @@ type ExchangeFilter struct {
 	FilterType  ExchangeFilterType `json:"filter_type,omitempty"`
 }
 
-func ExchangeFilterFromSDK(v *sdk.ExchangeFilter) (*ExchangeFilter, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeFilter.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeFilter.UpdatedAt", err)
-	}
-	return &ExchangeFilter{
-		Id:          v.Id,
-		ExchangeId:  v.ExchangeId,
-		FilterValue: v.FilterValue,
-		Name:        v.Name,
-		CreatedAt:   createdAtWireValue,
-		CreatedBy:   v.CreatedBy,
-		UpdatedAt:   updatedAtWireValue,
-		UpdatedBy:   v.UpdatedBy,
-		FilterType:  v.FilterType,
-	}, nil
-}
-
-func ExchangeFilterToSDK(w *ExchangeFilter) (*sdk.ExchangeFilter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeFilter.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeFilter.UpdatedAt", err)
-	}
-	return &sdk.ExchangeFilter{
-		Id:          w.Id,
-		ExchangeId:  w.ExchangeId,
-		FilterValue: w.FilterValue,
-		Name:        w.Name,
-		CreatedAt:   createdAtPublicValue,
-		CreatedBy:   w.CreatedBy,
-		UpdatedAt:   updatedAtPublicValue,
-		UpdatedBy:   w.UpdatedBy,
-		FilterType:  w.FilterType,
-	}, nil
-}
-
 type ExchangeListing struct {
 	Id           *string `json:"id,omitempty"`
 	ExchangeId   *string `json:"exchange_id,omitempty"`
@@ -727,44 +280,6 @@ type ExchangeListing struct {
 	ListingName  *string `json:"listing_name,omitempty"`
 	CreatedAt    *int64  `json:"created_at,omitempty"`
 	CreatedBy    *string `json:"created_by,omitempty"`
-}
-
-func ExchangeListingFromSDK(v *sdk.ExchangeListing) (*ExchangeListing, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeListing.CreatedAt", err)
-	}
-	return &ExchangeListing{
-		Id:           v.Id,
-		ExchangeId:   v.ExchangeId,
-		ExchangeName: v.ExchangeName,
-		ListingId:    v.ListingId,
-		ListingName:  v.ListingName,
-		CreatedAt:    createdAtWireValue,
-		CreatedBy:    v.CreatedBy,
-	}, nil
-}
-
-func ExchangeListingToSDK(w *ExchangeListing) (*sdk.ExchangeListing, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExchangeListing.CreatedAt", err)
-	}
-	return &sdk.ExchangeListing{
-		Id:           w.Id,
-		ExchangeId:   w.ExchangeId,
-		ExchangeName: w.ExchangeName,
-		ListingId:    w.ListingId,
-		ListingName:  w.ListingName,
-		CreatedAt:    createdAtPublicValue,
-		CreatedBy:    w.CreatedBy,
-	}, nil
 }
 
 type FileInfo struct {
@@ -783,89 +298,9 @@ type FileInfo struct {
 	StatusMessage *string `json:"status_message,omitempty"`
 }
 
-func FileInfoFromSDK(v *sdk.FileInfo) (*FileInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileParentWireValue, err := FileParentFromSDK(v.FileParent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.FileParent", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.UpdatedAt", err)
-	}
-	return &FileInfo{
-		Id:                  v.Id,
-		MarketplaceFileType: v.MarketplaceFileType,
-		FileParent:          fileParentWireValue,
-		MimeType:            v.MimeType,
-		DownloadLink:        v.DownloadLink,
-		CreatedAt:           createdAtWireValue,
-		UpdatedAt:           updatedAtWireValue,
-		DisplayName:         v.DisplayName,
-		Status:              v.Status,
-		StatusMessage:       v.StatusMessage,
-	}, nil
-}
-
-func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileParentPublicValue, err := FileParentToSDK(w.FileParent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.FileParent", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FileInfo.UpdatedAt", err)
-	}
-	return &sdk.FileInfo{
-		Id:                  w.Id,
-		MarketplaceFileType: w.MarketplaceFileType,
-		FileParent:          fileParentPublicValue,
-		MimeType:            w.MimeType,
-		DownloadLink:        w.DownloadLink,
-		CreatedAt:           createdAtPublicValue,
-		UpdatedAt:           updatedAtPublicValue,
-		DisplayName:         w.DisplayName,
-		Status:              w.Status,
-		StatusMessage:       w.StatusMessage,
-	}, nil
-}
-
 type FileParent struct {
 	ParentId       *string        `json:"parent_id,omitempty"`
 	FileParentType FileParentType `json:"file_parent_type,omitempty"`
-}
-
-func FileParentFromSDK(v *sdk.FileParent) (*FileParent, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FileParent{
-		ParentId:       v.ParentId,
-		FileParentType: v.FileParentType,
-	}, nil
-}
-
-func FileParentToSDK(w *FileParent) (*sdk.FileParent, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FileParent{
-		ParentId:       w.ParentId,
-		FileParentType: w.FileParentType,
-	}, nil
 }
 
 type GetAllPersonalizationRequestsForConsumerResponse struct {
@@ -873,52 +308,12 @@ type GetAllPersonalizationRequestsForConsumerResponse struct {
 	NextPageToken           *string                  `json:"next_page_token,omitempty"`
 }
 
-func GetAllPersonalizationRequestsForConsumerResponseToSDK(w *GetAllPersonalizationRequestsForConsumerResponse) (*sdk.GetAllPersonalizationRequestsForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	personalizationRequestsPublicValue, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetAllPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
-	}
-	return &sdk.GetAllPersonalizationRequestsForConsumerResponse{
-		PersonalizationRequests: personalizationRequestsPublicValue,
-		NextPageToken:           w.NextPageToken,
-	}, nil
-}
-
 type GetExchangeResponse struct {
 	Exchange *Exchange `json:"exchange,omitempty"`
 }
 
-func GetExchangeResponseToSDK(w *GetExchangeResponse) (*sdk.GetExchangeResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangePublicValue, err := ExchangeToSDK(w.Exchange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetExchangeResponse.Exchange", err)
-	}
-	return &sdk.GetExchangeResponse{
-		Exchange: exchangePublicValue,
-	}, nil
-}
-
 type GetFileResponse struct {
 	FileInfo *FileInfo `json:"file_info,omitempty"`
-}
-
-func GetFileResponseToSDK(w *GetFileResponse) (*sdk.GetFileResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileInfoPublicValue, err := FileInfoToSDK(w.FileInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetFileResponse.FileInfo", err)
-	}
-	return &sdk.GetFileResponse{
-		FileInfo: fileInfoPublicValue,
-	}, nil
 }
 
 type GetInstallationDetailsRequest struct {
@@ -927,33 +322,9 @@ type GetInstallationDetailsRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func GetInstallationDetailsRequestFromSDK(v *sdk.GetInstallationDetailsRequest) (*GetInstallationDetailsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetInstallationDetailsRequest{
-		ListingId: v.ListingId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type GetLatestVersionProviderAnalyticsDashboardResponse struct {
 	// version here is latest logical version of the dashboard template
 	Version *int64 `json:"version,omitempty"`
-}
-
-func GetLatestVersionProviderAnalyticsDashboardResponseToSDK(w *GetLatestVersionProviderAnalyticsDashboardResponse) (*sdk.GetLatestVersionProviderAnalyticsDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionPublicValue, err := int64FromWire(w.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetLatestVersionProviderAnalyticsDashboardResponse.Version", err)
-	}
-	return &sdk.GetLatestVersionProviderAnalyticsDashboardResponse{
-		Version: versionPublicValue,
-	}, nil
 }
 
 type GetListingContentMetadataRequest struct {
@@ -962,51 +333,13 @@ type GetListingContentMetadataRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func GetListingContentMetadataRequestFromSDK(v *sdk.GetListingContentMetadataRequest) (*GetListingContentMetadataRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetListingContentMetadataRequest{
-		ListingId: v.ListingId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type GetListingContentMetadataResponse struct {
 	SharedDataObjects []SharedDataObject `json:"shared_data_objects,omitempty"`
 	NextPageToken     *string            `json:"next_page_token,omitempty"`
 }
 
-func GetListingContentMetadataResponseToSDK(w *GetListingContentMetadataResponse) (*sdk.GetListingContentMetadataResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sharedDataObjectsPublicValue, err := convertSlice(w.SharedDataObjects, SharedDataObjectToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetListingContentMetadataResponse.SharedDataObjects", err)
-	}
-	return &sdk.GetListingContentMetadataResponse{
-		SharedDataObjects: sharedDataObjectsPublicValue,
-		NextPageToken:     w.NextPageToken,
-	}, nil
-}
-
 type GetListingResponse struct {
 	Listing *Listing `json:"listing,omitempty"`
-}
-
-func GetListingResponseToSDK(w *GetListingResponse) (*sdk.GetListingResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingPublicValue, err := ListingToSDK(w.Listing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetListingResponse.Listing", err)
-	}
-	return &sdk.GetListingResponse{
-		Listing: listingPublicValue,
-	}, nil
 }
 
 type GetListingsResponse struct {
@@ -1014,35 +347,8 @@ type GetListingsResponse struct {
 	NextPageToken *string   `json:"next_page_token,omitempty"`
 }
 
-func GetListingsResponseToSDK(w *GetListingsResponse) (*sdk.GetListingsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingsPublicValue, err := convertSlice(w.Listings, ListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetListingsResponse.Listings", err)
-	}
-	return &sdk.GetListingsResponse{
-		Listings:      listingsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type GetPersonalizationRequestsForConsumerResponse struct {
 	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
-}
-
-func GetPersonalizationRequestsForConsumerResponseToSDK(w *GetPersonalizationRequestsForConsumerResponse) (*sdk.GetPersonalizationRequestsForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	personalizationRequestsPublicValue, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
-	}
-	return &sdk.GetPersonalizationRequestsForConsumerResponse{
-		PersonalizationRequests: personalizationRequestsPublicValue,
-	}, nil
 }
 
 type GetPersonalizationRequestsForProviderRequest struct {
@@ -1050,67 +356,17 @@ type GetPersonalizationRequestsForProviderRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func GetPersonalizationRequestsForProviderRequestFromSDK(v *sdk.GetPersonalizationRequestsForProviderRequest) (*GetPersonalizationRequestsForProviderRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetPersonalizationRequestsForProviderRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type GetPersonalizationRequestsForProviderResponse struct {
 	PersonalizationRequests []PersonalizationRequest `json:"personalization_requests,omitempty"`
 	NextPageToken           *string                  `json:"next_page_token,omitempty"`
-}
-
-func GetPersonalizationRequestsForProviderResponseToSDK(w *GetPersonalizationRequestsForProviderResponse) (*sdk.GetPersonalizationRequestsForProviderResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	personalizationRequestsPublicValue, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForProviderResponse.PersonalizationRequests", err)
-	}
-	return &sdk.GetPersonalizationRequestsForProviderResponse{
-		PersonalizationRequests: personalizationRequestsPublicValue,
-		NextPageToken:           w.NextPageToken,
-	}, nil
 }
 
 type GetProviderResponse struct {
 	Provider *ProviderInfo `json:"provider,omitempty"`
 }
 
-func GetProviderResponseToSDK(w *GetProviderResponse) (*sdk.GetProviderResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerPublicValue, err := ProviderInfoToSDK(w.Provider)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetProviderResponse.Provider", err)
-	}
-	return &sdk.GetProviderResponse{
-		Provider: providerPublicValue,
-	}, nil
-}
-
 type GetPublishedListingForConsumerResponse struct {
 	Listing *Listing `json:"listing,omitempty"`
-}
-
-func GetPublishedListingForConsumerResponseToSDK(w *GetPublishedListingForConsumerResponse) (*sdk.GetPublishedListingForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingPublicValue, err := ListingToSDK(w.Listing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPublishedListingForConsumerResponse.Listing", err)
-	}
-	return &sdk.GetPublishedListingForConsumerResponse{
-		Listing: listingPublicValue,
-	}, nil
 }
 
 type GetPublishedListingsForConsumerResponse struct {
@@ -1118,35 +374,8 @@ type GetPublishedListingsForConsumerResponse struct {
 	NextPageToken *string   `json:"next_page_token,omitempty"`
 }
 
-func GetPublishedListingsForConsumerResponseToSDK(w *GetPublishedListingsForConsumerResponse) (*sdk.GetPublishedListingsForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingsPublicValue, err := convertSlice(w.Listings, ListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPublishedListingsForConsumerResponse.Listings", err)
-	}
-	return &sdk.GetPublishedListingsForConsumerResponse{
-		Listings:      listingsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type GetPublishedProviderForConsumerResponse struct {
 	Provider *ProviderInfo `json:"provider,omitempty"`
-}
-
-func GetPublishedProviderForConsumerResponseToSDK(w *GetPublishedProviderForConsumerResponse) (*sdk.GetPublishedProviderForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providerPublicValue, err := ProviderInfoToSDK(w.Provider)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPublishedProviderForConsumerResponse.Provider", err)
-	}
-	return &sdk.GetPublishedProviderForConsumerResponse{
-		Provider: providerPublicValue,
-	}, nil
 }
 
 type InstallationDetail struct {
@@ -1165,89 +394,9 @@ type InstallationDetail struct {
 	TokenDetail   *TokenDetail              `json:"token_detail,omitempty"`
 }
 
-func InstallationDetailFromSDK(v *sdk.InstallationDetail) (*InstallationDetail, error) {
-	if v == nil {
-		return nil, nil
-	}
-	installedOnWireValue, err := int64ToWire(v.InstalledOn)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.InstalledOn", err)
-	}
-	tokensWireValue, err := convertSlice(v.Tokens, TokenInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.Tokens", err)
-	}
-	tokenDetailWireValue, err := TokenDetailFromSDK(v.TokenDetail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.TokenDetail", err)
-	}
-	return &InstallationDetail{
-		Id:            v.Id,
-		ListingId:     v.ListingId,
-		ShareName:     v.ShareName,
-		CatalogName:   v.CatalogName,
-		InstalledOn:   installedOnWireValue,
-		Status:        v.Status,
-		ErrorMessage:  v.ErrorMessage,
-		ListingName:   v.ListingName,
-		RepoName:      v.RepoName,
-		RepoPath:      v.RepoPath,
-		RecipientType: v.RecipientType,
-		Tokens:        tokensWireValue,
-		TokenDetail:   tokenDetailWireValue,
-	}, nil
-}
-
-func InstallationDetailToSDK(w *InstallationDetail) (*sdk.InstallationDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	installedOnPublicValue, err := int64FromWire(w.InstalledOn)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.InstalledOn", err)
-	}
-	tokensPublicValue, err := convertSlice(w.Tokens, TokenInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.Tokens", err)
-	}
-	tokenDetailPublicValue, err := TokenDetailToSDK(w.TokenDetail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "InstallationDetail.TokenDetail", err)
-	}
-	return &sdk.InstallationDetail{
-		Id:            w.Id,
-		ListingId:     w.ListingId,
-		ShareName:     w.ShareName,
-		CatalogName:   w.CatalogName,
-		InstalledOn:   installedOnPublicValue,
-		Status:        w.Status,
-		ErrorMessage:  w.ErrorMessage,
-		ListingName:   w.ListingName,
-		RepoName:      w.RepoName,
-		RepoPath:      w.RepoPath,
-		RecipientType: w.RecipientType,
-		Tokens:        tokensPublicValue,
-		TokenDetail:   tokenDetailPublicValue,
-	}, nil
-}
-
 type ListAllInstallationsResponse struct {
 	Installations []InstallationDetail `json:"installations,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
-}
-
-func ListAllInstallationsResponseToSDK(w *ListAllInstallationsResponse) (*sdk.ListAllInstallationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	installationsPublicValue, err := convertSlice(w.Installations, InstallationDetailToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAllInstallationsResponse.Installations", err)
-	}
-	return &sdk.ListAllInstallationsResponse{
-		Installations: installationsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListExchangeFiltersRequest struct {
@@ -1256,34 +405,9 @@ type ListExchangeFiltersRequest struct {
 	PageSize   *int    `json:"page_size,omitempty"`
 }
 
-func ListExchangeFiltersRequestFromSDK(v *sdk.ListExchangeFiltersRequest) (*ListExchangeFiltersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExchangeFiltersRequest{
-		ExchangeId: v.ExchangeId,
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-	}, nil
-}
-
 type ListExchangeFiltersResponse struct {
 	Filters       []ExchangeFilter `json:"filters,omitempty"`
 	NextPageToken *string          `json:"next_page_token,omitempty"`
-}
-
-func ListExchangeFiltersResponseToSDK(w *ListExchangeFiltersResponse) (*sdk.ListExchangeFiltersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filtersPublicValue, err := convertSlice(w.Filters, ExchangeFilterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExchangeFiltersResponse.Filters", err)
-	}
-	return &sdk.ListExchangeFiltersResponse{
-		Filters:       filtersPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListExchangesForListingRequest struct {
@@ -1292,34 +416,9 @@ type ListExchangesForListingRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListExchangesForListingRequestFromSDK(v *sdk.ListExchangesForListingRequest) (*ListExchangesForListingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExchangesForListingRequest{
-		ListingId: v.ListingId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListExchangesForListingResponse struct {
 	ExchangeListing []ExchangeListing `json:"exchange_listing,omitempty"`
 	NextPageToken   *string           `json:"next_page_token,omitempty"`
-}
-
-func ListExchangesForListingResponseToSDK(w *ListExchangesForListingResponse) (*sdk.ListExchangesForListingResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangeListingPublicValue, err := convertSlice(w.ExchangeListing, ExchangeListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExchangesForListingResponse.ExchangeListing", err)
-	}
-	return &sdk.ListExchangesForListingResponse{
-		ExchangeListing: exchangeListingPublicValue,
-		NextPageToken:   w.NextPageToken,
-	}, nil
 }
 
 type ListExchangesRequest struct {
@@ -1327,33 +426,9 @@ type ListExchangesRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListExchangesRequestFromSDK(v *sdk.ListExchangesRequest) (*ListExchangesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExchangesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListExchangesResponse struct {
 	Exchanges     []Exchange `json:"exchanges,omitempty"`
 	NextPageToken *string    `json:"next_page_token,omitempty"`
-}
-
-func ListExchangesResponseToSDK(w *ListExchangesResponse) (*sdk.ListExchangesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangesPublicValue, err := convertSlice(w.Exchanges, ExchangeToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExchangesResponse.Exchanges", err)
-	}
-	return &sdk.ListExchangesResponse{
-		Exchanges:     exchangesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListFilesRequest struct {
@@ -1362,38 +437,9 @@ type ListFilesRequest struct {
 	PageSize   *int        `json:"page_size,omitempty"`
 }
 
-func ListFilesRequestFromSDK(v *sdk.ListFilesRequest) (*ListFilesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	fileParentWireValue, err := FileParentFromSDK(v.FileParent)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFilesRequest.FileParent", err)
-	}
-	return &ListFilesRequest{
-		FileParent: fileParentWireValue,
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-	}, nil
-}
-
 type ListFilesResponse struct {
 	FileInfos     []FileInfo `json:"file_infos,omitempty"`
 	NextPageToken *string    `json:"next_page_token,omitempty"`
-}
-
-func ListFilesResponseToSDK(w *ListFilesResponse) (*sdk.ListFilesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fileInfosPublicValue, err := convertSlice(w.FileInfos, FileInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFilesResponse.FileInfos", err)
-	}
-	return &sdk.ListFilesResponse{
-		FileInfos:     fileInfosPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListFulfillmentsResponse struct {
@@ -1401,52 +447,14 @@ type ListFulfillmentsResponse struct {
 	NextPageToken *string              `json:"next_page_token,omitempty"`
 }
 
-func ListFulfillmentsResponseToSDK(w *ListFulfillmentsResponse) (*sdk.ListFulfillmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fulfillmentsPublicValue, err := convertSlice(w.Fulfillments, ListingFulfillmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFulfillmentsResponse.Fulfillments", err)
-	}
-	return &sdk.ListFulfillmentsResponse{
-		Fulfillments:  fulfillmentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ListInstallationsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListInstallationsRequestFromSDK(v *sdk.ListInstallationsRequest) (*ListInstallationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListInstallationsRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListInstallationsResponse struct {
 	Installations []InstallationDetail `json:"installations,omitempty"`
 	NextPageToken *string              `json:"next_page_token,omitempty"`
-}
-
-func ListInstallationsResponseToSDK(w *ListInstallationsResponse) (*sdk.ListInstallationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	installationsPublicValue, err := convertSlice(w.Installations, InstallationDetailToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListInstallationsResponse.Installations", err)
-	}
-	return &sdk.ListInstallationsResponse{
-		Installations: installationsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListListingFulfillmentsRequest struct {
@@ -1455,32 +463,10 @@ type ListListingFulfillmentsRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListListingFulfillmentsRequestFromSDK(v *sdk.ListListingFulfillmentsRequest) (*ListListingFulfillmentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListListingFulfillmentsRequest{
-		ListingId: v.ListingId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListListingsForExchangeRequest struct {
 	ExchangeId *string `json:"exchange_id,omitempty"`
 	PageToken  *string `json:"page_token,omitempty"`
 	PageSize   *int    `json:"page_size,omitempty"`
-}
-
-func ListListingsForExchangeRequestFromSDK(v *sdk.ListListingsForExchangeRequest) (*ListListingsForExchangeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListListingsForExchangeRequest{
-		ExchangeId: v.ExchangeId,
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-	}, nil
 }
 
 type ListListingsForExchangeResponse struct {
@@ -1488,48 +474,14 @@ type ListListingsForExchangeResponse struct {
 	NextPageToken    *string           `json:"next_page_token,omitempty"`
 }
 
-func ListListingsForExchangeResponseToSDK(w *ListListingsForExchangeResponse) (*sdk.ListListingsForExchangeResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangeListingsPublicValue, err := convertSlice(w.ExchangeListings, ExchangeListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListListingsForExchangeResponse.ExchangeListings", err)
-	}
-	return &sdk.ListListingsForExchangeResponse{
-		ExchangeListings: exchangeListingsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
-}
-
 type ListListingsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListListingsRequestFromSDK(v *sdk.ListListingsRequest) (*ListListingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListListingsRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListPersonalizationRequestsForConsumerRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
-}
-
-func ListPersonalizationRequestsForConsumerRequestFromSDK(v *sdk.ListPersonalizationRequestsForConsumerRequest) (*ListPersonalizationRequestsForConsumerRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPersonalizationRequestsForConsumerRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
 }
 
 type ListProviderAnalyticsDashboardResponse struct {
@@ -1539,53 +491,14 @@ type ListProviderAnalyticsDashboardResponse struct {
 	DashboardId *string `json:"dashboard_id,omitempty"`
 }
 
-func ListProviderAnalyticsDashboardResponseToSDK(w *ListProviderAnalyticsDashboardResponse) (*sdk.ListProviderAnalyticsDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionPublicValue, err := int64FromWire(w.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProviderAnalyticsDashboardResponse.Version", err)
-	}
-	return &sdk.ListProviderAnalyticsDashboardResponse{
-		Id:          w.Id,
-		Version:     versionPublicValue,
-		DashboardId: w.DashboardId,
-	}, nil
-}
-
 type ListProvidersRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListProvidersRequestFromSDK(v *sdk.ListProvidersRequest) (*ListProvidersRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListProvidersRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListProvidersResponse struct {
 	Providers     []ProviderInfo `json:"providers,omitempty"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
-}
-
-func ListProvidersResponseToSDK(w *ListProvidersResponse) (*sdk.ListProvidersResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providersPublicValue, err := convertSlice(w.Providers, ProviderInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
-	}
-	return &sdk.ListProvidersResponse{
-		Providers:     providersPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Listing messages.
@@ -1608,42 +521,10 @@ type ListPublishedListingsForConsumerRequest struct {
 	ProviderIds []string `json:"provider_ids,omitempty"`
 }
 
-func ListPublishedListingsForConsumerRequestFromSDK(v *sdk.ListPublishedListingsForConsumerRequest) (*ListPublishedListingsForConsumerRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := ListingTagFromSDK(v.Tags)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPublishedListingsForConsumerRequest.Tags", err)
-	}
-	return &ListPublishedListingsForConsumerRequest{
-		PageToken:         v.PageToken,
-		PageSize:          v.PageSize,
-		Assets:            v.Assets,
-		Categories:        v.Categories,
-		Tags:              tagsWireValue,
-		IsFree:            v.IsFree,
-		IsPrivateExchange: v.IsPrivateExchange,
-		IsStaffPick:       v.IsStaffPick,
-		ProviderIds:       v.ProviderIds,
-	}, nil
-}
-
 type ListPublishedProvidersForConsumerRequest struct {
 	PageToken  *string `json:"page_token,omitempty"`
 	PageSize   *int    `json:"page_size,omitempty"`
 	IsFeatured *bool   `json:"is_featured,omitempty"`
-}
-
-func ListPublishedProvidersForConsumerRequestFromSDK(v *sdk.ListPublishedProvidersForConsumerRequest) (*ListPublishedProvidersForConsumerRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPublishedProvidersForConsumerRequest{
-		PageToken:  v.PageToken,
-		PageSize:   v.PageSize,
-		IsFeatured: v.IsFeatured,
-	}, nil
 }
 
 type ListPublishedProvidersForConsumerResponse struct {
@@ -1651,62 +532,10 @@ type ListPublishedProvidersForConsumerResponse struct {
 	NextPageToken *string        `json:"next_page_token,omitempty"`
 }
 
-func ListPublishedProvidersForConsumerResponseToSDK(w *ListPublishedProvidersForConsumerResponse) (*sdk.ListPublishedProvidersForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	providersPublicValue, err := convertSlice(w.Providers, ProviderInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPublishedProvidersForConsumerResponse.Providers", err)
-	}
-	return &sdk.ListPublishedProvidersForConsumerResponse{
-		Providers:     providersPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type Listing struct {
 	Id      *string         `json:"id,omitempty"`
 	Summary *ListingSummary `json:"summary,omitempty"`
 	Detail  *ListingDetail  `json:"detail,omitempty"`
-}
-
-func ListingFromSDK(v *sdk.Listing) (*Listing, error) {
-	if v == nil {
-		return nil, nil
-	}
-	summaryWireValue, err := ListingSummaryFromSDK(v.Summary)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Listing.Summary", err)
-	}
-	detailWireValue, err := ListingDetailFromSDK(v.Detail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Listing.Detail", err)
-	}
-	return &Listing{
-		Id:      v.Id,
-		Summary: summaryWireValue,
-		Detail:  detailWireValue,
-	}, nil
-}
-
-func ListingToSDK(w *Listing) (*sdk.Listing, error) {
-	if w == nil {
-		return nil, nil
-	}
-	summaryPublicValue, err := ListingSummaryToSDK(w.Summary)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Listing.Summary", err)
-	}
-	detailPublicValue, err := ListingDetailToSDK(w.Detail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Listing.Detail", err)
-	}
-	return &sdk.Listing{
-		Id:      w.Id,
-		Summary: summaryPublicValue,
-		Detail:  detailPublicValue,
-	}, nil
 }
 
 type ListingDetail struct {
@@ -1752,108 +581,6 @@ type ListingDetail struct {
 	Tags []ListingTag `json:"tags,omitempty"`
 }
 
-func ListingDetailFromSDK(v *sdk.ListingDetail) (*ListingDetail, error) {
-	if v == nil {
-		return nil, nil
-	}
-	embeddedNotebookFileInfosWireValue, err := convertSlice(v.EmbeddedNotebookFileInfos, FileInfoFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.EmbeddedNotebookFileInfos", err)
-	}
-	updateFrequencyWireValue, err := DataRefreshInfoFromSDK(v.UpdateFrequency)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.UpdateFrequency", err)
-	}
-	collectionGranularityWireValue, err := DataRefreshInfoFromSDK(v.CollectionGranularity)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionGranularity", err)
-	}
-	collectionDateStartWireValue, err := int64ToWire(v.CollectionDateStart)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionDateStart", err)
-	}
-	collectionDateEndWireValue, err := int64ToWire(v.CollectionDateEnd)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionDateEnd", err)
-	}
-	tagsWireValue, err := convertSlice(v.Tags, ListingTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.Tags", err)
-	}
-	return &ListingDetail{
-		Description:               v.Description,
-		TermsOfService:            v.TermsOfService,
-		DocumentationLink:         v.DocumentationLink,
-		SupportLink:               v.SupportLink,
-		FileIds:                   v.FileIds,
-		PrivacyPolicyLink:         v.PrivacyPolicyLink,
-		EmbeddedNotebookFileInfos: embeddedNotebookFileInfosWireValue,
-		GeographicalCoverage:      v.GeographicalCoverage,
-		Cost:                      v.Cost,
-		PricingModel:              v.PricingModel,
-		UpdateFrequency:           updateFrequencyWireValue,
-		CollectionGranularity:     collectionGranularityWireValue,
-		CollectionDateStart:       collectionDateStartWireValue,
-		CollectionDateEnd:         collectionDateEndWireValue,
-		DataSource:                v.DataSource,
-		Size:                      v.Size,
-		Assets:                    v.Assets,
-		License:                   v.License,
-		Tags:                      tagsWireValue,
-	}, nil
-}
-
-func ListingDetailToSDK(w *ListingDetail) (*sdk.ListingDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	embeddedNotebookFileInfosPublicValue, err := convertSlice(w.EmbeddedNotebookFileInfos, FileInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.EmbeddedNotebookFileInfos", err)
-	}
-	updateFrequencyPublicValue, err := DataRefreshInfoToSDK(w.UpdateFrequency)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.UpdateFrequency", err)
-	}
-	collectionGranularityPublicValue, err := DataRefreshInfoToSDK(w.CollectionGranularity)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionGranularity", err)
-	}
-	collectionDateStartPublicValue, err := int64FromWire(w.CollectionDateStart)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionDateStart", err)
-	}
-	collectionDateEndPublicValue, err := int64FromWire(w.CollectionDateEnd)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionDateEnd", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, ListingTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingDetail.Tags", err)
-	}
-	return &sdk.ListingDetail{
-		Description:               w.Description,
-		TermsOfService:            w.TermsOfService,
-		DocumentationLink:         w.DocumentationLink,
-		SupportLink:               w.SupportLink,
-		FileIds:                   w.FileIds,
-		PrivacyPolicyLink:         w.PrivacyPolicyLink,
-		EmbeddedNotebookFileInfos: embeddedNotebookFileInfosPublicValue,
-		GeographicalCoverage:      w.GeographicalCoverage,
-		Cost:                      w.Cost,
-		PricingModel:              w.PricingModel,
-		UpdateFrequency:           updateFrequencyPublicValue,
-		CollectionGranularity:     collectionGranularityPublicValue,
-		CollectionDateStart:       collectionDateStartPublicValue,
-		CollectionDateEnd:         collectionDateEndPublicValue,
-		DataSource:                w.DataSource,
-		Size:                      w.Size,
-		Assets:                    w.Assets,
-		License:                   w.License,
-		Tags:                      tagsPublicValue,
-	}, nil
-}
-
 type ListingFulfillment struct {
 	ListingId       *string                   `json:"listing_id,omitempty"`
 	FulfillmentType FulfillmentType           `json:"fulfillment_type,omitempty"`
@@ -1862,47 +589,8 @@ type ListingFulfillment struct {
 	RecipientType   DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 }
 
-func ListingFulfillmentToSDK(w *ListingFulfillment) (*sdk.ListingFulfillment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	shareInfoPublicValue, err := ShareInfoToSDK(w.ShareInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.ShareInfo", err)
-	}
-	repoInfoPublicValue, err := RepoInfoToSDK(w.RepoInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.RepoInfo", err)
-	}
-	return &sdk.ListingFulfillment{
-		ListingId:       w.ListingId,
-		FulfillmentType: w.FulfillmentType,
-		ShareInfo:       shareInfoPublicValue,
-		RepoInfo:        repoInfoPublicValue,
-		RecipientType:   w.RecipientType,
-	}, nil
-}
-
 type ListingSetting struct {
 	Visibility Visibility `json:"visibility,omitempty"`
-}
-
-func ListingSettingFromSDK(v *sdk.ListingSetting) (*ListingSetting, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListingSetting{
-		Visibility: v.Visibility,
-	}, nil
-}
-
-func ListingSettingToSDK(w *ListingSetting) (*sdk.ListingSetting, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ListingSetting{
-		Visibility: w.Visibility,
-	}, nil
 }
 
 type ListingSummary struct {
@@ -1929,158 +617,12 @@ type ListingSummary struct {
 	GitRepo *RepoInfo `json:"git_repo,omitempty"`
 }
 
-func ListingSummaryFromSDK(v *sdk.ListingSummary) (*ListingSummary, error) {
-	if v == nil {
-		return nil, nil
-	}
-	shareWireValue, err := ShareInfoFromSDK(v.Share)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.Share", err)
-	}
-	providerRegionWireValue, err := RegionInfoFromSDK(v.ProviderRegion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.ProviderRegion", err)
-	}
-	settingWireValue, err := ListingSettingFromSDK(v.Setting)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.Setting", err)
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.UpdatedAt", err)
-	}
-	publishedAtWireValue, err := int64ToWire(v.PublishedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.PublishedAt", err)
-	}
-	createdByIdWireValue, err := int64ToWire(v.CreatedById)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.CreatedById", err)
-	}
-	updatedByIdWireValue, err := int64ToWire(v.UpdatedById)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.UpdatedById", err)
-	}
-	gitRepoWireValue, err := RepoInfoFromSDK(v.GitRepo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.GitRepo", err)
-	}
-	return &ListingSummary{
-		Name:           v.Name,
-		Subtitle:       v.Subtitle,
-		Status:         v.Status,
-		Share:          shareWireValue,
-		ProviderRegion: providerRegionWireValue,
-		Setting:        settingWireValue,
-		CreatedAt:      createdAtWireValue,
-		CreatedBy:      v.CreatedBy,
-		UpdatedAt:      updatedAtWireValue,
-		UpdatedBy:      v.UpdatedBy,
-		PublishedAt:    publishedAtWireValue,
-		PublishedBy:    v.PublishedBy,
-		Categories:     v.Categories,
-		ListingType:    v.ListingType,
-		CreatedById:    createdByIdWireValue,
-		UpdatedById:    updatedByIdWireValue,
-		ProviderId:     v.ProviderId,
-		ExchangeIds:    v.ExchangeIds,
-		GitRepo:        gitRepoWireValue,
-	}, nil
-}
-
-func ListingSummaryToSDK(w *ListingSummary) (*sdk.ListingSummary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sharePublicValue, err := ShareInfoToSDK(w.Share)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.Share", err)
-	}
-	providerRegionPublicValue, err := RegionInfoToSDK(w.ProviderRegion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.ProviderRegion", err)
-	}
-	settingPublicValue, err := ListingSettingToSDK(w.Setting)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.Setting", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.UpdatedAt", err)
-	}
-	publishedAtPublicValue, err := int64FromWire(w.PublishedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.PublishedAt", err)
-	}
-	createdByIdPublicValue, err := int64FromWire(w.CreatedById)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.CreatedById", err)
-	}
-	updatedByIdPublicValue, err := int64FromWire(w.UpdatedById)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.UpdatedById", err)
-	}
-	gitRepoPublicValue, err := RepoInfoToSDK(w.GitRepo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListingSummary.GitRepo", err)
-	}
-	return &sdk.ListingSummary{
-		Name:           w.Name,
-		Subtitle:       w.Subtitle,
-		Status:         w.Status,
-		Share:          sharePublicValue,
-		ProviderRegion: providerRegionPublicValue,
-		Setting:        settingPublicValue,
-		CreatedAt:      createdAtPublicValue,
-		CreatedBy:      w.CreatedBy,
-		UpdatedAt:      updatedAtPublicValue,
-		UpdatedBy:      w.UpdatedBy,
-		PublishedAt:    publishedAtPublicValue,
-		PublishedBy:    w.PublishedBy,
-		Categories:     w.Categories,
-		ListingType:    w.ListingType,
-		CreatedById:    createdByIdPublicValue,
-		UpdatedById:    updatedByIdPublicValue,
-		ProviderId:     w.ProviderId,
-		ExchangeIds:    w.ExchangeIds,
-		GitRepo:        gitRepoPublicValue,
-	}, nil
-}
-
 type ListingTag struct {
 	// Tag name (enum)
 	TagName ListingTagType `json:"tag_name,omitempty"`
 	// String representation of the tag value. Values should be string literals (no
 	// complex types)
 	TagValues []string `json:"tag_values,omitempty"`
-}
-
-func ListingTagFromSDK(v *sdk.ListingTag) (*ListingTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListingTag{
-		TagName:   v.TagName,
-		TagValues: v.TagValues,
-	}, nil
-}
-
-func ListingTagToSDK(w *ListingTag) (*sdk.ListingTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ListingTag{
-		TagName:   w.TagName,
-		TagValues: w.TagValues,
-	}, nil
 }
 
 type PersonalizationRequest struct {
@@ -2104,50 +646,6 @@ type PersonalizationRequest struct {
 	RecipientType    DeltaSharingRecipientType `json:"recipient_type,omitempty"`
 }
 
-func PersonalizationRequestToSDK(w *PersonalizationRequest) (*sdk.PersonalizationRequest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	consumerRegionPublicValue, err := RegionInfoToSDK(w.ConsumerRegion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ConsumerRegion", err)
-	}
-	contactInfoPublicValue, err := ContactInfoToSDK(w.ContactInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ContactInfo", err)
-	}
-	sharePublicValue, err := ShareInfoToSDK(w.Share)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.Share", err)
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.UpdatedAt", err)
-	}
-	return &sdk.PersonalizationRequest{
-		Id:               w.Id,
-		ConsumerRegion:   consumerRegionPublicValue,
-		ContactInfo:      contactInfoPublicValue,
-		Comment:          w.Comment,
-		IntendedUse:      w.IntendedUse,
-		Status:           w.Status,
-		StatusMessage:    w.StatusMessage,
-		Share:            sharePublicValue,
-		CreatedAt:        createdAtPublicValue,
-		ListingId:        w.ListingId,
-		UpdatedAt:        updatedAtPublicValue,
-		MetastoreId:      w.MetastoreId,
-		ListingName:      w.ListingName,
-		IsFromLighthouse: w.IsFromLighthouse,
-		ProviderId:       w.ProviderId,
-		RecipientType:    w.RecipientType,
-	}, nil
-}
-
 type ProviderInfo struct {
 	Id                   *string `json:"id,omitempty"`
 	Name                 *string `json:"name,omitempty"`
@@ -2167,96 +665,14 @@ type ProviderInfo struct {
 	DarkModeIconFilePath *string `json:"dark_mode_icon_file_path,omitempty"`
 }
 
-func ProviderInfoFromSDK(v *sdk.ProviderInfo) (*ProviderInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ProviderInfo{
-		Id:                   v.Id,
-		Name:                 v.Name,
-		Description:          v.Description,
-		IconFilePath:         v.IconFilePath,
-		BusinessContactEmail: v.BusinessContactEmail,
-		SupportContactEmail:  v.SupportContactEmail,
-		IsFeatured:           v.IsFeatured,
-		PublishedBy:          v.PublishedBy,
-		CompanyWebsiteLink:   v.CompanyWebsiteLink,
-		IconFileId:           v.IconFileId,
-		TermOfServiceLink:    v.TermOfServiceLink,
-		PrivacyPolicyLink:    v.PrivacyPolicyLink,
-		DarkModeIconFileId:   v.DarkModeIconFileId,
-		DarkModeIconFilePath: v.DarkModeIconFilePath,
-	}, nil
-}
-
-func ProviderInfoToSDK(w *ProviderInfo) (*sdk.ProviderInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProviderInfo{
-		Id:                   w.Id,
-		Name:                 w.Name,
-		Description:          w.Description,
-		IconFilePath:         w.IconFilePath,
-		BusinessContactEmail: w.BusinessContactEmail,
-		SupportContactEmail:  w.SupportContactEmail,
-		IsFeatured:           w.IsFeatured,
-		PublishedBy:          w.PublishedBy,
-		CompanyWebsiteLink:   w.CompanyWebsiteLink,
-		IconFileId:           w.IconFileId,
-		TermOfServiceLink:    w.TermOfServiceLink,
-		PrivacyPolicyLink:    w.PrivacyPolicyLink,
-		DarkModeIconFileId:   w.DarkModeIconFileId,
-		DarkModeIconFilePath: w.DarkModeIconFilePath,
-	}, nil
-}
-
 type RegionInfo struct {
 	Cloud  *string `json:"cloud,omitempty"`
 	Region *string `json:"region,omitempty"`
 }
 
-func RegionInfoFromSDK(v *sdk.RegionInfo) (*RegionInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RegionInfo{
-		Cloud:  v.Cloud,
-		Region: v.Region,
-	}, nil
-}
-
-func RegionInfoToSDK(w *RegionInfo) (*sdk.RegionInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RegionInfo{
-		Cloud:  w.Cloud,
-		Region: w.Region,
-	}, nil
-}
-
 type RepoInfo struct {
 	// the git repo url e.g. https://github.com/databrickslabs/dolly.git
 	GitRepoUrl *string `json:"git_repo_url,omitempty"`
-}
-
-func RepoInfoFromSDK(v *sdk.RepoInfo) (*RepoInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RepoInfo{
-		GitRepoUrl: v.GitRepoUrl,
-	}, nil
-}
-
-func RepoInfoToSDK(w *RepoInfo) (*sdk.RepoInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RepoInfo{
-		GitRepoUrl: w.GitRepoUrl,
-	}, nil
 }
 
 type RepoInstallation struct {
@@ -2266,16 +682,6 @@ type RepoInstallation struct {
 	// entrypoint (e.g. a README.md file, or the repo file view in the unified UI)
 	// should just be a relative path
 	RepoPath *string `json:"repo_path,omitempty"`
-}
-
-func RepoInstallationFromSDK(v *sdk.RepoInstallation) (*RepoInstallation, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RepoInstallation{
-		RepoName: v.RepoName,
-		RepoPath: v.RepoPath,
-	}, nil
 }
 
 type SearchPublishedListingsForConsumerRequest struct {
@@ -2293,64 +699,14 @@ type SearchPublishedListingsForConsumerRequest struct {
 	PageSize  *int        `json:"page_size,omitempty"`
 }
 
-func SearchPublishedListingsForConsumerRequestFromSDK(v *sdk.SearchPublishedListingsForConsumerRequest) (*SearchPublishedListingsForConsumerRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SearchPublishedListingsForConsumerRequest{
-		Query:             v.Query,
-		IsFree:            v.IsFree,
-		IsPrivateExchange: v.IsPrivateExchange,
-		ProviderIds:       v.ProviderIds,
-		Categories:        v.Categories,
-		Assets:            v.Assets,
-		PageToken:         v.PageToken,
-		PageSize:          v.PageSize,
-	}, nil
-}
-
 type SearchPublishedListingsForConsumerResponse struct {
 	Listings      []Listing `json:"listings,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
 }
 
-func SearchPublishedListingsForConsumerResponseToSDK(w *SearchPublishedListingsForConsumerResponse) (*sdk.SearchPublishedListingsForConsumerResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingsPublicValue, err := convertSlice(w.Listings, ListingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchPublishedListingsForConsumerResponse.Listings", err)
-	}
-	return &sdk.SearchPublishedListingsForConsumerResponse{
-		Listings:      listingsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ShareInfo struct {
 	Name *string          `json:"name,omitempty"`
 	Type ListingShareType `json:"type,omitempty"`
-}
-
-func ShareInfoFromSDK(v *sdk.ShareInfo) (*ShareInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ShareInfo{
-		Name: v.Name,
-		Type: v.Type,
-	}, nil
-}
-
-func ShareInfoToSDK(w *ShareInfo) (*sdk.ShareInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ShareInfo{
-		Name: w.Name,
-		Type: w.Type,
-	}, nil
 }
 
 type SharedDataObject struct {
@@ -2361,16 +717,6 @@ type SharedDataObject struct {
 	DataObjectType *string `json:"data_object_type,omitempty"`
 }
 
-func SharedDataObjectToSDK(w *SharedDataObject) (*sdk.SharedDataObject, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SharedDataObject{
-		Name:           w.Name,
-		DataObjectType: w.DataObjectType,
-	}, nil
-}
-
 type TokenDetail struct {
 	// These field names must follow the delta sharing protocol. Original message:
 	// RetrieveToken.Response in managed-catalog/api/messages/recipient.proto
@@ -2378,30 +724,6 @@ type TokenDetail struct {
 	BearerToken             *string `json:"bearerToken,omitempty"`
 	Endpoint                *string `json:"endpoint,omitempty"`
 	ExpirationTime          *string `json:"expirationTime,omitempty"`
-}
-
-func TokenDetailFromSDK(v *sdk.TokenDetail) (*TokenDetail, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TokenDetail{
-		ShareCredentialsVersion: v.ShareCredentialsVersion,
-		BearerToken:             v.BearerToken,
-		Endpoint:                v.Endpoint,
-		ExpirationTime:          v.ExpirationTime,
-	}, nil
-}
-
-func TokenDetailToSDK(w *TokenDetail) (*sdk.TokenDetail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TokenDetail{
-		ShareCredentialsVersion: w.ShareCredentialsVersion,
-		BearerToken:             w.BearerToken,
-		Endpoint:                w.Endpoint,
-		ExpirationTime:          w.ExpirationTime,
-	}, nil
 }
 
 type TokenInfo struct {
@@ -2422,94 +744,13 @@ type TokenInfo struct {
 	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
-func TokenInfoFromSDK(v *sdk.TokenInfo) (*TokenInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.CreatedAt", err)
-	}
-	expirationTimeWireValue, err := int64ToWire(v.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.ExpirationTime", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.UpdatedAt", err)
-	}
-	return &TokenInfo{
-		Id:             v.Id,
-		CreatedAt:      createdAtWireValue,
-		CreatedBy:      v.CreatedBy,
-		ActivationUrl:  v.ActivationUrl,
-		ExpirationTime: expirationTimeWireValue,
-		UpdatedAt:      updatedAtWireValue,
-		UpdatedBy:      v.UpdatedBy,
-	}, nil
-}
-
-func TokenInfoToSDK(w *TokenInfo) (*sdk.TokenInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.CreatedAt", err)
-	}
-	expirationTimePublicValue, err := int64FromWire(w.ExpirationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.ExpirationTime", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TokenInfo.UpdatedAt", err)
-	}
-	return &sdk.TokenInfo{
-		Id:             w.Id,
-		CreatedAt:      createdAtPublicValue,
-		CreatedBy:      w.CreatedBy,
-		ActivationUrl:  w.ActivationUrl,
-		ExpirationTime: expirationTimePublicValue,
-		UpdatedAt:      updatedAtPublicValue,
-		UpdatedBy:      w.UpdatedBy,
-	}, nil
-}
-
 type UpdateExchangeFilterRequest struct {
 	Id     *string         `json:"id,omitempty"`
 	Filter *ExchangeFilter `json:"filter,omitempty"`
 }
 
-func UpdateExchangeFilterRequestFromSDK(v *sdk.UpdateExchangeFilterRequest) (*UpdateExchangeFilterRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	filterWireValue, err := ExchangeFilterFromSDK(v.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterRequest.Filter", err)
-	}
-	return &UpdateExchangeFilterRequest{
-		Id:     v.Id,
-		Filter: filterWireValue,
-	}, nil
-}
-
 type UpdateExchangeFilterResponse struct {
 	Filter *ExchangeFilter `json:"filter,omitempty"`
-}
-
-func UpdateExchangeFilterResponseToSDK(w *UpdateExchangeFilterResponse) (*sdk.UpdateExchangeFilterResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	filterPublicValue, err := ExchangeFilterToSDK(w.Filter)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterResponse.Filter", err)
-	}
-	return &sdk.UpdateExchangeFilterResponse{
-		Filter: filterPublicValue,
-	}, nil
 }
 
 type UpdateExchangeRequest struct {
@@ -2517,35 +758,8 @@ type UpdateExchangeRequest struct {
 	Exchange *Exchange `json:"exchange,omitempty"`
 }
 
-func UpdateExchangeRequestFromSDK(v *sdk.UpdateExchangeRequest) (*UpdateExchangeRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exchangeWireValue, err := ExchangeFromSDK(v.Exchange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExchangeRequest.Exchange", err)
-	}
-	return &UpdateExchangeRequest{
-		Id:       v.Id,
-		Exchange: exchangeWireValue,
-	}, nil
-}
-
 type UpdateExchangeResponse struct {
 	Exchange *Exchange `json:"exchange,omitempty"`
-}
-
-func UpdateExchangeResponseToSDK(w *UpdateExchangeResponse) (*sdk.UpdateExchangeResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	exchangePublicValue, err := ExchangeToSDK(w.Exchange)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExchangeResponse.Exchange", err)
-	}
-	return &sdk.UpdateExchangeResponse{
-		Exchange: exchangePublicValue,
-	}, nil
 }
 
 type UpdateInstallationRequest struct {
@@ -2555,37 +769,8 @@ type UpdateInstallationRequest struct {
 	RotateToken    *bool               `json:"rotate_token,omitempty"`
 }
 
-func UpdateInstallationRequestFromSDK(v *sdk.UpdateInstallationRequest) (*UpdateInstallationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	installationWireValue, err := InstallationDetailFromSDK(v.Installation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInstallationRequest.Installation", err)
-	}
-	return &UpdateInstallationRequest{
-		ListingId:      v.ListingId,
-		InstallationId: v.InstallationId,
-		Installation:   installationWireValue,
-		RotateToken:    v.RotateToken,
-	}, nil
-}
-
 type UpdateInstallationResponse struct {
 	Installation *InstallationDetail `json:"installation,omitempty"`
-}
-
-func UpdateInstallationResponseToSDK(w *UpdateInstallationResponse) (*sdk.UpdateInstallationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	installationPublicValue, err := InstallationDetailToSDK(w.Installation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateInstallationResponse.Installation", err)
-	}
-	return &sdk.UpdateInstallationResponse{
-		Installation: installationPublicValue,
-	}, nil
 }
 
 type UpdateListingRequest struct {
@@ -2593,35 +778,8 @@ type UpdateListingRequest struct {
 	Listing *Listing `json:"listing,omitempty"`
 }
 
-func UpdateListingRequestFromSDK(v *sdk.UpdateListingRequest) (*UpdateListingRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	listingWireValue, err := ListingFromSDK(v.Listing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateListingRequest.Listing", err)
-	}
-	return &UpdateListingRequest{
-		Id:      v.Id,
-		Listing: listingWireValue,
-	}, nil
-}
-
 type UpdateListingResponse struct {
 	Listing *Listing `json:"listing,omitempty"`
-}
-
-func UpdateListingResponseToSDK(w *UpdateListingResponse) (*sdk.UpdateListingResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	listingPublicValue, err := ListingToSDK(w.Listing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateListingResponse.Listing", err)
-	}
-	return &sdk.UpdateListingResponse{
-		Listing: listingPublicValue,
-	}, nil
 }
 
 type UpdatePersonalizationRequestStatusRequest struct {
@@ -2632,38 +790,8 @@ type UpdatePersonalizationRequestStatusRequest struct {
 	Share     *ShareInfo                   `json:"share,omitempty"`
 }
 
-func UpdatePersonalizationRequestStatusRequestFromSDK(v *sdk.UpdatePersonalizationRequestStatusRequest) (*UpdatePersonalizationRequestStatusRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	shareWireValue, err := ShareInfoFromSDK(v.Share)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusRequest.Share", err)
-	}
-	return &UpdatePersonalizationRequestStatusRequest{
-		ListingId: v.ListingId,
-		RequestId: v.RequestId,
-		Status:    v.Status,
-		Reason:    v.Reason,
-		Share:     shareWireValue,
-	}, nil
-}
-
 type UpdatePersonalizationRequestStatusResponse struct {
 	Request *PersonalizationRequest `json:"request,omitempty"`
-}
-
-func UpdatePersonalizationRequestStatusResponseToSDK(w *UpdatePersonalizationRequestStatusResponse) (*sdk.UpdatePersonalizationRequestStatusResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestPublicValue, err := PersonalizationRequestToSDK(w.Request)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusResponse.Request", err)
-	}
-	return &sdk.UpdatePersonalizationRequestStatusResponse{
-		Request: requestPublicValue,
-	}, nil
 }
 
 type UpdateProviderAnalyticsDashboardRequest struct {
@@ -2675,20 +803,6 @@ type UpdateProviderAnalyticsDashboardRequest struct {
 	Version *int64 `json:"version,omitempty"`
 }
 
-func UpdateProviderAnalyticsDashboardRequestFromSDK(v *sdk.UpdateProviderAnalyticsDashboardRequest) (*UpdateProviderAnalyticsDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionWireValue, err := int64ToWire(v.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderAnalyticsDashboardRequest.Version", err)
-	}
-	return &UpdateProviderAnalyticsDashboardRequest{
-		Id:      v.Id,
-		Version: versionWireValue,
-	}, nil
-}
-
 type UpdateProviderAnalyticsDashboardResponse struct {
 	// id & version should be the same as the request
 	Id      *string `json:"id,omitempty"`
@@ -2697,55 +811,3029 @@ type UpdateProviderAnalyticsDashboardResponse struct {
 	DashboardId *string `json:"dashboard_id,omitempty"`
 }
 
-func UpdateProviderAnalyticsDashboardResponseToSDK(w *UpdateProviderAnalyticsDashboardResponse) (*sdk.UpdateProviderAnalyticsDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	versionPublicValue, err := int64FromWire(w.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderAnalyticsDashboardResponse.Version", err)
-	}
-	return &sdk.UpdateProviderAnalyticsDashboardResponse{
-		Id:          w.Id,
-		Version:     versionPublicValue,
-		DashboardId: w.DashboardId,
-	}, nil
-}
-
 type UpdateProviderRequest struct {
 	Id       *string       `json:"id,omitempty"`
 	Provider *ProviderInfo `json:"provider,omitempty"`
-}
-
-func UpdateProviderRequestFromSDK(v *sdk.UpdateProviderRequest) (*UpdateProviderRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	providerWireValue, err := ProviderInfoFromSDK(v.Provider)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.Provider", err)
-	}
-	return &UpdateProviderRequest{
-		Id:       v.Id,
-		Provider: providerWireValue,
-	}, nil
 }
 
 type UpdateProviderResponse struct {
 	Provider *ProviderInfo `json:"provider,omitempty"`
 }
 
+// AddExchangeForListingRequestToSDK converts the mirror to the sdk-go type.
+func AddExchangeForListingRequestToSDK(w *AddExchangeForListingRequest) (*sdk.AddExchangeForListingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AddExchangeForListingRequest{}
+	out.ListingId = w.ListingId
+	out.ExchangeId = w.ExchangeId
+	return out, nil
+}
+
+// AddExchangeForListingRequestFromSDK converts the sdk-go type to the mirror.
+func AddExchangeForListingRequestFromSDK(v *sdk.AddExchangeForListingRequest) (*AddExchangeForListingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AddExchangeForListingRequest{}
+	out.ListingId = v.ListingId
+	out.ExchangeId = v.ExchangeId
+	return out, nil
+}
+
+// AddExchangeForListingResponseToSDK converts the mirror to the sdk-go type.
+func AddExchangeForListingResponseToSDK(w *AddExchangeForListingResponse) (*sdk.AddExchangeForListingResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AddExchangeForListingResponse{}
+	conv1, err := ExchangeListingToSDK(w.ExchangeForListing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AddExchangeForListingResponse.ExchangeForListing", err)
+	}
+	out.ExchangeForListing = conv1
+	return out, nil
+}
+
+// AddExchangeForListingResponseFromSDK converts the sdk-go type to the mirror.
+func AddExchangeForListingResponseFromSDK(v *sdk.AddExchangeForListingResponse) (*AddExchangeForListingResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AddExchangeForListingResponse{}
+	conv2, err := ExchangeListingFromSDK(v.ExchangeForListing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AddExchangeForListingResponse.ExchangeForListing", err)
+	}
+	out.ExchangeForListing = conv2
+	return out, nil
+}
+
+// BatchGetListingsRequestToSDK converts the mirror to the sdk-go type.
+func BatchGetListingsRequestToSDK(w *BatchGetListingsRequest) (*sdk.BatchGetListingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchGetListingsRequest{}
+	out.Ids = w.Ids
+	return out, nil
+}
+
+// BatchGetListingsRequestFromSDK converts the sdk-go type to the mirror.
+func BatchGetListingsRequestFromSDK(v *sdk.BatchGetListingsRequest) (*BatchGetListingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchGetListingsRequest{}
+	out.Ids = v.Ids
+	return out, nil
+}
+
+// BatchGetListingsResponseToSDK converts the mirror to the sdk-go type.
+func BatchGetListingsResponseToSDK(w *BatchGetListingsResponse) (*sdk.BatchGetListingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchGetListingsResponse{}
+	conv3, err := convertSlice(w.Listings, ListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchGetListingsResponse.Listings", err)
+	}
+	out.Listings = conv3
+	return out, nil
+}
+
+// BatchGetListingsResponseFromSDK converts the sdk-go type to the mirror.
+func BatchGetListingsResponseFromSDK(v *sdk.BatchGetListingsResponse) (*BatchGetListingsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchGetListingsResponse{}
+	conv4, err := convertSlice(v.Listings, ListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchGetListingsResponse.Listings", err)
+	}
+	out.Listings = conv4
+	return out, nil
+}
+
+// BatchGetProvidersRequestToSDK converts the mirror to the sdk-go type.
+func BatchGetProvidersRequestToSDK(w *BatchGetProvidersRequest) (*sdk.BatchGetProvidersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchGetProvidersRequest{}
+	out.Ids = w.Ids
+	return out, nil
+}
+
+// BatchGetProvidersRequestFromSDK converts the sdk-go type to the mirror.
+func BatchGetProvidersRequestFromSDK(v *sdk.BatchGetProvidersRequest) (*BatchGetProvidersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchGetProvidersRequest{}
+	out.Ids = v.Ids
+	return out, nil
+}
+
+// BatchGetProvidersResponseToSDK converts the mirror to the sdk-go type.
+func BatchGetProvidersResponseToSDK(w *BatchGetProvidersResponse) (*sdk.BatchGetProvidersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchGetProvidersResponse{}
+	conv5, err := convertSlice(w.Providers, ProviderInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchGetProvidersResponse.Providers", err)
+	}
+	out.Providers = conv5
+	return out, nil
+}
+
+// BatchGetProvidersResponseFromSDK converts the sdk-go type to the mirror.
+func BatchGetProvidersResponseFromSDK(v *sdk.BatchGetProvidersResponse) (*BatchGetProvidersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchGetProvidersResponse{}
+	conv6, err := convertSlice(v.Providers, ProviderInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchGetProvidersResponse.Providers", err)
+	}
+	out.Providers = conv6
+	return out, nil
+}
+
+// ConsumerTermsToSDK converts the mirror to the sdk-go type.
+func ConsumerTermsToSDK(w *ConsumerTerms) (*sdk.ConsumerTerms, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConsumerTerms{}
+	out.Version = w.Version
+	return out, nil
+}
+
+// ConsumerTermsFromSDK converts the sdk-go type to the mirror.
+func ConsumerTermsFromSDK(v *sdk.ConsumerTerms) (*ConsumerTerms, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConsumerTerms{}
+	out.Version = v.Version
+	return out, nil
+}
+
+// ContactInfoToSDK converts the mirror to the sdk-go type.
+func ContactInfoToSDK(w *ContactInfo) (*sdk.ContactInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ContactInfo{}
+	out.FirstName = w.FirstName
+	out.LastName = w.LastName
+	out.Email = w.Email
+	out.Company = w.Company
+	return out, nil
+}
+
+// ContactInfoFromSDK converts the sdk-go type to the mirror.
+func ContactInfoFromSDK(v *sdk.ContactInfo) (*ContactInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ContactInfo{}
+	out.FirstName = v.FirstName
+	out.LastName = v.LastName
+	out.Email = v.Email
+	out.Company = v.Company
+	return out, nil
+}
+
+// CreateExchangeFilterRequestToSDK converts the mirror to the sdk-go type.
+func CreateExchangeFilterRequestToSDK(w *CreateExchangeFilterRequest) (*sdk.CreateExchangeFilterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExchangeFilterRequest{}
+	conv7, err := ExchangeFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExchangeFilterRequest.Filter", err)
+	}
+	out.Filter = conv7
+	return out, nil
+}
+
+// CreateExchangeFilterRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExchangeFilterRequestFromSDK(v *sdk.CreateExchangeFilterRequest) (*CreateExchangeFilterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExchangeFilterRequest{}
+	conv8, err := ExchangeFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExchangeFilterRequest.Filter", err)
+	}
+	out.Filter = conv8
+	return out, nil
+}
+
+// CreateExchangeFilterResponseToSDK converts the mirror to the sdk-go type.
+func CreateExchangeFilterResponseToSDK(w *CreateExchangeFilterResponse) (*sdk.CreateExchangeFilterResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExchangeFilterResponse{}
+	out.FilterId = w.FilterId
+	return out, nil
+}
+
+// CreateExchangeFilterResponseFromSDK converts the sdk-go type to the mirror.
+func CreateExchangeFilterResponseFromSDK(v *sdk.CreateExchangeFilterResponse) (*CreateExchangeFilterResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExchangeFilterResponse{}
+	out.FilterId = v.FilterId
+	return out, nil
+}
+
+// CreateExchangeRequestToSDK converts the mirror to the sdk-go type.
+func CreateExchangeRequestToSDK(w *CreateExchangeRequest) (*sdk.CreateExchangeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExchangeRequest{}
+	conv9, err := ExchangeToSDK(w.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExchangeRequest.Exchange", err)
+	}
+	out.Exchange = conv9
+	return out, nil
+}
+
+// CreateExchangeRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExchangeRequestFromSDK(v *sdk.CreateExchangeRequest) (*CreateExchangeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExchangeRequest{}
+	conv10, err := ExchangeFromSDK(v.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExchangeRequest.Exchange", err)
+	}
+	out.Exchange = conv10
+	return out, nil
+}
+
+// CreateExchangeResponseToSDK converts the mirror to the sdk-go type.
+func CreateExchangeResponseToSDK(w *CreateExchangeResponse) (*sdk.CreateExchangeResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExchangeResponse{}
+	out.ExchangeId = w.ExchangeId
+	return out, nil
+}
+
+// CreateExchangeResponseFromSDK converts the sdk-go type to the mirror.
+func CreateExchangeResponseFromSDK(v *sdk.CreateExchangeResponse) (*CreateExchangeResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExchangeResponse{}
+	out.ExchangeId = v.ExchangeId
+	return out, nil
+}
+
+// CreateFileRequestToSDK converts the mirror to the sdk-go type.
+func CreateFileRequestToSDK(w *CreateFileRequest) (*sdk.CreateFileRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFileRequest{}
+	conv11, err := FileParentToSDK(w.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFileRequest.FileParent", err)
+	}
+	out.FileParent = conv11
+	out.MarketplaceFileType = w.MarketplaceFileType
+	out.MimeType = w.MimeType
+	out.DisplayName = w.DisplayName
+	return out, nil
+}
+
+// CreateFileRequestFromSDK converts the sdk-go type to the mirror.
+func CreateFileRequestFromSDK(v *sdk.CreateFileRequest) (*CreateFileRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFileRequest{}
+	conv12, err := FileParentFromSDK(v.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFileRequest.FileParent", err)
+	}
+	out.FileParent = conv12
+	out.MarketplaceFileType = v.MarketplaceFileType
+	out.MimeType = v.MimeType
+	out.DisplayName = v.DisplayName
+	return out, nil
+}
+
+// CreateFileResponseToSDK converts the mirror to the sdk-go type.
+func CreateFileResponseToSDK(w *CreateFileResponse) (*sdk.CreateFileResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFileResponse{}
+	out.UploadUrl = w.UploadUrl
+	conv13, err := FileInfoToSDK(w.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFileResponse.FileInfo", err)
+	}
+	out.FileInfo = conv13
+	return out, nil
+}
+
+// CreateFileResponseFromSDK converts the sdk-go type to the mirror.
+func CreateFileResponseFromSDK(v *sdk.CreateFileResponse) (*CreateFileResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateFileResponse{}
+	out.UploadUrl = v.UploadUrl
+	conv14, err := FileInfoFromSDK(v.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFileResponse.FileInfo", err)
+	}
+	out.FileInfo = conv14
+	return out, nil
+}
+
+// CreateInstallationRequestToSDK converts the mirror to the sdk-go type.
+func CreateInstallationRequestToSDK(w *CreateInstallationRequest) (*sdk.CreateInstallationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateInstallationRequest{}
+	out.ListingId = w.ListingId
+	out.ShareName = w.ShareName
+	out.CatalogName = w.CatalogName
+	conv15, err := RepoInstallationToSDK(w.RepoDetail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.RepoDetail", err)
+	}
+	out.RepoDetail = conv15
+	out.RecipientType = w.RecipientType
+	conv16, err := ConsumerTermsToSDK(w.AcceptedConsumerTerms)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.AcceptedConsumerTerms", err)
+	}
+	out.AcceptedConsumerTerms = conv16
+	return out, nil
+}
+
+// CreateInstallationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateInstallationRequestFromSDK(v *sdk.CreateInstallationRequest) (*CreateInstallationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateInstallationRequest{}
+	out.ListingId = v.ListingId
+	out.ShareName = v.ShareName
+	out.CatalogName = v.CatalogName
+	conv17, err := RepoInstallationFromSDK(v.RepoDetail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.RepoDetail", err)
+	}
+	out.RepoDetail = conv17
+	out.RecipientType = v.RecipientType
+	conv18, err := ConsumerTermsFromSDK(v.AcceptedConsumerTerms)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationRequest.AcceptedConsumerTerms", err)
+	}
+	out.AcceptedConsumerTerms = conv18
+	return out, nil
+}
+
+// CreateInstallationResponseToSDK converts the mirror to the sdk-go type.
+func CreateInstallationResponseToSDK(w *CreateInstallationResponse) (*sdk.CreateInstallationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateInstallationResponse{}
+	conv19, err := InstallationDetailToSDK(w.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationResponse.Installation", err)
+	}
+	out.Installation = conv19
+	return out, nil
+}
+
+// CreateInstallationResponseFromSDK converts the sdk-go type to the mirror.
+func CreateInstallationResponseFromSDK(v *sdk.CreateInstallationResponse) (*CreateInstallationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateInstallationResponse{}
+	conv20, err := InstallationDetailFromSDK(v.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateInstallationResponse.Installation", err)
+	}
+	out.Installation = conv20
+	return out, nil
+}
+
+// CreateListingRequestToSDK converts the mirror to the sdk-go type.
+func CreateListingRequestToSDK(w *CreateListingRequest) (*sdk.CreateListingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateListingRequest{}
+	conv21, err := ListingToSDK(w.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateListingRequest.Listing", err)
+	}
+	out.Listing = conv21
+	return out, nil
+}
+
+// CreateListingRequestFromSDK converts the sdk-go type to the mirror.
+func CreateListingRequestFromSDK(v *sdk.CreateListingRequest) (*CreateListingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateListingRequest{}
+	conv22, err := ListingFromSDK(v.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateListingRequest.Listing", err)
+	}
+	out.Listing = conv22
+	return out, nil
+}
+
+// CreateListingResponseToSDK converts the mirror to the sdk-go type.
+func CreateListingResponseToSDK(w *CreateListingResponse) (*sdk.CreateListingResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateListingResponse{}
+	out.ListingId = w.ListingId
+	return out, nil
+}
+
+// CreateListingResponseFromSDK converts the sdk-go type to the mirror.
+func CreateListingResponseFromSDK(v *sdk.CreateListingResponse) (*CreateListingResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateListingResponse{}
+	out.ListingId = v.ListingId
+	return out, nil
+}
+
+// CreatePersonalizationRequestToSDK converts the mirror to the sdk-go type.
+func CreatePersonalizationRequestToSDK(w *CreatePersonalizationRequest) (*sdk.CreatePersonalizationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePersonalizationRequest{}
+	out.ListingId = w.ListingId
+	out.Comment = w.Comment
+	out.IntendedUse = w.IntendedUse
+	out.FirstName = w.FirstName
+	out.LastName = w.LastName
+	out.Company = w.Company
+	out.IsFromLighthouse = w.IsFromLighthouse
+	out.RecipientType = w.RecipientType
+	conv23, err := ConsumerTermsToSDK(w.AcceptedConsumerTerms)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePersonalizationRequest.AcceptedConsumerTerms", err)
+	}
+	out.AcceptedConsumerTerms = conv23
+	return out, nil
+}
+
+// CreatePersonalizationRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePersonalizationRequestFromSDK(v *sdk.CreatePersonalizationRequest) (*CreatePersonalizationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePersonalizationRequest{}
+	out.ListingId = v.ListingId
+	out.Comment = v.Comment
+	out.IntendedUse = v.IntendedUse
+	out.FirstName = v.FirstName
+	out.LastName = v.LastName
+	out.Company = v.Company
+	out.IsFromLighthouse = v.IsFromLighthouse
+	out.RecipientType = v.RecipientType
+	conv24, err := ConsumerTermsFromSDK(v.AcceptedConsumerTerms)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePersonalizationRequest.AcceptedConsumerTerms", err)
+	}
+	out.AcceptedConsumerTerms = conv24
+	return out, nil
+}
+
+// CreatePersonalizationResponseToSDK converts the mirror to the sdk-go type.
+func CreatePersonalizationResponseToSDK(w *CreatePersonalizationResponse) (*sdk.CreatePersonalizationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePersonalizationResponse{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreatePersonalizationResponseFromSDK converts the sdk-go type to the mirror.
+func CreatePersonalizationResponseFromSDK(v *sdk.CreatePersonalizationResponse) (*CreatePersonalizationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePersonalizationResponse{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// CreateProviderAnalyticsDashboardRequestToSDK converts the mirror to the sdk-go type.
+func CreateProviderAnalyticsDashboardRequestToSDK(w *CreateProviderAnalyticsDashboardRequest) (*sdk.CreateProviderAnalyticsDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProviderAnalyticsDashboardRequest{}
+	return out, nil
+}
+
+// CreateProviderAnalyticsDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func CreateProviderAnalyticsDashboardRequestFromSDK(v *sdk.CreateProviderAnalyticsDashboardRequest) (*CreateProviderAnalyticsDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProviderAnalyticsDashboardRequest{}
+	return out, nil
+}
+
+// CreateProviderAnalyticsDashboardResponseToSDK converts the mirror to the sdk-go type.
+func CreateProviderAnalyticsDashboardResponseToSDK(w *CreateProviderAnalyticsDashboardResponse) (*sdk.CreateProviderAnalyticsDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProviderAnalyticsDashboardResponse{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreateProviderAnalyticsDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func CreateProviderAnalyticsDashboardResponseFromSDK(v *sdk.CreateProviderAnalyticsDashboardResponse) (*CreateProviderAnalyticsDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProviderAnalyticsDashboardResponse{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// CreateProviderRequestToSDK converts the mirror to the sdk-go type.
+func CreateProviderRequestToSDK(w *CreateProviderRequest) (*sdk.CreateProviderRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProviderRequest{}
+	conv25, err := ProviderInfoToSDK(w.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.Provider", err)
+	}
+	out.Provider = conv25
+	return out, nil
+}
+
+// CreateProviderRequestFromSDK converts the sdk-go type to the mirror.
+func CreateProviderRequestFromSDK(v *sdk.CreateProviderRequest) (*CreateProviderRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProviderRequest{}
+	conv26, err := ProviderInfoFromSDK(v.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateProviderRequest.Provider", err)
+	}
+	out.Provider = conv26
+	return out, nil
+}
+
+// CreateProviderResponseToSDK converts the mirror to the sdk-go type.
+func CreateProviderResponseToSDK(w *CreateProviderResponse) (*sdk.CreateProviderResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateProviderResponse{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// CreateProviderResponseFromSDK converts the sdk-go type to the mirror.
+func CreateProviderResponseFromSDK(v *sdk.CreateProviderResponse) (*CreateProviderResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateProviderResponse{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// DataRefreshInfoToSDK converts the mirror to the sdk-go type.
+func DataRefreshInfoToSDK(w *DataRefreshInfo) (*sdk.DataRefreshInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataRefreshInfo{}
+	out.Interval = w.Interval
+	out.Unit = w.Unit
+	return out, nil
+}
+
+// DataRefreshInfoFromSDK converts the sdk-go type to the mirror.
+func DataRefreshInfoFromSDK(v *sdk.DataRefreshInfo) (*DataRefreshInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataRefreshInfo{}
+	out.Interval = v.Interval
+	out.Unit = v.Unit
+	return out, nil
+}
+
+// ExchangeToSDK converts the mirror to the sdk-go type.
+func ExchangeToSDK(w *Exchange) (*sdk.Exchange, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Exchange{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Comment = w.Comment
+	conv27, err := convertSlice(w.Filters, ExchangeFilterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Exchange.Filters", err)
+	}
+	out.Filters = conv27
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	conv28, err := convertSlice(w.LinkedListings, ExchangeListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Exchange.LinkedListings", err)
+	}
+	out.LinkedListings = conv28
+	return out, nil
+}
+
+// ExchangeFromSDK converts the sdk-go type to the mirror.
+func ExchangeFromSDK(v *sdk.Exchange) (*Exchange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Exchange{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Comment = v.Comment
+	conv29, err := convertSlice(v.Filters, ExchangeFilterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Exchange.Filters", err)
+	}
+	out.Filters = conv29
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	conv30, err := convertSlice(v.LinkedListings, ExchangeListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Exchange.LinkedListings", err)
+	}
+	out.LinkedListings = conv30
+	return out, nil
+}
+
+// ExchangeFilterToSDK converts the mirror to the sdk-go type.
+func ExchangeFilterToSDK(w *ExchangeFilter) (*sdk.ExchangeFilter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExchangeFilter{}
+	out.Id = w.Id
+	out.ExchangeId = w.ExchangeId
+	out.FilterValue = w.FilterValue
+	out.Name = w.Name
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.FilterType = w.FilterType
+	return out, nil
+}
+
+// ExchangeFilterFromSDK converts the sdk-go type to the mirror.
+func ExchangeFilterFromSDK(v *sdk.ExchangeFilter) (*ExchangeFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExchangeFilter{}
+	out.Id = v.Id
+	out.ExchangeId = v.ExchangeId
+	out.FilterValue = v.FilterValue
+	out.Name = v.Name
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.FilterType = v.FilterType
+	return out, nil
+}
+
+// ExchangeListingToSDK converts the mirror to the sdk-go type.
+func ExchangeListingToSDK(w *ExchangeListing) (*sdk.ExchangeListing, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExchangeListing{}
+	out.Id = w.Id
+	out.ExchangeId = w.ExchangeId
+	out.ExchangeName = w.ExchangeName
+	out.ListingId = w.ListingId
+	out.ListingName = w.ListingName
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	return out, nil
+}
+
+// ExchangeListingFromSDK converts the sdk-go type to the mirror.
+func ExchangeListingFromSDK(v *sdk.ExchangeListing) (*ExchangeListing, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExchangeListing{}
+	out.Id = v.Id
+	out.ExchangeId = v.ExchangeId
+	out.ExchangeName = v.ExchangeName
+	out.ListingId = v.ListingId
+	out.ListingName = v.ListingName
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	return out, nil
+}
+
+// FileInfoToSDK converts the mirror to the sdk-go type.
+func FileInfoToSDK(w *FileInfo) (*sdk.FileInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileInfo{}
+	out.Id = w.Id
+	out.MarketplaceFileType = w.MarketplaceFileType
+	conv31, err := FileParentToSDK(w.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FileInfo.FileParent", err)
+	}
+	out.FileParent = conv31
+	out.MimeType = w.MimeType
+	out.DownloadLink = w.DownloadLink
+	out.CreatedAt = w.CreatedAt
+	out.UpdatedAt = w.UpdatedAt
+	out.DisplayName = w.DisplayName
+	out.Status = w.Status
+	out.StatusMessage = w.StatusMessage
+	return out, nil
+}
+
+// FileInfoFromSDK converts the sdk-go type to the mirror.
+func FileInfoFromSDK(v *sdk.FileInfo) (*FileInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileInfo{}
+	out.Id = v.Id
+	out.MarketplaceFileType = v.MarketplaceFileType
+	conv32, err := FileParentFromSDK(v.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FileInfo.FileParent", err)
+	}
+	out.FileParent = conv32
+	out.MimeType = v.MimeType
+	out.DownloadLink = v.DownloadLink
+	out.CreatedAt = v.CreatedAt
+	out.UpdatedAt = v.UpdatedAt
+	out.DisplayName = v.DisplayName
+	out.Status = v.Status
+	out.StatusMessage = v.StatusMessage
+	return out, nil
+}
+
+// FileParentToSDK converts the mirror to the sdk-go type.
+func FileParentToSDK(w *FileParent) (*sdk.FileParent, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileParent{}
+	out.ParentId = w.ParentId
+	out.FileParentType = w.FileParentType
+	return out, nil
+}
+
+// FileParentFromSDK converts the sdk-go type to the mirror.
+func FileParentFromSDK(v *sdk.FileParent) (*FileParent, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileParent{}
+	out.ParentId = v.ParentId
+	out.FileParentType = v.FileParentType
+	return out, nil
+}
+
+// GetAllPersonalizationRequestsForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func GetAllPersonalizationRequestsForConsumerResponseToSDK(w *GetAllPersonalizationRequestsForConsumerResponse) (*sdk.GetAllPersonalizationRequestsForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetAllPersonalizationRequestsForConsumerResponse{}
+	conv33, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetAllPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv33
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetAllPersonalizationRequestsForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func GetAllPersonalizationRequestsForConsumerResponseFromSDK(v *sdk.GetAllPersonalizationRequestsForConsumerResponse) (*GetAllPersonalizationRequestsForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetAllPersonalizationRequestsForConsumerResponse{}
+	conv34, err := convertSlice(v.PersonalizationRequests, PersonalizationRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetAllPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv34
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetExchangeResponseToSDK converts the mirror to the sdk-go type.
+func GetExchangeResponseToSDK(w *GetExchangeResponse) (*sdk.GetExchangeResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetExchangeResponse{}
+	conv35, err := ExchangeToSDK(w.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExchangeResponse.Exchange", err)
+	}
+	out.Exchange = conv35
+	return out, nil
+}
+
+// GetExchangeResponseFromSDK converts the sdk-go type to the mirror.
+func GetExchangeResponseFromSDK(v *sdk.GetExchangeResponse) (*GetExchangeResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetExchangeResponse{}
+	conv36, err := ExchangeFromSDK(v.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetExchangeResponse.Exchange", err)
+	}
+	out.Exchange = conv36
+	return out, nil
+}
+
+// GetFileResponseToSDK converts the mirror to the sdk-go type.
+func GetFileResponseToSDK(w *GetFileResponse) (*sdk.GetFileResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetFileResponse{}
+	conv37, err := FileInfoToSDK(w.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetFileResponse.FileInfo", err)
+	}
+	out.FileInfo = conv37
+	return out, nil
+}
+
+// GetFileResponseFromSDK converts the sdk-go type to the mirror.
+func GetFileResponseFromSDK(v *sdk.GetFileResponse) (*GetFileResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetFileResponse{}
+	conv38, err := FileInfoFromSDK(v.FileInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetFileResponse.FileInfo", err)
+	}
+	out.FileInfo = conv38
+	return out, nil
+}
+
+// GetInstallationDetailsRequestToSDK converts the mirror to the sdk-go type.
+func GetInstallationDetailsRequestToSDK(w *GetInstallationDetailsRequest) (*sdk.GetInstallationDetailsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetInstallationDetailsRequest{}
+	out.ListingId = w.ListingId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// GetInstallationDetailsRequestFromSDK converts the sdk-go type to the mirror.
+func GetInstallationDetailsRequestFromSDK(v *sdk.GetInstallationDetailsRequest) (*GetInstallationDetailsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetInstallationDetailsRequest{}
+	out.ListingId = v.ListingId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// GetLatestVersionProviderAnalyticsDashboardResponseToSDK converts the mirror to the sdk-go type.
+func GetLatestVersionProviderAnalyticsDashboardResponseToSDK(w *GetLatestVersionProviderAnalyticsDashboardResponse) (*sdk.GetLatestVersionProviderAnalyticsDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetLatestVersionProviderAnalyticsDashboardResponse{}
+	out.Version = w.Version
+	return out, nil
+}
+
+// GetLatestVersionProviderAnalyticsDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func GetLatestVersionProviderAnalyticsDashboardResponseFromSDK(v *sdk.GetLatestVersionProviderAnalyticsDashboardResponse) (*GetLatestVersionProviderAnalyticsDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetLatestVersionProviderAnalyticsDashboardResponse{}
+	out.Version = v.Version
+	return out, nil
+}
+
+// GetListingContentMetadataRequestToSDK converts the mirror to the sdk-go type.
+func GetListingContentMetadataRequestToSDK(w *GetListingContentMetadataRequest) (*sdk.GetListingContentMetadataRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetListingContentMetadataRequest{}
+	out.ListingId = w.ListingId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// GetListingContentMetadataRequestFromSDK converts the sdk-go type to the mirror.
+func GetListingContentMetadataRequestFromSDK(v *sdk.GetListingContentMetadataRequest) (*GetListingContentMetadataRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetListingContentMetadataRequest{}
+	out.ListingId = v.ListingId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// GetListingContentMetadataResponseToSDK converts the mirror to the sdk-go type.
+func GetListingContentMetadataResponseToSDK(w *GetListingContentMetadataResponse) (*sdk.GetListingContentMetadataResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetListingContentMetadataResponse{}
+	conv39, err := convertSlice(w.SharedDataObjects, SharedDataObjectToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingContentMetadataResponse.SharedDataObjects", err)
+	}
+	out.SharedDataObjects = conv39
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetListingContentMetadataResponseFromSDK converts the sdk-go type to the mirror.
+func GetListingContentMetadataResponseFromSDK(v *sdk.GetListingContentMetadataResponse) (*GetListingContentMetadataResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetListingContentMetadataResponse{}
+	conv40, err := convertSlice(v.SharedDataObjects, SharedDataObjectFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingContentMetadataResponse.SharedDataObjects", err)
+	}
+	out.SharedDataObjects = conv40
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetListingResponseToSDK converts the mirror to the sdk-go type.
+func GetListingResponseToSDK(w *GetListingResponse) (*sdk.GetListingResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetListingResponse{}
+	conv41, err := ListingToSDK(w.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingResponse.Listing", err)
+	}
+	out.Listing = conv41
+	return out, nil
+}
+
+// GetListingResponseFromSDK converts the sdk-go type to the mirror.
+func GetListingResponseFromSDK(v *sdk.GetListingResponse) (*GetListingResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetListingResponse{}
+	conv42, err := ListingFromSDK(v.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingResponse.Listing", err)
+	}
+	out.Listing = conv42
+	return out, nil
+}
+
+// GetListingsResponseToSDK converts the mirror to the sdk-go type.
+func GetListingsResponseToSDK(w *GetListingsResponse) (*sdk.GetListingsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetListingsResponse{}
+	conv43, err := convertSlice(w.Listings, ListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingsResponse.Listings", err)
+	}
+	out.Listings = conv43
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetListingsResponseFromSDK converts the sdk-go type to the mirror.
+func GetListingsResponseFromSDK(v *sdk.GetListingsResponse) (*GetListingsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetListingsResponse{}
+	conv44, err := convertSlice(v.Listings, ListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetListingsResponse.Listings", err)
+	}
+	out.Listings = conv44
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetPersonalizationRequestsForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func GetPersonalizationRequestsForConsumerResponseToSDK(w *GetPersonalizationRequestsForConsumerResponse) (*sdk.GetPersonalizationRequestsForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPersonalizationRequestsForConsumerResponse{}
+	conv45, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv45
+	return out, nil
+}
+
+// GetPersonalizationRequestsForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func GetPersonalizationRequestsForConsumerResponseFromSDK(v *sdk.GetPersonalizationRequestsForConsumerResponse) (*GetPersonalizationRequestsForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPersonalizationRequestsForConsumerResponse{}
+	conv46, err := convertSlice(v.PersonalizationRequests, PersonalizationRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForConsumerResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv46
+	return out, nil
+}
+
+// GetPersonalizationRequestsForProviderRequestToSDK converts the mirror to the sdk-go type.
+func GetPersonalizationRequestsForProviderRequestToSDK(w *GetPersonalizationRequestsForProviderRequest) (*sdk.GetPersonalizationRequestsForProviderRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPersonalizationRequestsForProviderRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// GetPersonalizationRequestsForProviderRequestFromSDK converts the sdk-go type to the mirror.
+func GetPersonalizationRequestsForProviderRequestFromSDK(v *sdk.GetPersonalizationRequestsForProviderRequest) (*GetPersonalizationRequestsForProviderRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPersonalizationRequestsForProviderRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// GetPersonalizationRequestsForProviderResponseToSDK converts the mirror to the sdk-go type.
+func GetPersonalizationRequestsForProviderResponseToSDK(w *GetPersonalizationRequestsForProviderResponse) (*sdk.GetPersonalizationRequestsForProviderResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPersonalizationRequestsForProviderResponse{}
+	conv47, err := convertSlice(w.PersonalizationRequests, PersonalizationRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForProviderResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv47
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetPersonalizationRequestsForProviderResponseFromSDK converts the sdk-go type to the mirror.
+func GetPersonalizationRequestsForProviderResponseFromSDK(v *sdk.GetPersonalizationRequestsForProviderResponse) (*GetPersonalizationRequestsForProviderResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPersonalizationRequestsForProviderResponse{}
+	conv48, err := convertSlice(v.PersonalizationRequests, PersonalizationRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPersonalizationRequestsForProviderResponse.PersonalizationRequests", err)
+	}
+	out.PersonalizationRequests = conv48
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetProviderResponseToSDK converts the mirror to the sdk-go type.
+func GetProviderResponseToSDK(w *GetProviderResponse) (*sdk.GetProviderResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetProviderResponse{}
+	conv49, err := ProviderInfoToSDK(w.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetProviderResponse.Provider", err)
+	}
+	out.Provider = conv49
+	return out, nil
+}
+
+// GetProviderResponseFromSDK converts the sdk-go type to the mirror.
+func GetProviderResponseFromSDK(v *sdk.GetProviderResponse) (*GetProviderResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetProviderResponse{}
+	conv50, err := ProviderInfoFromSDK(v.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetProviderResponse.Provider", err)
+	}
+	out.Provider = conv50
+	return out, nil
+}
+
+// GetPublishedListingForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func GetPublishedListingForConsumerResponseToSDK(w *GetPublishedListingForConsumerResponse) (*sdk.GetPublishedListingForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPublishedListingForConsumerResponse{}
+	conv51, err := ListingToSDK(w.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedListingForConsumerResponse.Listing", err)
+	}
+	out.Listing = conv51
+	return out, nil
+}
+
+// GetPublishedListingForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func GetPublishedListingForConsumerResponseFromSDK(v *sdk.GetPublishedListingForConsumerResponse) (*GetPublishedListingForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPublishedListingForConsumerResponse{}
+	conv52, err := ListingFromSDK(v.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedListingForConsumerResponse.Listing", err)
+	}
+	out.Listing = conv52
+	return out, nil
+}
+
+// GetPublishedListingsForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func GetPublishedListingsForConsumerResponseToSDK(w *GetPublishedListingsForConsumerResponse) (*sdk.GetPublishedListingsForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPublishedListingsForConsumerResponse{}
+	conv53, err := convertSlice(w.Listings, ListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedListingsForConsumerResponse.Listings", err)
+	}
+	out.Listings = conv53
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GetPublishedListingsForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func GetPublishedListingsForConsumerResponseFromSDK(v *sdk.GetPublishedListingsForConsumerResponse) (*GetPublishedListingsForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPublishedListingsForConsumerResponse{}
+	conv54, err := convertSlice(v.Listings, ListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedListingsForConsumerResponse.Listings", err)
+	}
+	out.Listings = conv54
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GetPublishedProviderForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func GetPublishedProviderForConsumerResponseToSDK(w *GetPublishedProviderForConsumerResponse) (*sdk.GetPublishedProviderForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPublishedProviderForConsumerResponse{}
+	conv55, err := ProviderInfoToSDK(w.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedProviderForConsumerResponse.Provider", err)
+	}
+	out.Provider = conv55
+	return out, nil
+}
+
+// GetPublishedProviderForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func GetPublishedProviderForConsumerResponseFromSDK(v *sdk.GetPublishedProviderForConsumerResponse) (*GetPublishedProviderForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPublishedProviderForConsumerResponse{}
+	conv56, err := ProviderInfoFromSDK(v.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetPublishedProviderForConsumerResponse.Provider", err)
+	}
+	out.Provider = conv56
+	return out, nil
+}
+
+// InstallationDetailToSDK converts the mirror to the sdk-go type.
+func InstallationDetailToSDK(w *InstallationDetail) (*sdk.InstallationDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.InstallationDetail{}
+	out.Id = w.Id
+	out.ListingId = w.ListingId
+	out.ShareName = w.ShareName
+	out.CatalogName = w.CatalogName
+	out.InstalledOn = w.InstalledOn
+	out.Status = w.Status
+	out.ErrorMessage = w.ErrorMessage
+	out.ListingName = w.ListingName
+	out.RepoName = w.RepoName
+	out.RepoPath = w.RepoPath
+	out.RecipientType = w.RecipientType
+	conv57, err := convertSlice(w.Tokens, TokenInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallationDetail.Tokens", err)
+	}
+	out.Tokens = conv57
+	conv58, err := TokenDetailToSDK(w.TokenDetail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallationDetail.TokenDetail", err)
+	}
+	out.TokenDetail = conv58
+	return out, nil
+}
+
+// InstallationDetailFromSDK converts the sdk-go type to the mirror.
+func InstallationDetailFromSDK(v *sdk.InstallationDetail) (*InstallationDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &InstallationDetail{}
+	out.Id = v.Id
+	out.ListingId = v.ListingId
+	out.ShareName = v.ShareName
+	out.CatalogName = v.CatalogName
+	out.InstalledOn = v.InstalledOn
+	out.Status = v.Status
+	out.ErrorMessage = v.ErrorMessage
+	out.ListingName = v.ListingName
+	out.RepoName = v.RepoName
+	out.RepoPath = v.RepoPath
+	out.RecipientType = v.RecipientType
+	conv59, err := convertSlice(v.Tokens, TokenInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallationDetail.Tokens", err)
+	}
+	out.Tokens = conv59
+	conv60, err := TokenDetailFromSDK(v.TokenDetail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "InstallationDetail.TokenDetail", err)
+	}
+	out.TokenDetail = conv60
+	return out, nil
+}
+
+// ListAllInstallationsResponseToSDK converts the mirror to the sdk-go type.
+func ListAllInstallationsResponseToSDK(w *ListAllInstallationsResponse) (*sdk.ListAllInstallationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAllInstallationsResponse{}
+	conv61, err := convertSlice(w.Installations, InstallationDetailToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAllInstallationsResponse.Installations", err)
+	}
+	out.Installations = conv61
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAllInstallationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAllInstallationsResponseFromSDK(v *sdk.ListAllInstallationsResponse) (*ListAllInstallationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAllInstallationsResponse{}
+	conv62, err := convertSlice(v.Installations, InstallationDetailFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAllInstallationsResponse.Installations", err)
+	}
+	out.Installations = conv62
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListExchangeFiltersRequestToSDK converts the mirror to the sdk-go type.
+func ListExchangeFiltersRequestToSDK(w *ListExchangeFiltersRequest) (*sdk.ListExchangeFiltersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangeFiltersRequest{}
+	out.ExchangeId = w.ExchangeId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListExchangeFiltersRequestFromSDK converts the sdk-go type to the mirror.
+func ListExchangeFiltersRequestFromSDK(v *sdk.ListExchangeFiltersRequest) (*ListExchangeFiltersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangeFiltersRequest{}
+	out.ExchangeId = v.ExchangeId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListExchangeFiltersResponseToSDK converts the mirror to the sdk-go type.
+func ListExchangeFiltersResponseToSDK(w *ListExchangeFiltersResponse) (*sdk.ListExchangeFiltersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangeFiltersResponse{}
+	conv63, err := convertSlice(w.Filters, ExchangeFilterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangeFiltersResponse.Filters", err)
+	}
+	out.Filters = conv63
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExchangeFiltersResponseFromSDK converts the sdk-go type to the mirror.
+func ListExchangeFiltersResponseFromSDK(v *sdk.ListExchangeFiltersResponse) (*ListExchangeFiltersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangeFiltersResponse{}
+	conv64, err := convertSlice(v.Filters, ExchangeFilterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangeFiltersResponse.Filters", err)
+	}
+	out.Filters = conv64
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListExchangesForListingRequestToSDK converts the mirror to the sdk-go type.
+func ListExchangesForListingRequestToSDK(w *ListExchangesForListingRequest) (*sdk.ListExchangesForListingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangesForListingRequest{}
+	out.ListingId = w.ListingId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListExchangesForListingRequestFromSDK converts the sdk-go type to the mirror.
+func ListExchangesForListingRequestFromSDK(v *sdk.ListExchangesForListingRequest) (*ListExchangesForListingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangesForListingRequest{}
+	out.ListingId = v.ListingId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListExchangesForListingResponseToSDK converts the mirror to the sdk-go type.
+func ListExchangesForListingResponseToSDK(w *ListExchangesForListingResponse) (*sdk.ListExchangesForListingResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangesForListingResponse{}
+	conv65, err := convertSlice(w.ExchangeListing, ExchangeListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangesForListingResponse.ExchangeListing", err)
+	}
+	out.ExchangeListing = conv65
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExchangesForListingResponseFromSDK converts the sdk-go type to the mirror.
+func ListExchangesForListingResponseFromSDK(v *sdk.ListExchangesForListingResponse) (*ListExchangesForListingResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangesForListingResponse{}
+	conv66, err := convertSlice(v.ExchangeListing, ExchangeListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangesForListingResponse.ExchangeListing", err)
+	}
+	out.ExchangeListing = conv66
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListExchangesRequestToSDK converts the mirror to the sdk-go type.
+func ListExchangesRequestToSDK(w *ListExchangesRequest) (*sdk.ListExchangesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListExchangesRequestFromSDK converts the sdk-go type to the mirror.
+func ListExchangesRequestFromSDK(v *sdk.ListExchangesRequest) (*ListExchangesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListExchangesResponseToSDK converts the mirror to the sdk-go type.
+func ListExchangesResponseToSDK(w *ListExchangesResponse) (*sdk.ListExchangesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExchangesResponse{}
+	conv67, err := convertSlice(w.Exchanges, ExchangeToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangesResponse.Exchanges", err)
+	}
+	out.Exchanges = conv67
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExchangesResponseFromSDK converts the sdk-go type to the mirror.
+func ListExchangesResponseFromSDK(v *sdk.ListExchangesResponse) (*ListExchangesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExchangesResponse{}
+	conv68, err := convertSlice(v.Exchanges, ExchangeFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExchangesResponse.Exchanges", err)
+	}
+	out.Exchanges = conv68
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListFilesRequestToSDK converts the mirror to the sdk-go type.
+func ListFilesRequestToSDK(w *ListFilesRequest) (*sdk.ListFilesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFilesRequest{}
+	conv69, err := FileParentToSDK(w.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFilesRequest.FileParent", err)
+	}
+	out.FileParent = conv69
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListFilesRequestFromSDK converts the sdk-go type to the mirror.
+func ListFilesRequestFromSDK(v *sdk.ListFilesRequest) (*ListFilesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFilesRequest{}
+	conv70, err := FileParentFromSDK(v.FileParent)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFilesRequest.FileParent", err)
+	}
+	out.FileParent = conv70
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListFilesResponseToSDK converts the mirror to the sdk-go type.
+func ListFilesResponseToSDK(w *ListFilesResponse) (*sdk.ListFilesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFilesResponse{}
+	conv71, err := convertSlice(w.FileInfos, FileInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFilesResponse.FileInfos", err)
+	}
+	out.FileInfos = conv71
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFilesResponseFromSDK converts the sdk-go type to the mirror.
+func ListFilesResponseFromSDK(v *sdk.ListFilesResponse) (*ListFilesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFilesResponse{}
+	conv72, err := convertSlice(v.FileInfos, FileInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFilesResponse.FileInfos", err)
+	}
+	out.FileInfos = conv72
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListFulfillmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListFulfillmentsResponseToSDK(w *ListFulfillmentsResponse) (*sdk.ListFulfillmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFulfillmentsResponse{}
+	conv73, err := convertSlice(w.Fulfillments, ListingFulfillmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFulfillmentsResponse.Fulfillments", err)
+	}
+	out.Fulfillments = conv73
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFulfillmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListFulfillmentsResponseFromSDK(v *sdk.ListFulfillmentsResponse) (*ListFulfillmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFulfillmentsResponse{}
+	conv74, err := convertSlice(v.Fulfillments, ListingFulfillmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFulfillmentsResponse.Fulfillments", err)
+	}
+	out.Fulfillments = conv74
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListInstallationsRequestToSDK converts the mirror to the sdk-go type.
+func ListInstallationsRequestToSDK(w *ListInstallationsRequest) (*sdk.ListInstallationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListInstallationsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListInstallationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListInstallationsRequestFromSDK(v *sdk.ListInstallationsRequest) (*ListInstallationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListInstallationsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListInstallationsResponseToSDK converts the mirror to the sdk-go type.
+func ListInstallationsResponseToSDK(w *ListInstallationsResponse) (*sdk.ListInstallationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListInstallationsResponse{}
+	conv75, err := convertSlice(w.Installations, InstallationDetailToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstallationsResponse.Installations", err)
+	}
+	out.Installations = conv75
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListInstallationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListInstallationsResponseFromSDK(v *sdk.ListInstallationsResponse) (*ListInstallationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListInstallationsResponse{}
+	conv76, err := convertSlice(v.Installations, InstallationDetailFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListInstallationsResponse.Installations", err)
+	}
+	out.Installations = conv76
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListListingFulfillmentsRequestToSDK converts the mirror to the sdk-go type.
+func ListListingFulfillmentsRequestToSDK(w *ListListingFulfillmentsRequest) (*sdk.ListListingFulfillmentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListListingFulfillmentsRequest{}
+	out.ListingId = w.ListingId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListListingFulfillmentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListListingFulfillmentsRequestFromSDK(v *sdk.ListListingFulfillmentsRequest) (*ListListingFulfillmentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListListingFulfillmentsRequest{}
+	out.ListingId = v.ListingId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListListingsForExchangeRequestToSDK converts the mirror to the sdk-go type.
+func ListListingsForExchangeRequestToSDK(w *ListListingsForExchangeRequest) (*sdk.ListListingsForExchangeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListListingsForExchangeRequest{}
+	out.ExchangeId = w.ExchangeId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListListingsForExchangeRequestFromSDK converts the sdk-go type to the mirror.
+func ListListingsForExchangeRequestFromSDK(v *sdk.ListListingsForExchangeRequest) (*ListListingsForExchangeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListListingsForExchangeRequest{}
+	out.ExchangeId = v.ExchangeId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListListingsForExchangeResponseToSDK converts the mirror to the sdk-go type.
+func ListListingsForExchangeResponseToSDK(w *ListListingsForExchangeResponse) (*sdk.ListListingsForExchangeResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListListingsForExchangeResponse{}
+	conv77, err := convertSlice(w.ExchangeListings, ExchangeListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListListingsForExchangeResponse.ExchangeListings", err)
+	}
+	out.ExchangeListings = conv77
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListListingsForExchangeResponseFromSDK converts the sdk-go type to the mirror.
+func ListListingsForExchangeResponseFromSDK(v *sdk.ListListingsForExchangeResponse) (*ListListingsForExchangeResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListListingsForExchangeResponse{}
+	conv78, err := convertSlice(v.ExchangeListings, ExchangeListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListListingsForExchangeResponse.ExchangeListings", err)
+	}
+	out.ExchangeListings = conv78
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListListingsRequestToSDK converts the mirror to the sdk-go type.
+func ListListingsRequestToSDK(w *ListListingsRequest) (*sdk.ListListingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListListingsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListListingsRequestFromSDK converts the sdk-go type to the mirror.
+func ListListingsRequestFromSDK(v *sdk.ListListingsRequest) (*ListListingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListListingsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListPersonalizationRequestsForConsumerRequestToSDK converts the mirror to the sdk-go type.
+func ListPersonalizationRequestsForConsumerRequestToSDK(w *ListPersonalizationRequestsForConsumerRequest) (*sdk.ListPersonalizationRequestsForConsumerRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPersonalizationRequestsForConsumerRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListPersonalizationRequestsForConsumerRequestFromSDK converts the sdk-go type to the mirror.
+func ListPersonalizationRequestsForConsumerRequestFromSDK(v *sdk.ListPersonalizationRequestsForConsumerRequest) (*ListPersonalizationRequestsForConsumerRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPersonalizationRequestsForConsumerRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListProviderAnalyticsDashboardResponseToSDK converts the mirror to the sdk-go type.
+func ListProviderAnalyticsDashboardResponseToSDK(w *ListProviderAnalyticsDashboardResponse) (*sdk.ListProviderAnalyticsDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProviderAnalyticsDashboardResponse{}
+	out.Id = w.Id
+	out.Version = w.Version
+	out.DashboardId = w.DashboardId
+	return out, nil
+}
+
+// ListProviderAnalyticsDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func ListProviderAnalyticsDashboardResponseFromSDK(v *sdk.ListProviderAnalyticsDashboardResponse) (*ListProviderAnalyticsDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProviderAnalyticsDashboardResponse{}
+	out.Id = v.Id
+	out.Version = v.Version
+	out.DashboardId = v.DashboardId
+	return out, nil
+}
+
+// ListProvidersRequestToSDK converts the mirror to the sdk-go type.
+func ListProvidersRequestToSDK(w *ListProvidersRequest) (*sdk.ListProvidersRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProvidersRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListProvidersRequestFromSDK converts the sdk-go type to the mirror.
+func ListProvidersRequestFromSDK(v *sdk.ListProvidersRequest) (*ListProvidersRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProvidersRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListProvidersResponseToSDK converts the mirror to the sdk-go type.
+func ListProvidersResponseToSDK(w *ListProvidersResponse) (*sdk.ListProvidersResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListProvidersResponse{}
+	conv79, err := convertSlice(w.Providers, ProviderInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
+	}
+	out.Providers = conv79
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListProvidersResponseFromSDK converts the sdk-go type to the mirror.
+func ListProvidersResponseFromSDK(v *sdk.ListProvidersResponse) (*ListProvidersResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListProvidersResponse{}
+	conv80, err := convertSlice(v.Providers, ProviderInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListProvidersResponse.Providers", err)
+	}
+	out.Providers = conv80
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListPublishedListingsForConsumerRequestToSDK converts the mirror to the sdk-go type.
+func ListPublishedListingsForConsumerRequestToSDK(w *ListPublishedListingsForConsumerRequest) (*sdk.ListPublishedListingsForConsumerRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedListingsForConsumerRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.Assets = w.Assets
+	out.Categories = w.Categories
+	conv81, err := ListingTagToSDK(w.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedListingsForConsumerRequest.Tags", err)
+	}
+	out.Tags = conv81
+	out.IsFree = w.IsFree
+	out.IsPrivateExchange = w.IsPrivateExchange
+	out.IsStaffPick = w.IsStaffPick
+	out.ProviderIds = w.ProviderIds
+	return out, nil
+}
+
+// ListPublishedListingsForConsumerRequestFromSDK converts the sdk-go type to the mirror.
+func ListPublishedListingsForConsumerRequestFromSDK(v *sdk.ListPublishedListingsForConsumerRequest) (*ListPublishedListingsForConsumerRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedListingsForConsumerRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.Assets = v.Assets
+	out.Categories = v.Categories
+	conv82, err := ListingTagFromSDK(v.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedListingsForConsumerRequest.Tags", err)
+	}
+	out.Tags = conv82
+	out.IsFree = v.IsFree
+	out.IsPrivateExchange = v.IsPrivateExchange
+	out.IsStaffPick = v.IsStaffPick
+	out.ProviderIds = v.ProviderIds
+	return out, nil
+}
+
+// ListPublishedProvidersForConsumerRequestToSDK converts the mirror to the sdk-go type.
+func ListPublishedProvidersForConsumerRequestToSDK(w *ListPublishedProvidersForConsumerRequest) (*sdk.ListPublishedProvidersForConsumerRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedProvidersForConsumerRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.IsFeatured = w.IsFeatured
+	return out, nil
+}
+
+// ListPublishedProvidersForConsumerRequestFromSDK converts the sdk-go type to the mirror.
+func ListPublishedProvidersForConsumerRequestFromSDK(v *sdk.ListPublishedProvidersForConsumerRequest) (*ListPublishedProvidersForConsumerRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedProvidersForConsumerRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.IsFeatured = v.IsFeatured
+	return out, nil
+}
+
+// ListPublishedProvidersForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func ListPublishedProvidersForConsumerResponseToSDK(w *ListPublishedProvidersForConsumerResponse) (*sdk.ListPublishedProvidersForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedProvidersForConsumerResponse{}
+	conv83, err := convertSlice(w.Providers, ProviderInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedProvidersForConsumerResponse.Providers", err)
+	}
+	out.Providers = conv83
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPublishedProvidersForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func ListPublishedProvidersForConsumerResponseFromSDK(v *sdk.ListPublishedProvidersForConsumerResponse) (*ListPublishedProvidersForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedProvidersForConsumerResponse{}
+	conv84, err := convertSlice(v.Providers, ProviderInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedProvidersForConsumerResponse.Providers", err)
+	}
+	out.Providers = conv84
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListingToSDK converts the mirror to the sdk-go type.
+func ListingToSDK(w *Listing) (*sdk.Listing, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Listing{}
+	out.Id = w.Id
+	conv85, err := ListingSummaryToSDK(w.Summary)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Listing.Summary", err)
+	}
+	out.Summary = conv85
+	conv86, err := ListingDetailToSDK(w.Detail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Listing.Detail", err)
+	}
+	out.Detail = conv86
+	return out, nil
+}
+
+// ListingFromSDK converts the sdk-go type to the mirror.
+func ListingFromSDK(v *sdk.Listing) (*Listing, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Listing{}
+	out.Id = v.Id
+	conv87, err := ListingSummaryFromSDK(v.Summary)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Listing.Summary", err)
+	}
+	out.Summary = conv87
+	conv88, err := ListingDetailFromSDK(v.Detail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Listing.Detail", err)
+	}
+	out.Detail = conv88
+	return out, nil
+}
+
+// ListingDetailToSDK converts the mirror to the sdk-go type.
+func ListingDetailToSDK(w *ListingDetail) (*sdk.ListingDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListingDetail{}
+	out.Description = w.Description
+	out.TermsOfService = w.TermsOfService
+	out.DocumentationLink = w.DocumentationLink
+	out.SupportLink = w.SupportLink
+	out.FileIds = w.FileIds
+	out.PrivacyPolicyLink = w.PrivacyPolicyLink
+	conv89, err := convertSlice(w.EmbeddedNotebookFileInfos, FileInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.EmbeddedNotebookFileInfos", err)
+	}
+	out.EmbeddedNotebookFileInfos = conv89
+	out.GeographicalCoverage = w.GeographicalCoverage
+	out.Cost = w.Cost
+	out.PricingModel = w.PricingModel
+	conv90, err := DataRefreshInfoToSDK(w.UpdateFrequency)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.UpdateFrequency", err)
+	}
+	out.UpdateFrequency = conv90
+	conv91, err := DataRefreshInfoToSDK(w.CollectionGranularity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionGranularity", err)
+	}
+	out.CollectionGranularity = conv91
+	out.CollectionDateStart = w.CollectionDateStart
+	out.CollectionDateEnd = w.CollectionDateEnd
+	out.DataSource = w.DataSource
+	out.Size = w.Size
+	out.Assets = w.Assets
+	out.License = w.License
+	conv92, err := convertSlice(w.Tags, ListingTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.Tags", err)
+	}
+	out.Tags = conv92
+	return out, nil
+}
+
+// ListingDetailFromSDK converts the sdk-go type to the mirror.
+func ListingDetailFromSDK(v *sdk.ListingDetail) (*ListingDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListingDetail{}
+	out.Description = v.Description
+	out.TermsOfService = v.TermsOfService
+	out.DocumentationLink = v.DocumentationLink
+	out.SupportLink = v.SupportLink
+	out.FileIds = v.FileIds
+	out.PrivacyPolicyLink = v.PrivacyPolicyLink
+	conv93, err := convertSlice(v.EmbeddedNotebookFileInfos, FileInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.EmbeddedNotebookFileInfos", err)
+	}
+	out.EmbeddedNotebookFileInfos = conv93
+	out.GeographicalCoverage = v.GeographicalCoverage
+	out.Cost = v.Cost
+	out.PricingModel = v.PricingModel
+	conv94, err := DataRefreshInfoFromSDK(v.UpdateFrequency)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.UpdateFrequency", err)
+	}
+	out.UpdateFrequency = conv94
+	conv95, err := DataRefreshInfoFromSDK(v.CollectionGranularity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.CollectionGranularity", err)
+	}
+	out.CollectionGranularity = conv95
+	out.CollectionDateStart = v.CollectionDateStart
+	out.CollectionDateEnd = v.CollectionDateEnd
+	out.DataSource = v.DataSource
+	out.Size = v.Size
+	out.Assets = v.Assets
+	out.License = v.License
+	conv96, err := convertSlice(v.Tags, ListingTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingDetail.Tags", err)
+	}
+	out.Tags = conv96
+	return out, nil
+}
+
+// ListingFulfillmentToSDK converts the mirror to the sdk-go type.
+func ListingFulfillmentToSDK(w *ListingFulfillment) (*sdk.ListingFulfillment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListingFulfillment{}
+	out.ListingId = w.ListingId
+	out.FulfillmentType = w.FulfillmentType
+	conv97, err := ShareInfoToSDK(w.ShareInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.ShareInfo", err)
+	}
+	out.ShareInfo = conv97
+	conv98, err := RepoInfoToSDK(w.RepoInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.RepoInfo", err)
+	}
+	out.RepoInfo = conv98
+	out.RecipientType = w.RecipientType
+	return out, nil
+}
+
+// ListingFulfillmentFromSDK converts the sdk-go type to the mirror.
+func ListingFulfillmentFromSDK(v *sdk.ListingFulfillment) (*ListingFulfillment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListingFulfillment{}
+	out.ListingId = v.ListingId
+	out.FulfillmentType = v.FulfillmentType
+	conv99, err := ShareInfoFromSDK(v.ShareInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.ShareInfo", err)
+	}
+	out.ShareInfo = conv99
+	conv100, err := RepoInfoFromSDK(v.RepoInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingFulfillment.RepoInfo", err)
+	}
+	out.RepoInfo = conv100
+	out.RecipientType = v.RecipientType
+	return out, nil
+}
+
+// ListingSettingToSDK converts the mirror to the sdk-go type.
+func ListingSettingToSDK(w *ListingSetting) (*sdk.ListingSetting, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListingSetting{}
+	out.Visibility = w.Visibility
+	return out, nil
+}
+
+// ListingSettingFromSDK converts the sdk-go type to the mirror.
+func ListingSettingFromSDK(v *sdk.ListingSetting) (*ListingSetting, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListingSetting{}
+	out.Visibility = v.Visibility
+	return out, nil
+}
+
+// ListingSummaryToSDK converts the mirror to the sdk-go type.
+func ListingSummaryToSDK(w *ListingSummary) (*sdk.ListingSummary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListingSummary{}
+	out.Name = w.Name
+	out.Subtitle = w.Subtitle
+	out.Status = w.Status
+	conv101, err := ShareInfoToSDK(w.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.Share", err)
+	}
+	out.Share = conv101
+	conv102, err := RegionInfoToSDK(w.ProviderRegion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.ProviderRegion", err)
+	}
+	out.ProviderRegion = conv102
+	conv103, err := ListingSettingToSDK(w.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.Setting", err)
+	}
+	out.Setting = conv103
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.PublishedAt = w.PublishedAt
+	out.PublishedBy = w.PublishedBy
+	out.Categories = w.Categories
+	out.ListingType = w.ListingType
+	out.CreatedById = w.CreatedById
+	out.UpdatedById = w.UpdatedById
+	out.ProviderId = w.ProviderId
+	out.ExchangeIds = w.ExchangeIds
+	conv104, err := RepoInfoToSDK(w.GitRepo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.GitRepo", err)
+	}
+	out.GitRepo = conv104
+	return out, nil
+}
+
+// ListingSummaryFromSDK converts the sdk-go type to the mirror.
+func ListingSummaryFromSDK(v *sdk.ListingSummary) (*ListingSummary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListingSummary{}
+	out.Name = v.Name
+	out.Subtitle = v.Subtitle
+	out.Status = v.Status
+	conv105, err := ShareInfoFromSDK(v.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.Share", err)
+	}
+	out.Share = conv105
+	conv106, err := RegionInfoFromSDK(v.ProviderRegion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.ProviderRegion", err)
+	}
+	out.ProviderRegion = conv106
+	conv107, err := ListingSettingFromSDK(v.Setting)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.Setting", err)
+	}
+	out.Setting = conv107
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.PublishedAt = v.PublishedAt
+	out.PublishedBy = v.PublishedBy
+	out.Categories = v.Categories
+	out.ListingType = v.ListingType
+	out.CreatedById = v.CreatedById
+	out.UpdatedById = v.UpdatedById
+	out.ProviderId = v.ProviderId
+	out.ExchangeIds = v.ExchangeIds
+	conv108, err := RepoInfoFromSDK(v.GitRepo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListingSummary.GitRepo", err)
+	}
+	out.GitRepo = conv108
+	return out, nil
+}
+
+// ListingTagToSDK converts the mirror to the sdk-go type.
+func ListingTagToSDK(w *ListingTag) (*sdk.ListingTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListingTag{}
+	out.TagName = w.TagName
+	out.TagValues = w.TagValues
+	return out, nil
+}
+
+// ListingTagFromSDK converts the sdk-go type to the mirror.
+func ListingTagFromSDK(v *sdk.ListingTag) (*ListingTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListingTag{}
+	out.TagName = v.TagName
+	out.TagValues = v.TagValues
+	return out, nil
+}
+
+// PersonalizationRequestToSDK converts the mirror to the sdk-go type.
+func PersonalizationRequestToSDK(w *PersonalizationRequest) (*sdk.PersonalizationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PersonalizationRequest{}
+	out.Id = w.Id
+	conv109, err := RegionInfoToSDK(w.ConsumerRegion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ConsumerRegion", err)
+	}
+	out.ConsumerRegion = conv109
+	conv110, err := ContactInfoToSDK(w.ContactInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ContactInfo", err)
+	}
+	out.ContactInfo = conv110
+	out.Comment = w.Comment
+	out.IntendedUse = w.IntendedUse
+	out.Status = w.Status
+	out.StatusMessage = w.StatusMessage
+	conv111, err := ShareInfoToSDK(w.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.Share", err)
+	}
+	out.Share = conv111
+	out.CreatedAt = w.CreatedAt
+	out.ListingId = w.ListingId
+	out.UpdatedAt = w.UpdatedAt
+	out.MetastoreId = w.MetastoreId
+	out.ListingName = w.ListingName
+	out.IsFromLighthouse = w.IsFromLighthouse
+	out.ProviderId = w.ProviderId
+	out.RecipientType = w.RecipientType
+	return out, nil
+}
+
+// PersonalizationRequestFromSDK converts the sdk-go type to the mirror.
+func PersonalizationRequestFromSDK(v *sdk.PersonalizationRequest) (*PersonalizationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PersonalizationRequest{}
+	out.Id = v.Id
+	conv112, err := RegionInfoFromSDK(v.ConsumerRegion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ConsumerRegion", err)
+	}
+	out.ConsumerRegion = conv112
+	conv113, err := ContactInfoFromSDK(v.ContactInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.ContactInfo", err)
+	}
+	out.ContactInfo = conv113
+	out.Comment = v.Comment
+	out.IntendedUse = v.IntendedUse
+	out.Status = v.Status
+	out.StatusMessage = v.StatusMessage
+	conv114, err := ShareInfoFromSDK(v.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PersonalizationRequest.Share", err)
+	}
+	out.Share = conv114
+	out.CreatedAt = v.CreatedAt
+	out.ListingId = v.ListingId
+	out.UpdatedAt = v.UpdatedAt
+	out.MetastoreId = v.MetastoreId
+	out.ListingName = v.ListingName
+	out.IsFromLighthouse = v.IsFromLighthouse
+	out.ProviderId = v.ProviderId
+	out.RecipientType = v.RecipientType
+	return out, nil
+}
+
+// ProviderInfoToSDK converts the mirror to the sdk-go type.
+func ProviderInfoToSDK(w *ProviderInfo) (*sdk.ProviderInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProviderInfo{}
+	out.Id = w.Id
+	out.Name = w.Name
+	out.Description = w.Description
+	out.IconFilePath = w.IconFilePath
+	out.BusinessContactEmail = w.BusinessContactEmail
+	out.SupportContactEmail = w.SupportContactEmail
+	out.IsFeatured = w.IsFeatured
+	out.PublishedBy = w.PublishedBy
+	out.CompanyWebsiteLink = w.CompanyWebsiteLink
+	out.IconFileId = w.IconFileId
+	out.TermOfServiceLink = w.TermOfServiceLink
+	out.PrivacyPolicyLink = w.PrivacyPolicyLink
+	out.DarkModeIconFileId = w.DarkModeIconFileId
+	out.DarkModeIconFilePath = w.DarkModeIconFilePath
+	return out, nil
+}
+
+// ProviderInfoFromSDK converts the sdk-go type to the mirror.
+func ProviderInfoFromSDK(v *sdk.ProviderInfo) (*ProviderInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProviderInfo{}
+	out.Id = v.Id
+	out.Name = v.Name
+	out.Description = v.Description
+	out.IconFilePath = v.IconFilePath
+	out.BusinessContactEmail = v.BusinessContactEmail
+	out.SupportContactEmail = v.SupportContactEmail
+	out.IsFeatured = v.IsFeatured
+	out.PublishedBy = v.PublishedBy
+	out.CompanyWebsiteLink = v.CompanyWebsiteLink
+	out.IconFileId = v.IconFileId
+	out.TermOfServiceLink = v.TermOfServiceLink
+	out.PrivacyPolicyLink = v.PrivacyPolicyLink
+	out.DarkModeIconFileId = v.DarkModeIconFileId
+	out.DarkModeIconFilePath = v.DarkModeIconFilePath
+	return out, nil
+}
+
+// RegionInfoToSDK converts the mirror to the sdk-go type.
+func RegionInfoToSDK(w *RegionInfo) (*sdk.RegionInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegionInfo{}
+	out.Cloud = w.Cloud
+	out.Region = w.Region
+	return out, nil
+}
+
+// RegionInfoFromSDK converts the sdk-go type to the mirror.
+func RegionInfoFromSDK(v *sdk.RegionInfo) (*RegionInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegionInfo{}
+	out.Cloud = v.Cloud
+	out.Region = v.Region
+	return out, nil
+}
+
+// RepoInfoToSDK converts the mirror to the sdk-go type.
+func RepoInfoToSDK(w *RepoInfo) (*sdk.RepoInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepoInfo{}
+	out.GitRepoUrl = w.GitRepoUrl
+	return out, nil
+}
+
+// RepoInfoFromSDK converts the sdk-go type to the mirror.
+func RepoInfoFromSDK(v *sdk.RepoInfo) (*RepoInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepoInfo{}
+	out.GitRepoUrl = v.GitRepoUrl
+	return out, nil
+}
+
+// RepoInstallationToSDK converts the mirror to the sdk-go type.
+func RepoInstallationToSDK(w *RepoInstallation) (*sdk.RepoInstallation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepoInstallation{}
+	out.RepoName = w.RepoName
+	out.RepoPath = w.RepoPath
+	return out, nil
+}
+
+// RepoInstallationFromSDK converts the sdk-go type to the mirror.
+func RepoInstallationFromSDK(v *sdk.RepoInstallation) (*RepoInstallation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepoInstallation{}
+	out.RepoName = v.RepoName
+	out.RepoPath = v.RepoPath
+	return out, nil
+}
+
+// SearchPublishedListingsForConsumerRequestToSDK converts the mirror to the sdk-go type.
+func SearchPublishedListingsForConsumerRequestToSDK(w *SearchPublishedListingsForConsumerRequest) (*sdk.SearchPublishedListingsForConsumerRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchPublishedListingsForConsumerRequest{}
+	out.Query = w.Query
+	out.IsFree = w.IsFree
+	out.IsPrivateExchange = w.IsPrivateExchange
+	out.ProviderIds = w.ProviderIds
+	out.Categories = w.Categories
+	out.Assets = w.Assets
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// SearchPublishedListingsForConsumerRequestFromSDK converts the sdk-go type to the mirror.
+func SearchPublishedListingsForConsumerRequestFromSDK(v *sdk.SearchPublishedListingsForConsumerRequest) (*SearchPublishedListingsForConsumerRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchPublishedListingsForConsumerRequest{}
+	out.Query = v.Query
+	out.IsFree = v.IsFree
+	out.IsPrivateExchange = v.IsPrivateExchange
+	out.ProviderIds = v.ProviderIds
+	out.Categories = v.Categories
+	out.Assets = v.Assets
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// SearchPublishedListingsForConsumerResponseToSDK converts the mirror to the sdk-go type.
+func SearchPublishedListingsForConsumerResponseToSDK(w *SearchPublishedListingsForConsumerResponse) (*sdk.SearchPublishedListingsForConsumerResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchPublishedListingsForConsumerResponse{}
+	conv115, err := convertSlice(w.Listings, ListingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchPublishedListingsForConsumerResponse.Listings", err)
+	}
+	out.Listings = conv115
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchPublishedListingsForConsumerResponseFromSDK converts the sdk-go type to the mirror.
+func SearchPublishedListingsForConsumerResponseFromSDK(v *sdk.SearchPublishedListingsForConsumerResponse) (*SearchPublishedListingsForConsumerResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchPublishedListingsForConsumerResponse{}
+	conv116, err := convertSlice(v.Listings, ListingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchPublishedListingsForConsumerResponse.Listings", err)
+	}
+	out.Listings = conv116
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ShareInfoToSDK converts the mirror to the sdk-go type.
+func ShareInfoToSDK(w *ShareInfo) (*sdk.ShareInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ShareInfo{}
+	out.Name = w.Name
+	out.Type = w.Type
+	return out, nil
+}
+
+// ShareInfoFromSDK converts the sdk-go type to the mirror.
+func ShareInfoFromSDK(v *sdk.ShareInfo) (*ShareInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ShareInfo{}
+	out.Name = v.Name
+	out.Type = v.Type
+	return out, nil
+}
+
+// SharedDataObjectToSDK converts the mirror to the sdk-go type.
+func SharedDataObjectToSDK(w *SharedDataObject) (*sdk.SharedDataObject, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SharedDataObject{}
+	out.Name = w.Name
+	out.DataObjectType = w.DataObjectType
+	return out, nil
+}
+
+// SharedDataObjectFromSDK converts the sdk-go type to the mirror.
+func SharedDataObjectFromSDK(v *sdk.SharedDataObject) (*SharedDataObject, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SharedDataObject{}
+	out.Name = v.Name
+	out.DataObjectType = v.DataObjectType
+	return out, nil
+}
+
+// TokenDetailToSDK converts the mirror to the sdk-go type.
+func TokenDetailToSDK(w *TokenDetail) (*sdk.TokenDetail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TokenDetail{}
+	out.ShareCredentialsVersion = w.ShareCredentialsVersion
+	out.BearerToken = w.BearerToken
+	out.Endpoint = w.Endpoint
+	out.ExpirationTime = w.ExpirationTime
+	return out, nil
+}
+
+// TokenDetailFromSDK converts the sdk-go type to the mirror.
+func TokenDetailFromSDK(v *sdk.TokenDetail) (*TokenDetail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TokenDetail{}
+	out.ShareCredentialsVersion = v.ShareCredentialsVersion
+	out.BearerToken = v.BearerToken
+	out.Endpoint = v.Endpoint
+	out.ExpirationTime = v.ExpirationTime
+	return out, nil
+}
+
+// TokenInfoToSDK converts the mirror to the sdk-go type.
+func TokenInfoToSDK(w *TokenInfo) (*sdk.TokenInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TokenInfo{}
+	out.Id = w.Id
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.ActivationUrl = w.ActivationUrl
+	out.ExpirationTime = w.ExpirationTime
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	return out, nil
+}
+
+// TokenInfoFromSDK converts the sdk-go type to the mirror.
+func TokenInfoFromSDK(v *sdk.TokenInfo) (*TokenInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TokenInfo{}
+	out.Id = v.Id
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.ActivationUrl = v.ActivationUrl
+	out.ExpirationTime = v.ExpirationTime
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	return out, nil
+}
+
+// UpdateExchangeFilterRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExchangeFilterRequestToSDK(w *UpdateExchangeFilterRequest) (*sdk.UpdateExchangeFilterRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExchangeFilterRequest{}
+	out.Id = w.Id
+	conv117, err := ExchangeFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterRequest.Filter", err)
+	}
+	out.Filter = conv117
+	return out, nil
+}
+
+// UpdateExchangeFilterRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExchangeFilterRequestFromSDK(v *sdk.UpdateExchangeFilterRequest) (*UpdateExchangeFilterRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExchangeFilterRequest{}
+	out.Id = v.Id
+	conv118, err := ExchangeFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterRequest.Filter", err)
+	}
+	out.Filter = conv118
+	return out, nil
+}
+
+// UpdateExchangeFilterResponseToSDK converts the mirror to the sdk-go type.
+func UpdateExchangeFilterResponseToSDK(w *UpdateExchangeFilterResponse) (*sdk.UpdateExchangeFilterResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExchangeFilterResponse{}
+	conv119, err := ExchangeFilterToSDK(w.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterResponse.Filter", err)
+	}
+	out.Filter = conv119
+	return out, nil
+}
+
+// UpdateExchangeFilterResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateExchangeFilterResponseFromSDK(v *sdk.UpdateExchangeFilterResponse) (*UpdateExchangeFilterResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExchangeFilterResponse{}
+	conv120, err := ExchangeFilterFromSDK(v.Filter)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeFilterResponse.Filter", err)
+	}
+	out.Filter = conv120
+	return out, nil
+}
+
+// UpdateExchangeRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExchangeRequestToSDK(w *UpdateExchangeRequest) (*sdk.UpdateExchangeRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExchangeRequest{}
+	out.Id = w.Id
+	conv121, err := ExchangeToSDK(w.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeRequest.Exchange", err)
+	}
+	out.Exchange = conv121
+	return out, nil
+}
+
+// UpdateExchangeRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExchangeRequestFromSDK(v *sdk.UpdateExchangeRequest) (*UpdateExchangeRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExchangeRequest{}
+	out.Id = v.Id
+	conv122, err := ExchangeFromSDK(v.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeRequest.Exchange", err)
+	}
+	out.Exchange = conv122
+	return out, nil
+}
+
+// UpdateExchangeResponseToSDK converts the mirror to the sdk-go type.
+func UpdateExchangeResponseToSDK(w *UpdateExchangeResponse) (*sdk.UpdateExchangeResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExchangeResponse{}
+	conv123, err := ExchangeToSDK(w.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeResponse.Exchange", err)
+	}
+	out.Exchange = conv123
+	return out, nil
+}
+
+// UpdateExchangeResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateExchangeResponseFromSDK(v *sdk.UpdateExchangeResponse) (*UpdateExchangeResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExchangeResponse{}
+	conv124, err := ExchangeFromSDK(v.Exchange)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExchangeResponse.Exchange", err)
+	}
+	out.Exchange = conv124
+	return out, nil
+}
+
+// UpdateInstallationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateInstallationRequestToSDK(w *UpdateInstallationRequest) (*sdk.UpdateInstallationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateInstallationRequest{}
+	out.ListingId = w.ListingId
+	out.InstallationId = w.InstallationId
+	conv125, err := InstallationDetailToSDK(w.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInstallationRequest.Installation", err)
+	}
+	out.Installation = conv125
+	out.RotateToken = w.RotateToken
+	return out, nil
+}
+
+// UpdateInstallationRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateInstallationRequestFromSDK(v *sdk.UpdateInstallationRequest) (*UpdateInstallationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateInstallationRequest{}
+	out.ListingId = v.ListingId
+	out.InstallationId = v.InstallationId
+	conv126, err := InstallationDetailFromSDK(v.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInstallationRequest.Installation", err)
+	}
+	out.Installation = conv126
+	out.RotateToken = v.RotateToken
+	return out, nil
+}
+
+// UpdateInstallationResponseToSDK converts the mirror to the sdk-go type.
+func UpdateInstallationResponseToSDK(w *UpdateInstallationResponse) (*sdk.UpdateInstallationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateInstallationResponse{}
+	conv127, err := InstallationDetailToSDK(w.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInstallationResponse.Installation", err)
+	}
+	out.Installation = conv127
+	return out, nil
+}
+
+// UpdateInstallationResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateInstallationResponseFromSDK(v *sdk.UpdateInstallationResponse) (*UpdateInstallationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateInstallationResponse{}
+	conv128, err := InstallationDetailFromSDK(v.Installation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateInstallationResponse.Installation", err)
+	}
+	out.Installation = conv128
+	return out, nil
+}
+
+// UpdateListingRequestToSDK converts the mirror to the sdk-go type.
+func UpdateListingRequestToSDK(w *UpdateListingRequest) (*sdk.UpdateListingRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateListingRequest{}
+	out.Id = w.Id
+	conv129, err := ListingToSDK(w.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateListingRequest.Listing", err)
+	}
+	out.Listing = conv129
+	return out, nil
+}
+
+// UpdateListingRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateListingRequestFromSDK(v *sdk.UpdateListingRequest) (*UpdateListingRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateListingRequest{}
+	out.Id = v.Id
+	conv130, err := ListingFromSDK(v.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateListingRequest.Listing", err)
+	}
+	out.Listing = conv130
+	return out, nil
+}
+
+// UpdateListingResponseToSDK converts the mirror to the sdk-go type.
+func UpdateListingResponseToSDK(w *UpdateListingResponse) (*sdk.UpdateListingResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateListingResponse{}
+	conv131, err := ListingToSDK(w.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateListingResponse.Listing", err)
+	}
+	out.Listing = conv131
+	return out, nil
+}
+
+// UpdateListingResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateListingResponseFromSDK(v *sdk.UpdateListingResponse) (*UpdateListingResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateListingResponse{}
+	conv132, err := ListingFromSDK(v.Listing)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateListingResponse.Listing", err)
+	}
+	out.Listing = conv132
+	return out, nil
+}
+
+// UpdatePersonalizationRequestStatusRequestToSDK converts the mirror to the sdk-go type.
+func UpdatePersonalizationRequestStatusRequestToSDK(w *UpdatePersonalizationRequestStatusRequest) (*sdk.UpdatePersonalizationRequestStatusRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePersonalizationRequestStatusRequest{}
+	out.ListingId = w.ListingId
+	out.RequestId = w.RequestId
+	out.Status = w.Status
+	out.Reason = w.Reason
+	conv133, err := ShareInfoToSDK(w.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusRequest.Share", err)
+	}
+	out.Share = conv133
+	return out, nil
+}
+
+// UpdatePersonalizationRequestStatusRequestFromSDK converts the sdk-go type to the mirror.
+func UpdatePersonalizationRequestStatusRequestFromSDK(v *sdk.UpdatePersonalizationRequestStatusRequest) (*UpdatePersonalizationRequestStatusRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePersonalizationRequestStatusRequest{}
+	out.ListingId = v.ListingId
+	out.RequestId = v.RequestId
+	out.Status = v.Status
+	out.Reason = v.Reason
+	conv134, err := ShareInfoFromSDK(v.Share)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusRequest.Share", err)
+	}
+	out.Share = conv134
+	return out, nil
+}
+
+// UpdatePersonalizationRequestStatusResponseToSDK converts the mirror to the sdk-go type.
+func UpdatePersonalizationRequestStatusResponseToSDK(w *UpdatePersonalizationRequestStatusResponse) (*sdk.UpdatePersonalizationRequestStatusResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePersonalizationRequestStatusResponse{}
+	conv135, err := PersonalizationRequestToSDK(w.Request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusResponse.Request", err)
+	}
+	out.Request = conv135
+	return out, nil
+}
+
+// UpdatePersonalizationRequestStatusResponseFromSDK converts the sdk-go type to the mirror.
+func UpdatePersonalizationRequestStatusResponseFromSDK(v *sdk.UpdatePersonalizationRequestStatusResponse) (*UpdatePersonalizationRequestStatusResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePersonalizationRequestStatusResponse{}
+	conv136, err := PersonalizationRequestFromSDK(v.Request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePersonalizationRequestStatusResponse.Request", err)
+	}
+	out.Request = conv136
+	return out, nil
+}
+
+// UpdateProviderAnalyticsDashboardRequestToSDK converts the mirror to the sdk-go type.
+func UpdateProviderAnalyticsDashboardRequestToSDK(w *UpdateProviderAnalyticsDashboardRequest) (*sdk.UpdateProviderAnalyticsDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateProviderAnalyticsDashboardRequest{}
+	out.Id = w.Id
+	out.Version = w.Version
+	return out, nil
+}
+
+// UpdateProviderAnalyticsDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateProviderAnalyticsDashboardRequestFromSDK(v *sdk.UpdateProviderAnalyticsDashboardRequest) (*UpdateProviderAnalyticsDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProviderAnalyticsDashboardRequest{}
+	out.Id = v.Id
+	out.Version = v.Version
+	return out, nil
+}
+
+// UpdateProviderAnalyticsDashboardResponseToSDK converts the mirror to the sdk-go type.
+func UpdateProviderAnalyticsDashboardResponseToSDK(w *UpdateProviderAnalyticsDashboardResponse) (*sdk.UpdateProviderAnalyticsDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateProviderAnalyticsDashboardResponse{}
+	out.Id = w.Id
+	out.Version = w.Version
+	out.DashboardId = w.DashboardId
+	return out, nil
+}
+
+// UpdateProviderAnalyticsDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateProviderAnalyticsDashboardResponseFromSDK(v *sdk.UpdateProviderAnalyticsDashboardResponse) (*UpdateProviderAnalyticsDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProviderAnalyticsDashboardResponse{}
+	out.Id = v.Id
+	out.Version = v.Version
+	out.DashboardId = v.DashboardId
+	return out, nil
+}
+
+// UpdateProviderRequestToSDK converts the mirror to the sdk-go type.
+func UpdateProviderRequestToSDK(w *UpdateProviderRequest) (*sdk.UpdateProviderRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateProviderRequest{}
+	out.Id = w.Id
+	conv137, err := ProviderInfoToSDK(w.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.Provider", err)
+	}
+	out.Provider = conv137
+	return out, nil
+}
+
+// UpdateProviderRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateProviderRequestFromSDK(v *sdk.UpdateProviderRequest) (*UpdateProviderRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProviderRequest{}
+	out.Id = v.Id
+	conv138, err := ProviderInfoFromSDK(v.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProviderRequest.Provider", err)
+	}
+	out.Provider = conv138
+	return out, nil
+}
+
+// UpdateProviderResponseToSDK converts the mirror to the sdk-go type.
 func UpdateProviderResponseToSDK(w *UpdateProviderResponse) (*sdk.UpdateProviderResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	providerPublicValue, err := ProviderInfoToSDK(w.Provider)
+	out := &sdk.UpdateProviderResponse{}
+	conv139, err := ProviderInfoToSDK(w.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateProviderResponse.Provider", err)
 	}
-	return &sdk.UpdateProviderResponse{
-		Provider: providerPublicValue,
-	}, nil
+	out.Provider = conv139
+	return out, nil
+}
+
+// UpdateProviderResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateProviderResponseFromSDK(v *sdk.UpdateProviderResponse) (*UpdateProviderResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateProviderResponse{}
+	conv140, err := ProviderInfoFromSDK(v.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateProviderResponse.Provider", err)
+	}
+	out.Provider = conv140
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/knowledgeassistants/v1"
+	strings "strings"
 )
 
 type (
@@ -24,14 +25,6 @@ const (
 	KnowledgeSource_State_FailedUpdate   = sdk.KnowledgeSource_State_FailedUpdate
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Create an example..
 type CreateExampleRequest struct {
 	// Parent resource where this example will be created. Format:
@@ -41,36 +34,9 @@ type CreateExampleRequest struct {
 	Example *Example `json:"example,omitempty"`
 }
 
-func CreateExampleRequestFromSDK(v *sdk.CreateExampleRequest) (*CreateExampleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exampleWireValue, err := ExampleFromSDK(v.Example)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
-	}
-	return &CreateExampleRequest{
-		Parent:  v.Parent,
-		Example: exampleWireValue,
-	}, nil
-}
-
 type CreateKnowledgeAssistantRequest struct {
 	// The Knowledge Assistant to create.
 	KnowledgeAssistant *KnowledgeAssistant `json:"knowledge_assistant,omitempty"`
-}
-
-func CreateKnowledgeAssistantRequestFromSDK(v *sdk.CreateKnowledgeAssistantRequest) (*CreateKnowledgeAssistantRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	knowledgeAssistantWireValue, err := KnowledgeAssistantFromSDK(v.KnowledgeAssistant)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeAssistantRequest.KnowledgeAssistant", err)
-	}
-	return &CreateKnowledgeAssistantRequest{
-		KnowledgeAssistant: knowledgeAssistantWireValue,
-	}, nil
 }
 
 type CreateKnowledgeSourceRequest struct {
@@ -78,20 +44,6 @@ type CreateKnowledgeSourceRequest struct {
 	// knowledge-assistants/{knowledge_assistant_id}
 	Parent          *string          `json:"parent,omitempty"`
 	KnowledgeSource *KnowledgeSource `json:"knowledge_source,omitempty"`
-}
-
-func CreateKnowledgeSourceRequestFromSDK(v *sdk.CreateKnowledgeSourceRequest) (*CreateKnowledgeSourceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	knowledgeSourceWireValue, err := KnowledgeSourceFromSDK(v.KnowledgeSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeSourceRequest.KnowledgeSource", err)
-	}
-	return &CreateKnowledgeSourceRequest{
-		Parent:          v.Parent,
-		KnowledgeSource: knowledgeSourceWireValue,
-	}, nil
 }
 
 // An example associated with a Knowledge Assistant. Contains a question and
@@ -113,34 +65,6 @@ type Example struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func ExampleFromSDK(v *sdk.Example) (*Example, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Example{
-		Name:       v.Name,
-		Question:   v.Question,
-		Guidelines: v.Guidelines,
-		ExampleId:  v.ExampleId,
-		CreateTime: v.CreateTime,
-		UpdateTime: v.UpdateTime,
-	}, nil
-}
-
-func ExampleToSDK(w *Example) (*sdk.Example, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Example{
-		Name:       w.Name,
-		Question:   w.Question,
-		Guidelines: w.Guidelines,
-		ExampleId:  w.ExampleId,
-		CreateTime: w.CreateTime,
-		UpdateTime: w.UpdateTime,
-	}, nil
-}
-
 // FileTableSpec specifies a file table source configuration..
 type FileTableSpec struct {
 	// Full UC name of the table, in the format of {CATALOG}.{SCHEMA}.{TABLE_NAME}.
@@ -149,48 +73,10 @@ type FileTableSpec struct {
 	FileCol *string `json:"file_col,omitempty"`
 }
 
-func FileTableSpecFromSDK(v *sdk.FileTableSpec) (*FileTableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FileTableSpec{
-		TableName: v.TableName,
-		FileCol:   v.FileCol,
-	}, nil
-}
-
-func FileTableSpecToSDK(w *FileTableSpec) (*sdk.FileTableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FileTableSpec{
-		TableName: w.TableName,
-		FileCol:   w.FileCol,
-	}, nil
-}
-
 // FilesSpec specifies a files source configuration..
 type FilesSpec struct {
 	// A UC volume path that includes a list of files.
 	Path *string `json:"path,omitempty"`
-}
-
-func FilesSpecFromSDK(v *sdk.FilesSpec) (*FilesSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FilesSpec{
-		Path: v.Path,
-	}, nil
-}
-
-func FilesSpecToSDK(w *FilesSpec) (*sdk.FilesSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.FilesSpec{
-		Path: w.Path,
-	}, nil
 }
 
 // IndexSpec specifies a vector search index source configuration..
@@ -203,28 +89,6 @@ type IndexSpec struct {
 	// The column that specifies a link or reference to where the information came
 	// from.
 	DocUriCol *string `json:"doc_uri_col,omitempty"`
-}
-
-func IndexSpecFromSDK(v *sdk.IndexSpec) (*IndexSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IndexSpec{
-		IndexName: v.IndexName,
-		TextCol:   v.TextCol,
-		DocUriCol: v.DocUriCol,
-	}, nil
-}
-
-func IndexSpecToSDK(w *IndexSpec) (*sdk.IndexSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IndexSpec{
-		IndexName: w.IndexName,
-		TextCol:   w.TextCol,
-		DocUriCol: w.DocUriCol,
-	}, nil
 }
 
 // Entity message that represents a knowledge assistant. Note: REQUIRED
@@ -262,44 +126,6 @@ type KnowledgeAssistant struct {
 	ErrorInfo *string `json:"error_info,omitempty"`
 }
 
-func KnowledgeAssistantFromSDK(v *sdk.KnowledgeAssistant) (*KnowledgeAssistant, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &KnowledgeAssistant{
-		Name:         v.Name,
-		State:        v.State,
-		Id:           v.Id,
-		DisplayName:  v.DisplayName,
-		Description:  v.Description,
-		Instructions: v.Instructions,
-		Creator:      v.Creator,
-		CreateTime:   v.CreateTime,
-		EndpointName: v.EndpointName,
-		ExperimentId: v.ExperimentId,
-		ErrorInfo:    v.ErrorInfo,
-	}, nil
-}
-
-func KnowledgeAssistantToSDK(w *KnowledgeAssistant) (*sdk.KnowledgeAssistant, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.KnowledgeAssistant{
-		Name:         w.Name,
-		State:        w.State,
-		Id:           w.Id,
-		DisplayName:  w.DisplayName,
-		Description:  w.Description,
-		Instructions: w.Instructions,
-		Creator:      w.Creator,
-		CreateTime:   w.CreateTime,
-		EndpointName: w.EndpointName,
-		ExperimentId: w.ExperimentId,
-		ErrorInfo:    w.ErrorInfo,
-	}, nil
-}
-
 // KnowledgeSource represents a source of knowledge for the KnowledgeAssistant.
 // Used in create/update requests and returned in Get/List responses. Note:
 // REQUIRED annotations below represent create-time requirements. For updates,
@@ -332,108 +158,6 @@ type KnowledgeSource struct {
 	CreateTime *types.Time `json:"create_time,omitempty"`
 }
 
-func KnowledgeSourceFromSDK(v *sdk.KnowledgeSource) (*KnowledgeSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var specIndexWire *IndexSpec
-	var specFilesWire *FilesSpec
-	var specFileTableWire *FileTableSpec
-	switch value := v.Spec.(type) {
-	case nil:
-	case *sdk.KnowledgeSource_Spec_Index:
-		if value != nil {
-			specIndexConverted, err := IndexSpecFromSDK(&value.Index)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.Index", err)
-			}
-			specIndexWire = specIndexConverted
-		}
-	case *sdk.KnowledgeSource_Spec_Files:
-		if value != nil {
-			specFilesConverted, err := FilesSpecFromSDK(&value.Files)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.Files", err)
-			}
-			specFilesWire = specFilesConverted
-		}
-	case *sdk.KnowledgeSource_Spec_FileTable:
-		if value != nil {
-			specFileTableConverted, err := FileTableSpecFromSDK(&value.FileTable)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.FileTable", err)
-			}
-			specFileTableWire = specFileTableConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "KnowledgeSource.Spec", value)
-	}
-	return &KnowledgeSource{
-		Name:                v.Name,
-		DisplayName:         v.DisplayName,
-		Description:         v.Description,
-		SourceType:          v.SourceType,
-		Index:               specIndexWire,
-		Files:               specFilesWire,
-		FileTable:           specFileTableWire,
-		State:               v.State,
-		Id:                  v.Id,
-		KnowledgeCutoffTime: v.KnowledgeCutoffTime,
-		CreateTime:          v.CreateTime,
-	}, nil
-}
-
-func KnowledgeSourceToSDK(w *KnowledgeSource) (*sdk.KnowledgeSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specMembers := 0
-	if w.Index != nil {
-		specMembers++
-	}
-	if w.Files != nil {
-		specMembers++
-	}
-	if w.FileTable != nil {
-		specMembers++
-	}
-	if specMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "KnowledgeSource.Spec")
-	}
-	specSelection := (&sdk.KnowledgeSource{}).Spec
-	switch {
-	case w.Index != nil:
-		specIndexConverted, err := IndexSpecToSDK(w.Index)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.Index", err)
-		}
-		specSelection = &sdk.KnowledgeSource_Spec_Index{Index: *specIndexConverted}
-	case w.Files != nil:
-		specFilesConverted, err := FilesSpecToSDK(w.Files)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.Files", err)
-		}
-		specSelection = &sdk.KnowledgeSource_Spec_Files{Files: *specFilesConverted}
-	case w.FileTable != nil:
-		specFileTableConverted, err := FileTableSpecToSDK(w.FileTable)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec.FileTable", err)
-		}
-		specSelection = &sdk.KnowledgeSource_Spec_FileTable{FileTable: *specFileTableConverted}
-	}
-	return &sdk.KnowledgeSource{
-		Name:                w.Name,
-		DisplayName:         w.DisplayName,
-		Description:         w.Description,
-		SourceType:          w.SourceType,
-		State:               w.State,
-		Id:                  w.Id,
-		KnowledgeCutoffTime: w.KnowledgeCutoffTime,
-		CreateTime:          w.CreateTime,
-		Spec:                specSelection,
-	}, nil
-}
-
 // List examples..
 type ListExamplesRequest struct {
 	// Parent resource to list from. Format:
@@ -449,35 +173,10 @@ type ListExamplesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListExamplesRequestFromSDK(v *sdk.ListExamplesRequest) (*ListExamplesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListExamplesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // A list of Knowledge Assistant examples..
 type ListExamplesResponse struct {
 	Examples      []Example `json:"examples,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-func ListExamplesResponseToSDK(w *ListExamplesResponse) (*sdk.ListExamplesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	examplesPublicValue, err := convertSlice(w.Examples, ExampleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
-	}
-	return &sdk.ListExamplesResponse{
-		Examples:      examplesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A request to list Knowledge Assistants..
@@ -492,36 +191,12 @@ type ListKnowledgeAssistantsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListKnowledgeAssistantsRequestFromSDK(v *sdk.ListKnowledgeAssistantsRequest) (*ListKnowledgeAssistantsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListKnowledgeAssistantsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // A list of Knowledge Assistants..
 type ListKnowledgeAssistantsResponse struct {
 	KnowledgeAssistants []KnowledgeAssistant `json:"knowledge_assistants,omitempty"`
 	// A token that can be sent as `page_token` to retrieve the next page. If this
 	// field is omitted, there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListKnowledgeAssistantsResponseToSDK(w *ListKnowledgeAssistantsResponse) (*sdk.ListKnowledgeAssistantsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	knowledgeAssistantsPublicValue, err := convertSlice(w.KnowledgeAssistants, KnowledgeAssistantToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListKnowledgeAssistantsResponse.KnowledgeAssistants", err)
-	}
-	return &sdk.ListKnowledgeAssistantsResponse{
-		KnowledgeAssistants: knowledgeAssistantsPublicValue,
-		NextPageToken:       w.NextPageToken,
-	}, nil
 }
 
 type ListKnowledgeSourcesRequest struct {
@@ -532,49 +207,15 @@ type ListKnowledgeSourcesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListKnowledgeSourcesRequestFromSDK(v *sdk.ListKnowledgeSourcesRequest) (*ListKnowledgeSourcesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListKnowledgeSourcesRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListKnowledgeSourcesResponse struct {
 	KnowledgeSources []KnowledgeSource `json:"knowledge_sources,omitempty"`
 	NextPageToken    *string           `json:"next_page_token,omitempty"`
-}
-
-func ListKnowledgeSourcesResponseToSDK(w *ListKnowledgeSourcesResponse) (*sdk.ListKnowledgeSourcesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	knowledgeSourcesPublicValue, err := convertSlice(w.KnowledgeSources, KnowledgeSourceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListKnowledgeSourcesResponse.KnowledgeSources", err)
-	}
-	return &sdk.ListKnowledgeSourcesResponse{
-		KnowledgeSources: knowledgeSourcesPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type SyncKnowledgeSourcesRequest struct {
 	// The resource name of the Knowledge Assistant. Format:
 	// knowledge-assistants/{knowledge_assistant_id}
 	Name *string `json:"name,omitempty"`
-}
-
-func SyncKnowledgeSourcesRequestFromSDK(v *sdk.SyncKnowledgeSourcesRequest) (*SyncKnowledgeSourcesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncKnowledgeSourcesRequest{
-		Name: v.Name,
-	}, nil
 }
 
 // Update an example..
@@ -588,21 +229,6 @@ type UpdateExampleRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateExampleRequestFromSDK(v *sdk.UpdateExampleRequest) (*UpdateExampleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	exampleWireValue, err := ExampleFromSDK(v.Example)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
-	}
-	return &UpdateExampleRequest{
-		Name:       v.Name,
-		Example:    exampleWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateKnowledgeAssistantRequest struct {
 	// The Knowledge Assistant update payload. Only fields listed in update_mask are
 	// updated. REQUIRED annotations on Knowledge Assistant fields describe
@@ -613,20 +239,6 @@ type UpdateKnowledgeAssistantRequest struct {
 	// values: `display_name`, `description`, `instructions`. Examples: -
 	// `display_name` - `description,instructions`
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateKnowledgeAssistantRequestFromSDK(v *sdk.UpdateKnowledgeAssistantRequest) (*UpdateKnowledgeAssistantRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	knowledgeAssistantWireValue, err := KnowledgeAssistantFromSDK(v.KnowledgeAssistant)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeAssistantRequest.KnowledgeAssistant", err)
-	}
-	return &UpdateKnowledgeAssistantRequest{
-		KnowledgeAssistant: knowledgeAssistantWireValue,
-		UpdateMask:         fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateKnowledgeSourceRequest struct {
@@ -643,19 +255,609 @@ type UpdateKnowledgeSourceRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateExampleRequestToSDK converts the mirror to the sdk-go type.
+func CreateExampleRequestToSDK(w *CreateExampleRequest) (*sdk.CreateExampleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateExampleRequest{}
+	out.Parent = w.Parent
+	conv1, err := ExampleToSDK(w.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
+	}
+	out.Example = conv1
+	return out, nil
+}
+
+// CreateExampleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateExampleRequestFromSDK(v *sdk.CreateExampleRequest) (*CreateExampleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateExampleRequest{}
+	out.Parent = v.Parent
+	conv2, err := ExampleFromSDK(v.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateExampleRequest.Example", err)
+	}
+	out.Example = conv2
+	return out, nil
+}
+
+// CreateKnowledgeAssistantRequestToSDK converts the mirror to the sdk-go type.
+func CreateKnowledgeAssistantRequestToSDK(w *CreateKnowledgeAssistantRequest) (*sdk.CreateKnowledgeAssistantRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateKnowledgeAssistantRequest{}
+	conv3, err := KnowledgeAssistantToSDK(w.KnowledgeAssistant)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeAssistantRequest.KnowledgeAssistant", err)
+	}
+	out.KnowledgeAssistant = conv3
+	return out, nil
+}
+
+// CreateKnowledgeAssistantRequestFromSDK converts the sdk-go type to the mirror.
+func CreateKnowledgeAssistantRequestFromSDK(v *sdk.CreateKnowledgeAssistantRequest) (*CreateKnowledgeAssistantRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateKnowledgeAssistantRequest{}
+	conv4, err := KnowledgeAssistantFromSDK(v.KnowledgeAssistant)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeAssistantRequest.KnowledgeAssistant", err)
+	}
+	out.KnowledgeAssistant = conv4
+	return out, nil
+}
+
+// CreateKnowledgeSourceRequestToSDK converts the mirror to the sdk-go type.
+func CreateKnowledgeSourceRequestToSDK(w *CreateKnowledgeSourceRequest) (*sdk.CreateKnowledgeSourceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateKnowledgeSourceRequest{}
+	out.Parent = w.Parent
+	conv5, err := KnowledgeSourceToSDK(w.KnowledgeSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeSourceRequest.KnowledgeSource", err)
+	}
+	out.KnowledgeSource = conv5
+	return out, nil
+}
+
+// CreateKnowledgeSourceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateKnowledgeSourceRequestFromSDK(v *sdk.CreateKnowledgeSourceRequest) (*CreateKnowledgeSourceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateKnowledgeSourceRequest{}
+	out.Parent = v.Parent
+	conv6, err := KnowledgeSourceFromSDK(v.KnowledgeSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateKnowledgeSourceRequest.KnowledgeSource", err)
+	}
+	out.KnowledgeSource = conv6
+	return out, nil
+}
+
+// ExampleToSDK converts the mirror to the sdk-go type.
+func ExampleToSDK(w *Example) (*sdk.Example, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Example{}
+	out.Name = w.Name
+	out.Question = w.Question
+	out.Guidelines = w.Guidelines
+	out.ExampleId = w.ExampleId
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// ExampleFromSDK converts the sdk-go type to the mirror.
+func ExampleFromSDK(v *sdk.Example) (*Example, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Example{}
+	out.Name = v.Name
+	out.Question = v.Question
+	out.Guidelines = v.Guidelines
+	out.ExampleId = v.ExampleId
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// FileTableSpecToSDK converts the mirror to the sdk-go type.
+func FileTableSpecToSDK(w *FileTableSpec) (*sdk.FileTableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FileTableSpec{}
+	out.TableName = w.TableName
+	out.FileCol = w.FileCol
+	return out, nil
+}
+
+// FileTableSpecFromSDK converts the sdk-go type to the mirror.
+func FileTableSpecFromSDK(v *sdk.FileTableSpec) (*FileTableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FileTableSpec{}
+	out.TableName = v.TableName
+	out.FileCol = v.FileCol
+	return out, nil
+}
+
+// FilesSpecToSDK converts the mirror to the sdk-go type.
+func FilesSpecToSDK(w *FilesSpec) (*sdk.FilesSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FilesSpec{}
+	out.Path = w.Path
+	return out, nil
+}
+
+// FilesSpecFromSDK converts the sdk-go type to the mirror.
+func FilesSpecFromSDK(v *sdk.FilesSpec) (*FilesSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FilesSpec{}
+	out.Path = v.Path
+	return out, nil
+}
+
+// IndexSpecToSDK converts the mirror to the sdk-go type.
+func IndexSpecToSDK(w *IndexSpec) (*sdk.IndexSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IndexSpec{}
+	out.IndexName = w.IndexName
+	out.TextCol = w.TextCol
+	out.DocUriCol = w.DocUriCol
+	return out, nil
+}
+
+// IndexSpecFromSDK converts the sdk-go type to the mirror.
+func IndexSpecFromSDK(v *sdk.IndexSpec) (*IndexSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IndexSpec{}
+	out.IndexName = v.IndexName
+	out.TextCol = v.TextCol
+	out.DocUriCol = v.DocUriCol
+	return out, nil
+}
+
+// KnowledgeAssistantToSDK converts the mirror to the sdk-go type.
+func KnowledgeAssistantToSDK(w *KnowledgeAssistant) (*sdk.KnowledgeAssistant, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KnowledgeAssistant{}
+	out.Name = w.Name
+	out.State = w.State
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.Instructions = w.Instructions
+	out.Creator = w.Creator
+	out.CreateTime = w.CreateTime
+	out.EndpointName = w.EndpointName
+	out.ExperimentId = w.ExperimentId
+	out.ErrorInfo = w.ErrorInfo
+	return out, nil
+}
+
+// KnowledgeAssistantFromSDK converts the sdk-go type to the mirror.
+func KnowledgeAssistantFromSDK(v *sdk.KnowledgeAssistant) (*KnowledgeAssistant, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KnowledgeAssistant{}
+	out.Name = v.Name
+	out.State = v.State
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.Instructions = v.Instructions
+	out.Creator = v.Creator
+	out.CreateTime = v.CreateTime
+	out.EndpointName = v.EndpointName
+	out.ExperimentId = v.ExperimentId
+	out.ErrorInfo = v.ErrorInfo
+	return out, nil
+}
+
+// KnowledgeSourceToSDK converts the mirror to the sdk-go type.
+func KnowledgeSourceToSDK(w *KnowledgeSource) (*sdk.KnowledgeSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.KnowledgeSource{}
+	out.Name = w.Name
+	out.DisplayName = w.DisplayName
+	out.Description = w.Description
+	out.SourceType = w.SourceType
+	{
+		members := 0
+		if w.Index != nil {
+			members++
+		}
+		if w.Files != nil {
+			members++
+		}
+		if w.FileTable != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "KnowledgeSource.Spec")
+		}
+	}
+	switch {
+	case w.Index != nil:
+		conv7, err := IndexSpecToSDK(w.Index)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+		}
+		out.Spec = &sdk.KnowledgeSource_Spec_Index{Index: *conv7}
+	case w.Files != nil:
+		conv8, err := FilesSpecToSDK(w.Files)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+		}
+		out.Spec = &sdk.KnowledgeSource_Spec_Files{Files: *conv8}
+	case w.FileTable != nil:
+		conv9, err := FileTableSpecToSDK(w.FileTable)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+		}
+		out.Spec = &sdk.KnowledgeSource_Spec_FileTable{FileTable: *conv9}
+	}
+	out.State = w.State
+	out.Id = w.Id
+	out.KnowledgeCutoffTime = w.KnowledgeCutoffTime
+	out.CreateTime = w.CreateTime
+	return out, nil
+}
+
+// KnowledgeSourceFromSDK converts the sdk-go type to the mirror.
+func KnowledgeSourceFromSDK(v *sdk.KnowledgeSource) (*KnowledgeSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &KnowledgeSource{}
+	out.Name = v.Name
+	out.DisplayName = v.DisplayName
+	out.Description = v.Description
+	out.SourceType = v.SourceType
+	switch value := v.Spec.(type) {
+	case *sdk.KnowledgeSource_Spec_Index:
+		if value != nil {
+			conv10, err := IndexSpecFromSDK(&value.Index)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+			}
+			out.Index = conv10
+		}
+	case *sdk.KnowledgeSource_Spec_Files:
+		if value != nil {
+			conv11, err := FilesSpecFromSDK(&value.Files)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+			}
+			out.Files = conv11
+		}
+	case *sdk.KnowledgeSource_Spec_FileTable:
+		if value != nil {
+			conv12, err := FileTableSpecFromSDK(&value.FileTable)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "KnowledgeSource.Spec", err)
+			}
+			out.FileTable = conv12
+		}
+	}
+	out.State = v.State
+	out.Id = v.Id
+	out.KnowledgeCutoffTime = v.KnowledgeCutoffTime
+	out.CreateTime = v.CreateTime
+	return out, nil
+}
+
+// ListExamplesRequestToSDK converts the mirror to the sdk-go type.
+func ListExamplesRequestToSDK(w *ListExamplesRequest) (*sdk.ListExamplesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExamplesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListExamplesRequestFromSDK converts the sdk-go type to the mirror.
+func ListExamplesRequestFromSDK(v *sdk.ListExamplesRequest) (*ListExamplesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExamplesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListExamplesResponseToSDK converts the mirror to the sdk-go type.
+func ListExamplesResponseToSDK(w *ListExamplesResponse) (*sdk.ListExamplesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListExamplesResponse{}
+	conv13, err := convertSlice(w.Examples, ExampleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
+	}
+	out.Examples = conv13
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListExamplesResponseFromSDK converts the sdk-go type to the mirror.
+func ListExamplesResponseFromSDK(v *sdk.ListExamplesResponse) (*ListExamplesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListExamplesResponse{}
+	conv14, err := convertSlice(v.Examples, ExampleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListExamplesResponse.Examples", err)
+	}
+	out.Examples = conv14
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListKnowledgeAssistantsRequestToSDK converts the mirror to the sdk-go type.
+func ListKnowledgeAssistantsRequestToSDK(w *ListKnowledgeAssistantsRequest) (*sdk.ListKnowledgeAssistantsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKnowledgeAssistantsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListKnowledgeAssistantsRequestFromSDK converts the sdk-go type to the mirror.
+func ListKnowledgeAssistantsRequestFromSDK(v *sdk.ListKnowledgeAssistantsRequest) (*ListKnowledgeAssistantsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKnowledgeAssistantsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListKnowledgeAssistantsResponseToSDK converts the mirror to the sdk-go type.
+func ListKnowledgeAssistantsResponseToSDK(w *ListKnowledgeAssistantsResponse) (*sdk.ListKnowledgeAssistantsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKnowledgeAssistantsResponse{}
+	conv15, err := convertSlice(w.KnowledgeAssistants, KnowledgeAssistantToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKnowledgeAssistantsResponse.KnowledgeAssistants", err)
+	}
+	out.KnowledgeAssistants = conv15
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListKnowledgeAssistantsResponseFromSDK converts the sdk-go type to the mirror.
+func ListKnowledgeAssistantsResponseFromSDK(v *sdk.ListKnowledgeAssistantsResponse) (*ListKnowledgeAssistantsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKnowledgeAssistantsResponse{}
+	conv16, err := convertSlice(v.KnowledgeAssistants, KnowledgeAssistantFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKnowledgeAssistantsResponse.KnowledgeAssistants", err)
+	}
+	out.KnowledgeAssistants = conv16
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListKnowledgeSourcesRequestToSDK converts the mirror to the sdk-go type.
+func ListKnowledgeSourcesRequestToSDK(w *ListKnowledgeSourcesRequest) (*sdk.ListKnowledgeSourcesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKnowledgeSourcesRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListKnowledgeSourcesRequestFromSDK converts the sdk-go type to the mirror.
+func ListKnowledgeSourcesRequestFromSDK(v *sdk.ListKnowledgeSourcesRequest) (*ListKnowledgeSourcesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKnowledgeSourcesRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListKnowledgeSourcesResponseToSDK converts the mirror to the sdk-go type.
+func ListKnowledgeSourcesResponseToSDK(w *ListKnowledgeSourcesResponse) (*sdk.ListKnowledgeSourcesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListKnowledgeSourcesResponse{}
+	conv17, err := convertSlice(w.KnowledgeSources, KnowledgeSourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKnowledgeSourcesResponse.KnowledgeSources", err)
+	}
+	out.KnowledgeSources = conv17
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListKnowledgeSourcesResponseFromSDK converts the sdk-go type to the mirror.
+func ListKnowledgeSourcesResponseFromSDK(v *sdk.ListKnowledgeSourcesResponse) (*ListKnowledgeSourcesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListKnowledgeSourcesResponse{}
+	conv18, err := convertSlice(v.KnowledgeSources, KnowledgeSourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListKnowledgeSourcesResponse.KnowledgeSources", err)
+	}
+	out.KnowledgeSources = conv18
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SyncKnowledgeSourcesRequestToSDK converts the mirror to the sdk-go type.
+func SyncKnowledgeSourcesRequestToSDK(w *SyncKnowledgeSourcesRequest) (*sdk.SyncKnowledgeSourcesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncKnowledgeSourcesRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// SyncKnowledgeSourcesRequestFromSDK converts the sdk-go type to the mirror.
+func SyncKnowledgeSourcesRequestFromSDK(v *sdk.SyncKnowledgeSourcesRequest) (*SyncKnowledgeSourcesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncKnowledgeSourcesRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateExampleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateExampleRequestToSDK(w *UpdateExampleRequest) (*sdk.UpdateExampleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateExampleRequest{}
+	out.Name = w.Name
+	conv19, err := ExampleToSDK(w.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
+	}
+	out.Example = conv19
+	mask20, err := fieldMaskFromString[sdk.Example](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask20
+	return out, nil
+}
+
+// UpdateExampleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateExampleRequestFromSDK(v *sdk.UpdateExampleRequest) (*UpdateExampleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateExampleRequest{}
+	out.Name = v.Name
+	conv21, err := ExampleFromSDK(v.Example)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateExampleRequest.Example", err)
+	}
+	out.Example = conv21
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateKnowledgeAssistantRequestToSDK converts the mirror to the sdk-go type.
+func UpdateKnowledgeAssistantRequestToSDK(w *UpdateKnowledgeAssistantRequest) (*sdk.UpdateKnowledgeAssistantRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateKnowledgeAssistantRequest{}
+	conv22, err := KnowledgeAssistantToSDK(w.KnowledgeAssistant)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeAssistantRequest.KnowledgeAssistant", err)
+	}
+	out.KnowledgeAssistant = conv22
+	mask23, err := fieldMaskFromString[sdk.KnowledgeAssistant](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeAssistantRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask23
+	return out, nil
+}
+
+// UpdateKnowledgeAssistantRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateKnowledgeAssistantRequestFromSDK(v *sdk.UpdateKnowledgeAssistantRequest) (*UpdateKnowledgeAssistantRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateKnowledgeAssistantRequest{}
+	conv24, err := KnowledgeAssistantFromSDK(v.KnowledgeAssistant)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeAssistantRequest.KnowledgeAssistant", err)
+	}
+	out.KnowledgeAssistant = conv24
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateKnowledgeSourceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateKnowledgeSourceRequestToSDK(w *UpdateKnowledgeSourceRequest) (*sdk.UpdateKnowledgeSourceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateKnowledgeSourceRequest{}
+	out.Name = w.Name
+	conv25, err := KnowledgeSourceToSDK(w.KnowledgeSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeSourceRequest.KnowledgeSource", err)
+	}
+	out.KnowledgeSource = conv25
+	mask26, err := fieldMaskFromString[sdk.KnowledgeSource](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeSourceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask26
+	return out, nil
+}
+
+// UpdateKnowledgeSourceRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateKnowledgeSourceRequestFromSDK(v *sdk.UpdateKnowledgeSourceRequest) (*UpdateKnowledgeSourceRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	knowledgeSourceWireValue, err := KnowledgeSourceFromSDK(v.KnowledgeSource)
+	out := &UpdateKnowledgeSourceRequest{}
+	out.Name = v.Name
+	conv27, err := KnowledgeSourceFromSDK(v.KnowledgeSource)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateKnowledgeSourceRequest.KnowledgeSource", err)
 	}
-	return &UpdateKnowledgeSourceRequest{
-		Name:            v.Name,
-		KnowledgeSource: knowledgeSourceWireValue,
-		UpdateMask:      fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.KnowledgeSource = conv27
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -671,4 +873,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

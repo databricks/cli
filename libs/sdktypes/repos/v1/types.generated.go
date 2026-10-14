@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/repos/v1"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateRepoRequest struct {
 	// URL of the Git repository to be linked.
 	Url *string `json:"url,omitempty"`
@@ -45,27 +29,6 @@ type CreateRepoRequest struct {
 	GitCredentialId *int64 `json:"git_credential_id,omitempty"`
 }
 
-func CreateRepoRequestFromSDK(v *sdk.CreateRepoRequest) (*CreateRepoRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sparseCheckoutWireValue, err := SparseCheckoutFromSDK(v.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRepoRequest.SparseCheckout", err)
-	}
-	gitCredentialIdWireValue, err := int64ToWire(v.GitCredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRepoRequest.GitCredentialId", err)
-	}
-	return &CreateRepoRequest{
-		Url:             v.Url,
-		Provider:        v.Provider,
-		Path:            v.Path,
-		SparseCheckout:  sparseCheckoutWireValue,
-		GitCredentialId: gitCredentialIdWireValue,
-	}, nil
-}
-
 type CreateRepoResponse struct {
 	// ID of the Git folder (repo) object in the workspace.
 	Id *int64 `json:"id,omitempty"`
@@ -84,29 +47,6 @@ type CreateRepoResponse struct {
 	HeadCommitId *string `json:"head_commit_id,omitempty"`
 	// Sparse checkout settings for the Git folder (repo).
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
-}
-
-func CreateRepoResponseToSDK(w *CreateRepoResponse) (*sdk.CreateRepoResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	idPublicValue, err := int64FromWire(w.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRepoResponse.Id", err)
-	}
-	sparseCheckoutPublicValue, err := SparseCheckoutToSDK(w.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRepoResponse.SparseCheckout", err)
-	}
-	return &sdk.CreateRepoResponse{
-		Id:             idPublicValue,
-		Path:           w.Path,
-		Url:            w.Url,
-		Provider:       w.Provider,
-		Branch:         w.Branch,
-		HeadCommitId:   w.HeadCommitId,
-		SparseCheckout: sparseCheckoutPublicValue,
-	}, nil
 }
 
 type GetRepoResponse struct {
@@ -131,30 +71,6 @@ type GetRepoResponse struct {
 	GitCliEnabled *bool `json:"git_cli_enabled,omitempty"`
 }
 
-func GetRepoResponseToSDK(w *GetRepoResponse) (*sdk.GetRepoResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	idPublicValue, err := int64FromWire(w.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRepoResponse.Id", err)
-	}
-	sparseCheckoutPublicValue, err := SparseCheckoutToSDK(w.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRepoResponse.SparseCheckout", err)
-	}
-	return &sdk.GetRepoResponse{
-		Id:             idPublicValue,
-		Path:           w.Path,
-		Url:            w.Url,
-		Provider:       w.Provider,
-		Branch:         w.Branch,
-		HeadCommitId:   w.HeadCommitId,
-		SparseCheckout: sparseCheckoutPublicValue,
-		GitCliEnabled:  w.GitCliEnabled,
-	}, nil
-}
-
 type ListReposRequest struct {
 	// Filters repos that have paths starting with the given path prefix. If not
 	// provided or when provided an effectively empty prefix (`/` or `/Workspace`)
@@ -165,36 +81,12 @@ type ListReposRequest struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListReposRequestFromSDK(v *sdk.ListReposRequest) (*ListReposRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListReposRequest{
-		PathPrefix:    v.PathPrefix,
-		NextPageToken: v.NextPageToken,
-	}, nil
-}
-
 type ListReposResponse struct {
 	// List of Git folders (repos).
 	Repos []RepoInfo `json:"repos,omitempty"`
 	// Token that can be specified as a query parameter to the `GET /repos` endpoint
 	// to retrieve the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListReposResponseToSDK(w *ListReposResponse) (*sdk.ListReposResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	reposPublicValue, err := convertSlice(w.Repos, RepoInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListReposResponse.Repos", err)
-	}
-	return &sdk.ListReposResponse{
-		Repos:         reposPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Git folder (repo) information..
@@ -217,29 +109,6 @@ type RepoInfo struct {
 	SparseCheckout *SparseCheckout `json:"sparse_checkout,omitempty"`
 }
 
-func RepoInfoToSDK(w *RepoInfo) (*sdk.RepoInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	idPublicValue, err := int64FromWire(w.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepoInfo.Id", err)
-	}
-	sparseCheckoutPublicValue, err := SparseCheckoutToSDK(w.SparseCheckout)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RepoInfo.SparseCheckout", err)
-	}
-	return &sdk.RepoInfo{
-		Id:             idPublicValue,
-		Path:           w.Path,
-		Url:            w.Url,
-		Provider:       w.Provider,
-		Branch:         w.Branch,
-		HeadCommitId:   w.HeadCommitId,
-		SparseCheckout: sparseCheckoutPublicValue,
-	}, nil
-}
-
 // Sparse checkout configuration, it contains options like cone patterns..
 type SparseCheckout struct {
 	// List of sparse checkout cone patterns, see [cone mode handling] for details.
@@ -248,39 +117,12 @@ type SparseCheckout struct {
 	Patterns []string `json:"patterns,omitempty"`
 }
 
-func SparseCheckoutFromSDK(v *sdk.SparseCheckout) (*SparseCheckout, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparseCheckout{
-		Patterns: v.Patterns,
-	}, nil
-}
-
-func SparseCheckoutToSDK(w *SparseCheckout) (*sdk.SparseCheckout, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SparseCheckout{
-		Patterns: w.Patterns,
-	}, nil
-}
-
 // Sparse checkout configuration, it contains options like cone patterns..
 type SparseCheckoutUpdate struct {
 	// List of sparse checkout cone patterns, see [cone mode handling] for details.
 	//
 	// [cone mode handling]: https://git-scm.com/docs/git-sparse-checkout#_internalscone_mode_handling
 	Patterns []string `json:"patterns,omitempty"`
-}
-
-func SparseCheckoutUpdateFromSDK(v *sdk.SparseCheckoutUpdate) (*SparseCheckoutUpdate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SparseCheckoutUpdate{
-		Patterns: v.Patterns,
-	}, nil
 }
 
 type UpdateRepoRequest struct {
@@ -313,30 +155,292 @@ type UpdateRepoRequest struct {
 	GitCredentialId *int64 `json:"git_credential_id,omitempty"`
 }
 
+// CreateRepoRequestToSDK converts the mirror to the sdk-go type.
+func CreateRepoRequestToSDK(w *CreateRepoRequest) (*sdk.CreateRepoRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRepoRequest{}
+	out.Url = w.Url
+	out.Provider = w.Provider
+	out.Path = w.Path
+	conv1, err := SparseCheckoutToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRepoRequest.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv1
+	out.GitCredentialId = w.GitCredentialId
+	return out, nil
+}
+
+// CreateRepoRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRepoRequestFromSDK(v *sdk.CreateRepoRequest) (*CreateRepoRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRepoRequest{}
+	out.Url = v.Url
+	out.Provider = v.Provider
+	out.Path = v.Path
+	conv2, err := SparseCheckoutFromSDK(v.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRepoRequest.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv2
+	out.GitCredentialId = v.GitCredentialId
+	return out, nil
+}
+
+// CreateRepoResponseToSDK converts the mirror to the sdk-go type.
+func CreateRepoResponseToSDK(w *CreateRepoResponse) (*sdk.CreateRepoResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRepoResponse{}
+	out.Id = w.Id
+	out.Path = w.Path
+	out.Url = w.Url
+	out.Provider = w.Provider
+	out.Branch = w.Branch
+	out.HeadCommitId = w.HeadCommitId
+	conv3, err := SparseCheckoutToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRepoResponse.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv3
+	return out, nil
+}
+
+// CreateRepoResponseFromSDK converts the sdk-go type to the mirror.
+func CreateRepoResponseFromSDK(v *sdk.CreateRepoResponse) (*CreateRepoResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRepoResponse{}
+	out.Id = v.Id
+	out.Path = v.Path
+	out.Url = v.Url
+	out.Provider = v.Provider
+	out.Branch = v.Branch
+	out.HeadCommitId = v.HeadCommitId
+	conv4, err := SparseCheckoutFromSDK(v.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRepoResponse.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv4
+	return out, nil
+}
+
+// GetRepoResponseToSDK converts the mirror to the sdk-go type.
+func GetRepoResponseToSDK(w *GetRepoResponse) (*sdk.GetRepoResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRepoResponse{}
+	out.Id = w.Id
+	out.Path = w.Path
+	out.Url = w.Url
+	out.Provider = w.Provider
+	out.Branch = w.Branch
+	out.HeadCommitId = w.HeadCommitId
+	conv5, err := SparseCheckoutToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRepoResponse.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv5
+	out.GitCliEnabled = w.GitCliEnabled
+	return out, nil
+}
+
+// GetRepoResponseFromSDK converts the sdk-go type to the mirror.
+func GetRepoResponseFromSDK(v *sdk.GetRepoResponse) (*GetRepoResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRepoResponse{}
+	out.Id = v.Id
+	out.Path = v.Path
+	out.Url = v.Url
+	out.Provider = v.Provider
+	out.Branch = v.Branch
+	out.HeadCommitId = v.HeadCommitId
+	conv6, err := SparseCheckoutFromSDK(v.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRepoResponse.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv6
+	out.GitCliEnabled = v.GitCliEnabled
+	return out, nil
+}
+
+// ListReposRequestToSDK converts the mirror to the sdk-go type.
+func ListReposRequestToSDK(w *ListReposRequest) (*sdk.ListReposRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListReposRequest{}
+	out.PathPrefix = w.PathPrefix
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListReposRequestFromSDK converts the sdk-go type to the mirror.
+func ListReposRequestFromSDK(v *sdk.ListReposRequest) (*ListReposRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListReposRequest{}
+	out.PathPrefix = v.PathPrefix
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListReposResponseToSDK converts the mirror to the sdk-go type.
+func ListReposResponseToSDK(w *ListReposResponse) (*sdk.ListReposResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListReposResponse{}
+	conv7, err := convertSlice(w.Repos, RepoInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListReposResponse.Repos", err)
+	}
+	out.Repos = conv7
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListReposResponseFromSDK converts the sdk-go type to the mirror.
+func ListReposResponseFromSDK(v *sdk.ListReposResponse) (*ListReposResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListReposResponse{}
+	conv8, err := convertSlice(v.Repos, RepoInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListReposResponse.Repos", err)
+	}
+	out.Repos = conv8
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// RepoInfoToSDK converts the mirror to the sdk-go type.
+func RepoInfoToSDK(w *RepoInfo) (*sdk.RepoInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RepoInfo{}
+	out.Id = w.Id
+	out.Path = w.Path
+	out.Url = w.Url
+	out.Provider = w.Provider
+	out.Branch = w.Branch
+	out.HeadCommitId = w.HeadCommitId
+	conv9, err := SparseCheckoutToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepoInfo.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv9
+	return out, nil
+}
+
+// RepoInfoFromSDK converts the sdk-go type to the mirror.
+func RepoInfoFromSDK(v *sdk.RepoInfo) (*RepoInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RepoInfo{}
+	out.Id = v.Id
+	out.Path = v.Path
+	out.Url = v.Url
+	out.Provider = v.Provider
+	out.Branch = v.Branch
+	out.HeadCommitId = v.HeadCommitId
+	conv10, err := SparseCheckoutFromSDK(v.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RepoInfo.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv10
+	return out, nil
+}
+
+// SparseCheckoutToSDK converts the mirror to the sdk-go type.
+func SparseCheckoutToSDK(w *SparseCheckout) (*sdk.SparseCheckout, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparseCheckout{}
+	out.Patterns = w.Patterns
+	return out, nil
+}
+
+// SparseCheckoutFromSDK converts the sdk-go type to the mirror.
+func SparseCheckoutFromSDK(v *sdk.SparseCheckout) (*SparseCheckout, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparseCheckout{}
+	out.Patterns = v.Patterns
+	return out, nil
+}
+
+// SparseCheckoutUpdateToSDK converts the mirror to the sdk-go type.
+func SparseCheckoutUpdateToSDK(w *SparseCheckoutUpdate) (*sdk.SparseCheckoutUpdate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SparseCheckoutUpdate{}
+	out.Patterns = w.Patterns
+	return out, nil
+}
+
+// SparseCheckoutUpdateFromSDK converts the sdk-go type to the mirror.
+func SparseCheckoutUpdateFromSDK(v *sdk.SparseCheckoutUpdate) (*SparseCheckoutUpdate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SparseCheckoutUpdate{}
+	out.Patterns = v.Patterns
+	return out, nil
+}
+
+// UpdateRepoRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRepoRequestToSDK(w *UpdateRepoRequest) (*sdk.UpdateRepoRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRepoRequest{}
+	out.Id = w.Id
+	out.Branch = w.Branch
+	out.Tag = w.Tag
+	conv11, err := SparseCheckoutUpdateToSDK(w.SparseCheckout)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRepoRequest.SparseCheckout", err)
+	}
+	out.SparseCheckout = conv11
+	out.DangerouslyForceDiscardAll = w.DangerouslyForceDiscardAll
+	out.GitCredentialId = w.GitCredentialId
+	return out, nil
+}
+
+// UpdateRepoRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateRepoRequestFromSDK(v *sdk.UpdateRepoRequest) (*UpdateRepoRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	idWireValue, err := int64ToWire(v.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRepoRequest.Id", err)
-	}
-	sparseCheckoutWireValue, err := SparseCheckoutUpdateFromSDK(v.SparseCheckout)
+	out := &UpdateRepoRequest{}
+	out.Id = v.Id
+	out.Branch = v.Branch
+	out.Tag = v.Tag
+	conv12, err := SparseCheckoutUpdateFromSDK(v.SparseCheckout)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRepoRequest.SparseCheckout", err)
 	}
-	gitCredentialIdWireValue, err := int64ToWire(v.GitCredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRepoRequest.GitCredentialId", err)
-	}
-	return &UpdateRepoRequest{
-		Id:                         idWireValue,
-		Branch:                     v.Branch,
-		Tag:                        v.Tag,
-		SparseCheckout:             sparseCheckoutWireValue,
-		DangerouslyForceDiscardAll: v.DangerouslyForceDiscardAll,
-		GitCredentialId:            gitCredentialIdWireValue,
-	}, nil
+	out.SparseCheckout = conv12
+	out.DangerouslyForceDiscardAll = v.DangerouslyForceDiscardAll
+	out.GitCredentialId = v.GitCredentialId
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

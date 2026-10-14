@@ -59,48 +59,10 @@ const (
 	ProvisioningInfo_State_Degraded     = sdk.ProvisioningInfo_State_Degraded
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AzureEncryptionSettings struct {
 	AzureTenantId             *string `json:"azure_tenant_id,omitempty"`
 	AzureCmkAccessConnectorId *string `json:"azure_cmk_access_connector_id,omitempty"`
 	AzureCmkManagedIdentityId *string `json:"azure_cmk_managed_identity_id,omitempty"`
-}
-
-func AzureEncryptionSettingsFromSDK(v *sdk.AzureEncryptionSettings) (*AzureEncryptionSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzureEncryptionSettings{
-		AzureTenantId:             v.AzureTenantId,
-		AzureCmkAccessConnectorId: v.AzureCmkAccessConnectorId,
-		AzureCmkManagedIdentityId: v.AzureCmkManagedIdentityId,
-	}, nil
-}
-
-func AzureEncryptionSettingsToSDK(w *AzureEncryptionSettings) (*sdk.AzureEncryptionSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzureEncryptionSettings{
-		AzureTenantId:             w.AzureTenantId,
-		AzureCmkAccessConnectorId: w.AzureCmkAccessConnectorId,
-		AzureCmkManagedIdentityId: w.AzureCmkManagedIdentityId,
-	}, nil
 }
 
 type CatalogInfo struct {
@@ -159,63 +121,6 @@ type CatalogInfo struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-func CatalogInfoToSDK(w *CatalogInfo) (*sdk.CatalogInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.CreatedAt", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagPublicValue, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.EffectivePredictiveOptimizationFlag", err)
-	}
-	provisioningInfoPublicValue, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ProvisioningInfo", err)
-	}
-	customMaxRetentionHoursPublicValue, err := int64FromWire(w.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.CustomMaxRetentionHours", err)
-	}
-	managedEncryptionSettingsPublicValue, err := EncryptionSettingsToSDK(w.ManagedEncryptionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ManagedEncryptionSettings", err)
-	}
-	return &sdk.CatalogInfo{
-		Name:                                w.Name,
-		Owner:                               w.Owner,
-		Comment:                             w.Comment,
-		StorageRoot:                         w.StorageRoot,
-		EnablePredictiveOptimization:        w.EnablePredictiveOptimization,
-		CatalogType:                         w.CatalogType,
-		ProviderName:                        w.ProviderName,
-		ShareName:                           w.ShareName,
-		ConnectionName:                      w.ConnectionName,
-		MetastoreId:                         w.MetastoreId,
-		CreatedAt:                           createdAtPublicValue,
-		CreatedBy:                           w.CreatedBy,
-		UpdatedAt:                           updatedAtPublicValue,
-		UpdatedBy:                           w.UpdatedBy,
-		StorageLocation:                     w.StorageLocation,
-		IsolationMode:                       w.IsolationMode,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagPublicValue,
-		BrowseOnly:                          w.BrowseOnly,
-		ProvisioningInfo:                    provisioningInfoPublicValue,
-		FullName:                            w.FullName,
-		SecurableType:                       w.SecurableType,
-		CustomMaxRetentionHours:             customMaxRetentionHoursPublicValue,
-		ManagedEncryptionSettings:           managedEncryptionSettingsPublicValue,
-		Properties:                          w.Properties,
-		Options:                             w.Options,
-	}, nil
-}
-
 type CreateCatalogRequest struct {
 	// Name of catalog.
 	Name *string `json:"name,omitempty"`
@@ -272,78 +177,11 @@ type CreateCatalogRequest struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
-func CreateCatalogRequestFromSDK(v *sdk.CreateCatalogRequest) (*CreateCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.EffectivePredictiveOptimizationFlag", err)
-	}
-	provisioningInfoWireValue, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ProvisioningInfo", err)
-	}
-	customMaxRetentionHoursWireValue, err := int64ToWire(v.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.CustomMaxRetentionHours", err)
-	}
-	managedEncryptionSettingsWireValue, err := EncryptionSettingsFromSDK(v.ManagedEncryptionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ManagedEncryptionSettings", err)
-	}
-	return &CreateCatalogRequest{
-		Name:                                v.Name,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageRoot:                         v.StorageRoot,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		CatalogType:                         v.CatalogType,
-		ProviderName:                        v.ProviderName,
-		ShareName:                           v.ShareName,
-		ConnectionName:                      v.ConnectionName,
-		MetastoreId:                         v.MetastoreId,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		StorageLocation:                     v.StorageLocation,
-		IsolationMode:                       v.IsolationMode,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		BrowseOnly:                          v.BrowseOnly,
-		ProvisioningInfo:                    provisioningInfoWireValue,
-		FullName:                            v.FullName,
-		SecurableType:                       v.SecurableType,
-		CustomMaxRetentionHours:             customMaxRetentionHoursWireValue,
-		ManagedEncryptionSettings:           managedEncryptionSettingsWireValue,
-		Properties:                          v.Properties,
-		Options:                             v.Options,
-	}, nil
-}
-
 type DeleteCatalogRequest struct {
 	// The name of the catalog.
 	NameArg *string `json:"name_arg,omitempty"`
 	// Force deletion even if the catalog is not empty.
 	Force *bool `json:"force,omitempty"`
-}
-
-func DeleteCatalogRequestFromSDK(v *sdk.DeleteCatalogRequest) (*DeleteCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteCatalogRequest{
-		NameArg: v.NameArg,
-		Force:   v.Force,
-	}, nil
 }
 
 type EffectivePredictiveOptimizationFlag struct {
@@ -358,28 +196,6 @@ type EffectivePredictiveOptimizationFlag struct {
 	InheritedFromName *string `json:"inherited_from_name,omitempty"`
 }
 
-func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EffectivePredictiveOptimizationFlag{
-		Value:             v.Value,
-		InheritedFromType: v.InheritedFromType,
-		InheritedFromName: v.InheritedFromName,
-	}, nil
-}
-
-func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EffectivePredictiveOptimizationFlag{
-		Value:             w.Value,
-		InheritedFromType: w.InheritedFromType,
-		InheritedFromName: w.InheritedFromName,
-	}, nil
-}
-
 // Encryption Settings are used to carry metadata for securable encryption at
 // rest. Currently used for catalogs, we can use the information supplied here
 // to interact with a CMK..
@@ -392,52 +208,12 @@ type EncryptionSettings struct {
 	AzureEncryptionSettings *AzureEncryptionSettings `json:"azure_encryption_settings,omitempty"`
 }
 
-func EncryptionSettingsFromSDK(v *sdk.EncryptionSettings) (*EncryptionSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	azureEncryptionSettingsWireValue, err := AzureEncryptionSettingsFromSDK(v.AzureEncryptionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EncryptionSettings.AzureEncryptionSettings", err)
-	}
-	return &EncryptionSettings{
-		CustomerManagedKeyId:    v.CustomerManagedKeyId,
-		AzureKeyVaultKeyId:      v.AzureKeyVaultKeyId,
-		AzureEncryptionSettings: azureEncryptionSettingsWireValue,
-	}, nil
-}
-
-func EncryptionSettingsToSDK(w *EncryptionSettings) (*sdk.EncryptionSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	azureEncryptionSettingsPublicValue, err := AzureEncryptionSettingsToSDK(w.AzureEncryptionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EncryptionSettings.AzureEncryptionSettings", err)
-	}
-	return &sdk.EncryptionSettings{
-		CustomerManagedKeyId:    w.CustomerManagedKeyId,
-		AzureKeyVaultKeyId:      w.AzureKeyVaultKeyId,
-		AzureEncryptionSettings: azureEncryptionSettingsPublicValue,
-	}, nil
-}
-
 type GetCatalogRequest struct {
 	// The name of the catalog.
 	NameArg *string `json:"name_arg,omitempty"`
 	// Whether to include catalogs in the response for which the principal can only
 	// access selective metadata for
 	IncludeBrowse *bool `json:"include_browse,omitempty"`
-}
-
-func GetCatalogRequestFromSDK(v *sdk.GetCatalogRequest) (*GetCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetCatalogRequest{
-		NameArg:       v.NameArg,
-		IncludeBrowse: v.IncludeBrowse,
-	}, nil
 }
 
 type ListCatalogsRequest struct {
@@ -461,18 +237,6 @@ type ListCatalogsRequest struct {
 	IncludeUnbound *bool `json:"include_unbound,omitempty"`
 }
 
-func ListCatalogsRequestFromSDK(v *sdk.ListCatalogsRequest) (*ListCatalogsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCatalogsRequest{
-		IncludeBrowse:  v.IncludeBrowse,
-		MaxResults:     v.MaxResults,
-		PageToken:      v.PageToken,
-		IncludeUnbound: v.IncludeUnbound,
-	}, nil
-}
-
 type ListCatalogsResponse struct {
 	// An array of catalog information objects.
 	Catalogs []CatalogInfo `json:"catalogs,omitempty"`
@@ -482,42 +246,10 @@ type ListCatalogsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListCatalogsResponseToSDK(w *ListCatalogsResponse) (*sdk.ListCatalogsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	catalogsPublicValue, err := convertSlice(w.Catalogs, CatalogInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCatalogsResponse.Catalogs", err)
-	}
-	return &sdk.ListCatalogsResponse{
-		Catalogs:      catalogsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // Status of an asynchronously provisioned resource..
 type ProvisioningInfo struct {
 	// The provisioning state of the resource.
 	State ProvisioningInfo_State `json:"state,omitempty"`
-}
-
-func ProvisioningInfoFromSDK(v *sdk.ProvisioningInfo) (*ProvisioningInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ProvisioningInfo{
-		State: v.State,
-	}, nil
-}
-
-func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ProvisioningInfo{
-		State: w.State,
-	}, nil
 }
 
 type UpdateCatalogRequest struct {
@@ -580,63 +312,484 @@ type UpdateCatalogRequest struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
+// AzureEncryptionSettingsToSDK converts the mirror to the sdk-go type.
+func AzureEncryptionSettingsToSDK(w *AzureEncryptionSettings) (*sdk.AzureEncryptionSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureEncryptionSettings{}
+	out.AzureTenantId = w.AzureTenantId
+	out.AzureCmkAccessConnectorId = w.AzureCmkAccessConnectorId
+	out.AzureCmkManagedIdentityId = w.AzureCmkManagedIdentityId
+	return out, nil
+}
+
+// AzureEncryptionSettingsFromSDK converts the sdk-go type to the mirror.
+func AzureEncryptionSettingsFromSDK(v *sdk.AzureEncryptionSettings) (*AzureEncryptionSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureEncryptionSettings{}
+	out.AzureTenantId = v.AzureTenantId
+	out.AzureCmkAccessConnectorId = v.AzureCmkAccessConnectorId
+	out.AzureCmkManagedIdentityId = v.AzureCmkManagedIdentityId
+	return out, nil
+}
+
+// CatalogInfoToSDK converts the mirror to the sdk-go type.
+func CatalogInfoToSDK(w *CatalogInfo) (*sdk.CatalogInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CatalogInfo{}
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.CatalogType = w.CatalogType
+	out.ProviderName = w.ProviderName
+	out.ShareName = w.ShareName
+	out.ConnectionName = w.ConnectionName
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	out.IsolationMode = w.IsolationMode
+	conv1, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv1
+	out.BrowseOnly = w.BrowseOnly
+	conv2, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv2
+	out.FullName = w.FullName
+	out.SecurableType = w.SecurableType
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	conv3, err := EncryptionSettingsToSDK(w.ManagedEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ManagedEncryptionSettings", err)
+	}
+	out.ManagedEncryptionSettings = conv3
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// CatalogInfoFromSDK converts the sdk-go type to the mirror.
+func CatalogInfoFromSDK(v *sdk.CatalogInfo) (*CatalogInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CatalogInfo{}
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.CatalogType = v.CatalogType
+	out.ProviderName = v.ProviderName
+	out.ShareName = v.ShareName
+	out.ConnectionName = v.ConnectionName
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	out.IsolationMode = v.IsolationMode
+	conv4, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv4
+	out.BrowseOnly = v.BrowseOnly
+	conv5, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv5
+	out.FullName = v.FullName
+	out.SecurableType = v.SecurableType
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	conv6, err := EncryptionSettingsFromSDK(v.ManagedEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogInfo.ManagedEncryptionSettings", err)
+	}
+	out.ManagedEncryptionSettings = conv6
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
+}
+
+// CreateCatalogRequestToSDK converts the mirror to the sdk-go type.
+func CreateCatalogRequestToSDK(w *CreateCatalogRequest) (*sdk.CreateCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCatalogRequest{}
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.CatalogType = w.CatalogType
+	out.ProviderName = w.ProviderName
+	out.ShareName = w.ShareName
+	out.ConnectionName = w.ConnectionName
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	out.IsolationMode = w.IsolationMode
+	conv7, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv7
+	out.BrowseOnly = w.BrowseOnly
+	conv8, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv8
+	out.FullName = w.FullName
+	out.SecurableType = w.SecurableType
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	conv9, err := EncryptionSettingsToSDK(w.ManagedEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ManagedEncryptionSettings", err)
+	}
+	out.ManagedEncryptionSettings = conv9
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// CreateCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCatalogRequestFromSDK(v *sdk.CreateCatalogRequest) (*CreateCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCatalogRequest{}
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.CatalogType = v.CatalogType
+	out.ProviderName = v.ProviderName
+	out.ShareName = v.ShareName
+	out.ConnectionName = v.ConnectionName
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	out.IsolationMode = v.IsolationMode
+	conv10, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv10
+	out.BrowseOnly = v.BrowseOnly
+	conv11, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv11
+	out.FullName = v.FullName
+	out.SecurableType = v.SecurableType
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	conv12, err := EncryptionSettingsFromSDK(v.ManagedEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogRequest.ManagedEncryptionSettings", err)
+	}
+	out.ManagedEncryptionSettings = conv12
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
+}
+
+// DeleteCatalogRequestToSDK converts the mirror to the sdk-go type.
+func DeleteCatalogRequestToSDK(w *DeleteCatalogRequest) (*sdk.DeleteCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteCatalogRequest{}
+	out.NameArg = w.NameArg
+	out.Force = w.Force
+	return out, nil
+}
+
+// DeleteCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteCatalogRequestFromSDK(v *sdk.DeleteCatalogRequest) (*DeleteCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteCatalogRequest{}
+	out.NameArg = v.NameArg
+	out.Force = v.Force
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagToSDK converts the mirror to the sdk-go type.
+func EffectivePredictiveOptimizationFlagToSDK(w *EffectivePredictiveOptimizationFlag) (*sdk.EffectivePredictiveOptimizationFlag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EffectivePredictiveOptimizationFlag{}
+	out.Value = w.Value
+	out.InheritedFromType = w.InheritedFromType
+	out.InheritedFromName = w.InheritedFromName
+	return out, nil
+}
+
+// EffectivePredictiveOptimizationFlagFromSDK converts the sdk-go type to the mirror.
+func EffectivePredictiveOptimizationFlagFromSDK(v *sdk.EffectivePredictiveOptimizationFlag) (*EffectivePredictiveOptimizationFlag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EffectivePredictiveOptimizationFlag{}
+	out.Value = v.Value
+	out.InheritedFromType = v.InheritedFromType
+	out.InheritedFromName = v.InheritedFromName
+	return out, nil
+}
+
+// EncryptionSettingsToSDK converts the mirror to the sdk-go type.
+func EncryptionSettingsToSDK(w *EncryptionSettings) (*sdk.EncryptionSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EncryptionSettings{}
+	out.CustomerManagedKeyId = w.CustomerManagedKeyId
+	out.AzureKeyVaultKeyId = w.AzureKeyVaultKeyId
+	conv13, err := AzureEncryptionSettingsToSDK(w.AzureEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EncryptionSettings.AzureEncryptionSettings", err)
+	}
+	out.AzureEncryptionSettings = conv13
+	return out, nil
+}
+
+// EncryptionSettingsFromSDK converts the sdk-go type to the mirror.
+func EncryptionSettingsFromSDK(v *sdk.EncryptionSettings) (*EncryptionSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EncryptionSettings{}
+	out.CustomerManagedKeyId = v.CustomerManagedKeyId
+	out.AzureKeyVaultKeyId = v.AzureKeyVaultKeyId
+	conv14, err := AzureEncryptionSettingsFromSDK(v.AzureEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EncryptionSettings.AzureEncryptionSettings", err)
+	}
+	out.AzureEncryptionSettings = conv14
+	return out, nil
+}
+
+// GetCatalogRequestToSDK converts the mirror to the sdk-go type.
+func GetCatalogRequestToSDK(w *GetCatalogRequest) (*sdk.GetCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetCatalogRequest{}
+	out.NameArg = w.NameArg
+	out.IncludeBrowse = w.IncludeBrowse
+	return out, nil
+}
+
+// GetCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func GetCatalogRequestFromSDK(v *sdk.GetCatalogRequest) (*GetCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetCatalogRequest{}
+	out.NameArg = v.NameArg
+	out.IncludeBrowse = v.IncludeBrowse
+	return out, nil
+}
+
+// ListCatalogsRequestToSDK converts the mirror to the sdk-go type.
+func ListCatalogsRequestToSDK(w *ListCatalogsRequest) (*sdk.ListCatalogsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCatalogsRequest{}
+	out.IncludeBrowse = w.IncludeBrowse
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	out.IncludeUnbound = w.IncludeUnbound
+	return out, nil
+}
+
+// ListCatalogsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCatalogsRequestFromSDK(v *sdk.ListCatalogsRequest) (*ListCatalogsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCatalogsRequest{}
+	out.IncludeBrowse = v.IncludeBrowse
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	out.IncludeUnbound = v.IncludeUnbound
+	return out, nil
+}
+
+// ListCatalogsResponseToSDK converts the mirror to the sdk-go type.
+func ListCatalogsResponseToSDK(w *ListCatalogsResponse) (*sdk.ListCatalogsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCatalogsResponse{}
+	conv15, err := convertSlice(w.Catalogs, CatalogInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCatalogsResponse.Catalogs", err)
+	}
+	out.Catalogs = conv15
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCatalogsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCatalogsResponseFromSDK(v *sdk.ListCatalogsResponse) (*ListCatalogsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCatalogsResponse{}
+	conv16, err := convertSlice(v.Catalogs, CatalogInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCatalogsResponse.Catalogs", err)
+	}
+	out.Catalogs = conv16
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ProvisioningInfoToSDK converts the mirror to the sdk-go type.
+func ProvisioningInfoToSDK(w *ProvisioningInfo) (*sdk.ProvisioningInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ProvisioningInfo{}
+	out.State = w.State
+	return out, nil
+}
+
+// ProvisioningInfoFromSDK converts the sdk-go type to the mirror.
+func ProvisioningInfoFromSDK(v *sdk.ProvisioningInfo) (*ProvisioningInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ProvisioningInfo{}
+	out.State = v.State
+	return out, nil
+}
+
+// UpdateCatalogRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCatalogRequestToSDK(w *UpdateCatalogRequest) (*sdk.UpdateCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCatalogRequest{}
+	out.NameArg = w.NameArg
+	out.NewName = w.NewName
+	out.Name = w.Name
+	out.Owner = w.Owner
+	out.Comment = w.Comment
+	out.StorageRoot = w.StorageRoot
+	out.EnablePredictiveOptimization = w.EnablePredictiveOptimization
+	out.CatalogType = w.CatalogType
+	out.ProviderName = w.ProviderName
+	out.ShareName = w.ShareName
+	out.ConnectionName = w.ConnectionName
+	out.MetastoreId = w.MetastoreId
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.StorageLocation = w.StorageLocation
+	out.IsolationMode = w.IsolationMode
+	conv17, err := EffectivePredictiveOptimizationFlagToSDK(w.EffectivePredictiveOptimizationFlag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.EffectivePredictiveOptimizationFlag", err)
+	}
+	out.EffectivePredictiveOptimizationFlag = conv17
+	out.BrowseOnly = w.BrowseOnly
+	conv18, err := ProvisioningInfoToSDK(w.ProvisioningInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.ProvisioningInfo", err)
+	}
+	out.ProvisioningInfo = conv18
+	out.FullName = w.FullName
+	out.SecurableType = w.SecurableType
+	out.CustomMaxRetentionHours = w.CustomMaxRetentionHours
+	conv19, err := EncryptionSettingsToSDK(w.ManagedEncryptionSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.ManagedEncryptionSettings", err)
+	}
+	out.ManagedEncryptionSettings = conv19
+	out.Properties = w.Properties
+	out.Options = w.Options
+	return out, nil
+}
+
+// UpdateCatalogRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateCatalogRequestFromSDK(v *sdk.UpdateCatalogRequest) (*UpdateCatalogRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	createdAtWireValue, err := int64ToWire(v.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.CreatedAt", err)
-	}
-	updatedAtWireValue, err := int64ToWire(v.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.UpdatedAt", err)
-	}
-	effectivePredictiveOptimizationFlagWireValue, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
+	out := &UpdateCatalogRequest{}
+	out.NameArg = v.NameArg
+	out.NewName = v.NewName
+	out.Name = v.Name
+	out.Owner = v.Owner
+	out.Comment = v.Comment
+	out.StorageRoot = v.StorageRoot
+	out.EnablePredictiveOptimization = v.EnablePredictiveOptimization
+	out.CatalogType = v.CatalogType
+	out.ProviderName = v.ProviderName
+	out.ShareName = v.ShareName
+	out.ConnectionName = v.ConnectionName
+	out.MetastoreId = v.MetastoreId
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.StorageLocation = v.StorageLocation
+	out.IsolationMode = v.IsolationMode
+	conv20, err := EffectivePredictiveOptimizationFlagFromSDK(v.EffectivePredictiveOptimizationFlag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.EffectivePredictiveOptimizationFlag", err)
 	}
-	provisioningInfoWireValue, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
+	out.EffectivePredictiveOptimizationFlag = conv20
+	out.BrowseOnly = v.BrowseOnly
+	conv21, err := ProvisioningInfoFromSDK(v.ProvisioningInfo)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.ProvisioningInfo", err)
 	}
-	customMaxRetentionHoursWireValue, err := int64ToWire(v.CustomMaxRetentionHours)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.CustomMaxRetentionHours", err)
-	}
-	managedEncryptionSettingsWireValue, err := EncryptionSettingsFromSDK(v.ManagedEncryptionSettings)
+	out.ProvisioningInfo = conv21
+	out.FullName = v.FullName
+	out.SecurableType = v.SecurableType
+	out.CustomMaxRetentionHours = v.CustomMaxRetentionHours
+	conv22, err := EncryptionSettingsFromSDK(v.ManagedEncryptionSettings)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCatalogRequest.ManagedEncryptionSettings", err)
 	}
-	return &UpdateCatalogRequest{
-		NameArg:                             v.NameArg,
-		NewName:                             v.NewName,
-		Name:                                v.Name,
-		Owner:                               v.Owner,
-		Comment:                             v.Comment,
-		StorageRoot:                         v.StorageRoot,
-		EnablePredictiveOptimization:        v.EnablePredictiveOptimization,
-		CatalogType:                         v.CatalogType,
-		ProviderName:                        v.ProviderName,
-		ShareName:                           v.ShareName,
-		ConnectionName:                      v.ConnectionName,
-		MetastoreId:                         v.MetastoreId,
-		CreatedAt:                           createdAtWireValue,
-		CreatedBy:                           v.CreatedBy,
-		UpdatedAt:                           updatedAtWireValue,
-		UpdatedBy:                           v.UpdatedBy,
-		StorageLocation:                     v.StorageLocation,
-		IsolationMode:                       v.IsolationMode,
-		EffectivePredictiveOptimizationFlag: effectivePredictiveOptimizationFlagWireValue,
-		BrowseOnly:                          v.BrowseOnly,
-		ProvisioningInfo:                    provisioningInfoWireValue,
-		FullName:                            v.FullName,
-		SecurableType:                       v.SecurableType,
-		CustomMaxRetentionHours:             customMaxRetentionHoursWireValue,
-		ManagedEncryptionSettings:           managedEncryptionSettingsWireValue,
-		Properties:                          v.Properties,
-		Options:                             v.Options,
-	}, nil
+	out.ManagedEncryptionSettings = conv22
+	out.Properties = v.Properties
+	out.Options = v.Options
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

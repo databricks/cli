@@ -6,31 +6,11 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/tagassignments/v1"
+	strings "strings"
 )
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
 
 type CreateTagAssignmentRequest struct {
 	TagAssignment *TagAssignment `json:"tag_assignment,omitempty"`
-}
-
-func CreateTagAssignmentRequestFromSDK(v *sdk.CreateTagAssignmentRequest) (*CreateTagAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagAssignmentWireValue, err := TagAssignmentFromSDK(v.TagAssignment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTagAssignmentRequest.TagAssignment", err)
-	}
-	return &CreateTagAssignmentRequest{
-		TagAssignment: tagAssignmentWireValue,
-	}, nil
 }
 
 type ListTagAssignmentsRequest struct {
@@ -47,36 +27,10 @@ type ListTagAssignmentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListTagAssignmentsRequestFromSDK(v *sdk.ListTagAssignmentsRequest) (*ListTagAssignmentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListTagAssignmentsRequest{
-		EntityType: v.EntityType,
-		EntityId:   v.EntityId,
-		PageSize:   v.PageSize,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListTagAssignmentsResponse struct {
 	TagAssignments []TagAssignment `json:"tag_assignments,omitempty"`
 	// Pagination token to request the next page of tag assignments
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListTagAssignmentsResponseToSDK(w *ListTagAssignmentsResponse) (*sdk.ListTagAssignmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tagAssignmentsPublicValue, err := convertSlice(w.TagAssignments, TagAssignmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTagAssignmentsResponse.TagAssignments", err)
-	}
-	return &sdk.ListTagAssignmentsResponse{
-		TagAssignments: tagAssignmentsPublicValue,
-		NextPageToken:  w.NextPageToken,
-	}, nil
 }
 
 type TagAssignment struct {
@@ -93,47 +47,153 @@ type TagAssignment struct {
 	TagValue *string `json:"tag_value,omitempty"`
 }
 
-func TagAssignmentFromSDK(v *sdk.TagAssignment) (*TagAssignment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TagAssignment{
-		EntityType: v.EntityType,
-		EntityId:   v.EntityId,
-		TagKey:     v.TagKey,
-		TagValue:   v.TagValue,
-	}, nil
-}
-
-func TagAssignmentToSDK(w *TagAssignment) (*sdk.TagAssignment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TagAssignment{
-		EntityType: w.EntityType,
-		EntityId:   w.EntityId,
-		TagKey:     w.TagKey,
-		TagValue:   w.TagValue,
-	}, nil
-}
-
 type UpdateTagAssignmentRequest struct {
 	TagAssignment *TagAssignment `json:"tag_assignment,omitempty"`
 	UpdateMask    *string        `json:"update_mask,omitempty"`
 }
 
+// CreateTagAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func CreateTagAssignmentRequestToSDK(w *CreateTagAssignmentRequest) (*sdk.CreateTagAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTagAssignmentRequest{}
+	conv1, err := TagAssignmentToSDK(w.TagAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTagAssignmentRequest.TagAssignment", err)
+	}
+	out.TagAssignment = conv1
+	return out, nil
+}
+
+// CreateTagAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTagAssignmentRequestFromSDK(v *sdk.CreateTagAssignmentRequest) (*CreateTagAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTagAssignmentRequest{}
+	conv2, err := TagAssignmentFromSDK(v.TagAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTagAssignmentRequest.TagAssignment", err)
+	}
+	out.TagAssignment = conv2
+	return out, nil
+}
+
+// ListTagAssignmentsRequestToSDK converts the mirror to the sdk-go type.
+func ListTagAssignmentsRequestToSDK(w *ListTagAssignmentsRequest) (*sdk.ListTagAssignmentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTagAssignmentsRequest{}
+	out.EntityType = w.EntityType
+	out.EntityId = w.EntityId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListTagAssignmentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListTagAssignmentsRequestFromSDK(v *sdk.ListTagAssignmentsRequest) (*ListTagAssignmentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTagAssignmentsRequest{}
+	out.EntityType = v.EntityType
+	out.EntityId = v.EntityId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListTagAssignmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListTagAssignmentsResponseToSDK(w *ListTagAssignmentsResponse) (*sdk.ListTagAssignmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTagAssignmentsResponse{}
+	conv3, err := convertSlice(w.TagAssignments, TagAssignmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTagAssignmentsResponse.TagAssignments", err)
+	}
+	out.TagAssignments = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListTagAssignmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListTagAssignmentsResponseFromSDK(v *sdk.ListTagAssignmentsResponse) (*ListTagAssignmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTagAssignmentsResponse{}
+	conv4, err := convertSlice(v.TagAssignments, TagAssignmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTagAssignmentsResponse.TagAssignments", err)
+	}
+	out.TagAssignments = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// TagAssignmentToSDK converts the mirror to the sdk-go type.
+func TagAssignmentToSDK(w *TagAssignment) (*sdk.TagAssignment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TagAssignment{}
+	out.EntityType = w.EntityType
+	out.EntityId = w.EntityId
+	out.TagKey = w.TagKey
+	out.TagValue = w.TagValue
+	return out, nil
+}
+
+// TagAssignmentFromSDK converts the sdk-go type to the mirror.
+func TagAssignmentFromSDK(v *sdk.TagAssignment) (*TagAssignment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TagAssignment{}
+	out.EntityType = v.EntityType
+	out.EntityId = v.EntityId
+	out.TagKey = v.TagKey
+	out.TagValue = v.TagValue
+	return out, nil
+}
+
+// UpdateTagAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateTagAssignmentRequestToSDK(w *UpdateTagAssignmentRequest) (*sdk.UpdateTagAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateTagAssignmentRequest{}
+	conv5, err := TagAssignmentToSDK(w.TagAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTagAssignmentRequest.TagAssignment", err)
+	}
+	out.TagAssignment = conv5
+	mask6, err := fieldMaskFromString[sdk.TagAssignment](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateTagAssignmentRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask6
+	return out, nil
+}
+
+// UpdateTagAssignmentRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateTagAssignmentRequestFromSDK(v *sdk.UpdateTagAssignmentRequest) (*UpdateTagAssignmentRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	tagAssignmentWireValue, err := TagAssignmentFromSDK(v.TagAssignment)
+	out := &UpdateTagAssignmentRequest{}
+	conv7, err := TagAssignmentFromSDK(v.TagAssignment)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateTagAssignmentRequest.TagAssignment", err)
 	}
-	return &UpdateTagAssignmentRequest{
-		TagAssignment: tagAssignmentWireValue,
-		UpdateMask:    fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.TagAssignment = conv7
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -149,4 +209,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

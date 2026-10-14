@@ -8,22 +8,6 @@ import (
 	sdk "github.com/databricks/sdk-go/oauth/v1"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateCustomOAuthAppIntegrationRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// List of OAuth redirect urls
@@ -44,25 +28,6 @@ type CreateCustomOAuthAppIntegrationRequest struct {
 	UserAuthorizedScopes []string `json:"user_authorized_scopes,omitempty"`
 }
 
-func CreateCustomOAuthAppIntegrationRequestFromSDK(v *sdk.CreateCustomOAuthAppIntegrationRequest) (*CreateCustomOAuthAppIntegrationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tokenAccessPolicyWireValue, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
-	}
-	return &CreateCustomOAuthAppIntegrationRequest{
-		AccountId:            v.AccountId,
-		RedirectUrls:         v.RedirectUrls,
-		Name:                 v.Name,
-		Confidential:         v.Confidential,
-		TokenAccessPolicy:    tokenAccessPolicyWireValue,
-		Scopes:               v.Scopes,
-		UserAuthorizedScopes: v.UserAuthorizedScopes,
-	}, nil
-}
-
 type CreatePublishedOAuthAppIntegrationRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// App id of the OAuth published app integration. For example power-bi,
@@ -72,33 +37,9 @@ type CreatePublishedOAuthAppIntegrationRequest struct {
 	TokenAccessPolicy *TokenAccessPolicy `json:"token_access_policy,omitempty"`
 }
 
-func CreatePublishedOAuthAppIntegrationRequestFromSDK(v *sdk.CreatePublishedOAuthAppIntegrationRequest) (*CreatePublishedOAuthAppIntegrationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tokenAccessPolicyWireValue, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePublishedOAuthAppIntegrationRequest.TokenAccessPolicy", err)
-	}
-	return &CreatePublishedOAuthAppIntegrationRequest{
-		AccountId:         v.AccountId,
-		AppId:             v.AppId,
-		TokenAccessPolicy: tokenAccessPolicyWireValue,
-	}, nil
-}
-
 type CreatePublishedOAuthAppIntegrationResponse struct {
 	// Unique integration id for the published OAuth app
 	IntegrationId *string `json:"integration_id,omitempty"`
-}
-
-func CreatePublishedOAuthAppIntegrationResponseToSDK(w *CreatePublishedOAuthAppIntegrationResponse) (*sdk.CreatePublishedOAuthAppIntegrationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreatePublishedOAuthAppIntegrationResponse{
-		IntegrationId: w.IntegrationId,
-	}, nil
 }
 
 type CustomOAuthAppIntegration struct {
@@ -125,33 +66,6 @@ type CustomOAuthAppIntegration struct {
 	UserAuthorizedScopes []string `json:"user_authorized_scopes,omitempty"`
 }
 
-func CustomOAuthAppIntegrationToSDK(w *CustomOAuthAppIntegration) (*sdk.CustomOAuthAppIntegration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tokenAccessPolicyPublicValue, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomOAuthAppIntegration.TokenAccessPolicy", err)
-	}
-	createdByPublicValue, err := int64FromWire(w.CreatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomOAuthAppIntegration.CreatedBy", err)
-	}
-	return &sdk.CustomOAuthAppIntegration{
-		IntegrationId:        w.IntegrationId,
-		ClientId:             w.ClientId,
-		RedirectUrls:         w.RedirectUrls,
-		Name:                 w.Name,
-		Confidential:         w.Confidential,
-		TokenAccessPolicy:    tokenAccessPolicyPublicValue,
-		Scopes:               w.Scopes,
-		CreatedBy:            createdByPublicValue,
-		CreateTime:           w.CreateTime,
-		CreatorUsername:      w.CreatorUsername,
-		UserAuthorizedScopes: w.UserAuthorizedScopes,
-	}, nil
-}
-
 type CustomOAuthAppIntegrationSecret struct {
 	// Unique integration id for the custom OAuth app
 	IntegrationId *string `json:"integration_id,omitempty"`
@@ -162,34 +76,11 @@ type CustomOAuthAppIntegrationSecret struct {
 	ClientSecret *string `json:"client_secret,omitempty"`
 }
 
-func CustomOAuthAppIntegrationSecretToSDK(w *CustomOAuthAppIntegrationSecret) (*sdk.CustomOAuthAppIntegrationSecret, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CustomOAuthAppIntegrationSecret{
-		IntegrationId: w.IntegrationId,
-		ClientId:      w.ClientId,
-		ClientSecret:  w.ClientSecret,
-	}, nil
-}
-
 type ListCustomOAuthAppIntegrationsRequest struct {
 	AccountId              *string `json:"account_id,omitempty"`
 	PageToken              *string `json:"page_token,omitempty"`
 	PageSize               *int    `json:"page_size,omitempty"`
 	IncludeCreatorUsername *bool   `json:"include_creator_username,omitempty"`
-}
-
-func ListCustomOAuthAppIntegrationsRequestFromSDK(v *sdk.ListCustomOAuthAppIntegrationsRequest) (*ListCustomOAuthAppIntegrationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCustomOAuthAppIntegrationsRequest{
-		AccountId:              v.AccountId,
-		PageToken:              v.PageToken,
-		PageSize:               v.PageSize,
-		IncludeCreatorUsername: v.IncludeCreatorUsername,
-	}, nil
 }
 
 type ListCustomOAuthAppIntegrationsResponse struct {
@@ -198,55 +89,16 @@ type ListCustomOAuthAppIntegrationsResponse struct {
 	NextPageToken *string                     `json:"next_page_token,omitempty"`
 }
 
-func ListCustomOAuthAppIntegrationsResponseToSDK(w *ListCustomOAuthAppIntegrationsResponse) (*sdk.ListCustomOAuthAppIntegrationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	appsPublicValue, err := convertSlice(w.Apps, CustomOAuthAppIntegrationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCustomOAuthAppIntegrationsResponse.Apps", err)
-	}
-	return &sdk.ListCustomOAuthAppIntegrationsResponse{
-		Apps:          appsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 type ListPublishedOAuthAppIntegrationsRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListPublishedOAuthAppIntegrationsRequestFromSDK(v *sdk.ListPublishedOAuthAppIntegrationsRequest) (*ListPublishedOAuthAppIntegrationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPublishedOAuthAppIntegrationsRequest{
-		AccountId: v.AccountId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListPublishedOAuthAppIntegrationsResponse struct {
 	// List of Published OAuth App Integrations defined for the account.
 	Apps          []PublishedOAuthAppIntegration `json:"apps,omitempty"`
 	NextPageToken *string                        `json:"next_page_token,omitempty"`
-}
-
-func ListPublishedOAuthAppIntegrationsResponseToSDK(w *ListPublishedOAuthAppIntegrationsResponse) (*sdk.ListPublishedOAuthAppIntegrationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	appsPublicValue, err := convertSlice(w.Apps, PublishedOAuthAppIntegrationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppIntegrationsResponse.Apps", err)
-	}
-	return &sdk.ListPublishedOAuthAppIntegrationsResponse{
-		Apps:          appsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListPublishedOAuthAppsRequest struct {
@@ -258,37 +110,12 @@ type ListPublishedOAuthAppsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListPublishedOAuthAppsRequestFromSDK(v *sdk.ListPublishedOAuthAppsRequest) (*ListPublishedOAuthAppsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListPublishedOAuthAppsRequest{
-		AccountId: v.AccountId,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListPublishedOAuthAppsResponse struct {
 	// List of Published OAuth Apps.
 	Apps []PublishedOAuthApp `json:"apps,omitempty"`
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListPublishedOAuthAppsResponseToSDK(w *ListPublishedOAuthAppsResponse) (*sdk.ListPublishedOAuthAppsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	appsPublicValue, err := convertSlice(w.Apps, PublishedOAuthAppToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppsResponse.Apps", err)
-	}
-	return &sdk.ListPublishedOAuthAppsResponse{
-		Apps:          appsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type PublishedOAuthApp struct {
@@ -309,21 +136,6 @@ type PublishedOAuthApp struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-func PublishedOAuthAppToSDK(w *PublishedOAuthApp) (*sdk.PublishedOAuthApp, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PublishedOAuthApp{
-		AppId:                w.AppId,
-		ClientId:             w.ClientId,
-		Name:                 w.Name,
-		Description:          w.Description,
-		IsConfidentialClient: w.IsConfidentialClient,
-		RedirectUrls:         w.RedirectUrls,
-		Scopes:               w.Scopes,
-	}, nil
-}
-
 type PublishedOAuthAppIntegration struct {
 	// App-id of the published app integration
 	AppId *string `json:"app_id,omitempty"`
@@ -335,28 +147,6 @@ type PublishedOAuthAppIntegration struct {
 	TokenAccessPolicy *TokenAccessPolicy `json:"token_access_policy,omitempty"`
 	CreatedBy         *int64             `json:"created_by,omitempty"`
 	CreateTime        *string            `json:"create_time,omitempty"`
-}
-
-func PublishedOAuthAppIntegrationToSDK(w *PublishedOAuthAppIntegration) (*sdk.PublishedOAuthAppIntegration, error) {
-	if w == nil {
-		return nil, nil
-	}
-	tokenAccessPolicyPublicValue, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublishedOAuthAppIntegration.TokenAccessPolicy", err)
-	}
-	createdByPublicValue, err := int64FromWire(w.CreatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PublishedOAuthAppIntegration.CreatedBy", err)
-	}
-	return &sdk.PublishedOAuthAppIntegration{
-		AppId:             w.AppId,
-		IntegrationId:     w.IntegrationId,
-		Name:              w.Name,
-		TokenAccessPolicy: tokenAccessPolicyPublicValue,
-		CreatedBy:         createdByPublicValue,
-		CreateTime:        w.CreateTime,
-	}, nil
 }
 
 type TokenAccessPolicy struct {
@@ -382,30 +172,6 @@ type TokenAccessPolicy struct {
 	AbsoluteSessionLifetimeInMinutes *int `json:"absolute_session_lifetime_in_minutes,omitempty"`
 }
 
-func TokenAccessPolicyFromSDK(v *sdk.TokenAccessPolicy) (*TokenAccessPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TokenAccessPolicy{
-		AccessTokenTtlInMinutes:          v.AccessTokenTtlInMinutes,
-		RefreshTokenTtlInMinutes:         v.RefreshTokenTtlInMinutes,
-		EnableSingleUseRefreshTokens:     v.EnableSingleUseRefreshTokens,
-		AbsoluteSessionLifetimeInMinutes: v.AbsoluteSessionLifetimeInMinutes,
-	}, nil
-}
-
-func TokenAccessPolicyToSDK(w *TokenAccessPolicy) (*sdk.TokenAccessPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TokenAccessPolicy{
-		AccessTokenTtlInMinutes:          w.AccessTokenTtlInMinutes,
-		RefreshTokenTtlInMinutes:         w.RefreshTokenTtlInMinutes,
-		EnableSingleUseRefreshTokens:     w.EnableSingleUseRefreshTokens,
-		AbsoluteSessionLifetimeInMinutes: w.AbsoluteSessionLifetimeInMinutes,
-	}, nil
-}
-
 type UpdateCustomOAuthAppIntegrationRequest struct {
 	AccountId     *string `json:"account_id,omitempty"`
 	IntegrationId *string `json:"integration_id,omitempty"`
@@ -423,24 +189,6 @@ type UpdateCustomOAuthAppIntegrationRequest struct {
 	UserAuthorizedScopes []string `json:"user_authorized_scopes,omitempty"`
 }
 
-func UpdateCustomOAuthAppIntegrationRequestFromSDK(v *sdk.UpdateCustomOAuthAppIntegrationRequest) (*UpdateCustomOAuthAppIntegrationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tokenAccessPolicyWireValue, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
-	}
-	return &UpdateCustomOAuthAppIntegrationRequest{
-		AccountId:            v.AccountId,
-		IntegrationId:        v.IntegrationId,
-		RedirectUrls:         v.RedirectUrls,
-		TokenAccessPolicy:    tokenAccessPolicyWireValue,
-		Scopes:               v.Scopes,
-		UserAuthorizedScopes: v.UserAuthorizedScopes,
-	}, nil
-}
-
 type UpdatePublishedOAuthAppIntegrationRequest struct {
 	AccountId     *string `json:"account_id,omitempty"`
 	IntegrationId *string `json:"integration_id,omitempty"`
@@ -448,19 +196,498 @@ type UpdatePublishedOAuthAppIntegrationRequest struct {
 	TokenAccessPolicy *TokenAccessPolicy `json:"token_access_policy,omitempty"`
 }
 
+// CreateCustomOAuthAppIntegrationRequestToSDK converts the mirror to the sdk-go type.
+func CreateCustomOAuthAppIntegrationRequestToSDK(w *CreateCustomOAuthAppIntegrationRequest) (*sdk.CreateCustomOAuthAppIntegrationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCustomOAuthAppIntegrationRequest{}
+	out.AccountId = w.AccountId
+	out.RedirectUrls = w.RedirectUrls
+	out.Name = w.Name
+	out.Confidential = w.Confidential
+	conv1, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv1
+	out.Scopes = w.Scopes
+	out.UserAuthorizedScopes = w.UserAuthorizedScopes
+	return out, nil
+}
+
+// CreateCustomOAuthAppIntegrationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCustomOAuthAppIntegrationRequestFromSDK(v *sdk.CreateCustomOAuthAppIntegrationRequest) (*CreateCustomOAuthAppIntegrationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCustomOAuthAppIntegrationRequest{}
+	out.AccountId = v.AccountId
+	out.RedirectUrls = v.RedirectUrls
+	out.Name = v.Name
+	out.Confidential = v.Confidential
+	conv2, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv2
+	out.Scopes = v.Scopes
+	out.UserAuthorizedScopes = v.UserAuthorizedScopes
+	return out, nil
+}
+
+// CreatePublishedOAuthAppIntegrationRequestToSDK converts the mirror to the sdk-go type.
+func CreatePublishedOAuthAppIntegrationRequestToSDK(w *CreatePublishedOAuthAppIntegrationRequest) (*sdk.CreatePublishedOAuthAppIntegrationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePublishedOAuthAppIntegrationRequest{}
+	out.AccountId = w.AccountId
+	out.AppId = w.AppId
+	conv3, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePublishedOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv3
+	return out, nil
+}
+
+// CreatePublishedOAuthAppIntegrationRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePublishedOAuthAppIntegrationRequestFromSDK(v *sdk.CreatePublishedOAuthAppIntegrationRequest) (*CreatePublishedOAuthAppIntegrationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePublishedOAuthAppIntegrationRequest{}
+	out.AccountId = v.AccountId
+	out.AppId = v.AppId
+	conv4, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreatePublishedOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv4
+	return out, nil
+}
+
+// CreatePublishedOAuthAppIntegrationResponseToSDK converts the mirror to the sdk-go type.
+func CreatePublishedOAuthAppIntegrationResponseToSDK(w *CreatePublishedOAuthAppIntegrationResponse) (*sdk.CreatePublishedOAuthAppIntegrationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePublishedOAuthAppIntegrationResponse{}
+	out.IntegrationId = w.IntegrationId
+	return out, nil
+}
+
+// CreatePublishedOAuthAppIntegrationResponseFromSDK converts the sdk-go type to the mirror.
+func CreatePublishedOAuthAppIntegrationResponseFromSDK(v *sdk.CreatePublishedOAuthAppIntegrationResponse) (*CreatePublishedOAuthAppIntegrationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePublishedOAuthAppIntegrationResponse{}
+	out.IntegrationId = v.IntegrationId
+	return out, nil
+}
+
+// CustomOAuthAppIntegrationToSDK converts the mirror to the sdk-go type.
+func CustomOAuthAppIntegrationToSDK(w *CustomOAuthAppIntegration) (*sdk.CustomOAuthAppIntegration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomOAuthAppIntegration{}
+	out.IntegrationId = w.IntegrationId
+	out.ClientId = w.ClientId
+	out.RedirectUrls = w.RedirectUrls
+	out.Name = w.Name
+	out.Confidential = w.Confidential
+	conv5, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomOAuthAppIntegration.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv5
+	out.Scopes = w.Scopes
+	out.CreatedBy = w.CreatedBy
+	out.CreateTime = w.CreateTime
+	out.CreatorUsername = w.CreatorUsername
+	out.UserAuthorizedScopes = w.UserAuthorizedScopes
+	return out, nil
+}
+
+// CustomOAuthAppIntegrationFromSDK converts the sdk-go type to the mirror.
+func CustomOAuthAppIntegrationFromSDK(v *sdk.CustomOAuthAppIntegration) (*CustomOAuthAppIntegration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomOAuthAppIntegration{}
+	out.IntegrationId = v.IntegrationId
+	out.ClientId = v.ClientId
+	out.RedirectUrls = v.RedirectUrls
+	out.Name = v.Name
+	out.Confidential = v.Confidential
+	conv6, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomOAuthAppIntegration.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv6
+	out.Scopes = v.Scopes
+	out.CreatedBy = v.CreatedBy
+	out.CreateTime = v.CreateTime
+	out.CreatorUsername = v.CreatorUsername
+	out.UserAuthorizedScopes = v.UserAuthorizedScopes
+	return out, nil
+}
+
+// CustomOAuthAppIntegrationSecretToSDK converts the mirror to the sdk-go type.
+func CustomOAuthAppIntegrationSecretToSDK(w *CustomOAuthAppIntegrationSecret) (*sdk.CustomOAuthAppIntegrationSecret, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomOAuthAppIntegrationSecret{}
+	out.IntegrationId = w.IntegrationId
+	out.ClientId = w.ClientId
+	out.ClientSecret = w.ClientSecret
+	return out, nil
+}
+
+// CustomOAuthAppIntegrationSecretFromSDK converts the sdk-go type to the mirror.
+func CustomOAuthAppIntegrationSecretFromSDK(v *sdk.CustomOAuthAppIntegrationSecret) (*CustomOAuthAppIntegrationSecret, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomOAuthAppIntegrationSecret{}
+	out.IntegrationId = v.IntegrationId
+	out.ClientId = v.ClientId
+	out.ClientSecret = v.ClientSecret
+	return out, nil
+}
+
+// ListCustomOAuthAppIntegrationsRequestToSDK converts the mirror to the sdk-go type.
+func ListCustomOAuthAppIntegrationsRequestToSDK(w *ListCustomOAuthAppIntegrationsRequest) (*sdk.ListCustomOAuthAppIntegrationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCustomOAuthAppIntegrationsRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.IncludeCreatorUsername = w.IncludeCreatorUsername
+	return out, nil
+}
+
+// ListCustomOAuthAppIntegrationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCustomOAuthAppIntegrationsRequestFromSDK(v *sdk.ListCustomOAuthAppIntegrationsRequest) (*ListCustomOAuthAppIntegrationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCustomOAuthAppIntegrationsRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.IncludeCreatorUsername = v.IncludeCreatorUsername
+	return out, nil
+}
+
+// ListCustomOAuthAppIntegrationsResponseToSDK converts the mirror to the sdk-go type.
+func ListCustomOAuthAppIntegrationsResponseToSDK(w *ListCustomOAuthAppIntegrationsResponse) (*sdk.ListCustomOAuthAppIntegrationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCustomOAuthAppIntegrationsResponse{}
+	conv7, err := convertSlice(w.Apps, CustomOAuthAppIntegrationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCustomOAuthAppIntegrationsResponse.Apps", err)
+	}
+	out.Apps = conv7
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCustomOAuthAppIntegrationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCustomOAuthAppIntegrationsResponseFromSDK(v *sdk.ListCustomOAuthAppIntegrationsResponse) (*ListCustomOAuthAppIntegrationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCustomOAuthAppIntegrationsResponse{}
+	conv8, err := convertSlice(v.Apps, CustomOAuthAppIntegrationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCustomOAuthAppIntegrationsResponse.Apps", err)
+	}
+	out.Apps = conv8
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListPublishedOAuthAppIntegrationsRequestToSDK converts the mirror to the sdk-go type.
+func ListPublishedOAuthAppIntegrationsRequestToSDK(w *ListPublishedOAuthAppIntegrationsRequest) (*sdk.ListPublishedOAuthAppIntegrationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedOAuthAppIntegrationsRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListPublishedOAuthAppIntegrationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListPublishedOAuthAppIntegrationsRequestFromSDK(v *sdk.ListPublishedOAuthAppIntegrationsRequest) (*ListPublishedOAuthAppIntegrationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedOAuthAppIntegrationsRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListPublishedOAuthAppIntegrationsResponseToSDK converts the mirror to the sdk-go type.
+func ListPublishedOAuthAppIntegrationsResponseToSDK(w *ListPublishedOAuthAppIntegrationsResponse) (*sdk.ListPublishedOAuthAppIntegrationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedOAuthAppIntegrationsResponse{}
+	conv9, err := convertSlice(w.Apps, PublishedOAuthAppIntegrationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppIntegrationsResponse.Apps", err)
+	}
+	out.Apps = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPublishedOAuthAppIntegrationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListPublishedOAuthAppIntegrationsResponseFromSDK(v *sdk.ListPublishedOAuthAppIntegrationsResponse) (*ListPublishedOAuthAppIntegrationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedOAuthAppIntegrationsResponse{}
+	conv10, err := convertSlice(v.Apps, PublishedOAuthAppIntegrationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppIntegrationsResponse.Apps", err)
+	}
+	out.Apps = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListPublishedOAuthAppsRequestToSDK converts the mirror to the sdk-go type.
+func ListPublishedOAuthAppsRequestToSDK(w *ListPublishedOAuthAppsRequest) (*sdk.ListPublishedOAuthAppsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedOAuthAppsRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListPublishedOAuthAppsRequestFromSDK converts the sdk-go type to the mirror.
+func ListPublishedOAuthAppsRequestFromSDK(v *sdk.ListPublishedOAuthAppsRequest) (*ListPublishedOAuthAppsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedOAuthAppsRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListPublishedOAuthAppsResponseToSDK converts the mirror to the sdk-go type.
+func ListPublishedOAuthAppsResponseToSDK(w *ListPublishedOAuthAppsResponse) (*sdk.ListPublishedOAuthAppsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPublishedOAuthAppsResponse{}
+	conv11, err := convertSlice(w.Apps, PublishedOAuthAppToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppsResponse.Apps", err)
+	}
+	out.Apps = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPublishedOAuthAppsResponseFromSDK converts the sdk-go type to the mirror.
+func ListPublishedOAuthAppsResponseFromSDK(v *sdk.ListPublishedOAuthAppsResponse) (*ListPublishedOAuthAppsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPublishedOAuthAppsResponse{}
+	conv12, err := convertSlice(v.Apps, PublishedOAuthAppFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPublishedOAuthAppsResponse.Apps", err)
+	}
+	out.Apps = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// PublishedOAuthAppToSDK converts the mirror to the sdk-go type.
+func PublishedOAuthAppToSDK(w *PublishedOAuthApp) (*sdk.PublishedOAuthApp, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishedOAuthApp{}
+	out.AppId = w.AppId
+	out.ClientId = w.ClientId
+	out.Name = w.Name
+	out.Description = w.Description
+	out.IsConfidentialClient = w.IsConfidentialClient
+	out.RedirectUrls = w.RedirectUrls
+	out.Scopes = w.Scopes
+	return out, nil
+}
+
+// PublishedOAuthAppFromSDK converts the sdk-go type to the mirror.
+func PublishedOAuthAppFromSDK(v *sdk.PublishedOAuthApp) (*PublishedOAuthApp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishedOAuthApp{}
+	out.AppId = v.AppId
+	out.ClientId = v.ClientId
+	out.Name = v.Name
+	out.Description = v.Description
+	out.IsConfidentialClient = v.IsConfidentialClient
+	out.RedirectUrls = v.RedirectUrls
+	out.Scopes = v.Scopes
+	return out, nil
+}
+
+// PublishedOAuthAppIntegrationToSDK converts the mirror to the sdk-go type.
+func PublishedOAuthAppIntegrationToSDK(w *PublishedOAuthAppIntegration) (*sdk.PublishedOAuthAppIntegration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PublishedOAuthAppIntegration{}
+	out.AppId = w.AppId
+	out.IntegrationId = w.IntegrationId
+	out.Name = w.Name
+	conv13, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PublishedOAuthAppIntegration.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv13
+	out.CreatedBy = w.CreatedBy
+	out.CreateTime = w.CreateTime
+	return out, nil
+}
+
+// PublishedOAuthAppIntegrationFromSDK converts the sdk-go type to the mirror.
+func PublishedOAuthAppIntegrationFromSDK(v *sdk.PublishedOAuthAppIntegration) (*PublishedOAuthAppIntegration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PublishedOAuthAppIntegration{}
+	out.AppId = v.AppId
+	out.IntegrationId = v.IntegrationId
+	out.Name = v.Name
+	conv14, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PublishedOAuthAppIntegration.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv14
+	out.CreatedBy = v.CreatedBy
+	out.CreateTime = v.CreateTime
+	return out, nil
+}
+
+// TokenAccessPolicyToSDK converts the mirror to the sdk-go type.
+func TokenAccessPolicyToSDK(w *TokenAccessPolicy) (*sdk.TokenAccessPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TokenAccessPolicy{}
+	out.AccessTokenTtlInMinutes = w.AccessTokenTtlInMinutes
+	out.RefreshTokenTtlInMinutes = w.RefreshTokenTtlInMinutes
+	out.EnableSingleUseRefreshTokens = w.EnableSingleUseRefreshTokens
+	out.AbsoluteSessionLifetimeInMinutes = w.AbsoluteSessionLifetimeInMinutes
+	return out, nil
+}
+
+// TokenAccessPolicyFromSDK converts the sdk-go type to the mirror.
+func TokenAccessPolicyFromSDK(v *sdk.TokenAccessPolicy) (*TokenAccessPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TokenAccessPolicy{}
+	out.AccessTokenTtlInMinutes = v.AccessTokenTtlInMinutes
+	out.RefreshTokenTtlInMinutes = v.RefreshTokenTtlInMinutes
+	out.EnableSingleUseRefreshTokens = v.EnableSingleUseRefreshTokens
+	out.AbsoluteSessionLifetimeInMinutes = v.AbsoluteSessionLifetimeInMinutes
+	return out, nil
+}
+
+// UpdateCustomOAuthAppIntegrationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCustomOAuthAppIntegrationRequestToSDK(w *UpdateCustomOAuthAppIntegrationRequest) (*sdk.UpdateCustomOAuthAppIntegrationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCustomOAuthAppIntegrationRequest{}
+	out.AccountId = w.AccountId
+	out.IntegrationId = w.IntegrationId
+	out.RedirectUrls = w.RedirectUrls
+	conv15, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv15
+	out.Scopes = w.Scopes
+	out.UserAuthorizedScopes = w.UserAuthorizedScopes
+	return out, nil
+}
+
+// UpdateCustomOAuthAppIntegrationRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCustomOAuthAppIntegrationRequestFromSDK(v *sdk.UpdateCustomOAuthAppIntegrationRequest) (*UpdateCustomOAuthAppIntegrationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCustomOAuthAppIntegrationRequest{}
+	out.AccountId = v.AccountId
+	out.IntegrationId = v.IntegrationId
+	out.RedirectUrls = v.RedirectUrls
+	conv16, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv16
+	out.Scopes = v.Scopes
+	out.UserAuthorizedScopes = v.UserAuthorizedScopes
+	return out, nil
+}
+
+// UpdatePublishedOAuthAppIntegrationRequestToSDK converts the mirror to the sdk-go type.
+func UpdatePublishedOAuthAppIntegrationRequestToSDK(w *UpdatePublishedOAuthAppIntegrationRequest) (*sdk.UpdatePublishedOAuthAppIntegrationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePublishedOAuthAppIntegrationRequest{}
+	out.AccountId = w.AccountId
+	out.IntegrationId = w.IntegrationId
+	conv17, err := TokenAccessPolicyToSDK(w.TokenAccessPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePublishedOAuthAppIntegrationRequest.TokenAccessPolicy", err)
+	}
+	out.TokenAccessPolicy = conv17
+	return out, nil
+}
+
+// UpdatePublishedOAuthAppIntegrationRequestFromSDK converts the sdk-go type to the mirror.
 func UpdatePublishedOAuthAppIntegrationRequestFromSDK(v *sdk.UpdatePublishedOAuthAppIntegrationRequest) (*UpdatePublishedOAuthAppIntegrationRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	tokenAccessPolicyWireValue, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
+	out := &UpdatePublishedOAuthAppIntegrationRequest{}
+	out.AccountId = v.AccountId
+	out.IntegrationId = v.IntegrationId
+	conv18, err := TokenAccessPolicyFromSDK(v.TokenAccessPolicy)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdatePublishedOAuthAppIntegrationRequest.TokenAccessPolicy", err)
 	}
-	return &UpdatePublishedOAuthAppIntegrationRequest{
-		AccountId:         v.AccountId,
-		IntegrationId:     v.IntegrationId,
-		TokenAccessPolicy: tokenAccessPolicyWireValue,
-	}, nil
+	out.TokenAccessPolicy = conv18
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

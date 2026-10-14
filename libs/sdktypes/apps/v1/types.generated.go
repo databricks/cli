@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/apps/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -245,48 +246,12 @@ const (
 	SpaceStatus_SpaceState_SpaceUpdating                                             = sdk.SpaceStatus_SpaceState_SpaceUpdating
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Databricks Error that is returned by all Databricks APIs..
 type ApiError struct {
 	ErrorCode  ErrorCode         `json:"error_code,omitempty"`
 	Message    *string           `json:"message,omitempty"`
 	StackTrace *string           `json:"stack_trace,omitempty"`
 	Details    []json.RawMessage `json:"details,omitempty"`
-}
-
-func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApiError{
-		ErrorCode:  w.ErrorCode,
-		Message:    w.Message,
-		StackTrace: w.StackTrace,
-		Details:    w.Details,
-	}, nil
 }
 
 type App struct {
@@ -361,205 +326,6 @@ type App struct {
 	ForwardUserAccessToken *bool `json:"forward_user_access_token,omitempty"`
 }
 
-func AppFromSDK(v *sdk.App) (*App, error) {
-	if v == nil {
-		return nil, nil
-	}
-	computeStatusWireValue, err := ComputeStatusFromSDK(v.ComputeStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ComputeStatus", err)
-	}
-	appStatusWireValue, err := ApplicationStatusFromSDK(v.AppStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.AppStatus", err)
-	}
-	activeDeploymentWireValue, err := AppDeploymentFromSDK(v.ActiveDeployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ActiveDeployment", err)
-	}
-	pendingDeploymentWireValue, err := AppDeploymentFromSDK(v.PendingDeployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.PendingDeployment", err)
-	}
-	resourcesWireValue, err := convertSlice(v.Resources, AppResourceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.Resources", err)
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ServicePrincipalId", err)
-	}
-	defaultGitSourceWireValue, err := GitSourceFromSDK(v.DefaultGitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.DefaultGitSource", err)
-	}
-	gitRepositoryWireValue, err := GitRepositoryFromSDK(v.GitRepository)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.GitRepository", err)
-	}
-	telemetryExportDestinationsWireValue, err := convertSlice(v.TelemetryExportDestinations, TelemetryExportDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.TelemetryExportDestinations", err)
-	}
-	var deploymentSourceSourceCodePathWire *string
-	var deploymentSourceGitSourceWire *GitSource
-	switch value := v.DeploymentSource.(type) {
-	case nil:
-	case *sdk.App_DeploymentSource_SourceCodePath:
-		if value != nil {
-			deploymentSourceSourceCodePathWire = new(value.SourceCodePath)
-		}
-	case *sdk.App_DeploymentSource_GitSource:
-		if value != nil {
-			deploymentSourceGitSourceConverted, err := GitSourceFromSDK(&value.GitSource)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "App.DeploymentSource.GitSource", err)
-			}
-			deploymentSourceGitSourceWire = deploymentSourceGitSourceConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "App.DeploymentSource", value)
-	}
-	return &App{
-		Name:                        v.Name,
-		Description:                 v.Description,
-		ComputeStatus:               computeStatusWireValue,
-		AppStatus:                   appStatusWireValue,
-		Url:                         v.Url,
-		ActiveDeployment:            activeDeploymentWireValue,
-		CreateTime:                  v.CreateTime,
-		Creator:                     v.Creator,
-		UpdateTime:                  v.UpdateTime,
-		Updater:                     v.Updater,
-		PendingDeployment:           pendingDeploymentWireValue,
-		Resources:                   resourcesWireValue,
-		ServicePrincipalId:          servicePrincipalIdWireValue,
-		ServicePrincipalName:        v.ServicePrincipalName,
-		DefaultSourceCodePath:       v.DefaultSourceCodePath,
-		DefaultGitSource:            defaultGitSourceWireValue,
-		BudgetPolicyId:              v.BudgetPolicyId,
-		EffectiveBudgetPolicyId:     v.EffectiveBudgetPolicyId,
-		ServicePrincipalClientId:    v.ServicePrincipalClientId,
-		UserApiScopes:               v.UserApiScopes,
-		Id:                          v.Id,
-		EffectiveUserApiScopes:      v.EffectiveUserApiScopes,
-		Oauth2AppIntegrationId:      v.Oauth2AppIntegrationId,
-		Oauth2AppClientId:           v.Oauth2AppClientId,
-		ComputeSize:                 v.ComputeSize,
-		UsagePolicyId:               v.UsagePolicyId,
-		EffectiveUsagePolicyId:      v.EffectiveUsagePolicyId,
-		ComputeMinInstances:         v.ComputeMinInstances,
-		ComputeMaxInstances:         v.ComputeMaxInstances,
-		GitRepository:               gitRepositoryWireValue,
-		TelemetryExportDestinations: telemetryExportDestinationsWireValue,
-		ThumbnailUrl:                v.ThumbnailUrl,
-		Space:                       v.Space,
-		SourceCodePath:              deploymentSourceSourceCodePathWire,
-		GitSource:                   deploymentSourceGitSourceWire,
-		ForwardUserAccessToken:      v.ForwardUserAccessToken,
-	}, nil
-}
-
-func AppToSDK(w *App) (*sdk.App, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deploymentSourceMembers := 0
-	if w.SourceCodePath != nil {
-		deploymentSourceMembers++
-	}
-	if w.GitSource != nil {
-		deploymentSourceMembers++
-	}
-	if deploymentSourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "App.DeploymentSource")
-	}
-	computeStatusPublicValue, err := ComputeStatusToSDK(w.ComputeStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ComputeStatus", err)
-	}
-	appStatusPublicValue, err := ApplicationStatusToSDK(w.AppStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.AppStatus", err)
-	}
-	activeDeploymentPublicValue, err := AppDeploymentToSDK(w.ActiveDeployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ActiveDeployment", err)
-	}
-	pendingDeploymentPublicValue, err := AppDeploymentToSDK(w.PendingDeployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.PendingDeployment", err)
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AppResourceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.Resources", err)
-	}
-	servicePrincipalIdPublicValue, err := int64FromWire(w.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.ServicePrincipalId", err)
-	}
-	defaultGitSourcePublicValue, err := GitSourceToSDK(w.DefaultGitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.DefaultGitSource", err)
-	}
-	gitRepositoryPublicValue, err := GitRepositoryToSDK(w.GitRepository)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.GitRepository", err)
-	}
-	telemetryExportDestinationsPublicValue, err := convertSlice(w.TelemetryExportDestinations, TelemetryExportDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "App.TelemetryExportDestinations", err)
-	}
-	deploymentSourceSelection := (&sdk.App{}).DeploymentSource
-	switch {
-	case w.SourceCodePath != nil:
-		deploymentSourceSelection = &sdk.App_DeploymentSource_SourceCodePath{SourceCodePath: *w.SourceCodePath}
-	case w.GitSource != nil:
-		deploymentSourceGitSourceConverted, err := GitSourceToSDK(w.GitSource)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "App.DeploymentSource.GitSource", err)
-		}
-		deploymentSourceSelection = &sdk.App_DeploymentSource_GitSource{GitSource: *deploymentSourceGitSourceConverted}
-	}
-	return &sdk.App{
-		Name:                        w.Name,
-		Description:                 w.Description,
-		ComputeStatus:               computeStatusPublicValue,
-		AppStatus:                   appStatusPublicValue,
-		Url:                         w.Url,
-		ActiveDeployment:            activeDeploymentPublicValue,
-		CreateTime:                  w.CreateTime,
-		Creator:                     w.Creator,
-		UpdateTime:                  w.UpdateTime,
-		Updater:                     w.Updater,
-		PendingDeployment:           pendingDeploymentPublicValue,
-		Resources:                   resourcesPublicValue,
-		ServicePrincipalId:          servicePrincipalIdPublicValue,
-		ServicePrincipalName:        w.ServicePrincipalName,
-		DefaultSourceCodePath:       w.DefaultSourceCodePath,
-		DefaultGitSource:            defaultGitSourcePublicValue,
-		BudgetPolicyId:              w.BudgetPolicyId,
-		EffectiveBudgetPolicyId:     w.EffectiveBudgetPolicyId,
-		ServicePrincipalClientId:    w.ServicePrincipalClientId,
-		UserApiScopes:               w.UserApiScopes,
-		Id:                          w.Id,
-		EffectiveUserApiScopes:      w.EffectiveUserApiScopes,
-		Oauth2AppIntegrationId:      w.Oauth2AppIntegrationId,
-		Oauth2AppClientId:           w.Oauth2AppClientId,
-		ComputeSize:                 w.ComputeSize,
-		UsagePolicyId:               w.UsagePolicyId,
-		EffectiveUsagePolicyId:      w.EffectiveUsagePolicyId,
-		ComputeMinInstances:         w.ComputeMinInstances,
-		ComputeMaxInstances:         w.ComputeMaxInstances,
-		GitRepository:               gitRepositoryPublicValue,
-		TelemetryExportDestinations: telemetryExportDestinationsPublicValue,
-		ThumbnailUrl:                w.ThumbnailUrl,
-		Space:                       w.Space,
-		ForwardUserAccessToken:      w.ForwardUserAccessToken,
-		DeploymentSource:            deploymentSourceSelection,
-	}, nil
-}
-
 type AppDeployment struct {
 	// The unique id of the deployment.
 	DeploymentId *string `json:"deployment_id,omitempty"`
@@ -595,108 +361,10 @@ type AppDeployment struct {
 	HealthCheck *AppHealthCheck `json:"health_check,omitempty"`
 }
 
-func AppDeploymentFromSDK(v *sdk.AppDeployment) (*AppDeployment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	gitSourceWireValue, err := GitSourceFromSDK(v.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.GitSource", err)
-	}
-	deploymentArtifactsWireValue, err := AppDeploymentArtifactsFromSDK(v.DeploymentArtifacts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.DeploymentArtifacts", err)
-	}
-	statusWireValue, err := AppDeploymentStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.Status", err)
-	}
-	envVarsWireValue, err := convertSlice(v.EnvVars, EnvVarFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.EnvVars", err)
-	}
-	healthCheckWireValue, err := AppHealthCheckFromSDK(v.HealthCheck)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.HealthCheck", err)
-	}
-	return &AppDeployment{
-		DeploymentId:        v.DeploymentId,
-		SourceCodePath:      v.SourceCodePath,
-		GitSource:           gitSourceWireValue,
-		Mode:                v.Mode,
-		DeploymentArtifacts: deploymentArtifactsWireValue,
-		Status:              statusWireValue,
-		CreateTime:          v.CreateTime,
-		Creator:             v.Creator,
-		UpdateTime:          v.UpdateTime,
-		Command:             v.Command,
-		EnvVars:             envVarsWireValue,
-		HealthCheck:         healthCheckWireValue,
-	}, nil
-}
-
-func AppDeploymentToSDK(w *AppDeployment) (*sdk.AppDeployment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	gitSourcePublicValue, err := GitSourceToSDK(w.GitSource)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.GitSource", err)
-	}
-	deploymentArtifactsPublicValue, err := AppDeploymentArtifactsToSDK(w.DeploymentArtifacts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.DeploymentArtifacts", err)
-	}
-	statusPublicValue, err := AppDeploymentStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.Status", err)
-	}
-	envVarsPublicValue, err := convertSlice(w.EnvVars, EnvVarToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.EnvVars", err)
-	}
-	healthCheckPublicValue, err := AppHealthCheckToSDK(w.HealthCheck)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppDeployment.HealthCheck", err)
-	}
-	return &sdk.AppDeployment{
-		DeploymentId:        w.DeploymentId,
-		SourceCodePath:      w.SourceCodePath,
-		GitSource:           gitSourcePublicValue,
-		Mode:                w.Mode,
-		DeploymentArtifacts: deploymentArtifactsPublicValue,
-		Status:              statusPublicValue,
-		CreateTime:          w.CreateTime,
-		Creator:             w.Creator,
-		UpdateTime:          w.UpdateTime,
-		Command:             w.Command,
-		EnvVars:             envVarsPublicValue,
-		HealthCheck:         healthCheckPublicValue,
-	}, nil
-}
-
 type AppDeploymentArtifacts struct {
 	// The snapshotted workspace file system path of the source code loaded by the
 	// deployed app.
 	SourceCodePath *string `json:"source_code_path,omitempty"`
-}
-
-func AppDeploymentArtifactsFromSDK(v *sdk.AppDeploymentArtifacts) (*AppDeploymentArtifacts, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppDeploymentArtifacts{
-		SourceCodePath: v.SourceCodePath,
-	}, nil
-}
-
-func AppDeploymentArtifactsToSDK(w *AppDeploymentArtifacts) (*sdk.AppDeploymentArtifacts, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppDeploymentArtifacts{
-		SourceCodePath: w.SourceCodePath,
-	}, nil
 }
 
 type AppDeploymentStatus struct {
@@ -706,26 +374,6 @@ type AppDeploymentStatus struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func AppDeploymentStatusFromSDK(v *sdk.AppDeploymentStatus) (*AppDeploymentStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppDeploymentStatus{
-		State:   v.State,
-		Message: v.Message,
-	}, nil
-}
-
-func AppDeploymentStatusToSDK(w *AppDeploymentStatus) (*sdk.AppDeploymentStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppDeploymentStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
-}
-
 // Deploy-time HTTP health check configuration for an app deployment..
 type AppHealthCheck struct {
 	// HTTP path to probe, e.g. "/health" or "/api/status".
@@ -733,26 +381,6 @@ type AppHealthCheck struct {
 	// Timeout to wait for the health check to pass before failing the deployment.
 	// If not set, a default timeout is used.
 	Timeout *types.Duration `json:"timeout,omitempty"`
-}
-
-func AppHealthCheckFromSDK(v *sdk.AppHealthCheck) (*AppHealthCheck, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppHealthCheck{
-		Path:    v.Path,
-		Timeout: v.Timeout,
-	}, nil
-}
-
-func AppHealthCheckToSDK(w *AppHealthCheck) (*sdk.AppHealthCheck, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppHealthCheck{
-		Path:    w.Path,
-		Timeout: w.Timeout,
-	}, nil
 }
 
 // App manifest definition.
@@ -766,58 +394,8 @@ type AppManifest struct {
 	ResourceSpecs []AppManifest_AppResourceSpec `json:"resource_specs,omitempty"`
 }
 
-func AppManifestFromSDK(v *sdk.AppManifest) (*AppManifest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	resourceSpecsWireValue, err := convertSlice(v.ResourceSpecs, AppManifest_AppResourceSpecFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppManifest.ResourceSpecs", err)
-	}
-	return &AppManifest{
-		Version:       v.Version,
-		Name:          v.Name,
-		Description:   v.Description,
-		ResourceSpecs: resourceSpecsWireValue,
-	}, nil
-}
-
-func AppManifestToSDK(w *AppManifest) (*sdk.AppManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourceSpecsPublicValue, err := convertSlice(w.ResourceSpecs, AppManifest_AppResourceSpecToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppManifest.ResourceSpecs", err)
-	}
-	return &sdk.AppManifest{
-		Version:       w.Version,
-		Name:          w.Name,
-		Description:   w.Description,
-		ResourceSpecs: resourceSpecsPublicValue,
-	}, nil
-}
-
 type AppManifest_AppResourceExperimentSpec struct {
 	Permission AppManifest_AppResourceExperimentSpec_ExperimentPermission `json:"permission,omitempty"`
-}
-
-func AppManifest_AppResourceExperimentSpecFromSDK(v *sdk.AppManifest_AppResourceExperimentSpec) (*AppManifest_AppResourceExperimentSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceExperimentSpec{
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceExperimentSpecToSDK(w *AppManifest_AppResourceExperimentSpec) (*sdk.AppManifest_AppResourceExperimentSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceExperimentSpec{
-		Permission: w.Permission,
-	}, nil
 }
 
 type AppManifest_AppResourceJobSpec struct {
@@ -826,70 +404,16 @@ type AppManifest_AppResourceJobSpec struct {
 	Permission AppManifest_AppResourceJobSpec_JobPermission `json:"permission,omitempty"`
 }
 
-func AppManifest_AppResourceJobSpecFromSDK(v *sdk.AppManifest_AppResourceJobSpec) (*AppManifest_AppResourceJobSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceJobSpec{
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceJobSpecToSDK(w *AppManifest_AppResourceJobSpec) (*sdk.AppManifest_AppResourceJobSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceJobSpec{
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppManifest_AppResourceSecretSpec struct {
 	// Permission to grant on the secret scope. For secrets, only one permission is
 	// allowed. Permission must be one of: "READ", "WRITE", "MANAGE".
 	Permission AppManifest_AppResourceSecretSpec_SecretPermission `json:"permission,omitempty"`
 }
 
-func AppManifest_AppResourceSecretSpecFromSDK(v *sdk.AppManifest_AppResourceSecretSpec) (*AppManifest_AppResourceSecretSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceSecretSpec{
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceSecretSpecToSDK(w *AppManifest_AppResourceSecretSpec) (*sdk.AppManifest_AppResourceSecretSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceSecretSpec{
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppManifest_AppResourceServingEndpointSpec struct {
 	// Permission to grant on the serving endpoint. Supported permissions are:
 	// "CAN_MANAGE", "CAN_QUERY", "CAN_VIEW".
 	Permission AppManifest_AppResourceServingEndpointSpec_ServingEndpointPermission `json:"permission,omitempty"`
-}
-
-func AppManifest_AppResourceServingEndpointSpecFromSDK(v *sdk.AppManifest_AppResourceServingEndpointSpec) (*AppManifest_AppResourceServingEndpointSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceServingEndpointSpec{
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceServingEndpointSpecToSDK(w *AppManifest_AppResourceServingEndpointSpec) (*sdk.AppManifest_AppResourceServingEndpointSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceServingEndpointSpec{
-		Permission: w.Permission,
-	}, nil
 }
 
 // AppResource related fields are copied from app.proto but excludes resource
@@ -907,200 +431,15 @@ type AppManifest_AppResourceSpec struct {
 	ExperimentSpec      *AppManifest_AppResourceExperimentSpec      `json:"experiment_spec,omitempty"`
 }
 
-func AppManifest_AppResourceSpecFromSDK(v *sdk.AppManifest_AppResourceSpec) (*AppManifest_AppResourceSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var resourceSecretSpecWire *AppManifest_AppResourceSecretSpec
-	var resourceSqlWarehouseSpecWire *AppManifest_AppResourceSqlWarehouseSpec
-	var resourceServingEndpointSpecWire *AppManifest_AppResourceServingEndpointSpec
-	var resourceJobSpecWire *AppManifest_AppResourceJobSpec
-	var resourceUcSecurableSpecWire *AppManifest_AppResourceUcSecurableSpec
-	var resourceExperimentSpecWire *AppManifest_AppResourceExperimentSpec
-	switch value := v.Resource.(type) {
-	case nil:
-	case *sdk.AppManifest_AppResourceSpec_Resource_SecretSpec:
-		if value != nil {
-			resourceSecretSpecConverted, err := AppManifest_AppResourceSecretSpecFromSDK(&value.SecretSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.SecretSpec", err)
-			}
-			resourceSecretSpecWire = resourceSecretSpecConverted
-		}
-	case *sdk.AppManifest_AppResourceSpec_Resource_SqlWarehouseSpec:
-		if value != nil {
-			resourceSqlWarehouseSpecConverted, err := AppManifest_AppResourceSqlWarehouseSpecFromSDK(&value.SqlWarehouseSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.SqlWarehouseSpec", err)
-			}
-			resourceSqlWarehouseSpecWire = resourceSqlWarehouseSpecConverted
-		}
-	case *sdk.AppManifest_AppResourceSpec_Resource_ServingEndpointSpec:
-		if value != nil {
-			resourceServingEndpointSpecConverted, err := AppManifest_AppResourceServingEndpointSpecFromSDK(&value.ServingEndpointSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.ServingEndpointSpec", err)
-			}
-			resourceServingEndpointSpecWire = resourceServingEndpointSpecConverted
-		}
-	case *sdk.AppManifest_AppResourceSpec_Resource_JobSpec:
-		if value != nil {
-			resourceJobSpecConverted, err := AppManifest_AppResourceJobSpecFromSDK(&value.JobSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.JobSpec", err)
-			}
-			resourceJobSpecWire = resourceJobSpecConverted
-		}
-	case *sdk.AppManifest_AppResourceSpec_Resource_UcSecurableSpec:
-		if value != nil {
-			resourceUcSecurableSpecConverted, err := AppManifest_AppResourceUcSecurableSpecFromSDK(&value.UcSecurableSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.UcSecurableSpec", err)
-			}
-			resourceUcSecurableSpecWire = resourceUcSecurableSpecConverted
-		}
-	case *sdk.AppManifest_AppResourceSpec_Resource_ExperimentSpec:
-		if value != nil {
-			resourceExperimentSpecConverted, err := AppManifest_AppResourceExperimentSpecFromSDK(&value.ExperimentSpec)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.ExperimentSpec", err)
-			}
-			resourceExperimentSpecWire = resourceExperimentSpecConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AppManifest_AppResourceSpec.Resource", value)
-	}
-	return &AppManifest_AppResourceSpec{
-		Name:                v.Name,
-		Description:         v.Description,
-		SecretSpec:          resourceSecretSpecWire,
-		SqlWarehouseSpec:    resourceSqlWarehouseSpecWire,
-		ServingEndpointSpec: resourceServingEndpointSpecWire,
-		JobSpec:             resourceJobSpecWire,
-		UcSecurableSpec:     resourceUcSecurableSpecWire,
-		ExperimentSpec:      resourceExperimentSpecWire,
-	}, nil
-}
-
-func AppManifest_AppResourceSpecToSDK(w *AppManifest_AppResourceSpec) (*sdk.AppManifest_AppResourceSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourceMembers := 0
-	if w.SecretSpec != nil {
-		resourceMembers++
-	}
-	if w.SqlWarehouseSpec != nil {
-		resourceMembers++
-	}
-	if w.ServingEndpointSpec != nil {
-		resourceMembers++
-	}
-	if w.JobSpec != nil {
-		resourceMembers++
-	}
-	if w.UcSecurableSpec != nil {
-		resourceMembers++
-	}
-	if w.ExperimentSpec != nil {
-		resourceMembers++
-	}
-	if resourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AppManifest_AppResourceSpec.Resource")
-	}
-	resourceSelection := (&sdk.AppManifest_AppResourceSpec{}).Resource
-	switch {
-	case w.SecretSpec != nil:
-		resourceSecretSpecConverted, err := AppManifest_AppResourceSecretSpecToSDK(w.SecretSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.SecretSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_SecretSpec{SecretSpec: *resourceSecretSpecConverted}
-	case w.SqlWarehouseSpec != nil:
-		resourceSqlWarehouseSpecConverted, err := AppManifest_AppResourceSqlWarehouseSpecToSDK(w.SqlWarehouseSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.SqlWarehouseSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_SqlWarehouseSpec{SqlWarehouseSpec: *resourceSqlWarehouseSpecConverted}
-	case w.ServingEndpointSpec != nil:
-		resourceServingEndpointSpecConverted, err := AppManifest_AppResourceServingEndpointSpecToSDK(w.ServingEndpointSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.ServingEndpointSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_ServingEndpointSpec{ServingEndpointSpec: *resourceServingEndpointSpecConverted}
-	case w.JobSpec != nil:
-		resourceJobSpecConverted, err := AppManifest_AppResourceJobSpecToSDK(w.JobSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.JobSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_JobSpec{JobSpec: *resourceJobSpecConverted}
-	case w.UcSecurableSpec != nil:
-		resourceUcSecurableSpecConverted, err := AppManifest_AppResourceUcSecurableSpecToSDK(w.UcSecurableSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.UcSecurableSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_UcSecurableSpec{UcSecurableSpec: *resourceUcSecurableSpecConverted}
-	case w.ExperimentSpec != nil:
-		resourceExperimentSpecConverted, err := AppManifest_AppResourceExperimentSpecToSDK(w.ExperimentSpec)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource.ExperimentSpec", err)
-		}
-		resourceSelection = &sdk.AppManifest_AppResourceSpec_Resource_ExperimentSpec{ExperimentSpec: *resourceExperimentSpecConverted}
-	}
-	return &sdk.AppManifest_AppResourceSpec{
-		Name:        w.Name,
-		Description: w.Description,
-		Resource:    resourceSelection,
-	}, nil
-}
-
 type AppManifest_AppResourceSqlWarehouseSpec struct {
 	// Permission to grant on the SQL warehouse. Supported permissions are:
 	// "CAN_MANAGE", "CAN_USE", "IS_OWNER".
 	Permission AppManifest_AppResourceSqlWarehouseSpec_SqlWarehousePermission `json:"permission,omitempty"`
 }
 
-func AppManifest_AppResourceSqlWarehouseSpecFromSDK(v *sdk.AppManifest_AppResourceSqlWarehouseSpec) (*AppManifest_AppResourceSqlWarehouseSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceSqlWarehouseSpec{
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceSqlWarehouseSpecToSDK(w *AppManifest_AppResourceSqlWarehouseSpec) (*sdk.AppManifest_AppResourceSqlWarehouseSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceSqlWarehouseSpec{
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppManifest_AppResourceUcSecurableSpec struct {
 	SecurableType AppManifest_AppResourceUcSecurableSpec_UcSecurableType       `json:"securable_type,omitempty"`
 	Permission    AppManifest_AppResourceUcSecurableSpec_UcSecurablePermission `json:"permission,omitempty"`
-}
-
-func AppManifest_AppResourceUcSecurableSpecFromSDK(v *sdk.AppManifest_AppResourceUcSecurableSpec) (*AppManifest_AppResourceUcSecurableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppManifest_AppResourceUcSecurableSpec{
-		SecurableType: v.SecurableType,
-		Permission:    v.Permission,
-	}, nil
-}
-
-func AppManifest_AppResourceUcSecurableSpecToSDK(w *AppManifest_AppResourceUcSecurableSpec) (*sdk.AppManifest_AppResourceUcSecurableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppManifest_AppResourceUcSecurableSpec{
-		SecurableType: w.SecurableType,
-		Permission:    w.Permission,
-	}, nil
 }
 
 type AppResource struct {
@@ -1120,252 +459,9 @@ type AppResource struct {
 	Postgres        *AppResourcePostgres        `json:"postgres,omitempty"`
 }
 
-func AppResourceFromSDK(v *sdk.AppResource) (*AppResource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var resourceSecretWire *AppResourceSecret
-	var resourceSqlWarehouseWire *AppResourceSqlWarehouse
-	var resourceServingEndpointWire *AppResourceServingEndpoint
-	var resourceJobWire *AppResourceJob
-	var resourceUcSecurableWire *AppResourceUcSecurable
-	var resourceDatabaseWire *AppResourceDatabase
-	var resourceGenieSpaceWire *AppResourceGenieSpace
-	var resourceExperimentWire *AppResourceExperiment
-	var resourceAppWire *AppResourceApp
-	var resourcePostgresWire *AppResourcePostgres
-	switch value := v.Resource.(type) {
-	case nil:
-	case *sdk.AppResource_Resource_Secret:
-		if value != nil {
-			resourceSecretConverted, err := AppResourceSecretFromSDK(&value.Secret)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Secret", err)
-			}
-			resourceSecretWire = resourceSecretConverted
-		}
-	case *sdk.AppResource_Resource_SqlWarehouse:
-		if value != nil {
-			resourceSqlWarehouseConverted, err := AppResourceSqlWarehouseFromSDK(&value.SqlWarehouse)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.SqlWarehouse", err)
-			}
-			resourceSqlWarehouseWire = resourceSqlWarehouseConverted
-		}
-	case *sdk.AppResource_Resource_ServingEndpoint:
-		if value != nil {
-			resourceServingEndpointConverted, err := AppResourceServingEndpointFromSDK(&value.ServingEndpoint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.ServingEndpoint", err)
-			}
-			resourceServingEndpointWire = resourceServingEndpointConverted
-		}
-	case *sdk.AppResource_Resource_Job:
-		if value != nil {
-			resourceJobConverted, err := AppResourceJobFromSDK(&value.Job)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Job", err)
-			}
-			resourceJobWire = resourceJobConverted
-		}
-	case *sdk.AppResource_Resource_UcSecurable:
-		if value != nil {
-			resourceUcSecurableConverted, err := AppResourceUcSecurableFromSDK(&value.UcSecurable)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.UcSecurable", err)
-			}
-			resourceUcSecurableWire = resourceUcSecurableConverted
-		}
-	case *sdk.AppResource_Resource_Database:
-		if value != nil {
-			resourceDatabaseConverted, err := AppResourceDatabaseFromSDK(&value.Database)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Database", err)
-			}
-			resourceDatabaseWire = resourceDatabaseConverted
-		}
-	case *sdk.AppResource_Resource_GenieSpace:
-		if value != nil {
-			resourceGenieSpaceConverted, err := AppResourceGenieSpaceFromSDK(&value.GenieSpace)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.GenieSpace", err)
-			}
-			resourceGenieSpaceWire = resourceGenieSpaceConverted
-		}
-	case *sdk.AppResource_Resource_Experiment:
-		if value != nil {
-			resourceExperimentConverted, err := AppResourceExperimentFromSDK(&value.Experiment)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Experiment", err)
-			}
-			resourceExperimentWire = resourceExperimentConverted
-		}
-	case *sdk.AppResource_Resource_App:
-		if value != nil {
-			resourceAppConverted, err := AppResourceAppFromSDK(&value.App)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.App", err)
-			}
-			resourceAppWire = resourceAppConverted
-		}
-	case *sdk.AppResource_Resource_Postgres:
-		if value != nil {
-			resourcePostgresConverted, err := AppResourcePostgresFromSDK(&value.Postgres)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Postgres", err)
-			}
-			resourcePostgresWire = resourcePostgresConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AppResource.Resource", value)
-	}
-	return &AppResource{
-		Name:            v.Name,
-		Description:     v.Description,
-		Secret:          resourceSecretWire,
-		SqlWarehouse:    resourceSqlWarehouseWire,
-		ServingEndpoint: resourceServingEndpointWire,
-		Job:             resourceJobWire,
-		UcSecurable:     resourceUcSecurableWire,
-		Database:        resourceDatabaseWire,
-		GenieSpace:      resourceGenieSpaceWire,
-		Experiment:      resourceExperimentWire,
-		App:             resourceAppWire,
-		Postgres:        resourcePostgresWire,
-	}, nil
-}
-
-func AppResourceToSDK(w *AppResource) (*sdk.AppResource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resourceMembers := 0
-	if w.Secret != nil {
-		resourceMembers++
-	}
-	if w.SqlWarehouse != nil {
-		resourceMembers++
-	}
-	if w.ServingEndpoint != nil {
-		resourceMembers++
-	}
-	if w.Job != nil {
-		resourceMembers++
-	}
-	if w.UcSecurable != nil {
-		resourceMembers++
-	}
-	if w.Database != nil {
-		resourceMembers++
-	}
-	if w.GenieSpace != nil {
-		resourceMembers++
-	}
-	if w.Experiment != nil {
-		resourceMembers++
-	}
-	if w.App != nil {
-		resourceMembers++
-	}
-	if w.Postgres != nil {
-		resourceMembers++
-	}
-	if resourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AppResource.Resource")
-	}
-	resourceSelection := (&sdk.AppResource{}).Resource
-	switch {
-	case w.Secret != nil:
-		resourceSecretConverted, err := AppResourceSecretToSDK(w.Secret)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Secret", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_Secret{Secret: *resourceSecretConverted}
-	case w.SqlWarehouse != nil:
-		resourceSqlWarehouseConverted, err := AppResourceSqlWarehouseToSDK(w.SqlWarehouse)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.SqlWarehouse", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_SqlWarehouse{SqlWarehouse: *resourceSqlWarehouseConverted}
-	case w.ServingEndpoint != nil:
-		resourceServingEndpointConverted, err := AppResourceServingEndpointToSDK(w.ServingEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.ServingEndpoint", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_ServingEndpoint{ServingEndpoint: *resourceServingEndpointConverted}
-	case w.Job != nil:
-		resourceJobConverted, err := AppResourceJobToSDK(w.Job)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Job", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_Job{Job: *resourceJobConverted}
-	case w.UcSecurable != nil:
-		resourceUcSecurableConverted, err := AppResourceUcSecurableToSDK(w.UcSecurable)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.UcSecurable", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_UcSecurable{UcSecurable: *resourceUcSecurableConverted}
-	case w.Database != nil:
-		resourceDatabaseConverted, err := AppResourceDatabaseToSDK(w.Database)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Database", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_Database{Database: *resourceDatabaseConverted}
-	case w.GenieSpace != nil:
-		resourceGenieSpaceConverted, err := AppResourceGenieSpaceToSDK(w.GenieSpace)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.GenieSpace", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_GenieSpace{GenieSpace: *resourceGenieSpaceConverted}
-	case w.Experiment != nil:
-		resourceExperimentConverted, err := AppResourceExperimentToSDK(w.Experiment)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Experiment", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_Experiment{Experiment: *resourceExperimentConverted}
-	case w.App != nil:
-		resourceAppConverted, err := AppResourceAppToSDK(w.App)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.App", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_App{App: *resourceAppConverted}
-	case w.Postgres != nil:
-		resourcePostgresConverted, err := AppResourcePostgresToSDK(w.Postgres)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "AppResource.Resource.Postgres", err)
-		}
-		resourceSelection = &sdk.AppResource_Resource_Postgres{Postgres: *resourcePostgresConverted}
-	}
-	return &sdk.AppResource{
-		Name:        w.Name,
-		Description: w.Description,
-		Resource:    resourceSelection,
-	}, nil
-}
-
 type AppResourceApp struct {
 	Name       *string                      `json:"name,omitempty"`
 	Permission AppResourceApp_AppPermission `json:"permission,omitempty"`
-}
-
-func AppResourceAppFromSDK(v *sdk.AppResourceApp) (*AppResourceApp, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceApp{
-		Name:       v.Name,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceAppToSDK(w *AppResourceApp) (*sdk.AppResourceApp, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceApp{
-		Name:       w.Name,
-		Permission: w.Permission,
-	}, nil
 }
 
 type AppResourceDatabase struct {
@@ -1374,79 +470,15 @@ type AppResourceDatabase struct {
 	Permission   AppResourceDatabase_DatabasePermission `json:"permission,omitempty"`
 }
 
-func AppResourceDatabaseFromSDK(v *sdk.AppResourceDatabase) (*AppResourceDatabase, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceDatabase{
-		InstanceName: v.InstanceName,
-		DatabaseName: v.DatabaseName,
-		Permission:   v.Permission,
-	}, nil
-}
-
-func AppResourceDatabaseToSDK(w *AppResourceDatabase) (*sdk.AppResourceDatabase, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceDatabase{
-		InstanceName: w.InstanceName,
-		DatabaseName: w.DatabaseName,
-		Permission:   w.Permission,
-	}, nil
-}
-
 type AppResourceExperiment struct {
 	ExperimentId *string                                    `json:"experiment_id,omitempty"`
 	Permission   AppResourceExperiment_ExperimentPermission `json:"permission,omitempty"`
-}
-
-func AppResourceExperimentFromSDK(v *sdk.AppResourceExperiment) (*AppResourceExperiment, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceExperiment{
-		ExperimentId: v.ExperimentId,
-		Permission:   v.Permission,
-	}, nil
-}
-
-func AppResourceExperimentToSDK(w *AppResourceExperiment) (*sdk.AppResourceExperiment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceExperiment{
-		ExperimentId: w.ExperimentId,
-		Permission:   w.Permission,
-	}, nil
 }
 
 type AppResourceGenieSpace struct {
 	Name       *string                                    `json:"name,omitempty"`
 	SpaceId    *string                                    `json:"space_id,omitempty"`
 	Permission AppResourceGenieSpace_GenieSpacePermission `json:"permission,omitempty"`
-}
-
-func AppResourceGenieSpaceFromSDK(v *sdk.AppResourceGenieSpace) (*AppResourceGenieSpace, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceGenieSpace{
-		Name:       v.Name,
-		SpaceId:    v.SpaceId,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceGenieSpaceToSDK(w *AppResourceGenieSpace) (*sdk.AppResourceGenieSpace, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceGenieSpace{
-		Name:       w.Name,
-		SpaceId:    w.SpaceId,
-		Permission: w.Permission,
-	}, nil
 }
 
 type AppResourceJob struct {
@@ -1457,52 +489,10 @@ type AppResourceJob struct {
 	Permission AppResourceJob_JobPermission `json:"permission,omitempty"`
 }
 
-func AppResourceJobFromSDK(v *sdk.AppResourceJob) (*AppResourceJob, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceJob{
-		Id:         v.Id,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceJobToSDK(w *AppResourceJob) (*sdk.AppResourceJob, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceJob{
-		Id:         w.Id,
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppResourcePostgres struct {
 	Branch     *string                                `json:"branch,omitempty"`
 	Database   *string                                `json:"database,omitempty"`
 	Permission AppResourcePostgres_PostgresPermission `json:"permission,omitempty"`
-}
-
-func AppResourcePostgresFromSDK(v *sdk.AppResourcePostgres) (*AppResourcePostgres, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourcePostgres{
-		Branch:     v.Branch,
-		Database:   v.Database,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourcePostgresToSDK(w *AppResourcePostgres) (*sdk.AppResourcePostgres, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourcePostgres{
-		Branch:     w.Branch,
-		Database:   w.Database,
-		Permission: w.Permission,
-	}, nil
 }
 
 type AppResourceSecret struct {
@@ -1515,28 +505,6 @@ type AppResourceSecret struct {
 	Permission AppResourceSecret_SecretPermission `json:"permission,omitempty"`
 }
 
-func AppResourceSecretFromSDK(v *sdk.AppResourceSecret) (*AppResourceSecret, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceSecret{
-		Scope:      v.Scope,
-		Key:        v.Key,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceSecretToSDK(w *AppResourceSecret) (*sdk.AppResourceSecret, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceSecret{
-		Scope:      w.Scope,
-		Key:        w.Key,
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppResourceServingEndpoint struct {
 	// Name of the serving endpoint to grant permission on.
 	Name *string `json:"name,omitempty"`
@@ -1545,52 +513,12 @@ type AppResourceServingEndpoint struct {
 	Permission AppResourceServingEndpoint_ServingEndpointPermission `json:"permission,omitempty"`
 }
 
-func AppResourceServingEndpointFromSDK(v *sdk.AppResourceServingEndpoint) (*AppResourceServingEndpoint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceServingEndpoint{
-		Name:       v.Name,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceServingEndpointToSDK(w *AppResourceServingEndpoint) (*sdk.AppResourceServingEndpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceServingEndpoint{
-		Name:       w.Name,
-		Permission: w.Permission,
-	}, nil
-}
-
 type AppResourceSqlWarehouse struct {
 	// Id of the SQL warehouse to grant permission on.
 	Id *string `json:"id,omitempty"`
 	// Permission to grant on the SQL warehouse. Supported permissions are:
 	// "CAN_MANAGE", "CAN_USE", "IS_OWNER".
 	Permission AppResourceSqlWarehouse_SqlWarehousePermission `json:"permission,omitempty"`
-}
-
-func AppResourceSqlWarehouseFromSDK(v *sdk.AppResourceSqlWarehouse) (*AppResourceSqlWarehouse, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceSqlWarehouse{
-		Id:         v.Id,
-		Permission: v.Permission,
-	}, nil
-}
-
-func AppResourceSqlWarehouseToSDK(w *AppResourceSqlWarehouse) (*sdk.AppResourceSqlWarehouse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceSqlWarehouse{
-		Id:         w.Id,
-		Permission: w.Permission,
-	}, nil
 }
 
 type AppResourceUcSecurable struct {
@@ -1602,52 +530,10 @@ type AppResourceUcSecurable struct {
 	SecurableKind *string `json:"securable_kind,omitempty"`
 }
 
-func AppResourceUcSecurableFromSDK(v *sdk.AppResourceUcSecurable) (*AppResourceUcSecurable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppResourceUcSecurable{
-		SecurableFullName: v.SecurableFullName,
-		SecurableType:     v.SecurableType,
-		Permission:        v.Permission,
-		SecurableKind:     v.SecurableKind,
-	}, nil
-}
-
-func AppResourceUcSecurableToSDK(w *AppResourceUcSecurable) (*sdk.AppResourceUcSecurable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppResourceUcSecurable{
-		SecurableFullName: w.SecurableFullName,
-		SecurableType:     w.SecurableType,
-		Permission:        w.Permission,
-		SecurableKind:     w.SecurableKind,
-	}, nil
-}
-
 // The thumbnail for an app..
 type AppThumbnail struct {
 	// The thumbnail image bytes.
 	Thumbnail []byte `json:"thumbnail,omitempty"`
-}
-
-func AppThumbnailFromSDK(v *sdk.AppThumbnail) (*AppThumbnail, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AppThumbnail{
-		Thumbnail: v.Thumbnail,
-	}, nil
-}
-
-func AppThumbnailToSDK(w *AppThumbnail) (*sdk.AppThumbnail, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppThumbnail{
-		Thumbnail: w.Thumbnail,
-	}, nil
 }
 
 type AppUpdate struct {
@@ -1671,55 +557,9 @@ type AppUpdate struct {
 	ForwardUserAccessToken *bool `json:"forward_user_access_token,omitempty"`
 }
 
-func AppUpdateToSDK(w *AppUpdate) (*sdk.AppUpdate, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusPublicValue, err := AppUpdate_UpdateStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppUpdate.Status", err)
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AppResourceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppUpdate.Resources", err)
-	}
-	gitRepositoryPublicValue, err := GitRepositoryToSDK(w.GitRepository)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppUpdate.GitRepository", err)
-	}
-	telemetryExportDestinationsPublicValue, err := convertSlice(w.TelemetryExportDestinations, TelemetryExportDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AppUpdate.TelemetryExportDestinations", err)
-	}
-	return &sdk.AppUpdate{
-		Status:                      statusPublicValue,
-		Description:                 w.Description,
-		BudgetPolicyId:              w.BudgetPolicyId,
-		Resources:                   resourcesPublicValue,
-		UserApiScopes:               w.UserApiScopes,
-		ComputeSize:                 w.ComputeSize,
-		UsagePolicyId:               w.UsagePolicyId,
-		ComputeMinInstances:         w.ComputeMinInstances,
-		ComputeMaxInstances:         w.ComputeMaxInstances,
-		GitRepository:               gitRepositoryPublicValue,
-		TelemetryExportDestinations: telemetryExportDestinationsPublicValue,
-		ForwardUserAccessToken:      w.ForwardUserAccessToken,
-	}, nil
-}
-
 type AppUpdate_UpdateStatus struct {
 	State   AppUpdate_UpdateStatus_UpdateState `json:"state,omitempty"`
 	Message *string                            `json:"message,omitempty"`
-}
-
-func AppUpdate_UpdateStatusToSDK(w *AppUpdate_UpdateStatus) (*sdk.AppUpdate_UpdateStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AppUpdate_UpdateStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
 }
 
 type ApplicationStatus struct {
@@ -1731,47 +571,10 @@ type ApplicationStatus struct {
 	RunningInstances *int `json:"running_instances,omitempty"`
 }
 
-func ApplicationStatusFromSDK(v *sdk.ApplicationStatus) (*ApplicationStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApplicationStatus{
-		State:            v.State,
-		Message:          v.Message,
-		RunningInstances: v.RunningInstances,
-	}, nil
-}
-
-func ApplicationStatusToSDK(w *ApplicationStatus) (*sdk.ApplicationStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ApplicationStatus{
-		State:            w.State,
-		Message:          w.Message,
-		RunningInstances: w.RunningInstances,
-	}, nil
-}
-
 type AsyncUpdateAppRequest struct {
 	App        *App    `json:"app,omitempty"`
 	UpdateMask *string `json:"update_mask,omitempty"`
 	AppName    *string `json:"app_name,omitempty"`
-}
-
-func AsyncUpdateAppRequestFromSDK(v *sdk.AsyncUpdateAppRequest) (*AsyncUpdateAppRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	appWireValue, err := AppFromSDK(v.App)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AsyncUpdateAppRequest.App", err)
-	}
-	return &AsyncUpdateAppRequest{
-		App:        appWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-		AppName:    v.AppName,
-	}, nil
 }
 
 type ComputeStatus struct {
@@ -1784,47 +587,11 @@ type ComputeStatus struct {
 	ActiveInstances *int `json:"active_instances,omitempty"`
 }
 
-func ComputeStatusFromSDK(v *sdk.ComputeStatus) (*ComputeStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComputeStatus{
-		State:           v.State,
-		Message:         v.Message,
-		ActiveInstances: v.ActiveInstances,
-	}, nil
-}
-
-func ComputeStatusToSDK(w *ComputeStatus) (*sdk.ComputeStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComputeStatus{
-		State:           w.State,
-		Message:         w.Message,
-		ActiveInstances: w.ActiveInstances,
-	}, nil
-}
-
 type CreateAppDeploymentRequest struct {
 	// The name of the app.
 	AppName *string `json:"app_name,omitempty"`
 	// The app deployment configuration.
 	AppDeployment *AppDeployment `json:"app_deployment,omitempty"`
-}
-
-func CreateAppDeploymentRequestFromSDK(v *sdk.CreateAppDeploymentRequest) (*CreateAppDeploymentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	appDeploymentWireValue, err := AppDeploymentFromSDK(v.AppDeployment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAppDeploymentRequest.AppDeployment", err)
-	}
-	return &CreateAppDeploymentRequest{
-		AppName:       v.AppName,
-		AppDeployment: appDeploymentWireValue,
-	}, nil
 }
 
 type CreateAppRequest struct {
@@ -1833,52 +600,12 @@ type CreateAppRequest struct {
 	NoCompute *bool `json:"no_compute,omitempty"`
 }
 
-func CreateAppRequestFromSDK(v *sdk.CreateAppRequest) (*CreateAppRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	appWireValue, err := AppFromSDK(v.App)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAppRequest.App", err)
-	}
-	return &CreateAppRequest{
-		App:       appWireValue,
-		NoCompute: v.NoCompute,
-	}, nil
-}
-
 type CreateCustomTemplateRequest struct {
 	Template *CustomTemplate `json:"template,omitempty"`
 }
 
-func CreateCustomTemplateRequestFromSDK(v *sdk.CreateCustomTemplateRequest) (*CreateCustomTemplateRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	templateWireValue, err := CustomTemplateFromSDK(v.Template)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCustomTemplateRequest.Template", err)
-	}
-	return &CreateCustomTemplateRequest{
-		Template: templateWireValue,
-	}, nil
-}
-
 type CreateSpaceRequest struct {
 	Space *Space `json:"space,omitempty"`
-}
-
-func CreateSpaceRequestFromSDK(v *sdk.CreateSpaceRequest) (*CreateSpaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	spaceWireValue, err := SpaceFromSDK(v.Space)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSpaceRequest.Space", err)
-	}
-	return &CreateSpaceRequest{
-		Space: spaceWireValue,
-	}, nil
 }
 
 type CustomTemplate struct {
@@ -1900,102 +627,11 @@ type CustomTemplate struct {
 	Creator     *string `json:"creator,omitempty"`
 }
 
-func CustomTemplateFromSDK(v *sdk.CustomTemplate) (*CustomTemplate, error) {
-	if v == nil {
-		return nil, nil
-	}
-	manifestWireValue, err := AppManifestFromSDK(v.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomTemplate.Manifest", err)
-	}
-	return &CustomTemplate{
-		Name:        v.Name,
-		Description: v.Description,
-		GitRepo:     v.GitRepo,
-		Path:        v.Path,
-		Manifest:    manifestWireValue,
-		GitProvider: v.GitProvider,
-		Creator:     v.Creator,
-	}, nil
-}
-
-func CustomTemplateToSDK(w *CustomTemplate) (*sdk.CustomTemplate, error) {
-	if w == nil {
-		return nil, nil
-	}
-	manifestPublicValue, err := AppManifestToSDK(w.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomTemplate.Manifest", err)
-	}
-	return &sdk.CustomTemplate{
-		Name:        w.Name,
-		Description: w.Description,
-		GitRepo:     w.GitRepo,
-		Path:        w.Path,
-		Manifest:    manifestPublicValue,
-		GitProvider: w.GitProvider,
-		Creator:     w.Creator,
-	}, nil
-}
-
 type EnvVar struct {
 	// The name of the environment variable.
 	Name      *string `json:"name,omitempty"`
 	Value     *string `json:"value,omitempty"`
 	ValueFrom *string `json:"value_from,omitempty"`
-}
-
-func EnvVarFromSDK(v *sdk.EnvVar) (*EnvVar, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceValueWire *string
-	var sourceValueFromWire *string
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.EnvVar_Source_Value:
-		if value != nil {
-			sourceValueWire = new(value.Value)
-		}
-	case *sdk.EnvVar_Source_ValueFrom:
-		if value != nil {
-			sourceValueFromWire = new(value.ValueFrom)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "EnvVar.Source", value)
-	}
-	return &EnvVar{
-		Name:      v.Name,
-		Value:     sourceValueWire,
-		ValueFrom: sourceValueFromWire,
-	}, nil
-}
-
-func EnvVarToSDK(w *EnvVar) (*sdk.EnvVar, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.Value != nil {
-		sourceMembers++
-	}
-	if w.ValueFrom != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "EnvVar.Source")
-	}
-	sourceSelection := (&sdk.EnvVar{}).Source
-	switch {
-	case w.Value != nil:
-		sourceSelection = &sdk.EnvVar_Source_Value{Value: *w.Value}
-	case w.ValueFrom != nil:
-		sourceSelection = &sdk.EnvVar_Source_ValueFrom{ValueFrom: *w.ValueFrom}
-	}
-	return &sdk.EnvVar{
-		Name:   w.Name,
-		Source: sourceSelection,
-	}, nil
 }
 
 // Git repository configuration specifying the location of the repository..
@@ -2012,38 +648,6 @@ type GitRepository struct {
 	// ID of a personal access token Git credential owned by the caller, used to
 	// grant the app's service principal access to this repository.
 	CallerCredentialId *int64 `json:"caller_credential_id,omitempty"`
-}
-
-func GitRepositoryFromSDK(v *sdk.GitRepository) (*GitRepository, error) {
-	if v == nil {
-		return nil, nil
-	}
-	callerCredentialIdWireValue, err := int64ToWire(v.CallerCredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitRepository.CallerCredentialId", err)
-	}
-	return &GitRepository{
-		Url:                v.Url,
-		Provider:           v.Provider,
-		AutoDeploy:         v.AutoDeploy,
-		CallerCredentialId: callerCredentialIdWireValue,
-	}, nil
-}
-
-func GitRepositoryToSDK(w *GitRepository) (*sdk.GitRepository, error) {
-	if w == nil {
-		return nil, nil
-	}
-	callerCredentialIdPublicValue, err := int64FromWire(w.CallerCredentialId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitRepository.CallerCredentialId", err)
-	}
-	return &sdk.GitRepository{
-		Url:                w.Url,
-		Provider:           w.Provider,
-		AutoDeploy:         w.AutoDeploy,
-		CallerCredentialId: callerCredentialIdPublicValue,
-	}, nil
 }
 
 // Complete git source specification including repository location and
@@ -2066,82 +670,6 @@ type GitSource struct {
 	ResolvedCommit *string `json:"resolved_commit,omitempty"`
 }
 
-func GitSourceFromSDK(v *sdk.GitSource) (*GitSource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	gitRepositoryWireValue, err := GitRepositoryFromSDK(v.GitRepository)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.GitRepository", err)
-	}
-	var referenceBranchWire *string
-	var referenceTagWire *string
-	var referenceCommitWire *string
-	switch value := v.Reference.(type) {
-	case nil:
-	case *sdk.GitSource_Reference_Branch:
-		if value != nil {
-			referenceBranchWire = new(value.Branch)
-		}
-	case *sdk.GitSource_Reference_Tag:
-		if value != nil {
-			referenceTagWire = new(value.Tag)
-		}
-	case *sdk.GitSource_Reference_Commit:
-		if value != nil {
-			referenceCommitWire = new(value.Commit)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "GitSource.Reference", value)
-	}
-	return &GitSource{
-		GitRepository:  gitRepositoryWireValue,
-		Branch:         referenceBranchWire,
-		Tag:            referenceTagWire,
-		Commit:         referenceCommitWire,
-		SourceCodePath: v.SourceCodePath,
-		ResolvedCommit: v.ResolvedCommit,
-	}, nil
-}
-
-func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
-	if w == nil {
-		return nil, nil
-	}
-	referenceMembers := 0
-	if w.Branch != nil {
-		referenceMembers++
-	}
-	if w.Tag != nil {
-		referenceMembers++
-	}
-	if w.Commit != nil {
-		referenceMembers++
-	}
-	if referenceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.Reference")
-	}
-	gitRepositoryPublicValue, err := GitRepositoryToSDK(w.GitRepository)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GitSource.GitRepository", err)
-	}
-	referenceSelection := (&sdk.GitSource{}).Reference
-	switch {
-	case w.Branch != nil:
-		referenceSelection = &sdk.GitSource_Reference_Branch{Branch: *w.Branch}
-	case w.Tag != nil:
-		referenceSelection = &sdk.GitSource_Reference_Tag{Tag: *w.Tag}
-	case w.Commit != nil:
-		referenceSelection = &sdk.GitSource_Reference_Commit{Commit: *w.Commit}
-	}
-	return &sdk.GitSource{
-		GitRepository:  gitRepositoryPublicValue,
-		SourceCodePath: w.SourceCodePath,
-		ResolvedCommit: w.ResolvedCommit,
-		Reference:      referenceSelection,
-	}, nil
-}
-
 type ListAppDeploymentsRequest struct {
 	// The name of the app.
 	AppName *string `json:"app_name,omitempty"`
@@ -2152,36 +680,11 @@ type ListAppDeploymentsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListAppDeploymentsRequestFromSDK(v *sdk.ListAppDeploymentsRequest) (*ListAppDeploymentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAppDeploymentsRequest{
-		AppName:   v.AppName,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListAppDeploymentsResponse struct {
 	// Deployment history of the app.
 	AppDeployments []AppDeployment `json:"app_deployments,omitempty"`
 	// Pagination token to request the next page of apps.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListAppDeploymentsResponseToSDK(w *ListAppDeploymentsResponse) (*sdk.ListAppDeploymentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	appDeploymentsPublicValue, err := convertSlice(w.AppDeployments, AppDeploymentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAppDeploymentsResponse.AppDeployments", err)
-	}
-	return &sdk.ListAppDeploymentsResponse{
-		AppDeployments: appDeploymentsPublicValue,
-		NextPageToken:  w.NextPageToken,
-	}, nil
 }
 
 // Request to list all apps deployed in the workspace.
@@ -2196,35 +699,10 @@ type ListAppsRequest struct {
 	Space *string `json:"space,omitempty"`
 }
 
-func ListAppsRequestFromSDK(v *sdk.ListAppsRequest) (*ListAppsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAppsRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-		Space:     v.Space,
-	}, nil
-}
-
 type ListAppsResponse struct {
 	Apps []App `json:"apps,omitempty"`
 	// Pagination token to request the next page of apps.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListAppsResponseToSDK(w *ListAppsResponse) (*sdk.ListAppsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	appsPublicValue, err := convertSlice(w.Apps, AppToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAppsResponse.Apps", err)
-	}
-	return &sdk.ListAppsResponse{
-		Apps:          appsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListCustomTemplatesRequest struct {
@@ -2235,34 +713,10 @@ type ListCustomTemplatesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListCustomTemplatesRequestFromSDK(v *sdk.ListCustomTemplatesRequest) (*ListCustomTemplatesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCustomTemplatesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListCustomTemplatesResponse struct {
 	Templates []CustomTemplate `json:"templates,omitempty"`
 	// Pagination token to request the next page of custom templates.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListCustomTemplatesResponseToSDK(w *ListCustomTemplatesResponse) (*sdk.ListCustomTemplatesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	templatesPublicValue, err := convertSlice(w.Templates, CustomTemplateToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCustomTemplatesResponse.Templates", err)
-	}
-	return &sdk.ListCustomTemplatesResponse{
-		Templates:     templatesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListSpacesRequest struct {
@@ -2273,34 +727,10 @@ type ListSpacesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListSpacesRequestFromSDK(v *sdk.ListSpacesRequest) (*ListSpacesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSpacesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListSpacesResponse struct {
 	Spaces []Space `json:"spaces,omitempty"`
 	// Pagination token to request the next page of app spaces.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSpacesResponseToSDK(w *ListSpacesResponse) (*sdk.ListSpacesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	spacesPublicValue, err := convertSlice(w.Spaces, SpaceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSpacesResponse.Spaces", err)
-	}
-	return &sdk.ListSpacesResponse{
-		Spaces:        spacesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // This resource represents a long-running operation that is the result of a
@@ -2320,39 +750,6 @@ type Operation struct {
 	Done     *bool           `json:"done,omitempty"`
 	Error    *ApiError       `json:"error,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
-}
-
-func OperationToSDK(w *Operation) (*sdk.Operation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultMembers := 0
-	if w.Error != nil {
-		resultMembers++
-	}
-	if w.Response != nil {
-		resultMembers++
-	}
-	if resultMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
-	}
-	resultSelection := (&sdk.Operation{}).Result
-	switch {
-	case w.Error != nil:
-		resultErrorConverted, err := ApiErrorToSDK(w.Error)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Operation.Result.Error", err)
-		}
-		resultSelection = &sdk.Operation_Result_Error{Error: *resultErrorConverted}
-	case w.Response != nil:
-		resultSelection = &sdk.Operation_Result_Response{Response: w.Response}
-	}
-	return &sdk.Operation{
-		Name:     w.Name,
-		Metadata: w.Metadata,
-		Done:     w.Done,
-		Result:   resultSelection,
-	}, nil
 }
 
 type Space struct {
@@ -2396,105 +793,11 @@ type Space struct {
 	AssumeGroupId *string `json:"assume_group_id,omitempty"`
 }
 
-func SpaceFromSDK(v *sdk.Space) (*Space, error) {
-	if v == nil {
-		return nil, nil
-	}
-	statusWireValue, err := SpaceStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.Status", err)
-	}
-	resourcesWireValue, err := convertSlice(v.Resources, AppResourceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.Resources", err)
-	}
-	servicePrincipalIdWireValue, err := int64ToWire(v.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.ServicePrincipalId", err)
-	}
-	return &Space{
-		Name:                     v.Name,
-		Description:              v.Description,
-		Status:                   statusWireValue,
-		Id:                       v.Id,
-		CreateTime:               v.CreateTime,
-		Creator:                  v.Creator,
-		UpdateTime:               v.UpdateTime,
-		Updater:                  v.Updater,
-		Resources:                resourcesWireValue,
-		UserApiScopes:            v.UserApiScopes,
-		EffectiveUserApiScopes:   v.EffectiveUserApiScopes,
-		ServicePrincipalId:       servicePrincipalIdWireValue,
-		ServicePrincipalName:     v.ServicePrincipalName,
-		ServicePrincipalClientId: v.ServicePrincipalClientId,
-		UsagePolicyId:            v.UsagePolicyId,
-		EffectiveUsagePolicyId:   v.EffectiveUsagePolicyId,
-		AssumeGroupId:            v.AssumeGroupId,
-	}, nil
-}
-
-func SpaceToSDK(w *Space) (*sdk.Space, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusPublicValue, err := SpaceStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.Status", err)
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AppResourceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.Resources", err)
-	}
-	servicePrincipalIdPublicValue, err := int64FromWire(w.ServicePrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Space.ServicePrincipalId", err)
-	}
-	return &sdk.Space{
-		Name:                     w.Name,
-		Description:              w.Description,
-		Status:                   statusPublicValue,
-		Id:                       w.Id,
-		CreateTime:               w.CreateTime,
-		Creator:                  w.Creator,
-		UpdateTime:               w.UpdateTime,
-		Updater:                  w.Updater,
-		Resources:                resourcesPublicValue,
-		UserApiScopes:            w.UserApiScopes,
-		EffectiveUserApiScopes:   w.EffectiveUserApiScopes,
-		ServicePrincipalId:       servicePrincipalIdPublicValue,
-		ServicePrincipalName:     w.ServicePrincipalName,
-		ServicePrincipalClientId: w.ServicePrincipalClientId,
-		UsagePolicyId:            w.UsagePolicyId,
-		EffectiveUsagePolicyId:   w.EffectiveUsagePolicyId,
-		AssumeGroupId:            w.AssumeGroupId,
-	}, nil
-}
-
 type SpaceStatus struct {
 	// The state of the app space.
 	State SpaceStatus_SpaceState `json:"state,omitempty"`
 	// Message providing context about the current state.
 	Message *string `json:"message,omitempty"`
-}
-
-func SpaceStatusFromSDK(v *sdk.SpaceStatus) (*SpaceStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SpaceStatus{
-		State:   v.State,
-		Message: v.Message,
-	}, nil
-}
-
-func SpaceStatusToSDK(w *SpaceStatus) (*sdk.SpaceStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SpaceStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
 }
 
 // Tracks app space update information..
@@ -2506,41 +809,10 @@ type SpaceUpdate struct {
 	UsagePolicyId *string            `json:"usage_policy_id,omitempty"`
 }
 
-func SpaceUpdateToSDK(w *SpaceUpdate) (*sdk.SpaceUpdate, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusPublicValue, err := SpaceUpdateStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Status", err)
-	}
-	resourcesPublicValue, err := convertSlice(w.Resources, AppResourceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Resources", err)
-	}
-	return &sdk.SpaceUpdate{
-		Status:        statusPublicValue,
-		Description:   w.Description,
-		Resources:     resourcesPublicValue,
-		UserApiScopes: w.UserApiScopes,
-		UsagePolicyId: w.UsagePolicyId,
-	}, nil
-}
-
 // Status of an app space update operation.
 type SpaceUpdateStatus struct {
 	State   SpaceUpdateState `json:"state,omitempty"`
 	Message *string          `json:"message,omitempty"`
-}
-
-func SpaceUpdateStatusToSDK(w *SpaceUpdateStatus) (*sdk.SpaceUpdateStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SpaceUpdateStatus{
-		State:   w.State,
-		Message: w.Message,
-	}, nil
 }
 
 type StartAppRequest struct {
@@ -2548,80 +820,14 @@ type StartAppRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func StartAppRequestFromSDK(v *sdk.StartAppRequest) (*StartAppRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StartAppRequest{
-		Name: v.Name,
-	}, nil
-}
-
 type StopAppRequest struct {
 	// The name of the app.
 	Name *string `json:"name,omitempty"`
 }
 
-func StopAppRequestFromSDK(v *sdk.StopAppRequest) (*StopAppRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StopAppRequest{
-		Name: v.Name,
-	}, nil
-}
-
 // A single telemetry export destination with its configuration and status..
 type TelemetryExportDestination struct {
 	UnityCatalog *UnityCatalog `json:"unity_catalog,omitempty"`
-}
-
-func TelemetryExportDestinationFromSDK(v *sdk.TelemetryExportDestination) (*TelemetryExportDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var destinationUnityCatalogWire *UnityCatalog
-	switch value := v.Destination.(type) {
-	case nil:
-	case *sdk.TelemetryExportDestination_Destination_UnityCatalog:
-		if value != nil {
-			destinationUnityCatalogConverted, err := UnityCatalogFromSDK(&value.UnityCatalog)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "TelemetryExportDestination.Destination.UnityCatalog", err)
-			}
-			destinationUnityCatalogWire = destinationUnityCatalogConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "TelemetryExportDestination.Destination", value)
-	}
-	return &TelemetryExportDestination{
-		UnityCatalog: destinationUnityCatalogWire,
-	}, nil
-}
-
-func TelemetryExportDestinationToSDK(w *TelemetryExportDestination) (*sdk.TelemetryExportDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	destinationMembers := 0
-	if w.UnityCatalog != nil {
-		destinationMembers++
-	}
-	if destinationMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryExportDestination.Destination")
-	}
-	destinationSelection := (&sdk.TelemetryExportDestination{}).Destination
-	switch {
-	case w.UnityCatalog != nil:
-		destinationUnityCatalogConverted, err := UnityCatalogToSDK(w.UnityCatalog)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "TelemetryExportDestination.Destination.UnityCatalog", err)
-		}
-		destinationSelection = &sdk.TelemetryExportDestination_Destination_UnityCatalog{UnityCatalog: *destinationUnityCatalogConverted}
-	}
-	return &sdk.TelemetryExportDestination{
-		Destination: destinationSelection,
-	}, nil
 }
 
 // Unity Catalog Destinations for OTEL telemetry export..
@@ -2634,43 +840,8 @@ type UnityCatalog struct {
 	TracesTable *string `json:"traces_table,omitempty"`
 }
 
-func UnityCatalogFromSDK(v *sdk.UnityCatalog) (*UnityCatalog, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UnityCatalog{
-		LogsTable:    v.LogsTable,
-		MetricsTable: v.MetricsTable,
-		TracesTable:  v.TracesTable,
-	}, nil
-}
-
-func UnityCatalogToSDK(w *UnityCatalog) (*sdk.UnityCatalog, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UnityCatalog{
-		LogsTable:    w.LogsTable,
-		MetricsTable: w.MetricsTable,
-		TracesTable:  w.TracesTable,
-	}, nil
-}
-
 type UpdateAppRequest struct {
 	App *App `json:"app,omitempty"`
-}
-
-func UpdateAppRequestFromSDK(v *sdk.UpdateAppRequest) (*UpdateAppRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	appWireValue, err := AppFromSDK(v.App)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAppRequest.App", err)
-	}
-	return &UpdateAppRequest{
-		App: appWireValue,
-	}, nil
 }
 
 type UpdateAppThumbnailRequest struct {
@@ -2680,35 +851,8 @@ type UpdateAppThumbnailRequest struct {
 	AppThumbnail *AppThumbnail `json:"app_thumbnail,omitempty"`
 }
 
-func UpdateAppThumbnailRequestFromSDK(v *sdk.UpdateAppThumbnailRequest) (*UpdateAppThumbnailRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	appThumbnailWireValue, err := AppThumbnailFromSDK(v.AppThumbnail)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAppThumbnailRequest.AppThumbnail", err)
-	}
-	return &UpdateAppThumbnailRequest{
-		Name:         v.Name,
-		AppThumbnail: appThumbnailWireValue,
-	}, nil
-}
-
 type UpdateCustomTemplateRequest struct {
 	Template *CustomTemplate `json:"template,omitempty"`
-}
-
-func UpdateCustomTemplateRequestFromSDK(v *sdk.UpdateCustomTemplateRequest) (*UpdateCustomTemplateRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	templateWireValue, err := CustomTemplateFromSDK(v.Template)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCustomTemplateRequest.Template", err)
-	}
-	return &UpdateCustomTemplateRequest{
-		Template: templateWireValue,
-	}, nil
 }
 
 type UpdateSpaceRequest struct {
@@ -2716,18 +860,2242 @@ type UpdateSpaceRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// ApiErrorToSDK converts the mirror to the sdk-go type.
+func ApiErrorToSDK(w *ApiError) (*sdk.ApiError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApiError{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	out.StackTrace = w.StackTrace
+	out.Details = w.Details
+	return out, nil
+}
+
+// ApiErrorFromSDK converts the sdk-go type to the mirror.
+func ApiErrorFromSDK(v *sdk.ApiError) (*ApiError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApiError{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	out.StackTrace = v.StackTrace
+	out.Details = v.Details
+	return out, nil
+}
+
+// AppToSDK converts the mirror to the sdk-go type.
+func AppToSDK(w *App) (*sdk.App, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.App{}
+	out.Name = w.Name
+	out.Description = w.Description
+	conv1, err := ComputeStatusToSDK(w.ComputeStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.ComputeStatus", err)
+	}
+	out.ComputeStatus = conv1
+	conv2, err := ApplicationStatusToSDK(w.AppStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.AppStatus", err)
+	}
+	out.AppStatus = conv2
+	out.Url = w.Url
+	conv3, err := AppDeploymentToSDK(w.ActiveDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.ActiveDeployment", err)
+	}
+	out.ActiveDeployment = conv3
+	out.CreateTime = w.CreateTime
+	out.Creator = w.Creator
+	out.UpdateTime = w.UpdateTime
+	out.Updater = w.Updater
+	conv4, err := AppDeploymentToSDK(w.PendingDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.PendingDeployment", err)
+	}
+	out.PendingDeployment = conv4
+	conv5, err := convertSlice(w.Resources, AppResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.Resources", err)
+	}
+	out.Resources = conv5
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.ServicePrincipalName = w.ServicePrincipalName
+	out.DefaultSourceCodePath = w.DefaultSourceCodePath
+	conv6, err := GitSourceToSDK(w.DefaultGitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.DefaultGitSource", err)
+	}
+	out.DefaultGitSource = conv6
+	out.BudgetPolicyId = w.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = w.EffectiveBudgetPolicyId
+	out.ServicePrincipalClientId = w.ServicePrincipalClientId
+	out.UserApiScopes = w.UserApiScopes
+	out.Id = w.Id
+	out.EffectiveUserApiScopes = w.EffectiveUserApiScopes
+	out.Oauth2AppIntegrationId = w.Oauth2AppIntegrationId
+	out.Oauth2AppClientId = w.Oauth2AppClientId
+	out.ComputeSize = w.ComputeSize
+	out.UsagePolicyId = w.UsagePolicyId
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	out.ComputeMinInstances = w.ComputeMinInstances
+	out.ComputeMaxInstances = w.ComputeMaxInstances
+	conv7, err := GitRepositoryToSDK(w.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.GitRepository", err)
+	}
+	out.GitRepository = conv7
+	conv8, err := convertSlice(w.TelemetryExportDestinations, TelemetryExportDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.TelemetryExportDestinations", err)
+	}
+	out.TelemetryExportDestinations = conv8
+	out.ThumbnailUrl = w.ThumbnailUrl
+	out.Space = w.Space
+	{
+		members := 0
+		if w.SourceCodePath != nil {
+			members++
+		}
+		if w.GitSource != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "App.DeploymentSource")
+		}
+	}
+	switch {
+	case w.SourceCodePath != nil:
+		out.DeploymentSource = &sdk.App_DeploymentSource_SourceCodePath{SourceCodePath: *w.SourceCodePath}
+	case w.GitSource != nil:
+		conv9, err := GitSourceToSDK(w.GitSource)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "App.DeploymentSource", err)
+		}
+		out.DeploymentSource = &sdk.App_DeploymentSource_GitSource{GitSource: *conv9}
+	}
+	out.ForwardUserAccessToken = w.ForwardUserAccessToken
+	return out, nil
+}
+
+// AppFromSDK converts the sdk-go type to the mirror.
+func AppFromSDK(v *sdk.App) (*App, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &App{}
+	out.Name = v.Name
+	out.Description = v.Description
+	conv10, err := ComputeStatusFromSDK(v.ComputeStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.ComputeStatus", err)
+	}
+	out.ComputeStatus = conv10
+	conv11, err := ApplicationStatusFromSDK(v.AppStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.AppStatus", err)
+	}
+	out.AppStatus = conv11
+	out.Url = v.Url
+	conv12, err := AppDeploymentFromSDK(v.ActiveDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.ActiveDeployment", err)
+	}
+	out.ActiveDeployment = conv12
+	out.CreateTime = v.CreateTime
+	out.Creator = v.Creator
+	out.UpdateTime = v.UpdateTime
+	out.Updater = v.Updater
+	conv13, err := AppDeploymentFromSDK(v.PendingDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.PendingDeployment", err)
+	}
+	out.PendingDeployment = conv13
+	conv14, err := convertSlice(v.Resources, AppResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.Resources", err)
+	}
+	out.Resources = conv14
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.ServicePrincipalName = v.ServicePrincipalName
+	out.DefaultSourceCodePath = v.DefaultSourceCodePath
+	conv15, err := GitSourceFromSDK(v.DefaultGitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.DefaultGitSource", err)
+	}
+	out.DefaultGitSource = conv15
+	out.BudgetPolicyId = v.BudgetPolicyId
+	out.EffectiveBudgetPolicyId = v.EffectiveBudgetPolicyId
+	out.ServicePrincipalClientId = v.ServicePrincipalClientId
+	out.UserApiScopes = v.UserApiScopes
+	out.Id = v.Id
+	out.EffectiveUserApiScopes = v.EffectiveUserApiScopes
+	out.Oauth2AppIntegrationId = v.Oauth2AppIntegrationId
+	out.Oauth2AppClientId = v.Oauth2AppClientId
+	out.ComputeSize = v.ComputeSize
+	out.UsagePolicyId = v.UsagePolicyId
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	out.ComputeMinInstances = v.ComputeMinInstances
+	out.ComputeMaxInstances = v.ComputeMaxInstances
+	conv16, err := GitRepositoryFromSDK(v.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.GitRepository", err)
+	}
+	out.GitRepository = conv16
+	conv17, err := convertSlice(v.TelemetryExportDestinations, TelemetryExportDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "App.TelemetryExportDestinations", err)
+	}
+	out.TelemetryExportDestinations = conv17
+	out.ThumbnailUrl = v.ThumbnailUrl
+	out.Space = v.Space
+	switch value := v.DeploymentSource.(type) {
+	case *sdk.App_DeploymentSource_SourceCodePath:
+		if value != nil {
+			out.SourceCodePath = new(value.SourceCodePath)
+		}
+	case *sdk.App_DeploymentSource_GitSource:
+		if value != nil {
+			conv18, err := GitSourceFromSDK(&value.GitSource)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "App.DeploymentSource", err)
+			}
+			out.GitSource = conv18
+		}
+	}
+	out.ForwardUserAccessToken = v.ForwardUserAccessToken
+	return out, nil
+}
+
+// AppDeploymentToSDK converts the mirror to the sdk-go type.
+func AppDeploymentToSDK(w *AppDeployment) (*sdk.AppDeployment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppDeployment{}
+	out.DeploymentId = w.DeploymentId
+	out.SourceCodePath = w.SourceCodePath
+	conv19, err := GitSourceToSDK(w.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.GitSource", err)
+	}
+	out.GitSource = conv19
+	out.Mode = w.Mode
+	conv20, err := AppDeploymentArtifactsToSDK(w.DeploymentArtifacts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.DeploymentArtifacts", err)
+	}
+	out.DeploymentArtifacts = conv20
+	conv21, err := AppDeploymentStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.Status", err)
+	}
+	out.Status = conv21
+	out.CreateTime = w.CreateTime
+	out.Creator = w.Creator
+	out.UpdateTime = w.UpdateTime
+	out.Command = w.Command
+	conv22, err := convertSlice(w.EnvVars, EnvVarToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.EnvVars", err)
+	}
+	out.EnvVars = conv22
+	conv23, err := AppHealthCheckToSDK(w.HealthCheck)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.HealthCheck", err)
+	}
+	out.HealthCheck = conv23
+	return out, nil
+}
+
+// AppDeploymentFromSDK converts the sdk-go type to the mirror.
+func AppDeploymentFromSDK(v *sdk.AppDeployment) (*AppDeployment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppDeployment{}
+	out.DeploymentId = v.DeploymentId
+	out.SourceCodePath = v.SourceCodePath
+	conv24, err := GitSourceFromSDK(v.GitSource)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.GitSource", err)
+	}
+	out.GitSource = conv24
+	out.Mode = v.Mode
+	conv25, err := AppDeploymentArtifactsFromSDK(v.DeploymentArtifacts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.DeploymentArtifacts", err)
+	}
+	out.DeploymentArtifacts = conv25
+	conv26, err := AppDeploymentStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.Status", err)
+	}
+	out.Status = conv26
+	out.CreateTime = v.CreateTime
+	out.Creator = v.Creator
+	out.UpdateTime = v.UpdateTime
+	out.Command = v.Command
+	conv27, err := convertSlice(v.EnvVars, EnvVarFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.EnvVars", err)
+	}
+	out.EnvVars = conv27
+	conv28, err := AppHealthCheckFromSDK(v.HealthCheck)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppDeployment.HealthCheck", err)
+	}
+	out.HealthCheck = conv28
+	return out, nil
+}
+
+// AppDeploymentArtifactsToSDK converts the mirror to the sdk-go type.
+func AppDeploymentArtifactsToSDK(w *AppDeploymentArtifacts) (*sdk.AppDeploymentArtifacts, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppDeploymentArtifacts{}
+	out.SourceCodePath = w.SourceCodePath
+	return out, nil
+}
+
+// AppDeploymentArtifactsFromSDK converts the sdk-go type to the mirror.
+func AppDeploymentArtifactsFromSDK(v *sdk.AppDeploymentArtifacts) (*AppDeploymentArtifacts, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppDeploymentArtifacts{}
+	out.SourceCodePath = v.SourceCodePath
+	return out, nil
+}
+
+// AppDeploymentStatusToSDK converts the mirror to the sdk-go type.
+func AppDeploymentStatusToSDK(w *AppDeploymentStatus) (*sdk.AppDeploymentStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppDeploymentStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// AppDeploymentStatusFromSDK converts the sdk-go type to the mirror.
+func AppDeploymentStatusFromSDK(v *sdk.AppDeploymentStatus) (*AppDeploymentStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppDeploymentStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// AppHealthCheckToSDK converts the mirror to the sdk-go type.
+func AppHealthCheckToSDK(w *AppHealthCheck) (*sdk.AppHealthCheck, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppHealthCheck{}
+	out.Path = w.Path
+	out.Timeout = w.Timeout
+	return out, nil
+}
+
+// AppHealthCheckFromSDK converts the sdk-go type to the mirror.
+func AppHealthCheckFromSDK(v *sdk.AppHealthCheck) (*AppHealthCheck, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppHealthCheck{}
+	out.Path = v.Path
+	out.Timeout = v.Timeout
+	return out, nil
+}
+
+// AppManifestToSDK converts the mirror to the sdk-go type.
+func AppManifestToSDK(w *AppManifest) (*sdk.AppManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest{}
+	out.Version = w.Version
+	out.Name = w.Name
+	out.Description = w.Description
+	conv29, err := convertSlice(w.ResourceSpecs, AppManifest_AppResourceSpecToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppManifest.ResourceSpecs", err)
+	}
+	out.ResourceSpecs = conv29
+	return out, nil
+}
+
+// AppManifestFromSDK converts the sdk-go type to the mirror.
+func AppManifestFromSDK(v *sdk.AppManifest) (*AppManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest{}
+	out.Version = v.Version
+	out.Name = v.Name
+	out.Description = v.Description
+	conv30, err := convertSlice(v.ResourceSpecs, AppManifest_AppResourceSpecFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppManifest.ResourceSpecs", err)
+	}
+	out.ResourceSpecs = conv30
+	return out, nil
+}
+
+// AppManifest_AppResourceExperimentSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceExperimentSpecToSDK(w *AppManifest_AppResourceExperimentSpec) (*sdk.AppManifest_AppResourceExperimentSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceExperimentSpec{}
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceExperimentSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceExperimentSpecFromSDK(v *sdk.AppManifest_AppResourceExperimentSpec) (*AppManifest_AppResourceExperimentSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceExperimentSpec{}
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceJobSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceJobSpecToSDK(w *AppManifest_AppResourceJobSpec) (*sdk.AppManifest_AppResourceJobSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceJobSpec{}
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceJobSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceJobSpecFromSDK(v *sdk.AppManifest_AppResourceJobSpec) (*AppManifest_AppResourceJobSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceJobSpec{}
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceSecretSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceSecretSpecToSDK(w *AppManifest_AppResourceSecretSpec) (*sdk.AppManifest_AppResourceSecretSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceSecretSpec{}
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceSecretSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceSecretSpecFromSDK(v *sdk.AppManifest_AppResourceSecretSpec) (*AppManifest_AppResourceSecretSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceSecretSpec{}
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceServingEndpointSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceServingEndpointSpecToSDK(w *AppManifest_AppResourceServingEndpointSpec) (*sdk.AppManifest_AppResourceServingEndpointSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceServingEndpointSpec{}
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceServingEndpointSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceServingEndpointSpecFromSDK(v *sdk.AppManifest_AppResourceServingEndpointSpec) (*AppManifest_AppResourceServingEndpointSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceServingEndpointSpec{}
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceSpecToSDK(w *AppManifest_AppResourceSpec) (*sdk.AppManifest_AppResourceSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceSpec{}
+	out.Name = w.Name
+	out.Description = w.Description
+	{
+		members := 0
+		if w.SecretSpec != nil {
+			members++
+		}
+		if w.SqlWarehouseSpec != nil {
+			members++
+		}
+		if w.ServingEndpointSpec != nil {
+			members++
+		}
+		if w.JobSpec != nil {
+			members++
+		}
+		if w.UcSecurableSpec != nil {
+			members++
+		}
+		if w.ExperimentSpec != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AppManifest_AppResourceSpec.Resource")
+		}
+	}
+	switch {
+	case w.SecretSpec != nil:
+		conv31, err := AppManifest_AppResourceSecretSpecToSDK(w.SecretSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_SecretSpec{SecretSpec: *conv31}
+	case w.SqlWarehouseSpec != nil:
+		conv32, err := AppManifest_AppResourceSqlWarehouseSpecToSDK(w.SqlWarehouseSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_SqlWarehouseSpec{SqlWarehouseSpec: *conv32}
+	case w.ServingEndpointSpec != nil:
+		conv33, err := AppManifest_AppResourceServingEndpointSpecToSDK(w.ServingEndpointSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_ServingEndpointSpec{ServingEndpointSpec: *conv33}
+	case w.JobSpec != nil:
+		conv34, err := AppManifest_AppResourceJobSpecToSDK(w.JobSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_JobSpec{JobSpec: *conv34}
+	case w.UcSecurableSpec != nil:
+		conv35, err := AppManifest_AppResourceUcSecurableSpecToSDK(w.UcSecurableSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_UcSecurableSpec{UcSecurableSpec: *conv35}
+	case w.ExperimentSpec != nil:
+		conv36, err := AppManifest_AppResourceExperimentSpecToSDK(w.ExperimentSpec)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+		}
+		out.Resource = &sdk.AppManifest_AppResourceSpec_Resource_ExperimentSpec{ExperimentSpec: *conv36}
+	}
+	return out, nil
+}
+
+// AppManifest_AppResourceSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceSpecFromSDK(v *sdk.AppManifest_AppResourceSpec) (*AppManifest_AppResourceSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceSpec{}
+	out.Name = v.Name
+	out.Description = v.Description
+	switch value := v.Resource.(type) {
+	case *sdk.AppManifest_AppResourceSpec_Resource_SecretSpec:
+		if value != nil {
+			conv37, err := AppManifest_AppResourceSecretSpecFromSDK(&value.SecretSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.SecretSpec = conv37
+		}
+	case *sdk.AppManifest_AppResourceSpec_Resource_SqlWarehouseSpec:
+		if value != nil {
+			conv38, err := AppManifest_AppResourceSqlWarehouseSpecFromSDK(&value.SqlWarehouseSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.SqlWarehouseSpec = conv38
+		}
+	case *sdk.AppManifest_AppResourceSpec_Resource_ServingEndpointSpec:
+		if value != nil {
+			conv39, err := AppManifest_AppResourceServingEndpointSpecFromSDK(&value.ServingEndpointSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.ServingEndpointSpec = conv39
+		}
+	case *sdk.AppManifest_AppResourceSpec_Resource_JobSpec:
+		if value != nil {
+			conv40, err := AppManifest_AppResourceJobSpecFromSDK(&value.JobSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.JobSpec = conv40
+		}
+	case *sdk.AppManifest_AppResourceSpec_Resource_UcSecurableSpec:
+		if value != nil {
+			conv41, err := AppManifest_AppResourceUcSecurableSpecFromSDK(&value.UcSecurableSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.UcSecurableSpec = conv41
+		}
+	case *sdk.AppManifest_AppResourceSpec_Resource_ExperimentSpec:
+		if value != nil {
+			conv42, err := AppManifest_AppResourceExperimentSpecFromSDK(&value.ExperimentSpec)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppManifest_AppResourceSpec.Resource", err)
+			}
+			out.ExperimentSpec = conv42
+		}
+	}
+	return out, nil
+}
+
+// AppManifest_AppResourceSqlWarehouseSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceSqlWarehouseSpecToSDK(w *AppManifest_AppResourceSqlWarehouseSpec) (*sdk.AppManifest_AppResourceSqlWarehouseSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceSqlWarehouseSpec{}
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceSqlWarehouseSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceSqlWarehouseSpecFromSDK(v *sdk.AppManifest_AppResourceSqlWarehouseSpec) (*AppManifest_AppResourceSqlWarehouseSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceSqlWarehouseSpec{}
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceUcSecurableSpecToSDK converts the mirror to the sdk-go type.
+func AppManifest_AppResourceUcSecurableSpecToSDK(w *AppManifest_AppResourceUcSecurableSpec) (*sdk.AppManifest_AppResourceUcSecurableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppManifest_AppResourceUcSecurableSpec{}
+	out.SecurableType = w.SecurableType
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppManifest_AppResourceUcSecurableSpecFromSDK converts the sdk-go type to the mirror.
+func AppManifest_AppResourceUcSecurableSpecFromSDK(v *sdk.AppManifest_AppResourceUcSecurableSpec) (*AppManifest_AppResourceUcSecurableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppManifest_AppResourceUcSecurableSpec{}
+	out.SecurableType = v.SecurableType
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceToSDK converts the mirror to the sdk-go type.
+func AppResourceToSDK(w *AppResource) (*sdk.AppResource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResource{}
+	out.Name = w.Name
+	out.Description = w.Description
+	{
+		members := 0
+		if w.Secret != nil {
+			members++
+		}
+		if w.SqlWarehouse != nil {
+			members++
+		}
+		if w.ServingEndpoint != nil {
+			members++
+		}
+		if w.Job != nil {
+			members++
+		}
+		if w.UcSecurable != nil {
+			members++
+		}
+		if w.Database != nil {
+			members++
+		}
+		if w.GenieSpace != nil {
+			members++
+		}
+		if w.Experiment != nil {
+			members++
+		}
+		if w.App != nil {
+			members++
+		}
+		if w.Postgres != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AppResource.Resource")
+		}
+	}
+	switch {
+	case w.Secret != nil:
+		conv43, err := AppResourceSecretToSDK(w.Secret)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_Secret{Secret: *conv43}
+	case w.SqlWarehouse != nil:
+		conv44, err := AppResourceSqlWarehouseToSDK(w.SqlWarehouse)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_SqlWarehouse{SqlWarehouse: *conv44}
+	case w.ServingEndpoint != nil:
+		conv45, err := AppResourceServingEndpointToSDK(w.ServingEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_ServingEndpoint{ServingEndpoint: *conv45}
+	case w.Job != nil:
+		conv46, err := AppResourceJobToSDK(w.Job)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_Job{Job: *conv46}
+	case w.UcSecurable != nil:
+		conv47, err := AppResourceUcSecurableToSDK(w.UcSecurable)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_UcSecurable{UcSecurable: *conv47}
+	case w.Database != nil:
+		conv48, err := AppResourceDatabaseToSDK(w.Database)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_Database{Database: *conv48}
+	case w.GenieSpace != nil:
+		conv49, err := AppResourceGenieSpaceToSDK(w.GenieSpace)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_GenieSpace{GenieSpace: *conv49}
+	case w.Experiment != nil:
+		conv50, err := AppResourceExperimentToSDK(w.Experiment)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_Experiment{Experiment: *conv50}
+	case w.App != nil:
+		conv51, err := AppResourceAppToSDK(w.App)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_App{App: *conv51}
+	case w.Postgres != nil:
+		conv52, err := AppResourcePostgresToSDK(w.Postgres)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+		}
+		out.Resource = &sdk.AppResource_Resource_Postgres{Postgres: *conv52}
+	}
+	return out, nil
+}
+
+// AppResourceFromSDK converts the sdk-go type to the mirror.
+func AppResourceFromSDK(v *sdk.AppResource) (*AppResource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResource{}
+	out.Name = v.Name
+	out.Description = v.Description
+	switch value := v.Resource.(type) {
+	case *sdk.AppResource_Resource_Secret:
+		if value != nil {
+			conv53, err := AppResourceSecretFromSDK(&value.Secret)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.Secret = conv53
+		}
+	case *sdk.AppResource_Resource_SqlWarehouse:
+		if value != nil {
+			conv54, err := AppResourceSqlWarehouseFromSDK(&value.SqlWarehouse)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.SqlWarehouse = conv54
+		}
+	case *sdk.AppResource_Resource_ServingEndpoint:
+		if value != nil {
+			conv55, err := AppResourceServingEndpointFromSDK(&value.ServingEndpoint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.ServingEndpoint = conv55
+		}
+	case *sdk.AppResource_Resource_Job:
+		if value != nil {
+			conv56, err := AppResourceJobFromSDK(&value.Job)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.Job = conv56
+		}
+	case *sdk.AppResource_Resource_UcSecurable:
+		if value != nil {
+			conv57, err := AppResourceUcSecurableFromSDK(&value.UcSecurable)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.UcSecurable = conv57
+		}
+	case *sdk.AppResource_Resource_Database:
+		if value != nil {
+			conv58, err := AppResourceDatabaseFromSDK(&value.Database)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.Database = conv58
+		}
+	case *sdk.AppResource_Resource_GenieSpace:
+		if value != nil {
+			conv59, err := AppResourceGenieSpaceFromSDK(&value.GenieSpace)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.GenieSpace = conv59
+		}
+	case *sdk.AppResource_Resource_Experiment:
+		if value != nil {
+			conv60, err := AppResourceExperimentFromSDK(&value.Experiment)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.Experiment = conv60
+		}
+	case *sdk.AppResource_Resource_App:
+		if value != nil {
+			conv61, err := AppResourceAppFromSDK(&value.App)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.App = conv61
+		}
+	case *sdk.AppResource_Resource_Postgres:
+		if value != nil {
+			conv62, err := AppResourcePostgresFromSDK(&value.Postgres)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "AppResource.Resource", err)
+			}
+			out.Postgres = conv62
+		}
+	}
+	return out, nil
+}
+
+// AppResourceAppToSDK converts the mirror to the sdk-go type.
+func AppResourceAppToSDK(w *AppResourceApp) (*sdk.AppResourceApp, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceApp{}
+	out.Name = w.Name
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceAppFromSDK converts the sdk-go type to the mirror.
+func AppResourceAppFromSDK(v *sdk.AppResourceApp) (*AppResourceApp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceApp{}
+	out.Name = v.Name
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceDatabaseToSDK converts the mirror to the sdk-go type.
+func AppResourceDatabaseToSDK(w *AppResourceDatabase) (*sdk.AppResourceDatabase, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceDatabase{}
+	out.InstanceName = w.InstanceName
+	out.DatabaseName = w.DatabaseName
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceDatabaseFromSDK converts the sdk-go type to the mirror.
+func AppResourceDatabaseFromSDK(v *sdk.AppResourceDatabase) (*AppResourceDatabase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceDatabase{}
+	out.InstanceName = v.InstanceName
+	out.DatabaseName = v.DatabaseName
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceExperimentToSDK converts the mirror to the sdk-go type.
+func AppResourceExperimentToSDK(w *AppResourceExperiment) (*sdk.AppResourceExperiment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceExperiment{}
+	out.ExperimentId = w.ExperimentId
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceExperimentFromSDK converts the sdk-go type to the mirror.
+func AppResourceExperimentFromSDK(v *sdk.AppResourceExperiment) (*AppResourceExperiment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceExperiment{}
+	out.ExperimentId = v.ExperimentId
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceGenieSpaceToSDK converts the mirror to the sdk-go type.
+func AppResourceGenieSpaceToSDK(w *AppResourceGenieSpace) (*sdk.AppResourceGenieSpace, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceGenieSpace{}
+	out.Name = w.Name
+	out.SpaceId = w.SpaceId
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceGenieSpaceFromSDK converts the sdk-go type to the mirror.
+func AppResourceGenieSpaceFromSDK(v *sdk.AppResourceGenieSpace) (*AppResourceGenieSpace, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceGenieSpace{}
+	out.Name = v.Name
+	out.SpaceId = v.SpaceId
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceJobToSDK converts the mirror to the sdk-go type.
+func AppResourceJobToSDK(w *AppResourceJob) (*sdk.AppResourceJob, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceJob{}
+	out.Id = w.Id
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceJobFromSDK converts the sdk-go type to the mirror.
+func AppResourceJobFromSDK(v *sdk.AppResourceJob) (*AppResourceJob, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceJob{}
+	out.Id = v.Id
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourcePostgresToSDK converts the mirror to the sdk-go type.
+func AppResourcePostgresToSDK(w *AppResourcePostgres) (*sdk.AppResourcePostgres, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourcePostgres{}
+	out.Branch = w.Branch
+	out.Database = w.Database
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourcePostgresFromSDK converts the sdk-go type to the mirror.
+func AppResourcePostgresFromSDK(v *sdk.AppResourcePostgres) (*AppResourcePostgres, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourcePostgres{}
+	out.Branch = v.Branch
+	out.Database = v.Database
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceSecretToSDK converts the mirror to the sdk-go type.
+func AppResourceSecretToSDK(w *AppResourceSecret) (*sdk.AppResourceSecret, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceSecret{}
+	out.Scope = w.Scope
+	out.Key = w.Key
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceSecretFromSDK converts the sdk-go type to the mirror.
+func AppResourceSecretFromSDK(v *sdk.AppResourceSecret) (*AppResourceSecret, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceSecret{}
+	out.Scope = v.Scope
+	out.Key = v.Key
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceServingEndpointToSDK converts the mirror to the sdk-go type.
+func AppResourceServingEndpointToSDK(w *AppResourceServingEndpoint) (*sdk.AppResourceServingEndpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceServingEndpoint{}
+	out.Name = w.Name
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceServingEndpointFromSDK converts the sdk-go type to the mirror.
+func AppResourceServingEndpointFromSDK(v *sdk.AppResourceServingEndpoint) (*AppResourceServingEndpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceServingEndpoint{}
+	out.Name = v.Name
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceSqlWarehouseToSDK converts the mirror to the sdk-go type.
+func AppResourceSqlWarehouseToSDK(w *AppResourceSqlWarehouse) (*sdk.AppResourceSqlWarehouse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceSqlWarehouse{}
+	out.Id = w.Id
+	out.Permission = w.Permission
+	return out, nil
+}
+
+// AppResourceSqlWarehouseFromSDK converts the sdk-go type to the mirror.
+func AppResourceSqlWarehouseFromSDK(v *sdk.AppResourceSqlWarehouse) (*AppResourceSqlWarehouse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceSqlWarehouse{}
+	out.Id = v.Id
+	out.Permission = v.Permission
+	return out, nil
+}
+
+// AppResourceUcSecurableToSDK converts the mirror to the sdk-go type.
+func AppResourceUcSecurableToSDK(w *AppResourceUcSecurable) (*sdk.AppResourceUcSecurable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppResourceUcSecurable{}
+	out.SecurableFullName = w.SecurableFullName
+	out.SecurableType = w.SecurableType
+	out.Permission = w.Permission
+	out.SecurableKind = w.SecurableKind
+	return out, nil
+}
+
+// AppResourceUcSecurableFromSDK converts the sdk-go type to the mirror.
+func AppResourceUcSecurableFromSDK(v *sdk.AppResourceUcSecurable) (*AppResourceUcSecurable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppResourceUcSecurable{}
+	out.SecurableFullName = v.SecurableFullName
+	out.SecurableType = v.SecurableType
+	out.Permission = v.Permission
+	out.SecurableKind = v.SecurableKind
+	return out, nil
+}
+
+// AppThumbnailToSDK converts the mirror to the sdk-go type.
+func AppThumbnailToSDK(w *AppThumbnail) (*sdk.AppThumbnail, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppThumbnail{}
+	out.Thumbnail = w.Thumbnail
+	return out, nil
+}
+
+// AppThumbnailFromSDK converts the sdk-go type to the mirror.
+func AppThumbnailFromSDK(v *sdk.AppThumbnail) (*AppThumbnail, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppThumbnail{}
+	out.Thumbnail = v.Thumbnail
+	return out, nil
+}
+
+// AppUpdateToSDK converts the mirror to the sdk-go type.
+func AppUpdateToSDK(w *AppUpdate) (*sdk.AppUpdate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppUpdate{}
+	conv63, err := AppUpdate_UpdateStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.Status", err)
+	}
+	out.Status = conv63
+	out.Description = w.Description
+	out.BudgetPolicyId = w.BudgetPolicyId
+	conv64, err := convertSlice(w.Resources, AppResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.Resources", err)
+	}
+	out.Resources = conv64
+	out.UserApiScopes = w.UserApiScopes
+	out.ComputeSize = w.ComputeSize
+	out.UsagePolicyId = w.UsagePolicyId
+	out.ComputeMinInstances = w.ComputeMinInstances
+	out.ComputeMaxInstances = w.ComputeMaxInstances
+	conv65, err := GitRepositoryToSDK(w.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.GitRepository", err)
+	}
+	out.GitRepository = conv65
+	conv66, err := convertSlice(w.TelemetryExportDestinations, TelemetryExportDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.TelemetryExportDestinations", err)
+	}
+	out.TelemetryExportDestinations = conv66
+	out.ForwardUserAccessToken = w.ForwardUserAccessToken
+	return out, nil
+}
+
+// AppUpdateFromSDK converts the sdk-go type to the mirror.
+func AppUpdateFromSDK(v *sdk.AppUpdate) (*AppUpdate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppUpdate{}
+	conv67, err := AppUpdate_UpdateStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.Status", err)
+	}
+	out.Status = conv67
+	out.Description = v.Description
+	out.BudgetPolicyId = v.BudgetPolicyId
+	conv68, err := convertSlice(v.Resources, AppResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.Resources", err)
+	}
+	out.Resources = conv68
+	out.UserApiScopes = v.UserApiScopes
+	out.ComputeSize = v.ComputeSize
+	out.UsagePolicyId = v.UsagePolicyId
+	out.ComputeMinInstances = v.ComputeMinInstances
+	out.ComputeMaxInstances = v.ComputeMaxInstances
+	conv69, err := GitRepositoryFromSDK(v.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.GitRepository", err)
+	}
+	out.GitRepository = conv69
+	conv70, err := convertSlice(v.TelemetryExportDestinations, TelemetryExportDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AppUpdate.TelemetryExportDestinations", err)
+	}
+	out.TelemetryExportDestinations = conv70
+	out.ForwardUserAccessToken = v.ForwardUserAccessToken
+	return out, nil
+}
+
+// AppUpdate_UpdateStatusToSDK converts the mirror to the sdk-go type.
+func AppUpdate_UpdateStatusToSDK(w *AppUpdate_UpdateStatus) (*sdk.AppUpdate_UpdateStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AppUpdate_UpdateStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// AppUpdate_UpdateStatusFromSDK converts the sdk-go type to the mirror.
+func AppUpdate_UpdateStatusFromSDK(v *sdk.AppUpdate_UpdateStatus) (*AppUpdate_UpdateStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AppUpdate_UpdateStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// ApplicationStatusToSDK converts the mirror to the sdk-go type.
+func ApplicationStatusToSDK(w *ApplicationStatus) (*sdk.ApplicationStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApplicationStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	out.RunningInstances = w.RunningInstances
+	return out, nil
+}
+
+// ApplicationStatusFromSDK converts the sdk-go type to the mirror.
+func ApplicationStatusFromSDK(v *sdk.ApplicationStatus) (*ApplicationStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApplicationStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	out.RunningInstances = v.RunningInstances
+	return out, nil
+}
+
+// AsyncUpdateAppRequestToSDK converts the mirror to the sdk-go type.
+func AsyncUpdateAppRequestToSDK(w *AsyncUpdateAppRequest) (*sdk.AsyncUpdateAppRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AsyncUpdateAppRequest{}
+	conv71, err := AppToSDK(w.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AsyncUpdateAppRequest.App", err)
+	}
+	out.App = conv71
+	mask72, err := fieldMaskFromString[sdk.App](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AsyncUpdateAppRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask72
+	out.AppName = w.AppName
+	return out, nil
+}
+
+// AsyncUpdateAppRequestFromSDK converts the sdk-go type to the mirror.
+func AsyncUpdateAppRequestFromSDK(v *sdk.AsyncUpdateAppRequest) (*AsyncUpdateAppRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AsyncUpdateAppRequest{}
+	conv73, err := AppFromSDK(v.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AsyncUpdateAppRequest.App", err)
+	}
+	out.App = conv73
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.AppName = v.AppName
+	return out, nil
+}
+
+// ComputeStatusToSDK converts the mirror to the sdk-go type.
+func ComputeStatusToSDK(w *ComputeStatus) (*sdk.ComputeStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComputeStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	out.ActiveInstances = w.ActiveInstances
+	return out, nil
+}
+
+// ComputeStatusFromSDK converts the sdk-go type to the mirror.
+func ComputeStatusFromSDK(v *sdk.ComputeStatus) (*ComputeStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComputeStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	out.ActiveInstances = v.ActiveInstances
+	return out, nil
+}
+
+// CreateAppDeploymentRequestToSDK converts the mirror to the sdk-go type.
+func CreateAppDeploymentRequestToSDK(w *CreateAppDeploymentRequest) (*sdk.CreateAppDeploymentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAppDeploymentRequest{}
+	out.AppName = w.AppName
+	conv74, err := AppDeploymentToSDK(w.AppDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAppDeploymentRequest.AppDeployment", err)
+	}
+	out.AppDeployment = conv74
+	return out, nil
+}
+
+// CreateAppDeploymentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAppDeploymentRequestFromSDK(v *sdk.CreateAppDeploymentRequest) (*CreateAppDeploymentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAppDeploymentRequest{}
+	out.AppName = v.AppName
+	conv75, err := AppDeploymentFromSDK(v.AppDeployment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAppDeploymentRequest.AppDeployment", err)
+	}
+	out.AppDeployment = conv75
+	return out, nil
+}
+
+// CreateAppRequestToSDK converts the mirror to the sdk-go type.
+func CreateAppRequestToSDK(w *CreateAppRequest) (*sdk.CreateAppRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAppRequest{}
+	conv76, err := AppToSDK(w.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAppRequest.App", err)
+	}
+	out.App = conv76
+	out.NoCompute = w.NoCompute
+	return out, nil
+}
+
+// CreateAppRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAppRequestFromSDK(v *sdk.CreateAppRequest) (*CreateAppRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAppRequest{}
+	conv77, err := AppFromSDK(v.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAppRequest.App", err)
+	}
+	out.App = conv77
+	out.NoCompute = v.NoCompute
+	return out, nil
+}
+
+// CreateCustomTemplateRequestToSDK converts the mirror to the sdk-go type.
+func CreateCustomTemplateRequestToSDK(w *CreateCustomTemplateRequest) (*sdk.CreateCustomTemplateRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCustomTemplateRequest{}
+	conv78, err := CustomTemplateToSDK(w.Template)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomTemplateRequest.Template", err)
+	}
+	out.Template = conv78
+	return out, nil
+}
+
+// CreateCustomTemplateRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCustomTemplateRequestFromSDK(v *sdk.CreateCustomTemplateRequest) (*CreateCustomTemplateRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCustomTemplateRequest{}
+	conv79, err := CustomTemplateFromSDK(v.Template)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCustomTemplateRequest.Template", err)
+	}
+	out.Template = conv79
+	return out, nil
+}
+
+// CreateSpaceRequestToSDK converts the mirror to the sdk-go type.
+func CreateSpaceRequestToSDK(w *CreateSpaceRequest) (*sdk.CreateSpaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSpaceRequest{}
+	conv80, err := SpaceToSDK(w.Space)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSpaceRequest.Space", err)
+	}
+	out.Space = conv80
+	return out, nil
+}
+
+// CreateSpaceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSpaceRequestFromSDK(v *sdk.CreateSpaceRequest) (*CreateSpaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSpaceRequest{}
+	conv81, err := SpaceFromSDK(v.Space)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSpaceRequest.Space", err)
+	}
+	out.Space = conv81
+	return out, nil
+}
+
+// CustomTemplateToSDK converts the mirror to the sdk-go type.
+func CustomTemplateToSDK(w *CustomTemplate) (*sdk.CustomTemplate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomTemplate{}
+	out.Name = w.Name
+	out.Description = w.Description
+	out.GitRepo = w.GitRepo
+	out.Path = w.Path
+	conv82, err := AppManifestToSDK(w.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomTemplate.Manifest", err)
+	}
+	out.Manifest = conv82
+	out.GitProvider = w.GitProvider
+	out.Creator = w.Creator
+	return out, nil
+}
+
+// CustomTemplateFromSDK converts the sdk-go type to the mirror.
+func CustomTemplateFromSDK(v *sdk.CustomTemplate) (*CustomTemplate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomTemplate{}
+	out.Name = v.Name
+	out.Description = v.Description
+	out.GitRepo = v.GitRepo
+	out.Path = v.Path
+	conv83, err := AppManifestFromSDK(v.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomTemplate.Manifest", err)
+	}
+	out.Manifest = conv83
+	out.GitProvider = v.GitProvider
+	out.Creator = v.Creator
+	return out, nil
+}
+
+// EnvVarToSDK converts the mirror to the sdk-go type.
+func EnvVarToSDK(w *EnvVar) (*sdk.EnvVar, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnvVar{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.Value != nil {
+			members++
+		}
+		if w.ValueFrom != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "EnvVar.Source")
+		}
+	}
+	switch {
+	case w.Value != nil:
+		out.Source = &sdk.EnvVar_Source_Value{Value: *w.Value}
+	case w.ValueFrom != nil:
+		out.Source = &sdk.EnvVar_Source_ValueFrom{ValueFrom: *w.ValueFrom}
+	}
+	return out, nil
+}
+
+// EnvVarFromSDK converts the sdk-go type to the mirror.
+func EnvVarFromSDK(v *sdk.EnvVar) (*EnvVar, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnvVar{}
+	out.Name = v.Name
+	switch value := v.Source.(type) {
+	case *sdk.EnvVar_Source_Value:
+		if value != nil {
+			out.Value = new(value.Value)
+		}
+	case *sdk.EnvVar_Source_ValueFrom:
+		if value != nil {
+			out.ValueFrom = new(value.ValueFrom)
+		}
+	}
+	return out, nil
+}
+
+// GitRepositoryToSDK converts the mirror to the sdk-go type.
+func GitRepositoryToSDK(w *GitRepository) (*sdk.GitRepository, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GitRepository{}
+	out.Url = w.Url
+	out.Provider = w.Provider
+	out.AutoDeploy = w.AutoDeploy
+	out.CallerCredentialId = w.CallerCredentialId
+	return out, nil
+}
+
+// GitRepositoryFromSDK converts the sdk-go type to the mirror.
+func GitRepositoryFromSDK(v *sdk.GitRepository) (*GitRepository, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GitRepository{}
+	out.Url = v.Url
+	out.Provider = v.Provider
+	out.AutoDeploy = v.AutoDeploy
+	out.CallerCredentialId = v.CallerCredentialId
+	return out, nil
+}
+
+// GitSourceToSDK converts the mirror to the sdk-go type.
+func GitSourceToSDK(w *GitSource) (*sdk.GitSource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GitSource{}
+	conv84, err := GitRepositoryToSDK(w.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.GitRepository", err)
+	}
+	out.GitRepository = conv84
+	{
+		members := 0
+		if w.Branch != nil {
+			members++
+		}
+		if w.Tag != nil {
+			members++
+		}
+		if w.Commit != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GitSource.Reference")
+		}
+	}
+	switch {
+	case w.Branch != nil:
+		out.Reference = &sdk.GitSource_Reference_Branch{Branch: *w.Branch}
+	case w.Tag != nil:
+		out.Reference = &sdk.GitSource_Reference_Tag{Tag: *w.Tag}
+	case w.Commit != nil:
+		out.Reference = &sdk.GitSource_Reference_Commit{Commit: *w.Commit}
+	}
+	out.SourceCodePath = w.SourceCodePath
+	out.ResolvedCommit = w.ResolvedCommit
+	return out, nil
+}
+
+// GitSourceFromSDK converts the sdk-go type to the mirror.
+func GitSourceFromSDK(v *sdk.GitSource) (*GitSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GitSource{}
+	conv85, err := GitRepositoryFromSDK(v.GitRepository)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GitSource.GitRepository", err)
+	}
+	out.GitRepository = conv85
+	switch value := v.Reference.(type) {
+	case *sdk.GitSource_Reference_Branch:
+		if value != nil {
+			out.Branch = new(value.Branch)
+		}
+	case *sdk.GitSource_Reference_Tag:
+		if value != nil {
+			out.Tag = new(value.Tag)
+		}
+	case *sdk.GitSource_Reference_Commit:
+		if value != nil {
+			out.Commit = new(value.Commit)
+		}
+	}
+	out.SourceCodePath = v.SourceCodePath
+	out.ResolvedCommit = v.ResolvedCommit
+	return out, nil
+}
+
+// ListAppDeploymentsRequestToSDK converts the mirror to the sdk-go type.
+func ListAppDeploymentsRequestToSDK(w *ListAppDeploymentsRequest) (*sdk.ListAppDeploymentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAppDeploymentsRequest{}
+	out.AppName = w.AppName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListAppDeploymentsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAppDeploymentsRequestFromSDK(v *sdk.ListAppDeploymentsRequest) (*ListAppDeploymentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAppDeploymentsRequest{}
+	out.AppName = v.AppName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListAppDeploymentsResponseToSDK converts the mirror to the sdk-go type.
+func ListAppDeploymentsResponseToSDK(w *ListAppDeploymentsResponse) (*sdk.ListAppDeploymentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAppDeploymentsResponse{}
+	conv86, err := convertSlice(w.AppDeployments, AppDeploymentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAppDeploymentsResponse.AppDeployments", err)
+	}
+	out.AppDeployments = conv86
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAppDeploymentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAppDeploymentsResponseFromSDK(v *sdk.ListAppDeploymentsResponse) (*ListAppDeploymentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAppDeploymentsResponse{}
+	conv87, err := convertSlice(v.AppDeployments, AppDeploymentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAppDeploymentsResponse.AppDeployments", err)
+	}
+	out.AppDeployments = conv87
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListAppsRequestToSDK converts the mirror to the sdk-go type.
+func ListAppsRequestToSDK(w *ListAppsRequest) (*sdk.ListAppsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAppsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	out.Space = w.Space
+	return out, nil
+}
+
+// ListAppsRequestFromSDK converts the sdk-go type to the mirror.
+func ListAppsRequestFromSDK(v *sdk.ListAppsRequest) (*ListAppsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAppsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	out.Space = v.Space
+	return out, nil
+}
+
+// ListAppsResponseToSDK converts the mirror to the sdk-go type.
+func ListAppsResponseToSDK(w *ListAppsResponse) (*sdk.ListAppsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAppsResponse{}
+	conv88, err := convertSlice(w.Apps, AppToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAppsResponse.Apps", err)
+	}
+	out.Apps = conv88
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListAppsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAppsResponseFromSDK(v *sdk.ListAppsResponse) (*ListAppsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAppsResponse{}
+	conv89, err := convertSlice(v.Apps, AppFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAppsResponse.Apps", err)
+	}
+	out.Apps = conv89
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListCustomTemplatesRequestToSDK converts the mirror to the sdk-go type.
+func ListCustomTemplatesRequestToSDK(w *ListCustomTemplatesRequest) (*sdk.ListCustomTemplatesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCustomTemplatesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListCustomTemplatesRequestFromSDK converts the sdk-go type to the mirror.
+func ListCustomTemplatesRequestFromSDK(v *sdk.ListCustomTemplatesRequest) (*ListCustomTemplatesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCustomTemplatesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListCustomTemplatesResponseToSDK converts the mirror to the sdk-go type.
+func ListCustomTemplatesResponseToSDK(w *ListCustomTemplatesResponse) (*sdk.ListCustomTemplatesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCustomTemplatesResponse{}
+	conv90, err := convertSlice(w.Templates, CustomTemplateToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCustomTemplatesResponse.Templates", err)
+	}
+	out.Templates = conv90
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCustomTemplatesResponseFromSDK converts the sdk-go type to the mirror.
+func ListCustomTemplatesResponseFromSDK(v *sdk.ListCustomTemplatesResponse) (*ListCustomTemplatesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCustomTemplatesResponse{}
+	conv91, err := convertSlice(v.Templates, CustomTemplateFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCustomTemplatesResponse.Templates", err)
+	}
+	out.Templates = conv91
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSpacesRequestToSDK converts the mirror to the sdk-go type.
+func ListSpacesRequestToSDK(w *ListSpacesRequest) (*sdk.ListSpacesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSpacesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListSpacesRequestFromSDK converts the sdk-go type to the mirror.
+func ListSpacesRequestFromSDK(v *sdk.ListSpacesRequest) (*ListSpacesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSpacesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListSpacesResponseToSDK converts the mirror to the sdk-go type.
+func ListSpacesResponseToSDK(w *ListSpacesResponse) (*sdk.ListSpacesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSpacesResponse{}
+	conv92, err := convertSlice(w.Spaces, SpaceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSpacesResponse.Spaces", err)
+	}
+	out.Spaces = conv92
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSpacesResponseFromSDK converts the sdk-go type to the mirror.
+func ListSpacesResponseFromSDK(v *sdk.ListSpacesResponse) (*ListSpacesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSpacesResponse{}
+	conv93, err := convertSlice(v.Spaces, SpaceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSpacesResponse.Spaces", err)
+	}
+	out.Spaces = conv93
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// OperationToSDK converts the mirror to the sdk-go type.
+func OperationToSDK(w *Operation) (*sdk.Operation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Operation{}
+	out.Name = w.Name
+	out.Metadata = w.Metadata
+	out.Done = w.Done
+	{
+		members := 0
+		if w.Error != nil {
+			members++
+		}
+		if w.Response != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Operation.Result")
+		}
+	}
+	switch {
+	case w.Error != nil:
+		conv94, err := ApiErrorToSDK(w.Error)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+		}
+		out.Result = &sdk.Operation_Result_Error{Error: *conv94}
+	case w.Response != nil:
+		out.Result = &sdk.Operation_Result_Response{Response: w.Response}
+	}
+	return out, nil
+}
+
+// OperationFromSDK converts the sdk-go type to the mirror.
+func OperationFromSDK(v *sdk.Operation) (*Operation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Operation{}
+	out.Name = v.Name
+	out.Metadata = v.Metadata
+	out.Done = v.Done
+	switch value := v.Result.(type) {
+	case *sdk.Operation_Result_Error:
+		if value != nil {
+			conv95, err := ApiErrorFromSDK(&value.Error)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Operation.Result", err)
+			}
+			out.Error = conv95
+		}
+	case *sdk.Operation_Result_Response:
+		if value != nil {
+			out.Response = value.Response
+		}
+	}
+	return out, nil
+}
+
+// SpaceToSDK converts the mirror to the sdk-go type.
+func SpaceToSDK(w *Space) (*sdk.Space, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Space{}
+	out.Name = w.Name
+	out.Description = w.Description
+	conv96, err := SpaceStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Space.Status", err)
+	}
+	out.Status = conv96
+	out.Id = w.Id
+	out.CreateTime = w.CreateTime
+	out.Creator = w.Creator
+	out.UpdateTime = w.UpdateTime
+	out.Updater = w.Updater
+	conv97, err := convertSlice(w.Resources, AppResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Space.Resources", err)
+	}
+	out.Resources = conv97
+	out.UserApiScopes = w.UserApiScopes
+	out.EffectiveUserApiScopes = w.EffectiveUserApiScopes
+	out.ServicePrincipalId = w.ServicePrincipalId
+	out.ServicePrincipalName = w.ServicePrincipalName
+	out.ServicePrincipalClientId = w.ServicePrincipalClientId
+	out.UsagePolicyId = w.UsagePolicyId
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	out.AssumeGroupId = w.AssumeGroupId
+	return out, nil
+}
+
+// SpaceFromSDK converts the sdk-go type to the mirror.
+func SpaceFromSDK(v *sdk.Space) (*Space, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Space{}
+	out.Name = v.Name
+	out.Description = v.Description
+	conv98, err := SpaceStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Space.Status", err)
+	}
+	out.Status = conv98
+	out.Id = v.Id
+	out.CreateTime = v.CreateTime
+	out.Creator = v.Creator
+	out.UpdateTime = v.UpdateTime
+	out.Updater = v.Updater
+	conv99, err := convertSlice(v.Resources, AppResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Space.Resources", err)
+	}
+	out.Resources = conv99
+	out.UserApiScopes = v.UserApiScopes
+	out.EffectiveUserApiScopes = v.EffectiveUserApiScopes
+	out.ServicePrincipalId = v.ServicePrincipalId
+	out.ServicePrincipalName = v.ServicePrincipalName
+	out.ServicePrincipalClientId = v.ServicePrincipalClientId
+	out.UsagePolicyId = v.UsagePolicyId
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	out.AssumeGroupId = v.AssumeGroupId
+	return out, nil
+}
+
+// SpaceStatusToSDK converts the mirror to the sdk-go type.
+func SpaceStatusToSDK(w *SpaceStatus) (*sdk.SpaceStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SpaceStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// SpaceStatusFromSDK converts the sdk-go type to the mirror.
+func SpaceStatusFromSDK(v *sdk.SpaceStatus) (*SpaceStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SpaceStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// SpaceUpdateToSDK converts the mirror to the sdk-go type.
+func SpaceUpdateToSDK(w *SpaceUpdate) (*sdk.SpaceUpdate, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SpaceUpdate{}
+	conv100, err := SpaceUpdateStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Status", err)
+	}
+	out.Status = conv100
+	out.Description = w.Description
+	conv101, err := convertSlice(w.Resources, AppResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Resources", err)
+	}
+	out.Resources = conv101
+	out.UserApiScopes = w.UserApiScopes
+	out.UsagePolicyId = w.UsagePolicyId
+	return out, nil
+}
+
+// SpaceUpdateFromSDK converts the sdk-go type to the mirror.
+func SpaceUpdateFromSDK(v *sdk.SpaceUpdate) (*SpaceUpdate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SpaceUpdate{}
+	conv102, err := SpaceUpdateStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Status", err)
+	}
+	out.Status = conv102
+	out.Description = v.Description
+	conv103, err := convertSlice(v.Resources, AppResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SpaceUpdate.Resources", err)
+	}
+	out.Resources = conv103
+	out.UserApiScopes = v.UserApiScopes
+	out.UsagePolicyId = v.UsagePolicyId
+	return out, nil
+}
+
+// SpaceUpdateStatusToSDK converts the mirror to the sdk-go type.
+func SpaceUpdateStatusToSDK(w *SpaceUpdateStatus) (*sdk.SpaceUpdateStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SpaceUpdateStatus{}
+	out.State = w.State
+	out.Message = w.Message
+	return out, nil
+}
+
+// SpaceUpdateStatusFromSDK converts the sdk-go type to the mirror.
+func SpaceUpdateStatusFromSDK(v *sdk.SpaceUpdateStatus) (*SpaceUpdateStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SpaceUpdateStatus{}
+	out.State = v.State
+	out.Message = v.Message
+	return out, nil
+}
+
+// StartAppRequestToSDK converts the mirror to the sdk-go type.
+func StartAppRequestToSDK(w *StartAppRequest) (*sdk.StartAppRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartAppRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// StartAppRequestFromSDK converts the sdk-go type to the mirror.
+func StartAppRequestFromSDK(v *sdk.StartAppRequest) (*StartAppRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartAppRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// StopAppRequestToSDK converts the mirror to the sdk-go type.
+func StopAppRequestToSDK(w *StopAppRequest) (*sdk.StopAppRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StopAppRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// StopAppRequestFromSDK converts the sdk-go type to the mirror.
+func StopAppRequestFromSDK(v *sdk.StopAppRequest) (*StopAppRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StopAppRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// TelemetryExportDestinationToSDK converts the mirror to the sdk-go type.
+func TelemetryExportDestinationToSDK(w *TelemetryExportDestination) (*sdk.TelemetryExportDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TelemetryExportDestination{}
+	{
+		members := 0
+		if w.UnityCatalog != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "TelemetryExportDestination.Destination")
+		}
+	}
+	switch {
+	case w.UnityCatalog != nil:
+		conv104, err := UnityCatalogToSDK(w.UnityCatalog)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "TelemetryExportDestination.Destination", err)
+		}
+		out.Destination = &sdk.TelemetryExportDestination_Destination_UnityCatalog{UnityCatalog: *conv104}
+	}
+	return out, nil
+}
+
+// TelemetryExportDestinationFromSDK converts the sdk-go type to the mirror.
+func TelemetryExportDestinationFromSDK(v *sdk.TelemetryExportDestination) (*TelemetryExportDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TelemetryExportDestination{}
+	switch value := v.Destination.(type) {
+	case *sdk.TelemetryExportDestination_Destination_UnityCatalog:
+		if value != nil {
+			conv105, err := UnityCatalogFromSDK(&value.UnityCatalog)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "TelemetryExportDestination.Destination", err)
+			}
+			out.UnityCatalog = conv105
+		}
+	}
+	return out, nil
+}
+
+// UnityCatalogToSDK converts the mirror to the sdk-go type.
+func UnityCatalogToSDK(w *UnityCatalog) (*sdk.UnityCatalog, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UnityCatalog{}
+	out.LogsTable = w.LogsTable
+	out.MetricsTable = w.MetricsTable
+	out.TracesTable = w.TracesTable
+	return out, nil
+}
+
+// UnityCatalogFromSDK converts the sdk-go type to the mirror.
+func UnityCatalogFromSDK(v *sdk.UnityCatalog) (*UnityCatalog, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UnityCatalog{}
+	out.LogsTable = v.LogsTable
+	out.MetricsTable = v.MetricsTable
+	out.TracesTable = v.TracesTable
+	return out, nil
+}
+
+// UpdateAppRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAppRequestToSDK(w *UpdateAppRequest) (*sdk.UpdateAppRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAppRequest{}
+	conv106, err := AppToSDK(w.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAppRequest.App", err)
+	}
+	out.App = conv106
+	return out, nil
+}
+
+// UpdateAppRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAppRequestFromSDK(v *sdk.UpdateAppRequest) (*UpdateAppRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAppRequest{}
+	conv107, err := AppFromSDK(v.App)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAppRequest.App", err)
+	}
+	out.App = conv107
+	return out, nil
+}
+
+// UpdateAppThumbnailRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAppThumbnailRequestToSDK(w *UpdateAppThumbnailRequest) (*sdk.UpdateAppThumbnailRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAppThumbnailRequest{}
+	out.Name = w.Name
+	conv108, err := AppThumbnailToSDK(w.AppThumbnail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAppThumbnailRequest.AppThumbnail", err)
+	}
+	out.AppThumbnail = conv108
+	return out, nil
+}
+
+// UpdateAppThumbnailRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAppThumbnailRequestFromSDK(v *sdk.UpdateAppThumbnailRequest) (*UpdateAppThumbnailRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAppThumbnailRequest{}
+	out.Name = v.Name
+	conv109, err := AppThumbnailFromSDK(v.AppThumbnail)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAppThumbnailRequest.AppThumbnail", err)
+	}
+	out.AppThumbnail = conv109
+	return out, nil
+}
+
+// UpdateCustomTemplateRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCustomTemplateRequestToSDK(w *UpdateCustomTemplateRequest) (*sdk.UpdateCustomTemplateRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCustomTemplateRequest{}
+	conv110, err := CustomTemplateToSDK(w.Template)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomTemplateRequest.Template", err)
+	}
+	out.Template = conv110
+	return out, nil
+}
+
+// UpdateCustomTemplateRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCustomTemplateRequestFromSDK(v *sdk.UpdateCustomTemplateRequest) (*UpdateCustomTemplateRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCustomTemplateRequest{}
+	conv111, err := CustomTemplateFromSDK(v.Template)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCustomTemplateRequest.Template", err)
+	}
+	out.Template = conv111
+	return out, nil
+}
+
+// UpdateSpaceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSpaceRequestToSDK(w *UpdateSpaceRequest) (*sdk.UpdateSpaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSpaceRequest{}
+	conv112, err := SpaceToSDK(w.Space)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSpaceRequest.Space", err)
+	}
+	out.Space = conv112
+	mask113, err := fieldMaskFromString[sdk.Space](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSpaceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask113
+	return out, nil
+}
+
+// UpdateSpaceRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSpaceRequestFromSDK(v *sdk.UpdateSpaceRequest) (*UpdateSpaceRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	spaceWireValue, err := SpaceFromSDK(v.Space)
+	out := &UpdateSpaceRequest{}
+	conv114, err := SpaceFromSDK(v.Space)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSpaceRequest.Space", err)
 	}
-	return &UpdateSpaceRequest{
-		Space:      spaceWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Space = conv114
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -2743,4 +3111,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

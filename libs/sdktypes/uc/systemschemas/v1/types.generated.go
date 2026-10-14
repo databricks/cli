@@ -16,17 +16,6 @@ type EnableSystemSchemaRequest struct {
 	CatalogName *string `json:"catalog_name,omitempty"`
 }
 
-func EnableSystemSchemaRequestFromSDK(v *sdk.EnableSystemSchemaRequest) (*EnableSystemSchemaRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EnableSystemSchemaRequest{
-		Schema:      v.Schema,
-		MetastoreId: v.MetastoreId,
-		CatalogName: v.CatalogName,
-	}, nil
-}
-
 type ListSystemSchemasRequest struct {
 	// The ID for the metastore in which the system schema resides.
 	MetastoreId *string `json:"metastore_id,omitempty"`
@@ -40,17 +29,6 @@ type ListSystemSchemasRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListSystemSchemasRequestFromSDK(v *sdk.ListSystemSchemasRequest) (*ListSystemSchemasRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSystemSchemasRequest{
-		MetastoreId: v.MetastoreId,
-		MaxResults:  v.MaxResults,
-		PageToken:   v.PageToken,
-	}, nil
-}
-
 type ListSystemSchemasResponse struct {
 	// An array of system schema information objects.
 	Schemas []SystemSchemaInfo `json:"schemas,omitempty"`
@@ -58,20 +36,6 @@ type ListSystemSchemasResponse struct {
 	// more pages. __page_token__ should be set to this value for the next request
 	// (for the next page of results).
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSystemSchemasResponseToSDK(w *ListSystemSchemasResponse) (*sdk.ListSystemSchemasResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemasPublicValue, err := convertSlice(w.Schemas, SystemSchemaInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSystemSchemasResponse.Schemas", err)
-	}
-	return &sdk.ListSystemSchemasResponse{
-		Schemas:       schemasPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SystemSchemaInfo struct {
@@ -84,14 +48,104 @@ type SystemSchemaInfo struct {
 	State *string `json:"state,omitempty"`
 }
 
+// EnableSystemSchemaRequestToSDK converts the mirror to the sdk-go type.
+func EnableSystemSchemaRequestToSDK(w *EnableSystemSchemaRequest) (*sdk.EnableSystemSchemaRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnableSystemSchemaRequest{}
+	out.Schema = w.Schema
+	out.MetastoreId = w.MetastoreId
+	out.CatalogName = w.CatalogName
+	return out, nil
+}
+
+// EnableSystemSchemaRequestFromSDK converts the sdk-go type to the mirror.
+func EnableSystemSchemaRequestFromSDK(v *sdk.EnableSystemSchemaRequest) (*EnableSystemSchemaRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnableSystemSchemaRequest{}
+	out.Schema = v.Schema
+	out.MetastoreId = v.MetastoreId
+	out.CatalogName = v.CatalogName
+	return out, nil
+}
+
+// ListSystemSchemasRequestToSDK converts the mirror to the sdk-go type.
+func ListSystemSchemasRequestToSDK(w *ListSystemSchemasRequest) (*sdk.ListSystemSchemasRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSystemSchemasRequest{}
+	out.MetastoreId = w.MetastoreId
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListSystemSchemasRequestFromSDK converts the sdk-go type to the mirror.
+func ListSystemSchemasRequestFromSDK(v *sdk.ListSystemSchemasRequest) (*ListSystemSchemasRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSystemSchemasRequest{}
+	out.MetastoreId = v.MetastoreId
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListSystemSchemasResponseToSDK converts the mirror to the sdk-go type.
+func ListSystemSchemasResponseToSDK(w *ListSystemSchemasResponse) (*sdk.ListSystemSchemasResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSystemSchemasResponse{}
+	conv1, err := convertSlice(w.Schemas, SystemSchemaInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSystemSchemasResponse.Schemas", err)
+	}
+	out.Schemas = conv1
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSystemSchemasResponseFromSDK converts the sdk-go type to the mirror.
+func ListSystemSchemasResponseFromSDK(v *sdk.ListSystemSchemasResponse) (*ListSystemSchemasResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSystemSchemasResponse{}
+	conv2, err := convertSlice(v.Schemas, SystemSchemaInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSystemSchemasResponse.Schemas", err)
+	}
+	out.Schemas = conv2
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SystemSchemaInfoToSDK converts the mirror to the sdk-go type.
 func SystemSchemaInfoToSDK(w *SystemSchemaInfo) (*sdk.SystemSchemaInfo, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.SystemSchemaInfo{
-		Schema: w.Schema,
-		State:  w.State,
-	}, nil
+	out := &sdk.SystemSchemaInfo{}
+	out.Schema = w.Schema
+	out.State = w.State
+	return out, nil
+}
+
+// SystemSchemaInfoFromSDK converts the sdk-go type to the mirror.
+func SystemSchemaInfoFromSDK(v *sdk.SystemSchemaInfo) (*SystemSchemaInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SystemSchemaInfo{}
+	out.Schema = v.Schema
+	out.State = v.State
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

@@ -23,22 +23,6 @@ const (
 	DestinationType_DatabricksAppTeams = sdk.DestinationType_DatabricksAppTeams
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type Config struct {
 	Slack              *SlackConfig              `json:"slack,omitempty"`
 	Email              *EmailConfig              `json:"email,omitempty"`
@@ -49,188 +33,12 @@ type Config struct {
 	DatabricksAppTeams *DatabricksAppTeamsConfig `json:"databricks_app_teams,omitempty"`
 }
 
-func ConfigFromSDK(v *sdk.Config) (*Config, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var configSlackWire *SlackConfig
-	var configEmailWire *EmailConfig
-	var configGenericWebhookWire *GenericWebhookConfig
-	var configPagerdutyWire *PagerdutyConfig
-	var configMicrosoftTeamsWire *MicrosoftTeamsConfig
-	var configDatabricksAppSlackWire *DatabricksAppSlackConfig
-	var configDatabricksAppTeamsWire *DatabricksAppTeamsConfig
-	switch value := v.Config.(type) {
-	case nil:
-	case *sdk.Config_Config_Slack:
-		if value != nil {
-			configSlackConverted, err := SlackConfigFromSDK(&value.Slack)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.Slack", err)
-			}
-			configSlackWire = configSlackConverted
-		}
-	case *sdk.Config_Config_Email:
-		if value != nil {
-			configEmailConverted, err := EmailConfigFromSDK(&value.Email)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.Email", err)
-			}
-			configEmailWire = configEmailConverted
-		}
-	case *sdk.Config_Config_GenericWebhook:
-		if value != nil {
-			configGenericWebhookConverted, err := GenericWebhookConfigFromSDK(&value.GenericWebhook)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.GenericWebhook", err)
-			}
-			configGenericWebhookWire = configGenericWebhookConverted
-		}
-	case *sdk.Config_Config_Pagerduty:
-		if value != nil {
-			configPagerdutyConverted, err := PagerdutyConfigFromSDK(&value.Pagerduty)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.Pagerduty", err)
-			}
-			configPagerdutyWire = configPagerdutyConverted
-		}
-	case *sdk.Config_Config_MicrosoftTeams:
-		if value != nil {
-			configMicrosoftTeamsConverted, err := MicrosoftTeamsConfigFromSDK(&value.MicrosoftTeams)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.MicrosoftTeams", err)
-			}
-			configMicrosoftTeamsWire = configMicrosoftTeamsConverted
-		}
-	case *sdk.Config_Config_DatabricksAppSlack:
-		if value != nil {
-			configDatabricksAppSlackConverted, err := DatabricksAppSlackConfigFromSDK(&value.DatabricksAppSlack)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.DatabricksAppSlack", err)
-			}
-			configDatabricksAppSlackWire = configDatabricksAppSlackConverted
-		}
-	case *sdk.Config_Config_DatabricksAppTeams:
-		if value != nil {
-			configDatabricksAppTeamsConverted, err := DatabricksAppTeamsConfigFromSDK(&value.DatabricksAppTeams)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Config.Config.DatabricksAppTeams", err)
-			}
-			configDatabricksAppTeamsWire = configDatabricksAppTeamsConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Config.Config", value)
-	}
-	return &Config{
-		Slack:              configSlackWire,
-		Email:              configEmailWire,
-		GenericWebhook:     configGenericWebhookWire,
-		Pagerduty:          configPagerdutyWire,
-		MicrosoftTeams:     configMicrosoftTeamsWire,
-		DatabricksAppSlack: configDatabricksAppSlackWire,
-		DatabricksAppTeams: configDatabricksAppTeamsWire,
-	}, nil
-}
-
-func ConfigToSDK(w *Config) (*sdk.Config, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configMembers := 0
-	if w.Slack != nil {
-		configMembers++
-	}
-	if w.Email != nil {
-		configMembers++
-	}
-	if w.GenericWebhook != nil {
-		configMembers++
-	}
-	if w.Pagerduty != nil {
-		configMembers++
-	}
-	if w.MicrosoftTeams != nil {
-		configMembers++
-	}
-	if w.DatabricksAppSlack != nil {
-		configMembers++
-	}
-	if w.DatabricksAppTeams != nil {
-		configMembers++
-	}
-	if configMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Config.Config")
-	}
-	configSelection := (&sdk.Config{}).Config
-	switch {
-	case w.Slack != nil:
-		configSlackConverted, err := SlackConfigToSDK(w.Slack)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.Slack", err)
-		}
-		configSelection = &sdk.Config_Config_Slack{Slack: *configSlackConverted}
-	case w.Email != nil:
-		configEmailConverted, err := EmailConfigToSDK(w.Email)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.Email", err)
-		}
-		configSelection = &sdk.Config_Config_Email{Email: *configEmailConverted}
-	case w.GenericWebhook != nil:
-		configGenericWebhookConverted, err := GenericWebhookConfigToSDK(w.GenericWebhook)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.GenericWebhook", err)
-		}
-		configSelection = &sdk.Config_Config_GenericWebhook{GenericWebhook: *configGenericWebhookConverted}
-	case w.Pagerduty != nil:
-		configPagerdutyConverted, err := PagerdutyConfigToSDK(w.Pagerduty)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.Pagerduty", err)
-		}
-		configSelection = &sdk.Config_Config_Pagerduty{Pagerduty: *configPagerdutyConverted}
-	case w.MicrosoftTeams != nil:
-		configMicrosoftTeamsConverted, err := MicrosoftTeamsConfigToSDK(w.MicrosoftTeams)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.MicrosoftTeams", err)
-		}
-		configSelection = &sdk.Config_Config_MicrosoftTeams{MicrosoftTeams: *configMicrosoftTeamsConverted}
-	case w.DatabricksAppSlack != nil:
-		configDatabricksAppSlackConverted, err := DatabricksAppSlackConfigToSDK(w.DatabricksAppSlack)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.DatabricksAppSlack", err)
-		}
-		configSelection = &sdk.Config_Config_DatabricksAppSlack{DatabricksAppSlack: *configDatabricksAppSlackConverted}
-	case w.DatabricksAppTeams != nil:
-		configDatabricksAppTeamsConverted, err := DatabricksAppTeamsConfigToSDK(w.DatabricksAppTeams)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Config.Config.DatabricksAppTeams", err)
-		}
-		configSelection = &sdk.Config_Config_DatabricksAppTeams{DatabricksAppTeams: *configDatabricksAppTeamsConverted}
-	}
-	return &sdk.Config{
-		Config: configSelection,
-	}, nil
-}
-
 type CreateNotificationDestinationRequest struct {
 	// The display name for the notification destination.
 	DisplayName *string `json:"display_name,omitempty"`
 	// The configuration for the notification destination. Must wrap EXACTLY one of
 	// the nested configs.
 	Config *Config `json:"config,omitempty"`
-}
-
-func CreateNotificationDestinationRequestFromSDK(v *sdk.CreateNotificationDestinationRequest) (*CreateNotificationDestinationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	configWireValue, err := ConfigFromSDK(v.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNotificationDestinationRequest.Config", err)
-	}
-	return &CreateNotificationDestinationRequest{
-		DisplayName: v.DisplayName,
-		Config:      configWireValue,
-	}, nil
 }
 
 // Slack channel reached through the Databricks app. The app must already be
@@ -244,30 +52,6 @@ type DatabricksAppSlackConfig struct {
 	ChannelId *string `json:"channel_id,omitempty"`
 	// [Output-Only] Whether channel ID is set.
 	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
-}
-
-func DatabricksAppSlackConfigFromSDK(v *sdk.DatabricksAppSlackConfig) (*DatabricksAppSlackConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabricksAppSlackConfig{
-		TeamId:       v.TeamId,
-		TeamIdSet:    v.TeamIdSet,
-		ChannelId:    v.ChannelId,
-		ChannelIdSet: v.ChannelIdSet,
-	}, nil
-}
-
-func DatabricksAppSlackConfigToSDK(w *DatabricksAppSlackConfig) (*sdk.DatabricksAppSlackConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabricksAppSlackConfig{
-		TeamId:       w.TeamId,
-		TeamIdSet:    w.TeamIdSet,
-		ChannelId:    w.ChannelId,
-		ChannelIdSet: w.ChannelIdSet,
-	}, nil
 }
 
 // Microsoft Teams channel reached through the Databricks app. The app must
@@ -289,55 +73,9 @@ type DatabricksAppTeamsConfig struct {
 	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
 }
 
-func DatabricksAppTeamsConfigFromSDK(v *sdk.DatabricksAppTeamsConfig) (*DatabricksAppTeamsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabricksAppTeamsConfig{
-		TenantId:     v.TenantId,
-		TenantIdSet:  v.TenantIdSet,
-		TeamId:       v.TeamId,
-		TeamIdSet:    v.TeamIdSet,
-		ChannelId:    v.ChannelId,
-		ChannelIdSet: v.ChannelIdSet,
-	}, nil
-}
-
-func DatabricksAppTeamsConfigToSDK(w *DatabricksAppTeamsConfig) (*sdk.DatabricksAppTeamsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabricksAppTeamsConfig{
-		TenantId:     w.TenantId,
-		TenantIdSet:  w.TenantIdSet,
-		TeamId:       w.TeamId,
-		TeamIdSet:    w.TeamIdSet,
-		ChannelId:    w.ChannelId,
-		ChannelIdSet: w.ChannelIdSet,
-	}, nil
-}
-
 type EmailConfig struct {
 	// Email addresses to notify.
 	Addresses []string `json:"addresses,omitempty"`
-}
-
-func EmailConfigFromSDK(v *sdk.EmailConfig) (*EmailConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EmailConfig{
-		Addresses: v.Addresses,
-	}, nil
-}
-
-func EmailConfigToSDK(w *EmailConfig) (*sdk.EmailConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmailConfig{
-		Addresses: w.Addresses,
-	}, nil
 }
 
 type GenericWebhookConfig struct {
@@ -355,71 +93,15 @@ type GenericWebhookConfig struct {
 	PasswordSet *bool `json:"password_set,omitempty"`
 }
 
-func GenericWebhookConfigFromSDK(v *sdk.GenericWebhookConfig) (*GenericWebhookConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenericWebhookConfig{
-		Url:         v.Url,
-		UrlSet:      v.UrlSet,
-		Username:    v.Username,
-		UsernameSet: v.UsernameSet,
-		Password:    v.Password,
-		PasswordSet: v.PasswordSet,
-	}, nil
-}
-
-func GenericWebhookConfigToSDK(w *GenericWebhookConfig) (*sdk.GenericWebhookConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenericWebhookConfig{
-		Url:         w.Url,
-		UrlSet:      w.UrlSet,
-		Username:    w.Username,
-		UsernameSet: w.UsernameSet,
-		Password:    w.Password,
-		PasswordSet: w.PasswordSet,
-	}, nil
-}
-
 type ListNotificationDestinationsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int64  `json:"page_size,omitempty"`
-}
-
-func ListNotificationDestinationsRequestFromSDK(v *sdk.ListNotificationDestinationsRequest) (*ListNotificationDestinationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	pageSizeWireValue, err := int64ToWire(v.PageSize)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsRequest.PageSize", err)
-	}
-	return &ListNotificationDestinationsRequest{
-		PageToken: v.PageToken,
-		PageSize:  pageSizeWireValue,
-	}, nil
 }
 
 type ListNotificationDestinationsResponse struct {
 	Results []ListNotificationDestinationsResult `json:"results,omitempty"`
 	// Page token for next of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListNotificationDestinationsResponseToSDK(w *ListNotificationDestinationsResponse) (*sdk.ListNotificationDestinationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	resultsPublicValue, err := convertSlice(w.Results, ListNotificationDestinationsResultToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResponse.Results", err)
-	}
-	return &sdk.ListNotificationDestinationsResponse{
-		Results:       resultsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListNotificationDestinationsResult struct {
@@ -433,22 +115,6 @@ type ListNotificationDestinationsResult struct {
 	// The configuration for the notification destination. Will be exactly one of
 	// the nested configs. Only returns for users with workspace admin permissions.
 	Config *Config `json:"config,omitempty"`
-}
-
-func ListNotificationDestinationsResultToSDK(w *ListNotificationDestinationsResult) (*sdk.ListNotificationDestinationsResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := ConfigToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResult.Config", err)
-	}
-	return &sdk.ListNotificationDestinationsResult{
-		Id:              w.Id,
-		DisplayName:     w.DisplayName,
-		DestinationType: w.DestinationType,
-		Config:          configPublicValue,
-	}, nil
 }
 
 type MicrosoftTeamsConfig struct {
@@ -474,42 +140,6 @@ type MicrosoftTeamsConfig struct {
 	TenantIdSet *bool `json:"tenant_id_set,omitempty"`
 }
 
-func MicrosoftTeamsConfigFromSDK(v *sdk.MicrosoftTeamsConfig) (*MicrosoftTeamsConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &MicrosoftTeamsConfig{
-		Url:           v.Url,
-		UrlSet:        v.UrlSet,
-		AppId:         v.AppId,
-		AppIdSet:      v.AppIdSet,
-		AuthSecret:    v.AuthSecret,
-		AuthSecretSet: v.AuthSecretSet,
-		ChannelUrl:    v.ChannelUrl,
-		ChannelUrlSet: v.ChannelUrlSet,
-		TenantId:      v.TenantId,
-		TenantIdSet:   v.TenantIdSet,
-	}, nil
-}
-
-func MicrosoftTeamsConfigToSDK(w *MicrosoftTeamsConfig) (*sdk.MicrosoftTeamsConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MicrosoftTeamsConfig{
-		Url:           w.Url,
-		UrlSet:        w.UrlSet,
-		AppId:         w.AppId,
-		AppIdSet:      w.AppIdSet,
-		AuthSecret:    w.AuthSecret,
-		AuthSecretSet: w.AuthSecretSet,
-		ChannelUrl:    w.ChannelUrl,
-		ChannelUrlSet: w.ChannelUrlSet,
-		TenantId:      w.TenantId,
-		TenantIdSet:   w.TenantIdSet,
-	}, nil
-}
-
 type NotificationDestination struct {
 	// UUID identifying notification destination.
 	Id *string `json:"id,omitempty"`
@@ -523,47 +153,11 @@ type NotificationDestination struct {
 	Config *Config `json:"config,omitempty"`
 }
 
-func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	configPublicValue, err := ConfigToSDK(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NotificationDestination.Config", err)
-	}
-	return &sdk.NotificationDestination{
-		Id:              w.Id,
-		DisplayName:     w.DisplayName,
-		DestinationType: w.DestinationType,
-		Config:          configPublicValue,
-	}, nil
-}
-
 type PagerdutyConfig struct {
 	// [Input-Only] Integration key for PagerDuty.
 	IntegrationKey *string `json:"integration_key,omitempty"`
 	// [Output-Only] Whether integration key is set.
 	IntegrationKeySet *bool `json:"integration_key_set,omitempty"`
-}
-
-func PagerdutyConfigFromSDK(v *sdk.PagerdutyConfig) (*PagerdutyConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PagerdutyConfig{
-		IntegrationKey:    v.IntegrationKey,
-		IntegrationKeySet: v.IntegrationKeySet,
-	}, nil
-}
-
-func PagerdutyConfigToSDK(w *PagerdutyConfig) (*sdk.PagerdutyConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PagerdutyConfig{
-		IntegrationKey:    w.IntegrationKey,
-		IntegrationKeySet: w.IntegrationKeySet,
-	}, nil
 }
 
 type SlackConfig struct {
@@ -581,34 +175,6 @@ type SlackConfig struct {
 	ChannelIdSet *bool `json:"channel_id_set,omitempty"`
 }
 
-func SlackConfigFromSDK(v *sdk.SlackConfig) (*SlackConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SlackConfig{
-		Url:           v.Url,
-		UrlSet:        v.UrlSet,
-		OauthToken:    v.OauthToken,
-		OauthTokenSet: v.OauthTokenSet,
-		ChannelId:     v.ChannelId,
-		ChannelIdSet:  v.ChannelIdSet,
-	}, nil
-}
-
-func SlackConfigToSDK(w *SlackConfig) (*sdk.SlackConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SlackConfig{
-		Url:           w.Url,
-		UrlSet:        w.UrlSet,
-		OauthToken:    w.OauthToken,
-		OauthTokenSet: w.OauthTokenSet,
-		ChannelId:     w.ChannelId,
-		ChannelIdSet:  w.ChannelIdSet,
-	}, nil
-}
-
 type UpdateNotificationDestinationRequest struct {
 	// UUID identifying notification destination.
 	Id *string `json:"id,omitempty"`
@@ -619,19 +185,529 @@ type UpdateNotificationDestinationRequest struct {
 	Config *Config `json:"config,omitempty"`
 }
 
+// ConfigToSDK converts the mirror to the sdk-go type.
+func ConfigToSDK(w *Config) (*sdk.Config, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Config{}
+	{
+		members := 0
+		if w.Slack != nil {
+			members++
+		}
+		if w.Email != nil {
+			members++
+		}
+		if w.GenericWebhook != nil {
+			members++
+		}
+		if w.Pagerduty != nil {
+			members++
+		}
+		if w.MicrosoftTeams != nil {
+			members++
+		}
+		if w.DatabricksAppSlack != nil {
+			members++
+		}
+		if w.DatabricksAppTeams != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Config.Config")
+		}
+	}
+	switch {
+	case w.Slack != nil:
+		conv1, err := SlackConfigToSDK(w.Slack)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_Slack{Slack: *conv1}
+	case w.Email != nil:
+		conv2, err := EmailConfigToSDK(w.Email)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_Email{Email: *conv2}
+	case w.GenericWebhook != nil:
+		conv3, err := GenericWebhookConfigToSDK(w.GenericWebhook)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_GenericWebhook{GenericWebhook: *conv3}
+	case w.Pagerduty != nil:
+		conv4, err := PagerdutyConfigToSDK(w.Pagerduty)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_Pagerduty{Pagerduty: *conv4}
+	case w.MicrosoftTeams != nil:
+		conv5, err := MicrosoftTeamsConfigToSDK(w.MicrosoftTeams)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_MicrosoftTeams{MicrosoftTeams: *conv5}
+	case w.DatabricksAppSlack != nil:
+		conv6, err := DatabricksAppSlackConfigToSDK(w.DatabricksAppSlack)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_DatabricksAppSlack{DatabricksAppSlack: *conv6}
+	case w.DatabricksAppTeams != nil:
+		conv7, err := DatabricksAppTeamsConfigToSDK(w.DatabricksAppTeams)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+		}
+		out.Config = &sdk.Config_Config_DatabricksAppTeams{DatabricksAppTeams: *conv7}
+	}
+	return out, nil
+}
+
+// ConfigFromSDK converts the sdk-go type to the mirror.
+func ConfigFromSDK(v *sdk.Config) (*Config, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Config{}
+	switch value := v.Config.(type) {
+	case *sdk.Config_Config_Slack:
+		if value != nil {
+			conv8, err := SlackConfigFromSDK(&value.Slack)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.Slack = conv8
+		}
+	case *sdk.Config_Config_Email:
+		if value != nil {
+			conv9, err := EmailConfigFromSDK(&value.Email)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.Email = conv9
+		}
+	case *sdk.Config_Config_GenericWebhook:
+		if value != nil {
+			conv10, err := GenericWebhookConfigFromSDK(&value.GenericWebhook)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.GenericWebhook = conv10
+		}
+	case *sdk.Config_Config_Pagerduty:
+		if value != nil {
+			conv11, err := PagerdutyConfigFromSDK(&value.Pagerduty)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.Pagerduty = conv11
+		}
+	case *sdk.Config_Config_MicrosoftTeams:
+		if value != nil {
+			conv12, err := MicrosoftTeamsConfigFromSDK(&value.MicrosoftTeams)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.MicrosoftTeams = conv12
+		}
+	case *sdk.Config_Config_DatabricksAppSlack:
+		if value != nil {
+			conv13, err := DatabricksAppSlackConfigFromSDK(&value.DatabricksAppSlack)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.DatabricksAppSlack = conv13
+		}
+	case *sdk.Config_Config_DatabricksAppTeams:
+		if value != nil {
+			conv14, err := DatabricksAppTeamsConfigFromSDK(&value.DatabricksAppTeams)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Config.Config", err)
+			}
+			out.DatabricksAppTeams = conv14
+		}
+	}
+	return out, nil
+}
+
+// CreateNotificationDestinationRequestToSDK converts the mirror to the sdk-go type.
+func CreateNotificationDestinationRequestToSDK(w *CreateNotificationDestinationRequest) (*sdk.CreateNotificationDestinationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNotificationDestinationRequest{}
+	out.DisplayName = w.DisplayName
+	conv15, err := ConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNotificationDestinationRequest.Config", err)
+	}
+	out.Config = conv15
+	return out, nil
+}
+
+// CreateNotificationDestinationRequestFromSDK converts the sdk-go type to the mirror.
+func CreateNotificationDestinationRequestFromSDK(v *sdk.CreateNotificationDestinationRequest) (*CreateNotificationDestinationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNotificationDestinationRequest{}
+	out.DisplayName = v.DisplayName
+	conv16, err := ConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNotificationDestinationRequest.Config", err)
+	}
+	out.Config = conv16
+	return out, nil
+}
+
+// DatabricksAppSlackConfigToSDK converts the mirror to the sdk-go type.
+func DatabricksAppSlackConfigToSDK(w *DatabricksAppSlackConfig) (*sdk.DatabricksAppSlackConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabricksAppSlackConfig{}
+	out.TeamId = w.TeamId
+	out.TeamIdSet = w.TeamIdSet
+	out.ChannelId = w.ChannelId
+	out.ChannelIdSet = w.ChannelIdSet
+	return out, nil
+}
+
+// DatabricksAppSlackConfigFromSDK converts the sdk-go type to the mirror.
+func DatabricksAppSlackConfigFromSDK(v *sdk.DatabricksAppSlackConfig) (*DatabricksAppSlackConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabricksAppSlackConfig{}
+	out.TeamId = v.TeamId
+	out.TeamIdSet = v.TeamIdSet
+	out.ChannelId = v.ChannelId
+	out.ChannelIdSet = v.ChannelIdSet
+	return out, nil
+}
+
+// DatabricksAppTeamsConfigToSDK converts the mirror to the sdk-go type.
+func DatabricksAppTeamsConfigToSDK(w *DatabricksAppTeamsConfig) (*sdk.DatabricksAppTeamsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabricksAppTeamsConfig{}
+	out.TenantId = w.TenantId
+	out.TenantIdSet = w.TenantIdSet
+	out.TeamId = w.TeamId
+	out.TeamIdSet = w.TeamIdSet
+	out.ChannelId = w.ChannelId
+	out.ChannelIdSet = w.ChannelIdSet
+	return out, nil
+}
+
+// DatabricksAppTeamsConfigFromSDK converts the sdk-go type to the mirror.
+func DatabricksAppTeamsConfigFromSDK(v *sdk.DatabricksAppTeamsConfig) (*DatabricksAppTeamsConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabricksAppTeamsConfig{}
+	out.TenantId = v.TenantId
+	out.TenantIdSet = v.TenantIdSet
+	out.TeamId = v.TeamId
+	out.TeamIdSet = v.TeamIdSet
+	out.ChannelId = v.ChannelId
+	out.ChannelIdSet = v.ChannelIdSet
+	return out, nil
+}
+
+// EmailConfigToSDK converts the mirror to the sdk-go type.
+func EmailConfigToSDK(w *EmailConfig) (*sdk.EmailConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmailConfig{}
+	out.Addresses = w.Addresses
+	return out, nil
+}
+
+// EmailConfigFromSDK converts the sdk-go type to the mirror.
+func EmailConfigFromSDK(v *sdk.EmailConfig) (*EmailConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmailConfig{}
+	out.Addresses = v.Addresses
+	return out, nil
+}
+
+// GenericWebhookConfigToSDK converts the mirror to the sdk-go type.
+func GenericWebhookConfigToSDK(w *GenericWebhookConfig) (*sdk.GenericWebhookConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenericWebhookConfig{}
+	out.Url = w.Url
+	out.UrlSet = w.UrlSet
+	out.Username = w.Username
+	out.UsernameSet = w.UsernameSet
+	out.Password = w.Password
+	out.PasswordSet = w.PasswordSet
+	return out, nil
+}
+
+// GenericWebhookConfigFromSDK converts the sdk-go type to the mirror.
+func GenericWebhookConfigFromSDK(v *sdk.GenericWebhookConfig) (*GenericWebhookConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenericWebhookConfig{}
+	out.Url = v.Url
+	out.UrlSet = v.UrlSet
+	out.Username = v.Username
+	out.UsernameSet = v.UsernameSet
+	out.Password = v.Password
+	out.PasswordSet = v.PasswordSet
+	return out, nil
+}
+
+// ListNotificationDestinationsRequestToSDK converts the mirror to the sdk-go type.
+func ListNotificationDestinationsRequestToSDK(w *ListNotificationDestinationsRequest) (*sdk.ListNotificationDestinationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNotificationDestinationsRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListNotificationDestinationsRequestFromSDK converts the sdk-go type to the mirror.
+func ListNotificationDestinationsRequestFromSDK(v *sdk.ListNotificationDestinationsRequest) (*ListNotificationDestinationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNotificationDestinationsRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListNotificationDestinationsResponseToSDK converts the mirror to the sdk-go type.
+func ListNotificationDestinationsResponseToSDK(w *ListNotificationDestinationsResponse) (*sdk.ListNotificationDestinationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNotificationDestinationsResponse{}
+	conv17, err := convertSlice(w.Results, ListNotificationDestinationsResultToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResponse.Results", err)
+	}
+	out.Results = conv17
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListNotificationDestinationsResponseFromSDK converts the sdk-go type to the mirror.
+func ListNotificationDestinationsResponseFromSDK(v *sdk.ListNotificationDestinationsResponse) (*ListNotificationDestinationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNotificationDestinationsResponse{}
+	conv18, err := convertSlice(v.Results, ListNotificationDestinationsResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResponse.Results", err)
+	}
+	out.Results = conv18
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListNotificationDestinationsResultToSDK converts the mirror to the sdk-go type.
+func ListNotificationDestinationsResultToSDK(w *ListNotificationDestinationsResult) (*sdk.ListNotificationDestinationsResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNotificationDestinationsResult{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.DestinationType = w.DestinationType
+	conv19, err := ConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResult.Config", err)
+	}
+	out.Config = conv19
+	return out, nil
+}
+
+// ListNotificationDestinationsResultFromSDK converts the sdk-go type to the mirror.
+func ListNotificationDestinationsResultFromSDK(v *sdk.ListNotificationDestinationsResult) (*ListNotificationDestinationsResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNotificationDestinationsResult{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.DestinationType = v.DestinationType
+	conv20, err := ConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNotificationDestinationsResult.Config", err)
+	}
+	out.Config = conv20
+	return out, nil
+}
+
+// MicrosoftTeamsConfigToSDK converts the mirror to the sdk-go type.
+func MicrosoftTeamsConfigToSDK(w *MicrosoftTeamsConfig) (*sdk.MicrosoftTeamsConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MicrosoftTeamsConfig{}
+	out.Url = w.Url
+	out.UrlSet = w.UrlSet
+	out.AppId = w.AppId
+	out.AppIdSet = w.AppIdSet
+	out.AuthSecret = w.AuthSecret
+	out.AuthSecretSet = w.AuthSecretSet
+	out.ChannelUrl = w.ChannelUrl
+	out.ChannelUrlSet = w.ChannelUrlSet
+	out.TenantId = w.TenantId
+	out.TenantIdSet = w.TenantIdSet
+	return out, nil
+}
+
+// MicrosoftTeamsConfigFromSDK converts the sdk-go type to the mirror.
+func MicrosoftTeamsConfigFromSDK(v *sdk.MicrosoftTeamsConfig) (*MicrosoftTeamsConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MicrosoftTeamsConfig{}
+	out.Url = v.Url
+	out.UrlSet = v.UrlSet
+	out.AppId = v.AppId
+	out.AppIdSet = v.AppIdSet
+	out.AuthSecret = v.AuthSecret
+	out.AuthSecretSet = v.AuthSecretSet
+	out.ChannelUrl = v.ChannelUrl
+	out.ChannelUrlSet = v.ChannelUrlSet
+	out.TenantId = v.TenantId
+	out.TenantIdSet = v.TenantIdSet
+	return out, nil
+}
+
+// NotificationDestinationToSDK converts the mirror to the sdk-go type.
+func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotificationDestination{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	out.DestinationType = w.DestinationType
+	conv21, err := ConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotificationDestination.Config", err)
+	}
+	out.Config = conv21
+	return out, nil
+}
+
+// NotificationDestinationFromSDK converts the sdk-go type to the mirror.
+func NotificationDestinationFromSDK(v *sdk.NotificationDestination) (*NotificationDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotificationDestination{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	out.DestinationType = v.DestinationType
+	conv22, err := ConfigFromSDK(v.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NotificationDestination.Config", err)
+	}
+	out.Config = conv22
+	return out, nil
+}
+
+// PagerdutyConfigToSDK converts the mirror to the sdk-go type.
+func PagerdutyConfigToSDK(w *PagerdutyConfig) (*sdk.PagerdutyConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PagerdutyConfig{}
+	out.IntegrationKey = w.IntegrationKey
+	out.IntegrationKeySet = w.IntegrationKeySet
+	return out, nil
+}
+
+// PagerdutyConfigFromSDK converts the sdk-go type to the mirror.
+func PagerdutyConfigFromSDK(v *sdk.PagerdutyConfig) (*PagerdutyConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PagerdutyConfig{}
+	out.IntegrationKey = v.IntegrationKey
+	out.IntegrationKeySet = v.IntegrationKeySet
+	return out, nil
+}
+
+// SlackConfigToSDK converts the mirror to the sdk-go type.
+func SlackConfigToSDK(w *SlackConfig) (*sdk.SlackConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SlackConfig{}
+	out.Url = w.Url
+	out.UrlSet = w.UrlSet
+	out.OauthToken = w.OauthToken
+	out.OauthTokenSet = w.OauthTokenSet
+	out.ChannelId = w.ChannelId
+	out.ChannelIdSet = w.ChannelIdSet
+	return out, nil
+}
+
+// SlackConfigFromSDK converts the sdk-go type to the mirror.
+func SlackConfigFromSDK(v *sdk.SlackConfig) (*SlackConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SlackConfig{}
+	out.Url = v.Url
+	out.UrlSet = v.UrlSet
+	out.OauthToken = v.OauthToken
+	out.OauthTokenSet = v.OauthTokenSet
+	out.ChannelId = v.ChannelId
+	out.ChannelIdSet = v.ChannelIdSet
+	return out, nil
+}
+
+// UpdateNotificationDestinationRequestToSDK converts the mirror to the sdk-go type.
+func UpdateNotificationDestinationRequestToSDK(w *UpdateNotificationDestinationRequest) (*sdk.UpdateNotificationDestinationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateNotificationDestinationRequest{}
+	out.Id = w.Id
+	out.DisplayName = w.DisplayName
+	conv23, err := ConfigToSDK(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNotificationDestinationRequest.Config", err)
+	}
+	out.Config = conv23
+	return out, nil
+}
+
+// UpdateNotificationDestinationRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateNotificationDestinationRequestFromSDK(v *sdk.UpdateNotificationDestinationRequest) (*UpdateNotificationDestinationRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	configWireValue, err := ConfigFromSDK(v.Config)
+	out := &UpdateNotificationDestinationRequest{}
+	out.Id = v.Id
+	out.DisplayName = v.DisplayName
+	conv24, err := ConfigFromSDK(v.Config)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateNotificationDestinationRequest.Config", err)
 	}
-	return &UpdateNotificationDestinationRequest{
-		Id:          v.Id,
-		DisplayName: v.DisplayName,
-		Config:      configWireValue,
-	}, nil
+	out.Config = conv24
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

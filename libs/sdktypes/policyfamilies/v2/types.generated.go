@@ -8,42 +8,12 @@ import (
 	sdk "github.com/databricks/sdk-go/policyfamilies/v2"
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // Returns the details of a policy family at a specific version.
 type GetPolicyFamilyRequest struct {
 	// The family ID about which to retrieve information.
 	PolicyFamilyId *string `json:"policy_family_id,omitempty"`
 	// The version number for the family to fetch. Defaults to the latest version.
 	Version *int64 `json:"version,omitempty"`
-}
-
-func GetPolicyFamilyRequestFromSDK(v *sdk.GetPolicyFamilyRequest) (*GetPolicyFamilyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	versionWireValue, err := int64ToWire(v.Version)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetPolicyFamilyRequest.Version", err)
-	}
-	return &GetPolicyFamilyRequest{
-		PolicyFamilyId: v.PolicyFamilyId,
-		Version:        versionWireValue,
-	}, nil
 }
 
 // Returns the list of policy families available to use at their latest version.
@@ -54,40 +24,12 @@ type ListPolicyFamiliesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListPolicyFamiliesRequestFromSDK(v *sdk.ListPolicyFamiliesRequest) (*ListPolicyFamiliesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPolicyFamiliesRequest.MaxResults", err)
-	}
-	return &ListPolicyFamiliesRequest{
-		MaxResults: maxResultsWireValue,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListPolicyFamiliesResponse struct {
 	// List of policy families.
 	PolicyFamilies []PolicyFamily `json:"policy_families,omitempty"`
 	// A token that can be used to get the next page of results. If not present,
 	// there are no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListPolicyFamiliesResponseToSDK(w *ListPolicyFamiliesResponse) (*sdk.ListPolicyFamiliesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	policyFamiliesPublicValue, err := convertSlice(w.PolicyFamilies, PolicyFamilyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPolicyFamiliesResponse.PolicyFamilies", err)
-	}
-	return &sdk.ListPolicyFamiliesResponse{
-		PolicyFamilies: policyFamiliesPublicValue,
-		NextPageToken:  w.NextPageToken,
-	}, nil
 }
 
 type PolicyFamily struct {
@@ -104,16 +46,104 @@ type PolicyFamily struct {
 	Definition *string `json:"definition,omitempty"`
 }
 
+// GetPolicyFamilyRequestToSDK converts the mirror to the sdk-go type.
+func GetPolicyFamilyRequestToSDK(w *GetPolicyFamilyRequest) (*sdk.GetPolicyFamilyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetPolicyFamilyRequest{}
+	out.PolicyFamilyId = w.PolicyFamilyId
+	out.Version = w.Version
+	return out, nil
+}
+
+// GetPolicyFamilyRequestFromSDK converts the sdk-go type to the mirror.
+func GetPolicyFamilyRequestFromSDK(v *sdk.GetPolicyFamilyRequest) (*GetPolicyFamilyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetPolicyFamilyRequest{}
+	out.PolicyFamilyId = v.PolicyFamilyId
+	out.Version = v.Version
+	return out, nil
+}
+
+// ListPolicyFamiliesRequestToSDK converts the mirror to the sdk-go type.
+func ListPolicyFamiliesRequestToSDK(w *ListPolicyFamiliesRequest) (*sdk.ListPolicyFamiliesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPolicyFamiliesRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListPolicyFamiliesRequestFromSDK converts the sdk-go type to the mirror.
+func ListPolicyFamiliesRequestFromSDK(v *sdk.ListPolicyFamiliesRequest) (*ListPolicyFamiliesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPolicyFamiliesRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListPolicyFamiliesResponseToSDK converts the mirror to the sdk-go type.
+func ListPolicyFamiliesResponseToSDK(w *ListPolicyFamiliesResponse) (*sdk.ListPolicyFamiliesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPolicyFamiliesResponse{}
+	conv1, err := convertSlice(w.PolicyFamilies, PolicyFamilyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPolicyFamiliesResponse.PolicyFamilies", err)
+	}
+	out.PolicyFamilies = conv1
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListPolicyFamiliesResponseFromSDK converts the sdk-go type to the mirror.
+func ListPolicyFamiliesResponseFromSDK(v *sdk.ListPolicyFamiliesResponse) (*ListPolicyFamiliesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPolicyFamiliesResponse{}
+	conv2, err := convertSlice(v.PolicyFamilies, PolicyFamilyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPolicyFamiliesResponse.PolicyFamilies", err)
+	}
+	out.PolicyFamilies = conv2
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// PolicyFamilyToSDK converts the mirror to the sdk-go type.
 func PolicyFamilyToSDK(w *PolicyFamily) (*sdk.PolicyFamily, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.PolicyFamily{
-		PolicyFamilyId: w.PolicyFamilyId,
-		Name:           w.Name,
-		Description:    w.Description,
-		Definition:     w.Definition,
-	}, nil
+	out := &sdk.PolicyFamily{}
+	out.PolicyFamilyId = w.PolicyFamilyId
+	out.Name = w.Name
+	out.Description = w.Description
+	out.Definition = w.Definition
+	return out, nil
+}
+
+// PolicyFamilyFromSDK converts the sdk-go type to the mirror.
+func PolicyFamilyFromSDK(v *sdk.PolicyFamily) (*PolicyFamily, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PolicyFamily{}
+	out.PolicyFamilyId = v.PolicyFamilyId
+	out.Name = v.Name
+	out.Description = v.Description
+	out.Definition = v.Definition
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

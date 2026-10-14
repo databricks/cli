@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/database/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -72,63 +73,13 @@ const (
 	SyncedTableSpec_PgSpecificType_PgSpecificTypeVarchar        = sdk.SyncedTableSpec_PgSpecificType_PgSpecificTypeVarchar
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type CreateDatabaseCatalogRequest struct {
 	Catalog *DatabaseCatalog `json:"catalog,omitempty"`
-}
-
-func CreateDatabaseCatalogRequestFromSDK(v *sdk.CreateDatabaseCatalogRequest) (*CreateDatabaseCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	catalogWireValue, err := DatabaseCatalogFromSDK(v.Catalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDatabaseCatalogRequest.Catalog", err)
-	}
-	return &CreateDatabaseCatalogRequest{
-		Catalog: catalogWireValue,
-	}, nil
 }
 
 type CreateDatabaseInstanceRequest struct {
 	// Instance to create.
 	DatabaseInstance *DatabaseInstance `json:"database_instance,omitempty"`
-}
-
-func CreateDatabaseInstanceRequestFromSDK(v *sdk.CreateDatabaseInstanceRequest) (*CreateDatabaseInstanceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseInstanceWireValue, err := DatabaseInstanceFromSDK(v.DatabaseInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRequest.DatabaseInstance", err)
-	}
-	return &CreateDatabaseInstanceRequest{
-		DatabaseInstance: databaseInstanceWireValue,
-	}, nil
 }
 
 type CreateDatabaseInstanceRoleRequest struct {
@@ -137,53 +88,12 @@ type CreateDatabaseInstanceRoleRequest struct {
 	DatabaseInstanceName *string               `json:"database_instance_name,omitempty"`
 }
 
-func CreateDatabaseInstanceRoleRequestFromSDK(v *sdk.CreateDatabaseInstanceRoleRequest) (*CreateDatabaseInstanceRoleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseInstanceRoleWireValue, err := DatabaseInstanceRoleFromSDK(v.DatabaseInstanceRole)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRoleRequest.DatabaseInstanceRole", err)
-	}
-	return &CreateDatabaseInstanceRoleRequest{
-		InstanceName:         v.InstanceName,
-		DatabaseInstanceRole: databaseInstanceRoleWireValue,
-		DatabaseInstanceName: v.DatabaseInstanceName,
-	}, nil
-}
-
 type CreateDatabaseTableRequest struct {
 	Table *DatabaseTable `json:"table,omitempty"`
 }
 
-func CreateDatabaseTableRequestFromSDK(v *sdk.CreateDatabaseTableRequest) (*CreateDatabaseTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tableWireValue, err := DatabaseTableFromSDK(v.Table)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateDatabaseTableRequest.Table", err)
-	}
-	return &CreateDatabaseTableRequest{
-		Table: tableWireValue,
-	}, nil
-}
-
 type CreateSyncedDatabaseTableRequest struct {
 	SyncedTable *SyncedDatabaseTable `json:"synced_table,omitempty"`
-}
-
-func CreateSyncedDatabaseTableRequestFromSDK(v *sdk.CreateSyncedDatabaseTableRequest) (*CreateSyncedDatabaseTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	syncedTableWireValue, err := SyncedDatabaseTableFromSDK(v.SyncedTable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSyncedDatabaseTableRequest.SyncedTable", err)
-	}
-	return &CreateSyncedDatabaseTableRequest{
-		SyncedTable: syncedTableWireValue,
-	}, nil
 }
 
 type CustomTag struct {
@@ -191,26 +101,6 @@ type CustomTag struct {
 	Key *string `json:"key,omitempty"`
 	// The value of the custom tag.
 	Value *string `json:"value,omitempty"`
-}
-
-func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CustomTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CustomTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type DatabaseCatalog struct {
@@ -224,45 +114,9 @@ type DatabaseCatalog struct {
 	CreateDatabaseIfNotExists *bool   `json:"create_database_if_not_exists,omitempty"`
 }
 
-func DatabaseCatalogFromSDK(v *sdk.DatabaseCatalog) (*DatabaseCatalog, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabaseCatalog{
-		Name:                      v.Name,
-		DatabaseInstanceName:      v.DatabaseInstanceName,
-		DatabaseName:              v.DatabaseName,
-		Uid:                       v.Uid,
-		CreateDatabaseIfNotExists: v.CreateDatabaseIfNotExists,
-	}, nil
-}
-
-func DatabaseCatalogToSDK(w *DatabaseCatalog) (*sdk.DatabaseCatalog, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseCatalog{
-		Name:                      w.Name,
-		DatabaseInstanceName:      w.DatabaseInstanceName,
-		DatabaseName:              w.DatabaseName,
-		Uid:                       w.Uid,
-		CreateDatabaseIfNotExists: w.CreateDatabaseIfNotExists,
-	}, nil
-}
-
 type DatabaseCredential struct {
 	Token          *string     `json:"token,omitempty"`
 	ExpirationTime *types.Time `json:"expiration_time,omitempty"`
-}
-
-func DatabaseCredentialToSDK(w *DatabaseCredential) (*sdk.DatabaseCredential, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseCredential{
-		Token:          w.Token,
-		ExpirationTime: w.ExpirationTime,
-	}, nil
 }
 
 // A DatabaseInstance represents a logical Postgres instance, comprised of both
@@ -357,106 +211,6 @@ type DatabaseInstance struct {
 	EffectiveCustomTags []CustomTag `json:"effective_custom_tags,omitempty"`
 }
 
-func DatabaseInstanceFromSDK(v *sdk.DatabaseInstance) (*DatabaseInstance, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parentInstanceRefWireValue, err := DatabaseInstanceRefFromSDK(v.ParentInstanceRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ParentInstanceRef", err)
-	}
-	childInstanceRefsWireValue, err := convertSlice(v.ChildInstanceRefs, DatabaseInstanceRefFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ChildInstanceRefs", err)
-	}
-	customTagsWireValue, err := convertSlice(v.CustomTags, CustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.CustomTags", err)
-	}
-	effectiveCustomTagsWireValue, err := convertSlice(v.EffectiveCustomTags, CustomTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.EffectiveCustomTags", err)
-	}
-	return &DatabaseInstance{
-		Uid:                                v.Uid,
-		Name:                               v.Name,
-		Creator:                            v.Creator,
-		ReadWriteDns:                       v.ReadWriteDns,
-		CreationTime:                       v.CreationTime,
-		State:                              v.State,
-		PgVersion:                          v.PgVersion,
-		Capacity:                           v.Capacity,
-		EffectiveCapacity:                  v.EffectiveCapacity,
-		Stopped:                            v.Stopped,
-		EffectiveStopped:                   v.EffectiveStopped,
-		NodeCount:                          v.NodeCount,
-		EffectiveNodeCount:                 v.EffectiveNodeCount,
-		EnableReadableSecondaries:          v.EnableReadableSecondaries,
-		EffectiveEnableReadableSecondaries: v.EffectiveEnableReadableSecondaries,
-		ReadOnlyDns:                        v.ReadOnlyDns,
-		RetentionWindowInDays:              v.RetentionWindowInDays,
-		EffectiveRetentionWindowInDays:     v.EffectiveRetentionWindowInDays,
-		ParentInstanceRef:                  parentInstanceRefWireValue,
-		ChildInstanceRefs:                  childInstanceRefsWireValue,
-		EnablePgNativeLogin:                v.EnablePgNativeLogin,
-		EffectiveEnablePgNativeLogin:       v.EffectiveEnablePgNativeLogin,
-		UsagePolicyId:                      v.UsagePolicyId,
-		EffectiveUsagePolicyId:             v.EffectiveUsagePolicyId,
-		CustomTags:                         customTagsWireValue,
-		EffectiveCustomTags:                effectiveCustomTagsWireValue,
-	}, nil
-}
-
-func DatabaseInstanceToSDK(w *DatabaseInstance) (*sdk.DatabaseInstance, error) {
-	if w == nil {
-		return nil, nil
-	}
-	parentInstanceRefPublicValue, err := DatabaseInstanceRefToSDK(w.ParentInstanceRef)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ParentInstanceRef", err)
-	}
-	childInstanceRefsPublicValue, err := convertSlice(w.ChildInstanceRefs, DatabaseInstanceRefToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ChildInstanceRefs", err)
-	}
-	customTagsPublicValue, err := convertSlice(w.CustomTags, CustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.CustomTags", err)
-	}
-	effectiveCustomTagsPublicValue, err := convertSlice(w.EffectiveCustomTags, CustomTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.EffectiveCustomTags", err)
-	}
-	return &sdk.DatabaseInstance{
-		Uid:                                w.Uid,
-		Name:                               w.Name,
-		Creator:                            w.Creator,
-		ReadWriteDns:                       w.ReadWriteDns,
-		CreationTime:                       w.CreationTime,
-		State:                              w.State,
-		PgVersion:                          w.PgVersion,
-		Capacity:                           w.Capacity,
-		EffectiveCapacity:                  w.EffectiveCapacity,
-		Stopped:                            w.Stopped,
-		EffectiveStopped:                   w.EffectiveStopped,
-		NodeCount:                          w.NodeCount,
-		EffectiveNodeCount:                 w.EffectiveNodeCount,
-		EnableReadableSecondaries:          w.EnableReadableSecondaries,
-		EffectiveEnableReadableSecondaries: w.EffectiveEnableReadableSecondaries,
-		ReadOnlyDns:                        w.ReadOnlyDns,
-		RetentionWindowInDays:              w.RetentionWindowInDays,
-		EffectiveRetentionWindowInDays:     w.EffectiveRetentionWindowInDays,
-		ParentInstanceRef:                  parentInstanceRefPublicValue,
-		ChildInstanceRefs:                  childInstanceRefsPublicValue,
-		EnablePgNativeLogin:                w.EnablePgNativeLogin,
-		EffectiveEnablePgNativeLogin:       w.EffectiveEnablePgNativeLogin,
-		UsagePolicyId:                      w.UsagePolicyId,
-		EffectiveUsagePolicyId:             w.EffectiveUsagePolicyId,
-		CustomTags:                         customTagsPublicValue,
-		EffectiveCustomTags:                effectiveCustomTagsPublicValue,
-	}, nil
-}
-
 // DatabaseInstanceRef is a reference to a database instance. It is used in the
 // DatabaseInstance object to refer to the parent instance of an instance and to
 // refer the child instances of an instance. To specify as a parent instance
@@ -490,32 +244,6 @@ type DatabaseInstanceRef struct {
 	BranchTime *types.Time `json:"branch_time,omitempty"`
 }
 
-func DatabaseInstanceRefFromSDK(v *sdk.DatabaseInstanceRef) (*DatabaseInstanceRef, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabaseInstanceRef{
-		Uid:          v.Uid,
-		Name:         v.Name,
-		Lsn:          v.Lsn,
-		EffectiveLsn: v.EffectiveLsn,
-		BranchTime:   v.BranchTime,
-	}, nil
-}
-
-func DatabaseInstanceRefToSDK(w *DatabaseInstanceRef) (*sdk.DatabaseInstanceRef, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseInstanceRef{
-		Uid:          w.Uid,
-		Name:         w.Name,
-		Lsn:          w.Lsn,
-		EffectiveLsn: w.EffectiveLsn,
-		BranchTime:   w.BranchTime,
-	}, nil
-}
-
 // A DatabaseInstanceRole represents a Postgres role in a database instance..
 type DatabaseInstanceRole struct {
 	// The name of the role. This is the unique identifier for the role in an
@@ -535,50 +263,6 @@ type DatabaseInstanceRole struct {
 	InstanceName        *string                          `json:"instance_name,omitempty"`
 }
 
-func DatabaseInstanceRoleFromSDK(v *sdk.DatabaseInstanceRole) (*DatabaseInstanceRole, error) {
-	if v == nil {
-		return nil, nil
-	}
-	attributesWireValue, err := DatabaseInstanceRole_AttributesFromSDK(v.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.Attributes", err)
-	}
-	effectiveAttributesWireValue, err := DatabaseInstanceRole_AttributesFromSDK(v.EffectiveAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.EffectiveAttributes", err)
-	}
-	return &DatabaseInstanceRole{
-		Name:                v.Name,
-		IdentityType:        v.IdentityType,
-		MembershipRole:      v.MembershipRole,
-		Attributes:          attributesWireValue,
-		EffectiveAttributes: effectiveAttributesWireValue,
-		InstanceName:        v.InstanceName,
-	}, nil
-}
-
-func DatabaseInstanceRoleToSDK(w *DatabaseInstanceRole) (*sdk.DatabaseInstanceRole, error) {
-	if w == nil {
-		return nil, nil
-	}
-	attributesPublicValue, err := DatabaseInstanceRole_AttributesToSDK(w.Attributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.Attributes", err)
-	}
-	effectiveAttributesPublicValue, err := DatabaseInstanceRole_AttributesToSDK(w.EffectiveAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.EffectiveAttributes", err)
-	}
-	return &sdk.DatabaseInstanceRole{
-		Name:                w.Name,
-		IdentityType:        w.IdentityType,
-		MembershipRole:      w.MembershipRole,
-		Attributes:          attributesPublicValue,
-		EffectiveAttributes: effectiveAttributesPublicValue,
-		InstanceName:        w.InstanceName,
-	}, nil
-}
-
 // Attributes that can be granted to a Postgres role. We are only implementing a
 // subset for now, see xref:
 // https://www.postgresql.org/docs/16/sql-createrole.html The values follow
@@ -590,28 +274,6 @@ type DatabaseInstanceRole_Attributes struct {
 	Createdb   *bool `json:"createdb,omitempty"`
 	Createrole *bool `json:"createrole,omitempty"`
 	Bypassrls  *bool `json:"bypassrls,omitempty"`
-}
-
-func DatabaseInstanceRole_AttributesFromSDK(v *sdk.DatabaseInstanceRole_Attributes) (*DatabaseInstanceRole_Attributes, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabaseInstanceRole_Attributes{
-		Createdb:   v.Createdb,
-		Createrole: v.Createrole,
-		Bypassrls:  v.Bypassrls,
-	}, nil
-}
-
-func DatabaseInstanceRole_AttributesToSDK(w *DatabaseInstanceRole_Attributes) (*sdk.DatabaseInstanceRole_Attributes, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseInstanceRole_Attributes{
-		Createdb:   w.Createdb,
-		Createrole: w.Createrole,
-		Bypassrls:  w.Bypassrls,
-	}, nil
 }
 
 type DatabaseTable struct {
@@ -634,28 +296,6 @@ type DatabaseTable struct {
 	LogicalDatabaseName *string `json:"logical_database_name,omitempty"`
 }
 
-func DatabaseTableFromSDK(v *sdk.DatabaseTable) (*DatabaseTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DatabaseTable{
-		Name:                 v.Name,
-		DatabaseInstanceName: v.DatabaseInstanceName,
-		LogicalDatabaseName:  v.LogicalDatabaseName,
-	}, nil
-}
-
-func DatabaseTableToSDK(w *DatabaseTable) (*sdk.DatabaseTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabaseTable{
-		Name:                 w.Name,
-		DatabaseInstanceName: w.DatabaseInstanceName,
-		LogicalDatabaseName:  w.LogicalDatabaseName,
-	}, nil
-}
-
 type DeleteDatabaseInstanceRequest struct {
 	// Name of the instance to delete.
 	Name *string `json:"name,omitempty"`
@@ -668,17 +308,6 @@ type DeleteDatabaseInstanceRequest struct {
 	Purge *bool `json:"purge,omitempty"`
 }
 
-func DeleteDatabaseInstanceRequestFromSDK(v *sdk.DeleteDatabaseInstanceRequest) (*DeleteDatabaseInstanceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteDatabaseInstanceRequest{
-		Name:  v.Name,
-		Force: v.Force,
-		Purge: v.Purge,
-	}, nil
-}
-
 type DeleteDatabaseInstanceRoleRequest struct {
 	InstanceName    *string `json:"instance_name,omitempty"`
 	Name            *string `json:"name,omitempty"`
@@ -688,33 +317,11 @@ type DeleteDatabaseInstanceRoleRequest struct {
 	AllowMissing *bool `json:"allow_missing,omitempty"`
 }
 
-func DeleteDatabaseInstanceRoleRequestFromSDK(v *sdk.DeleteDatabaseInstanceRoleRequest) (*DeleteDatabaseInstanceRoleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteDatabaseInstanceRoleRequest{
-		InstanceName:    v.InstanceName,
-		Name:            v.Name,
-		ReassignOwnedTo: v.ReassignOwnedTo,
-		AllowMissing:    v.AllowMissing,
-	}, nil
-}
-
 type DeleteSyncedDatabaseTableRequest struct {
 	Name *string `json:"name,omitempty"`
 	// Optional. When set to true, the actual PostgreSQL table will be dropped from
 	// the database.
 	PurgeData *bool `json:"purge_data,omitempty"`
-}
-
-func DeleteSyncedDatabaseTableRequestFromSDK(v *sdk.DeleteSyncedDatabaseTableRequest) (*DeleteSyncedDatabaseTableRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteSyncedDatabaseTableRequest{
-		Name:      v.Name,
-		PurgeData: v.PurgeData,
-	}, nil
 }
 
 type DeltaTableSyncInfo struct {
@@ -726,46 +333,9 @@ type DeltaTableSyncInfo struct {
 	DeltaCommitTimestamp *types.Time `json:"delta_commit_timestamp,omitempty"`
 }
 
-func DeltaTableSyncInfoFromSDK(v *sdk.DeltaTableSyncInfo) (*DeltaTableSyncInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	deltaCommitVersionWireValue, err := int64ToWire(v.DeltaCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaTableSyncInfo.DeltaCommitVersion", err)
-	}
-	return &DeltaTableSyncInfo{
-		DeltaCommitVersion:   deltaCommitVersionWireValue,
-		DeltaCommitTimestamp: v.DeltaCommitTimestamp,
-	}, nil
-}
-
-func DeltaTableSyncInfoToSDK(w *DeltaTableSyncInfo) (*sdk.DeltaTableSyncInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	deltaCommitVersionPublicValue, err := int64FromWire(w.DeltaCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeltaTableSyncInfo.DeltaCommitVersion", err)
-	}
-	return &sdk.DeltaTableSyncInfo{
-		DeltaCommitVersion:   deltaCommitVersionPublicValue,
-		DeltaCommitTimestamp: w.DeltaCommitTimestamp,
-	}, nil
-}
-
 type FindDatabaseInstanceByUidRequest struct {
 	// UID of the cluster to get.
 	Uid *string `json:"uid,omitempty"`
-}
-
-func FindDatabaseInstanceByUidRequestFromSDK(v *sdk.FindDatabaseInstanceByUidRequest) (*FindDatabaseInstanceByUidRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FindDatabaseInstanceByUidRequest{
-		Uid: v.Uid,
-	}, nil
 }
 
 // Generates a credential that can be used to access database instances.
@@ -783,21 +353,6 @@ type GenerateDatabaseCredentialRequest struct {
 	Claims []RequestedClaims `json:"claims,omitempty"`
 }
 
-func GenerateDatabaseCredentialRequestFromSDK(v *sdk.GenerateDatabaseCredentialRequest) (*GenerateDatabaseCredentialRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	claimsWireValue, err := convertSlice(v.Claims, RequestedClaimsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
-	}
-	return &GenerateDatabaseCredentialRequest{
-		RequestId:     v.RequestId,
-		InstanceNames: v.InstanceNames,
-		Claims:        claimsWireValue,
-	}, nil
-}
-
 type ListDatabaseCatalogsRequest struct {
 	// Name of the instance to get database catalogs for.
 	InstanceName *string `json:"instance_name,omitempty"`
@@ -808,35 +363,10 @@ type ListDatabaseCatalogsRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListDatabaseCatalogsRequestFromSDK(v *sdk.ListDatabaseCatalogsRequest) (*ListDatabaseCatalogsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDatabaseCatalogsRequest{
-		InstanceName: v.InstanceName,
-		PageToken:    v.PageToken,
-		PageSize:     v.PageSize,
-	}, nil
-}
-
 type ListDatabaseCatalogsResponse struct {
 	DatabaseCatalogs []DatabaseCatalog `json:"database_catalogs,omitempty"`
 	// Pagination token to request the next page of database catalogs.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDatabaseCatalogsResponseToSDK(w *ListDatabaseCatalogsResponse) (*sdk.ListDatabaseCatalogsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	databaseCatalogsPublicValue, err := convertSlice(w.DatabaseCatalogs, DatabaseCatalogToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDatabaseCatalogsResponse.DatabaseCatalogs", err)
-	}
-	return &sdk.ListDatabaseCatalogsResponse{
-		DatabaseCatalogs: databaseCatalogsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ListDatabaseInstanceRolesRequest struct {
@@ -848,36 +378,11 @@ type ListDatabaseInstanceRolesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListDatabaseInstanceRolesRequestFromSDK(v *sdk.ListDatabaseInstanceRolesRequest) (*ListDatabaseInstanceRolesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDatabaseInstanceRolesRequest{
-		InstanceName: v.InstanceName,
-		PageToken:    v.PageToken,
-		PageSize:     v.PageSize,
-	}, nil
-}
-
 type ListDatabaseInstanceRolesResponse struct {
 	// List of database instance roles.
 	DatabaseInstanceRoles []DatabaseInstanceRole `json:"database_instance_roles,omitempty"`
 	// Pagination token to request the next page of instances.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDatabaseInstanceRolesResponseToSDK(w *ListDatabaseInstanceRolesResponse) (*sdk.ListDatabaseInstanceRolesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	databaseInstanceRolesPublicValue, err := convertSlice(w.DatabaseInstanceRoles, DatabaseInstanceRoleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstanceRolesResponse.DatabaseInstanceRoles", err)
-	}
-	return &sdk.ListDatabaseInstanceRolesResponse{
-		DatabaseInstanceRoles: databaseInstanceRolesPublicValue,
-		NextPageToken:         w.NextPageToken,
-	}, nil
 }
 
 type ListDatabaseInstancesRequest struct {
@@ -888,35 +393,11 @@ type ListDatabaseInstancesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListDatabaseInstancesRequestFromSDK(v *sdk.ListDatabaseInstancesRequest) (*ListDatabaseInstancesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListDatabaseInstancesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListDatabaseInstancesResponse struct {
 	// List of instances.
 	DatabaseInstances []DatabaseInstance `json:"database_instances,omitempty"`
 	// Pagination token to request the next page of instances.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListDatabaseInstancesResponseToSDK(w *ListDatabaseInstancesResponse) (*sdk.ListDatabaseInstancesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	databaseInstancesPublicValue, err := convertSlice(w.DatabaseInstances, DatabaseInstanceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstancesResponse.DatabaseInstances", err)
-	}
-	return &sdk.ListDatabaseInstancesResponse{
-		DatabaseInstances: databaseInstancesPublicValue,
-		NextPageToken:     w.NextPageToken,
-	}, nil
 }
 
 type ListSyncedDatabaseTablesRequest struct {
@@ -929,35 +410,10 @@ type ListSyncedDatabaseTablesRequest struct {
 	PageSize *int `json:"page_size,omitempty"`
 }
 
-func ListSyncedDatabaseTablesRequestFromSDK(v *sdk.ListSyncedDatabaseTablesRequest) (*ListSyncedDatabaseTablesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSyncedDatabaseTablesRequest{
-		InstanceName: v.InstanceName,
-		PageToken:    v.PageToken,
-		PageSize:     v.PageSize,
-	}, nil
-}
-
 type ListSyncedDatabaseTablesResponse struct {
 	SyncedTables []SyncedDatabaseTable `json:"synced_tables,omitempty"`
 	// Pagination token to request the next page of synced tables.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListSyncedDatabaseTablesResponseToSDK(w *ListSyncedDatabaseTablesResponse) (*sdk.ListSyncedDatabaseTablesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	syncedTablesPublicValue, err := convertSlice(w.SyncedTables, SyncedDatabaseTableToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSyncedDatabaseTablesResponse.SyncedTables", err)
-	}
-	return &sdk.ListSyncedDatabaseTablesResponse{
-		SyncedTables:  syncedTablesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Custom fields that user can set for pipeline while creating
@@ -982,75 +438,14 @@ type NewPipelineSpec struct {
 	BudgetPolicyId *string `json:"budget_policy_id,omitempty"`
 }
 
-func NewPipelineSpecFromSDK(v *sdk.NewPipelineSpec) (*NewPipelineSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NewPipelineSpec{
-		StorageCatalog: v.StorageCatalog,
-		StorageSchema:  v.StorageSchema,
-		BudgetPolicyId: v.BudgetPolicyId,
-	}, nil
-}
-
-func NewPipelineSpecToSDK(w *NewPipelineSpec) (*sdk.NewPipelineSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NewPipelineSpec{
-		StorageCatalog: w.StorageCatalog,
-		StorageSchema:  w.StorageSchema,
-		BudgetPolicyId: w.BudgetPolicyId,
-	}, nil
-}
-
 type RequestedClaims struct {
 	PermissionSet RequestedClaims_PermissionSet `json:"permission_set,omitempty"`
 	Resources     []RequestedResource           `json:"resources,omitempty"`
 }
 
-func RequestedClaimsFromSDK(v *sdk.RequestedClaims) (*RequestedClaims, error) {
-	if v == nil {
-		return nil, nil
-	}
-	resourcesWireValue, err := convertSlice(v.Resources, RequestedResourceFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
-	}
-	return &RequestedClaims{
-		PermissionSet: v.PermissionSet,
-		Resources:     resourcesWireValue,
-	}, nil
-}
-
 type RequestedResource struct {
 	UnspecifiedResourceName *string `json:"unspecified_resource_name,omitempty"`
 	TableName               *string `json:"table_name,omitempty"`
-}
-
-func RequestedResourceFromSDK(v *sdk.RequestedResource) (*RequestedResource, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var resourceNameUnspecifiedResourceNameWire *string
-	var resourceNameTableNameWire *string
-	switch value := v.ResourceName.(type) {
-	case nil:
-	case *sdk.RequestedResource_ResourceName_UnspecifiedResourceName:
-		if value != nil {
-			resourceNameUnspecifiedResourceNameWire = new(value.UnspecifiedResourceName)
-		}
-	case *sdk.RequestedResource_ResourceName_TableName:
-		if value != nil {
-			resourceNameTableNameWire = new(value.TableName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "RequestedResource.ResourceName", value)
-	}
-	return &RequestedResource{
-		UnspecifiedResourceName: resourceNameUnspecifiedResourceNameWire,
-		TableName:               resourceNameTableNameWire,
-	}, nil
 }
 
 type SyncedDatabaseTable struct {
@@ -1096,54 +491,6 @@ type SyncedDatabaseTable struct {
 	DataSynchronizationStatus *SyncedTableStatus `json:"data_synchronization_status,omitempty"`
 }
 
-func SyncedDatabaseTableFromSDK(v *sdk.SyncedDatabaseTable) (*SyncedDatabaseTable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := SyncedTableSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.Spec", err)
-	}
-	dataSynchronizationStatusWireValue, err := SyncedTableStatusFromSDK(v.DataSynchronizationStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.DataSynchronizationStatus", err)
-	}
-	return &SyncedDatabaseTable{
-		Name:                          v.Name,
-		DatabaseInstanceName:          v.DatabaseInstanceName,
-		EffectiveDatabaseInstanceName: v.EffectiveDatabaseInstanceName,
-		LogicalDatabaseName:           v.LogicalDatabaseName,
-		EffectiveLogicalDatabaseName:  v.EffectiveLogicalDatabaseName,
-		Spec:                          specWireValue,
-		UnityCatalogProvisioningState: v.UnityCatalogProvisioningState,
-		DataSynchronizationStatus:     dataSynchronizationStatusWireValue,
-	}, nil
-}
-
-func SyncedDatabaseTableToSDK(w *SyncedDatabaseTable) (*sdk.SyncedDatabaseTable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := SyncedTableSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.Spec", err)
-	}
-	dataSynchronizationStatusPublicValue, err := SyncedTableStatusToSDK(w.DataSynchronizationStatus)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.DataSynchronizationStatus", err)
-	}
-	return &sdk.SyncedDatabaseTable{
-		Name:                          w.Name,
-		DatabaseInstanceName:          w.DatabaseInstanceName,
-		EffectiveDatabaseInstanceName: w.EffectiveDatabaseInstanceName,
-		LogicalDatabaseName:           w.LogicalDatabaseName,
-		EffectiveLogicalDatabaseName:  w.EffectiveLogicalDatabaseName,
-		Spec:                          specPublicValue,
-		UnityCatalogProvisioningState: w.UnityCatalogProvisioningState,
-		DataSynchronizationStatus:     dataSynchronizationStatusPublicValue,
-	}, nil
-}
-
 // Detailed status of a synced table. Shown if the synced table is in the
 // SYNCED_CONTINUOUS_UPDATE or the SYNCED_UPDATING_PIPELINE_RESOURCES state..
 type SyncedTableContinuousUpdateStatus struct {
@@ -1158,44 +505,6 @@ type SyncedTableContinuousUpdateStatus struct {
 	InitialPipelineSyncProgress *SyncedTablePipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
 }
 
-func SyncedTableContinuousUpdateStatusFromSDK(v *sdk.SyncedTableContinuousUpdateStatus) (*SyncedTableContinuousUpdateStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	initialPipelineSyncProgressWireValue, err := SyncedTablePipelineProgressFromSDK(v.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.InitialPipelineSyncProgress", err)
-	}
-	return &SyncedTableContinuousUpdateStatus{
-		LastProcessedCommitVersion:  lastProcessedCommitVersionWireValue,
-		Timestamp:                   v.Timestamp,
-		InitialPipelineSyncProgress: initialPipelineSyncProgressWireValue,
-	}, nil
-}
-
-func SyncedTableContinuousUpdateStatusToSDK(w *SyncedTableContinuousUpdateStatus) (*sdk.SyncedTableContinuousUpdateStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	initialPipelineSyncProgressPublicValue, err := SyncedTablePipelineProgressToSDK(w.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.InitialPipelineSyncProgress", err)
-	}
-	return &sdk.SyncedTableContinuousUpdateStatus{
-		LastProcessedCommitVersion:  lastProcessedCommitVersionPublicValue,
-		Timestamp:                   w.Timestamp,
-		InitialPipelineSyncProgress: initialPipelineSyncProgressPublicValue,
-	}, nil
-}
-
 // Detailed status of a synced table. Shown if the synced table is in the
 // OFFLINE_FAILED or the SYNCED_PIPELINE_FAILED state..
 type SyncedTableFailedStatus struct {
@@ -1208,34 +517,6 @@ type SyncedTableFailedStatus struct {
 	// table to the synced table. Only populated if the table is still synced and
 	// available for serving.
 	Timestamp *types.Time `json:"timestamp,omitempty"`
-}
-
-func SyncedTableFailedStatusFromSDK(v *sdk.SyncedTableFailedStatus) (*SyncedTableFailedStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableFailedStatus.LastProcessedCommitVersion", err)
-	}
-	return &SyncedTableFailedStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionWireValue,
-		Timestamp:                  v.Timestamp,
-	}, nil
-}
-
-func SyncedTableFailedStatusToSDK(w *SyncedTableFailedStatus) (*sdk.SyncedTableFailedStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableFailedStatus.LastProcessedCommitVersion", err)
-	}
-	return &sdk.SyncedTableFailedStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionPublicValue,
-		Timestamp:                  w.Timestamp,
-	}, nil
 }
 
 // Progress information of the Synced Table data synchronization pipeline..
@@ -1256,58 +537,6 @@ type SyncedTablePipelineProgress struct {
 	ProvisioningPhase ProvisioningPhase `json:"provisioning_phase,omitempty"`
 }
 
-func SyncedTablePipelineProgressFromSDK(v *sdk.SyncedTablePipelineProgress) (*SyncedTablePipelineProgress, error) {
-	if v == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingWireValue, err := int64ToWire(v.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountWireValue, err := int64ToWire(v.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountWireValue, err := int64ToWire(v.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.TotalRowCount", err)
-	}
-	return &SyncedTablePipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingWireValue,
-		SyncedRowCount:                   syncedRowCountWireValue,
-		TotalRowCount:                    totalRowCountWireValue,
-		SyncProgressCompletion:           v.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   v.EstimatedCompletionTimeSeconds,
-		ProvisioningPhase:                v.ProvisioningPhase,
-	}, nil
-}
-
-func SyncedTablePipelineProgressToSDK(w *SyncedTablePipelineProgress) (*sdk.SyncedTablePipelineProgress, error) {
-	if w == nil {
-		return nil, nil
-	}
-	latestVersionCurrentlyProcessingPublicValue, err := int64FromWire(w.LatestVersionCurrentlyProcessing)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.LatestVersionCurrentlyProcessing", err)
-	}
-	syncedRowCountPublicValue, err := int64FromWire(w.SyncedRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.SyncedRowCount", err)
-	}
-	totalRowCountPublicValue, err := int64FromWire(w.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTablePipelineProgress.TotalRowCount", err)
-	}
-	return &sdk.SyncedTablePipelineProgress{
-		LatestVersionCurrentlyProcessing: latestVersionCurrentlyProcessingPublicValue,
-		SyncedRowCount:                   syncedRowCountPublicValue,
-		TotalRowCount:                    totalRowCountPublicValue,
-		SyncProgressCompletion:           w.SyncProgressCompletion,
-		EstimatedCompletionTimeSeconds:   w.EstimatedCompletionTimeSeconds,
-		ProvisioningPhase:                w.ProvisioningPhase,
-	}, nil
-}
-
 type SyncedTablePosition struct {
 	// The starting timestamp of the most recent successful synchronization from the
 	// source table to the destination (synced) table. Note this is the starting
@@ -1320,90 +549,12 @@ type SyncedTablePosition struct {
 	DeltaTableSyncInfo *DeltaTableSyncInfo `json:"delta_table_sync_info,omitempty"`
 }
 
-func SyncedTablePositionFromSDK(v *sdk.SyncedTablePosition) (*SyncedTablePosition, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceSyncInfoDeltaTableSyncInfoWire *DeltaTableSyncInfo
-	switch value := v.SourceSyncInfo.(type) {
-	case nil:
-	case *sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo:
-		if value != nil {
-			sourceSyncInfoDeltaTableSyncInfoConverted, err := DeltaTableSyncInfoFromSDK(&value.DeltaTableSyncInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo.DeltaTableSyncInfo", err)
-			}
-			sourceSyncInfoDeltaTableSyncInfoWire = sourceSyncInfoDeltaTableSyncInfoConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SyncedTablePosition.SourceSyncInfo", value)
-	}
-	return &SyncedTablePosition{
-		SyncStartTimestamp: v.SyncStartTimestamp,
-		SyncEndTimestamp:   v.SyncEndTimestamp,
-		DeltaTableSyncInfo: sourceSyncInfoDeltaTableSyncInfoWire,
-	}, nil
-}
-
-func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceSyncInfoMembers := 0
-	if w.DeltaTableSyncInfo != nil {
-		sourceSyncInfoMembers++
-	}
-	if sourceSyncInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
-	}
-	sourceSyncInfoSelection := (&sdk.SyncedTablePosition{}).SourceSyncInfo
-	switch {
-	case w.DeltaTableSyncInfo != nil:
-		sourceSyncInfoDeltaTableSyncInfoConverted, err := DeltaTableSyncInfoToSDK(w.DeltaTableSyncInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo.DeltaTableSyncInfo", err)
-		}
-		sourceSyncInfoSelection = &sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo{DeltaTableSyncInfo: *sourceSyncInfoDeltaTableSyncInfoConverted}
-	}
-	return &sdk.SyncedTablePosition{
-		SyncStartTimestamp: w.SyncStartTimestamp,
-		SyncEndTimestamp:   w.SyncEndTimestamp,
-		SourceSyncInfo:     sourceSyncInfoSelection,
-	}, nil
-}
-
 // Detailed status of a synced table. Shown if the synced table is in the
 // PROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state..
 type SyncedTableProvisioningStatus struct {
 	// Details about initial data synchronization. Only populated when in the
 	// PROVISIONING_INITIAL_SNAPSHOT state.
 	InitialPipelineSyncProgress *SyncedTablePipelineProgress `json:"initial_pipeline_sync_progress,omitempty"`
-}
-
-func SyncedTableProvisioningStatusFromSDK(v *sdk.SyncedTableProvisioningStatus) (*SyncedTableProvisioningStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	initialPipelineSyncProgressWireValue, err := SyncedTablePipelineProgressFromSDK(v.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableProvisioningStatus.InitialPipelineSyncProgress", err)
-	}
-	return &SyncedTableProvisioningStatus{
-		InitialPipelineSyncProgress: initialPipelineSyncProgressWireValue,
-	}, nil
-}
-
-func SyncedTableProvisioningStatusToSDK(w *SyncedTableProvisioningStatus) (*sdk.SyncedTableProvisioningStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	initialPipelineSyncProgressPublicValue, err := SyncedTablePipelineProgressToSDK(w.InitialPipelineSyncProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableProvisioningStatus.InitialPipelineSyncProgress", err)
-	}
-	return &sdk.SyncedTableProvisioningStatus{
-		InitialPipelineSyncProgress: initialPipelineSyncProgressPublicValue,
-	}, nil
 }
 
 // Specification of a synced database table..
@@ -1445,56 +596,6 @@ type SyncedTableSpec struct {
 	TypeOverrides []SyncedTableSpec_TypeOverride `json:"type_overrides,omitempty"`
 }
 
-func SyncedTableSpecFromSDK(v *sdk.SyncedTableSpec) (*SyncedTableSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	newPipelineSpecWireValue, err := NewPipelineSpecFromSDK(v.NewPipelineSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.NewPipelineSpec", err)
-	}
-	typeOverridesWireValue, err := convertSlice(v.TypeOverrides, SyncedTableSpec_TypeOverrideFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.TypeOverrides", err)
-	}
-	return &SyncedTableSpec{
-		SchedulingPolicy:               v.SchedulingPolicy,
-		SourceTableFullName:            v.SourceTableFullName,
-		PrimaryKeyColumns:              v.PrimaryKeyColumns,
-		TimeseriesKey:                  v.TimeseriesKey,
-		ExistingPipelineId:             v.ExistingPipelineId,
-		CreateDatabaseObjectsIfMissing: v.CreateDatabaseObjectsIfMissing,
-		NewPipelineSpec:                newPipelineSpecWireValue,
-		AcceleratedSync:                v.AcceleratedSync,
-		TypeOverrides:                  typeOverridesWireValue,
-	}, nil
-}
-
-func SyncedTableSpecToSDK(w *SyncedTableSpec) (*sdk.SyncedTableSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	newPipelineSpecPublicValue, err := NewPipelineSpecToSDK(w.NewPipelineSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.NewPipelineSpec", err)
-	}
-	typeOverridesPublicValue, err := convertSlice(w.TypeOverrides, SyncedTableSpec_TypeOverrideToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.TypeOverrides", err)
-	}
-	return &sdk.SyncedTableSpec{
-		SchedulingPolicy:               w.SchedulingPolicy,
-		SourceTableFullName:            w.SourceTableFullName,
-		PrimaryKeyColumns:              w.PrimaryKeyColumns,
-		TimeseriesKey:                  w.TimeseriesKey,
-		ExistingPipelineId:             w.ExistingPipelineId,
-		CreateDatabaseObjectsIfMissing: w.CreateDatabaseObjectsIfMissing,
-		NewPipelineSpec:                newPipelineSpecPublicValue,
-		AcceleratedSync:                w.AcceleratedSync,
-		TypeOverrides:                  typeOverridesPublicValue,
-	}, nil
-}
-
 // Overrides the default Delta-to-PostgreSQL type mapping for a single column..
 type SyncedTableSpec_TypeOverride struct {
 	// Name of the source column whose target PostgreSQL type should be overridden.
@@ -1504,28 +605,6 @@ type SyncedTableSpec_TypeOverride struct {
 	// Size parameter for the target type, for types that take one (e.g. vector
 	// dimension, varchar length). Required when the chosen pg_type needs a size.
 	Size *int `json:"size,omitempty"`
-}
-
-func SyncedTableSpec_TypeOverrideFromSDK(v *sdk.SyncedTableSpec_TypeOverride) (*SyncedTableSpec_TypeOverride, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SyncedTableSpec_TypeOverride{
-		ColumnName: v.ColumnName,
-		PgType:     v.PgType,
-		Size:       v.Size,
-	}, nil
-}
-
-func SyncedTableSpec_TypeOverrideToSDK(w *SyncedTableSpec_TypeOverride) (*sdk.SyncedTableSpec_TypeOverride, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SyncedTableSpec_TypeOverride{
-		ColumnName: w.ColumnName,
-		PgType:     w.PgType,
-		Size:       w.Size,
-	}, nil
 }
 
 // Status of a synced table..
@@ -1556,127 +635,6 @@ type SyncedTableStatus struct {
 	LastSync *SyncedTablePosition `json:"last_sync,omitempty"`
 }
 
-func SyncedTableStatusFromSDK(v *sdk.SyncedTableStatus) (*SyncedTableStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastSyncWireValue, err := SyncedTablePositionFromSDK(v.LastSync)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.LastSync", err)
-	}
-	var detailedStatusProvisioningStatusWire *SyncedTableProvisioningStatus
-	var detailedStatusContinuousUpdateStatusWire *SyncedTableContinuousUpdateStatus
-	var detailedStatusTriggeredUpdateStatusWire *SyncedTableTriggeredUpdateStatus
-	var detailedStatusFailedStatusWire *SyncedTableFailedStatus
-	switch value := v.DetailedStatus.(type) {
-	case nil:
-	case *sdk.SyncedTableStatus_DetailedStatus_ProvisioningStatus:
-		if value != nil {
-			detailedStatusProvisioningStatusConverted, err := SyncedTableProvisioningStatusFromSDK(&value.ProvisioningStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.ProvisioningStatus", err)
-			}
-			detailedStatusProvisioningStatusWire = detailedStatusProvisioningStatusConverted
-		}
-	case *sdk.SyncedTableStatus_DetailedStatus_ContinuousUpdateStatus:
-		if value != nil {
-			detailedStatusContinuousUpdateStatusConverted, err := SyncedTableContinuousUpdateStatusFromSDK(&value.ContinuousUpdateStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.ContinuousUpdateStatus", err)
-			}
-			detailedStatusContinuousUpdateStatusWire = detailedStatusContinuousUpdateStatusConverted
-		}
-	case *sdk.SyncedTableStatus_DetailedStatus_TriggeredUpdateStatus:
-		if value != nil {
-			detailedStatusTriggeredUpdateStatusConverted, err := SyncedTableTriggeredUpdateStatusFromSDK(&value.TriggeredUpdateStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.TriggeredUpdateStatus", err)
-			}
-			detailedStatusTriggeredUpdateStatusWire = detailedStatusTriggeredUpdateStatusConverted
-		}
-	case *sdk.SyncedTableStatus_DetailedStatus_FailedStatus:
-		if value != nil {
-			detailedStatusFailedStatusConverted, err := SyncedTableFailedStatusFromSDK(&value.FailedStatus)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.FailedStatus", err)
-			}
-			detailedStatusFailedStatusWire = detailedStatusFailedStatusConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "SyncedTableStatus.DetailedStatus", value)
-	}
-	return &SyncedTableStatus{
-		DetailedState:          v.DetailedState,
-		Message:                v.Message,
-		ProvisioningStatus:     detailedStatusProvisioningStatusWire,
-		ContinuousUpdateStatus: detailedStatusContinuousUpdateStatusWire,
-		TriggeredUpdateStatus:  detailedStatusTriggeredUpdateStatusWire,
-		FailedStatus:           detailedStatusFailedStatusWire,
-		PipelineId:             v.PipelineId,
-		LastSync:               lastSyncWireValue,
-	}, nil
-}
-
-func SyncedTableStatusToSDK(w *SyncedTableStatus) (*sdk.SyncedTableStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	detailedStatusMembers := 0
-	if w.ProvisioningStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.ContinuousUpdateStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.TriggeredUpdateStatus != nil {
-		detailedStatusMembers++
-	}
-	if w.FailedStatus != nil {
-		detailedStatusMembers++
-	}
-	if detailedStatusMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTableStatus.DetailedStatus")
-	}
-	lastSyncPublicValue, err := SyncedTablePositionToSDK(w.LastSync)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.LastSync", err)
-	}
-	detailedStatusSelection := (&sdk.SyncedTableStatus{}).DetailedStatus
-	switch {
-	case w.ProvisioningStatus != nil:
-		detailedStatusProvisioningStatusConverted, err := SyncedTableProvisioningStatusToSDK(w.ProvisioningStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.ProvisioningStatus", err)
-		}
-		detailedStatusSelection = &sdk.SyncedTableStatus_DetailedStatus_ProvisioningStatus{ProvisioningStatus: *detailedStatusProvisioningStatusConverted}
-	case w.ContinuousUpdateStatus != nil:
-		detailedStatusContinuousUpdateStatusConverted, err := SyncedTableContinuousUpdateStatusToSDK(w.ContinuousUpdateStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.ContinuousUpdateStatus", err)
-		}
-		detailedStatusSelection = &sdk.SyncedTableStatus_DetailedStatus_ContinuousUpdateStatus{ContinuousUpdateStatus: *detailedStatusContinuousUpdateStatusConverted}
-	case w.TriggeredUpdateStatus != nil:
-		detailedStatusTriggeredUpdateStatusConverted, err := SyncedTableTriggeredUpdateStatusToSDK(w.TriggeredUpdateStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.TriggeredUpdateStatus", err)
-		}
-		detailedStatusSelection = &sdk.SyncedTableStatus_DetailedStatus_TriggeredUpdateStatus{TriggeredUpdateStatus: *detailedStatusTriggeredUpdateStatusConverted}
-	case w.FailedStatus != nil:
-		detailedStatusFailedStatusConverted, err := SyncedTableFailedStatusToSDK(w.FailedStatus)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus.FailedStatus", err)
-		}
-		detailedStatusSelection = &sdk.SyncedTableStatus_DetailedStatus_FailedStatus{FailedStatus: *detailedStatusFailedStatusConverted}
-	}
-	return &sdk.SyncedTableStatus{
-		DetailedState:  w.DetailedState,
-		Message:        w.Message,
-		PipelineId:     w.PipelineId,
-		LastSync:       lastSyncPublicValue,
-		DetailedStatus: detailedStatusSelection,
-	}, nil
-}
-
 // Detailed status of a synced table. Shown if the synced table is in the
 // SYNCED_TRIGGERED_UPDATE or the SYNCED_NO_PENDING_UPDATE state..
 type SyncedTableTriggeredUpdateStatus struct {
@@ -1691,63 +649,11 @@ type SyncedTableTriggeredUpdateStatus struct {
 	TriggeredUpdateProgress *SyncedTablePipelineProgress `json:"triggered_update_progress,omitempty"`
 }
 
-func SyncedTableTriggeredUpdateStatusFromSDK(v *sdk.SyncedTableTriggeredUpdateStatus) (*SyncedTableTriggeredUpdateStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionWireValue, err := int64ToWire(v.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	triggeredUpdateProgressWireValue, err := SyncedTablePipelineProgressFromSDK(v.TriggeredUpdateProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.TriggeredUpdateProgress", err)
-	}
-	return &SyncedTableTriggeredUpdateStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionWireValue,
-		Timestamp:                  v.Timestamp,
-		TriggeredUpdateProgress:    triggeredUpdateProgressWireValue,
-	}, nil
-}
-
-func SyncedTableTriggeredUpdateStatusToSDK(w *SyncedTableTriggeredUpdateStatus) (*sdk.SyncedTableTriggeredUpdateStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastProcessedCommitVersionPublicValue, err := int64FromWire(w.LastProcessedCommitVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.LastProcessedCommitVersion", err)
-	}
-	triggeredUpdateProgressPublicValue, err := SyncedTablePipelineProgressToSDK(w.TriggeredUpdateProgress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.TriggeredUpdateProgress", err)
-	}
-	return &sdk.SyncedTableTriggeredUpdateStatus{
-		LastProcessedCommitVersion: lastProcessedCommitVersionPublicValue,
-		Timestamp:                  w.Timestamp,
-		TriggeredUpdateProgress:    triggeredUpdateProgressPublicValue,
-	}, nil
-}
-
 type UpdateDatabaseCatalogRequest struct {
 	// Note that updating a database catalog is not yet supported.
 	DatabaseCatalog *DatabaseCatalog `json:"database_catalog,omitempty"`
 	// The list of fields to update. Setting this field is not yet supported.
 	UpdateMask *string `json:"update_mask,omitempty"`
-}
-
-func UpdateDatabaseCatalogRequestFromSDK(v *sdk.UpdateDatabaseCatalogRequest) (*UpdateDatabaseCatalogRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseCatalogWireValue, err := DatabaseCatalogFromSDK(v.DatabaseCatalog)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseCatalogRequest.DatabaseCatalog", err)
-	}
-	return &UpdateDatabaseCatalogRequest{
-		DatabaseCatalog: databaseCatalogWireValue,
-		UpdateMask:      fieldMaskToWire(v.UpdateMask),
-	}, nil
 }
 
 type UpdateDatabaseInstanceRequest struct {
@@ -1758,20 +664,6 @@ type UpdateDatabaseInstanceRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
-func UpdateDatabaseInstanceRequestFromSDK(v *sdk.UpdateDatabaseInstanceRequest) (*UpdateDatabaseInstanceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	databaseInstanceWireValue, err := DatabaseInstanceFromSDK(v.DatabaseInstance)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseInstanceRequest.DatabaseInstance", err)
-	}
-	return &UpdateDatabaseInstanceRequest{
-		DatabaseInstance: databaseInstanceWireValue,
-		UpdateMask:       fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateSyncedDatabaseTableRequest struct {
 	// Note that updating a synced database table is not yet supported.
 	SyncedTable *SyncedDatabaseTable `json:"synced_table,omitempty"`
@@ -1779,18 +671,1437 @@ type UpdateSyncedDatabaseTableRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CreateDatabaseCatalogRequestToSDK converts the mirror to the sdk-go type.
+func CreateDatabaseCatalogRequestToSDK(w *CreateDatabaseCatalogRequest) (*sdk.CreateDatabaseCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDatabaseCatalogRequest{}
+	conv1, err := DatabaseCatalogToSDK(w.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseCatalogRequest.Catalog", err)
+	}
+	out.Catalog = conv1
+	return out, nil
+}
+
+// CreateDatabaseCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDatabaseCatalogRequestFromSDK(v *sdk.CreateDatabaseCatalogRequest) (*CreateDatabaseCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDatabaseCatalogRequest{}
+	conv2, err := DatabaseCatalogFromSDK(v.Catalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseCatalogRequest.Catalog", err)
+	}
+	out.Catalog = conv2
+	return out, nil
+}
+
+// CreateDatabaseInstanceRequestToSDK converts the mirror to the sdk-go type.
+func CreateDatabaseInstanceRequestToSDK(w *CreateDatabaseInstanceRequest) (*sdk.CreateDatabaseInstanceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDatabaseInstanceRequest{}
+	conv3, err := DatabaseInstanceToSDK(w.DatabaseInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRequest.DatabaseInstance", err)
+	}
+	out.DatabaseInstance = conv3
+	return out, nil
+}
+
+// CreateDatabaseInstanceRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDatabaseInstanceRequestFromSDK(v *sdk.CreateDatabaseInstanceRequest) (*CreateDatabaseInstanceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDatabaseInstanceRequest{}
+	conv4, err := DatabaseInstanceFromSDK(v.DatabaseInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRequest.DatabaseInstance", err)
+	}
+	out.DatabaseInstance = conv4
+	return out, nil
+}
+
+// CreateDatabaseInstanceRoleRequestToSDK converts the mirror to the sdk-go type.
+func CreateDatabaseInstanceRoleRequestToSDK(w *CreateDatabaseInstanceRoleRequest) (*sdk.CreateDatabaseInstanceRoleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDatabaseInstanceRoleRequest{}
+	out.InstanceName = w.InstanceName
+	conv5, err := DatabaseInstanceRoleToSDK(w.DatabaseInstanceRole)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRoleRequest.DatabaseInstanceRole", err)
+	}
+	out.DatabaseInstanceRole = conv5
+	out.DatabaseInstanceName = w.DatabaseInstanceName
+	return out, nil
+}
+
+// CreateDatabaseInstanceRoleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDatabaseInstanceRoleRequestFromSDK(v *sdk.CreateDatabaseInstanceRoleRequest) (*CreateDatabaseInstanceRoleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDatabaseInstanceRoleRequest{}
+	out.InstanceName = v.InstanceName
+	conv6, err := DatabaseInstanceRoleFromSDK(v.DatabaseInstanceRole)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseInstanceRoleRequest.DatabaseInstanceRole", err)
+	}
+	out.DatabaseInstanceRole = conv6
+	out.DatabaseInstanceName = v.DatabaseInstanceName
+	return out, nil
+}
+
+// CreateDatabaseTableRequestToSDK converts the mirror to the sdk-go type.
+func CreateDatabaseTableRequestToSDK(w *CreateDatabaseTableRequest) (*sdk.CreateDatabaseTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateDatabaseTableRequest{}
+	conv7, err := DatabaseTableToSDK(w.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseTableRequest.Table", err)
+	}
+	out.Table = conv7
+	return out, nil
+}
+
+// CreateDatabaseTableRequestFromSDK converts the sdk-go type to the mirror.
+func CreateDatabaseTableRequestFromSDK(v *sdk.CreateDatabaseTableRequest) (*CreateDatabaseTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateDatabaseTableRequest{}
+	conv8, err := DatabaseTableFromSDK(v.Table)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateDatabaseTableRequest.Table", err)
+	}
+	out.Table = conv8
+	return out, nil
+}
+
+// CreateSyncedDatabaseTableRequestToSDK converts the mirror to the sdk-go type.
+func CreateSyncedDatabaseTableRequestToSDK(w *CreateSyncedDatabaseTableRequest) (*sdk.CreateSyncedDatabaseTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSyncedDatabaseTableRequest{}
+	conv9, err := SyncedDatabaseTableToSDK(w.SyncedTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSyncedDatabaseTableRequest.SyncedTable", err)
+	}
+	out.SyncedTable = conv9
+	return out, nil
+}
+
+// CreateSyncedDatabaseTableRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSyncedDatabaseTableRequestFromSDK(v *sdk.CreateSyncedDatabaseTableRequest) (*CreateSyncedDatabaseTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSyncedDatabaseTableRequest{}
+	conv10, err := SyncedDatabaseTableFromSDK(v.SyncedTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSyncedDatabaseTableRequest.SyncedTable", err)
+	}
+	out.SyncedTable = conv10
+	return out, nil
+}
+
+// CustomTagToSDK converts the mirror to the sdk-go type.
+func CustomTagToSDK(w *CustomTag) (*sdk.CustomTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// CustomTagFromSDK converts the sdk-go type to the mirror.
+func CustomTagFromSDK(v *sdk.CustomTag) (*CustomTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// DatabaseCatalogToSDK converts the mirror to the sdk-go type.
+func DatabaseCatalogToSDK(w *DatabaseCatalog) (*sdk.DatabaseCatalog, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseCatalog{}
+	out.Name = w.Name
+	out.DatabaseInstanceName = w.DatabaseInstanceName
+	out.DatabaseName = w.DatabaseName
+	out.Uid = w.Uid
+	out.CreateDatabaseIfNotExists = w.CreateDatabaseIfNotExists
+	return out, nil
+}
+
+// DatabaseCatalogFromSDK converts the sdk-go type to the mirror.
+func DatabaseCatalogFromSDK(v *sdk.DatabaseCatalog) (*DatabaseCatalog, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseCatalog{}
+	out.Name = v.Name
+	out.DatabaseInstanceName = v.DatabaseInstanceName
+	out.DatabaseName = v.DatabaseName
+	out.Uid = v.Uid
+	out.CreateDatabaseIfNotExists = v.CreateDatabaseIfNotExists
+	return out, nil
+}
+
+// DatabaseCredentialToSDK converts the mirror to the sdk-go type.
+func DatabaseCredentialToSDK(w *DatabaseCredential) (*sdk.DatabaseCredential, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseCredential{}
+	out.Token = w.Token
+	out.ExpirationTime = w.ExpirationTime
+	return out, nil
+}
+
+// DatabaseCredentialFromSDK converts the sdk-go type to the mirror.
+func DatabaseCredentialFromSDK(v *sdk.DatabaseCredential) (*DatabaseCredential, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseCredential{}
+	out.Token = v.Token
+	out.ExpirationTime = v.ExpirationTime
+	return out, nil
+}
+
+// DatabaseInstanceToSDK converts the mirror to the sdk-go type.
+func DatabaseInstanceToSDK(w *DatabaseInstance) (*sdk.DatabaseInstance, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseInstance{}
+	out.Uid = w.Uid
+	out.Name = w.Name
+	out.Creator = w.Creator
+	out.ReadWriteDns = w.ReadWriteDns
+	out.CreationTime = w.CreationTime
+	out.State = w.State
+	out.PgVersion = w.PgVersion
+	out.Capacity = w.Capacity
+	out.EffectiveCapacity = w.EffectiveCapacity
+	out.Stopped = w.Stopped
+	out.EffectiveStopped = w.EffectiveStopped
+	out.NodeCount = w.NodeCount
+	out.EffectiveNodeCount = w.EffectiveNodeCount
+	out.EnableReadableSecondaries = w.EnableReadableSecondaries
+	out.EffectiveEnableReadableSecondaries = w.EffectiveEnableReadableSecondaries
+	out.ReadOnlyDns = w.ReadOnlyDns
+	out.RetentionWindowInDays = w.RetentionWindowInDays
+	out.EffectiveRetentionWindowInDays = w.EffectiveRetentionWindowInDays
+	conv11, err := DatabaseInstanceRefToSDK(w.ParentInstanceRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ParentInstanceRef", err)
+	}
+	out.ParentInstanceRef = conv11
+	conv12, err := convertSlice(w.ChildInstanceRefs, DatabaseInstanceRefToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ChildInstanceRefs", err)
+	}
+	out.ChildInstanceRefs = conv12
+	out.EnablePgNativeLogin = w.EnablePgNativeLogin
+	out.EffectiveEnablePgNativeLogin = w.EffectiveEnablePgNativeLogin
+	out.UsagePolicyId = w.UsagePolicyId
+	out.EffectiveUsagePolicyId = w.EffectiveUsagePolicyId
+	conv13, err := convertSlice(w.CustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.CustomTags", err)
+	}
+	out.CustomTags = conv13
+	conv14, err := convertSlice(w.EffectiveCustomTags, CustomTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.EffectiveCustomTags", err)
+	}
+	out.EffectiveCustomTags = conv14
+	return out, nil
+}
+
+// DatabaseInstanceFromSDK converts the sdk-go type to the mirror.
+func DatabaseInstanceFromSDK(v *sdk.DatabaseInstance) (*DatabaseInstance, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseInstance{}
+	out.Uid = v.Uid
+	out.Name = v.Name
+	out.Creator = v.Creator
+	out.ReadWriteDns = v.ReadWriteDns
+	out.CreationTime = v.CreationTime
+	out.State = v.State
+	out.PgVersion = v.PgVersion
+	out.Capacity = v.Capacity
+	out.EffectiveCapacity = v.EffectiveCapacity
+	out.Stopped = v.Stopped
+	out.EffectiveStopped = v.EffectiveStopped
+	out.NodeCount = v.NodeCount
+	out.EffectiveNodeCount = v.EffectiveNodeCount
+	out.EnableReadableSecondaries = v.EnableReadableSecondaries
+	out.EffectiveEnableReadableSecondaries = v.EffectiveEnableReadableSecondaries
+	out.ReadOnlyDns = v.ReadOnlyDns
+	out.RetentionWindowInDays = v.RetentionWindowInDays
+	out.EffectiveRetentionWindowInDays = v.EffectiveRetentionWindowInDays
+	conv15, err := DatabaseInstanceRefFromSDK(v.ParentInstanceRef)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ParentInstanceRef", err)
+	}
+	out.ParentInstanceRef = conv15
+	conv16, err := convertSlice(v.ChildInstanceRefs, DatabaseInstanceRefFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.ChildInstanceRefs", err)
+	}
+	out.ChildInstanceRefs = conv16
+	out.EnablePgNativeLogin = v.EnablePgNativeLogin
+	out.EffectiveEnablePgNativeLogin = v.EffectiveEnablePgNativeLogin
+	out.UsagePolicyId = v.UsagePolicyId
+	out.EffectiveUsagePolicyId = v.EffectiveUsagePolicyId
+	conv17, err := convertSlice(v.CustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.CustomTags", err)
+	}
+	out.CustomTags = conv17
+	conv18, err := convertSlice(v.EffectiveCustomTags, CustomTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstance.EffectiveCustomTags", err)
+	}
+	out.EffectiveCustomTags = conv18
+	return out, nil
+}
+
+// DatabaseInstanceRefToSDK converts the mirror to the sdk-go type.
+func DatabaseInstanceRefToSDK(w *DatabaseInstanceRef) (*sdk.DatabaseInstanceRef, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseInstanceRef{}
+	out.Uid = w.Uid
+	out.Name = w.Name
+	out.Lsn = w.Lsn
+	out.EffectiveLsn = w.EffectiveLsn
+	out.BranchTime = w.BranchTime
+	return out, nil
+}
+
+// DatabaseInstanceRefFromSDK converts the sdk-go type to the mirror.
+func DatabaseInstanceRefFromSDK(v *sdk.DatabaseInstanceRef) (*DatabaseInstanceRef, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseInstanceRef{}
+	out.Uid = v.Uid
+	out.Name = v.Name
+	out.Lsn = v.Lsn
+	out.EffectiveLsn = v.EffectiveLsn
+	out.BranchTime = v.BranchTime
+	return out, nil
+}
+
+// DatabaseInstanceRoleToSDK converts the mirror to the sdk-go type.
+func DatabaseInstanceRoleToSDK(w *DatabaseInstanceRole) (*sdk.DatabaseInstanceRole, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseInstanceRole{}
+	out.Name = w.Name
+	out.IdentityType = w.IdentityType
+	out.MembershipRole = w.MembershipRole
+	conv19, err := DatabaseInstanceRole_AttributesToSDK(w.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.Attributes", err)
+	}
+	out.Attributes = conv19
+	conv20, err := DatabaseInstanceRole_AttributesToSDK(w.EffectiveAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.EffectiveAttributes", err)
+	}
+	out.EffectiveAttributes = conv20
+	out.InstanceName = w.InstanceName
+	return out, nil
+}
+
+// DatabaseInstanceRoleFromSDK converts the sdk-go type to the mirror.
+func DatabaseInstanceRoleFromSDK(v *sdk.DatabaseInstanceRole) (*DatabaseInstanceRole, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseInstanceRole{}
+	out.Name = v.Name
+	out.IdentityType = v.IdentityType
+	out.MembershipRole = v.MembershipRole
+	conv21, err := DatabaseInstanceRole_AttributesFromSDK(v.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.Attributes", err)
+	}
+	out.Attributes = conv21
+	conv22, err := DatabaseInstanceRole_AttributesFromSDK(v.EffectiveAttributes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DatabaseInstanceRole.EffectiveAttributes", err)
+	}
+	out.EffectiveAttributes = conv22
+	out.InstanceName = v.InstanceName
+	return out, nil
+}
+
+// DatabaseInstanceRole_AttributesToSDK converts the mirror to the sdk-go type.
+func DatabaseInstanceRole_AttributesToSDK(w *DatabaseInstanceRole_Attributes) (*sdk.DatabaseInstanceRole_Attributes, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseInstanceRole_Attributes{}
+	out.Createdb = w.Createdb
+	out.Createrole = w.Createrole
+	out.Bypassrls = w.Bypassrls
+	return out, nil
+}
+
+// DatabaseInstanceRole_AttributesFromSDK converts the sdk-go type to the mirror.
+func DatabaseInstanceRole_AttributesFromSDK(v *sdk.DatabaseInstanceRole_Attributes) (*DatabaseInstanceRole_Attributes, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseInstanceRole_Attributes{}
+	out.Createdb = v.Createdb
+	out.Createrole = v.Createrole
+	out.Bypassrls = v.Bypassrls
+	return out, nil
+}
+
+// DatabaseTableToSDK converts the mirror to the sdk-go type.
+func DatabaseTableToSDK(w *DatabaseTable) (*sdk.DatabaseTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabaseTable{}
+	out.Name = w.Name
+	out.DatabaseInstanceName = w.DatabaseInstanceName
+	out.LogicalDatabaseName = w.LogicalDatabaseName
+	return out, nil
+}
+
+// DatabaseTableFromSDK converts the sdk-go type to the mirror.
+func DatabaseTableFromSDK(v *sdk.DatabaseTable) (*DatabaseTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabaseTable{}
+	out.Name = v.Name
+	out.DatabaseInstanceName = v.DatabaseInstanceName
+	out.LogicalDatabaseName = v.LogicalDatabaseName
+	return out, nil
+}
+
+// DeleteDatabaseInstanceRequestToSDK converts the mirror to the sdk-go type.
+func DeleteDatabaseInstanceRequestToSDK(w *DeleteDatabaseInstanceRequest) (*sdk.DeleteDatabaseInstanceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteDatabaseInstanceRequest{}
+	out.Name = w.Name
+	out.Force = w.Force
+	out.Purge = w.Purge
+	return out, nil
+}
+
+// DeleteDatabaseInstanceRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteDatabaseInstanceRequestFromSDK(v *sdk.DeleteDatabaseInstanceRequest) (*DeleteDatabaseInstanceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteDatabaseInstanceRequest{}
+	out.Name = v.Name
+	out.Force = v.Force
+	out.Purge = v.Purge
+	return out, nil
+}
+
+// DeleteDatabaseInstanceRoleRequestToSDK converts the mirror to the sdk-go type.
+func DeleteDatabaseInstanceRoleRequestToSDK(w *DeleteDatabaseInstanceRoleRequest) (*sdk.DeleteDatabaseInstanceRoleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteDatabaseInstanceRoleRequest{}
+	out.InstanceName = w.InstanceName
+	out.Name = w.Name
+	out.ReassignOwnedTo = w.ReassignOwnedTo
+	out.AllowMissing = w.AllowMissing
+	return out, nil
+}
+
+// DeleteDatabaseInstanceRoleRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteDatabaseInstanceRoleRequestFromSDK(v *sdk.DeleteDatabaseInstanceRoleRequest) (*DeleteDatabaseInstanceRoleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteDatabaseInstanceRoleRequest{}
+	out.InstanceName = v.InstanceName
+	out.Name = v.Name
+	out.ReassignOwnedTo = v.ReassignOwnedTo
+	out.AllowMissing = v.AllowMissing
+	return out, nil
+}
+
+// DeleteSyncedDatabaseTableRequestToSDK converts the mirror to the sdk-go type.
+func DeleteSyncedDatabaseTableRequestToSDK(w *DeleteSyncedDatabaseTableRequest) (*sdk.DeleteSyncedDatabaseTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteSyncedDatabaseTableRequest{}
+	out.Name = w.Name
+	out.PurgeData = w.PurgeData
+	return out, nil
+}
+
+// DeleteSyncedDatabaseTableRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteSyncedDatabaseTableRequestFromSDK(v *sdk.DeleteSyncedDatabaseTableRequest) (*DeleteSyncedDatabaseTableRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteSyncedDatabaseTableRequest{}
+	out.Name = v.Name
+	out.PurgeData = v.PurgeData
+	return out, nil
+}
+
+// DeltaTableSyncInfoToSDK converts the mirror to the sdk-go type.
+func DeltaTableSyncInfoToSDK(w *DeltaTableSyncInfo) (*sdk.DeltaTableSyncInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeltaTableSyncInfo{}
+	out.DeltaCommitVersion = w.DeltaCommitVersion
+	out.DeltaCommitTimestamp = w.DeltaCommitTimestamp
+	return out, nil
+}
+
+// DeltaTableSyncInfoFromSDK converts the sdk-go type to the mirror.
+func DeltaTableSyncInfoFromSDK(v *sdk.DeltaTableSyncInfo) (*DeltaTableSyncInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeltaTableSyncInfo{}
+	out.DeltaCommitVersion = v.DeltaCommitVersion
+	out.DeltaCommitTimestamp = v.DeltaCommitTimestamp
+	return out, nil
+}
+
+// FindDatabaseInstanceByUidRequestToSDK converts the mirror to the sdk-go type.
+func FindDatabaseInstanceByUidRequestToSDK(w *FindDatabaseInstanceByUidRequest) (*sdk.FindDatabaseInstanceByUidRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FindDatabaseInstanceByUidRequest{}
+	out.Uid = w.Uid
+	return out, nil
+}
+
+// FindDatabaseInstanceByUidRequestFromSDK converts the sdk-go type to the mirror.
+func FindDatabaseInstanceByUidRequestFromSDK(v *sdk.FindDatabaseInstanceByUidRequest) (*FindDatabaseInstanceByUidRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FindDatabaseInstanceByUidRequest{}
+	out.Uid = v.Uid
+	return out, nil
+}
+
+// GenerateDatabaseCredentialRequestToSDK converts the mirror to the sdk-go type.
+func GenerateDatabaseCredentialRequestToSDK(w *GenerateDatabaseCredentialRequest) (*sdk.GenerateDatabaseCredentialRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenerateDatabaseCredentialRequest{}
+	out.RequestId = w.RequestId
+	out.InstanceNames = w.InstanceNames
+	conv23, err := convertSlice(w.Claims, RequestedClaimsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
+	}
+	out.Claims = conv23
+	return out, nil
+}
+
+// GenerateDatabaseCredentialRequestFromSDK converts the sdk-go type to the mirror.
+func GenerateDatabaseCredentialRequestFromSDK(v *sdk.GenerateDatabaseCredentialRequest) (*GenerateDatabaseCredentialRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenerateDatabaseCredentialRequest{}
+	out.RequestId = v.RequestId
+	out.InstanceNames = v.InstanceNames
+	conv24, err := convertSlice(v.Claims, RequestedClaimsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenerateDatabaseCredentialRequest.Claims", err)
+	}
+	out.Claims = conv24
+	return out, nil
+}
+
+// ListDatabaseCatalogsRequestToSDK converts the mirror to the sdk-go type.
+func ListDatabaseCatalogsRequestToSDK(w *ListDatabaseCatalogsRequest) (*sdk.ListDatabaseCatalogsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseCatalogsRequest{}
+	out.InstanceName = w.InstanceName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListDatabaseCatalogsRequestFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseCatalogsRequestFromSDK(v *sdk.ListDatabaseCatalogsRequest) (*ListDatabaseCatalogsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseCatalogsRequest{}
+	out.InstanceName = v.InstanceName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListDatabaseCatalogsResponseToSDK converts the mirror to the sdk-go type.
+func ListDatabaseCatalogsResponseToSDK(w *ListDatabaseCatalogsResponse) (*sdk.ListDatabaseCatalogsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseCatalogsResponse{}
+	conv25, err := convertSlice(w.DatabaseCatalogs, DatabaseCatalogToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseCatalogsResponse.DatabaseCatalogs", err)
+	}
+	out.DatabaseCatalogs = conv25
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDatabaseCatalogsResponseFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseCatalogsResponseFromSDK(v *sdk.ListDatabaseCatalogsResponse) (*ListDatabaseCatalogsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseCatalogsResponse{}
+	conv26, err := convertSlice(v.DatabaseCatalogs, DatabaseCatalogFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseCatalogsResponse.DatabaseCatalogs", err)
+	}
+	out.DatabaseCatalogs = conv26
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListDatabaseInstanceRolesRequestToSDK converts the mirror to the sdk-go type.
+func ListDatabaseInstanceRolesRequestToSDK(w *ListDatabaseInstanceRolesRequest) (*sdk.ListDatabaseInstanceRolesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseInstanceRolesRequest{}
+	out.InstanceName = w.InstanceName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListDatabaseInstanceRolesRequestFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseInstanceRolesRequestFromSDK(v *sdk.ListDatabaseInstanceRolesRequest) (*ListDatabaseInstanceRolesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseInstanceRolesRequest{}
+	out.InstanceName = v.InstanceName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListDatabaseInstanceRolesResponseToSDK converts the mirror to the sdk-go type.
+func ListDatabaseInstanceRolesResponseToSDK(w *ListDatabaseInstanceRolesResponse) (*sdk.ListDatabaseInstanceRolesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseInstanceRolesResponse{}
+	conv27, err := convertSlice(w.DatabaseInstanceRoles, DatabaseInstanceRoleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstanceRolesResponse.DatabaseInstanceRoles", err)
+	}
+	out.DatabaseInstanceRoles = conv27
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDatabaseInstanceRolesResponseFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseInstanceRolesResponseFromSDK(v *sdk.ListDatabaseInstanceRolesResponse) (*ListDatabaseInstanceRolesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseInstanceRolesResponse{}
+	conv28, err := convertSlice(v.DatabaseInstanceRoles, DatabaseInstanceRoleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstanceRolesResponse.DatabaseInstanceRoles", err)
+	}
+	out.DatabaseInstanceRoles = conv28
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListDatabaseInstancesRequestToSDK converts the mirror to the sdk-go type.
+func ListDatabaseInstancesRequestToSDK(w *ListDatabaseInstancesRequest) (*sdk.ListDatabaseInstancesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseInstancesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListDatabaseInstancesRequestFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseInstancesRequestFromSDK(v *sdk.ListDatabaseInstancesRequest) (*ListDatabaseInstancesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseInstancesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListDatabaseInstancesResponseToSDK converts the mirror to the sdk-go type.
+func ListDatabaseInstancesResponseToSDK(w *ListDatabaseInstancesResponse) (*sdk.ListDatabaseInstancesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListDatabaseInstancesResponse{}
+	conv29, err := convertSlice(w.DatabaseInstances, DatabaseInstanceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstancesResponse.DatabaseInstances", err)
+	}
+	out.DatabaseInstances = conv29
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListDatabaseInstancesResponseFromSDK converts the sdk-go type to the mirror.
+func ListDatabaseInstancesResponseFromSDK(v *sdk.ListDatabaseInstancesResponse) (*ListDatabaseInstancesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListDatabaseInstancesResponse{}
+	conv30, err := convertSlice(v.DatabaseInstances, DatabaseInstanceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListDatabaseInstancesResponse.DatabaseInstances", err)
+	}
+	out.DatabaseInstances = conv30
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSyncedDatabaseTablesRequestToSDK converts the mirror to the sdk-go type.
+func ListSyncedDatabaseTablesRequestToSDK(w *ListSyncedDatabaseTablesRequest) (*sdk.ListSyncedDatabaseTablesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSyncedDatabaseTablesRequest{}
+	out.InstanceName = w.InstanceName
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListSyncedDatabaseTablesRequestFromSDK converts the sdk-go type to the mirror.
+func ListSyncedDatabaseTablesRequestFromSDK(v *sdk.ListSyncedDatabaseTablesRequest) (*ListSyncedDatabaseTablesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSyncedDatabaseTablesRequest{}
+	out.InstanceName = v.InstanceName
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListSyncedDatabaseTablesResponseToSDK converts the mirror to the sdk-go type.
+func ListSyncedDatabaseTablesResponseToSDK(w *ListSyncedDatabaseTablesResponse) (*sdk.ListSyncedDatabaseTablesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSyncedDatabaseTablesResponse{}
+	conv31, err := convertSlice(w.SyncedTables, SyncedDatabaseTableToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSyncedDatabaseTablesResponse.SyncedTables", err)
+	}
+	out.SyncedTables = conv31
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSyncedDatabaseTablesResponseFromSDK converts the sdk-go type to the mirror.
+func ListSyncedDatabaseTablesResponseFromSDK(v *sdk.ListSyncedDatabaseTablesResponse) (*ListSyncedDatabaseTablesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSyncedDatabaseTablesResponse{}
+	conv32, err := convertSlice(v.SyncedTables, SyncedDatabaseTableFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSyncedDatabaseTablesResponse.SyncedTables", err)
+	}
+	out.SyncedTables = conv32
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// NewPipelineSpecToSDK converts the mirror to the sdk-go type.
+func NewPipelineSpecToSDK(w *NewPipelineSpec) (*sdk.NewPipelineSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NewPipelineSpec{}
+	out.StorageCatalog = w.StorageCatalog
+	out.StorageSchema = w.StorageSchema
+	out.BudgetPolicyId = w.BudgetPolicyId
+	return out, nil
+}
+
+// NewPipelineSpecFromSDK converts the sdk-go type to the mirror.
+func NewPipelineSpecFromSDK(v *sdk.NewPipelineSpec) (*NewPipelineSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NewPipelineSpec{}
+	out.StorageCatalog = v.StorageCatalog
+	out.StorageSchema = v.StorageSchema
+	out.BudgetPolicyId = v.BudgetPolicyId
+	return out, nil
+}
+
+// RequestedClaimsToSDK converts the mirror to the sdk-go type.
+func RequestedClaimsToSDK(w *RequestedClaims) (*sdk.RequestedClaims, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RequestedClaims{}
+	out.PermissionSet = w.PermissionSet
+	conv33, err := convertSlice(w.Resources, RequestedResourceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
+	}
+	out.Resources = conv33
+	return out, nil
+}
+
+// RequestedClaimsFromSDK converts the sdk-go type to the mirror.
+func RequestedClaimsFromSDK(v *sdk.RequestedClaims) (*RequestedClaims, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RequestedClaims{}
+	out.PermissionSet = v.PermissionSet
+	conv34, err := convertSlice(v.Resources, RequestedResourceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RequestedClaims.Resources", err)
+	}
+	out.Resources = conv34
+	return out, nil
+}
+
+// RequestedResourceToSDK converts the mirror to the sdk-go type.
+func RequestedResourceToSDK(w *RequestedResource) (*sdk.RequestedResource, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RequestedResource{}
+	{
+		members := 0
+		if w.UnspecifiedResourceName != nil {
+			members++
+		}
+		if w.TableName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "RequestedResource.ResourceName")
+		}
+	}
+	switch {
+	case w.UnspecifiedResourceName != nil:
+		out.ResourceName = &sdk.RequestedResource_ResourceName_UnspecifiedResourceName{UnspecifiedResourceName: *w.UnspecifiedResourceName}
+	case w.TableName != nil:
+		out.ResourceName = &sdk.RequestedResource_ResourceName_TableName{TableName: *w.TableName}
+	}
+	return out, nil
+}
+
+// RequestedResourceFromSDK converts the sdk-go type to the mirror.
+func RequestedResourceFromSDK(v *sdk.RequestedResource) (*RequestedResource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RequestedResource{}
+	switch value := v.ResourceName.(type) {
+	case *sdk.RequestedResource_ResourceName_UnspecifiedResourceName:
+		if value != nil {
+			out.UnspecifiedResourceName = new(value.UnspecifiedResourceName)
+		}
+	case *sdk.RequestedResource_ResourceName_TableName:
+		if value != nil {
+			out.TableName = new(value.TableName)
+		}
+	}
+	return out, nil
+}
+
+// SyncedDatabaseTableToSDK converts the mirror to the sdk-go type.
+func SyncedDatabaseTableToSDK(w *SyncedDatabaseTable) (*sdk.SyncedDatabaseTable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedDatabaseTable{}
+	out.Name = w.Name
+	out.DatabaseInstanceName = w.DatabaseInstanceName
+	out.EffectiveDatabaseInstanceName = w.EffectiveDatabaseInstanceName
+	out.LogicalDatabaseName = w.LogicalDatabaseName
+	out.EffectiveLogicalDatabaseName = w.EffectiveLogicalDatabaseName
+	conv35, err := SyncedTableSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.Spec", err)
+	}
+	out.Spec = conv35
+	out.UnityCatalogProvisioningState = w.UnityCatalogProvisioningState
+	conv36, err := SyncedTableStatusToSDK(w.DataSynchronizationStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.DataSynchronizationStatus", err)
+	}
+	out.DataSynchronizationStatus = conv36
+	return out, nil
+}
+
+// SyncedDatabaseTableFromSDK converts the sdk-go type to the mirror.
+func SyncedDatabaseTableFromSDK(v *sdk.SyncedDatabaseTable) (*SyncedDatabaseTable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedDatabaseTable{}
+	out.Name = v.Name
+	out.DatabaseInstanceName = v.DatabaseInstanceName
+	out.EffectiveDatabaseInstanceName = v.EffectiveDatabaseInstanceName
+	out.LogicalDatabaseName = v.LogicalDatabaseName
+	out.EffectiveLogicalDatabaseName = v.EffectiveLogicalDatabaseName
+	conv37, err := SyncedTableSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.Spec", err)
+	}
+	out.Spec = conv37
+	out.UnityCatalogProvisioningState = v.UnityCatalogProvisioningState
+	conv38, err := SyncedTableStatusFromSDK(v.DataSynchronizationStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedDatabaseTable.DataSynchronizationStatus", err)
+	}
+	out.DataSynchronizationStatus = conv38
+	return out, nil
+}
+
+// SyncedTableContinuousUpdateStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTableContinuousUpdateStatusToSDK(w *SyncedTableContinuousUpdateStatus) (*sdk.SyncedTableContinuousUpdateStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableContinuousUpdateStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	conv39, err := SyncedTablePipelineProgressToSDK(w.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv39
+	return out, nil
+}
+
+// SyncedTableContinuousUpdateStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTableContinuousUpdateStatusFromSDK(v *sdk.SyncedTableContinuousUpdateStatus) (*SyncedTableContinuousUpdateStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableContinuousUpdateStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	conv40, err := SyncedTablePipelineProgressFromSDK(v.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableContinuousUpdateStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv40
+	return out, nil
+}
+
+// SyncedTableFailedStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTableFailedStatusToSDK(w *SyncedTableFailedStatus) (*sdk.SyncedTableFailedStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableFailedStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	return out, nil
+}
+
+// SyncedTableFailedStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTableFailedStatusFromSDK(v *sdk.SyncedTableFailedStatus) (*SyncedTableFailedStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableFailedStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	return out, nil
+}
+
+// SyncedTablePipelineProgressToSDK converts the mirror to the sdk-go type.
+func SyncedTablePipelineProgressToSDK(w *SyncedTablePipelineProgress) (*sdk.SyncedTablePipelineProgress, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTablePipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = w.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = w.SyncedRowCount
+	out.TotalRowCount = w.TotalRowCount
+	out.SyncProgressCompletion = w.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = w.EstimatedCompletionTimeSeconds
+	out.ProvisioningPhase = w.ProvisioningPhase
+	return out, nil
+}
+
+// SyncedTablePipelineProgressFromSDK converts the sdk-go type to the mirror.
+func SyncedTablePipelineProgressFromSDK(v *sdk.SyncedTablePipelineProgress) (*SyncedTablePipelineProgress, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTablePipelineProgress{}
+	out.LatestVersionCurrentlyProcessing = v.LatestVersionCurrentlyProcessing
+	out.SyncedRowCount = v.SyncedRowCount
+	out.TotalRowCount = v.TotalRowCount
+	out.SyncProgressCompletion = v.SyncProgressCompletion
+	out.EstimatedCompletionTimeSeconds = v.EstimatedCompletionTimeSeconds
+	out.ProvisioningPhase = v.ProvisioningPhase
+	return out, nil
+}
+
+// SyncedTablePositionToSDK converts the mirror to the sdk-go type.
+func SyncedTablePositionToSDK(w *SyncedTablePosition) (*sdk.SyncedTablePosition, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTablePosition{}
+	out.SyncStartTimestamp = w.SyncStartTimestamp
+	out.SyncEndTimestamp = w.SyncEndTimestamp
+	{
+		members := 0
+		if w.DeltaTableSyncInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTablePosition.SourceSyncInfo")
+		}
+	}
+	switch {
+	case w.DeltaTableSyncInfo != nil:
+		conv41, err := DeltaTableSyncInfoToSDK(w.DeltaTableSyncInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo", err)
+		}
+		out.SourceSyncInfo = &sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo{DeltaTableSyncInfo: *conv41}
+	}
+	return out, nil
+}
+
+// SyncedTablePositionFromSDK converts the sdk-go type to the mirror.
+func SyncedTablePositionFromSDK(v *sdk.SyncedTablePosition) (*SyncedTablePosition, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTablePosition{}
+	out.SyncStartTimestamp = v.SyncStartTimestamp
+	out.SyncEndTimestamp = v.SyncEndTimestamp
+	switch value := v.SourceSyncInfo.(type) {
+	case *sdk.SyncedTablePosition_SourceSyncInfo_DeltaTableSyncInfo:
+		if value != nil {
+			conv42, err := DeltaTableSyncInfoFromSDK(&value.DeltaTableSyncInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTablePosition.SourceSyncInfo", err)
+			}
+			out.DeltaTableSyncInfo = conv42
+		}
+	}
+	return out, nil
+}
+
+// SyncedTableProvisioningStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTableProvisioningStatusToSDK(w *SyncedTableProvisioningStatus) (*sdk.SyncedTableProvisioningStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableProvisioningStatus{}
+	conv43, err := SyncedTablePipelineProgressToSDK(w.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableProvisioningStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv43
+	return out, nil
+}
+
+// SyncedTableProvisioningStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTableProvisioningStatusFromSDK(v *sdk.SyncedTableProvisioningStatus) (*SyncedTableProvisioningStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableProvisioningStatus{}
+	conv44, err := SyncedTablePipelineProgressFromSDK(v.InitialPipelineSyncProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableProvisioningStatus.InitialPipelineSyncProgress", err)
+	}
+	out.InitialPipelineSyncProgress = conv44
+	return out, nil
+}
+
+// SyncedTableSpecToSDK converts the mirror to the sdk-go type.
+func SyncedTableSpecToSDK(w *SyncedTableSpec) (*sdk.SyncedTableSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableSpec{}
+	out.SchedulingPolicy = w.SchedulingPolicy
+	out.SourceTableFullName = w.SourceTableFullName
+	out.PrimaryKeyColumns = w.PrimaryKeyColumns
+	out.TimeseriesKey = w.TimeseriesKey
+	out.ExistingPipelineId = w.ExistingPipelineId
+	out.CreateDatabaseObjectsIfMissing = w.CreateDatabaseObjectsIfMissing
+	conv45, err := NewPipelineSpecToSDK(w.NewPipelineSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.NewPipelineSpec", err)
+	}
+	out.NewPipelineSpec = conv45
+	out.AcceleratedSync = w.AcceleratedSync
+	conv46, err := convertSlice(w.TypeOverrides, SyncedTableSpec_TypeOverrideToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.TypeOverrides", err)
+	}
+	out.TypeOverrides = conv46
+	return out, nil
+}
+
+// SyncedTableSpecFromSDK converts the sdk-go type to the mirror.
+func SyncedTableSpecFromSDK(v *sdk.SyncedTableSpec) (*SyncedTableSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableSpec{}
+	out.SchedulingPolicy = v.SchedulingPolicy
+	out.SourceTableFullName = v.SourceTableFullName
+	out.PrimaryKeyColumns = v.PrimaryKeyColumns
+	out.TimeseriesKey = v.TimeseriesKey
+	out.ExistingPipelineId = v.ExistingPipelineId
+	out.CreateDatabaseObjectsIfMissing = v.CreateDatabaseObjectsIfMissing
+	conv47, err := NewPipelineSpecFromSDK(v.NewPipelineSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.NewPipelineSpec", err)
+	}
+	out.NewPipelineSpec = conv47
+	out.AcceleratedSync = v.AcceleratedSync
+	conv48, err := convertSlice(v.TypeOverrides, SyncedTableSpec_TypeOverrideFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableSpec.TypeOverrides", err)
+	}
+	out.TypeOverrides = conv48
+	return out, nil
+}
+
+// SyncedTableSpec_TypeOverrideToSDK converts the mirror to the sdk-go type.
+func SyncedTableSpec_TypeOverrideToSDK(w *SyncedTableSpec_TypeOverride) (*sdk.SyncedTableSpec_TypeOverride, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableSpec_TypeOverride{}
+	out.ColumnName = w.ColumnName
+	out.PgType = w.PgType
+	out.Size = w.Size
+	return out, nil
+}
+
+// SyncedTableSpec_TypeOverrideFromSDK converts the sdk-go type to the mirror.
+func SyncedTableSpec_TypeOverrideFromSDK(v *sdk.SyncedTableSpec_TypeOverride) (*SyncedTableSpec_TypeOverride, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableSpec_TypeOverride{}
+	out.ColumnName = v.ColumnName
+	out.PgType = v.PgType
+	out.Size = v.Size
+	return out, nil
+}
+
+// SyncedTableStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTableStatusToSDK(w *SyncedTableStatus) (*sdk.SyncedTableStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableStatus{}
+	out.DetailedState = w.DetailedState
+	out.Message = w.Message
+	{
+		members := 0
+		if w.ProvisioningStatus != nil {
+			members++
+		}
+		if w.ContinuousUpdateStatus != nil {
+			members++
+		}
+		if w.TriggeredUpdateStatus != nil {
+			members++
+		}
+		if w.FailedStatus != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "SyncedTableStatus.DetailedStatus")
+		}
+	}
+	switch {
+	case w.ProvisioningStatus != nil:
+		conv49, err := SyncedTableProvisioningStatusToSDK(w.ProvisioningStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.SyncedTableStatus_DetailedStatus_ProvisioningStatus{ProvisioningStatus: *conv49}
+	case w.ContinuousUpdateStatus != nil:
+		conv50, err := SyncedTableContinuousUpdateStatusToSDK(w.ContinuousUpdateStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.SyncedTableStatus_DetailedStatus_ContinuousUpdateStatus{ContinuousUpdateStatus: *conv50}
+	case w.TriggeredUpdateStatus != nil:
+		conv51, err := SyncedTableTriggeredUpdateStatusToSDK(w.TriggeredUpdateStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.SyncedTableStatus_DetailedStatus_TriggeredUpdateStatus{TriggeredUpdateStatus: *conv51}
+	case w.FailedStatus != nil:
+		conv52, err := SyncedTableFailedStatusToSDK(w.FailedStatus)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+		}
+		out.DetailedStatus = &sdk.SyncedTableStatus_DetailedStatus_FailedStatus{FailedStatus: *conv52}
+	}
+	out.PipelineId = w.PipelineId
+	conv53, err := SyncedTablePositionToSDK(w.LastSync)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.LastSync", err)
+	}
+	out.LastSync = conv53
+	return out, nil
+}
+
+// SyncedTableStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTableStatusFromSDK(v *sdk.SyncedTableStatus) (*SyncedTableStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableStatus{}
+	out.DetailedState = v.DetailedState
+	out.Message = v.Message
+	switch value := v.DetailedStatus.(type) {
+	case *sdk.SyncedTableStatus_DetailedStatus_ProvisioningStatus:
+		if value != nil {
+			conv54, err := SyncedTableProvisioningStatusFromSDK(&value.ProvisioningStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+			}
+			out.ProvisioningStatus = conv54
+		}
+	case *sdk.SyncedTableStatus_DetailedStatus_ContinuousUpdateStatus:
+		if value != nil {
+			conv55, err := SyncedTableContinuousUpdateStatusFromSDK(&value.ContinuousUpdateStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+			}
+			out.ContinuousUpdateStatus = conv55
+		}
+	case *sdk.SyncedTableStatus_DetailedStatus_TriggeredUpdateStatus:
+		if value != nil {
+			conv56, err := SyncedTableTriggeredUpdateStatusFromSDK(&value.TriggeredUpdateStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+			}
+			out.TriggeredUpdateStatus = conv56
+		}
+	case *sdk.SyncedTableStatus_DetailedStatus_FailedStatus:
+		if value != nil {
+			conv57, err := SyncedTableFailedStatusFromSDK(&value.FailedStatus)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.DetailedStatus", err)
+			}
+			out.FailedStatus = conv57
+		}
+	}
+	out.PipelineId = v.PipelineId
+	conv58, err := SyncedTablePositionFromSDK(v.LastSync)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableStatus.LastSync", err)
+	}
+	out.LastSync = conv58
+	return out, nil
+}
+
+// SyncedTableTriggeredUpdateStatusToSDK converts the mirror to the sdk-go type.
+func SyncedTableTriggeredUpdateStatusToSDK(w *SyncedTableTriggeredUpdateStatus) (*sdk.SyncedTableTriggeredUpdateStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SyncedTableTriggeredUpdateStatus{}
+	out.LastProcessedCommitVersion = w.LastProcessedCommitVersion
+	out.Timestamp = w.Timestamp
+	conv59, err := SyncedTablePipelineProgressToSDK(w.TriggeredUpdateProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.TriggeredUpdateProgress", err)
+	}
+	out.TriggeredUpdateProgress = conv59
+	return out, nil
+}
+
+// SyncedTableTriggeredUpdateStatusFromSDK converts the sdk-go type to the mirror.
+func SyncedTableTriggeredUpdateStatusFromSDK(v *sdk.SyncedTableTriggeredUpdateStatus) (*SyncedTableTriggeredUpdateStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SyncedTableTriggeredUpdateStatus{}
+	out.LastProcessedCommitVersion = v.LastProcessedCommitVersion
+	out.Timestamp = v.Timestamp
+	conv60, err := SyncedTablePipelineProgressFromSDK(v.TriggeredUpdateProgress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SyncedTableTriggeredUpdateStatus.TriggeredUpdateProgress", err)
+	}
+	out.TriggeredUpdateProgress = conv60
+	return out, nil
+}
+
+// UpdateDatabaseCatalogRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDatabaseCatalogRequestToSDK(w *UpdateDatabaseCatalogRequest) (*sdk.UpdateDatabaseCatalogRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDatabaseCatalogRequest{}
+	conv61, err := DatabaseCatalogToSDK(w.DatabaseCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseCatalogRequest.DatabaseCatalog", err)
+	}
+	out.DatabaseCatalog = conv61
+	mask62, err := fieldMaskFromString[sdk.DatabaseCatalog](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseCatalogRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask62
+	return out, nil
+}
+
+// UpdateDatabaseCatalogRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDatabaseCatalogRequestFromSDK(v *sdk.UpdateDatabaseCatalogRequest) (*UpdateDatabaseCatalogRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDatabaseCatalogRequest{}
+	conv63, err := DatabaseCatalogFromSDK(v.DatabaseCatalog)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseCatalogRequest.DatabaseCatalog", err)
+	}
+	out.DatabaseCatalog = conv63
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateDatabaseInstanceRequestToSDK converts the mirror to the sdk-go type.
+func UpdateDatabaseInstanceRequestToSDK(w *UpdateDatabaseInstanceRequest) (*sdk.UpdateDatabaseInstanceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateDatabaseInstanceRequest{}
+	conv64, err := DatabaseInstanceToSDK(w.DatabaseInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseInstanceRequest.DatabaseInstance", err)
+	}
+	out.DatabaseInstance = conv64
+	mask65, err := fieldMaskFromString[sdk.DatabaseInstance](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseInstanceRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask65
+	return out, nil
+}
+
+// UpdateDatabaseInstanceRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateDatabaseInstanceRequestFromSDK(v *sdk.UpdateDatabaseInstanceRequest) (*UpdateDatabaseInstanceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateDatabaseInstanceRequest{}
+	conv66, err := DatabaseInstanceFromSDK(v.DatabaseInstance)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateDatabaseInstanceRequest.DatabaseInstance", err)
+	}
+	out.DatabaseInstance = conv66
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateSyncedDatabaseTableRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSyncedDatabaseTableRequestToSDK(w *UpdateSyncedDatabaseTableRequest) (*sdk.UpdateSyncedDatabaseTableRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSyncedDatabaseTableRequest{}
+	conv67, err := SyncedDatabaseTableToSDK(w.SyncedTable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSyncedDatabaseTableRequest.SyncedTable", err)
+	}
+	out.SyncedTable = conv67
+	mask68, err := fieldMaskFromString[sdk.SyncedDatabaseTable](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSyncedDatabaseTableRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask68
+	return out, nil
+}
+
+// UpdateSyncedDatabaseTableRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSyncedDatabaseTableRequestFromSDK(v *sdk.UpdateSyncedDatabaseTableRequest) (*UpdateSyncedDatabaseTableRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	syncedTableWireValue, err := SyncedDatabaseTableFromSDK(v.SyncedTable)
+	out := &UpdateSyncedDatabaseTableRequest{}
+	conv69, err := SyncedDatabaseTableFromSDK(v.SyncedTable)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSyncedDatabaseTableRequest.SyncedTable", err)
 	}
-	return &UpdateSyncedDatabaseTableRequest{
-		SyncedTable: syncedTableWireValue,
-		UpdateMask:  fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.SyncedTable = conv69
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -1806,4 +2117,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

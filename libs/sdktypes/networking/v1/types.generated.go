@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/networking/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -125,30 +126,6 @@ const (
 	NetworkConnectivityConfigAzurePrivateEndpointRule_PrivateLinkConnectionState_CreateFailed            = sdk.NetworkConnectivityConfigAzurePrivateEndpointRule_PrivateLinkConnectionState_CreateFailed
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Definition of an IP Access list.
 type AccountIpAccessList struct {
 	// Universally unique identifier (UUID) of the IP access list.
@@ -171,40 +148,6 @@ type AccountIpAccessList struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func AccountIpAccessListToSDK(w *AccountIpAccessList) (*sdk.AccountIpAccessList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountIpAccessList.CreatedAt", err)
-	}
-	createdByPublicValue, err := int64FromWire(w.CreatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountIpAccessList.CreatedBy", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountIpAccessList.UpdatedAt", err)
-	}
-	updatedByPublicValue, err := int64FromWire(w.UpdatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountIpAccessList.UpdatedBy", err)
-	}
-	return &sdk.AccountIpAccessList{
-		ListId:       w.ListId,
-		Label:        w.Label,
-		IpAddresses:  w.IpAddresses,
-		AddressCount: w.AddressCount,
-		ListType:     w.ListType,
-		CreatedAt:    createdAtPublicValue,
-		CreatedBy:    createdByPublicValue,
-		UpdatedAt:    updatedAtPublicValue,
-		UpdatedBy:    updatedByPublicValue,
-		Enabled:      w.Enabled,
-	}, nil
-}
-
 type AccountNetworkPolicy struct {
 	// The unique identifier for the network policy.
 	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
@@ -220,56 +163,6 @@ type AccountNetworkPolicy struct {
 	IngressDryRun *IngressNetworkPolicy `json:"ingress_dry_run,omitempty"`
 }
 
-func AccountNetworkPolicyFromSDK(v *sdk.AccountNetworkPolicy) (*AccountNetworkPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	egressWireValue, err := EgressNetworkPolicyFromSDK(v.Egress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Egress", err)
-	}
-	ingressWireValue, err := IngressNetworkPolicyFromSDK(v.Ingress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Ingress", err)
-	}
-	ingressDryRunWireValue, err := IngressNetworkPolicyFromSDK(v.IngressDryRun)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.IngressDryRun", err)
-	}
-	return &AccountNetworkPolicy{
-		NetworkPolicyId: v.NetworkPolicyId,
-		AccountId:       v.AccountId,
-		Egress:          egressWireValue,
-		Ingress:         ingressWireValue,
-		IngressDryRun:   ingressDryRunWireValue,
-	}, nil
-}
-
-func AccountNetworkPolicyToSDK(w *AccountNetworkPolicy) (*sdk.AccountNetworkPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	egressPublicValue, err := EgressNetworkPolicyToSDK(w.Egress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Egress", err)
-	}
-	ingressPublicValue, err := IngressNetworkPolicyToSDK(w.Ingress)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Ingress", err)
-	}
-	ingressDryRunPublicValue, err := IngressNetworkPolicyToSDK(w.IngressDryRun)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.IngressDryRun", err)
-	}
-	return &sdk.AccountNetworkPolicy{
-		NetworkPolicyId: w.NetworkPolicyId,
-		AccountId:       w.AccountId,
-		Egress:          egressPublicValue,
-		Ingress:         ingressPublicValue,
-		IngressDryRun:   ingressDryRunPublicValue,
-	}, nil
-}
-
 type AwsVpcEndpointInfo struct {
 	// The ID of the underlying VPC endpoint in AWS. Provided by the customer when
 	// registering an existing AWS VPC endpoint.
@@ -278,28 +171,6 @@ type AwsVpcEndpointInfo struct {
 	AwsEndpointServiceId *string `json:"aws_endpoint_service_id,omitempty"`
 	// The AWS account ID in which this VPC endpoint lives.
 	AwsAccountId *string `json:"aws_account_id,omitempty"`
-}
-
-func AwsVpcEndpointInfoFromSDK(v *sdk.AwsVpcEndpointInfo) (*AwsVpcEndpointInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AwsVpcEndpointInfo{
-		AwsVpcEndpointId:     v.AwsVpcEndpointId,
-		AwsEndpointServiceId: v.AwsEndpointServiceId,
-		AwsAccountId:         v.AwsAccountId,
-	}, nil
-}
-
-func AwsVpcEndpointInfoToSDK(w *AwsVpcEndpointInfo) (*sdk.AwsVpcEndpointInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsVpcEndpointInfo{
-		AwsVpcEndpointId:     w.AwsVpcEndpointId,
-		AwsEndpointServiceId: w.AwsEndpointServiceId,
-		AwsAccountId:         w.AwsAccountId,
-	}, nil
 }
 
 type AzurePrivateEndpointInfo struct {
@@ -315,30 +186,6 @@ type AzurePrivateEndpointInfo struct {
 	PrivateLinkServiceId *string `json:"private_link_service_id,omitempty"`
 }
 
-func AzurePrivateEndpointInfoFromSDK(v *sdk.AzurePrivateEndpointInfo) (*AzurePrivateEndpointInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AzurePrivateEndpointInfo{
-		PrivateEndpointName:         v.PrivateEndpointName,
-		PrivateEndpointResourceGuid: v.PrivateEndpointResourceGuid,
-		PrivateEndpointResourceId:   v.PrivateEndpointResourceId,
-		PrivateLinkServiceId:        v.PrivateLinkServiceId,
-	}, nil
-}
-
-func AzurePrivateEndpointInfoToSDK(w *AzurePrivateEndpointInfo) (*sdk.AzurePrivateEndpointInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AzurePrivateEndpointInfo{
-		PrivateEndpointName:         w.PrivateEndpointName,
-		PrivateEndpointResourceGuid: w.PrivateEndpointResourceGuid,
-		PrivateEndpointResourceId:   w.PrivateEndpointResourceId,
-		PrivateLinkServiceId:        w.PrivateLinkServiceId,
-	}, nil
-}
-
 // Details required to configure a block list or allow list..
 type CreateAccountIpAccessListRequest struct {
 	AccountId   *string                                  `json:"account_id,omitempty"`
@@ -347,34 +194,9 @@ type CreateAccountIpAccessListRequest struct {
 	IpAddresses []string                                 `json:"ip_addresses,omitempty"`
 }
 
-func CreateAccountIpAccessListRequestFromSDK(v *sdk.CreateAccountIpAccessListRequest) (*CreateAccountIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateAccountIpAccessListRequest{
-		AccountId:   v.AccountId,
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-	}, nil
-}
-
 // An IP access list was successfully created..
 type CreateAccountIpAccessListResponse struct {
 	IpAccessList *AccountIpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func CreateAccountIpAccessListResponseToSDK(w *CreateAccountIpAccessListResponse) (*sdk.CreateAccountIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := AccountIpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccountIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.CreateAccountIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 type CreateEndpointRequest struct {
@@ -382,20 +204,6 @@ type CreateEndpointRequest struct {
 	// Format: `accounts/{account_id}`.
 	Parent   *string   `json:"parent,omitempty"`
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
-}
-
-func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	endpointWireValue, err := EndpointFromSDK(v.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
-	}
-	return &CreateEndpointRequest{
-		Parent:   v.Parent,
-		Endpoint: endpointWireValue,
-	}, nil
 }
 
 // Details required to configure a block list or allow list..
@@ -406,33 +214,9 @@ type CreateIpAccessListRequest struct {
 	IpAddresses []string         `json:"ip_addresses,omitempty"`
 }
 
-func CreateIpAccessListRequestFromSDK(v *sdk.CreateIpAccessListRequest) (*CreateIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateIpAccessListRequest{
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-	}, nil
-}
-
 // An IP access list was successfully created..
 type CreateIpAccessListResponse struct {
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func CreateIpAccessListResponseToSDK(w *CreateIpAccessListResponse) (*sdk.CreateIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := IpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.CreateIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Properties of the new private endpoint rule..
@@ -445,41 +229,12 @@ type CreateNccPrivateEndpointRuleRequest struct {
 	PrivateEndpointRule *CreatePrivateEndpointRule `json:"private_endpoint_rule,omitempty"`
 }
 
-func CreateNccPrivateEndpointRuleRequestFromSDK(v *sdk.CreateNccPrivateEndpointRuleRequest) (*CreateNccPrivateEndpointRuleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	privateEndpointRuleWireValue, err := CreatePrivateEndpointRuleFromSDK(v.PrivateEndpointRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
-	}
-	return &CreateNccPrivateEndpointRuleRequest{
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		AccountId:                   v.AccountId,
-		PrivateEndpointRule:         privateEndpointRuleWireValue,
-	}, nil
-}
-
 // Properties of the new network connectivity configuration..
 type CreateNetworkConnectivityConfigRequest struct {
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId                 *string                                 `json:"account_id,omitempty"`
 	NetworkConnectivityConfig *CreateNetworkConnectivityConfiguration `json:"network_connectivity_config,omitempty"`
-}
-
-func CreateNetworkConnectivityConfigRequestFromSDK(v *sdk.CreateNetworkConnectivityConfigRequest) (*CreateNetworkConnectivityConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	networkConnectivityConfigWireValue, err := CreateNetworkConnectivityConfigurationFromSDK(v.NetworkConnectivityConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfigRequest.NetworkConnectivityConfig", err)
-	}
-	return &CreateNetworkConnectivityConfigRequest{
-		AccountId:                 v.AccountId,
-		NetworkConnectivityConfig: networkConnectivityConfigWireValue,
-	}, nil
 }
 
 // Properties of the new network connectivity configuration..
@@ -506,53 +261,12 @@ type CreateNetworkConnectivityConfiguration struct {
 	CreationTime *int64 `json:"creation_time,omitempty"`
 }
 
-func CreateNetworkConnectivityConfigurationFromSDK(v *sdk.CreateNetworkConnectivityConfiguration) (*CreateNetworkConnectivityConfiguration, error) {
-	if v == nil {
-		return nil, nil
-	}
-	egressConfigWireValue, err := CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK(v.EgressConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfiguration.EgressConfig", err)
-	}
-	updatedTimeWireValue, err := int64ToWire(v.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfiguration.UpdatedTime", err)
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfiguration.CreationTime", err)
-	}
-	return &CreateNetworkConnectivityConfiguration{
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		AccountId:                   v.AccountId,
-		Name:                        v.Name,
-		Region:                      v.Region,
-		EgressConfig:                egressConfigWireValue,
-		UpdatedTime:                 updatedTimeWireValue,
-		CreationTime:                creationTimeWireValue,
-	}, nil
-}
-
 type CreateNetworkPolicyRequest struct {
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
 	AccountId *string `json:"account_id,omitempty"`
 	// Network policy configuration details.
 	NetworkPolicy *AccountNetworkPolicy `json:"network_policy,omitempty"`
-}
-
-func CreateNetworkPolicyRequestFromSDK(v *sdk.CreateNetworkPolicyRequest) (*CreateNetworkPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	networkPolicyWireValue, err := AccountNetworkPolicyFromSDK(v.NetworkPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkPolicyRequest.NetworkPolicy", err)
-	}
-	return &CreateNetworkPolicyRequest{
-		AccountId:     v.AccountId,
-		NetworkPolicy: networkPolicyWireValue,
-	}, nil
 }
 
 type CreateNetworkRequest struct {
@@ -570,29 +284,6 @@ type CreateNetworkRequest struct {
 	SecurityGroupIds []string             `json:"security_group_ids,omitempty"`
 	VpcEndpoints     *NetworkVpcEndpoints `json:"vpc_endpoints,omitempty"`
 	GcpNetworkInfo   *GcpNetworkInfo      `json:"gcp_network_info,omitempty"`
-}
-
-func CreateNetworkRequestFromSDK(v *sdk.CreateNetworkRequest) (*CreateNetworkRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	vpcEndpointsWireValue, err := NetworkVpcEndpointsFromSDK(v.VpcEndpoints)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.VpcEndpoints", err)
-	}
-	gcpNetworkInfoWireValue, err := GcpNetworkInfoFromSDK(v.GcpNetworkInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.GcpNetworkInfo", err)
-	}
-	return &CreateNetworkRequest{
-		AccountId:        v.AccountId,
-		NetworkName:      v.NetworkName,
-		VpcId:            v.VpcId,
-		SubnetIds:        v.SubnetIds,
-		SecurityGroupIds: v.SecurityGroupIds,
-		VpcEndpoints:     vpcEndpointsWireValue,
-		GcpNetworkInfo:   gcpNetworkInfoWireValue,
-	}, nil
 }
 
 type CreatePrivateAccessSettingsRequest struct {
@@ -624,20 +315,6 @@ type CreatePrivateAccessSettingsRequest struct {
 	// PrivateLink connections. To control how your workspace is accessed via public
 	// internet, see IP access lists.
 	AllowedVpcEndpointIds []string `json:"allowed_vpc_endpoint_ids,omitempty"`
-}
-
-func CreatePrivateAccessSettingsRequestFromSDK(v *sdk.CreatePrivateAccessSettingsRequest) (*CreatePrivateAccessSettingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreatePrivateAccessSettingsRequest{
-		AccountId:                 v.AccountId,
-		PrivateAccessSettingsName: v.PrivateAccessSettingsName,
-		Region:                    v.Region,
-		PublicAccessEnabled:       v.PublicAccessEnabled,
-		PrivateAccessLevel:        v.PrivateAccessLevel,
-		AllowedVpcEndpointIds:     v.AllowedVpcEndpointIds,
-	}, nil
 }
 
 // Properties of the new private endpoint rule. Note that you must approve the
@@ -709,58 +386,6 @@ type CreatePrivateEndpointRule struct {
 	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
-func CreatePrivateEndpointRuleFromSDK(v *sdk.CreatePrivateEndpointRule) (*CreatePrivateEndpointRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimeWireValue, err := int64ToWire(v.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtWireValue, err := int64ToWire(v.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.DeactivatedAt", err)
-	}
-	var endpointGcpEndpointWire *GcpEndpoint
-	switch value := v.Endpoint.(type) {
-	case nil:
-	case *sdk.CreatePrivateEndpointRule_Endpoint_GcpEndpoint:
-		if value != nil {
-			endpointGcpEndpointConverted, err := GcpEndpointFromSDK(&value.GcpEndpoint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.Endpoint.GcpEndpoint", err)
-			}
-			endpointGcpEndpointWire = endpointGcpEndpointConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreatePrivateEndpointRule.Endpoint", value)
-	}
-	return &CreatePrivateEndpointRule{
-		RuleId:                      v.RuleId,
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		ConnectionState:             v.ConnectionState,
-		DomainNames:                 v.DomainNames,
-		CreationTime:                creationTimeWireValue,
-		UpdatedTime:                 updatedTimeWireValue,
-		Deactivated:                 v.Deactivated,
-		DeactivatedAt:               deactivatedAtWireValue,
-		ErrorMessage:                v.ErrorMessage,
-		ResourceId:                  v.ResourceId,
-		GroupId:                     v.GroupId,
-		EndpointName:                v.EndpointName,
-		AccountId:                   v.AccountId,
-		EndpointService:             v.EndpointService,
-		ResourceNames:               v.ResourceNames,
-		VpcEndpointId:               v.VpcEndpointId,
-		Enabled:                     v.Enabled,
-		GcpEndpoint:                 endpointGcpEndpointWire,
-	}, nil
-}
-
 type CreateVpcEndpointRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
 	// The human-readable name of the storage configuration.
@@ -770,33 +395,6 @@ type CreateVpcEndpointRequest struct {
 	// The ID of the VPC endpoint object in AWS.
 	AwsVpcEndpointId   *string             `json:"aws_vpc_endpoint_id,omitempty"`
 	GcpVpcEndpointInfo *GcpVpcEndpointInfo `json:"gcp_vpc_endpoint_info,omitempty"`
-}
-
-func CreateVpcEndpointRequestFromSDK(v *sdk.CreateVpcEndpointRequest) (*CreateVpcEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vpcEndpointInfoGcpVpcEndpointInfoWire *GcpVpcEndpointInfo
-	switch value := v.VpcEndpointInfo.(type) {
-	case nil:
-	case *sdk.CreateVpcEndpointRequest_VpcEndpointInfo_GcpVpcEndpointInfo:
-		if value != nil {
-			vpcEndpointInfoGcpVpcEndpointInfoConverted, err := GcpVpcEndpointInfoFromSDK(&value.GcpVpcEndpointInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateVpcEndpointRequest.VpcEndpointInfo.GcpVpcEndpointInfo", err)
-			}
-			vpcEndpointInfoGcpVpcEndpointInfoWire = vpcEndpointInfoGcpVpcEndpointInfoConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateVpcEndpointRequest.VpcEndpointInfo", value)
-	}
-	return &CreateVpcEndpointRequest{
-		AccountId:          v.AccountId,
-		VpcEndpointName:    v.VpcEndpointName,
-		Region:             v.Region,
-		AwsVpcEndpointId:   v.AwsVpcEndpointId,
-		GcpVpcEndpointInfo: vpcEndpointInfoGcpVpcEndpointInfoWire,
-	}, nil
 }
 
 type CustomerFacingNetworkConnectivityConfigEgressConfig struct {
@@ -809,42 +407,6 @@ type CustomerFacingNetworkConnectivityConfigEgressConfig struct {
 	TargetRules *CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule `json:"target_rules,omitempty"`
 }
 
-func CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK(v *sdk.CustomerFacingNetworkConnectivityConfigEgressConfig) (*CustomerFacingNetworkConnectivityConfigEgressConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	defaultRulesWireValue, err := NetworkConnectivityConfigEgressConfig_DefaultRuleFromSDK(v.DefaultRules)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.DefaultRules", err)
-	}
-	targetRulesWireValue, err := CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleFromSDK(v.TargetRules)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.TargetRules", err)
-	}
-	return &CustomerFacingNetworkConnectivityConfigEgressConfig{
-		DefaultRules: defaultRulesWireValue,
-		TargetRules:  targetRulesWireValue,
-	}, nil
-}
-
-func CustomerFacingNetworkConnectivityConfigEgressConfigToSDK(w *CustomerFacingNetworkConnectivityConfigEgressConfig) (*sdk.CustomerFacingNetworkConnectivityConfigEgressConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	defaultRulesPublicValue, err := NetworkConnectivityConfigEgressConfig_DefaultRuleToSDK(w.DefaultRules)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.DefaultRules", err)
-	}
-	targetRulesPublicValue, err := CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleToSDK(w.TargetRules)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.TargetRules", err)
-	}
-	return &sdk.CustomerFacingNetworkConnectivityConfigEgressConfig{
-		DefaultRules: defaultRulesPublicValue,
-		TargetRules:  targetRulesPublicValue,
-	}, nil
-}
-
 // Target rule controls the egress rules that are dedicated to specific
 // resources..
 type CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule struct {
@@ -854,72 +416,10 @@ type CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRul
 	AwsPrivateEndpointRules []NetworkConnectivityConfigAwsPrivateEndpointRule `json:"aws_private_endpoint_rules,omitempty"`
 }
 
-func CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleFromSDK(v *sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule) (*CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	azurePrivateEndpointRulesWireValue, err := convertSlice(v.AzurePrivateEndpointRules, NetworkConnectivityConfigAzurePrivateEndpointRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AzurePrivateEndpointRules", err)
-	}
-	awsPrivateEndpointRulesWireValue, err := convertSlice(v.AwsPrivateEndpointRules, NetworkConnectivityConfigAwsPrivateEndpointRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AwsPrivateEndpointRules", err)
-	}
-	return &CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule{
-		AzurePrivateEndpointRules: azurePrivateEndpointRulesWireValue,
-		AwsPrivateEndpointRules:   awsPrivateEndpointRulesWireValue,
-	}, nil
-}
-
-func CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleToSDK(w *CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule) (*sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	azurePrivateEndpointRulesPublicValue, err := convertSlice(w.AzurePrivateEndpointRules, NetworkConnectivityConfigAzurePrivateEndpointRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AzurePrivateEndpointRules", err)
-	}
-	awsPrivateEndpointRulesPublicValue, err := convertSlice(w.AwsPrivateEndpointRules, NetworkConnectivityConfigAwsPrivateEndpointRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AwsPrivateEndpointRules", err)
-	}
-	return &sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule{
-		AzurePrivateEndpointRules: azurePrivateEndpointRulesPublicValue,
-		AwsPrivateEndpointRules:   awsPrivateEndpointRulesPublicValue,
-	}, nil
-}
-
 // The network policies applying for egress traffic..
 type EgressNetworkPolicy struct {
 	// The access policy enforced for egress traffic to the internet.
 	NetworkAccess *EgressNetworkPolicy_NetworkAccessPolicy `json:"network_access,omitempty"`
-}
-
-func EgressNetworkPolicyFromSDK(v *sdk.EgressNetworkPolicy) (*EgressNetworkPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	networkAccessWireValue, err := EgressNetworkPolicy_NetworkAccessPolicyFromSDK(v.NetworkAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.NetworkAccess", err)
-	}
-	return &EgressNetworkPolicy{
-		NetworkAccess: networkAccessWireValue,
-	}, nil
-}
-
-func EgressNetworkPolicyToSDK(w *EgressNetworkPolicy) (*sdk.EgressNetworkPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	networkAccessPublicValue, err := EgressNetworkPolicy_NetworkAccessPolicyToSDK(w.NetworkAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.NetworkAccess", err)
-	}
-	return &sdk.EgressNetworkPolicy{
-		NetworkAccess: networkAccessPublicValue,
-	}, nil
 }
 
 type EgressNetworkPolicy_NetworkAccessPolicy struct {
@@ -945,103 +445,9 @@ type EgressNetworkPolicy_NetworkAccessPolicy struct {
 	AllowedDatabricksDestinations []EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination `json:"allowed_databricks_destinations,omitempty"`
 }
 
-func EgressNetworkPolicy_NetworkAccessPolicyFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy) (*EgressNetworkPolicy_NetworkAccessPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	allowedInternetDestinationsWireValue, err := convertSlice(v.AllowedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedInternetDestinations", err)
-	}
-	allowedStorageDestinationsWireValue, err := convertSlice(v.AllowedStorageDestinations, EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedStorageDestinations", err)
-	}
-	policyEnforcementWireValue, err := EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementFromSDK(v.PolicyEnforcement)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.PolicyEnforcement", err)
-	}
-	blockedInternetDestinationsWireValue, err := convertSlice(v.BlockedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.BlockedInternetDestinations", err)
-	}
-	allowedDatabricksDestinationsWireValue, err := convertSlice(v.AllowedDatabricksDestinations, EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedDatabricksDestinations", err)
-	}
-	return &EgressNetworkPolicy_NetworkAccessPolicy{
-		RestrictionMode:               v.RestrictionMode,
-		AllowedInternetDestinations:   allowedInternetDestinationsWireValue,
-		AllowedStorageDestinations:    allowedStorageDestinationsWireValue,
-		PolicyEnforcement:             policyEnforcementWireValue,
-		BlockedInternetDestinations:   blockedInternetDestinationsWireValue,
-		AllowedDatabricksDestinations: allowedDatabricksDestinationsWireValue,
-	}, nil
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicyToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	allowedInternetDestinationsPublicValue, err := convertSlice(w.AllowedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedInternetDestinations", err)
-	}
-	allowedStorageDestinationsPublicValue, err := convertSlice(w.AllowedStorageDestinations, EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedStorageDestinations", err)
-	}
-	policyEnforcementPublicValue, err := EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementToSDK(w.PolicyEnforcement)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.PolicyEnforcement", err)
-	}
-	blockedInternetDestinationsPublicValue, err := convertSlice(w.BlockedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.BlockedInternetDestinations", err)
-	}
-	allowedDatabricksDestinationsPublicValue, err := convertSlice(w.AllowedDatabricksDestinations, EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedDatabricksDestinations", err)
-	}
-	return &sdk.EgressNetworkPolicy_NetworkAccessPolicy{
-		RestrictionMode:               w.RestrictionMode,
-		AllowedInternetDestinations:   allowedInternetDestinationsPublicValue,
-		AllowedStorageDestinations:    allowedStorageDestinationsPublicValue,
-		PolicyEnforcement:             policyEnforcementPublicValue,
-		BlockedInternetDestinations:   blockedInternetDestinationsPublicValue,
-		AllowedDatabricksDestinations: allowedDatabricksDestinationsPublicValue,
-	}, nil
-}
-
 type EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination struct {
 	// The workspace IDs to allow egress traffic to.
 	WorkspaceIds []int64 `json:"workspace_ids,omitempty"`
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdsWireValue, err := convertSlice(v.WorkspaceIds, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination.WorkspaceIds", err)
-	}
-	return &EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination{
-		WorkspaceIds: workspaceIdsWireValue,
-	}, nil
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdsPublicValue, err := convertSlice(w.WorkspaceIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination.WorkspaceIds", err)
-	}
-	return &sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination{
-		WorkspaceIds: workspaceIdsPublicValue,
-	}, nil
 }
 
 // Users can specify accessible internet destinations when outbound access is
@@ -1055,26 +461,6 @@ type EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination struct {
 	InternetDestinationType EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination_InternetDestinationType `json:"internet_destination_type,omitempty"`
 }
 
-func EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination{
-		Destination:             v.Destination,
-		InternetDestinationType: v.InternetDestinationType,
-	}, nil
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination{
-		Destination:             w.Destination,
-		InternetDestinationType: w.InternetDestinationType,
-	}, nil
-}
-
 type EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement struct {
 	// The mode of policy enforcement. ENFORCED blocks traffic that violates policy,
 	// while DRY_RUN only logs violations without blocking. When not specified,
@@ -1084,26 +470,6 @@ type EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement struct {
 	// run for specific products and for the other products, they will run in
 	// enforced mode.
 	DryRunModeProductFilter []EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement_DryRunModeProductFilter `json:"dry_run_mode_product_filter,omitempty"`
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement) (*EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement{
-		EnforcementMode:         v.EnforcementMode,
-		DryRunModeProductFilter: v.DryRunModeProductFilter,
-	}, nil
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement{
-		EnforcementMode:         w.EnforcementMode,
-		DryRunModeProductFilter: w.DryRunModeProductFilter,
-	}, nil
 }
 
 // Users can specify accessible storage destinations..
@@ -1116,32 +482,6 @@ type EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination struct {
 	AzureStorageAccount *string `json:"azure_storage_account,omitempty"`
 	// The Azure storage service type (blob, dfs, etc.).
 	AzureStorageService *string `json:"azure_storage_service,omitempty"`
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination{
-		BucketName:             v.BucketName,
-		Region:                 v.Region,
-		StorageDestinationType: v.StorageDestinationType,
-		AzureStorageAccount:    v.AzureStorageAccount,
-		AzureStorageService:    v.AzureStorageService,
-	}, nil
-}
-
-func EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination{
-		BucketName:             w.BucketName,
-		Region:                 w.Region,
-		StorageDestinationType: w.StorageDestinationType,
-		AzureStorageAccount:    w.AzureStorageAccount,
-		AzureStorageService:    w.AzureStorageService,
-	}, nil
 }
 
 // Endpoint represents a cloud networking resource in a user's cloud account and
@@ -1176,186 +516,12 @@ type Endpoint struct {
 	CreateTime *types.Time `json:"create_time,omitempty"`
 }
 
-func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var endpointInfoAzurePrivateEndpointInfoWire *AzurePrivateEndpointInfo
-	var endpointInfoAwsVpcEndpointInfoWire *AwsVpcEndpointInfo
-	var endpointInfoGcpPscEndpointInfoWire *GcpPscEndpointInfo
-	switch value := v.EndpointInfo.(type) {
-	case nil:
-	case *sdk.Endpoint_EndpointInfo_AzurePrivateEndpointInfo:
-		if value != nil {
-			endpointInfoAzurePrivateEndpointInfoConverted, err := AzurePrivateEndpointInfoFromSDK(&value.AzurePrivateEndpointInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.AzurePrivateEndpointInfo", err)
-			}
-			endpointInfoAzurePrivateEndpointInfoWire = endpointInfoAzurePrivateEndpointInfoConverted
-		}
-	case *sdk.Endpoint_EndpointInfo_AwsVpcEndpointInfo:
-		if value != nil {
-			endpointInfoAwsVpcEndpointInfoConverted, err := AwsVpcEndpointInfoFromSDK(&value.AwsVpcEndpointInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.AwsVpcEndpointInfo", err)
-			}
-			endpointInfoAwsVpcEndpointInfoWire = endpointInfoAwsVpcEndpointInfoConverted
-		}
-	case *sdk.Endpoint_EndpointInfo_GcpPscEndpointInfo:
-		if value != nil {
-			endpointInfoGcpPscEndpointInfoConverted, err := GcpPscEndpointInfoFromSDK(&value.GcpPscEndpointInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.GcpPscEndpointInfo", err)
-			}
-			endpointInfoGcpPscEndpointInfoWire = endpointInfoGcpPscEndpointInfoConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Endpoint.EndpointInfo", value)
-	}
-	return &Endpoint{
-		Name:                     v.Name,
-		EndpointId:               v.EndpointId,
-		AccountId:                v.AccountId,
-		DisplayName:              v.DisplayName,
-		UseCase:                  v.UseCase,
-		Region:                   v.Region,
-		State:                    v.State,
-		AzurePrivateEndpointInfo: endpointInfoAzurePrivateEndpointInfoWire,
-		AwsVpcEndpointInfo:       endpointInfoAwsVpcEndpointInfoWire,
-		GcpPscEndpointInfo:       endpointInfoGcpPscEndpointInfoWire,
-		CreateTime:               v.CreateTime,
-	}, nil
-}
-
-func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointInfoMembers := 0
-	if w.AzurePrivateEndpointInfo != nil {
-		endpointInfoMembers++
-	}
-	if w.AwsVpcEndpointInfo != nil {
-		endpointInfoMembers++
-	}
-	if w.GcpPscEndpointInfo != nil {
-		endpointInfoMembers++
-	}
-	if endpointInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Endpoint.EndpointInfo")
-	}
-	endpointInfoSelection := (&sdk.Endpoint{}).EndpointInfo
-	switch {
-	case w.AzurePrivateEndpointInfo != nil:
-		endpointInfoAzurePrivateEndpointInfoConverted, err := AzurePrivateEndpointInfoToSDK(w.AzurePrivateEndpointInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.AzurePrivateEndpointInfo", err)
-		}
-		endpointInfoSelection = &sdk.Endpoint_EndpointInfo_AzurePrivateEndpointInfo{AzurePrivateEndpointInfo: *endpointInfoAzurePrivateEndpointInfoConverted}
-	case w.AwsVpcEndpointInfo != nil:
-		endpointInfoAwsVpcEndpointInfoConverted, err := AwsVpcEndpointInfoToSDK(w.AwsVpcEndpointInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.AwsVpcEndpointInfo", err)
-		}
-		endpointInfoSelection = &sdk.Endpoint_EndpointInfo_AwsVpcEndpointInfo{AwsVpcEndpointInfo: *endpointInfoAwsVpcEndpointInfoConverted}
-	case w.GcpPscEndpointInfo != nil:
-		endpointInfoGcpPscEndpointInfoConverted, err := GcpPscEndpointInfoToSDK(w.GcpPscEndpointInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo.GcpPscEndpointInfo", err)
-		}
-		endpointInfoSelection = &sdk.Endpoint_EndpointInfo_GcpPscEndpointInfo{GcpPscEndpointInfo: *endpointInfoGcpPscEndpointInfoConverted}
-	}
-	return &sdk.Endpoint{
-		Name:         w.Name,
-		EndpointId:   w.EndpointId,
-		AccountId:    w.AccountId,
-		DisplayName:  w.DisplayName,
-		UseCase:      w.UseCase,
-		Region:       w.Region,
-		State:        w.State,
-		CreateTime:   w.CreateTime,
-		EndpointInfo: endpointInfoSelection,
-	}, nil
-}
-
 type GcpEndpoint struct {
 	// Output only. The URI of the created PSC endpoint.
 	PscEndpointUri     *string             `json:"psc_endpoint_uri,omitempty"`
 	ServiceAttachment  *string             `json:"service_attachment,omitempty"`
 	GoogleApiEndpoints *GoogleApiEndpoints `json:"google_api_endpoints,omitempty"`
 	AllVpcScServices   *bool               `json:"all_vpc_sc_services,omitempty"`
-}
-
-func GcpEndpointFromSDK(v *sdk.GcpEndpoint) (*GcpEndpoint, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var targetServicesServiceAttachmentWire *string
-	var targetServicesGoogleApiEndpointsWire *GoogleApiEndpoints
-	var targetServicesAllVpcScServicesWire *bool
-	switch value := v.TargetServices.(type) {
-	case nil:
-	case *sdk.GcpEndpoint_TargetServices_ServiceAttachment:
-		if value != nil {
-			targetServicesServiceAttachmentWire = new(value.ServiceAttachment)
-		}
-	case *sdk.GcpEndpoint_TargetServices_GoogleApiEndpoints:
-		if value != nil {
-			targetServicesGoogleApiEndpointsConverted, err := GoogleApiEndpointsFromSDK(&value.GoogleApiEndpoints)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "GcpEndpoint.TargetServices.GoogleApiEndpoints", err)
-			}
-			targetServicesGoogleApiEndpointsWire = targetServicesGoogleApiEndpointsConverted
-		}
-	case *sdk.GcpEndpoint_TargetServices_AllVpcScServices:
-		if value != nil {
-			targetServicesAllVpcScServicesWire = new(value.AllVpcScServices)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "GcpEndpoint.TargetServices", value)
-	}
-	return &GcpEndpoint{
-		PscEndpointUri:     v.PscEndpointUri,
-		ServiceAttachment:  targetServicesServiceAttachmentWire,
-		GoogleApiEndpoints: targetServicesGoogleApiEndpointsWire,
-		AllVpcScServices:   targetServicesAllVpcScServicesWire,
-	}, nil
-}
-
-func GcpEndpointToSDK(w *GcpEndpoint) (*sdk.GcpEndpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	targetServicesMembers := 0
-	if w.ServiceAttachment != nil {
-		targetServicesMembers++
-	}
-	if w.GoogleApiEndpoints != nil {
-		targetServicesMembers++
-	}
-	if w.AllVpcScServices != nil {
-		targetServicesMembers++
-	}
-	if targetServicesMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GcpEndpoint.TargetServices")
-	}
-	targetServicesSelection := (&sdk.GcpEndpoint{}).TargetServices
-	switch {
-	case w.ServiceAttachment != nil:
-		targetServicesSelection = &sdk.GcpEndpoint_TargetServices_ServiceAttachment{ServiceAttachment: *w.ServiceAttachment}
-	case w.GoogleApiEndpoints != nil:
-		targetServicesGoogleApiEndpointsConverted, err := GoogleApiEndpointsToSDK(w.GoogleApiEndpoints)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GcpEndpoint.TargetServices.GoogleApiEndpoints", err)
-		}
-		targetServicesSelection = &sdk.GcpEndpoint_TargetServices_GoogleApiEndpoints{GoogleApiEndpoints: *targetServicesGoogleApiEndpointsConverted}
-	case w.AllVpcScServices != nil:
-		targetServicesSelection = &sdk.GcpEndpoint_TargetServices_AllVpcScServices{AllVpcScServices: *w.AllVpcScServices}
-	}
-	return &sdk.GcpEndpoint{
-		PscEndpointUri: w.PscEndpointUri,
-		TargetServices: targetServicesSelection,
-	}, nil
 }
 
 type GcpNetworkInfo struct {
@@ -1377,34 +543,6 @@ type GcpNetworkInfo struct {
 	ServiceIpRangeName *string `json:"service_ip_range_name,omitempty"`
 }
 
-func GcpNetworkInfoFromSDK(v *sdk.GcpNetworkInfo) (*GcpNetworkInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpNetworkInfo{
-		NetworkProjectId:   v.NetworkProjectId,
-		VpcId:              v.VpcId,
-		SubnetId:           v.SubnetId,
-		SubnetRegion:       v.SubnetRegion,
-		PodIpRangeName:     v.PodIpRangeName,
-		ServiceIpRangeName: v.ServiceIpRangeName,
-	}, nil
-}
-
-func GcpNetworkInfoToSDK(w *GcpNetworkInfo) (*sdk.GcpNetworkInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpNetworkInfo{
-		NetworkProjectId:   w.NetworkProjectId,
-		VpcId:              w.VpcId,
-		SubnetId:           w.SubnetId,
-		SubnetRegion:       w.SubnetRegion,
-		PodIpRangeName:     w.PodIpRangeName,
-		ServiceIpRangeName: w.ServiceIpRangeName,
-	}, nil
-}
-
 type GcpPscEndpointInfo struct {
 	// The ID of the underlying Private Service Connect connection in the GCP
 	// consumer project, assigned by GCP when the PSC connection is created.
@@ -1423,32 +561,6 @@ type GcpPscEndpointInfo struct {
 	ServiceAttachmentId *string `json:"service_attachment_id,omitempty"`
 }
 
-func GcpPscEndpointInfoFromSDK(v *sdk.GcpPscEndpointInfo) (*GcpPscEndpointInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpPscEndpointInfo{
-		PscConnectionId:     v.PscConnectionId,
-		ProjectId:           v.ProjectId,
-		PscEndpoint:         v.PscEndpoint,
-		EndpointRegion:      v.EndpointRegion,
-		ServiceAttachmentId: v.ServiceAttachmentId,
-	}, nil
-}
-
-func GcpPscEndpointInfoToSDK(w *GcpPscEndpointInfo) (*sdk.GcpPscEndpointInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpPscEndpointInfo{
-		PscConnectionId:     w.PscConnectionId,
-		ProjectId:           w.ProjectId,
-		PscEndpoint:         w.PscEndpoint,
-		EndpointRegion:      w.EndpointRegion,
-		ServiceAttachmentId: w.ServiceAttachmentId,
-	}, nil
-}
-
 type GcpVpcEndpointInfo struct {
 	PscConnectionId     *string `json:"psc_connection_id,omitempty"`
 	ProjectId           *string `json:"project_id,omitempty"`
@@ -1457,65 +569,13 @@ type GcpVpcEndpointInfo struct {
 	ServiceAttachmentId *string `json:"service_attachment_id,omitempty"`
 }
 
-func GcpVpcEndpointInfoFromSDK(v *sdk.GcpVpcEndpointInfo) (*GcpVpcEndpointInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpVpcEndpointInfo{
-		PscConnectionId:     v.PscConnectionId,
-		ProjectId:           v.ProjectId,
-		PscEndpointName:     v.PscEndpointName,
-		EndpointRegion:      v.EndpointRegion,
-		ServiceAttachmentId: v.ServiceAttachmentId,
-	}, nil
-}
-
-func GcpVpcEndpointInfoToSDK(w *GcpVpcEndpointInfo) (*sdk.GcpVpcEndpointInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpVpcEndpointInfo{
-		PscConnectionId:     w.PscConnectionId,
-		ProjectId:           w.ProjectId,
-		PscEndpointName:     w.PscEndpointName,
-		EndpointRegion:      w.EndpointRegion,
-		ServiceAttachmentId: w.ServiceAttachmentId,
-	}, nil
-}
-
 type GetAccountIpAccessListResponse struct {
 	IpAccessList *AccountIpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func GetAccountIpAccessListResponseToSDK(w *GetAccountIpAccessListResponse) (*sdk.GetAccountIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := AccountIpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetAccountIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.GetAccountIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // An IP access list was successfully returned..
 type GetIpAccessListResponse struct {
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func GetIpAccessListResponseToSDK(w *GetIpAccessListResponse) (*sdk.GetIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := IpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.GetIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Wrapper for a list of Google API hostnames. Wrapped in a message because
@@ -1524,24 +584,6 @@ type GoogleApiEndpoints struct {
 	// Google API hostnames, e.g. "storage.googleapis.com",
 	// "bigquery.googleapis.com". Use "googleapis.com" to cover all Google APIs.
 	Endpoints []string `json:"endpoints,omitempty"`
-}
-
-func GoogleApiEndpointsFromSDK(v *sdk.GoogleApiEndpoints) (*GoogleApiEndpoints, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GoogleApiEndpoints{
-		Endpoints: v.Endpoints,
-	}, nil
-}
-
-func GoogleApiEndpointsToSDK(w *GoogleApiEndpoints) (*sdk.GoogleApiEndpoints, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GoogleApiEndpoints{
-		Endpoints: w.Endpoints,
-	}, nil
 }
 
 // The network policies applying for ingress traffic..
@@ -1555,52 +597,6 @@ type IngressNetworkPolicy struct {
 	CrossWorkspaceAccess *IngressNetworkPolicy_CrossWorkspaceAccess `json:"cross_workspace_access,omitempty"`
 }
 
-func IngressNetworkPolicyFromSDK(v *sdk.IngressNetworkPolicy) (*IngressNetworkPolicy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	publicAccessWireValue, err := IngressNetworkPolicy_PublicAccessFromSDK(v.PublicAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PublicAccess", err)
-	}
-	privateAccessWireValue, err := IngressNetworkPolicy_PrivateAccessFromSDK(v.PrivateAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PrivateAccess", err)
-	}
-	crossWorkspaceAccessWireValue, err := IngressNetworkPolicy_CrossWorkspaceAccessFromSDK(v.CrossWorkspaceAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.CrossWorkspaceAccess", err)
-	}
-	return &IngressNetworkPolicy{
-		PublicAccess:         publicAccessWireValue,
-		PrivateAccess:        privateAccessWireValue,
-		CrossWorkspaceAccess: crossWorkspaceAccessWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicyToSDK(w *IngressNetworkPolicy) (*sdk.IngressNetworkPolicy, error) {
-	if w == nil {
-		return nil, nil
-	}
-	publicAccessPublicValue, err := IngressNetworkPolicy_PublicAccessToSDK(w.PublicAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PublicAccess", err)
-	}
-	privateAccessPublicValue, err := IngressNetworkPolicy_PrivateAccessToSDK(w.PrivateAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PrivateAccess", err)
-	}
-	crossWorkspaceAccessPublicValue, err := IngressNetworkPolicy_CrossWorkspaceAccessToSDK(w.CrossWorkspaceAccess)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.CrossWorkspaceAccess", err)
-	}
-	return &sdk.IngressNetworkPolicy{
-		PublicAccess:         publicAccessPublicValue,
-		PrivateAccess:        privateAccessPublicValue,
-		CrossWorkspaceAccess: crossWorkspaceAccessPublicValue,
-	}, nil
-}
-
 // Matches account-level Databricks API endpoints for an ingress network policy
 // rule..
 type IngressNetworkPolicy_AccountApiDestination struct {
@@ -1611,47 +607,9 @@ type IngressNetworkPolicy_AccountApiDestination struct {
 	ScopeQualifier IngressNetworkPolicy_ApiScopeQualifier `json:"scope_qualifier,omitempty"`
 }
 
-func IngressNetworkPolicy_AccountApiDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountApiDestination) (*IngressNetworkPolicy_AccountApiDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_AccountApiDestination{
-		Scopes:         v.Scopes,
-		ScopeQualifier: v.ScopeQualifier,
-	}, nil
-}
-
-func IngressNetworkPolicy_AccountApiDestinationToSDK(w *IngressNetworkPolicy_AccountApiDestination) (*sdk.IngressNetworkPolicy_AccountApiDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_AccountApiDestination{
-		Scopes:         w.Scopes,
-		ScopeQualifier: w.ScopeQualifier,
-	}, nil
-}
-
 type IngressNetworkPolicy_AccountDatabricksOneDestination struct {
 	// Must be set to true.
 	AllDestinations *bool `json:"all_destinations,omitempty"`
-}
-
-func IngressNetworkPolicy_AccountDatabricksOneDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountDatabricksOneDestination) (*IngressNetworkPolicy_AccountDatabricksOneDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_AccountDatabricksOneDestination{
-		AllDestinations: v.AllDestinations,
-	}, nil
-}
-
-func IngressNetworkPolicy_AccountDatabricksOneDestinationToSDK(w *IngressNetworkPolicy_AccountDatabricksOneDestination) (*sdk.IngressNetworkPolicy_AccountDatabricksOneDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_AccountDatabricksOneDestination{
-		AllDestinations: w.AllDestinations,
-	}, nil
 }
 
 // The account console UI destination..
@@ -1660,45 +618,9 @@ type IngressNetworkPolicy_AccountUiDestination struct {
 	AllDestinations *bool `json:"all_destinations,omitempty"`
 }
 
-func IngressNetworkPolicy_AccountUiDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountUiDestination) (*IngressNetworkPolicy_AccountUiDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_AccountUiDestination{
-		AllDestinations: v.AllDestinations,
-	}, nil
-}
-
-func IngressNetworkPolicy_AccountUiDestinationToSDK(w *IngressNetworkPolicy_AccountUiDestination) (*sdk.IngressNetworkPolicy_AccountUiDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_AccountUiDestination{
-		AllDestinations: w.AllDestinations,
-	}, nil
-}
-
 type IngressNetworkPolicy_AppsRuntimeDestination struct {
 	// Must be set to true.
 	AllDestinations *bool `json:"all_destinations,omitempty"`
-}
-
-func IngressNetworkPolicy_AppsRuntimeDestinationFromSDK(v *sdk.IngressNetworkPolicy_AppsRuntimeDestination) (*IngressNetworkPolicy_AppsRuntimeDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_AppsRuntimeDestination{
-		AllDestinations: v.AllDestinations,
-	}, nil
-}
-
-func IngressNetworkPolicy_AppsRuntimeDestinationToSDK(w *IngressNetworkPolicy_AppsRuntimeDestination) (*sdk.IngressNetworkPolicy_AppsRuntimeDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_AppsRuntimeDestination{
-		AllDestinations: w.AllDestinations,
-	}, nil
 }
 
 type IngressNetworkPolicy_Authentication struct {
@@ -1707,65 +629,9 @@ type IngressNetworkPolicy_Authentication struct {
 	Identities []IngressNetworkPolicy_AuthenticationIdentity `json:"identities,omitempty"`
 }
 
-func IngressNetworkPolicy_AuthenticationFromSDK(v *sdk.IngressNetworkPolicy_Authentication) (*IngressNetworkPolicy_Authentication, error) {
-	if v == nil {
-		return nil, nil
-	}
-	identitiesWireValue, err := convertSlice(v.Identities, IngressNetworkPolicy_AuthenticationIdentityFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_Authentication.Identities", err)
-	}
-	return &IngressNetworkPolicy_Authentication{
-		IdentityType: v.IdentityType,
-		Identities:   identitiesWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_AuthenticationToSDK(w *IngressNetworkPolicy_Authentication) (*sdk.IngressNetworkPolicy_Authentication, error) {
-	if w == nil {
-		return nil, nil
-	}
-	identitiesPublicValue, err := convertSlice(w.Identities, IngressNetworkPolicy_AuthenticationIdentityToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_Authentication.Identities", err)
-	}
-	return &sdk.IngressNetworkPolicy_Authentication{
-		IdentityType: w.IdentityType,
-		Identities:   identitiesPublicValue,
-	}, nil
-}
-
 type IngressNetworkPolicy_AuthenticationIdentity struct {
 	PrincipalType IngressNetworkPolicy_AuthenticationIdentity_PrincipalType `json:"principal_type,omitempty"`
 	PrincipalId   *int64                                                    `json:"principal_id,omitempty"`
-}
-
-func IngressNetworkPolicy_AuthenticationIdentityFromSDK(v *sdk.IngressNetworkPolicy_AuthenticationIdentity) (*IngressNetworkPolicy_AuthenticationIdentity, error) {
-	if v == nil {
-		return nil, nil
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_AuthenticationIdentity.PrincipalId", err)
-	}
-	return &IngressNetworkPolicy_AuthenticationIdentity{
-		PrincipalType: v.PrincipalType,
-		PrincipalId:   principalIdWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_AuthenticationIdentityToSDK(w *IngressNetworkPolicy_AuthenticationIdentity) (*sdk.IngressNetworkPolicy_AuthenticationIdentity, error) {
-	if w == nil {
-		return nil, nil
-	}
-	principalIdPublicValue, err := int64FromWire(w.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_AuthenticationIdentity.PrincipalId", err)
-	}
-	return &sdk.IngressNetworkPolicy_AuthenticationIdentity{
-		PrincipalType: w.PrincipalType,
-		PrincipalId:   principalIdPublicValue,
-	}, nil
 }
 
 type IngressNetworkPolicy_CrossWorkspaceAccess struct {
@@ -1779,44 +645,6 @@ type IngressNetworkPolicy_CrossWorkspaceAccess struct {
 	// is allowed; a request matching no rule is denied by default. Only applies
 	// when restriction_mode is RESTRICTED_ACCESS.
 	AllowRules []IngressNetworkPolicy_CrossWorkspaceIngressRule `json:"allow_rules,omitempty"`
-}
-
-func IngressNetworkPolicy_CrossWorkspaceAccessFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceAccess) (*IngressNetworkPolicy_CrossWorkspaceAccess, error) {
-	if v == nil {
-		return nil, nil
-	}
-	denyRulesWireValue, err := convertSlice(v.DenyRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.DenyRules", err)
-	}
-	allowRulesWireValue, err := convertSlice(v.AllowRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.AllowRules", err)
-	}
-	return &IngressNetworkPolicy_CrossWorkspaceAccess{
-		RestrictionMode: v.RestrictionMode,
-		DenyRules:       denyRulesWireValue,
-		AllowRules:      allowRulesWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_CrossWorkspaceAccessToSDK(w *IngressNetworkPolicy_CrossWorkspaceAccess) (*sdk.IngressNetworkPolicy_CrossWorkspaceAccess, error) {
-	if w == nil {
-		return nil, nil
-	}
-	denyRulesPublicValue, err := convertSlice(w.DenyRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.DenyRules", err)
-	}
-	allowRulesPublicValue, err := convertSlice(w.AllowRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.AllowRules", err)
-	}
-	return &sdk.IngressNetworkPolicy_CrossWorkspaceAccess{
-		RestrictionMode: w.RestrictionMode,
-		DenyRules:       denyRulesPublicValue,
-		AllowRules:      allowRulesPublicValue,
-	}, nil
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
@@ -1836,116 +664,9 @@ type IngressNetworkPolicy_CrossWorkspaceIngressRule struct {
 	Label *string `json:"label,omitempty"`
 }
 
-func IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule) (*IngressNetworkPolicy_CrossWorkspaceIngressRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	originWireValue, err := IngressNetworkPolicy_CrossWorkspaceRequestOriginFromSDK(v.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Origin", err)
-	}
-	destinationWireValue, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Destination", err)
-	}
-	authenticationWireValue, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Authentication", err)
-	}
-	return &IngressNetworkPolicy_CrossWorkspaceIngressRule{
-		Origin:         originWireValue,
-		Destination:    destinationWireValue,
-		Authentication: authenticationWireValue,
-		Label:          v.Label,
-	}, nil
-}
-
-func IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK(w *IngressNetworkPolicy_CrossWorkspaceIngressRule) (*sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	originPublicValue, err := IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK(w.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Origin", err)
-	}
-	destinationPublicValue, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Destination", err)
-	}
-	authenticationPublicValue, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Authentication", err)
-	}
-	return &sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule{
-		Origin:         originPublicValue,
-		Destination:    destinationPublicValue,
-		Authentication: authenticationPublicValue,
-		Label:          w.Label,
-	}, nil
-}
-
 type IngressNetworkPolicy_CrossWorkspaceRequestOrigin struct {
 	AllSourceWorkspaces *bool                                 `json:"all_source_workspaces,omitempty"`
 	SelectedWorkspaces  *IngressNetworkPolicy_WorkspaceIdList `json:"selected_workspaces,omitempty"`
-}
-
-func IngressNetworkPolicy_CrossWorkspaceRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin) (*IngressNetworkPolicy_CrossWorkspaceRequestOrigin, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceAllSourceWorkspacesWire *bool
-	var sourceSelectedWorkspacesWire *IngressNetworkPolicy_WorkspaceIdList
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_AllSourceWorkspaces:
-		if value != nil {
-			sourceAllSourceWorkspacesWire = new(value.AllSourceWorkspaces)
-		}
-	case *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_SelectedWorkspaces:
-		if value != nil {
-			sourceSelectedWorkspacesConverted, err := IngressNetworkPolicy_WorkspaceIdListFromSDK(&value.SelectedWorkspaces)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source.SelectedWorkspaces", err)
-			}
-			sourceSelectedWorkspacesWire = sourceSelectedWorkspacesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source", value)
-	}
-	return &IngressNetworkPolicy_CrossWorkspaceRequestOrigin{
-		AllSourceWorkspaces: sourceAllSourceWorkspacesWire,
-		SelectedWorkspaces:  sourceSelectedWorkspacesWire,
-	}, nil
-}
-
-func IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK(w *IngressNetworkPolicy_CrossWorkspaceRequestOrigin) (*sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.AllSourceWorkspaces != nil {
-		sourceMembers++
-	}
-	if w.SelectedWorkspaces != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source")
-	}
-	sourceSelection := (&sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin{}).Source
-	switch {
-	case w.AllSourceWorkspaces != nil:
-		sourceSelection = &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_AllSourceWorkspaces{AllSourceWorkspaces: *w.AllSourceWorkspaces}
-	case w.SelectedWorkspaces != nil:
-		sourceSelectedWorkspacesConverted, err := IngressNetworkPolicy_WorkspaceIdListToSDK(w.SelectedWorkspaces)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source.SelectedWorkspaces", err)
-		}
-		sourceSelection = &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_SelectedWorkspaces{SelectedWorkspaces: *sourceSelectedWorkspacesConverted}
-	}
-	return &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin{
-		Source: sourceSelection,
-	}, nil
 }
 
 // A set of registered endpoints, identified by their endpoint IDs..
@@ -1954,68 +675,14 @@ type IngressNetworkPolicy_Endpoints struct {
 	EndpointIds []string `json:"endpoint_ids,omitempty"`
 }
 
-func IngressNetworkPolicy_EndpointsFromSDK(v *sdk.IngressNetworkPolicy_Endpoints) (*IngressNetworkPolicy_Endpoints, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_Endpoints{
-		EndpointIds: v.EndpointIds,
-	}, nil
-}
-
-func IngressNetworkPolicy_EndpointsToSDK(w *IngressNetworkPolicy_Endpoints) (*sdk.IngressNetworkPolicy_Endpoints, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_Endpoints{
-		EndpointIds: w.EndpointIds,
-	}, nil
-}
-
 type IngressNetworkPolicy_IpRanges struct {
 	// We only support IPv4 and IPv4 CIDR notation for now.
 	IpRanges []string `json:"ip_ranges,omitempty"`
 }
 
-func IngressNetworkPolicy_IpRangesFromSDK(v *sdk.IngressNetworkPolicy_IpRanges) (*IngressNetworkPolicy_IpRanges, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_IpRanges{
-		IpRanges: v.IpRanges,
-	}, nil
-}
-
-func IngressNetworkPolicy_IpRangesToSDK(w *IngressNetworkPolicy_IpRanges) (*sdk.IngressNetworkPolicy_IpRanges, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_IpRanges{
-		IpRanges: w.IpRanges,
-	}, nil
-}
-
 type IngressNetworkPolicy_LakebaseRuntimeDestination struct {
 	// Must be set to true.
 	AllDestinations *bool `json:"all_destinations,omitempty"`
-}
-
-func IngressNetworkPolicy_LakebaseRuntimeDestinationFromSDK(v *sdk.IngressNetworkPolicy_LakebaseRuntimeDestination) (*IngressNetworkPolicy_LakebaseRuntimeDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_LakebaseRuntimeDestination{
-		AllDestinations: v.AllDestinations,
-	}, nil
-}
-
-func IngressNetworkPolicy_LakebaseRuntimeDestinationToSDK(w *IngressNetworkPolicy_LakebaseRuntimeDestination) (*sdk.IngressNetworkPolicy_LakebaseRuntimeDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_LakebaseRuntimeDestination{
-		AllDestinations: w.AllDestinations,
-	}, nil
 }
 
 // Configures how requests arriving over private connectivity, such as
@@ -2031,44 +698,6 @@ type IngressNetworkPolicy_PrivateAccess struct {
 	// is allowed; a request matching no rule is denied by default. Only applies
 	// when restriction_mode is RESTRICTED_ACCESS.
 	AllowRules []IngressNetworkPolicy_PrivateIngressRule `json:"allow_rules,omitempty"`
-}
-
-func IngressNetworkPolicy_PrivateAccessFromSDK(v *sdk.IngressNetworkPolicy_PrivateAccess) (*IngressNetworkPolicy_PrivateAccess, error) {
-	if v == nil {
-		return nil, nil
-	}
-	denyRulesWireValue, err := convertSlice(v.DenyRules, IngressNetworkPolicy_PrivateIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.DenyRules", err)
-	}
-	allowRulesWireValue, err := convertSlice(v.AllowRules, IngressNetworkPolicy_PrivateIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.AllowRules", err)
-	}
-	return &IngressNetworkPolicy_PrivateAccess{
-		RestrictionMode: v.RestrictionMode,
-		DenyRules:       denyRulesWireValue,
-		AllowRules:      allowRulesWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_PrivateAccessToSDK(w *IngressNetworkPolicy_PrivateAccess) (*sdk.IngressNetworkPolicy_PrivateAccess, error) {
-	if w == nil {
-		return nil, nil
-	}
-	denyRulesPublicValue, err := convertSlice(w.DenyRules, IngressNetworkPolicy_PrivateIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.DenyRules", err)
-	}
-	allowRulesPublicValue, err := convertSlice(w.AllowRules, IngressNetworkPolicy_PrivateIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.AllowRules", err)
-	}
-	return &sdk.IngressNetworkPolicy_PrivateAccess{
-		RestrictionMode: w.RestrictionMode,
-		DenyRules:       denyRulesPublicValue,
-		AllowRules:      allowRulesPublicValue,
-	}, nil
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
@@ -2091,54 +720,6 @@ type IngressNetworkPolicy_PrivateIngressRule struct {
 	Label *string `json:"label,omitempty"`
 }
 
-func IngressNetworkPolicy_PrivateIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_PrivateIngressRule) (*IngressNetworkPolicy_PrivateIngressRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	originWireValue, err := IngressNetworkPolicy_PrivateRequestOriginFromSDK(v.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Origin", err)
-	}
-	destinationWireValue, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Destination", err)
-	}
-	authenticationWireValue, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Authentication", err)
-	}
-	return &IngressNetworkPolicy_PrivateIngressRule{
-		Origin:         originWireValue,
-		Destination:    destinationWireValue,
-		Authentication: authenticationWireValue,
-		Label:          v.Label,
-	}, nil
-}
-
-func IngressNetworkPolicy_PrivateIngressRuleToSDK(w *IngressNetworkPolicy_PrivateIngressRule) (*sdk.IngressNetworkPolicy_PrivateIngressRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	originPublicValue, err := IngressNetworkPolicy_PrivateRequestOriginToSDK(w.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Origin", err)
-	}
-	destinationPublicValue, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Destination", err)
-	}
-	authenticationPublicValue, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Authentication", err)
-	}
-	return &sdk.IngressNetworkPolicy_PrivateIngressRule{
-		Origin:         originPublicValue,
-		Destination:    destinationPublicValue,
-		Authentication: authenticationPublicValue,
-		Label:          w.Label,
-	}, nil
-}
-
 // The origin of a private access request, identified by the endpoint through
 // which the request arrives..
 type IngressNetworkPolicy_PrivateRequestOrigin struct {
@@ -2148,129 +729,10 @@ type IngressNetworkPolicy_PrivateRequestOrigin struct {
 	AllPrivateAccess          *bool                           `json:"all_private_access,omitempty"`
 }
 
-func IngressNetworkPolicy_PrivateRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_PrivateRequestOrigin) (*IngressNetworkPolicy_PrivateRequestOrigin, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceEndpointsWire *IngressNetworkPolicy_Endpoints
-	var sourceAllRegisteredEndpointsWire *bool
-	var sourceAzureWorkspacePrivateLinkWire *bool
-	var sourceAllPrivateAccessWire *bool
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_Endpoints:
-		if value != nil {
-			sourceEndpointsConverted, err := IngressNetworkPolicy_EndpointsFromSDK(&value.Endpoints)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateRequestOrigin.Source.Endpoints", err)
-			}
-			sourceEndpointsWire = sourceEndpointsConverted
-		}
-	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllRegisteredEndpoints:
-		if value != nil {
-			sourceAllRegisteredEndpointsWire = new(value.AllRegisteredEndpoints)
-		}
-	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AzureWorkspacePrivateLink:
-		if value != nil {
-			sourceAzureWorkspacePrivateLinkWire = new(value.AzureWorkspacePrivateLink)
-		}
-	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllPrivateAccess:
-		if value != nil {
-			sourceAllPrivateAccessWire = new(value.AllPrivateAccess)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngressNetworkPolicy_PrivateRequestOrigin.Source", value)
-	}
-	return &IngressNetworkPolicy_PrivateRequestOrigin{
-		Endpoints:                 sourceEndpointsWire,
-		AllRegisteredEndpoints:    sourceAllRegisteredEndpointsWire,
-		AzureWorkspacePrivateLink: sourceAzureWorkspacePrivateLinkWire,
-		AllPrivateAccess:          sourceAllPrivateAccessWire,
-	}, nil
-}
-
-func IngressNetworkPolicy_PrivateRequestOriginToSDK(w *IngressNetworkPolicy_PrivateRequestOrigin) (*sdk.IngressNetworkPolicy_PrivateRequestOrigin, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.Endpoints != nil {
-		sourceMembers++
-	}
-	if w.AllRegisteredEndpoints != nil {
-		sourceMembers++
-	}
-	if w.AzureWorkspacePrivateLink != nil {
-		sourceMembers++
-	}
-	if w.AllPrivateAccess != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PrivateRequestOrigin.Source")
-	}
-	sourceSelection := (&sdk.IngressNetworkPolicy_PrivateRequestOrigin{}).Source
-	switch {
-	case w.Endpoints != nil:
-		sourceEndpointsConverted, err := IngressNetworkPolicy_EndpointsToSDK(w.Endpoints)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateRequestOrigin.Source.Endpoints", err)
-		}
-		sourceSelection = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_Endpoints{Endpoints: *sourceEndpointsConverted}
-	case w.AllRegisteredEndpoints != nil:
-		sourceSelection = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllRegisteredEndpoints{AllRegisteredEndpoints: *w.AllRegisteredEndpoints}
-	case w.AzureWorkspacePrivateLink != nil:
-		sourceSelection = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AzureWorkspacePrivateLink{AzureWorkspacePrivateLink: *w.AzureWorkspacePrivateLink}
-	case w.AllPrivateAccess != nil:
-		sourceSelection = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllPrivateAccess{AllPrivateAccess: *w.AllPrivateAccess}
-	}
-	return &sdk.IngressNetworkPolicy_PrivateRequestOrigin{
-		Source: sourceSelection,
-	}, nil
-}
-
 type IngressNetworkPolicy_PublicAccess struct {
 	RestrictionMode IngressNetworkPolicy_PublicAccess_RestrictionMode `json:"restriction_mode,omitempty"`
 	DenyRules       []IngressNetworkPolicy_PublicIngressRule          `json:"deny_rules,omitempty"`
 	AllowRules      []IngressNetworkPolicy_PublicIngressRule          `json:"allow_rules,omitempty"`
-}
-
-func IngressNetworkPolicy_PublicAccessFromSDK(v *sdk.IngressNetworkPolicy_PublicAccess) (*IngressNetworkPolicy_PublicAccess, error) {
-	if v == nil {
-		return nil, nil
-	}
-	denyRulesWireValue, err := convertSlice(v.DenyRules, IngressNetworkPolicy_PublicIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.DenyRules", err)
-	}
-	allowRulesWireValue, err := convertSlice(v.AllowRules, IngressNetworkPolicy_PublicIngressRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.AllowRules", err)
-	}
-	return &IngressNetworkPolicy_PublicAccess{
-		RestrictionMode: v.RestrictionMode,
-		DenyRules:       denyRulesWireValue,
-		AllowRules:      allowRulesWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_PublicAccessToSDK(w *IngressNetworkPolicy_PublicAccess) (*sdk.IngressNetworkPolicy_PublicAccess, error) {
-	if w == nil {
-		return nil, nil
-	}
-	denyRulesPublicValue, err := convertSlice(w.DenyRules, IngressNetworkPolicy_PublicIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.DenyRules", err)
-	}
-	allowRulesPublicValue, err := convertSlice(w.AllowRules, IngressNetworkPolicy_PublicIngressRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.AllowRules", err)
-	}
-	return &sdk.IngressNetworkPolicy_PublicAccess{
-		RestrictionMode: w.RestrictionMode,
-		DenyRules:       denyRulesPublicValue,
-		AllowRules:      allowRulesPublicValue,
-	}, nil
 }
 
 // An ingress rule is enforced when a request satisfies all specified attributes
@@ -2283,136 +745,10 @@ type IngressNetworkPolicy_PublicIngressRule struct {
 	Label *string `json:"label,omitempty"`
 }
 
-func IngressNetworkPolicy_PublicIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_PublicIngressRule) (*IngressNetworkPolicy_PublicIngressRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	originWireValue, err := IngressNetworkPolicy_PublicRequestOriginFromSDK(v.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Origin", err)
-	}
-	destinationWireValue, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Destination", err)
-	}
-	authenticationWireValue, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Authentication", err)
-	}
-	return &IngressNetworkPolicy_PublicIngressRule{
-		Origin:         originWireValue,
-		Destination:    destinationWireValue,
-		Authentication: authenticationWireValue,
-		Label:          v.Label,
-	}, nil
-}
-
-func IngressNetworkPolicy_PublicIngressRuleToSDK(w *IngressNetworkPolicy_PublicIngressRule) (*sdk.IngressNetworkPolicy_PublicIngressRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	originPublicValue, err := IngressNetworkPolicy_PublicRequestOriginToSDK(w.Origin)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Origin", err)
-	}
-	destinationPublicValue, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Destination", err)
-	}
-	authenticationPublicValue, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Authentication", err)
-	}
-	return &sdk.IngressNetworkPolicy_PublicIngressRule{
-		Origin:         originPublicValue,
-		Destination:    destinationPublicValue,
-		Authentication: authenticationPublicValue,
-		Label:          w.Label,
-	}, nil
-}
-
 type IngressNetworkPolicy_PublicRequestOrigin struct {
 	AllIpRanges      *bool                          `json:"all_ip_ranges,omitempty"`
 	IncludedIpRanges *IngressNetworkPolicy_IpRanges `json:"included_ip_ranges,omitempty"`
 	ExcludedIpRanges *IngressNetworkPolicy_IpRanges `json:"excluded_ip_ranges,omitempty"`
-}
-
-func IngressNetworkPolicy_PublicRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_PublicRequestOrigin) (*IngressNetworkPolicy_PublicRequestOrigin, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var sourceAllIpRangesWire *bool
-	var sourceIncludedIpRangesWire *IngressNetworkPolicy_IpRanges
-	var sourceExcludedIpRangesWire *IngressNetworkPolicy_IpRanges
-	switch value := v.Source.(type) {
-	case nil:
-	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_AllIpRanges:
-		if value != nil {
-			sourceAllIpRangesWire = new(value.AllIpRanges)
-		}
-	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_IncludedIpRanges:
-		if value != nil {
-			sourceIncludedIpRangesConverted, err := IngressNetworkPolicy_IpRangesFromSDK(&value.IncludedIpRanges)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source.IncludedIpRanges", err)
-			}
-			sourceIncludedIpRangesWire = sourceIncludedIpRangesConverted
-		}
-	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_ExcludedIpRanges:
-		if value != nil {
-			sourceExcludedIpRangesConverted, err := IngressNetworkPolicy_IpRangesFromSDK(&value.ExcludedIpRanges)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source.ExcludedIpRanges", err)
-			}
-			sourceExcludedIpRangesWire = sourceExcludedIpRangesConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "IngressNetworkPolicy_PublicRequestOrigin.Source", value)
-	}
-	return &IngressNetworkPolicy_PublicRequestOrigin{
-		AllIpRanges:      sourceAllIpRangesWire,
-		IncludedIpRanges: sourceIncludedIpRangesWire,
-		ExcludedIpRanges: sourceExcludedIpRangesWire,
-	}, nil
-}
-
-func IngressNetworkPolicy_PublicRequestOriginToSDK(w *IngressNetworkPolicy_PublicRequestOrigin) (*sdk.IngressNetworkPolicy_PublicRequestOrigin, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sourceMembers := 0
-	if w.AllIpRanges != nil {
-		sourceMembers++
-	}
-	if w.IncludedIpRanges != nil {
-		sourceMembers++
-	}
-	if w.ExcludedIpRanges != nil {
-		sourceMembers++
-	}
-	if sourceMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PublicRequestOrigin.Source")
-	}
-	sourceSelection := (&sdk.IngressNetworkPolicy_PublicRequestOrigin{}).Source
-	switch {
-	case w.AllIpRanges != nil:
-		sourceSelection = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_AllIpRanges{AllIpRanges: *w.AllIpRanges}
-	case w.IncludedIpRanges != nil:
-		sourceIncludedIpRangesConverted, err := IngressNetworkPolicy_IpRangesToSDK(w.IncludedIpRanges)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source.IncludedIpRanges", err)
-		}
-		sourceSelection = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_IncludedIpRanges{IncludedIpRanges: *sourceIncludedIpRangesConverted}
-	case w.ExcludedIpRanges != nil:
-		sourceExcludedIpRangesConverted, err := IngressNetworkPolicy_IpRangesToSDK(w.ExcludedIpRanges)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source.ExcludedIpRanges", err)
-		}
-		sourceSelection = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_ExcludedIpRanges{ExcludedIpRanges: *sourceExcludedIpRangesConverted}
-	}
-	return &sdk.IngressNetworkPolicy_PublicRequestOrigin{
-		Source: sourceSelection,
-	}, nil
 }
 
 type IngressNetworkPolicy_RequestDestination struct {
@@ -2433,94 +769,6 @@ type IngressNetworkPolicy_RequestDestination struct {
 	AccountDatabricksOne *IngressNetworkPolicy_AccountDatabricksOneDestination `json:"account_databricks_one,omitempty"`
 }
 
-func IngressNetworkPolicy_RequestDestinationFromSDK(v *sdk.IngressNetworkPolicy_RequestDestination) (*IngressNetworkPolicy_RequestDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceUiWireValue, err := IngressNetworkPolicy_WorkspaceUiDestinationFromSDK(v.WorkspaceUi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceUi", err)
-	}
-	workspaceApiWireValue, err := IngressNetworkPolicy_WorkspaceApiDestinationFromSDK(v.WorkspaceApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceApi", err)
-	}
-	appsRuntimeWireValue, err := IngressNetworkPolicy_AppsRuntimeDestinationFromSDK(v.AppsRuntime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AppsRuntime", err)
-	}
-	lakebaseRuntimeWireValue, err := IngressNetworkPolicy_LakebaseRuntimeDestinationFromSDK(v.LakebaseRuntime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.LakebaseRuntime", err)
-	}
-	accountUiWireValue, err := IngressNetworkPolicy_AccountUiDestinationFromSDK(v.AccountUi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountUi", err)
-	}
-	accountApiWireValue, err := IngressNetworkPolicy_AccountApiDestinationFromSDK(v.AccountApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountApi", err)
-	}
-	accountDatabricksOneWireValue, err := IngressNetworkPolicy_AccountDatabricksOneDestinationFromSDK(v.AccountDatabricksOne)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountDatabricksOne", err)
-	}
-	return &IngressNetworkPolicy_RequestDestination{
-		AllDestinations:      v.AllDestinations,
-		WorkspaceUi:          workspaceUiWireValue,
-		WorkspaceApi:         workspaceApiWireValue,
-		AppsRuntime:          appsRuntimeWireValue,
-		LakebaseRuntime:      lakebaseRuntimeWireValue,
-		AccountUi:            accountUiWireValue,
-		AccountApi:           accountApiWireValue,
-		AccountDatabricksOne: accountDatabricksOneWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_RequestDestinationToSDK(w *IngressNetworkPolicy_RequestDestination) (*sdk.IngressNetworkPolicy_RequestDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceUiPublicValue, err := IngressNetworkPolicy_WorkspaceUiDestinationToSDK(w.WorkspaceUi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceUi", err)
-	}
-	workspaceApiPublicValue, err := IngressNetworkPolicy_WorkspaceApiDestinationToSDK(w.WorkspaceApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceApi", err)
-	}
-	appsRuntimePublicValue, err := IngressNetworkPolicy_AppsRuntimeDestinationToSDK(w.AppsRuntime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AppsRuntime", err)
-	}
-	lakebaseRuntimePublicValue, err := IngressNetworkPolicy_LakebaseRuntimeDestinationToSDK(w.LakebaseRuntime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.LakebaseRuntime", err)
-	}
-	accountUiPublicValue, err := IngressNetworkPolicy_AccountUiDestinationToSDK(w.AccountUi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountUi", err)
-	}
-	accountApiPublicValue, err := IngressNetworkPolicy_AccountApiDestinationToSDK(w.AccountApi)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountApi", err)
-	}
-	accountDatabricksOnePublicValue, err := IngressNetworkPolicy_AccountDatabricksOneDestinationToSDK(w.AccountDatabricksOne)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountDatabricksOne", err)
-	}
-	return &sdk.IngressNetworkPolicy_RequestDestination{
-		AllDestinations:      w.AllDestinations,
-		WorkspaceUi:          workspaceUiPublicValue,
-		WorkspaceApi:         workspaceApiPublicValue,
-		AppsRuntime:          appsRuntimePublicValue,
-		LakebaseRuntime:      lakebaseRuntimePublicValue,
-		AccountUi:            accountUiPublicValue,
-		AccountApi:           accountApiPublicValue,
-		AccountDatabricksOne: accountDatabricksOnePublicValue,
-	}, nil
-}
-
 // Matches workspace-level Databricks API endpoints for an ingress network
 // policy rule..
 type IngressNetworkPolicy_WorkspaceApiDestination struct {
@@ -2534,79 +782,13 @@ type IngressNetworkPolicy_WorkspaceApiDestination struct {
 	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 }
 
-func IngressNetworkPolicy_WorkspaceApiDestinationFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceApiDestination) (*IngressNetworkPolicy_WorkspaceApiDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_WorkspaceApiDestination{
-		Scopes:         v.Scopes,
-		ScopeQualifier: v.ScopeQualifier,
-		ExcludedScopes: v.ExcludedScopes,
-	}, nil
-}
-
-func IngressNetworkPolicy_WorkspaceApiDestinationToSDK(w *IngressNetworkPolicy_WorkspaceApiDestination) (*sdk.IngressNetworkPolicy_WorkspaceApiDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_WorkspaceApiDestination{
-		Scopes:         w.Scopes,
-		ScopeQualifier: w.ScopeQualifier,
-		ExcludedScopes: w.ExcludedScopes,
-	}, nil
-}
-
 type IngressNetworkPolicy_WorkspaceIdList struct {
 	WorkspaceIds []int64 `json:"workspace_ids,omitempty"`
-}
-
-func IngressNetworkPolicy_WorkspaceIdListFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceIdList) (*IngressNetworkPolicy_WorkspaceIdList, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdsWireValue, err := convertSlice(v.WorkspaceIds, int64ToWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_WorkspaceIdList.WorkspaceIds", err)
-	}
-	return &IngressNetworkPolicy_WorkspaceIdList{
-		WorkspaceIds: workspaceIdsWireValue,
-	}, nil
-}
-
-func IngressNetworkPolicy_WorkspaceIdListToSDK(w *IngressNetworkPolicy_WorkspaceIdList) (*sdk.IngressNetworkPolicy_WorkspaceIdList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceIdsPublicValue, err := convertSlice(w.WorkspaceIds, int64FromWire)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_WorkspaceIdList.WorkspaceIds", err)
-	}
-	return &sdk.IngressNetworkPolicy_WorkspaceIdList{
-		WorkspaceIds: workspaceIdsPublicValue,
-	}, nil
 }
 
 type IngressNetworkPolicy_WorkspaceUiDestination struct {
 	// Must be set to true.
 	AllDestinations *bool `json:"all_destinations,omitempty"`
-}
-
-func IngressNetworkPolicy_WorkspaceUiDestinationFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceUiDestination) (*IngressNetworkPolicy_WorkspaceUiDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &IngressNetworkPolicy_WorkspaceUiDestination{
-		AllDestinations: v.AllDestinations,
-	}, nil
-}
-
-func IngressNetworkPolicy_WorkspaceUiDestinationToSDK(w *IngressNetworkPolicy_WorkspaceUiDestination) (*sdk.IngressNetworkPolicy_WorkspaceUiDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.IngressNetworkPolicy_WorkspaceUiDestination{
-		AllDestinations: w.AllDestinations,
-	}, nil
 }
 
 // Definition of an IP Access list.
@@ -2631,56 +813,9 @@ type IpAccessList struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func IpAccessListToSDK(w *IpAccessList) (*sdk.IpAccessList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdAtPublicValue, err := int64FromWire(w.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IpAccessList.CreatedAt", err)
-	}
-	createdByPublicValue, err := int64FromWire(w.CreatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IpAccessList.CreatedBy", err)
-	}
-	updatedAtPublicValue, err := int64FromWire(w.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IpAccessList.UpdatedAt", err)
-	}
-	updatedByPublicValue, err := int64FromWire(w.UpdatedBy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "IpAccessList.UpdatedBy", err)
-	}
-	return &sdk.IpAccessList{
-		ListId:       w.ListId,
-		Label:        w.Label,
-		IpAddresses:  w.IpAddresses,
-		AddressCount: w.AddressCount,
-		ListType:     w.ListType,
-		CreatedAt:    createdAtPublicValue,
-		CreatedBy:    createdByPublicValue,
-		UpdatedAt:    updatedAtPublicValue,
-		UpdatedBy:    updatedByPublicValue,
-		Enabled:      w.Enabled,
-	}, nil
-}
-
 // IP access lists were successfully returned..
 type ListAccountIpAccessListsResponse struct {
 	IpAccessLists []AccountIpAccessList `json:"ip_access_lists,omitempty"`
-}
-
-func ListAccountIpAccessListsResponseToSDK(w *ListAccountIpAccessListsResponse) (*sdk.ListAccountIpAccessListsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListsPublicValue, err := convertSlice(w.IpAccessLists, AccountIpAccessListToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAccountIpAccessListsResponse.IpAccessLists", err)
-	}
-	return &sdk.ListAccountIpAccessListsResponse{
-		IpAccessLists: ipAccessListsPublicValue,
-	}, nil
 }
 
 type ListEndpointsRequest struct {
@@ -2691,52 +826,14 @@ type ListEndpointsRequest struct {
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListEndpointsRequest{
-		Parent:    v.Parent,
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 type ListEndpointsResponse struct {
 	Items         []Endpoint `json:"items,omitempty"`
 	NextPageToken *string    `json:"next_page_token,omitempty"`
 }
 
-func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemsPublicValue, err := convertSlice(w.Items, EndpointToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Items", err)
-	}
-	return &sdk.ListEndpointsResponse{
-		Items:         itemsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // IP access lists were successfully returned..
 type ListIpAccessListsResponse struct {
 	IpAccessLists []IpAccessList `json:"ip_access_lists,omitempty"`
-}
-
-func ListIpAccessListsResponseToSDK(w *ListIpAccessListsResponse) (*sdk.ListIpAccessListsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListsPublicValue, err := convertSlice(w.IpAccessLists, IpAccessListToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListIpAccessListsResponse.IpAccessLists", err)
-	}
-	return &sdk.ListIpAccessListsResponse{
-		IpAccessLists: ipAccessListsPublicValue,
-	}, nil
 }
 
 // Gets an array of private endpoint rules..
@@ -2750,37 +847,12 @@ type ListNccPrivateEndpointRulesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListNccPrivateEndpointRulesRequestFromSDK(v *sdk.ListNccPrivateEndpointRulesRequest) (*ListNccPrivateEndpointRulesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListNccPrivateEndpointRulesRequest{
-		AccountId:                   v.AccountId,
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		PageToken:                   v.PageToken,
-	}, nil
-}
-
 // The private endpoint rule list was successfully retrieved..
 type ListNccPrivateEndpointRulesResponse struct {
 	Items []NccPrivateEndpointRule `json:"items,omitempty"`
 	// A token that can be used to get the next page of results. If null, there are
 	// no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListNccPrivateEndpointRulesResponseToSDK(w *ListNccPrivateEndpointRulesResponse) (*sdk.ListNccPrivateEndpointRulesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemsPublicValue, err := convertSlice(w.Items, NccPrivateEndpointRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNccPrivateEndpointRulesResponse.Items", err)
-	}
-	return &sdk.ListNccPrivateEndpointRulesResponse{
-		Items:         itemsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListNetworkConnectivityConfigsRequest struct {
@@ -2791,36 +863,12 @@ type ListNetworkConnectivityConfigsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListNetworkConnectivityConfigsRequestFromSDK(v *sdk.ListNetworkConnectivityConfigsRequest) (*ListNetworkConnectivityConfigsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListNetworkConnectivityConfigsRequest{
-		AccountId: v.AccountId,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // The network connectivity configuration list was successfully retrieved..
 type ListNetworkConnectivityConfigsResponse struct {
 	Items []NetworkConnectivityConfig `json:"items,omitempty"`
 	// A token that can be used to get the next page of results. If null, there are
 	// no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListNetworkConnectivityConfigsResponseToSDK(w *ListNetworkConnectivityConfigsResponse) (*sdk.ListNetworkConnectivityConfigsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemsPublicValue, err := convertSlice(w.Items, NetworkConnectivityConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNetworkConnectivityConfigsResponse.Items", err)
-	}
-	return &sdk.ListNetworkConnectivityConfigsResponse{
-		Items:         itemsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListNetworkPoliciesRequest struct {
@@ -2831,36 +879,12 @@ type ListNetworkPoliciesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListNetworkPoliciesRequestFromSDK(v *sdk.ListNetworkPoliciesRequest) (*ListNetworkPoliciesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListNetworkPoliciesRequest{
-		AccountId: v.AccountId,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type ListNetworkPoliciesResponse struct {
 	// List of network policies.
 	Items []AccountNetworkPolicy `json:"items,omitempty"`
 	// A token that can be used to get the next page of results. If null, there are
 	// no more results to show.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListNetworkPoliciesResponseToSDK(w *ListNetworkPoliciesResponse) (*sdk.ListNetworkPoliciesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	itemsPublicValue, err := convertSlice(w.Items, AccountNetworkPolicyToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListNetworkPoliciesResponse.Items", err)
-	}
-	return &sdk.ListNetworkPoliciesResponse{
-		Items:         itemsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // Properties of the new private endpoint rule. Note that you must approve the
@@ -2932,60 +956,6 @@ type NccPrivateEndpointRule struct {
 	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
-func NccPrivateEndpointRuleToSDK(w *NccPrivateEndpointRule) (*sdk.NccPrivateEndpointRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	endpointMembers := 0
-	if w.GcpEndpoint != nil {
-		endpointMembers++
-	}
-	if endpointMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "NccPrivateEndpointRule.Endpoint")
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimePublicValue, err := int64FromWire(w.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtPublicValue, err := int64FromWire(w.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.DeactivatedAt", err)
-	}
-	endpointSelection := (&sdk.NccPrivateEndpointRule{}).Endpoint
-	switch {
-	case w.GcpEndpoint != nil:
-		endpointGcpEndpointConverted, err := GcpEndpointToSDK(w.GcpEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.Endpoint.GcpEndpoint", err)
-		}
-		endpointSelection = &sdk.NccPrivateEndpointRule_Endpoint_GcpEndpoint{GcpEndpoint: *endpointGcpEndpointConverted}
-	}
-	return &sdk.NccPrivateEndpointRule{
-		RuleId:                      w.RuleId,
-		NetworkConnectivityConfigId: w.NetworkConnectivityConfigId,
-		ConnectionState:             w.ConnectionState,
-		DomainNames:                 w.DomainNames,
-		CreationTime:                creationTimePublicValue,
-		UpdatedTime:                 updatedTimePublicValue,
-		Deactivated:                 w.Deactivated,
-		DeactivatedAt:               deactivatedAtPublicValue,
-		ErrorMessage:                w.ErrorMessage,
-		ResourceId:                  w.ResourceId,
-		GroupId:                     w.GroupId,
-		EndpointName:                w.EndpointName,
-		AccountId:                   w.AccountId,
-		EndpointService:             w.EndpointService,
-		ResourceNames:               w.ResourceNames,
-		VpcEndpointId:               w.VpcEndpointId,
-		Enabled:                     w.Enabled,
-		Endpoint:                    endpointSelection,
-	}, nil
-}
-
 type Network struct {
 	// The <Databricks> network configuration ID.
 	NetworkId *string `json:"network_id,omitempty"`
@@ -3015,63 +985,6 @@ type Network struct {
 	GcpNetworkInfo  *GcpNetworkInfo      `json:"gcp_network_info,omitempty"`
 }
 
-func NetworkToSDK(w *Network) (*sdk.Network, error) {
-	if w == nil {
-		return nil, nil
-	}
-	networkInfoMembers := 0
-	if w.GcpNetworkInfo != nil {
-		networkInfoMembers++
-	}
-	if networkInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Network.NetworkInfo")
-	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Network.WorkspaceId", err)
-	}
-	errorMessagesPublicValue, err := convertSlice(w.ErrorMessages, NetworkHealthToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Network.ErrorMessages", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Network.CreationTime", err)
-	}
-	warningMessagesPublicValue, err := convertSlice(w.WarningMessages, NetworkWarningToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Network.WarningMessages", err)
-	}
-	vpcEndpointsPublicValue, err := NetworkVpcEndpointsToSDK(w.VpcEndpoints)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Network.VpcEndpoints", err)
-	}
-	networkInfoSelection := (&sdk.Network{}).NetworkInfo
-	switch {
-	case w.GcpNetworkInfo != nil:
-		networkInfoGcpNetworkInfoConverted, err := GcpNetworkInfoToSDK(w.GcpNetworkInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Network.NetworkInfo.GcpNetworkInfo", err)
-		}
-		networkInfoSelection = &sdk.Network_NetworkInfo_GcpNetworkInfo{GcpNetworkInfo: *networkInfoGcpNetworkInfoConverted}
-	}
-	return &sdk.Network{
-		NetworkId:        w.NetworkId,
-		AccountId:        w.AccountId,
-		WorkspaceId:      workspaceIdPublicValue,
-		VpcId:            w.VpcId,
-		SubnetIds:        w.SubnetIds,
-		SecurityGroupIds: w.SecurityGroupIds,
-		VpcStatus:        w.VpcStatus,
-		ErrorMessages:    errorMessagesPublicValue,
-		NetworkName:      w.NetworkName,
-		CreationTime:     creationTimePublicValue,
-		WarningMessages:  warningMessagesPublicValue,
-		VpcEndpoints:     vpcEndpointsPublicValue,
-		NetworkInfo:      networkInfoSelection,
-	}, nil
-}
-
 // Properties of the new network connectivity configuration..
 type NetworkConnectivityConfig struct {
 	// <Databricks> network connectivity configuration ID.
@@ -3094,33 +1007,6 @@ type NetworkConnectivityConfig struct {
 	UpdatedTime *int64 `json:"updated_time,omitempty"`
 	// Time in epoch milliseconds when this object was created.
 	CreationTime *int64 `json:"creation_time,omitempty"`
-}
-
-func NetworkConnectivityConfigToSDK(w *NetworkConnectivityConfig) (*sdk.NetworkConnectivityConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	egressConfigPublicValue, err := CustomerFacingNetworkConnectivityConfigEgressConfigToSDK(w.EgressConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfig.EgressConfig", err)
-	}
-	updatedTimePublicValue, err := int64FromWire(w.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfig.UpdatedTime", err)
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfig.CreationTime", err)
-	}
-	return &sdk.NetworkConnectivityConfig{
-		NetworkConnectivityConfigId: w.NetworkConnectivityConfigId,
-		AccountId:                   w.AccountId,
-		Name:                        w.Name,
-		Region:                      w.Region,
-		EgressConfig:                egressConfigPublicValue,
-		UpdatedTime:                 updatedTimePublicValue,
-		CreationTime:                creationTimePublicValue,
-	}, nil
 }
 
 // Properties of the new private endpoint rule. Note that for private endpoints
@@ -3182,74 +1068,6 @@ type NetworkConnectivityConfigAwsPrivateEndpointRule struct {
 	ErrorMessage *string `json:"error_message,omitempty"`
 }
 
-func NetworkConnectivityConfigAwsPrivateEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigAwsPrivateEndpointRule) (*NetworkConnectivityConfigAwsPrivateEndpointRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimeWireValue, err := int64ToWire(v.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtWireValue, err := int64ToWire(v.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.DeactivatedAt", err)
-	}
-	return &NetworkConnectivityConfigAwsPrivateEndpointRule{
-		RuleId:                      v.RuleId,
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		AccountId:                   v.AccountId,
-		EndpointService:             v.EndpointService,
-		DomainNames:                 v.DomainNames,
-		ResourceNames:               v.ResourceNames,
-		VpcEndpointId:               v.VpcEndpointId,
-		ConnectionState:             v.ConnectionState,
-		CreationTime:                creationTimeWireValue,
-		UpdatedTime:                 updatedTimeWireValue,
-		Deactivated:                 v.Deactivated,
-		DeactivatedAt:               deactivatedAtWireValue,
-		Enabled:                     v.Enabled,
-		ErrorMessage:                v.ErrorMessage,
-	}, nil
-}
-
-func NetworkConnectivityConfigAwsPrivateEndpointRuleToSDK(w *NetworkConnectivityConfigAwsPrivateEndpointRule) (*sdk.NetworkConnectivityConfigAwsPrivateEndpointRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimePublicValue, err := int64FromWire(w.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtPublicValue, err := int64FromWire(w.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAwsPrivateEndpointRule.DeactivatedAt", err)
-	}
-	return &sdk.NetworkConnectivityConfigAwsPrivateEndpointRule{
-		RuleId:                      w.RuleId,
-		NetworkConnectivityConfigId: w.NetworkConnectivityConfigId,
-		AccountId:                   w.AccountId,
-		EndpointService:             w.EndpointService,
-		DomainNames:                 w.DomainNames,
-		ResourceNames:               w.ResourceNames,
-		VpcEndpointId:               w.VpcEndpointId,
-		ConnectionState:             w.ConnectionState,
-		CreationTime:                creationTimePublicValue,
-		UpdatedTime:                 updatedTimePublicValue,
-		Deactivated:                 w.Deactivated,
-		DeactivatedAt:               deactivatedAtPublicValue,
-		Enabled:                     w.Enabled,
-		ErrorMessage:                w.ErrorMessage,
-	}, nil
-}
-
 // Properties of the new private endpoint rule. Note that you must approve the
 // endpoint in Azure portal after initialization..
 type NetworkConnectivityConfigAzurePrivateEndpointRule struct {
@@ -3296,110 +1114,10 @@ type NetworkConnectivityConfigAzurePrivateEndpointRule struct {
 	ErrorMessage *string  `json:"error_message,omitempty"`
 }
 
-func NetworkConnectivityConfigAzurePrivateEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigAzurePrivateEndpointRule) (*NetworkConnectivityConfigAzurePrivateEndpointRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimeWireValue, err := int64ToWire(v.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtWireValue, err := int64ToWire(v.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.DeactivatedAt", err)
-	}
-	return &NetworkConnectivityConfigAzurePrivateEndpointRule{
-		RuleId:                      v.RuleId,
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		ResourceId:                  v.ResourceId,
-		GroupId:                     v.GroupId,
-		EndpointName:                v.EndpointName,
-		ConnectionState:             v.ConnectionState,
-		CreationTime:                creationTimeWireValue,
-		UpdatedTime:                 updatedTimeWireValue,
-		Deactivated:                 v.Deactivated,
-		DeactivatedAt:               deactivatedAtWireValue,
-		DomainNames:                 v.DomainNames,
-		ErrorMessage:                v.ErrorMessage,
-	}, nil
-}
-
-func NetworkConnectivityConfigAzurePrivateEndpointRuleToSDK(w *NetworkConnectivityConfigAzurePrivateEndpointRule) (*sdk.NetworkConnectivityConfigAzurePrivateEndpointRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimePublicValue, err := int64FromWire(w.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtPublicValue, err := int64FromWire(w.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigAzurePrivateEndpointRule.DeactivatedAt", err)
-	}
-	return &sdk.NetworkConnectivityConfigAzurePrivateEndpointRule{
-		RuleId:                      w.RuleId,
-		NetworkConnectivityConfigId: w.NetworkConnectivityConfigId,
-		ResourceId:                  w.ResourceId,
-		GroupId:                     w.GroupId,
-		EndpointName:                w.EndpointName,
-		ConnectionState:             w.ConnectionState,
-		CreationTime:                creationTimePublicValue,
-		UpdatedTime:                 updatedTimePublicValue,
-		Deactivated:                 w.Deactivated,
-		DeactivatedAt:               deactivatedAtPublicValue,
-		DomainNames:                 w.DomainNames,
-		ErrorMessage:                w.ErrorMessage,
-	}, nil
-}
-
 // Default rules don't have specific targets..
 type NetworkConnectivityConfigEgressConfig_DefaultRule struct {
 	AzureServiceEndpointRule *NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule `json:"azure_service_endpoint_rule,omitempty"`
 	AwsStableIpRule          *NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule          `json:"aws_stable_ip_rule,omitempty"`
-}
-
-func NetworkConnectivityConfigEgressConfig_DefaultRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	azureServiceEndpointRuleWireValue, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleFromSDK(v.AzureServiceEndpointRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AzureServiceEndpointRule", err)
-	}
-	awsStableIpRuleWireValue, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleFromSDK(v.AwsStableIpRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AwsStableIpRule", err)
-	}
-	return &NetworkConnectivityConfigEgressConfig_DefaultRule{
-		AzureServiceEndpointRule: azureServiceEndpointRuleWireValue,
-		AwsStableIpRule:          awsStableIpRuleWireValue,
-	}, nil
-}
-
-func NetworkConnectivityConfigEgressConfig_DefaultRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	azureServiceEndpointRulePublicValue, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleToSDK(w.AzureServiceEndpointRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AzureServiceEndpointRule", err)
-	}
-	awsStableIpRulePublicValue, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleToSDK(w.AwsStableIpRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AwsStableIpRule", err)
-	}
-	return &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule{
-		AzureServiceEndpointRule: azureServiceEndpointRulePublicValue,
-		AwsStableIpRule:          awsStableIpRulePublicValue,
-	}, nil
 }
 
 // The stable AWS IP CIDR blocks. You can use these to configure the firewall of
@@ -3408,24 +1126,6 @@ type NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule struct {
 	// The list of stable IP CIDR blocks from which <Databricks> network traffic
 	// originates when accessing your resources.
 	CidrBlocks []string `json:"cidr_blocks,omitempty"`
-}
-
-func NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule{
-		CidrBlocks: v.CidrBlocks,
-	}, nil
-}
-
-func NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule{
-		CidrBlocks: w.CidrBlocks,
-	}, nil
 }
 
 // The stable Azure service endpoints. You can configure the firewall of your
@@ -3441,42 +1141,10 @@ type NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule 
 	Subnets []string `json:"subnets,omitempty"`
 }
 
-func NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule{
-		TargetRegion:   v.TargetRegion,
-		TargetServices: v.TargetServices,
-		Subnets:        v.Subnets,
-	}, nil
-}
-
-func NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule{
-		TargetRegion:   w.TargetRegion,
-		TargetServices: w.TargetServices,
-		Subnets:        w.Subnets,
-	}, nil
-}
-
 type NetworkHealth struct {
 	ErrorType *string `json:"error_type,omitempty"`
 	// Details of the error.
 	ErrorMessage *string `json:"error_message,omitempty"`
-}
-
-func NetworkHealthToSDK(w *NetworkHealth) (*sdk.NetworkHealth, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NetworkHealth{
-		ErrorType:    w.ErrorType,
-		ErrorMessage: w.ErrorMessage,
-	}, nil
 }
 
 type NetworkVpcEndpoints struct {
@@ -3487,40 +1155,10 @@ type NetworkVpcEndpoints struct {
 	DataplaneRelay []string `json:"dataplane_relay,omitempty"`
 }
 
-func NetworkVpcEndpointsFromSDK(v *sdk.NetworkVpcEndpoints) (*NetworkVpcEndpoints, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NetworkVpcEndpoints{
-		RestApi:        v.RestApi,
-		DataplaneRelay: v.DataplaneRelay,
-	}, nil
-}
-
-func NetworkVpcEndpointsToSDK(w *NetworkVpcEndpoints) (*sdk.NetworkVpcEndpoints, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NetworkVpcEndpoints{
-		RestApi:        w.RestApi,
-		DataplaneRelay: w.DataplaneRelay,
-	}, nil
-}
-
 type NetworkWarning struct {
 	WarningType *string `json:"warning_type,omitempty"`
 	// Details of the warning.
 	WarningMessage *string `json:"warning_message,omitempty"`
-}
-
-func NetworkWarningToSDK(w *NetworkWarning) (*sdk.NetworkWarning, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NetworkWarning{
-		WarningType:    w.WarningType,
-		WarningMessage: w.WarningMessage,
-	}, nil
 }
 
 // *.
@@ -3558,36 +1196,6 @@ type PrivateAccessSettings struct {
 	AllowedVpcEndpointIds []string `json:"allowed_vpc_endpoint_ids,omitempty"`
 }
 
-func PrivateAccessSettingsFromSDK(v *sdk.PrivateAccessSettings) (*PrivateAccessSettings, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &PrivateAccessSettings{
-		PrivateAccessSettingsId:   v.PrivateAccessSettingsId,
-		AccountId:                 v.AccountId,
-		PrivateAccessSettingsName: v.PrivateAccessSettingsName,
-		Region:                    v.Region,
-		PublicAccessEnabled:       v.PublicAccessEnabled,
-		PrivateAccessLevel:        v.PrivateAccessLevel,
-		AllowedVpcEndpointIds:     v.AllowedVpcEndpointIds,
-	}, nil
-}
-
-func PrivateAccessSettingsToSDK(w *PrivateAccessSettings) (*sdk.PrivateAccessSettings, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PrivateAccessSettings{
-		PrivateAccessSettingsId:   w.PrivateAccessSettingsId,
-		AccountId:                 w.AccountId,
-		PrivateAccessSettingsName: w.PrivateAccessSettingsName,
-		Region:                    w.Region,
-		PublicAccessEnabled:       w.PublicAccessEnabled,
-		PrivateAccessLevel:        w.PrivateAccessLevel,
-		AllowedVpcEndpointIds:     w.AllowedVpcEndpointIds,
-	}, nil
-}
-
 // Details required to replace an IP access list..
 type ReplaceAccountIpAccessListRequest struct {
 	AccountId *string `json:"account_id,omitempty"`
@@ -3601,36 +1209,9 @@ type ReplaceAccountIpAccessListRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func ReplaceAccountIpAccessListRequestFromSDK(v *sdk.ReplaceAccountIpAccessListRequest) (*ReplaceAccountIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ReplaceAccountIpAccessListRequest{
-		AccountId:   v.AccountId,
-		ListId:      v.ListId,
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-		Enabled:     v.Enabled,
-	}, nil
-}
-
 // The IP access list was successfully replaced..
 type ReplaceAccountIpAccessListResponse struct {
 	IpAccessList *AccountIpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func ReplaceAccountIpAccessListResponseToSDK(w *ReplaceAccountIpAccessListResponse) (*sdk.ReplaceAccountIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := AccountIpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ReplaceAccountIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.ReplaceAccountIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Details required to replace an IP access list..
@@ -3645,35 +1226,9 @@ type ReplaceIpAccessListRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func ReplaceIpAccessListRequestFromSDK(v *sdk.ReplaceIpAccessListRequest) (*ReplaceIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ReplaceIpAccessListRequest{
-		ListId:      v.ListId,
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-		Enabled:     v.Enabled,
-	}, nil
-}
-
 // The IP access list was successfully replaced..
 type ReplaceIpAccessListResponse struct {
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func ReplaceIpAccessListResponseToSDK(w *ReplaceIpAccessListResponse) (*sdk.ReplaceIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := IpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ReplaceIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.ReplaceIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Details required to update an IP access list..
@@ -3689,36 +1244,9 @@ type UpdateAccountIpAccessListRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func UpdateAccountIpAccessListRequestFromSDK(v *sdk.UpdateAccountIpAccessListRequest) (*UpdateAccountIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateAccountIpAccessListRequest{
-		AccountId:   v.AccountId,
-		ListId:      v.ListId,
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-		Enabled:     v.Enabled,
-	}, nil
-}
-
 // The IP access list was successfully updated..
 type UpdateAccountIpAccessListResponse struct {
 	IpAccessList *AccountIpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func UpdateAccountIpAccessListResponseToSDK(w *UpdateAccountIpAccessListResponse) (*sdk.UpdateAccountIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := AccountIpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateAccountIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.UpdateAccountIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Details required to update an IP access list..
@@ -3733,35 +1261,9 @@ type UpdateIpAccessListRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-func UpdateIpAccessListRequestFromSDK(v *sdk.UpdateIpAccessListRequest) (*UpdateIpAccessListRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateIpAccessListRequest{
-		ListId:      v.ListId,
-		Label:       v.Label,
-		ListType:    v.ListType,
-		IpAddresses: v.IpAddresses,
-		Enabled:     v.Enabled,
-	}, nil
-}
-
 // The IP access list was successfully updated..
 type UpdateIpAccessListResponse struct {
 	IpAccessList *IpAccessList `json:"ip_access_list,omitempty"`
-}
-
-func UpdateIpAccessListResponseToSDK(w *UpdateIpAccessListResponse) (*sdk.UpdateIpAccessListResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	ipAccessListPublicValue, err := IpAccessListToSDK(w.IpAccessList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateIpAccessListResponse.IpAccessList", err)
-	}
-	return &sdk.UpdateIpAccessListResponse{
-		IpAccessList: ipAccessListPublicValue,
-	}, nil
 }
 
 // Your Network Connectivity Configuration ID..
@@ -3778,23 +1280,6 @@ type UpdateNccPrivateEndpointRuleRequest struct {
 	UpdateMask            *string                    `json:"update_mask,omitempty"`
 }
 
-func UpdateNccPrivateEndpointRuleRequestFromSDK(v *sdk.UpdateNccPrivateEndpointRuleRequest) (*UpdateNccPrivateEndpointRuleRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	privateEndpointRuleWireValue, err := UpdatePrivateEndpointRuleFromSDK(v.PrivateEndpointRule)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
-	}
-	return &UpdateNccPrivateEndpointRuleRequest{
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		AccountId:                   v.AccountId,
-		PrivateEndpointRuleId:       v.PrivateEndpointRuleId,
-		PrivateEndpointRule:         privateEndpointRuleWireValue,
-		UpdateMask:                  fieldMaskToWire(v.UpdateMask),
-	}, nil
-}
-
 type UpdateNetworkPolicyRequest struct {
 	// The unique identifier for the network policy.
 	NetworkPolicyId *string `json:"network_policy_id,omitempty"`
@@ -3805,37 +1290,9 @@ type UpdateNetworkPolicyRequest struct {
 	NetworkPolicy *AccountNetworkPolicy `json:"network_policy,omitempty"`
 }
 
-func UpdateNetworkPolicyRequestFromSDK(v *sdk.UpdateNetworkPolicyRequest) (*UpdateNetworkPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	networkPolicyWireValue, err := AccountNetworkPolicyFromSDK(v.NetworkPolicy)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateNetworkPolicyRequest.NetworkPolicy", err)
-	}
-	return &UpdateNetworkPolicyRequest{
-		NetworkPolicyId: v.NetworkPolicyId,
-		AccountId:       v.AccountId,
-		NetworkPolicy:   networkPolicyWireValue,
-	}, nil
-}
-
 type UpdatePrivateAccessSettingsRequest struct {
 	// Properties of the new private access settings object.
 	CustomerFacingPrivateAccessSettings *PrivateAccessSettings `json:"customer_facing_private_access_settings,omitempty"`
-}
-
-func UpdatePrivateAccessSettingsRequestFromSDK(v *sdk.UpdatePrivateAccessSettingsRequest) (*UpdatePrivateAccessSettingsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	customerFacingPrivateAccessSettingsWireValue, err := PrivateAccessSettingsFromSDK(v.CustomerFacingPrivateAccessSettings)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePrivateAccessSettingsRequest.CustomerFacingPrivateAccessSettings", err)
-	}
-	return &UpdatePrivateAccessSettingsRequest{
-		CustomerFacingPrivateAccessSettings: customerFacingPrivateAccessSettingsWireValue,
-	}, nil
 }
 
 // Properties of the new private endpoint rule. Note that you must approve the
@@ -3907,58 +1364,6 @@ type UpdatePrivateEndpointRule struct {
 	GcpEndpoint *GcpEndpoint `json:"gcp_endpoint,omitempty"`
 }
 
-func UpdatePrivateEndpointRuleFromSDK(v *sdk.UpdatePrivateEndpointRule) (*UpdatePrivateEndpointRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	creationTimeWireValue, err := int64ToWire(v.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.CreationTime", err)
-	}
-	updatedTimeWireValue, err := int64ToWire(v.UpdatedTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.UpdatedTime", err)
-	}
-	deactivatedAtWireValue, err := int64ToWire(v.DeactivatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.DeactivatedAt", err)
-	}
-	var endpointGcpEndpointWire *GcpEndpoint
-	switch value := v.Endpoint.(type) {
-	case nil:
-	case *sdk.UpdatePrivateEndpointRule_Endpoint_GcpEndpoint:
-		if value != nil {
-			endpointGcpEndpointConverted, err := GcpEndpointFromSDK(&value.GcpEndpoint)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.Endpoint.GcpEndpoint", err)
-			}
-			endpointGcpEndpointWire = endpointGcpEndpointConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "UpdatePrivateEndpointRule.Endpoint", value)
-	}
-	return &UpdatePrivateEndpointRule{
-		RuleId:                      v.RuleId,
-		NetworkConnectivityConfigId: v.NetworkConnectivityConfigId,
-		ConnectionState:             v.ConnectionState,
-		DomainNames:                 v.DomainNames,
-		CreationTime:                creationTimeWireValue,
-		UpdatedTime:                 updatedTimeWireValue,
-		Deactivated:                 v.Deactivated,
-		DeactivatedAt:               deactivatedAtWireValue,
-		ErrorMessage:                v.ErrorMessage,
-		ResourceId:                  v.ResourceId,
-		GroupId:                     v.GroupId,
-		EndpointName:                v.EndpointName,
-		AccountId:                   v.AccountId,
-		EndpointService:             v.EndpointService,
-		ResourceNames:               v.ResourceNames,
-		VpcEndpointId:               v.VpcEndpointId,
-		Enabled:                     v.Enabled,
-		GcpEndpoint:                 endpointGcpEndpointWire,
-	}, nil
-}
-
 type UpdateWorkspaceNetworkOptionRequest struct {
 	// Your <Databricks> account ID. You can find your account ID in your
 	// <Databricks> accounts console.
@@ -3967,25 +1372,6 @@ type UpdateWorkspaceNetworkOptionRequest struct {
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 	// The network option details for the workspace.
 	WorkspaceNetworkOption *WorkspaceNetworkOption `json:"workspace_network_option,omitempty"`
-}
-
-func UpdateWorkspaceNetworkOptionRequestFromSDK(v *sdk.UpdateWorkspaceNetworkOptionRequest) (*UpdateWorkspaceNetworkOptionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceNetworkOptionRequest.WorkspaceId", err)
-	}
-	workspaceNetworkOptionWireValue, err := WorkspaceNetworkOptionFromSDK(v.WorkspaceNetworkOption)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceNetworkOptionRequest.WorkspaceNetworkOption", err)
-	}
-	return &UpdateWorkspaceNetworkOptionRequest{
-		AccountId:              v.AccountId,
-		WorkspaceId:            workspaceIdWireValue,
-		WorkspaceNetworkOption: workspaceNetworkOptionWireValue,
-	}, nil
 }
 
 // *.
@@ -4027,40 +1413,6 @@ type VpcEndpoint struct {
 	GcpVpcEndpointInfo *GcpVpcEndpointInfo `json:"gcp_vpc_endpoint_info,omitempty"`
 }
 
-func VpcEndpointToSDK(w *VpcEndpoint) (*sdk.VpcEndpoint, error) {
-	if w == nil {
-		return nil, nil
-	}
-	vpcEndpointInfoMembers := 0
-	if w.GcpVpcEndpointInfo != nil {
-		vpcEndpointInfoMembers++
-	}
-	if vpcEndpointInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "VpcEndpoint.VpcEndpointInfo")
-	}
-	vpcEndpointInfoSelection := (&sdk.VpcEndpoint{}).VpcEndpointInfo
-	switch {
-	case w.GcpVpcEndpointInfo != nil:
-		vpcEndpointInfoGcpVpcEndpointInfoConverted, err := GcpVpcEndpointInfoToSDK(w.GcpVpcEndpointInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "VpcEndpoint.VpcEndpointInfo.GcpVpcEndpointInfo", err)
-		}
-		vpcEndpointInfoSelection = &sdk.VpcEndpoint_VpcEndpointInfo_GcpVpcEndpointInfo{GcpVpcEndpointInfo: *vpcEndpointInfoGcpVpcEndpointInfoConverted}
-	}
-	return &sdk.VpcEndpoint{
-		VpcEndpointId:        w.VpcEndpointId,
-		AccountId:            w.AccountId,
-		VpcEndpointName:      w.VpcEndpointName,
-		AwsVpcEndpointId:     w.AwsVpcEndpointId,
-		AwsEndpointServiceId: w.AwsEndpointServiceId,
-		UseCase:              w.UseCase,
-		Region:               w.Region,
-		AwsAccountId:         w.AwsAccountId,
-		State:                w.State,
-		VpcEndpointInfo:      vpcEndpointInfoSelection,
-	}, nil
-}
-
 type WorkspaceNetworkOption struct {
 	// The network policy ID to apply to the workspace. This controls the network
 	// access rules for all serverless compute resources in the workspace. Each
@@ -4071,32 +1423,3383 @@ type WorkspaceNetworkOption struct {
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
 }
 
-func WorkspaceNetworkOptionFromSDK(v *sdk.WorkspaceNetworkOption) (*WorkspaceNetworkOption, error) {
+// AccountIpAccessListToSDK converts the mirror to the sdk-go type.
+func AccountIpAccessListToSDK(w *AccountIpAccessList) (*sdk.AccountIpAccessList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountIpAccessList{}
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.IpAddresses = w.IpAddresses
+	out.AddressCount = w.AddressCount
+	out.ListType = w.ListType
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// AccountIpAccessListFromSDK converts the sdk-go type to the mirror.
+func AccountIpAccessListFromSDK(v *sdk.AccountIpAccessList) (*AccountIpAccessList, error) {
 	if v == nil {
 		return nil, nil
 	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceNetworkOption.WorkspaceId", err)
-	}
-	return &WorkspaceNetworkOption{
-		NetworkPolicyId: v.NetworkPolicyId,
-		WorkspaceId:     workspaceIdWireValue,
-	}, nil
+	out := &AccountIpAccessList{}
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.IpAddresses = v.IpAddresses
+	out.AddressCount = v.AddressCount
+	out.ListType = v.ListType
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Enabled = v.Enabled
+	return out, nil
 }
 
+// AccountNetworkPolicyToSDK converts the mirror to the sdk-go type.
+func AccountNetworkPolicyToSDK(w *AccountNetworkPolicy) (*sdk.AccountNetworkPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccountNetworkPolicy{}
+	out.NetworkPolicyId = w.NetworkPolicyId
+	out.AccountId = w.AccountId
+	conv1, err := EgressNetworkPolicyToSDK(w.Egress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Egress", err)
+	}
+	out.Egress = conv1
+	conv2, err := IngressNetworkPolicyToSDK(w.Ingress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Ingress", err)
+	}
+	out.Ingress = conv2
+	conv3, err := IngressNetworkPolicyToSDK(w.IngressDryRun)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.IngressDryRun", err)
+	}
+	out.IngressDryRun = conv3
+	return out, nil
+}
+
+// AccountNetworkPolicyFromSDK converts the sdk-go type to the mirror.
+func AccountNetworkPolicyFromSDK(v *sdk.AccountNetworkPolicy) (*AccountNetworkPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccountNetworkPolicy{}
+	out.NetworkPolicyId = v.NetworkPolicyId
+	out.AccountId = v.AccountId
+	conv4, err := EgressNetworkPolicyFromSDK(v.Egress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Egress", err)
+	}
+	out.Egress = conv4
+	conv5, err := IngressNetworkPolicyFromSDK(v.Ingress)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.Ingress", err)
+	}
+	out.Ingress = conv5
+	conv6, err := IngressNetworkPolicyFromSDK(v.IngressDryRun)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccountNetworkPolicy.IngressDryRun", err)
+	}
+	out.IngressDryRun = conv6
+	return out, nil
+}
+
+// AwsVpcEndpointInfoToSDK converts the mirror to the sdk-go type.
+func AwsVpcEndpointInfoToSDK(w *AwsVpcEndpointInfo) (*sdk.AwsVpcEndpointInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsVpcEndpointInfo{}
+	out.AwsVpcEndpointId = w.AwsVpcEndpointId
+	out.AwsEndpointServiceId = w.AwsEndpointServiceId
+	out.AwsAccountId = w.AwsAccountId
+	return out, nil
+}
+
+// AwsVpcEndpointInfoFromSDK converts the sdk-go type to the mirror.
+func AwsVpcEndpointInfoFromSDK(v *sdk.AwsVpcEndpointInfo) (*AwsVpcEndpointInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AwsVpcEndpointInfo{}
+	out.AwsVpcEndpointId = v.AwsVpcEndpointId
+	out.AwsEndpointServiceId = v.AwsEndpointServiceId
+	out.AwsAccountId = v.AwsAccountId
+	return out, nil
+}
+
+// AzurePrivateEndpointInfoToSDK converts the mirror to the sdk-go type.
+func AzurePrivateEndpointInfoToSDK(w *AzurePrivateEndpointInfo) (*sdk.AzurePrivateEndpointInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzurePrivateEndpointInfo{}
+	out.PrivateEndpointName = w.PrivateEndpointName
+	out.PrivateEndpointResourceGuid = w.PrivateEndpointResourceGuid
+	out.PrivateEndpointResourceId = w.PrivateEndpointResourceId
+	out.PrivateLinkServiceId = w.PrivateLinkServiceId
+	return out, nil
+}
+
+// AzurePrivateEndpointInfoFromSDK converts the sdk-go type to the mirror.
+func AzurePrivateEndpointInfoFromSDK(v *sdk.AzurePrivateEndpointInfo) (*AzurePrivateEndpointInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzurePrivateEndpointInfo{}
+	out.PrivateEndpointName = v.PrivateEndpointName
+	out.PrivateEndpointResourceGuid = v.PrivateEndpointResourceGuid
+	out.PrivateEndpointResourceId = v.PrivateEndpointResourceId
+	out.PrivateLinkServiceId = v.PrivateLinkServiceId
+	return out, nil
+}
+
+// CreateAccountIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccountIpAccessListRequestToSDK(w *CreateAccountIpAccessListRequest) (*sdk.CreateAccountIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountIpAccessListRequest{}
+	out.AccountId = w.AccountId
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	return out, nil
+}
+
+// CreateAccountIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccountIpAccessListRequestFromSDK(v *sdk.CreateAccountIpAccessListRequest) (*CreateAccountIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountIpAccessListRequest{}
+	out.AccountId = v.AccountId
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	return out, nil
+}
+
+// CreateAccountIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func CreateAccountIpAccessListResponseToSDK(w *CreateAccountIpAccessListResponse) (*sdk.CreateAccountIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccountIpAccessListResponse{}
+	conv7, err := AccountIpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv7
+	return out, nil
+}
+
+// CreateAccountIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func CreateAccountIpAccessListResponseFromSDK(v *sdk.CreateAccountIpAccessListResponse) (*CreateAccountIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccountIpAccessListResponse{}
+	conv8, err := AccountIpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv8
+	return out, nil
+}
+
+// CreateEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateEndpointRequestToSDK(w *CreateEndpointRequest) (*sdk.CreateEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateEndpointRequest{}
+	out.Parent = w.Parent
+	conv9, err := EndpointToSDK(w.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv9
+	return out, nil
+}
+
+// CreateEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateEndpointRequestFromSDK(v *sdk.CreateEndpointRequest) (*CreateEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateEndpointRequest{}
+	out.Parent = v.Parent
+	conv10, err := EndpointFromSDK(v.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateEndpointRequest.Endpoint", err)
+	}
+	out.Endpoint = conv10
+	return out, nil
+}
+
+// CreateIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func CreateIpAccessListRequestToSDK(w *CreateIpAccessListRequest) (*sdk.CreateIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateIpAccessListRequest{}
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	return out, nil
+}
+
+// CreateIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func CreateIpAccessListRequestFromSDK(v *sdk.CreateIpAccessListRequest) (*CreateIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateIpAccessListRequest{}
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	return out, nil
+}
+
+// CreateIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func CreateIpAccessListResponseToSDK(w *CreateIpAccessListResponse) (*sdk.CreateIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateIpAccessListResponse{}
+	conv11, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv11
+	return out, nil
+}
+
+// CreateIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func CreateIpAccessListResponseFromSDK(v *sdk.CreateIpAccessListResponse) (*CreateIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateIpAccessListResponse{}
+	conv12, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv12
+	return out, nil
+}
+
+// CreateNccPrivateEndpointRuleRequestToSDK converts the mirror to the sdk-go type.
+func CreateNccPrivateEndpointRuleRequestToSDK(w *CreateNccPrivateEndpointRuleRequest) (*sdk.CreateNccPrivateEndpointRuleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNccPrivateEndpointRuleRequest{}
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.AccountId = w.AccountId
+	conv13, err := CreatePrivateEndpointRuleToSDK(w.PrivateEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
+	}
+	out.PrivateEndpointRule = conv13
+	return out, nil
+}
+
+// CreateNccPrivateEndpointRuleRequestFromSDK converts the sdk-go type to the mirror.
+func CreateNccPrivateEndpointRuleRequestFromSDK(v *sdk.CreateNccPrivateEndpointRuleRequest) (*CreateNccPrivateEndpointRuleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNccPrivateEndpointRuleRequest{}
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.AccountId = v.AccountId
+	conv14, err := CreatePrivateEndpointRuleFromSDK(v.PrivateEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
+	}
+	out.PrivateEndpointRule = conv14
+	return out, nil
+}
+
+// CreateNetworkConnectivityConfigRequestToSDK converts the mirror to the sdk-go type.
+func CreateNetworkConnectivityConfigRequestToSDK(w *CreateNetworkConnectivityConfigRequest) (*sdk.CreateNetworkConnectivityConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNetworkConnectivityConfigRequest{}
+	out.AccountId = w.AccountId
+	conv15, err := CreateNetworkConnectivityConfigurationToSDK(w.NetworkConnectivityConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfigRequest.NetworkConnectivityConfig", err)
+	}
+	out.NetworkConnectivityConfig = conv15
+	return out, nil
+}
+
+// CreateNetworkConnectivityConfigRequestFromSDK converts the sdk-go type to the mirror.
+func CreateNetworkConnectivityConfigRequestFromSDK(v *sdk.CreateNetworkConnectivityConfigRequest) (*CreateNetworkConnectivityConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNetworkConnectivityConfigRequest{}
+	out.AccountId = v.AccountId
+	conv16, err := CreateNetworkConnectivityConfigurationFromSDK(v.NetworkConnectivityConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfigRequest.NetworkConnectivityConfig", err)
+	}
+	out.NetworkConnectivityConfig = conv16
+	return out, nil
+}
+
+// CreateNetworkConnectivityConfigurationToSDK converts the mirror to the sdk-go type.
+func CreateNetworkConnectivityConfigurationToSDK(w *CreateNetworkConnectivityConfiguration) (*sdk.CreateNetworkConnectivityConfiguration, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNetworkConnectivityConfiguration{}
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.AccountId = w.AccountId
+	out.Name = w.Name
+	out.Region = w.Region
+	conv17, err := CustomerFacingNetworkConnectivityConfigEgressConfigToSDK(w.EgressConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfiguration.EgressConfig", err)
+	}
+	out.EgressConfig = conv17
+	out.UpdatedTime = w.UpdatedTime
+	out.CreationTime = w.CreationTime
+	return out, nil
+}
+
+// CreateNetworkConnectivityConfigurationFromSDK converts the sdk-go type to the mirror.
+func CreateNetworkConnectivityConfigurationFromSDK(v *sdk.CreateNetworkConnectivityConfiguration) (*CreateNetworkConnectivityConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNetworkConnectivityConfiguration{}
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.AccountId = v.AccountId
+	out.Name = v.Name
+	out.Region = v.Region
+	conv18, err := CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK(v.EgressConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkConnectivityConfiguration.EgressConfig", err)
+	}
+	out.EgressConfig = conv18
+	out.UpdatedTime = v.UpdatedTime
+	out.CreationTime = v.CreationTime
+	return out, nil
+}
+
+// CreateNetworkPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CreateNetworkPolicyRequestToSDK(w *CreateNetworkPolicyRequest) (*sdk.CreateNetworkPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNetworkPolicyRequest{}
+	out.AccountId = w.AccountId
+	conv19, err := AccountNetworkPolicyToSDK(w.NetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkPolicyRequest.NetworkPolicy", err)
+	}
+	out.NetworkPolicy = conv19
+	return out, nil
+}
+
+// CreateNetworkPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateNetworkPolicyRequestFromSDK(v *sdk.CreateNetworkPolicyRequest) (*CreateNetworkPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNetworkPolicyRequest{}
+	out.AccountId = v.AccountId
+	conv20, err := AccountNetworkPolicyFromSDK(v.NetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkPolicyRequest.NetworkPolicy", err)
+	}
+	out.NetworkPolicy = conv20
+	return out, nil
+}
+
+// CreateNetworkRequestToSDK converts the mirror to the sdk-go type.
+func CreateNetworkRequestToSDK(w *CreateNetworkRequest) (*sdk.CreateNetworkRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateNetworkRequest{}
+	out.AccountId = w.AccountId
+	out.NetworkName = w.NetworkName
+	out.VpcId = w.VpcId
+	out.SubnetIds = w.SubnetIds
+	out.SecurityGroupIds = w.SecurityGroupIds
+	conv21, err := NetworkVpcEndpointsToSDK(w.VpcEndpoints)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.VpcEndpoints", err)
+	}
+	out.VpcEndpoints = conv21
+	conv22, err := GcpNetworkInfoToSDK(w.GcpNetworkInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.GcpNetworkInfo", err)
+	}
+	out.GcpNetworkInfo = conv22
+	return out, nil
+}
+
+// CreateNetworkRequestFromSDK converts the sdk-go type to the mirror.
+func CreateNetworkRequestFromSDK(v *sdk.CreateNetworkRequest) (*CreateNetworkRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateNetworkRequest{}
+	out.AccountId = v.AccountId
+	out.NetworkName = v.NetworkName
+	out.VpcId = v.VpcId
+	out.SubnetIds = v.SubnetIds
+	out.SecurityGroupIds = v.SecurityGroupIds
+	conv23, err := NetworkVpcEndpointsFromSDK(v.VpcEndpoints)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.VpcEndpoints", err)
+	}
+	out.VpcEndpoints = conv23
+	conv24, err := GcpNetworkInfoFromSDK(v.GcpNetworkInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateNetworkRequest.GcpNetworkInfo", err)
+	}
+	out.GcpNetworkInfo = conv24
+	return out, nil
+}
+
+// CreatePrivateAccessSettingsRequestToSDK converts the mirror to the sdk-go type.
+func CreatePrivateAccessSettingsRequestToSDK(w *CreatePrivateAccessSettingsRequest) (*sdk.CreatePrivateAccessSettingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePrivateAccessSettingsRequest{}
+	out.AccountId = w.AccountId
+	out.PrivateAccessSettingsName = w.PrivateAccessSettingsName
+	out.Region = w.Region
+	out.PublicAccessEnabled = w.PublicAccessEnabled
+	out.PrivateAccessLevel = w.PrivateAccessLevel
+	out.AllowedVpcEndpointIds = w.AllowedVpcEndpointIds
+	return out, nil
+}
+
+// CreatePrivateAccessSettingsRequestFromSDK converts the sdk-go type to the mirror.
+func CreatePrivateAccessSettingsRequestFromSDK(v *sdk.CreatePrivateAccessSettingsRequest) (*CreatePrivateAccessSettingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePrivateAccessSettingsRequest{}
+	out.AccountId = v.AccountId
+	out.PrivateAccessSettingsName = v.PrivateAccessSettingsName
+	out.Region = v.Region
+	out.PublicAccessEnabled = v.PublicAccessEnabled
+	out.PrivateAccessLevel = v.PrivateAccessLevel
+	out.AllowedVpcEndpointIds = v.AllowedVpcEndpointIds
+	return out, nil
+}
+
+// CreatePrivateEndpointRuleToSDK converts the mirror to the sdk-go type.
+func CreatePrivateEndpointRuleToSDK(w *CreatePrivateEndpointRule) (*sdk.CreatePrivateEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreatePrivateEndpointRule{}
+	out.RuleId = w.RuleId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.ConnectionState = w.ConnectionState
+	out.DomainNames = w.DomainNames
+	out.CreationTime = w.CreationTime
+	out.UpdatedTime = w.UpdatedTime
+	out.Deactivated = w.Deactivated
+	out.DeactivatedAt = w.DeactivatedAt
+	out.ErrorMessage = w.ErrorMessage
+	out.ResourceId = w.ResourceId
+	out.GroupId = w.GroupId
+	out.EndpointName = w.EndpointName
+	out.AccountId = w.AccountId
+	out.EndpointService = w.EndpointService
+	out.ResourceNames = w.ResourceNames
+	out.VpcEndpointId = w.VpcEndpointId
+	out.Enabled = w.Enabled
+	{
+		members := 0
+		if w.GcpEndpoint != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreatePrivateEndpointRule.Endpoint")
+		}
+	}
+	switch {
+	case w.GcpEndpoint != nil:
+		conv25, err := GcpEndpointToSDK(w.GcpEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.Endpoint", err)
+		}
+		out.Endpoint = &sdk.CreatePrivateEndpointRule_Endpoint_GcpEndpoint{GcpEndpoint: *conv25}
+	}
+	return out, nil
+}
+
+// CreatePrivateEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func CreatePrivateEndpointRuleFromSDK(v *sdk.CreatePrivateEndpointRule) (*CreatePrivateEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreatePrivateEndpointRule{}
+	out.RuleId = v.RuleId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.ConnectionState = v.ConnectionState
+	out.DomainNames = v.DomainNames
+	out.CreationTime = v.CreationTime
+	out.UpdatedTime = v.UpdatedTime
+	out.Deactivated = v.Deactivated
+	out.DeactivatedAt = v.DeactivatedAt
+	out.ErrorMessage = v.ErrorMessage
+	out.ResourceId = v.ResourceId
+	out.GroupId = v.GroupId
+	out.EndpointName = v.EndpointName
+	out.AccountId = v.AccountId
+	out.EndpointService = v.EndpointService
+	out.ResourceNames = v.ResourceNames
+	out.VpcEndpointId = v.VpcEndpointId
+	out.Enabled = v.Enabled
+	switch value := v.Endpoint.(type) {
+	case *sdk.CreatePrivateEndpointRule_Endpoint_GcpEndpoint:
+		if value != nil {
+			conv26, err := GcpEndpointFromSDK(&value.GcpEndpoint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreatePrivateEndpointRule.Endpoint", err)
+			}
+			out.GcpEndpoint = conv26
+		}
+	}
+	return out, nil
+}
+
+// CreateVpcEndpointRequestToSDK converts the mirror to the sdk-go type.
+func CreateVpcEndpointRequestToSDK(w *CreateVpcEndpointRequest) (*sdk.CreateVpcEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateVpcEndpointRequest{}
+	out.AccountId = w.AccountId
+	out.VpcEndpointName = w.VpcEndpointName
+	out.Region = w.Region
+	out.AwsVpcEndpointId = w.AwsVpcEndpointId
+	{
+		members := 0
+		if w.GcpVpcEndpointInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateVpcEndpointRequest.VpcEndpointInfo")
+		}
+	}
+	switch {
+	case w.GcpVpcEndpointInfo != nil:
+		conv27, err := GcpVpcEndpointInfoToSDK(w.GcpVpcEndpointInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateVpcEndpointRequest.VpcEndpointInfo", err)
+		}
+		out.VpcEndpointInfo = &sdk.CreateVpcEndpointRequest_VpcEndpointInfo_GcpVpcEndpointInfo{GcpVpcEndpointInfo: *conv27}
+	}
+	return out, nil
+}
+
+// CreateVpcEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func CreateVpcEndpointRequestFromSDK(v *sdk.CreateVpcEndpointRequest) (*CreateVpcEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateVpcEndpointRequest{}
+	out.AccountId = v.AccountId
+	out.VpcEndpointName = v.VpcEndpointName
+	out.Region = v.Region
+	out.AwsVpcEndpointId = v.AwsVpcEndpointId
+	switch value := v.VpcEndpointInfo.(type) {
+	case *sdk.CreateVpcEndpointRequest_VpcEndpointInfo_GcpVpcEndpointInfo:
+		if value != nil {
+			conv28, err := GcpVpcEndpointInfoFromSDK(&value.GcpVpcEndpointInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateVpcEndpointRequest.VpcEndpointInfo", err)
+			}
+			out.GcpVpcEndpointInfo = conv28
+		}
+	}
+	return out, nil
+}
+
+// CustomerFacingNetworkConnectivityConfigEgressConfigToSDK converts the mirror to the sdk-go type.
+func CustomerFacingNetworkConnectivityConfigEgressConfigToSDK(w *CustomerFacingNetworkConnectivityConfigEgressConfig) (*sdk.CustomerFacingNetworkConnectivityConfigEgressConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomerFacingNetworkConnectivityConfigEgressConfig{}
+	conv29, err := NetworkConnectivityConfigEgressConfig_DefaultRuleToSDK(w.DefaultRules)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.DefaultRules", err)
+	}
+	out.DefaultRules = conv29
+	conv30, err := CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleToSDK(w.TargetRules)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.TargetRules", err)
+	}
+	out.TargetRules = conv30
+	return out, nil
+}
+
+// CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK converts the sdk-go type to the mirror.
+func CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK(v *sdk.CustomerFacingNetworkConnectivityConfigEgressConfig) (*CustomerFacingNetworkConnectivityConfigEgressConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomerFacingNetworkConnectivityConfigEgressConfig{}
+	conv31, err := NetworkConnectivityConfigEgressConfig_DefaultRuleFromSDK(v.DefaultRules)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.DefaultRules", err)
+	}
+	out.DefaultRules = conv31
+	conv32, err := CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleFromSDK(v.TargetRules)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig.TargetRules", err)
+	}
+	out.TargetRules = conv32
+	return out, nil
+}
+
+// CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleToSDK converts the mirror to the sdk-go type.
+func CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleToSDK(w *CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule) (*sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule{}
+	conv33, err := convertSlice(w.AzurePrivateEndpointRules, NetworkConnectivityConfigAzurePrivateEndpointRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AzurePrivateEndpointRules", err)
+	}
+	out.AzurePrivateEndpointRules = conv33
+	conv34, err := convertSlice(w.AwsPrivateEndpointRules, NetworkConnectivityConfigAwsPrivateEndpointRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AwsPrivateEndpointRules", err)
+	}
+	out.AwsPrivateEndpointRules = conv34
+	return out, nil
+}
+
+// CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleFromSDK converts the sdk-go type to the mirror.
+func CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRuleFromSDK(v *sdk.CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule) (*CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule{}
+	conv35, err := convertSlice(v.AzurePrivateEndpointRules, NetworkConnectivityConfigAzurePrivateEndpointRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AzurePrivateEndpointRules", err)
+	}
+	out.AzurePrivateEndpointRules = conv35
+	conv36, err := convertSlice(v.AwsPrivateEndpointRules, NetworkConnectivityConfigAwsPrivateEndpointRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CustomerFacingNetworkConnectivityConfigEgressConfig_CustomerFacingTargetRule.AwsPrivateEndpointRules", err)
+	}
+	out.AwsPrivateEndpointRules = conv36
+	return out, nil
+}
+
+// EgressNetworkPolicyToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicyToSDK(w *EgressNetworkPolicy) (*sdk.EgressNetworkPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy{}
+	conv37, err := EgressNetworkPolicy_NetworkAccessPolicyToSDK(w.NetworkAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.NetworkAccess", err)
+	}
+	out.NetworkAccess = conv37
+	return out, nil
+}
+
+// EgressNetworkPolicyFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicyFromSDK(v *sdk.EgressNetworkPolicy) (*EgressNetworkPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy{}
+	conv38, err := EgressNetworkPolicy_NetworkAccessPolicyFromSDK(v.NetworkAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy.NetworkAccess", err)
+	}
+	out.NetworkAccess = conv38
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicyToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_NetworkAccessPolicyToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_NetworkAccessPolicy{}
+	out.RestrictionMode = w.RestrictionMode
+	conv39, err := convertSlice(w.AllowedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedInternetDestinations", err)
+	}
+	out.AllowedInternetDestinations = conv39
+	conv40, err := convertSlice(w.AllowedStorageDestinations, EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedStorageDestinations", err)
+	}
+	out.AllowedStorageDestinations = conv40
+	conv41, err := EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementToSDK(w.PolicyEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.PolicyEnforcement", err)
+	}
+	out.PolicyEnforcement = conv41
+	conv42, err := convertSlice(w.BlockedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.BlockedInternetDestinations", err)
+	}
+	out.BlockedInternetDestinations = conv42
+	conv43, err := convertSlice(w.AllowedDatabricksDestinations, EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedDatabricksDestinations", err)
+	}
+	out.AllowedDatabricksDestinations = conv43
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicyFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_NetworkAccessPolicyFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy) (*EgressNetworkPolicy_NetworkAccessPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_NetworkAccessPolicy{}
+	out.RestrictionMode = v.RestrictionMode
+	conv44, err := convertSlice(v.AllowedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedInternetDestinations", err)
+	}
+	out.AllowedInternetDestinations = conv44
+	conv45, err := convertSlice(v.AllowedStorageDestinations, EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedStorageDestinations", err)
+	}
+	out.AllowedStorageDestinations = conv45
+	conv46, err := EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementFromSDK(v.PolicyEnforcement)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.PolicyEnforcement", err)
+	}
+	out.PolicyEnforcement = conv46
+	conv47, err := convertSlice(v.BlockedInternetDestinations, EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.BlockedInternetDestinations", err)
+	}
+	out.BlockedInternetDestinations = conv47
+	conv48, err := convertSlice(v.AllowedDatabricksDestinations, EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "EgressNetworkPolicy_NetworkAccessPolicy.AllowedDatabricksDestinations", err)
+	}
+	out.AllowedDatabricksDestinations = conv48
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination{}
+	out.WorkspaceIds = w.WorkspaceIds
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_NetworkAccessPolicy_DatabricksDestination{}
+	out.WorkspaceIds = v.WorkspaceIds
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination{}
+	out.Destination = w.Destination
+	out.InternetDestinationType = w.InternetDestinationType
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_NetworkAccessPolicy_InternetDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_NetworkAccessPolicy_InternetDestination{}
+	out.Destination = v.Destination
+	out.InternetDestinationType = v.InternetDestinationType
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement{}
+	out.EnforcementMode = w.EnforcementMode
+	out.DryRunModeProductFilter = w.DryRunModeProductFilter
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcementFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement) (*EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_NetworkAccessPolicy_PolicyEnforcement{}
+	out.EnforcementMode = v.EnforcementMode
+	out.DryRunModeProductFilter = v.DryRunModeProductFilter
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationToSDK converts the mirror to the sdk-go type.
+func EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationToSDK(w *EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination) (*sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination{}
+	out.BucketName = w.BucketName
+	out.Region = w.Region
+	out.StorageDestinationType = w.StorageDestinationType
+	out.AzureStorageAccount = w.AzureStorageAccount
+	out.AzureStorageService = w.AzureStorageService
+	return out, nil
+}
+
+// EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationFromSDK converts the sdk-go type to the mirror.
+func EgressNetworkPolicy_NetworkAccessPolicy_StorageDestinationFromSDK(v *sdk.EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination) (*EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EgressNetworkPolicy_NetworkAccessPolicy_StorageDestination{}
+	out.BucketName = v.BucketName
+	out.Region = v.Region
+	out.StorageDestinationType = v.StorageDestinationType
+	out.AzureStorageAccount = v.AzureStorageAccount
+	out.AzureStorageService = v.AzureStorageService
+	return out, nil
+}
+
+// EndpointToSDK converts the mirror to the sdk-go type.
+func EndpointToSDK(w *Endpoint) (*sdk.Endpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Endpoint{}
+	out.Name = w.Name
+	out.EndpointId = w.EndpointId
+	out.AccountId = w.AccountId
+	out.DisplayName = w.DisplayName
+	out.UseCase = w.UseCase
+	out.Region = w.Region
+	out.State = w.State
+	{
+		members := 0
+		if w.AzurePrivateEndpointInfo != nil {
+			members++
+		}
+		if w.AwsVpcEndpointInfo != nil {
+			members++
+		}
+		if w.GcpPscEndpointInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Endpoint.EndpointInfo")
+		}
+	}
+	switch {
+	case w.AzurePrivateEndpointInfo != nil:
+		conv49, err := AzurePrivateEndpointInfoToSDK(w.AzurePrivateEndpointInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+		}
+		out.EndpointInfo = &sdk.Endpoint_EndpointInfo_AzurePrivateEndpointInfo{AzurePrivateEndpointInfo: *conv49}
+	case w.AwsVpcEndpointInfo != nil:
+		conv50, err := AwsVpcEndpointInfoToSDK(w.AwsVpcEndpointInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+		}
+		out.EndpointInfo = &sdk.Endpoint_EndpointInfo_AwsVpcEndpointInfo{AwsVpcEndpointInfo: *conv50}
+	case w.GcpPscEndpointInfo != nil:
+		conv51, err := GcpPscEndpointInfoToSDK(w.GcpPscEndpointInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+		}
+		out.EndpointInfo = &sdk.Endpoint_EndpointInfo_GcpPscEndpointInfo{GcpPscEndpointInfo: *conv51}
+	}
+	out.CreateTime = w.CreateTime
+	return out, nil
+}
+
+// EndpointFromSDK converts the sdk-go type to the mirror.
+func EndpointFromSDK(v *sdk.Endpoint) (*Endpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Endpoint{}
+	out.Name = v.Name
+	out.EndpointId = v.EndpointId
+	out.AccountId = v.AccountId
+	out.DisplayName = v.DisplayName
+	out.UseCase = v.UseCase
+	out.Region = v.Region
+	out.State = v.State
+	switch value := v.EndpointInfo.(type) {
+	case *sdk.Endpoint_EndpointInfo_AzurePrivateEndpointInfo:
+		if value != nil {
+			conv52, err := AzurePrivateEndpointInfoFromSDK(&value.AzurePrivateEndpointInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+			}
+			out.AzurePrivateEndpointInfo = conv52
+		}
+	case *sdk.Endpoint_EndpointInfo_AwsVpcEndpointInfo:
+		if value != nil {
+			conv53, err := AwsVpcEndpointInfoFromSDK(&value.AwsVpcEndpointInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+			}
+			out.AwsVpcEndpointInfo = conv53
+		}
+	case *sdk.Endpoint_EndpointInfo_GcpPscEndpointInfo:
+		if value != nil {
+			conv54, err := GcpPscEndpointInfoFromSDK(&value.GcpPscEndpointInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Endpoint.EndpointInfo", err)
+			}
+			out.GcpPscEndpointInfo = conv54
+		}
+	}
+	out.CreateTime = v.CreateTime
+	return out, nil
+}
+
+// GcpEndpointToSDK converts the mirror to the sdk-go type.
+func GcpEndpointToSDK(w *GcpEndpoint) (*sdk.GcpEndpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpEndpoint{}
+	out.PscEndpointUri = w.PscEndpointUri
+	{
+		members := 0
+		if w.ServiceAttachment != nil {
+			members++
+		}
+		if w.GoogleApiEndpoints != nil {
+			members++
+		}
+		if w.AllVpcScServices != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GcpEndpoint.TargetServices")
+		}
+	}
+	switch {
+	case w.ServiceAttachment != nil:
+		out.TargetServices = &sdk.GcpEndpoint_TargetServices_ServiceAttachment{ServiceAttachment: *w.ServiceAttachment}
+	case w.GoogleApiEndpoints != nil:
+		conv55, err := GoogleApiEndpointsToSDK(w.GoogleApiEndpoints)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GcpEndpoint.TargetServices", err)
+		}
+		out.TargetServices = &sdk.GcpEndpoint_TargetServices_GoogleApiEndpoints{GoogleApiEndpoints: *conv55}
+	case w.AllVpcScServices != nil:
+		out.TargetServices = &sdk.GcpEndpoint_TargetServices_AllVpcScServices{AllVpcScServices: *w.AllVpcScServices}
+	}
+	return out, nil
+}
+
+// GcpEndpointFromSDK converts the sdk-go type to the mirror.
+func GcpEndpointFromSDK(v *sdk.GcpEndpoint) (*GcpEndpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpEndpoint{}
+	out.PscEndpointUri = v.PscEndpointUri
+	switch value := v.TargetServices.(type) {
+	case *sdk.GcpEndpoint_TargetServices_ServiceAttachment:
+		if value != nil {
+			out.ServiceAttachment = new(value.ServiceAttachment)
+		}
+	case *sdk.GcpEndpoint_TargetServices_GoogleApiEndpoints:
+		if value != nil {
+			conv56, err := GoogleApiEndpointsFromSDK(&value.GoogleApiEndpoints)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GcpEndpoint.TargetServices", err)
+			}
+			out.GoogleApiEndpoints = conv56
+		}
+	case *sdk.GcpEndpoint_TargetServices_AllVpcScServices:
+		if value != nil {
+			out.AllVpcScServices = new(value.AllVpcScServices)
+		}
+	}
+	return out, nil
+}
+
+// GcpNetworkInfoToSDK converts the mirror to the sdk-go type.
+func GcpNetworkInfoToSDK(w *GcpNetworkInfo) (*sdk.GcpNetworkInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpNetworkInfo{}
+	out.NetworkProjectId = w.NetworkProjectId
+	out.VpcId = w.VpcId
+	out.SubnetId = w.SubnetId
+	out.SubnetRegion = w.SubnetRegion
+	out.PodIpRangeName = w.PodIpRangeName
+	out.ServiceIpRangeName = w.ServiceIpRangeName
+	return out, nil
+}
+
+// GcpNetworkInfoFromSDK converts the sdk-go type to the mirror.
+func GcpNetworkInfoFromSDK(v *sdk.GcpNetworkInfo) (*GcpNetworkInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpNetworkInfo{}
+	out.NetworkProjectId = v.NetworkProjectId
+	out.VpcId = v.VpcId
+	out.SubnetId = v.SubnetId
+	out.SubnetRegion = v.SubnetRegion
+	out.PodIpRangeName = v.PodIpRangeName
+	out.ServiceIpRangeName = v.ServiceIpRangeName
+	return out, nil
+}
+
+// GcpPscEndpointInfoToSDK converts the mirror to the sdk-go type.
+func GcpPscEndpointInfoToSDK(w *GcpPscEndpointInfo) (*sdk.GcpPscEndpointInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpPscEndpointInfo{}
+	out.PscConnectionId = w.PscConnectionId
+	out.ProjectId = w.ProjectId
+	out.PscEndpoint = w.PscEndpoint
+	out.EndpointRegion = w.EndpointRegion
+	out.ServiceAttachmentId = w.ServiceAttachmentId
+	return out, nil
+}
+
+// GcpPscEndpointInfoFromSDK converts the sdk-go type to the mirror.
+func GcpPscEndpointInfoFromSDK(v *sdk.GcpPscEndpointInfo) (*GcpPscEndpointInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpPscEndpointInfo{}
+	out.PscConnectionId = v.PscConnectionId
+	out.ProjectId = v.ProjectId
+	out.PscEndpoint = v.PscEndpoint
+	out.EndpointRegion = v.EndpointRegion
+	out.ServiceAttachmentId = v.ServiceAttachmentId
+	return out, nil
+}
+
+// GcpVpcEndpointInfoToSDK converts the mirror to the sdk-go type.
+func GcpVpcEndpointInfoToSDK(w *GcpVpcEndpointInfo) (*sdk.GcpVpcEndpointInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpVpcEndpointInfo{}
+	out.PscConnectionId = w.PscConnectionId
+	out.ProjectId = w.ProjectId
+	out.PscEndpointName = w.PscEndpointName
+	out.EndpointRegion = w.EndpointRegion
+	out.ServiceAttachmentId = w.ServiceAttachmentId
+	return out, nil
+}
+
+// GcpVpcEndpointInfoFromSDK converts the sdk-go type to the mirror.
+func GcpVpcEndpointInfoFromSDK(v *sdk.GcpVpcEndpointInfo) (*GcpVpcEndpointInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpVpcEndpointInfo{}
+	out.PscConnectionId = v.PscConnectionId
+	out.ProjectId = v.ProjectId
+	out.PscEndpointName = v.PscEndpointName
+	out.EndpointRegion = v.EndpointRegion
+	out.ServiceAttachmentId = v.ServiceAttachmentId
+	return out, nil
+}
+
+// GetAccountIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func GetAccountIpAccessListResponseToSDK(w *GetAccountIpAccessListResponse) (*sdk.GetAccountIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetAccountIpAccessListResponse{}
+	conv57, err := AccountIpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv57
+	return out, nil
+}
+
+// GetAccountIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func GetAccountIpAccessListResponseFromSDK(v *sdk.GetAccountIpAccessListResponse) (*GetAccountIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetAccountIpAccessListResponse{}
+	conv58, err := AccountIpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv58
+	return out, nil
+}
+
+// GetIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func GetIpAccessListResponseToSDK(w *GetIpAccessListResponse) (*sdk.GetIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetIpAccessListResponse{}
+	conv59, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv59
+	return out, nil
+}
+
+// GetIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func GetIpAccessListResponseFromSDK(v *sdk.GetIpAccessListResponse) (*GetIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetIpAccessListResponse{}
+	conv60, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv60
+	return out, nil
+}
+
+// GoogleApiEndpointsToSDK converts the mirror to the sdk-go type.
+func GoogleApiEndpointsToSDK(w *GoogleApiEndpoints) (*sdk.GoogleApiEndpoints, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GoogleApiEndpoints{}
+	out.Endpoints = w.Endpoints
+	return out, nil
+}
+
+// GoogleApiEndpointsFromSDK converts the sdk-go type to the mirror.
+func GoogleApiEndpointsFromSDK(v *sdk.GoogleApiEndpoints) (*GoogleApiEndpoints, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GoogleApiEndpoints{}
+	out.Endpoints = v.Endpoints
+	return out, nil
+}
+
+// IngressNetworkPolicyToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicyToSDK(w *IngressNetworkPolicy) (*sdk.IngressNetworkPolicy, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy{}
+	conv61, err := IngressNetworkPolicy_PublicAccessToSDK(w.PublicAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PublicAccess", err)
+	}
+	out.PublicAccess = conv61
+	conv62, err := IngressNetworkPolicy_PrivateAccessToSDK(w.PrivateAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PrivateAccess", err)
+	}
+	out.PrivateAccess = conv62
+	conv63, err := IngressNetworkPolicy_CrossWorkspaceAccessToSDK(w.CrossWorkspaceAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.CrossWorkspaceAccess", err)
+	}
+	out.CrossWorkspaceAccess = conv63
+	return out, nil
+}
+
+// IngressNetworkPolicyFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicyFromSDK(v *sdk.IngressNetworkPolicy) (*IngressNetworkPolicy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy{}
+	conv64, err := IngressNetworkPolicy_PublicAccessFromSDK(v.PublicAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PublicAccess", err)
+	}
+	out.PublicAccess = conv64
+	conv65, err := IngressNetworkPolicy_PrivateAccessFromSDK(v.PrivateAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.PrivateAccess", err)
+	}
+	out.PrivateAccess = conv65
+	conv66, err := IngressNetworkPolicy_CrossWorkspaceAccessFromSDK(v.CrossWorkspaceAccess)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy.CrossWorkspaceAccess", err)
+	}
+	out.CrossWorkspaceAccess = conv66
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountApiDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AccountApiDestinationToSDK(w *IngressNetworkPolicy_AccountApiDestination) (*sdk.IngressNetworkPolicy_AccountApiDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_AccountApiDestination{}
+	out.Scopes = w.Scopes
+	out.ScopeQualifier = w.ScopeQualifier
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountApiDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AccountApiDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountApiDestination) (*IngressNetworkPolicy_AccountApiDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_AccountApiDestination{}
+	out.Scopes = v.Scopes
+	out.ScopeQualifier = v.ScopeQualifier
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountDatabricksOneDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AccountDatabricksOneDestinationToSDK(w *IngressNetworkPolicy_AccountDatabricksOneDestination) (*sdk.IngressNetworkPolicy_AccountDatabricksOneDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_AccountDatabricksOneDestination{}
+	out.AllDestinations = w.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountDatabricksOneDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AccountDatabricksOneDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountDatabricksOneDestination) (*IngressNetworkPolicy_AccountDatabricksOneDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_AccountDatabricksOneDestination{}
+	out.AllDestinations = v.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountUiDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AccountUiDestinationToSDK(w *IngressNetworkPolicy_AccountUiDestination) (*sdk.IngressNetworkPolicy_AccountUiDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_AccountUiDestination{}
+	out.AllDestinations = w.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AccountUiDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AccountUiDestinationFromSDK(v *sdk.IngressNetworkPolicy_AccountUiDestination) (*IngressNetworkPolicy_AccountUiDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_AccountUiDestination{}
+	out.AllDestinations = v.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AppsRuntimeDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AppsRuntimeDestinationToSDK(w *IngressNetworkPolicy_AppsRuntimeDestination) (*sdk.IngressNetworkPolicy_AppsRuntimeDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_AppsRuntimeDestination{}
+	out.AllDestinations = w.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AppsRuntimeDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AppsRuntimeDestinationFromSDK(v *sdk.IngressNetworkPolicy_AppsRuntimeDestination) (*IngressNetworkPolicy_AppsRuntimeDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_AppsRuntimeDestination{}
+	out.AllDestinations = v.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_AuthenticationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AuthenticationToSDK(w *IngressNetworkPolicy_Authentication) (*sdk.IngressNetworkPolicy_Authentication, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_Authentication{}
+	out.IdentityType = w.IdentityType
+	conv67, err := convertSlice(w.Identities, IngressNetworkPolicy_AuthenticationIdentityToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_Authentication.Identities", err)
+	}
+	out.Identities = conv67
+	return out, nil
+}
+
+// IngressNetworkPolicy_AuthenticationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AuthenticationFromSDK(v *sdk.IngressNetworkPolicy_Authentication) (*IngressNetworkPolicy_Authentication, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_Authentication{}
+	out.IdentityType = v.IdentityType
+	conv68, err := convertSlice(v.Identities, IngressNetworkPolicy_AuthenticationIdentityFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_Authentication.Identities", err)
+	}
+	out.Identities = conv68
+	return out, nil
+}
+
+// IngressNetworkPolicy_AuthenticationIdentityToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_AuthenticationIdentityToSDK(w *IngressNetworkPolicy_AuthenticationIdentity) (*sdk.IngressNetworkPolicy_AuthenticationIdentity, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_AuthenticationIdentity{}
+	out.PrincipalType = w.PrincipalType
+	out.PrincipalId = w.PrincipalId
+	return out, nil
+}
+
+// IngressNetworkPolicy_AuthenticationIdentityFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_AuthenticationIdentityFromSDK(v *sdk.IngressNetworkPolicy_AuthenticationIdentity) (*IngressNetworkPolicy_AuthenticationIdentity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_AuthenticationIdentity{}
+	out.PrincipalType = v.PrincipalType
+	out.PrincipalId = v.PrincipalId
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceAccessToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_CrossWorkspaceAccessToSDK(w *IngressNetworkPolicy_CrossWorkspaceAccess) (*sdk.IngressNetworkPolicy_CrossWorkspaceAccess, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_CrossWorkspaceAccess{}
+	out.RestrictionMode = w.RestrictionMode
+	conv69, err := convertSlice(w.DenyRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.DenyRules", err)
+	}
+	out.DenyRules = conv69
+	conv70, err := convertSlice(w.AllowRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.AllowRules", err)
+	}
+	out.AllowRules = conv70
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceAccessFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_CrossWorkspaceAccessFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceAccess) (*IngressNetworkPolicy_CrossWorkspaceAccess, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_CrossWorkspaceAccess{}
+	out.RestrictionMode = v.RestrictionMode
+	conv71, err := convertSlice(v.DenyRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.DenyRules", err)
+	}
+	out.DenyRules = conv71
+	conv72, err := convertSlice(v.AllowRules, IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceAccess.AllowRules", err)
+	}
+	out.AllowRules = conv72
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_CrossWorkspaceIngressRuleToSDK(w *IngressNetworkPolicy_CrossWorkspaceIngressRule) (*sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule{}
+	conv73, err := IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK(w.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Origin", err)
+	}
+	out.Origin = conv73
+	conv74, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Destination", err)
+	}
+	out.Destination = conv74
+	conv75, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Authentication", err)
+	}
+	out.Authentication = conv75
+	out.Label = w.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_CrossWorkspaceIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceIngressRule) (*IngressNetworkPolicy_CrossWorkspaceIngressRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_CrossWorkspaceIngressRule{}
+	conv76, err := IngressNetworkPolicy_CrossWorkspaceRequestOriginFromSDK(v.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Origin", err)
+	}
+	out.Origin = conv76
+	conv77, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Destination", err)
+	}
+	out.Destination = conv77
+	conv78, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceIngressRule.Authentication", err)
+	}
+	out.Authentication = conv78
+	out.Label = v.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_CrossWorkspaceRequestOriginToSDK(w *IngressNetworkPolicy_CrossWorkspaceRequestOrigin) (*sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin{}
+	{
+		members := 0
+		if w.AllSourceWorkspaces != nil {
+			members++
+		}
+		if w.SelectedWorkspaces != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source")
+		}
+	}
+	switch {
+	case w.AllSourceWorkspaces != nil:
+		out.Source = &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_AllSourceWorkspaces{AllSourceWorkspaces: *w.AllSourceWorkspaces}
+	case w.SelectedWorkspaces != nil:
+		conv79, err := IngressNetworkPolicy_WorkspaceIdListToSDK(w.SelectedWorkspaces)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source", err)
+		}
+		out.Source = &sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_SelectedWorkspaces{SelectedWorkspaces: *conv79}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_CrossWorkspaceRequestOriginFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_CrossWorkspaceRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin) (*IngressNetworkPolicy_CrossWorkspaceRequestOrigin, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_CrossWorkspaceRequestOrigin{}
+	switch value := v.Source.(type) {
+	case *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_AllSourceWorkspaces:
+		if value != nil {
+			out.AllSourceWorkspaces = new(value.AllSourceWorkspaces)
+		}
+	case *sdk.IngressNetworkPolicy_CrossWorkspaceRequestOrigin_Source_SelectedWorkspaces:
+		if value != nil {
+			conv80, err := IngressNetworkPolicy_WorkspaceIdListFromSDK(&value.SelectedWorkspaces)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_CrossWorkspaceRequestOrigin.Source", err)
+			}
+			out.SelectedWorkspaces = conv80
+		}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_EndpointsToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_EndpointsToSDK(w *IngressNetworkPolicy_Endpoints) (*sdk.IngressNetworkPolicy_Endpoints, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_Endpoints{}
+	out.EndpointIds = w.EndpointIds
+	return out, nil
+}
+
+// IngressNetworkPolicy_EndpointsFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_EndpointsFromSDK(v *sdk.IngressNetworkPolicy_Endpoints) (*IngressNetworkPolicy_Endpoints, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_Endpoints{}
+	out.EndpointIds = v.EndpointIds
+	return out, nil
+}
+
+// IngressNetworkPolicy_IpRangesToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_IpRangesToSDK(w *IngressNetworkPolicy_IpRanges) (*sdk.IngressNetworkPolicy_IpRanges, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_IpRanges{}
+	out.IpRanges = w.IpRanges
+	return out, nil
+}
+
+// IngressNetworkPolicy_IpRangesFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_IpRangesFromSDK(v *sdk.IngressNetworkPolicy_IpRanges) (*IngressNetworkPolicy_IpRanges, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_IpRanges{}
+	out.IpRanges = v.IpRanges
+	return out, nil
+}
+
+// IngressNetworkPolicy_LakebaseRuntimeDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_LakebaseRuntimeDestinationToSDK(w *IngressNetworkPolicy_LakebaseRuntimeDestination) (*sdk.IngressNetworkPolicy_LakebaseRuntimeDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_LakebaseRuntimeDestination{}
+	out.AllDestinations = w.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_LakebaseRuntimeDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_LakebaseRuntimeDestinationFromSDK(v *sdk.IngressNetworkPolicy_LakebaseRuntimeDestination) (*IngressNetworkPolicy_LakebaseRuntimeDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_LakebaseRuntimeDestination{}
+	out.AllDestinations = v.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateAccessToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PrivateAccessToSDK(w *IngressNetworkPolicy_PrivateAccess) (*sdk.IngressNetworkPolicy_PrivateAccess, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PrivateAccess{}
+	out.RestrictionMode = w.RestrictionMode
+	conv81, err := convertSlice(w.DenyRules, IngressNetworkPolicy_PrivateIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.DenyRules", err)
+	}
+	out.DenyRules = conv81
+	conv82, err := convertSlice(w.AllowRules, IngressNetworkPolicy_PrivateIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.AllowRules", err)
+	}
+	out.AllowRules = conv82
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateAccessFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PrivateAccessFromSDK(v *sdk.IngressNetworkPolicy_PrivateAccess) (*IngressNetworkPolicy_PrivateAccess, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PrivateAccess{}
+	out.RestrictionMode = v.RestrictionMode
+	conv83, err := convertSlice(v.DenyRules, IngressNetworkPolicy_PrivateIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.DenyRules", err)
+	}
+	out.DenyRules = conv83
+	conv84, err := convertSlice(v.AllowRules, IngressNetworkPolicy_PrivateIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateAccess.AllowRules", err)
+	}
+	out.AllowRules = conv84
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateIngressRuleToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PrivateIngressRuleToSDK(w *IngressNetworkPolicy_PrivateIngressRule) (*sdk.IngressNetworkPolicy_PrivateIngressRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PrivateIngressRule{}
+	conv85, err := IngressNetworkPolicy_PrivateRequestOriginToSDK(w.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Origin", err)
+	}
+	out.Origin = conv85
+	conv86, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Destination", err)
+	}
+	out.Destination = conv86
+	conv87, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Authentication", err)
+	}
+	out.Authentication = conv87
+	out.Label = w.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateIngressRuleFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PrivateIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_PrivateIngressRule) (*IngressNetworkPolicy_PrivateIngressRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PrivateIngressRule{}
+	conv88, err := IngressNetworkPolicy_PrivateRequestOriginFromSDK(v.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Origin", err)
+	}
+	out.Origin = conv88
+	conv89, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Destination", err)
+	}
+	out.Destination = conv89
+	conv90, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateIngressRule.Authentication", err)
+	}
+	out.Authentication = conv90
+	out.Label = v.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateRequestOriginToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PrivateRequestOriginToSDK(w *IngressNetworkPolicy_PrivateRequestOrigin) (*sdk.IngressNetworkPolicy_PrivateRequestOrigin, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PrivateRequestOrigin{}
+	{
+		members := 0
+		if w.Endpoints != nil {
+			members++
+		}
+		if w.AllRegisteredEndpoints != nil {
+			members++
+		}
+		if w.AzureWorkspacePrivateLink != nil {
+			members++
+		}
+		if w.AllPrivateAccess != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PrivateRequestOrigin.Source")
+		}
+	}
+	switch {
+	case w.Endpoints != nil:
+		conv91, err := IngressNetworkPolicy_EndpointsToSDK(w.Endpoints)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateRequestOrigin.Source", err)
+		}
+		out.Source = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_Endpoints{Endpoints: *conv91}
+	case w.AllRegisteredEndpoints != nil:
+		out.Source = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllRegisteredEndpoints{AllRegisteredEndpoints: *w.AllRegisteredEndpoints}
+	case w.AzureWorkspacePrivateLink != nil:
+		out.Source = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AzureWorkspacePrivateLink{AzureWorkspacePrivateLink: *w.AzureWorkspacePrivateLink}
+	case w.AllPrivateAccess != nil:
+		out.Source = &sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllPrivateAccess{AllPrivateAccess: *w.AllPrivateAccess}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_PrivateRequestOriginFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PrivateRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_PrivateRequestOrigin) (*IngressNetworkPolicy_PrivateRequestOrigin, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PrivateRequestOrigin{}
+	switch value := v.Source.(type) {
+	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_Endpoints:
+		if value != nil {
+			conv92, err := IngressNetworkPolicy_EndpointsFromSDK(&value.Endpoints)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PrivateRequestOrigin.Source", err)
+			}
+			out.Endpoints = conv92
+		}
+	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllRegisteredEndpoints:
+		if value != nil {
+			out.AllRegisteredEndpoints = new(value.AllRegisteredEndpoints)
+		}
+	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AzureWorkspacePrivateLink:
+		if value != nil {
+			out.AzureWorkspacePrivateLink = new(value.AzureWorkspacePrivateLink)
+		}
+	case *sdk.IngressNetworkPolicy_PrivateRequestOrigin_Source_AllPrivateAccess:
+		if value != nil {
+			out.AllPrivateAccess = new(value.AllPrivateAccess)
+		}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicAccessToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PublicAccessToSDK(w *IngressNetworkPolicy_PublicAccess) (*sdk.IngressNetworkPolicy_PublicAccess, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PublicAccess{}
+	out.RestrictionMode = w.RestrictionMode
+	conv93, err := convertSlice(w.DenyRules, IngressNetworkPolicy_PublicIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.DenyRules", err)
+	}
+	out.DenyRules = conv93
+	conv94, err := convertSlice(w.AllowRules, IngressNetworkPolicy_PublicIngressRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.AllowRules", err)
+	}
+	out.AllowRules = conv94
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicAccessFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PublicAccessFromSDK(v *sdk.IngressNetworkPolicy_PublicAccess) (*IngressNetworkPolicy_PublicAccess, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PublicAccess{}
+	out.RestrictionMode = v.RestrictionMode
+	conv95, err := convertSlice(v.DenyRules, IngressNetworkPolicy_PublicIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.DenyRules", err)
+	}
+	out.DenyRules = conv95
+	conv96, err := convertSlice(v.AllowRules, IngressNetworkPolicy_PublicIngressRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicAccess.AllowRules", err)
+	}
+	out.AllowRules = conv96
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicIngressRuleToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PublicIngressRuleToSDK(w *IngressNetworkPolicy_PublicIngressRule) (*sdk.IngressNetworkPolicy_PublicIngressRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PublicIngressRule{}
+	conv97, err := IngressNetworkPolicy_PublicRequestOriginToSDK(w.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Origin", err)
+	}
+	out.Origin = conv97
+	conv98, err := IngressNetworkPolicy_RequestDestinationToSDK(w.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Destination", err)
+	}
+	out.Destination = conv98
+	conv99, err := IngressNetworkPolicy_AuthenticationToSDK(w.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Authentication", err)
+	}
+	out.Authentication = conv99
+	out.Label = w.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicIngressRuleFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PublicIngressRuleFromSDK(v *sdk.IngressNetworkPolicy_PublicIngressRule) (*IngressNetworkPolicy_PublicIngressRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PublicIngressRule{}
+	conv100, err := IngressNetworkPolicy_PublicRequestOriginFromSDK(v.Origin)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Origin", err)
+	}
+	out.Origin = conv100
+	conv101, err := IngressNetworkPolicy_RequestDestinationFromSDK(v.Destination)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Destination", err)
+	}
+	out.Destination = conv101
+	conv102, err := IngressNetworkPolicy_AuthenticationFromSDK(v.Authentication)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicIngressRule.Authentication", err)
+	}
+	out.Authentication = conv102
+	out.Label = v.Label
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicRequestOriginToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_PublicRequestOriginToSDK(w *IngressNetworkPolicy_PublicRequestOrigin) (*sdk.IngressNetworkPolicy_PublicRequestOrigin, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_PublicRequestOrigin{}
+	{
+		members := 0
+		if w.AllIpRanges != nil {
+			members++
+		}
+		if w.IncludedIpRanges != nil {
+			members++
+		}
+		if w.ExcludedIpRanges != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "IngressNetworkPolicy_PublicRequestOrigin.Source")
+		}
+	}
+	switch {
+	case w.AllIpRanges != nil:
+		out.Source = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_AllIpRanges{AllIpRanges: *w.AllIpRanges}
+	case w.IncludedIpRanges != nil:
+		conv103, err := IngressNetworkPolicy_IpRangesToSDK(w.IncludedIpRanges)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source", err)
+		}
+		out.Source = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_IncludedIpRanges{IncludedIpRanges: *conv103}
+	case w.ExcludedIpRanges != nil:
+		conv104, err := IngressNetworkPolicy_IpRangesToSDK(w.ExcludedIpRanges)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source", err)
+		}
+		out.Source = &sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_ExcludedIpRanges{ExcludedIpRanges: *conv104}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_PublicRequestOriginFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_PublicRequestOriginFromSDK(v *sdk.IngressNetworkPolicy_PublicRequestOrigin) (*IngressNetworkPolicy_PublicRequestOrigin, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_PublicRequestOrigin{}
+	switch value := v.Source.(type) {
+	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_AllIpRanges:
+		if value != nil {
+			out.AllIpRanges = new(value.AllIpRanges)
+		}
+	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_IncludedIpRanges:
+		if value != nil {
+			conv105, err := IngressNetworkPolicy_IpRangesFromSDK(&value.IncludedIpRanges)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source", err)
+			}
+			out.IncludedIpRanges = conv105
+		}
+	case *sdk.IngressNetworkPolicy_PublicRequestOrigin_Source_ExcludedIpRanges:
+		if value != nil {
+			conv106, err := IngressNetworkPolicy_IpRangesFromSDK(&value.ExcludedIpRanges)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_PublicRequestOrigin.Source", err)
+			}
+			out.ExcludedIpRanges = conv106
+		}
+	}
+	return out, nil
+}
+
+// IngressNetworkPolicy_RequestDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_RequestDestinationToSDK(w *IngressNetworkPolicy_RequestDestination) (*sdk.IngressNetworkPolicy_RequestDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_RequestDestination{}
+	out.AllDestinations = w.AllDestinations
+	conv107, err := IngressNetworkPolicy_WorkspaceUiDestinationToSDK(w.WorkspaceUi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceUi", err)
+	}
+	out.WorkspaceUi = conv107
+	conv108, err := IngressNetworkPolicy_WorkspaceApiDestinationToSDK(w.WorkspaceApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceApi", err)
+	}
+	out.WorkspaceApi = conv108
+	conv109, err := IngressNetworkPolicy_AppsRuntimeDestinationToSDK(w.AppsRuntime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AppsRuntime", err)
+	}
+	out.AppsRuntime = conv109
+	conv110, err := IngressNetworkPolicy_LakebaseRuntimeDestinationToSDK(w.LakebaseRuntime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.LakebaseRuntime", err)
+	}
+	out.LakebaseRuntime = conv110
+	conv111, err := IngressNetworkPolicy_AccountUiDestinationToSDK(w.AccountUi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountUi", err)
+	}
+	out.AccountUi = conv111
+	conv112, err := IngressNetworkPolicy_AccountApiDestinationToSDK(w.AccountApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountApi", err)
+	}
+	out.AccountApi = conv112
+	conv113, err := IngressNetworkPolicy_AccountDatabricksOneDestinationToSDK(w.AccountDatabricksOne)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountDatabricksOne", err)
+	}
+	out.AccountDatabricksOne = conv113
+	return out, nil
+}
+
+// IngressNetworkPolicy_RequestDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_RequestDestinationFromSDK(v *sdk.IngressNetworkPolicy_RequestDestination) (*IngressNetworkPolicy_RequestDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_RequestDestination{}
+	out.AllDestinations = v.AllDestinations
+	conv114, err := IngressNetworkPolicy_WorkspaceUiDestinationFromSDK(v.WorkspaceUi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceUi", err)
+	}
+	out.WorkspaceUi = conv114
+	conv115, err := IngressNetworkPolicy_WorkspaceApiDestinationFromSDK(v.WorkspaceApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.WorkspaceApi", err)
+	}
+	out.WorkspaceApi = conv115
+	conv116, err := IngressNetworkPolicy_AppsRuntimeDestinationFromSDK(v.AppsRuntime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AppsRuntime", err)
+	}
+	out.AppsRuntime = conv116
+	conv117, err := IngressNetworkPolicy_LakebaseRuntimeDestinationFromSDK(v.LakebaseRuntime)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.LakebaseRuntime", err)
+	}
+	out.LakebaseRuntime = conv117
+	conv118, err := IngressNetworkPolicy_AccountUiDestinationFromSDK(v.AccountUi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountUi", err)
+	}
+	out.AccountUi = conv118
+	conv119, err := IngressNetworkPolicy_AccountApiDestinationFromSDK(v.AccountApi)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountApi", err)
+	}
+	out.AccountApi = conv119
+	conv120, err := IngressNetworkPolicy_AccountDatabricksOneDestinationFromSDK(v.AccountDatabricksOne)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "IngressNetworkPolicy_RequestDestination.AccountDatabricksOne", err)
+	}
+	out.AccountDatabricksOne = conv120
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceApiDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_WorkspaceApiDestinationToSDK(w *IngressNetworkPolicy_WorkspaceApiDestination) (*sdk.IngressNetworkPolicy_WorkspaceApiDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_WorkspaceApiDestination{}
+	out.Scopes = w.Scopes
+	out.ScopeQualifier = w.ScopeQualifier
+	out.ExcludedScopes = w.ExcludedScopes
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceApiDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_WorkspaceApiDestinationFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceApiDestination) (*IngressNetworkPolicy_WorkspaceApiDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_WorkspaceApiDestination{}
+	out.Scopes = v.Scopes
+	out.ScopeQualifier = v.ScopeQualifier
+	out.ExcludedScopes = v.ExcludedScopes
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceIdListToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_WorkspaceIdListToSDK(w *IngressNetworkPolicy_WorkspaceIdList) (*sdk.IngressNetworkPolicy_WorkspaceIdList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_WorkspaceIdList{}
+	out.WorkspaceIds = w.WorkspaceIds
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceIdListFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_WorkspaceIdListFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceIdList) (*IngressNetworkPolicy_WorkspaceIdList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_WorkspaceIdList{}
+	out.WorkspaceIds = v.WorkspaceIds
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceUiDestinationToSDK converts the mirror to the sdk-go type.
+func IngressNetworkPolicy_WorkspaceUiDestinationToSDK(w *IngressNetworkPolicy_WorkspaceUiDestination) (*sdk.IngressNetworkPolicy_WorkspaceUiDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IngressNetworkPolicy_WorkspaceUiDestination{}
+	out.AllDestinations = w.AllDestinations
+	return out, nil
+}
+
+// IngressNetworkPolicy_WorkspaceUiDestinationFromSDK converts the sdk-go type to the mirror.
+func IngressNetworkPolicy_WorkspaceUiDestinationFromSDK(v *sdk.IngressNetworkPolicy_WorkspaceUiDestination) (*IngressNetworkPolicy_WorkspaceUiDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IngressNetworkPolicy_WorkspaceUiDestination{}
+	out.AllDestinations = v.AllDestinations
+	return out, nil
+}
+
+// IpAccessListToSDK converts the mirror to the sdk-go type.
+func IpAccessListToSDK(w *IpAccessList) (*sdk.IpAccessList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.IpAccessList{}
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.IpAddresses = w.IpAddresses
+	out.AddressCount = w.AddressCount
+	out.ListType = w.ListType
+	out.CreatedAt = w.CreatedAt
+	out.CreatedBy = w.CreatedBy
+	out.UpdatedAt = w.UpdatedAt
+	out.UpdatedBy = w.UpdatedBy
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// IpAccessListFromSDK converts the sdk-go type to the mirror.
+func IpAccessListFromSDK(v *sdk.IpAccessList) (*IpAccessList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &IpAccessList{}
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.IpAddresses = v.IpAddresses
+	out.AddressCount = v.AddressCount
+	out.ListType = v.ListType
+	out.CreatedAt = v.CreatedAt
+	out.CreatedBy = v.CreatedBy
+	out.UpdatedAt = v.UpdatedAt
+	out.UpdatedBy = v.UpdatedBy
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// ListAccountIpAccessListsResponseToSDK converts the mirror to the sdk-go type.
+func ListAccountIpAccessListsResponseToSDK(w *ListAccountIpAccessListsResponse) (*sdk.ListAccountIpAccessListsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAccountIpAccessListsResponse{}
+	conv121, err := convertSlice(w.IpAccessLists, AccountIpAccessListToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountIpAccessListsResponse.IpAccessLists", err)
+	}
+	out.IpAccessLists = conv121
+	return out, nil
+}
+
+// ListAccountIpAccessListsResponseFromSDK converts the sdk-go type to the mirror.
+func ListAccountIpAccessListsResponseFromSDK(v *sdk.ListAccountIpAccessListsResponse) (*ListAccountIpAccessListsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAccountIpAccessListsResponse{}
+	conv122, err := convertSlice(v.IpAccessLists, AccountIpAccessListFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAccountIpAccessListsResponse.IpAccessLists", err)
+	}
+	out.IpAccessLists = conv122
+	return out, nil
+}
+
+// ListEndpointsRequestToSDK converts the mirror to the sdk-go type.
+func ListEndpointsRequestToSDK(w *ListEndpointsRequest) (*sdk.ListEndpointsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsRequest{}
+	out.Parent = w.Parent
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListEndpointsRequestFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsRequestFromSDK(v *sdk.ListEndpointsRequest) (*ListEndpointsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsRequest{}
+	out.Parent = v.Parent
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListEndpointsResponseToSDK converts the mirror to the sdk-go type.
+func ListEndpointsResponseToSDK(w *ListEndpointsResponse) (*sdk.ListEndpointsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListEndpointsResponse{}
+	conv123, err := convertSlice(w.Items, EndpointToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Items", err)
+	}
+	out.Items = conv123
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListEndpointsResponseFromSDK converts the sdk-go type to the mirror.
+func ListEndpointsResponseFromSDK(v *sdk.ListEndpointsResponse) (*ListEndpointsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListEndpointsResponse{}
+	conv124, err := convertSlice(v.Items, EndpointFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListEndpointsResponse.Items", err)
+	}
+	out.Items = conv124
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListIpAccessListsResponseToSDK converts the mirror to the sdk-go type.
+func ListIpAccessListsResponseToSDK(w *ListIpAccessListsResponse) (*sdk.ListIpAccessListsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListIpAccessListsResponse{}
+	conv125, err := convertSlice(w.IpAccessLists, IpAccessListToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListIpAccessListsResponse.IpAccessLists", err)
+	}
+	out.IpAccessLists = conv125
+	return out, nil
+}
+
+// ListIpAccessListsResponseFromSDK converts the sdk-go type to the mirror.
+func ListIpAccessListsResponseFromSDK(v *sdk.ListIpAccessListsResponse) (*ListIpAccessListsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListIpAccessListsResponse{}
+	conv126, err := convertSlice(v.IpAccessLists, IpAccessListFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListIpAccessListsResponse.IpAccessLists", err)
+	}
+	out.IpAccessLists = conv126
+	return out, nil
+}
+
+// ListNccPrivateEndpointRulesRequestToSDK converts the mirror to the sdk-go type.
+func ListNccPrivateEndpointRulesRequestToSDK(w *ListNccPrivateEndpointRulesRequest) (*sdk.ListNccPrivateEndpointRulesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNccPrivateEndpointRulesRequest{}
+	out.AccountId = w.AccountId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListNccPrivateEndpointRulesRequestFromSDK converts the sdk-go type to the mirror.
+func ListNccPrivateEndpointRulesRequestFromSDK(v *sdk.ListNccPrivateEndpointRulesRequest) (*ListNccPrivateEndpointRulesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNccPrivateEndpointRulesRequest{}
+	out.AccountId = v.AccountId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListNccPrivateEndpointRulesResponseToSDK converts the mirror to the sdk-go type.
+func ListNccPrivateEndpointRulesResponseToSDK(w *ListNccPrivateEndpointRulesResponse) (*sdk.ListNccPrivateEndpointRulesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNccPrivateEndpointRulesResponse{}
+	conv127, err := convertSlice(w.Items, NccPrivateEndpointRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNccPrivateEndpointRulesResponse.Items", err)
+	}
+	out.Items = conv127
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListNccPrivateEndpointRulesResponseFromSDK converts the sdk-go type to the mirror.
+func ListNccPrivateEndpointRulesResponseFromSDK(v *sdk.ListNccPrivateEndpointRulesResponse) (*ListNccPrivateEndpointRulesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNccPrivateEndpointRulesResponse{}
+	conv128, err := convertSlice(v.Items, NccPrivateEndpointRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNccPrivateEndpointRulesResponse.Items", err)
+	}
+	out.Items = conv128
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListNetworkConnectivityConfigsRequestToSDK converts the mirror to the sdk-go type.
+func ListNetworkConnectivityConfigsRequestToSDK(w *ListNetworkConnectivityConfigsRequest) (*sdk.ListNetworkConnectivityConfigsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNetworkConnectivityConfigsRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListNetworkConnectivityConfigsRequestFromSDK converts the sdk-go type to the mirror.
+func ListNetworkConnectivityConfigsRequestFromSDK(v *sdk.ListNetworkConnectivityConfigsRequest) (*ListNetworkConnectivityConfigsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNetworkConnectivityConfigsRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListNetworkConnectivityConfigsResponseToSDK converts the mirror to the sdk-go type.
+func ListNetworkConnectivityConfigsResponseToSDK(w *ListNetworkConnectivityConfigsResponse) (*sdk.ListNetworkConnectivityConfigsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNetworkConnectivityConfigsResponse{}
+	conv129, err := convertSlice(w.Items, NetworkConnectivityConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNetworkConnectivityConfigsResponse.Items", err)
+	}
+	out.Items = conv129
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListNetworkConnectivityConfigsResponseFromSDK converts the sdk-go type to the mirror.
+func ListNetworkConnectivityConfigsResponseFromSDK(v *sdk.ListNetworkConnectivityConfigsResponse) (*ListNetworkConnectivityConfigsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNetworkConnectivityConfigsResponse{}
+	conv130, err := convertSlice(v.Items, NetworkConnectivityConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNetworkConnectivityConfigsResponse.Items", err)
+	}
+	out.Items = conv130
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListNetworkPoliciesRequestToSDK converts the mirror to the sdk-go type.
+func ListNetworkPoliciesRequestToSDK(w *ListNetworkPoliciesRequest) (*sdk.ListNetworkPoliciesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNetworkPoliciesRequest{}
+	out.AccountId = w.AccountId
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListNetworkPoliciesRequestFromSDK converts the sdk-go type to the mirror.
+func ListNetworkPoliciesRequestFromSDK(v *sdk.ListNetworkPoliciesRequest) (*ListNetworkPoliciesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNetworkPoliciesRequest{}
+	out.AccountId = v.AccountId
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListNetworkPoliciesResponseToSDK converts the mirror to the sdk-go type.
+func ListNetworkPoliciesResponseToSDK(w *ListNetworkPoliciesResponse) (*sdk.ListNetworkPoliciesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListNetworkPoliciesResponse{}
+	conv131, err := convertSlice(w.Items, AccountNetworkPolicyToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNetworkPoliciesResponse.Items", err)
+	}
+	out.Items = conv131
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListNetworkPoliciesResponseFromSDK converts the sdk-go type to the mirror.
+func ListNetworkPoliciesResponseFromSDK(v *sdk.ListNetworkPoliciesResponse) (*ListNetworkPoliciesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListNetworkPoliciesResponse{}
+	conv132, err := convertSlice(v.Items, AccountNetworkPolicyFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListNetworkPoliciesResponse.Items", err)
+	}
+	out.Items = conv132
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// NccPrivateEndpointRuleToSDK converts the mirror to the sdk-go type.
+func NccPrivateEndpointRuleToSDK(w *NccPrivateEndpointRule) (*sdk.NccPrivateEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NccPrivateEndpointRule{}
+	out.RuleId = w.RuleId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.ConnectionState = w.ConnectionState
+	out.DomainNames = w.DomainNames
+	out.CreationTime = w.CreationTime
+	out.UpdatedTime = w.UpdatedTime
+	out.Deactivated = w.Deactivated
+	out.DeactivatedAt = w.DeactivatedAt
+	out.ErrorMessage = w.ErrorMessage
+	out.ResourceId = w.ResourceId
+	out.GroupId = w.GroupId
+	out.EndpointName = w.EndpointName
+	out.AccountId = w.AccountId
+	out.EndpointService = w.EndpointService
+	out.ResourceNames = w.ResourceNames
+	out.VpcEndpointId = w.VpcEndpointId
+	out.Enabled = w.Enabled
+	{
+		members := 0
+		if w.GcpEndpoint != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "NccPrivateEndpointRule.Endpoint")
+		}
+	}
+	switch {
+	case w.GcpEndpoint != nil:
+		conv133, err := GcpEndpointToSDK(w.GcpEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.Endpoint", err)
+		}
+		out.Endpoint = &sdk.NccPrivateEndpointRule_Endpoint_GcpEndpoint{GcpEndpoint: *conv133}
+	}
+	return out, nil
+}
+
+// NccPrivateEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func NccPrivateEndpointRuleFromSDK(v *sdk.NccPrivateEndpointRule) (*NccPrivateEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NccPrivateEndpointRule{}
+	out.RuleId = v.RuleId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.ConnectionState = v.ConnectionState
+	out.DomainNames = v.DomainNames
+	out.CreationTime = v.CreationTime
+	out.UpdatedTime = v.UpdatedTime
+	out.Deactivated = v.Deactivated
+	out.DeactivatedAt = v.DeactivatedAt
+	out.ErrorMessage = v.ErrorMessage
+	out.ResourceId = v.ResourceId
+	out.GroupId = v.GroupId
+	out.EndpointName = v.EndpointName
+	out.AccountId = v.AccountId
+	out.EndpointService = v.EndpointService
+	out.ResourceNames = v.ResourceNames
+	out.VpcEndpointId = v.VpcEndpointId
+	out.Enabled = v.Enabled
+	switch value := v.Endpoint.(type) {
+	case *sdk.NccPrivateEndpointRule_Endpoint_GcpEndpoint:
+		if value != nil {
+			conv134, err := GcpEndpointFromSDK(&value.GcpEndpoint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "NccPrivateEndpointRule.Endpoint", err)
+			}
+			out.GcpEndpoint = conv134
+		}
+	}
+	return out, nil
+}
+
+// NetworkToSDK converts the mirror to the sdk-go type.
+func NetworkToSDK(w *Network) (*sdk.Network, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Network{}
+	out.NetworkId = w.NetworkId
+	out.AccountId = w.AccountId
+	out.WorkspaceId = w.WorkspaceId
+	out.VpcId = w.VpcId
+	out.SubnetIds = w.SubnetIds
+	out.SecurityGroupIds = w.SecurityGroupIds
+	out.VpcStatus = w.VpcStatus
+	conv135, err := convertSlice(w.ErrorMessages, NetworkHealthToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.ErrorMessages", err)
+	}
+	out.ErrorMessages = conv135
+	out.NetworkName = w.NetworkName
+	out.CreationTime = w.CreationTime
+	conv136, err := convertSlice(w.WarningMessages, NetworkWarningToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.WarningMessages", err)
+	}
+	out.WarningMessages = conv136
+	conv137, err := NetworkVpcEndpointsToSDK(w.VpcEndpoints)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.VpcEndpoints", err)
+	}
+	out.VpcEndpoints = conv137
+	{
+		members := 0
+		if w.GcpNetworkInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Network.NetworkInfo")
+		}
+	}
+	switch {
+	case w.GcpNetworkInfo != nil:
+		conv138, err := GcpNetworkInfoToSDK(w.GcpNetworkInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "Network.NetworkInfo", err)
+		}
+		out.NetworkInfo = &sdk.Network_NetworkInfo_GcpNetworkInfo{GcpNetworkInfo: *conv138}
+	}
+	return out, nil
+}
+
+// NetworkFromSDK converts the sdk-go type to the mirror.
+func NetworkFromSDK(v *sdk.Network) (*Network, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Network{}
+	out.NetworkId = v.NetworkId
+	out.AccountId = v.AccountId
+	out.WorkspaceId = v.WorkspaceId
+	out.VpcId = v.VpcId
+	out.SubnetIds = v.SubnetIds
+	out.SecurityGroupIds = v.SecurityGroupIds
+	out.VpcStatus = v.VpcStatus
+	conv139, err := convertSlice(v.ErrorMessages, NetworkHealthFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.ErrorMessages", err)
+	}
+	out.ErrorMessages = conv139
+	out.NetworkName = v.NetworkName
+	out.CreationTime = v.CreationTime
+	conv140, err := convertSlice(v.WarningMessages, NetworkWarningFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.WarningMessages", err)
+	}
+	out.WarningMessages = conv140
+	conv141, err := NetworkVpcEndpointsFromSDK(v.VpcEndpoints)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Network.VpcEndpoints", err)
+	}
+	out.VpcEndpoints = conv141
+	switch value := v.NetworkInfo.(type) {
+	case *sdk.Network_NetworkInfo_GcpNetworkInfo:
+		if value != nil {
+			conv142, err := GcpNetworkInfoFromSDK(&value.GcpNetworkInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Network.NetworkInfo", err)
+			}
+			out.GcpNetworkInfo = conv142
+		}
+	}
+	return out, nil
+}
+
+// NetworkConnectivityConfigToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigToSDK(w *NetworkConnectivityConfig) (*sdk.NetworkConnectivityConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfig{}
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.AccountId = w.AccountId
+	out.Name = w.Name
+	out.Region = w.Region
+	conv143, err := CustomerFacingNetworkConnectivityConfigEgressConfigToSDK(w.EgressConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfig.EgressConfig", err)
+	}
+	out.EgressConfig = conv143
+	out.UpdatedTime = w.UpdatedTime
+	out.CreationTime = w.CreationTime
+	return out, nil
+}
+
+// NetworkConnectivityConfigFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigFromSDK(v *sdk.NetworkConnectivityConfig) (*NetworkConnectivityConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfig{}
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.AccountId = v.AccountId
+	out.Name = v.Name
+	out.Region = v.Region
+	conv144, err := CustomerFacingNetworkConnectivityConfigEgressConfigFromSDK(v.EgressConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfig.EgressConfig", err)
+	}
+	out.EgressConfig = conv144
+	out.UpdatedTime = v.UpdatedTime
+	out.CreationTime = v.CreationTime
+	return out, nil
+}
+
+// NetworkConnectivityConfigAwsPrivateEndpointRuleToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigAwsPrivateEndpointRuleToSDK(w *NetworkConnectivityConfigAwsPrivateEndpointRule) (*sdk.NetworkConnectivityConfigAwsPrivateEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfigAwsPrivateEndpointRule{}
+	out.RuleId = w.RuleId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.AccountId = w.AccountId
+	out.EndpointService = w.EndpointService
+	out.DomainNames = w.DomainNames
+	out.ResourceNames = w.ResourceNames
+	out.VpcEndpointId = w.VpcEndpointId
+	out.ConnectionState = w.ConnectionState
+	out.CreationTime = w.CreationTime
+	out.UpdatedTime = w.UpdatedTime
+	out.Deactivated = w.Deactivated
+	out.DeactivatedAt = w.DeactivatedAt
+	out.Enabled = w.Enabled
+	out.ErrorMessage = w.ErrorMessage
+	return out, nil
+}
+
+// NetworkConnectivityConfigAwsPrivateEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigAwsPrivateEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigAwsPrivateEndpointRule) (*NetworkConnectivityConfigAwsPrivateEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfigAwsPrivateEndpointRule{}
+	out.RuleId = v.RuleId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.AccountId = v.AccountId
+	out.EndpointService = v.EndpointService
+	out.DomainNames = v.DomainNames
+	out.ResourceNames = v.ResourceNames
+	out.VpcEndpointId = v.VpcEndpointId
+	out.ConnectionState = v.ConnectionState
+	out.CreationTime = v.CreationTime
+	out.UpdatedTime = v.UpdatedTime
+	out.Deactivated = v.Deactivated
+	out.DeactivatedAt = v.DeactivatedAt
+	out.Enabled = v.Enabled
+	out.ErrorMessage = v.ErrorMessage
+	return out, nil
+}
+
+// NetworkConnectivityConfigAzurePrivateEndpointRuleToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigAzurePrivateEndpointRuleToSDK(w *NetworkConnectivityConfigAzurePrivateEndpointRule) (*sdk.NetworkConnectivityConfigAzurePrivateEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfigAzurePrivateEndpointRule{}
+	out.RuleId = w.RuleId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.ResourceId = w.ResourceId
+	out.GroupId = w.GroupId
+	out.EndpointName = w.EndpointName
+	out.ConnectionState = w.ConnectionState
+	out.CreationTime = w.CreationTime
+	out.UpdatedTime = w.UpdatedTime
+	out.Deactivated = w.Deactivated
+	out.DeactivatedAt = w.DeactivatedAt
+	out.DomainNames = w.DomainNames
+	out.ErrorMessage = w.ErrorMessage
+	return out, nil
+}
+
+// NetworkConnectivityConfigAzurePrivateEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigAzurePrivateEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigAzurePrivateEndpointRule) (*NetworkConnectivityConfigAzurePrivateEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfigAzurePrivateEndpointRule{}
+	out.RuleId = v.RuleId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.ResourceId = v.ResourceId
+	out.GroupId = v.GroupId
+	out.EndpointName = v.EndpointName
+	out.ConnectionState = v.ConnectionState
+	out.CreationTime = v.CreationTime
+	out.UpdatedTime = v.UpdatedTime
+	out.Deactivated = v.Deactivated
+	out.DeactivatedAt = v.DeactivatedAt
+	out.DomainNames = v.DomainNames
+	out.ErrorMessage = v.ErrorMessage
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRuleToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigEgressConfig_DefaultRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule{}
+	conv145, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleToSDK(w.AzureServiceEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AzureServiceEndpointRule", err)
+	}
+	out.AzureServiceEndpointRule = conv145
+	conv146, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleToSDK(w.AwsStableIpRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AwsStableIpRule", err)
+	}
+	out.AwsStableIpRule = conv146
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRuleFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigEgressConfig_DefaultRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfigEgressConfig_DefaultRule{}
+	conv147, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleFromSDK(v.AzureServiceEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AzureServiceEndpointRule", err)
+	}
+	out.AzureServiceEndpointRule = conv147
+	conv148, err := NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleFromSDK(v.AwsStableIpRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "NetworkConnectivityConfigEgressConfig_DefaultRule.AwsStableIpRule", err)
+	}
+	out.AwsStableIpRule = conv148
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule{}
+	out.CidrBlocks = w.CidrBlocks
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfigEgressConfig_DefaultRule_AwsStableIpRule{}
+	out.CidrBlocks = v.CidrBlocks
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleToSDK converts the mirror to the sdk-go type.
+func NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleToSDK(w *NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule) (*sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule{}
+	out.TargetRegion = w.TargetRegion
+	out.TargetServices = w.TargetServices
+	out.Subnets = w.Subnets
+	return out, nil
+}
+
+// NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRuleFromSDK(v *sdk.NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule) (*NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkConnectivityConfigEgressConfig_DefaultRule_AzureServiceEndpointRule{}
+	out.TargetRegion = v.TargetRegion
+	out.TargetServices = v.TargetServices
+	out.Subnets = v.Subnets
+	return out, nil
+}
+
+// NetworkHealthToSDK converts the mirror to the sdk-go type.
+func NetworkHealthToSDK(w *NetworkHealth) (*sdk.NetworkHealth, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkHealth{}
+	out.ErrorType = w.ErrorType
+	out.ErrorMessage = w.ErrorMessage
+	return out, nil
+}
+
+// NetworkHealthFromSDK converts the sdk-go type to the mirror.
+func NetworkHealthFromSDK(v *sdk.NetworkHealth) (*NetworkHealth, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkHealth{}
+	out.ErrorType = v.ErrorType
+	out.ErrorMessage = v.ErrorMessage
+	return out, nil
+}
+
+// NetworkVpcEndpointsToSDK converts the mirror to the sdk-go type.
+func NetworkVpcEndpointsToSDK(w *NetworkVpcEndpoints) (*sdk.NetworkVpcEndpoints, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkVpcEndpoints{}
+	out.RestApi = w.RestApi
+	out.DataplaneRelay = w.DataplaneRelay
+	return out, nil
+}
+
+// NetworkVpcEndpointsFromSDK converts the sdk-go type to the mirror.
+func NetworkVpcEndpointsFromSDK(v *sdk.NetworkVpcEndpoints) (*NetworkVpcEndpoints, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkVpcEndpoints{}
+	out.RestApi = v.RestApi
+	out.DataplaneRelay = v.DataplaneRelay
+	return out, nil
+}
+
+// NetworkWarningToSDK converts the mirror to the sdk-go type.
+func NetworkWarningToSDK(w *NetworkWarning) (*sdk.NetworkWarning, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NetworkWarning{}
+	out.WarningType = w.WarningType
+	out.WarningMessage = w.WarningMessage
+	return out, nil
+}
+
+// NetworkWarningFromSDK converts the sdk-go type to the mirror.
+func NetworkWarningFromSDK(v *sdk.NetworkWarning) (*NetworkWarning, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NetworkWarning{}
+	out.WarningType = v.WarningType
+	out.WarningMessage = v.WarningMessage
+	return out, nil
+}
+
+// PrivateAccessSettingsToSDK converts the mirror to the sdk-go type.
+func PrivateAccessSettingsToSDK(w *PrivateAccessSettings) (*sdk.PrivateAccessSettings, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrivateAccessSettings{}
+	out.PrivateAccessSettingsId = w.PrivateAccessSettingsId
+	out.AccountId = w.AccountId
+	out.PrivateAccessSettingsName = w.PrivateAccessSettingsName
+	out.Region = w.Region
+	out.PublicAccessEnabled = w.PublicAccessEnabled
+	out.PrivateAccessLevel = w.PrivateAccessLevel
+	out.AllowedVpcEndpointIds = w.AllowedVpcEndpointIds
+	return out, nil
+}
+
+// PrivateAccessSettingsFromSDK converts the sdk-go type to the mirror.
+func PrivateAccessSettingsFromSDK(v *sdk.PrivateAccessSettings) (*PrivateAccessSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrivateAccessSettings{}
+	out.PrivateAccessSettingsId = v.PrivateAccessSettingsId
+	out.AccountId = v.AccountId
+	out.PrivateAccessSettingsName = v.PrivateAccessSettingsName
+	out.Region = v.Region
+	out.PublicAccessEnabled = v.PublicAccessEnabled
+	out.PrivateAccessLevel = v.PrivateAccessLevel
+	out.AllowedVpcEndpointIds = v.AllowedVpcEndpointIds
+	return out, nil
+}
+
+// ReplaceAccountIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func ReplaceAccountIpAccessListRequestToSDK(w *ReplaceAccountIpAccessListRequest) (*sdk.ReplaceAccountIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplaceAccountIpAccessListRequest{}
+	out.AccountId = w.AccountId
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// ReplaceAccountIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func ReplaceAccountIpAccessListRequestFromSDK(v *sdk.ReplaceAccountIpAccessListRequest) (*ReplaceAccountIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplaceAccountIpAccessListRequest{}
+	out.AccountId = v.AccountId
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// ReplaceAccountIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func ReplaceAccountIpAccessListResponseToSDK(w *ReplaceAccountIpAccessListResponse) (*sdk.ReplaceAccountIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplaceAccountIpAccessListResponse{}
+	conv149, err := AccountIpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ReplaceAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv149
+	return out, nil
+}
+
+// ReplaceAccountIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func ReplaceAccountIpAccessListResponseFromSDK(v *sdk.ReplaceAccountIpAccessListResponse) (*ReplaceAccountIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplaceAccountIpAccessListResponse{}
+	conv150, err := AccountIpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ReplaceAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv150
+	return out, nil
+}
+
+// ReplaceIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func ReplaceIpAccessListRequestToSDK(w *ReplaceIpAccessListRequest) (*sdk.ReplaceIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplaceIpAccessListRequest{}
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// ReplaceIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func ReplaceIpAccessListRequestFromSDK(v *sdk.ReplaceIpAccessListRequest) (*ReplaceIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplaceIpAccessListRequest{}
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// ReplaceIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func ReplaceIpAccessListResponseToSDK(w *ReplaceIpAccessListResponse) (*sdk.ReplaceIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ReplaceIpAccessListResponse{}
+	conv151, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ReplaceIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv151
+	return out, nil
+}
+
+// ReplaceIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func ReplaceIpAccessListResponseFromSDK(v *sdk.ReplaceIpAccessListResponse) (*ReplaceIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ReplaceIpAccessListResponse{}
+	conv152, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ReplaceIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv152
+	return out, nil
+}
+
+// UpdateAccountIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccountIpAccessListRequestToSDK(w *UpdateAccountIpAccessListRequest) (*sdk.UpdateAccountIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountIpAccessListRequest{}
+	out.AccountId = w.AccountId
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// UpdateAccountIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountIpAccessListRequestFromSDK(v *sdk.UpdateAccountIpAccessListRequest) (*UpdateAccountIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountIpAccessListRequest{}
+	out.AccountId = v.AccountId
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// UpdateAccountIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func UpdateAccountIpAccessListResponseToSDK(w *UpdateAccountIpAccessListResponse) (*sdk.UpdateAccountIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccountIpAccessListResponse{}
+	conv153, err := AccountIpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv153
+	return out, nil
+}
+
+// UpdateAccountIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateAccountIpAccessListResponseFromSDK(v *sdk.UpdateAccountIpAccessListResponse) (*UpdateAccountIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateAccountIpAccessListResponse{}
+	conv154, err := AccountIpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccountIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv154
+	return out, nil
+}
+
+// UpdateIpAccessListRequestToSDK converts the mirror to the sdk-go type.
+func UpdateIpAccessListRequestToSDK(w *UpdateIpAccessListRequest) (*sdk.UpdateIpAccessListRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateIpAccessListRequest{}
+	out.ListId = w.ListId
+	out.Label = w.Label
+	out.ListType = w.ListType
+	out.IpAddresses = w.IpAddresses
+	out.Enabled = w.Enabled
+	return out, nil
+}
+
+// UpdateIpAccessListRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateIpAccessListRequestFromSDK(v *sdk.UpdateIpAccessListRequest) (*UpdateIpAccessListRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateIpAccessListRequest{}
+	out.ListId = v.ListId
+	out.Label = v.Label
+	out.ListType = v.ListType
+	out.IpAddresses = v.IpAddresses
+	out.Enabled = v.Enabled
+	return out, nil
+}
+
+// UpdateIpAccessListResponseToSDK converts the mirror to the sdk-go type.
+func UpdateIpAccessListResponseToSDK(w *UpdateIpAccessListResponse) (*sdk.UpdateIpAccessListResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateIpAccessListResponse{}
+	conv155, err := IpAccessListToSDK(w.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv155
+	return out, nil
+}
+
+// UpdateIpAccessListResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateIpAccessListResponseFromSDK(v *sdk.UpdateIpAccessListResponse) (*UpdateIpAccessListResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateIpAccessListResponse{}
+	conv156, err := IpAccessListFromSDK(v.IpAccessList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateIpAccessListResponse.IpAccessList", err)
+	}
+	out.IpAccessList = conv156
+	return out, nil
+}
+
+// UpdateNccPrivateEndpointRuleRequestToSDK converts the mirror to the sdk-go type.
+func UpdateNccPrivateEndpointRuleRequestToSDK(w *UpdateNccPrivateEndpointRuleRequest) (*sdk.UpdateNccPrivateEndpointRuleRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateNccPrivateEndpointRuleRequest{}
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.AccountId = w.AccountId
+	out.PrivateEndpointRuleId = w.PrivateEndpointRuleId
+	conv157, err := UpdatePrivateEndpointRuleToSDK(w.PrivateEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
+	}
+	out.PrivateEndpointRule = conv157
+	mask158, err := fieldMaskFromString[sdk.UpdatePrivateEndpointRule](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNccPrivateEndpointRuleRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask158
+	return out, nil
+}
+
+// UpdateNccPrivateEndpointRuleRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateNccPrivateEndpointRuleRequestFromSDK(v *sdk.UpdateNccPrivateEndpointRuleRequest) (*UpdateNccPrivateEndpointRuleRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateNccPrivateEndpointRuleRequest{}
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.AccountId = v.AccountId
+	out.PrivateEndpointRuleId = v.PrivateEndpointRuleId
+	conv159, err := UpdatePrivateEndpointRuleFromSDK(v.PrivateEndpointRule)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNccPrivateEndpointRuleRequest.PrivateEndpointRule", err)
+	}
+	out.PrivateEndpointRule = conv159
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
+}
+
+// UpdateNetworkPolicyRequestToSDK converts the mirror to the sdk-go type.
+func UpdateNetworkPolicyRequestToSDK(w *UpdateNetworkPolicyRequest) (*sdk.UpdateNetworkPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateNetworkPolicyRequest{}
+	out.NetworkPolicyId = w.NetworkPolicyId
+	out.AccountId = w.AccountId
+	conv160, err := AccountNetworkPolicyToSDK(w.NetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNetworkPolicyRequest.NetworkPolicy", err)
+	}
+	out.NetworkPolicy = conv160
+	return out, nil
+}
+
+// UpdateNetworkPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateNetworkPolicyRequestFromSDK(v *sdk.UpdateNetworkPolicyRequest) (*UpdateNetworkPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateNetworkPolicyRequest{}
+	out.NetworkPolicyId = v.NetworkPolicyId
+	out.AccountId = v.AccountId
+	conv161, err := AccountNetworkPolicyFromSDK(v.NetworkPolicy)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateNetworkPolicyRequest.NetworkPolicy", err)
+	}
+	out.NetworkPolicy = conv161
+	return out, nil
+}
+
+// UpdatePrivateAccessSettingsRequestToSDK converts the mirror to the sdk-go type.
+func UpdatePrivateAccessSettingsRequestToSDK(w *UpdatePrivateAccessSettingsRequest) (*sdk.UpdatePrivateAccessSettingsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePrivateAccessSettingsRequest{}
+	conv162, err := PrivateAccessSettingsToSDK(w.CustomerFacingPrivateAccessSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePrivateAccessSettingsRequest.CustomerFacingPrivateAccessSettings", err)
+	}
+	out.CustomerFacingPrivateAccessSettings = conv162
+	return out, nil
+}
+
+// UpdatePrivateAccessSettingsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdatePrivateAccessSettingsRequestFromSDK(v *sdk.UpdatePrivateAccessSettingsRequest) (*UpdatePrivateAccessSettingsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePrivateAccessSettingsRequest{}
+	conv163, err := PrivateAccessSettingsFromSDK(v.CustomerFacingPrivateAccessSettings)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdatePrivateAccessSettingsRequest.CustomerFacingPrivateAccessSettings", err)
+	}
+	out.CustomerFacingPrivateAccessSettings = conv163
+	return out, nil
+}
+
+// UpdatePrivateEndpointRuleToSDK converts the mirror to the sdk-go type.
+func UpdatePrivateEndpointRuleToSDK(w *UpdatePrivateEndpointRule) (*sdk.UpdatePrivateEndpointRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdatePrivateEndpointRule{}
+	out.RuleId = w.RuleId
+	out.NetworkConnectivityConfigId = w.NetworkConnectivityConfigId
+	out.ConnectionState = w.ConnectionState
+	out.DomainNames = w.DomainNames
+	out.CreationTime = w.CreationTime
+	out.UpdatedTime = w.UpdatedTime
+	out.Deactivated = w.Deactivated
+	out.DeactivatedAt = w.DeactivatedAt
+	out.ErrorMessage = w.ErrorMessage
+	out.ResourceId = w.ResourceId
+	out.GroupId = w.GroupId
+	out.EndpointName = w.EndpointName
+	out.AccountId = w.AccountId
+	out.EndpointService = w.EndpointService
+	out.ResourceNames = w.ResourceNames
+	out.VpcEndpointId = w.VpcEndpointId
+	out.Enabled = w.Enabled
+	{
+		members := 0
+		if w.GcpEndpoint != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "UpdatePrivateEndpointRule.Endpoint")
+		}
+	}
+	switch {
+	case w.GcpEndpoint != nil:
+		conv164, err := GcpEndpointToSDK(w.GcpEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.Endpoint", err)
+		}
+		out.Endpoint = &sdk.UpdatePrivateEndpointRule_Endpoint_GcpEndpoint{GcpEndpoint: *conv164}
+	}
+	return out, nil
+}
+
+// UpdatePrivateEndpointRuleFromSDK converts the sdk-go type to the mirror.
+func UpdatePrivateEndpointRuleFromSDK(v *sdk.UpdatePrivateEndpointRule) (*UpdatePrivateEndpointRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdatePrivateEndpointRule{}
+	out.RuleId = v.RuleId
+	out.NetworkConnectivityConfigId = v.NetworkConnectivityConfigId
+	out.ConnectionState = v.ConnectionState
+	out.DomainNames = v.DomainNames
+	out.CreationTime = v.CreationTime
+	out.UpdatedTime = v.UpdatedTime
+	out.Deactivated = v.Deactivated
+	out.DeactivatedAt = v.DeactivatedAt
+	out.ErrorMessage = v.ErrorMessage
+	out.ResourceId = v.ResourceId
+	out.GroupId = v.GroupId
+	out.EndpointName = v.EndpointName
+	out.AccountId = v.AccountId
+	out.EndpointService = v.EndpointService
+	out.ResourceNames = v.ResourceNames
+	out.VpcEndpointId = v.VpcEndpointId
+	out.Enabled = v.Enabled
+	switch value := v.Endpoint.(type) {
+	case *sdk.UpdatePrivateEndpointRule_Endpoint_GcpEndpoint:
+		if value != nil {
+			conv165, err := GcpEndpointFromSDK(&value.GcpEndpoint)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "UpdatePrivateEndpointRule.Endpoint", err)
+			}
+			out.GcpEndpoint = conv165
+		}
+	}
+	return out, nil
+}
+
+// UpdateWorkspaceNetworkOptionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspaceNetworkOptionRequestToSDK(w *UpdateWorkspaceNetworkOptionRequest) (*sdk.UpdateWorkspaceNetworkOptionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspaceNetworkOptionRequest{}
+	out.AccountId = w.AccountId
+	out.WorkspaceId = w.WorkspaceId
+	conv166, err := WorkspaceNetworkOptionToSDK(w.WorkspaceNetworkOption)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceNetworkOptionRequest.WorkspaceNetworkOption", err)
+	}
+	out.WorkspaceNetworkOption = conv166
+	return out, nil
+}
+
+// UpdateWorkspaceNetworkOptionRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspaceNetworkOptionRequestFromSDK(v *sdk.UpdateWorkspaceNetworkOptionRequest) (*UpdateWorkspaceNetworkOptionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspaceNetworkOptionRequest{}
+	out.AccountId = v.AccountId
+	out.WorkspaceId = v.WorkspaceId
+	conv167, err := WorkspaceNetworkOptionFromSDK(v.WorkspaceNetworkOption)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateWorkspaceNetworkOptionRequest.WorkspaceNetworkOption", err)
+	}
+	out.WorkspaceNetworkOption = conv167
+	return out, nil
+}
+
+// VpcEndpointToSDK converts the mirror to the sdk-go type.
+func VpcEndpointToSDK(w *VpcEndpoint) (*sdk.VpcEndpoint, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.VpcEndpoint{}
+	out.VpcEndpointId = w.VpcEndpointId
+	out.AccountId = w.AccountId
+	out.VpcEndpointName = w.VpcEndpointName
+	out.AwsVpcEndpointId = w.AwsVpcEndpointId
+	out.AwsEndpointServiceId = w.AwsEndpointServiceId
+	out.UseCase = w.UseCase
+	out.Region = w.Region
+	out.AwsAccountId = w.AwsAccountId
+	out.State = w.State
+	{
+		members := 0
+		if w.GcpVpcEndpointInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "VpcEndpoint.VpcEndpointInfo")
+		}
+	}
+	switch {
+	case w.GcpVpcEndpointInfo != nil:
+		conv168, err := GcpVpcEndpointInfoToSDK(w.GcpVpcEndpointInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "VpcEndpoint.VpcEndpointInfo", err)
+		}
+		out.VpcEndpointInfo = &sdk.VpcEndpoint_VpcEndpointInfo_GcpVpcEndpointInfo{GcpVpcEndpointInfo: *conv168}
+	}
+	return out, nil
+}
+
+// VpcEndpointFromSDK converts the sdk-go type to the mirror.
+func VpcEndpointFromSDK(v *sdk.VpcEndpoint) (*VpcEndpoint, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &VpcEndpoint{}
+	out.VpcEndpointId = v.VpcEndpointId
+	out.AccountId = v.AccountId
+	out.VpcEndpointName = v.VpcEndpointName
+	out.AwsVpcEndpointId = v.AwsVpcEndpointId
+	out.AwsEndpointServiceId = v.AwsEndpointServiceId
+	out.UseCase = v.UseCase
+	out.Region = v.Region
+	out.AwsAccountId = v.AwsAccountId
+	out.State = v.State
+	switch value := v.VpcEndpointInfo.(type) {
+	case *sdk.VpcEndpoint_VpcEndpointInfo_GcpVpcEndpointInfo:
+		if value != nil {
+			conv169, err := GcpVpcEndpointInfoFromSDK(&value.GcpVpcEndpointInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "VpcEndpoint.VpcEndpointInfo", err)
+			}
+			out.GcpVpcEndpointInfo = conv169
+		}
+	}
+	return out, nil
+}
+
+// WorkspaceNetworkOptionToSDK converts the mirror to the sdk-go type.
 func WorkspaceNetworkOptionToSDK(w *WorkspaceNetworkOption) (*sdk.WorkspaceNetworkOption, error) {
 	if w == nil {
 		return nil, nil
 	}
-	workspaceIdPublicValue, err := int64FromWire(w.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "WorkspaceNetworkOption.WorkspaceId", err)
+	out := &sdk.WorkspaceNetworkOption{}
+	out.NetworkPolicyId = w.NetworkPolicyId
+	out.WorkspaceId = w.WorkspaceId
+	return out, nil
+}
+
+// WorkspaceNetworkOptionFromSDK converts the sdk-go type to the mirror.
+func WorkspaceNetworkOptionFromSDK(v *sdk.WorkspaceNetworkOption) (*WorkspaceNetworkOption, error) {
+	if v == nil {
+		return nil, nil
 	}
-	return &sdk.WorkspaceNetworkOption{
-		NetworkPolicyId: w.NetworkPolicyId,
-		WorkspaceId:     workspaceIdPublicValue,
-	}, nil
+	out := &WorkspaceNetworkOption{}
+	out.NetworkPolicyId = v.NetworkPolicyId
+	out.WorkspaceId = v.WorkspaceId
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -4112,4 +4815,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

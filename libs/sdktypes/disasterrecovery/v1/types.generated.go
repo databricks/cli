@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/disasterrecovery/v1"
+	strings "strings"
 )
 
 type (
@@ -27,14 +28,6 @@ const (
 	FailoverGroup_State_DeletionFailed                    = sdk.FailoverGroup_State_DeletionFailed
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Request to create a new failover group..
 type CreateFailoverGroupRequest struct {
 	// The parent resource. Format: accounts/{account_id}.
@@ -46,22 +39,6 @@ type CreateFailoverGroupRequest struct {
 	// Client-provided identifier for the failover group. Used to construct the
 	// resource name as {parent}/failover-groups/{failover_group_id}.
 	FailoverGroupId *string `json:"failover_group_id,omitempty"`
-}
-
-func CreateFailoverGroupRequestFromSDK(v *sdk.CreateFailoverGroupRequest) (*CreateFailoverGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	failoverGroupWireValue, err := FailoverGroupFromSDK(v.FailoverGroup)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateFailoverGroupRequest.FailoverGroup", err)
-	}
-	return &CreateFailoverGroupRequest{
-		Parent:          v.Parent,
-		FailoverGroup:   failoverGroupWireValue,
-		ValidateOnly:    v.ValidateOnly,
-		FailoverGroupId: v.FailoverGroupId,
-	}, nil
 }
 
 // Request to create a new stable URL for failover-aware workspace access..
@@ -77,22 +54,6 @@ type CreateStableUrlRequest struct {
 	StableUrlId *string `json:"stable_url_id,omitempty"`
 }
 
-func CreateStableUrlRequestFromSDK(v *sdk.CreateStableUrlRequest) (*CreateStableUrlRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	stableUrlWireValue, err := StableUrlFromSDK(v.StableUrl)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateStableUrlRequest.StableUrl", err)
-	}
-	return &CreateStableUrlRequest{
-		Parent:       v.Parent,
-		StableUrl:    stableUrlWireValue,
-		ValidateOnly: v.ValidateOnly,
-		StableUrlId:  v.StableUrlId,
-	}, nil
-}
-
 // Request to delete a failover group..
 type DeleteFailoverGroupRequest struct {
 	// The fully qualified resource name of the failover group to delete. Format:
@@ -101,16 +62,6 @@ type DeleteFailoverGroupRequest struct {
 	// Opaque version string for optimistic locking. If provided, must match the
 	// current etag. If omitted, the delete proceeds without an etag check.
 	Etag *string `json:"etag,omitempty"`
-}
-
-func DeleteFailoverGroupRequestFromSDK(v *sdk.DeleteFailoverGroupRequest) (*DeleteFailoverGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteFailoverGroupRequest{
-		Name: v.Name,
-		Etag: v.Etag,
-	}, nil
 }
 
 // Request to failover a failover group to a new primary region..
@@ -127,18 +78,6 @@ type FailoverFailoverGroupRequest struct {
 	Etag *string `json:"etag,omitempty"`
 	// The type of failover to perform.
 	FailoverType FailoverFailoverGroupRequest_FailoverType `json:"failover_type,omitempty"`
-}
-
-func FailoverFailoverGroupRequestFromSDK(v *sdk.FailoverFailoverGroupRequest) (*FailoverFailoverGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &FailoverFailoverGroupRequest{
-		Name:                v.Name,
-		TargetPrimaryRegion: v.TargetPrimaryRegion,
-		Etag:                v.Etag,
-		FailoverType:        v.FailoverType,
-	}, nil
 }
 
 // A failover group manages disaster recovery across workspace sets,
@@ -172,60 +111,6 @@ type FailoverGroup struct {
 	InitialPrimaryRegion *string `json:"initial_primary_region,omitempty"`
 }
 
-func FailoverGroupFromSDK(v *sdk.FailoverGroup) (*FailoverGroup, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceSetsWireValue, err := convertSlice(v.WorkspaceSets, WorkspaceSetFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailoverGroup.WorkspaceSets", err)
-	}
-	unityCatalogAssetsWireValue, err := UcReplicationConfigFromSDK(v.UnityCatalogAssets)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailoverGroup.UnityCatalogAssets", err)
-	}
-	return &FailoverGroup{
-		Name:                   v.Name,
-		EffectivePrimaryRegion: v.EffectivePrimaryRegion,
-		Regions:                v.Regions,
-		WorkspaceSets:          workspaceSetsWireValue,
-		UnityCatalogAssets:     unityCatalogAssetsWireValue,
-		State:                  v.State,
-		Etag:                   v.Etag,
-		CreateTime:             v.CreateTime,
-		UpdateTime:             v.UpdateTime,
-		ReplicationPoint:       v.ReplicationPoint,
-		InitialPrimaryRegion:   v.InitialPrimaryRegion,
-	}, nil
-}
-
-func FailoverGroupToSDK(w *FailoverGroup) (*sdk.FailoverGroup, error) {
-	if w == nil {
-		return nil, nil
-	}
-	workspaceSetsPublicValue, err := convertSlice(w.WorkspaceSets, WorkspaceSetToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailoverGroup.WorkspaceSets", err)
-	}
-	unityCatalogAssetsPublicValue, err := UcReplicationConfigToSDK(w.UnityCatalogAssets)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FailoverGroup.UnityCatalogAssets", err)
-	}
-	return &sdk.FailoverGroup{
-		Name:                   w.Name,
-		EffectivePrimaryRegion: w.EffectivePrimaryRegion,
-		Regions:                w.Regions,
-		WorkspaceSets:          workspaceSetsPublicValue,
-		UnityCatalogAssets:     unityCatalogAssetsPublicValue,
-		State:                  w.State,
-		Etag:                   w.Etag,
-		CreateTime:             w.CreateTime,
-		UpdateTime:             w.UpdateTime,
-		ReplicationPoint:       w.ReplicationPoint,
-		InitialPrimaryRegion:   w.InitialPrimaryRegion,
-	}, nil
-}
-
 // Request to list failover groups for an account..
 type ListFailoverGroupsRequest struct {
 	// The parent resource. Format: accounts/{account_id}.
@@ -241,17 +126,6 @@ type ListFailoverGroupsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListFailoverGroupsRequestFromSDK(v *sdk.ListFailoverGroupsRequest) (*ListFailoverGroupsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListFailoverGroupsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for listing failover groups..
 type ListFailoverGroupsResponse struct {
 	// The failover groups for this account.
@@ -259,20 +133,6 @@ type ListFailoverGroupsResponse struct {
 	// A token that can be sent as page_token to retrieve the next page. If omitted,
 	// there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListFailoverGroupsResponseToSDK(w *ListFailoverGroupsResponse) (*sdk.ListFailoverGroupsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	failoverGroupsPublicValue, err := convertSlice(w.FailoverGroups, FailoverGroupToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListFailoverGroupsResponse.FailoverGroups", err)
-	}
-	return &sdk.ListFailoverGroupsResponse{
-		FailoverGroups: failoverGroupsPublicValue,
-		NextPageToken:  w.NextPageToken,
-	}, nil
 }
 
 // Request to list stable URLs for an account..
@@ -290,17 +150,6 @@ type ListStableUrlsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListStableUrlsRequestFromSDK(v *sdk.ListStableUrlsRequest) (*ListStableUrlsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListStableUrlsRequest{
-		Parent:    v.Parent,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 // Response for listing stable URLs..
 type ListStableUrlsResponse struct {
 	// The stable URLs for this account.
@@ -308,20 +157,6 @@ type ListStableUrlsResponse struct {
 	// A token that can be sent as page_token to retrieve the next page. If omitted,
 	// there are no subsequent pages.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListStableUrlsResponseToSDK(w *ListStableUrlsResponse) (*sdk.ListStableUrlsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	stableUrlsPublicValue, err := convertSlice(w.StableUrls, StableUrlToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListStableUrlsResponse.StableUrls", err)
-	}
-	return &sdk.ListStableUrlsResponse{
-		StableUrls:    stableUrlsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A location mapping identified by a name, with URIs per region. The system
@@ -333,34 +168,6 @@ type LocationMapping struct {
 	UriByRegion []LocationMappingEntry `json:"uri_by_region,omitempty"`
 }
 
-func LocationMappingFromSDK(v *sdk.LocationMapping) (*LocationMapping, error) {
-	if v == nil {
-		return nil, nil
-	}
-	uriByRegionWireValue, err := convertSlice(v.UriByRegion, LocationMappingEntryFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LocationMapping.UriByRegion", err)
-	}
-	return &LocationMapping{
-		Name:        v.Name,
-		UriByRegion: uriByRegionWireValue,
-	}, nil
-}
-
-func LocationMappingToSDK(w *LocationMapping) (*sdk.LocationMapping, error) {
-	if w == nil {
-		return nil, nil
-	}
-	uriByRegionPublicValue, err := convertSlice(w.UriByRegion, LocationMappingEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "LocationMapping.UriByRegion", err)
-	}
-	return &sdk.LocationMapping{
-		Name:        w.Name,
-		UriByRegion: uriByRegionPublicValue,
-	}, nil
-}
-
 // A single entry in a location mapping, mapping a region to a storage URI. Used
 // instead of map<string, string> for proto2 compatibility..
 type LocationMappingEntry struct {
@@ -368,26 +175,6 @@ type LocationMappingEntry struct {
 	Region *string `json:"region,omitempty"`
 	// The storage URI for this region.
 	Uri *string `json:"uri,omitempty"`
-}
-
-func LocationMappingEntryFromSDK(v *sdk.LocationMappingEntry) (*LocationMappingEntry, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &LocationMappingEntry{
-		Region: v.Region,
-		Uri:    v.Uri,
-	}, nil
-}
-
-func LocationMappingEntryToSDK(w *LocationMappingEntry) (*sdk.LocationMappingEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LocationMappingEntry{
-		Region: w.Region,
-		Uri:    w.Uri,
-	}, nil
 }
 
 // A stable URL provides a failover-aware endpoint for accessing a workspace.
@@ -423,56 +210,10 @@ type StableUrl struct {
 	StableWorkspaceId *string `json:"stable_workspace_id,omitempty"`
 }
 
-func StableUrlFromSDK(v *sdk.StableUrl) (*StableUrl, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StableUrl{
-		Name:                 v.Name,
-		Url:                  v.Url,
-		InitialWorkspaceId:   v.InitialWorkspaceId,
-		FailoverGroupName:    v.FailoverGroupName,
-		EffectiveWorkspaceId: v.EffectiveWorkspaceId,
-		StableWorkspaceId:    v.StableWorkspaceId,
-	}, nil
-}
-
-func StableUrlToSDK(w *StableUrl) (*sdk.StableUrl, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.StableUrl{
-		Name:                 w.Name,
-		Url:                  w.Url,
-		InitialWorkspaceId:   w.InitialWorkspaceId,
-		FailoverGroupName:    w.FailoverGroupName,
-		EffectiveWorkspaceId: w.EffectiveWorkspaceId,
-		StableWorkspaceId:    w.StableWorkspaceId,
-	}, nil
-}
-
 // A Unity Catalog catalog to replicate..
 type UcCatalog struct {
 	// The name of the UC catalog to replicate.
 	Name *string `json:"name,omitempty"`
-}
-
-func UcCatalogFromSDK(v *sdk.UcCatalog) (*UcCatalog, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UcCatalog{
-		Name: v.Name,
-	}, nil
-}
-
-func UcCatalogToSDK(w *UcCatalog) (*sdk.UcCatalog, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.UcCatalog{
-		Name: w.Name,
-	}, nil
 }
 
 // Unity Catalog replication configuration (top-level, not per-set)..
@@ -484,44 +225,6 @@ type UcReplicationConfig struct {
 	// The workspace set whose workspaces will be used for data replication of all
 	// UC catalogs' underlying storage.
 	DataReplicationWorkspaceSet *string `json:"data_replication_workspace_set,omitempty"`
-}
-
-func UcReplicationConfigFromSDK(v *sdk.UcReplicationConfig) (*UcReplicationConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	locationMappingsWireValue, err := convertSlice(v.LocationMappings, LocationMappingFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.LocationMappings", err)
-	}
-	catalogsWireValue, err := convertSlice(v.Catalogs, UcCatalogFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.Catalogs", err)
-	}
-	return &UcReplicationConfig{
-		LocationMappings:            locationMappingsWireValue,
-		Catalogs:                    catalogsWireValue,
-		DataReplicationWorkspaceSet: v.DataReplicationWorkspaceSet,
-	}, nil
-}
-
-func UcReplicationConfigToSDK(w *UcReplicationConfig) (*sdk.UcReplicationConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	locationMappingsPublicValue, err := convertSlice(w.LocationMappings, LocationMappingToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.LocationMappings", err)
-	}
-	catalogsPublicValue, err := convertSlice(w.Catalogs, UcCatalogToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.Catalogs", err)
-	}
-	return &sdk.UcReplicationConfig{
-		LocationMappings:            locationMappingsPublicValue,
-		Catalogs:                    catalogsPublicValue,
-		DataReplicationWorkspaceSet: w.DataReplicationWorkspaceSet,
-	}, nil
 }
 
 // Request to update a failover group..
@@ -536,21 +239,6 @@ type UpdateFailoverGroupRequest struct {
 	// matches the failover group's current etag. If omitted, the update proceeds
 	// without an optimistic-lock check.
 	Etag *string `json:"etag,omitempty"`
-}
-
-func UpdateFailoverGroupRequestFromSDK(v *sdk.UpdateFailoverGroupRequest) (*UpdateFailoverGroupRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	failoverGroupWireValue, err := FailoverGroupFromSDK(v.FailoverGroup)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateFailoverGroupRequest.FailoverGroup", err)
-	}
-	return &UpdateFailoverGroupRequest{
-		FailoverGroup: failoverGroupWireValue,
-		UpdateMask:    fieldMaskToWire(v.UpdateMask),
-		Etag:          v.Etag,
-	}, nil
 }
 
 // A set of workspaces that replicate to each other across regions..
@@ -569,28 +257,488 @@ type WorkspaceSet struct {
 	StableUrlNames []string `json:"stable_url_names,omitempty"`
 }
 
-func WorkspaceSetFromSDK(v *sdk.WorkspaceSet) (*WorkspaceSet, error) {
+// CreateFailoverGroupRequestToSDK converts the mirror to the sdk-go type.
+func CreateFailoverGroupRequestToSDK(w *CreateFailoverGroupRequest) (*sdk.CreateFailoverGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateFailoverGroupRequest{}
+	out.Parent = w.Parent
+	conv1, err := FailoverGroupToSDK(w.FailoverGroup)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFailoverGroupRequest.FailoverGroup", err)
+	}
+	out.FailoverGroup = conv1
+	out.ValidateOnly = w.ValidateOnly
+	out.FailoverGroupId = w.FailoverGroupId
+	return out, nil
+}
+
+// CreateFailoverGroupRequestFromSDK converts the sdk-go type to the mirror.
+func CreateFailoverGroupRequestFromSDK(v *sdk.CreateFailoverGroupRequest) (*CreateFailoverGroupRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &WorkspaceSet{
-		Name:                     v.Name,
-		WorkspaceIds:             v.WorkspaceIds,
-		ReplicateWorkspaceAssets: v.ReplicateWorkspaceAssets,
-		StableUrlNames:           v.StableUrlNames,
-	}, nil
+	out := &CreateFailoverGroupRequest{}
+	out.Parent = v.Parent
+	conv2, err := FailoverGroupFromSDK(v.FailoverGroup)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateFailoverGroupRequest.FailoverGroup", err)
+	}
+	out.FailoverGroup = conv2
+	out.ValidateOnly = v.ValidateOnly
+	out.FailoverGroupId = v.FailoverGroupId
+	return out, nil
 }
 
+// CreateStableUrlRequestToSDK converts the mirror to the sdk-go type.
+func CreateStableUrlRequestToSDK(w *CreateStableUrlRequest) (*sdk.CreateStableUrlRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateStableUrlRequest{}
+	out.Parent = w.Parent
+	conv3, err := StableUrlToSDK(w.StableUrl)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStableUrlRequest.StableUrl", err)
+	}
+	out.StableUrl = conv3
+	out.ValidateOnly = w.ValidateOnly
+	out.StableUrlId = w.StableUrlId
+	return out, nil
+}
+
+// CreateStableUrlRequestFromSDK converts the sdk-go type to the mirror.
+func CreateStableUrlRequestFromSDK(v *sdk.CreateStableUrlRequest) (*CreateStableUrlRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateStableUrlRequest{}
+	out.Parent = v.Parent
+	conv4, err := StableUrlFromSDK(v.StableUrl)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateStableUrlRequest.StableUrl", err)
+	}
+	out.StableUrl = conv4
+	out.ValidateOnly = v.ValidateOnly
+	out.StableUrlId = v.StableUrlId
+	return out, nil
+}
+
+// DeleteFailoverGroupRequestToSDK converts the mirror to the sdk-go type.
+func DeleteFailoverGroupRequestToSDK(w *DeleteFailoverGroupRequest) (*sdk.DeleteFailoverGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteFailoverGroupRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// DeleteFailoverGroupRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteFailoverGroupRequestFromSDK(v *sdk.DeleteFailoverGroupRequest) (*DeleteFailoverGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteFailoverGroupRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// FailoverFailoverGroupRequestToSDK converts the mirror to the sdk-go type.
+func FailoverFailoverGroupRequestToSDK(w *FailoverFailoverGroupRequest) (*sdk.FailoverFailoverGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FailoverFailoverGroupRequest{}
+	out.Name = w.Name
+	out.TargetPrimaryRegion = w.TargetPrimaryRegion
+	out.Etag = w.Etag
+	out.FailoverType = w.FailoverType
+	return out, nil
+}
+
+// FailoverFailoverGroupRequestFromSDK converts the sdk-go type to the mirror.
+func FailoverFailoverGroupRequestFromSDK(v *sdk.FailoverFailoverGroupRequest) (*FailoverFailoverGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FailoverFailoverGroupRequest{}
+	out.Name = v.Name
+	out.TargetPrimaryRegion = v.TargetPrimaryRegion
+	out.Etag = v.Etag
+	out.FailoverType = v.FailoverType
+	return out, nil
+}
+
+// FailoverGroupToSDK converts the mirror to the sdk-go type.
+func FailoverGroupToSDK(w *FailoverGroup) (*sdk.FailoverGroup, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FailoverGroup{}
+	out.Name = w.Name
+	out.EffectivePrimaryRegion = w.EffectivePrimaryRegion
+	out.Regions = w.Regions
+	conv5, err := convertSlice(w.WorkspaceSets, WorkspaceSetToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FailoverGroup.WorkspaceSets", err)
+	}
+	out.WorkspaceSets = conv5
+	conv6, err := UcReplicationConfigToSDK(w.UnityCatalogAssets)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FailoverGroup.UnityCatalogAssets", err)
+	}
+	out.UnityCatalogAssets = conv6
+	out.State = w.State
+	out.Etag = w.Etag
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.ReplicationPoint = w.ReplicationPoint
+	out.InitialPrimaryRegion = w.InitialPrimaryRegion
+	return out, nil
+}
+
+// FailoverGroupFromSDK converts the sdk-go type to the mirror.
+func FailoverGroupFromSDK(v *sdk.FailoverGroup) (*FailoverGroup, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FailoverGroup{}
+	out.Name = v.Name
+	out.EffectivePrimaryRegion = v.EffectivePrimaryRegion
+	out.Regions = v.Regions
+	conv7, err := convertSlice(v.WorkspaceSets, WorkspaceSetFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FailoverGroup.WorkspaceSets", err)
+	}
+	out.WorkspaceSets = conv7
+	conv8, err := UcReplicationConfigFromSDK(v.UnityCatalogAssets)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FailoverGroup.UnityCatalogAssets", err)
+	}
+	out.UnityCatalogAssets = conv8
+	out.State = v.State
+	out.Etag = v.Etag
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.ReplicationPoint = v.ReplicationPoint
+	out.InitialPrimaryRegion = v.InitialPrimaryRegion
+	return out, nil
+}
+
+// ListFailoverGroupsRequestToSDK converts the mirror to the sdk-go type.
+func ListFailoverGroupsRequestToSDK(w *ListFailoverGroupsRequest) (*sdk.ListFailoverGroupsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFailoverGroupsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListFailoverGroupsRequestFromSDK converts the sdk-go type to the mirror.
+func ListFailoverGroupsRequestFromSDK(v *sdk.ListFailoverGroupsRequest) (*ListFailoverGroupsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFailoverGroupsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListFailoverGroupsResponseToSDK converts the mirror to the sdk-go type.
+func ListFailoverGroupsResponseToSDK(w *ListFailoverGroupsResponse) (*sdk.ListFailoverGroupsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListFailoverGroupsResponse{}
+	conv9, err := convertSlice(w.FailoverGroups, FailoverGroupToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFailoverGroupsResponse.FailoverGroups", err)
+	}
+	out.FailoverGroups = conv9
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListFailoverGroupsResponseFromSDK converts the sdk-go type to the mirror.
+func ListFailoverGroupsResponseFromSDK(v *sdk.ListFailoverGroupsResponse) (*ListFailoverGroupsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListFailoverGroupsResponse{}
+	conv10, err := convertSlice(v.FailoverGroups, FailoverGroupFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListFailoverGroupsResponse.FailoverGroups", err)
+	}
+	out.FailoverGroups = conv10
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListStableUrlsRequestToSDK converts the mirror to the sdk-go type.
+func ListStableUrlsRequestToSDK(w *ListStableUrlsRequest) (*sdk.ListStableUrlsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStableUrlsRequest{}
+	out.Parent = w.Parent
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListStableUrlsRequestFromSDK converts the sdk-go type to the mirror.
+func ListStableUrlsRequestFromSDK(v *sdk.ListStableUrlsRequest) (*ListStableUrlsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStableUrlsRequest{}
+	out.Parent = v.Parent
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListStableUrlsResponseToSDK converts the mirror to the sdk-go type.
+func ListStableUrlsResponseToSDK(w *ListStableUrlsResponse) (*sdk.ListStableUrlsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListStableUrlsResponse{}
+	conv11, err := convertSlice(w.StableUrls, StableUrlToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStableUrlsResponse.StableUrls", err)
+	}
+	out.StableUrls = conv11
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListStableUrlsResponseFromSDK converts the sdk-go type to the mirror.
+func ListStableUrlsResponseFromSDK(v *sdk.ListStableUrlsResponse) (*ListStableUrlsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListStableUrlsResponse{}
+	conv12, err := convertSlice(v.StableUrls, StableUrlFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListStableUrlsResponse.StableUrls", err)
+	}
+	out.StableUrls = conv12
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// LocationMappingToSDK converts the mirror to the sdk-go type.
+func LocationMappingToSDK(w *LocationMapping) (*sdk.LocationMapping, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LocationMapping{}
+	out.Name = w.Name
+	conv13, err := convertSlice(w.UriByRegion, LocationMappingEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LocationMapping.UriByRegion", err)
+	}
+	out.UriByRegion = conv13
+	return out, nil
+}
+
+// LocationMappingFromSDK converts the sdk-go type to the mirror.
+func LocationMappingFromSDK(v *sdk.LocationMapping) (*LocationMapping, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LocationMapping{}
+	out.Name = v.Name
+	conv14, err := convertSlice(v.UriByRegion, LocationMappingEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "LocationMapping.UriByRegion", err)
+	}
+	out.UriByRegion = conv14
+	return out, nil
+}
+
+// LocationMappingEntryToSDK converts the mirror to the sdk-go type.
+func LocationMappingEntryToSDK(w *LocationMappingEntry) (*sdk.LocationMappingEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LocationMappingEntry{}
+	out.Region = w.Region
+	out.Uri = w.Uri
+	return out, nil
+}
+
+// LocationMappingEntryFromSDK converts the sdk-go type to the mirror.
+func LocationMappingEntryFromSDK(v *sdk.LocationMappingEntry) (*LocationMappingEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LocationMappingEntry{}
+	out.Region = v.Region
+	out.Uri = v.Uri
+	return out, nil
+}
+
+// StableUrlToSDK converts the mirror to the sdk-go type.
+func StableUrlToSDK(w *StableUrl) (*sdk.StableUrl, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StableUrl{}
+	out.Name = w.Name
+	out.Url = w.Url
+	out.InitialWorkspaceId = w.InitialWorkspaceId
+	out.FailoverGroupName = w.FailoverGroupName
+	out.EffectiveWorkspaceId = w.EffectiveWorkspaceId
+	out.StableWorkspaceId = w.StableWorkspaceId
+	return out, nil
+}
+
+// StableUrlFromSDK converts the sdk-go type to the mirror.
+func StableUrlFromSDK(v *sdk.StableUrl) (*StableUrl, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StableUrl{}
+	out.Name = v.Name
+	out.Url = v.Url
+	out.InitialWorkspaceId = v.InitialWorkspaceId
+	out.FailoverGroupName = v.FailoverGroupName
+	out.EffectiveWorkspaceId = v.EffectiveWorkspaceId
+	out.StableWorkspaceId = v.StableWorkspaceId
+	return out, nil
+}
+
+// UcCatalogToSDK converts the mirror to the sdk-go type.
+func UcCatalogToSDK(w *UcCatalog) (*sdk.UcCatalog, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UcCatalog{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// UcCatalogFromSDK converts the sdk-go type to the mirror.
+func UcCatalogFromSDK(v *sdk.UcCatalog) (*UcCatalog, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UcCatalog{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UcReplicationConfigToSDK converts the mirror to the sdk-go type.
+func UcReplicationConfigToSDK(w *UcReplicationConfig) (*sdk.UcReplicationConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UcReplicationConfig{}
+	conv15, err := convertSlice(w.LocationMappings, LocationMappingToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.LocationMappings", err)
+	}
+	out.LocationMappings = conv15
+	conv16, err := convertSlice(w.Catalogs, UcCatalogToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.Catalogs", err)
+	}
+	out.Catalogs = conv16
+	out.DataReplicationWorkspaceSet = w.DataReplicationWorkspaceSet
+	return out, nil
+}
+
+// UcReplicationConfigFromSDK converts the sdk-go type to the mirror.
+func UcReplicationConfigFromSDK(v *sdk.UcReplicationConfig) (*UcReplicationConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UcReplicationConfig{}
+	conv17, err := convertSlice(v.LocationMappings, LocationMappingFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.LocationMappings", err)
+	}
+	out.LocationMappings = conv17
+	conv18, err := convertSlice(v.Catalogs, UcCatalogFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UcReplicationConfig.Catalogs", err)
+	}
+	out.Catalogs = conv18
+	out.DataReplicationWorkspaceSet = v.DataReplicationWorkspaceSet
+	return out, nil
+}
+
+// UpdateFailoverGroupRequestToSDK converts the mirror to the sdk-go type.
+func UpdateFailoverGroupRequestToSDK(w *UpdateFailoverGroupRequest) (*sdk.UpdateFailoverGroupRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateFailoverGroupRequest{}
+	conv19, err := FailoverGroupToSDK(w.FailoverGroup)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFailoverGroupRequest.FailoverGroup", err)
+	}
+	out.FailoverGroup = conv19
+	mask20, err := fieldMaskFromString[sdk.FailoverGroup](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFailoverGroupRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask20
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// UpdateFailoverGroupRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateFailoverGroupRequestFromSDK(v *sdk.UpdateFailoverGroupRequest) (*UpdateFailoverGroupRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateFailoverGroupRequest{}
+	conv21, err := FailoverGroupFromSDK(v.FailoverGroup)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateFailoverGroupRequest.FailoverGroup", err)
+	}
+	out.FailoverGroup = conv21
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// WorkspaceSetToSDK converts the mirror to the sdk-go type.
 func WorkspaceSetToSDK(w *WorkspaceSet) (*sdk.WorkspaceSet, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.WorkspaceSet{
-		Name:                     w.Name,
-		WorkspaceIds:             w.WorkspaceIds,
-		ReplicateWorkspaceAssets: w.ReplicateWorkspaceAssets,
-		StableUrlNames:           w.StableUrlNames,
-	}, nil
+	out := &sdk.WorkspaceSet{}
+	out.Name = w.Name
+	out.WorkspaceIds = w.WorkspaceIds
+	out.ReplicateWorkspaceAssets = w.ReplicateWorkspaceAssets
+	out.StableUrlNames = w.StableUrlNames
+	return out, nil
+}
+
+// WorkspaceSetFromSDK converts the sdk-go type to the mirror.
+func WorkspaceSetFromSDK(v *sdk.WorkspaceSet) (*WorkspaceSet, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspaceSet{}
+	out.Name = v.Name
+	out.WorkspaceIds = v.WorkspaceIds
+	out.ReplicateWorkspaceAssets = v.ReplicateWorkspaceAssets
+	out.StableUrlNames = v.StableUrlNames
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -606,4 +754,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

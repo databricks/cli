@@ -17,22 +17,6 @@ const (
 	CmkUseCase_Storage     = sdk.CmkUseCase_Storage
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AwsKeyInfoOutput struct {
 	// The AWS KMS key's Amazon Resource Name (ARN).
 	KeyArn *string `json:"key_arn,omitempty"`
@@ -45,18 +29,6 @@ type AwsKeyInfoOutput struct {
 	// volumes. If you do not want to use this key for encrypting EBS volumes, set
 	// to false.
 	ReuseKeyForClusterVolumes *bool `json:"reuse_key_for_cluster_volumes,omitempty"`
-}
-
-func AwsKeyInfoOutputToSDK(w *AwsKeyInfoOutput) (*sdk.AwsKeyInfoOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AwsKeyInfoOutput{
-		KeyArn:                    w.KeyArn,
-		KeyAlias:                  w.KeyAlias,
-		KeyRegion:                 w.KeyRegion,
-		ReuseKeyForClusterVolumes: w.ReuseKeyForClusterVolumes,
-	}, nil
 }
 
 type AzureKeyInfo struct {
@@ -76,24 +48,6 @@ type AzureKeyInfo struct {
 	KeyAccessConfiguration *KeyAccessConfiguration `json:"key_access_configuration,omitempty"`
 }
 
-func AzureKeyInfoToSDK(w *AzureKeyInfo) (*sdk.AzureKeyInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	keyAccessConfigurationPublicValue, err := KeyAccessConfigurationToSDK(w.KeyAccessConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AzureKeyInfo.KeyAccessConfiguration", err)
-	}
-	return &sdk.AzureKeyInfo{
-		KeyVaultUri:            w.KeyVaultUri,
-		KeyName:                w.KeyName,
-		Version:                w.Version,
-		TenantId:               w.TenantId,
-		DiskEncryptionSetId:    w.DiskEncryptionSetId,
-		KeyAccessConfiguration: keyAccessConfigurationPublicValue,
-	}, nil
-}
-
 type CreateAwsKeyInfo struct {
 	// The AWS KMS key's Amazon Resource Name (ARN).
 	KeyArn *string `json:"key_arn,omitempty"`
@@ -106,18 +60,6 @@ type CreateAwsKeyInfo struct {
 	// volumes. If you do not want to use this key for encrypting EBS volumes, set
 	// to false.
 	ReuseKeyForClusterVolumes *bool `json:"reuse_key_for_cluster_volumes,omitempty"`
-}
-
-func CreateAwsKeyInfoFromSDK(v *sdk.CreateAwsKeyInfo) (*CreateAwsKeyInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateAwsKeyInfo{
-		KeyArn:                    v.KeyArn,
-		KeyAlias:                  v.KeyAlias,
-		KeyRegion:                 v.KeyRegion,
-		ReuseKeyForClusterVolumes: v.ReuseKeyForClusterVolumes,
-	}, nil
 }
 
 type CreateAzureKeyInfo struct {
@@ -137,24 +79,6 @@ type CreateAzureKeyInfo struct {
 	KeyAccessConfiguration *KeyAccessConfiguration `json:"key_access_configuration,omitempty"`
 }
 
-func CreateAzureKeyInfoFromSDK(v *sdk.CreateAzureKeyInfo) (*CreateAzureKeyInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	keyAccessConfigurationWireValue, err := KeyAccessConfigurationFromSDK(v.KeyAccessConfiguration)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAzureKeyInfo.KeyAccessConfiguration", err)
-	}
-	return &CreateAzureKeyInfo{
-		KeyVaultUri:            v.KeyVaultUri,
-		KeyName:                v.KeyName,
-		Version:                v.Version,
-		TenantId:               v.TenantId,
-		DiskEncryptionSetId:    v.DiskEncryptionSetId,
-		KeyAccessConfiguration: keyAccessConfigurationWireValue,
-	}, nil
-}
-
 type CreateCustomerManagedKeyRequest struct {
 	AccountId    *string             `json:"account_id,omitempty"`
 	AwsKeyInfo   *CreateAwsKeyInfo   `json:"aws_key_info,omitempty"`
@@ -162,51 +86,6 @@ type CreateCustomerManagedKeyRequest struct {
 	AzureKeyInfo *CreateAzureKeyInfo `json:"azure_key_info,omitempty"`
 	// The cases that the key can be used for.
 	UseCases []CmkUseCase `json:"use_cases,omitempty"`
-}
-
-func CreateCustomerManagedKeyRequestFromSDK(v *sdk.CreateCustomerManagedKeyRequest) (*CreateCustomerManagedKeyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var keyInfoAwsKeyInfoWire *CreateAwsKeyInfo
-	var keyInfoGcpKeyInfoWire *CreateGcpKeyInfo
-	var keyInfoAzureKeyInfoWire *CreateAzureKeyInfo
-	switch value := v.KeyInfo.(type) {
-	case nil:
-	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_AwsKeyInfo:
-		if value != nil {
-			keyInfoAwsKeyInfoConverted, err := CreateAwsKeyInfoFromSDK(&value.AwsKeyInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo.AwsKeyInfo", err)
-			}
-			keyInfoAwsKeyInfoWire = keyInfoAwsKeyInfoConverted
-		}
-	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_GcpKeyInfo:
-		if value != nil {
-			keyInfoGcpKeyInfoConverted, err := CreateGcpKeyInfoFromSDK(&value.GcpKeyInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo.GcpKeyInfo", err)
-			}
-			keyInfoGcpKeyInfoWire = keyInfoGcpKeyInfoConverted
-		}
-	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_AzureKeyInfo:
-		if value != nil {
-			keyInfoAzureKeyInfoConverted, err := CreateAzureKeyInfoFromSDK(&value.AzureKeyInfo)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo.AzureKeyInfo", err)
-			}
-			keyInfoAzureKeyInfoWire = keyInfoAzureKeyInfoConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CreateCustomerManagedKeyRequest.KeyInfo", value)
-	}
-	return &CreateCustomerManagedKeyRequest{
-		AccountId:    v.AccountId,
-		AwsKeyInfo:   keyInfoAwsKeyInfoWire,
-		GcpKeyInfo:   keyInfoGcpKeyInfoWire,
-		AzureKeyInfo: keyInfoAzureKeyInfoWire,
-		UseCases:     v.UseCases,
-	}, nil
 }
 
 type CreateGcpKeyInfo struct {
@@ -220,21 +99,6 @@ type CreateGcpKeyInfo struct {
 	// access to the KMS key. The customer is responsible for granting access
 	// manually.
 	Manual *bool `json:"manual,omitempty"`
-}
-
-func CreateGcpKeyInfoFromSDK(v *sdk.CreateGcpKeyInfo) (*CreateGcpKeyInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	gcpServiceAccountWireValue, err := GcpServiceAccountFromSDK(v.GcpServiceAccount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateGcpKeyInfo.GcpServiceAccount", err)
-	}
-	return &CreateGcpKeyInfo{
-		KmsKeyId:          v.KmsKeyId,
-		GcpServiceAccount: gcpServiceAccountWireValue,
-		Manual:            v.Manual,
-	}, nil
 }
 
 type CustomerManagedKey struct {
@@ -251,57 +115,6 @@ type CustomerManagedKey struct {
 	UseCases []CmkUseCase `json:"use_cases,omitempty"`
 }
 
-func CustomerManagedKeyToSDK(w *CustomerManagedKey) (*sdk.CustomerManagedKey, error) {
-	if w == nil {
-		return nil, nil
-	}
-	keyInfoMembers := 0
-	if w.AwsKeyInfo != nil {
-		keyInfoMembers++
-	}
-	if w.AzureKeyInfo != nil {
-		keyInfoMembers++
-	}
-	if w.GcpKeyInfo != nil {
-		keyInfoMembers++
-	}
-	if keyInfoMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CustomerManagedKey.KeyInfo")
-	}
-	creationTimePublicValue, err := int64FromWire(w.CreationTime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.CreationTime", err)
-	}
-	keyInfoSelection := (&sdk.CustomerManagedKey{}).KeyInfo
-	switch {
-	case w.AwsKeyInfo != nil:
-		keyInfoAwsKeyInfoConverted, err := AwsKeyInfoOutputToSDK(w.AwsKeyInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo.AwsKeyInfo", err)
-		}
-		keyInfoSelection = &sdk.CustomerManagedKey_KeyInfo_AwsKeyInfo{AwsKeyInfo: *keyInfoAwsKeyInfoConverted}
-	case w.AzureKeyInfo != nil:
-		keyInfoAzureKeyInfoConverted, err := AzureKeyInfoToSDK(w.AzureKeyInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo.AzureKeyInfo", err)
-		}
-		keyInfoSelection = &sdk.CustomerManagedKey_KeyInfo_AzureKeyInfo{AzureKeyInfo: *keyInfoAzureKeyInfoConverted}
-	case w.GcpKeyInfo != nil:
-		keyInfoGcpKeyInfoConverted, err := GcpKeyInfoToSDK(w.GcpKeyInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo.GcpKeyInfo", err)
-		}
-		keyInfoSelection = &sdk.CustomerManagedKey_KeyInfo_GcpKeyInfo{GcpKeyInfo: *keyInfoGcpKeyInfoConverted}
-	}
-	return &sdk.CustomerManagedKey{
-		CustomerManagedKeyId: w.CustomerManagedKeyId,
-		CreationTime:         creationTimePublicValue,
-		AccountId:            w.AccountId,
-		UseCases:             w.UseCases,
-		KeyInfo:              keyInfoSelection,
-	}, nil
-}
-
 type GcpKeyInfo struct {
 	// Globally unique kms key resource id of the form
 	// projects/testProjectId/locations/us-east4/keyRings/gcpCmkKeyRing/cryptoKeys/cmk-eastus4
@@ -315,41 +128,8 @@ type GcpKeyInfo struct {
 	Manual *bool `json:"manual,omitempty"`
 }
 
-func GcpKeyInfoToSDK(w *GcpKeyInfo) (*sdk.GcpKeyInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	gcpServiceAccountPublicValue, err := GcpServiceAccountToSDK(w.GcpServiceAccount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GcpKeyInfo.GcpServiceAccount", err)
-	}
-	return &sdk.GcpKeyInfo{
-		KmsKeyId:          w.KmsKeyId,
-		GcpServiceAccount: gcpServiceAccountPublicValue,
-		Manual:            w.Manual,
-	}, nil
-}
-
 type GcpServiceAccount struct {
 	ServiceAccountEmail *string `json:"service_account_email,omitempty"`
-}
-
-func GcpServiceAccountFromSDK(v *sdk.GcpServiceAccount) (*GcpServiceAccount, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GcpServiceAccount{
-		ServiceAccountEmail: v.ServiceAccountEmail,
-	}, nil
-}
-
-func GcpServiceAccountToSDK(w *GcpServiceAccount) (*sdk.GcpServiceAccount, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GcpServiceAccount{
-		ServiceAccountEmail: w.ServiceAccountEmail,
-	}, nil
 }
 
 // The credential ID that is used to access the key vault..
@@ -357,35 +137,404 @@ type KeyAccessConfiguration struct {
 	CredentialId *string `json:"credential_id,omitempty"`
 }
 
-func KeyAccessConfigurationFromSDK(v *sdk.KeyAccessConfiguration) (*KeyAccessConfiguration, error) {
+// AwsKeyInfoOutputToSDK converts the mirror to the sdk-go type.
+func AwsKeyInfoOutputToSDK(w *AwsKeyInfoOutput) (*sdk.AwsKeyInfoOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AwsKeyInfoOutput{}
+	out.KeyArn = w.KeyArn
+	out.KeyAlias = w.KeyAlias
+	out.KeyRegion = w.KeyRegion
+	out.ReuseKeyForClusterVolumes = w.ReuseKeyForClusterVolumes
+	return out, nil
+}
+
+// AwsKeyInfoOutputFromSDK converts the sdk-go type to the mirror.
+func AwsKeyInfoOutputFromSDK(v *sdk.AwsKeyInfoOutput) (*AwsKeyInfoOutput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return &KeyAccessConfiguration{
-		CredentialId: v.CredentialId,
-	}, nil
+	out := &AwsKeyInfoOutput{}
+	out.KeyArn = v.KeyArn
+	out.KeyAlias = v.KeyAlias
+	out.KeyRegion = v.KeyRegion
+	out.ReuseKeyForClusterVolumes = v.ReuseKeyForClusterVolumes
+	return out, nil
 }
 
+// AzureKeyInfoToSDK converts the mirror to the sdk-go type.
+func AzureKeyInfoToSDK(w *AzureKeyInfo) (*sdk.AzureKeyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AzureKeyInfo{}
+	out.KeyVaultUri = w.KeyVaultUri
+	out.KeyName = w.KeyName
+	out.Version = w.Version
+	out.TenantId = w.TenantId
+	out.DiskEncryptionSetId = w.DiskEncryptionSetId
+	conv1, err := KeyAccessConfigurationToSDK(w.KeyAccessConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureKeyInfo.KeyAccessConfiguration", err)
+	}
+	out.KeyAccessConfiguration = conv1
+	return out, nil
+}
+
+// AzureKeyInfoFromSDK converts the sdk-go type to the mirror.
+func AzureKeyInfoFromSDK(v *sdk.AzureKeyInfo) (*AzureKeyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AzureKeyInfo{}
+	out.KeyVaultUri = v.KeyVaultUri
+	out.KeyName = v.KeyName
+	out.Version = v.Version
+	out.TenantId = v.TenantId
+	out.DiskEncryptionSetId = v.DiskEncryptionSetId
+	conv2, err := KeyAccessConfigurationFromSDK(v.KeyAccessConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AzureKeyInfo.KeyAccessConfiguration", err)
+	}
+	out.KeyAccessConfiguration = conv2
+	return out, nil
+}
+
+// CreateAwsKeyInfoToSDK converts the mirror to the sdk-go type.
+func CreateAwsKeyInfoToSDK(w *CreateAwsKeyInfo) (*sdk.CreateAwsKeyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAwsKeyInfo{}
+	out.KeyArn = w.KeyArn
+	out.KeyAlias = w.KeyAlias
+	out.KeyRegion = w.KeyRegion
+	out.ReuseKeyForClusterVolumes = w.ReuseKeyForClusterVolumes
+	return out, nil
+}
+
+// CreateAwsKeyInfoFromSDK converts the sdk-go type to the mirror.
+func CreateAwsKeyInfoFromSDK(v *sdk.CreateAwsKeyInfo) (*CreateAwsKeyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAwsKeyInfo{}
+	out.KeyArn = v.KeyArn
+	out.KeyAlias = v.KeyAlias
+	out.KeyRegion = v.KeyRegion
+	out.ReuseKeyForClusterVolumes = v.ReuseKeyForClusterVolumes
+	return out, nil
+}
+
+// CreateAzureKeyInfoToSDK converts the mirror to the sdk-go type.
+func CreateAzureKeyInfoToSDK(w *CreateAzureKeyInfo) (*sdk.CreateAzureKeyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAzureKeyInfo{}
+	out.KeyVaultUri = w.KeyVaultUri
+	out.KeyName = w.KeyName
+	out.Version = w.Version
+	out.TenantId = w.TenantId
+	out.DiskEncryptionSetId = w.DiskEncryptionSetId
+	conv3, err := KeyAccessConfigurationToSDK(w.KeyAccessConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAzureKeyInfo.KeyAccessConfiguration", err)
+	}
+	out.KeyAccessConfiguration = conv3
+	return out, nil
+}
+
+// CreateAzureKeyInfoFromSDK converts the sdk-go type to the mirror.
+func CreateAzureKeyInfoFromSDK(v *sdk.CreateAzureKeyInfo) (*CreateAzureKeyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAzureKeyInfo{}
+	out.KeyVaultUri = v.KeyVaultUri
+	out.KeyName = v.KeyName
+	out.Version = v.Version
+	out.TenantId = v.TenantId
+	out.DiskEncryptionSetId = v.DiskEncryptionSetId
+	conv4, err := KeyAccessConfigurationFromSDK(v.KeyAccessConfiguration)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAzureKeyInfo.KeyAccessConfiguration", err)
+	}
+	out.KeyAccessConfiguration = conv4
+	return out, nil
+}
+
+// CreateCustomerManagedKeyRequestToSDK converts the mirror to the sdk-go type.
+func CreateCustomerManagedKeyRequestToSDK(w *CreateCustomerManagedKeyRequest) (*sdk.CreateCustomerManagedKeyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCustomerManagedKeyRequest{}
+	out.AccountId = w.AccountId
+	{
+		members := 0
+		if w.AwsKeyInfo != nil {
+			members++
+		}
+		if w.GcpKeyInfo != nil {
+			members++
+		}
+		if w.AzureKeyInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CreateCustomerManagedKeyRequest.KeyInfo")
+		}
+	}
+	switch {
+	case w.AwsKeyInfo != nil:
+		conv5, err := CreateAwsKeyInfoToSDK(w.AwsKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CreateCustomerManagedKeyRequest_KeyInfo_AwsKeyInfo{AwsKeyInfo: *conv5}
+	case w.GcpKeyInfo != nil:
+		conv6, err := CreateGcpKeyInfoToSDK(w.GcpKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CreateCustomerManagedKeyRequest_KeyInfo_GcpKeyInfo{GcpKeyInfo: *conv6}
+	case w.AzureKeyInfo != nil:
+		conv7, err := CreateAzureKeyInfoToSDK(w.AzureKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CreateCustomerManagedKeyRequest_KeyInfo_AzureKeyInfo{AzureKeyInfo: *conv7}
+	}
+	out.UseCases = w.UseCases
+	return out, nil
+}
+
+// CreateCustomerManagedKeyRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCustomerManagedKeyRequestFromSDK(v *sdk.CreateCustomerManagedKeyRequest) (*CreateCustomerManagedKeyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCustomerManagedKeyRequest{}
+	out.AccountId = v.AccountId
+	switch value := v.KeyInfo.(type) {
+	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_AwsKeyInfo:
+		if value != nil {
+			conv8, err := CreateAwsKeyInfoFromSDK(&value.AwsKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+			}
+			out.AwsKeyInfo = conv8
+		}
+	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_GcpKeyInfo:
+		if value != nil {
+			conv9, err := CreateGcpKeyInfoFromSDK(&value.GcpKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+			}
+			out.GcpKeyInfo = conv9
+		}
+	case *sdk.CreateCustomerManagedKeyRequest_KeyInfo_AzureKeyInfo:
+		if value != nil {
+			conv10, err := CreateAzureKeyInfoFromSDK(&value.AzureKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CreateCustomerManagedKeyRequest.KeyInfo", err)
+			}
+			out.AzureKeyInfo = conv10
+		}
+	}
+	out.UseCases = v.UseCases
+	return out, nil
+}
+
+// CreateGcpKeyInfoToSDK converts the mirror to the sdk-go type.
+func CreateGcpKeyInfoToSDK(w *CreateGcpKeyInfo) (*sdk.CreateGcpKeyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateGcpKeyInfo{}
+	out.KmsKeyId = w.KmsKeyId
+	conv11, err := GcpServiceAccountToSDK(w.GcpServiceAccount)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGcpKeyInfo.GcpServiceAccount", err)
+	}
+	out.GcpServiceAccount = conv11
+	out.Manual = w.Manual
+	return out, nil
+}
+
+// CreateGcpKeyInfoFromSDK converts the sdk-go type to the mirror.
+func CreateGcpKeyInfoFromSDK(v *sdk.CreateGcpKeyInfo) (*CreateGcpKeyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateGcpKeyInfo{}
+	out.KmsKeyId = v.KmsKeyId
+	conv12, err := GcpServiceAccountFromSDK(v.GcpServiceAccount)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateGcpKeyInfo.GcpServiceAccount", err)
+	}
+	out.GcpServiceAccount = conv12
+	out.Manual = v.Manual
+	return out, nil
+}
+
+// CustomerManagedKeyToSDK converts the mirror to the sdk-go type.
+func CustomerManagedKeyToSDK(w *CustomerManagedKey) (*sdk.CustomerManagedKey, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CustomerManagedKey{}
+	out.CustomerManagedKeyId = w.CustomerManagedKeyId
+	out.CreationTime = w.CreationTime
+	out.AccountId = w.AccountId
+	{
+		members := 0
+		if w.AwsKeyInfo != nil {
+			members++
+		}
+		if w.AzureKeyInfo != nil {
+			members++
+		}
+		if w.GcpKeyInfo != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CustomerManagedKey.KeyInfo")
+		}
+	}
+	switch {
+	case w.AwsKeyInfo != nil:
+		conv13, err := AwsKeyInfoOutputToSDK(w.AwsKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CustomerManagedKey_KeyInfo_AwsKeyInfo{AwsKeyInfo: *conv13}
+	case w.AzureKeyInfo != nil:
+		conv14, err := AzureKeyInfoToSDK(w.AzureKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CustomerManagedKey_KeyInfo_AzureKeyInfo{AzureKeyInfo: *conv14}
+	case w.GcpKeyInfo != nil:
+		conv15, err := GcpKeyInfoToSDK(w.GcpKeyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+		}
+		out.KeyInfo = &sdk.CustomerManagedKey_KeyInfo_GcpKeyInfo{GcpKeyInfo: *conv15}
+	}
+	out.UseCases = w.UseCases
+	return out, nil
+}
+
+// CustomerManagedKeyFromSDK converts the sdk-go type to the mirror.
+func CustomerManagedKeyFromSDK(v *sdk.CustomerManagedKey) (*CustomerManagedKey, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CustomerManagedKey{}
+	out.CustomerManagedKeyId = v.CustomerManagedKeyId
+	out.CreationTime = v.CreationTime
+	out.AccountId = v.AccountId
+	switch value := v.KeyInfo.(type) {
+	case *sdk.CustomerManagedKey_KeyInfo_AwsKeyInfo:
+		if value != nil {
+			conv16, err := AwsKeyInfoOutputFromSDK(&value.AwsKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+			}
+			out.AwsKeyInfo = conv16
+		}
+	case *sdk.CustomerManagedKey_KeyInfo_AzureKeyInfo:
+		if value != nil {
+			conv17, err := AzureKeyInfoFromSDK(&value.AzureKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+			}
+			out.AzureKeyInfo = conv17
+		}
+	case *sdk.CustomerManagedKey_KeyInfo_GcpKeyInfo:
+		if value != nil {
+			conv18, err := GcpKeyInfoFromSDK(&value.GcpKeyInfo)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CustomerManagedKey.KeyInfo", err)
+			}
+			out.GcpKeyInfo = conv18
+		}
+	}
+	out.UseCases = v.UseCases
+	return out, nil
+}
+
+// GcpKeyInfoToSDK converts the mirror to the sdk-go type.
+func GcpKeyInfoToSDK(w *GcpKeyInfo) (*sdk.GcpKeyInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpKeyInfo{}
+	out.KmsKeyId = w.KmsKeyId
+	conv19, err := GcpServiceAccountToSDK(w.GcpServiceAccount)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GcpKeyInfo.GcpServiceAccount", err)
+	}
+	out.GcpServiceAccount = conv19
+	out.Manual = w.Manual
+	return out, nil
+}
+
+// GcpKeyInfoFromSDK converts the sdk-go type to the mirror.
+func GcpKeyInfoFromSDK(v *sdk.GcpKeyInfo) (*GcpKeyInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpKeyInfo{}
+	out.KmsKeyId = v.KmsKeyId
+	conv20, err := GcpServiceAccountFromSDK(v.GcpServiceAccount)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GcpKeyInfo.GcpServiceAccount", err)
+	}
+	out.GcpServiceAccount = conv20
+	out.Manual = v.Manual
+	return out, nil
+}
+
+// GcpServiceAccountToSDK converts the mirror to the sdk-go type.
+func GcpServiceAccountToSDK(w *GcpServiceAccount) (*sdk.GcpServiceAccount, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GcpServiceAccount{}
+	out.ServiceAccountEmail = w.ServiceAccountEmail
+	return out, nil
+}
+
+// GcpServiceAccountFromSDK converts the sdk-go type to the mirror.
+func GcpServiceAccountFromSDK(v *sdk.GcpServiceAccount) (*GcpServiceAccount, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GcpServiceAccount{}
+	out.ServiceAccountEmail = v.ServiceAccountEmail
+	return out, nil
+}
+
+// KeyAccessConfigurationToSDK converts the mirror to the sdk-go type.
 func KeyAccessConfigurationToSDK(w *KeyAccessConfiguration) (*sdk.KeyAccessConfiguration, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.KeyAccessConfiguration{
-		CredentialId: w.CredentialId,
-	}, nil
+	out := &sdk.KeyAccessConfiguration{}
+	out.CredentialId = w.CredentialId
+	return out, nil
 }
 
-func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
-	if s == nil {
+// KeyAccessConfigurationFromSDK converts the sdk-go type to the mirror.
+func KeyAccessConfigurationFromSDK(v *sdk.KeyAccessConfiguration) (*KeyAccessConfiguration, error) {
+	if v == nil {
 		return nil, nil
 	}
-	out := make([]W, len(s))
-	for i := range s {
-		converted, err := conv(&s[i])
-		if err != nil {
-			return nil, fmt.Errorf("element %d: %w", i, err)
-		}
-		out[i] = *converted
-	}
+	out := &KeyAccessConfiguration{}
+	out.CredentialId = v.CredentialId
 	return out, nil
 }

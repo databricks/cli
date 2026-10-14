@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/dataclassification/v1"
+	strings "strings"
 )
 
 type (
@@ -18,14 +19,6 @@ const (
 	AutoTaggingConfig_AutoTaggingMode_AutoTaggingEnabled  = sdk.AutoTaggingConfig_AutoTaggingMode_AutoTaggingEnabled
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // Auto-tagging configuration for a classification tag. When enabled, detected
 // columns are automatically tagged with Unity Catalog tags..
 type AutoTaggingConfig struct {
@@ -35,26 +28,6 @@ type AutoTaggingConfig struct {
 	ClassificationTag *string `json:"classification_tag,omitempty"`
 	// Whether auto-tagging is enabled or disabled for this classification tag.
 	AutoTaggingMode AutoTaggingConfig_AutoTaggingMode `json:"auto_tagging_mode,omitempty"`
-}
-
-func AutoTaggingConfigFromSDK(v *sdk.AutoTaggingConfig) (*AutoTaggingConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &AutoTaggingConfig{
-		ClassificationTag: v.ClassificationTag,
-		AutoTaggingMode:   v.AutoTaggingMode,
-	}, nil
-}
-
-func AutoTaggingConfigToSDK(w *AutoTaggingConfig) (*sdk.AutoTaggingConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.AutoTaggingConfig{
-		ClassificationTag: w.ClassificationTag,
-		AutoTaggingMode:   w.AutoTaggingMode,
-	}, nil
 }
 
 // Data Classification configuration for a Unity Catalog catalog. This message
@@ -72,107 +45,10 @@ type CatalogConfig struct {
 	AutoTagConfigs []AutoTaggingConfig `json:"auto_tag_configs,omitempty"`
 }
 
-func CatalogConfigFromSDK(v *sdk.CatalogConfig) (*CatalogConfig, error) {
-	if v == nil {
-		return nil, nil
-	}
-	autoTagConfigsWireValue, err := convertSlice(v.AutoTagConfigs, AutoTaggingConfigFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogConfig.AutoTagConfigs", err)
-	}
-	var selectedSchemasIncludedSchemasWire *CatalogConfig_SchemaNames
-	var selectedSchemasExcludedSchemasWire *CatalogConfig_SchemaNames
-	switch value := v.SelectedSchemas.(type) {
-	case nil:
-	case *sdk.CatalogConfig_SelectedSchemas_IncludedSchemas:
-		if value != nil {
-			selectedSchemasIncludedSchemasConverted, err := CatalogConfig_SchemaNamesFromSDK(&value.IncludedSchemas)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas.IncludedSchemas", err)
-			}
-			selectedSchemasIncludedSchemasWire = selectedSchemasIncludedSchemasConverted
-		}
-	case *sdk.CatalogConfig_SelectedSchemas_ExcludedSchemas:
-		if value != nil {
-			selectedSchemasExcludedSchemasConverted, err := CatalogConfig_SchemaNamesFromSDK(&value.ExcludedSchemas)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas.ExcludedSchemas", err)
-			}
-			selectedSchemasExcludedSchemasWire = selectedSchemasExcludedSchemasConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "CatalogConfig.SelectedSchemas", value)
-	}
-	return &CatalogConfig{
-		Name:            v.Name,
-		IncludedSchemas: selectedSchemasIncludedSchemasWire,
-		ExcludedSchemas: selectedSchemasExcludedSchemasWire,
-		AutoTagConfigs:  autoTagConfigsWireValue,
-	}, nil
-}
-
-func CatalogConfigToSDK(w *CatalogConfig) (*sdk.CatalogConfig, error) {
-	if w == nil {
-		return nil, nil
-	}
-	selectedSchemasMembers := 0
-	if w.IncludedSchemas != nil {
-		selectedSchemasMembers++
-	}
-	if w.ExcludedSchemas != nil {
-		selectedSchemasMembers++
-	}
-	if selectedSchemasMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "CatalogConfig.SelectedSchemas")
-	}
-	autoTagConfigsPublicValue, err := convertSlice(w.AutoTagConfigs, AutoTaggingConfigToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CatalogConfig.AutoTagConfigs", err)
-	}
-	selectedSchemasSelection := (&sdk.CatalogConfig{}).SelectedSchemas
-	switch {
-	case w.IncludedSchemas != nil:
-		selectedSchemasIncludedSchemasConverted, err := CatalogConfig_SchemaNamesToSDK(w.IncludedSchemas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas.IncludedSchemas", err)
-		}
-		selectedSchemasSelection = &sdk.CatalogConfig_SelectedSchemas_IncludedSchemas{IncludedSchemas: *selectedSchemasIncludedSchemasConverted}
-	case w.ExcludedSchemas != nil:
-		selectedSchemasExcludedSchemasConverted, err := CatalogConfig_SchemaNamesToSDK(w.ExcludedSchemas)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas.ExcludedSchemas", err)
-		}
-		selectedSchemasSelection = &sdk.CatalogConfig_SelectedSchemas_ExcludedSchemas{ExcludedSchemas: *selectedSchemasExcludedSchemasConverted}
-	}
-	return &sdk.CatalogConfig{
-		Name:            w.Name,
-		AutoTagConfigs:  autoTagConfigsPublicValue,
-		SelectedSchemas: selectedSchemasSelection,
-	}, nil
-}
-
 // Wrapper message for a list of schema names..
 type CatalogConfig_SchemaNames struct {
 	// Schema names, each relative to the parent catalog. Must not be empty.
 	Names []string `json:"names,omitempty"`
-}
-
-func CatalogConfig_SchemaNamesFromSDK(v *sdk.CatalogConfig_SchemaNames) (*CatalogConfig_SchemaNames, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CatalogConfig_SchemaNames{
-		Names: v.Names,
-	}, nil
-}
-
-func CatalogConfig_SchemaNamesToSDK(w *CatalogConfig_SchemaNames) (*sdk.CatalogConfig_SchemaNames, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CatalogConfig_SchemaNames{
-		Names: w.Names,
-	}, nil
 }
 
 // Create Data Classification configuration for a catalog. Creating a config
@@ -182,20 +58,6 @@ type CreateCatalogConfigRequest struct {
 	Parent *string `json:"parent,omitempty"`
 	// The configuration to create.
 	CatalogConfig *CatalogConfig `json:"catalog_config,omitempty"`
-}
-
-func CreateCatalogConfigRequestFromSDK(v *sdk.CreateCatalogConfigRequest) (*CreateCatalogConfigRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	catalogConfigWireValue, err := CatalogConfigFromSDK(v.CatalogConfig)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCatalogConfigRequest.CatalogConfig", err)
-	}
-	return &CreateCatalogConfigRequest{
-		Parent:        v.Parent,
-		CatalogConfig: catalogConfigWireValue,
-	}, nil
 }
 
 // Request to update the Data Classification configuration for a catalog.
@@ -210,18 +72,184 @@ type UpdateCatalogConfigRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// AutoTaggingConfigToSDK converts the mirror to the sdk-go type.
+func AutoTaggingConfigToSDK(w *AutoTaggingConfig) (*sdk.AutoTaggingConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AutoTaggingConfig{}
+	out.ClassificationTag = w.ClassificationTag
+	out.AutoTaggingMode = w.AutoTaggingMode
+	return out, nil
+}
+
+// AutoTaggingConfigFromSDK converts the sdk-go type to the mirror.
+func AutoTaggingConfigFromSDK(v *sdk.AutoTaggingConfig) (*AutoTaggingConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AutoTaggingConfig{}
+	out.ClassificationTag = v.ClassificationTag
+	out.AutoTaggingMode = v.AutoTaggingMode
+	return out, nil
+}
+
+// CatalogConfigToSDK converts the mirror to the sdk-go type.
+func CatalogConfigToSDK(w *CatalogConfig) (*sdk.CatalogConfig, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CatalogConfig{}
+	out.Name = w.Name
+	{
+		members := 0
+		if w.IncludedSchemas != nil {
+			members++
+		}
+		if w.ExcludedSchemas != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "CatalogConfig.SelectedSchemas")
+		}
+	}
+	switch {
+	case w.IncludedSchemas != nil:
+		conv1, err := CatalogConfig_SchemaNamesToSDK(w.IncludedSchemas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas", err)
+		}
+		out.SelectedSchemas = &sdk.CatalogConfig_SelectedSchemas_IncludedSchemas{IncludedSchemas: *conv1}
+	case w.ExcludedSchemas != nil:
+		conv2, err := CatalogConfig_SchemaNamesToSDK(w.ExcludedSchemas)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas", err)
+		}
+		out.SelectedSchemas = &sdk.CatalogConfig_SelectedSchemas_ExcludedSchemas{ExcludedSchemas: *conv2}
+	}
+	conv3, err := convertSlice(w.AutoTagConfigs, AutoTaggingConfigToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogConfig.AutoTagConfigs", err)
+	}
+	out.AutoTagConfigs = conv3
+	return out, nil
+}
+
+// CatalogConfigFromSDK converts the sdk-go type to the mirror.
+func CatalogConfigFromSDK(v *sdk.CatalogConfig) (*CatalogConfig, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CatalogConfig{}
+	out.Name = v.Name
+	switch value := v.SelectedSchemas.(type) {
+	case *sdk.CatalogConfig_SelectedSchemas_IncludedSchemas:
+		if value != nil {
+			conv4, err := CatalogConfig_SchemaNamesFromSDK(&value.IncludedSchemas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas", err)
+			}
+			out.IncludedSchemas = conv4
+		}
+	case *sdk.CatalogConfig_SelectedSchemas_ExcludedSchemas:
+		if value != nil {
+			conv5, err := CatalogConfig_SchemaNamesFromSDK(&value.ExcludedSchemas)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "CatalogConfig.SelectedSchemas", err)
+			}
+			out.ExcludedSchemas = conv5
+		}
+	}
+	conv6, err := convertSlice(v.AutoTagConfigs, AutoTaggingConfigFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CatalogConfig.AutoTagConfigs", err)
+	}
+	out.AutoTagConfigs = conv6
+	return out, nil
+}
+
+// CatalogConfig_SchemaNamesToSDK converts the mirror to the sdk-go type.
+func CatalogConfig_SchemaNamesToSDK(w *CatalogConfig_SchemaNames) (*sdk.CatalogConfig_SchemaNames, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CatalogConfig_SchemaNames{}
+	out.Names = w.Names
+	return out, nil
+}
+
+// CatalogConfig_SchemaNamesFromSDK converts the sdk-go type to the mirror.
+func CatalogConfig_SchemaNamesFromSDK(v *sdk.CatalogConfig_SchemaNames) (*CatalogConfig_SchemaNames, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CatalogConfig_SchemaNames{}
+	out.Names = v.Names
+	return out, nil
+}
+
+// CreateCatalogConfigRequestToSDK converts the mirror to the sdk-go type.
+func CreateCatalogConfigRequestToSDK(w *CreateCatalogConfigRequest) (*sdk.CreateCatalogConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCatalogConfigRequest{}
+	out.Parent = w.Parent
+	conv7, err := CatalogConfigToSDK(w.CatalogConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogConfigRequest.CatalogConfig", err)
+	}
+	out.CatalogConfig = conv7
+	return out, nil
+}
+
+// CreateCatalogConfigRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCatalogConfigRequestFromSDK(v *sdk.CreateCatalogConfigRequest) (*CreateCatalogConfigRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCatalogConfigRequest{}
+	out.Parent = v.Parent
+	conv8, err := CatalogConfigFromSDK(v.CatalogConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCatalogConfigRequest.CatalogConfig", err)
+	}
+	out.CatalogConfig = conv8
+	return out, nil
+}
+
+// UpdateCatalogConfigRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCatalogConfigRequestToSDK(w *UpdateCatalogConfigRequest) (*sdk.UpdateCatalogConfigRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCatalogConfigRequest{}
+	conv9, err := CatalogConfigToSDK(w.CatalogConfig)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCatalogConfigRequest.CatalogConfig", err)
+	}
+	out.CatalogConfig = conv9
+	mask10, err := fieldMaskFromString[sdk.CatalogConfig](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCatalogConfigRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask10
+	return out, nil
+}
+
+// UpdateCatalogConfigRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateCatalogConfigRequestFromSDK(v *sdk.UpdateCatalogConfigRequest) (*UpdateCatalogConfigRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	catalogConfigWireValue, err := CatalogConfigFromSDK(v.CatalogConfig)
+	out := &UpdateCatalogConfigRequest{}
+	conv11, err := CatalogConfigFromSDK(v.CatalogConfig)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateCatalogConfigRequest.CatalogConfig", err)
 	}
-	return &UpdateCatalogConfigRequest{
-		CatalogConfig: catalogConfigWireValue,
-		UpdateMask:    fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.CatalogConfig = conv11
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -237,4 +265,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

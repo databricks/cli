@@ -8,6 +8,7 @@ import (
 	sdk "github.com/databricks/sdk-go/sandbox/v1"
 
 	types "github.com/databricks/sdk-go/core/types"
+	strings "strings"
 )
 
 type (
@@ -27,30 +28,6 @@ const (
 	SandboxState_SandboxStateStopping                  = sdk.SandboxState_SandboxStateStopping
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 // A single command execution..
 type Command struct {
 	// Stable identifier for this command.
@@ -68,45 +45,9 @@ type Command struct {
 	ExitCode *int `json:"exit_code,omitempty"`
 }
 
-func CommandToSDK(w *Command) (*sdk.Command, error) {
-	if w == nil {
-		return nil, nil
-	}
-	pidPublicValue, err := int64FromWire(w.Pid)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Command.Pid", err)
-	}
-	return &sdk.Command{
-		CommandId: w.CommandId,
-		Cmd:       w.Cmd,
-		Args:      w.Args,
-		Pid:       pidPublicValue,
-		Finished:  w.Finished,
-		ExitCode:  w.ExitCode,
-	}, nil
-}
-
 type ComputeSpec struct {
 	// Idle duration after which the sandbox is automatically terminated.
 	InactivityTimeout *types.Duration `json:"inactivity_timeout,omitempty"`
-}
-
-func ComputeSpecFromSDK(v *sdk.ComputeSpec) (*ComputeSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ComputeSpec{
-		InactivityTimeout: v.InactivityTimeout,
-	}, nil
-}
-
-func ComputeSpecToSDK(w *ComputeSpec) (*sdk.ComputeSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ComputeSpec{
-		InactivityTimeout: w.InactivityTimeout,
-	}, nil
 }
 
 // A request to create a Sandbox..
@@ -117,43 +58,11 @@ type CreateSandboxRequest struct {
 	SandboxId *string `json:"sandbox_id,omitempty"`
 }
 
-func CreateSandboxRequestFromSDK(v *sdk.CreateSandboxRequest) (*CreateSandboxRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	sandboxWireValue, err := SandboxFromSDK(v.Sandbox)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateSandboxRequest.Sandbox", err)
-	}
-	return &CreateSandboxRequest{
-		Sandbox:   sandboxWireValue,
-		SandboxId: v.SandboxId,
-	}, nil
-}
-
 type EnvironmentSpec struct {
 	// A Unity Catalog container artifact (e.g. `catalog.schema.folder.image:tag`)
 	// to run as the sandbox environment. When set, this image is used as the
 	// environment instead of resolving a managed image from `environment_version`.
 	ImageUri *string `json:"image_uri,omitempty"`
-}
-
-func EnvironmentSpecFromSDK(v *sdk.EnvironmentSpec) (*EnvironmentSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &EnvironmentSpec{
-		ImageUri: v.ImageUri,
-	}, nil
-}
-
-func EnvironmentSpecToSDK(w *EnvironmentSpec) (*sdk.EnvironmentSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EnvironmentSpec{
-		ImageUri: w.ImageUri,
-	}, nil
 }
 
 // Request to run a command in the given sandbox and wait for it to finish..
@@ -173,19 +82,6 @@ type ExecuteCommandSyncRequest struct {
 	// a default when unset and clamps to an upper bound; negative or otherwise
 	// invalid durations are rejected with `INVALID_ARGUMENT`.
 	ExecutionTimeout *types.Duration `json:"execution_timeout,omitempty"`
-}
-
-func ExecuteCommandSyncRequestFromSDK(v *sdk.ExecuteCommandSyncRequest) (*ExecuteCommandSyncRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ExecuteCommandSyncRequest{
-		Name:             v.Name,
-		Cmd:              v.Cmd,
-		Args:             v.Args,
-		Envs:             v.Envs,
-		ExecutionTimeout: v.ExecutionTimeout,
-	}, nil
 }
 
 // Result of a completed unary command execution: captured output, exit code,
@@ -211,20 +107,6 @@ type ExecuteCommandSyncResponse struct {
 	Truncated *bool `json:"truncated,omitempty"`
 }
 
-func ExecuteCommandSyncResponseToSDK(w *ExecuteCommandSyncResponse) (*sdk.ExecuteCommandSyncResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExecuteCommandSyncResponse{
-		ExitCode:  w.ExitCode,
-		Status:    w.Status,
-		Stdout:    w.Stdout,
-		Stderr:    w.Stderr,
-		CommandId: w.CommandId,
-		Truncated: w.Truncated,
-	}, nil
-}
-
 // Request to list tracked command executions..
 type ListCommandsRequest struct {
 	// Maximum number of commands to return. The server may return fewer. If
@@ -237,17 +119,6 @@ type ListCommandsRequest struct {
 	Parent *string `json:"parent,omitempty"`
 }
 
-func ListCommandsRequestFromSDK(v *sdk.ListCommandsRequest) (*ListCommandsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListCommandsRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-		Parent:    v.Parent,
-	}, nil
-}
-
 // Response listing tracked command executions..
 type ListCommandsResponse struct {
 	// Commands in this page of results.
@@ -256,54 +127,16 @@ type ListCommandsResponse struct {
 	NextPageToken *string `json:"next_page_token,omitempty"`
 }
 
-func ListCommandsResponseToSDK(w *ListCommandsResponse) (*sdk.ListCommandsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	commandsPublicValue, err := convertSlice(w.Commands, CommandToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListCommandsResponse.Commands", err)
-	}
-	return &sdk.ListCommandsResponse{
-		Commands:      commandsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
-}
-
 // A request to list Sandboxes..
 type ListSandboxesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 	PageSize  *int    `json:"page_size,omitempty"`
 }
 
-func ListSandboxesRequestFromSDK(v *sdk.ListSandboxesRequest) (*ListSandboxesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListSandboxesRequest{
-		PageToken: v.PageToken,
-		PageSize:  v.PageSize,
-	}, nil
-}
-
 // A list of Sandboxes..
 type ListSandboxesResponse struct {
 	Sandboxes     []Sandbox `json:"sandboxes,omitempty"`
 	NextPageToken *string   `json:"next_page_token,omitempty"`
-}
-
-func ListSandboxesResponseToSDK(w *ListSandboxesResponse) (*sdk.ListSandboxesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sandboxesPublicValue, err := convertSlice(w.Sandboxes, SandboxToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListSandboxesResponse.Sandboxes", err)
-	}
-	return &sdk.ListSandboxesResponse{
-		Sandboxes:     sandboxesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 // A Sandbox resource representing an execution environment..
@@ -325,50 +158,6 @@ type Sandbox struct {
 	DisplayName *string `json:"display_name,omitempty"`
 }
 
-func SandboxFromSDK(v *sdk.Sandbox) (*Sandbox, error) {
-	if v == nil {
-		return nil, nil
-	}
-	specWireValue, err := SandboxSpecFromSDK(v.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sandbox.Spec", err)
-	}
-	statusWireValue, err := SandboxStatusFromSDK(v.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sandbox.Status", err)
-	}
-	return &Sandbox{
-		Spec:        specWireValue,
-		Status:      statusWireValue,
-		Name:        v.Name,
-		CreateTime:  v.CreateTime,
-		UpdateTime:  v.UpdateTime,
-		DisplayName: v.DisplayName,
-	}, nil
-}
-
-func SandboxToSDK(w *Sandbox) (*sdk.Sandbox, error) {
-	if w == nil {
-		return nil, nil
-	}
-	specPublicValue, err := SandboxSpecToSDK(w.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sandbox.Spec", err)
-	}
-	statusPublicValue, err := SandboxStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Sandbox.Status", err)
-	}
-	return &sdk.Sandbox{
-		Spec:        specPublicValue,
-		Status:      statusPublicValue,
-		Name:        w.Name,
-		CreateTime:  w.CreateTime,
-		UpdateTime:  w.UpdateTime,
-		DisplayName: w.DisplayName,
-	}, nil
-}
-
 type SandboxSpec struct {
 	// Compute configuration (size, inactivity timeout) requested for the sandbox.
 	Compute *ComputeSpec `json:"compute,omitempty"`
@@ -376,63 +165,9 @@ type SandboxSpec struct {
 	Environment *EnvironmentSpec `json:"environment,omitempty"`
 }
 
-func SandboxSpecFromSDK(v *sdk.SandboxSpec) (*SandboxSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	computeWireValue, err := ComputeSpecFromSDK(v.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Compute", err)
-	}
-	environmentWireValue, err := EnvironmentSpecFromSDK(v.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Environment", err)
-	}
-	return &SandboxSpec{
-		Compute:     computeWireValue,
-		Environment: environmentWireValue,
-	}, nil
-}
-
-func SandboxSpecToSDK(w *SandboxSpec) (*sdk.SandboxSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	computePublicValue, err := ComputeSpecToSDK(w.Compute)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Compute", err)
-	}
-	environmentPublicValue, err := EnvironmentSpecToSDK(w.Environment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Environment", err)
-	}
-	return &sdk.SandboxSpec{
-		Compute:     computePublicValue,
-		Environment: environmentPublicValue,
-	}, nil
-}
-
 type SandboxStatus struct {
 	// Lifecycle state of the sandbox.
 	State SandboxState `json:"state,omitempty"`
-}
-
-func SandboxStatusFromSDK(v *sdk.SandboxStatus) (*SandboxStatus, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SandboxStatus{
-		State: v.State,
-	}, nil
-}
-
-func SandboxStatusToSDK(w *SandboxStatus) (*sdk.SandboxStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.SandboxStatus{
-		State: w.State,
-	}, nil
 }
 
 // A request to start a Sandbox..
@@ -441,28 +176,10 @@ type StartSandboxRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func StartSandboxRequestFromSDK(v *sdk.StartSandboxRequest) (*StartSandboxRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StartSandboxRequest{
-		Name: v.Name,
-	}, nil
-}
-
 // A request to stop a Sandbox..
 type StopSandboxRequest struct {
 	// Resource name of the sandbox to stop, in the form `sandboxes/{sandbox_id}`.
 	Name *string `json:"name,omitempty"`
-}
-
-func StopSandboxRequestFromSDK(v *sdk.StopSandboxRequest) (*StopSandboxRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &StopSandboxRequest{
-		Name: v.Name,
-	}, nil
 }
 
 // A request to update mutable fields on a Sandbox..
@@ -478,19 +195,448 @@ type UpdateSandboxRequest struct {
 	UpdateMask *string `json:"update_mask,omitempty"`
 }
 
+// CommandToSDK converts the mirror to the sdk-go type.
+func CommandToSDK(w *Command) (*sdk.Command, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Command{}
+	out.CommandId = w.CommandId
+	out.Cmd = w.Cmd
+	out.Args = w.Args
+	out.Pid = w.Pid
+	out.Finished = w.Finished
+	out.ExitCode = w.ExitCode
+	return out, nil
+}
+
+// CommandFromSDK converts the sdk-go type to the mirror.
+func CommandFromSDK(v *sdk.Command) (*Command, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Command{}
+	out.CommandId = v.CommandId
+	out.Cmd = v.Cmd
+	out.Args = v.Args
+	out.Pid = v.Pid
+	out.Finished = v.Finished
+	out.ExitCode = v.ExitCode
+	return out, nil
+}
+
+// ComputeSpecToSDK converts the mirror to the sdk-go type.
+func ComputeSpecToSDK(w *ComputeSpec) (*sdk.ComputeSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ComputeSpec{}
+	out.InactivityTimeout = w.InactivityTimeout
+	return out, nil
+}
+
+// ComputeSpecFromSDK converts the sdk-go type to the mirror.
+func ComputeSpecFromSDK(v *sdk.ComputeSpec) (*ComputeSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ComputeSpec{}
+	out.InactivityTimeout = v.InactivityTimeout
+	return out, nil
+}
+
+// CreateSandboxRequestToSDK converts the mirror to the sdk-go type.
+func CreateSandboxRequestToSDK(w *CreateSandboxRequest) (*sdk.CreateSandboxRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateSandboxRequest{}
+	conv1, err := SandboxToSDK(w.Sandbox)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSandboxRequest.Sandbox", err)
+	}
+	out.Sandbox = conv1
+	out.SandboxId = w.SandboxId
+	return out, nil
+}
+
+// CreateSandboxRequestFromSDK converts the sdk-go type to the mirror.
+func CreateSandboxRequestFromSDK(v *sdk.CreateSandboxRequest) (*CreateSandboxRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateSandboxRequest{}
+	conv2, err := SandboxFromSDK(v.Sandbox)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateSandboxRequest.Sandbox", err)
+	}
+	out.Sandbox = conv2
+	out.SandboxId = v.SandboxId
+	return out, nil
+}
+
+// EnvironmentSpecToSDK converts the mirror to the sdk-go type.
+func EnvironmentSpecToSDK(w *EnvironmentSpec) (*sdk.EnvironmentSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EnvironmentSpec{}
+	out.ImageUri = w.ImageUri
+	return out, nil
+}
+
+// EnvironmentSpecFromSDK converts the sdk-go type to the mirror.
+func EnvironmentSpecFromSDK(v *sdk.EnvironmentSpec) (*EnvironmentSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EnvironmentSpec{}
+	out.ImageUri = v.ImageUri
+	return out, nil
+}
+
+// ExecuteCommandSyncRequestToSDK converts the mirror to the sdk-go type.
+func ExecuteCommandSyncRequestToSDK(w *ExecuteCommandSyncRequest) (*sdk.ExecuteCommandSyncRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExecuteCommandSyncRequest{}
+	out.Name = w.Name
+	out.Cmd = w.Cmd
+	out.Args = w.Args
+	out.Envs = w.Envs
+	out.ExecutionTimeout = w.ExecutionTimeout
+	return out, nil
+}
+
+// ExecuteCommandSyncRequestFromSDK converts the sdk-go type to the mirror.
+func ExecuteCommandSyncRequestFromSDK(v *sdk.ExecuteCommandSyncRequest) (*ExecuteCommandSyncRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExecuteCommandSyncRequest{}
+	out.Name = v.Name
+	out.Cmd = v.Cmd
+	out.Args = v.Args
+	out.Envs = v.Envs
+	out.ExecutionTimeout = v.ExecutionTimeout
+	return out, nil
+}
+
+// ExecuteCommandSyncResponseToSDK converts the mirror to the sdk-go type.
+func ExecuteCommandSyncResponseToSDK(w *ExecuteCommandSyncResponse) (*sdk.ExecuteCommandSyncResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExecuteCommandSyncResponse{}
+	out.ExitCode = w.ExitCode
+	out.Status = w.Status
+	out.Stdout = w.Stdout
+	out.Stderr = w.Stderr
+	out.CommandId = w.CommandId
+	out.Truncated = w.Truncated
+	return out, nil
+}
+
+// ExecuteCommandSyncResponseFromSDK converts the sdk-go type to the mirror.
+func ExecuteCommandSyncResponseFromSDK(v *sdk.ExecuteCommandSyncResponse) (*ExecuteCommandSyncResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExecuteCommandSyncResponse{}
+	out.ExitCode = v.ExitCode
+	out.Status = v.Status
+	out.Stdout = v.Stdout
+	out.Stderr = v.Stderr
+	out.CommandId = v.CommandId
+	out.Truncated = v.Truncated
+	return out, nil
+}
+
+// ListCommandsRequestToSDK converts the mirror to the sdk-go type.
+func ListCommandsRequestToSDK(w *ListCommandsRequest) (*sdk.ListCommandsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCommandsRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.Parent = w.Parent
+	return out, nil
+}
+
+// ListCommandsRequestFromSDK converts the sdk-go type to the mirror.
+func ListCommandsRequestFromSDK(v *sdk.ListCommandsRequest) (*ListCommandsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCommandsRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.Parent = v.Parent
+	return out, nil
+}
+
+// ListCommandsResponseToSDK converts the mirror to the sdk-go type.
+func ListCommandsResponseToSDK(w *ListCommandsResponse) (*sdk.ListCommandsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListCommandsResponse{}
+	conv3, err := convertSlice(w.Commands, CommandToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCommandsResponse.Commands", err)
+	}
+	out.Commands = conv3
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListCommandsResponseFromSDK converts the sdk-go type to the mirror.
+func ListCommandsResponseFromSDK(v *sdk.ListCommandsResponse) (*ListCommandsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListCommandsResponse{}
+	conv4, err := convertSlice(v.Commands, CommandFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListCommandsResponse.Commands", err)
+	}
+	out.Commands = conv4
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListSandboxesRequestToSDK converts the mirror to the sdk-go type.
+func ListSandboxesRequestToSDK(w *ListSandboxesRequest) (*sdk.ListSandboxesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSandboxesRequest{}
+	out.PageToken = w.PageToken
+	out.PageSize = w.PageSize
+	return out, nil
+}
+
+// ListSandboxesRequestFromSDK converts the sdk-go type to the mirror.
+func ListSandboxesRequestFromSDK(v *sdk.ListSandboxesRequest) (*ListSandboxesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSandboxesRequest{}
+	out.PageToken = v.PageToken
+	out.PageSize = v.PageSize
+	return out, nil
+}
+
+// ListSandboxesResponseToSDK converts the mirror to the sdk-go type.
+func ListSandboxesResponseToSDK(w *ListSandboxesResponse) (*sdk.ListSandboxesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListSandboxesResponse{}
+	conv5, err := convertSlice(w.Sandboxes, SandboxToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSandboxesResponse.Sandboxes", err)
+	}
+	out.Sandboxes = conv5
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListSandboxesResponseFromSDK converts the sdk-go type to the mirror.
+func ListSandboxesResponseFromSDK(v *sdk.ListSandboxesResponse) (*ListSandboxesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListSandboxesResponse{}
+	conv6, err := convertSlice(v.Sandboxes, SandboxFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListSandboxesResponse.Sandboxes", err)
+	}
+	out.Sandboxes = conv6
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SandboxToSDK converts the mirror to the sdk-go type.
+func SandboxToSDK(w *Sandbox) (*sdk.Sandbox, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Sandbox{}
+	conv7, err := SandboxSpecToSDK(w.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sandbox.Spec", err)
+	}
+	out.Spec = conv7
+	conv8, err := SandboxStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sandbox.Status", err)
+	}
+	out.Status = conv8
+	out.Name = w.Name
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	out.DisplayName = w.DisplayName
+	return out, nil
+}
+
+// SandboxFromSDK converts the sdk-go type to the mirror.
+func SandboxFromSDK(v *sdk.Sandbox) (*Sandbox, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Sandbox{}
+	conv9, err := SandboxSpecFromSDK(v.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sandbox.Spec", err)
+	}
+	out.Spec = conv9
+	conv10, err := SandboxStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Sandbox.Status", err)
+	}
+	out.Status = conv10
+	out.Name = v.Name
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	out.DisplayName = v.DisplayName
+	return out, nil
+}
+
+// SandboxSpecToSDK converts the mirror to the sdk-go type.
+func SandboxSpecToSDK(w *SandboxSpec) (*sdk.SandboxSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SandboxSpec{}
+	conv11, err := ComputeSpecToSDK(w.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Compute", err)
+	}
+	out.Compute = conv11
+	conv12, err := EnvironmentSpecToSDK(w.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Environment", err)
+	}
+	out.Environment = conv12
+	return out, nil
+}
+
+// SandboxSpecFromSDK converts the sdk-go type to the mirror.
+func SandboxSpecFromSDK(v *sdk.SandboxSpec) (*SandboxSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SandboxSpec{}
+	conv13, err := ComputeSpecFromSDK(v.Compute)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Compute", err)
+	}
+	out.Compute = conv13
+	conv14, err := EnvironmentSpecFromSDK(v.Environment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SandboxSpec.Environment", err)
+	}
+	out.Environment = conv14
+	return out, nil
+}
+
+// SandboxStatusToSDK converts the mirror to the sdk-go type.
+func SandboxStatusToSDK(w *SandboxStatus) (*sdk.SandboxStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SandboxStatus{}
+	out.State = w.State
+	return out, nil
+}
+
+// SandboxStatusFromSDK converts the sdk-go type to the mirror.
+func SandboxStatusFromSDK(v *sdk.SandboxStatus) (*SandboxStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SandboxStatus{}
+	out.State = v.State
+	return out, nil
+}
+
+// StartSandboxRequestToSDK converts the mirror to the sdk-go type.
+func StartSandboxRequestToSDK(w *StartSandboxRequest) (*sdk.StartSandboxRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StartSandboxRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// StartSandboxRequestFromSDK converts the sdk-go type to the mirror.
+func StartSandboxRequestFromSDK(v *sdk.StartSandboxRequest) (*StartSandboxRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StartSandboxRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// StopSandboxRequestToSDK converts the mirror to the sdk-go type.
+func StopSandboxRequestToSDK(w *StopSandboxRequest) (*sdk.StopSandboxRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StopSandboxRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// StopSandboxRequestFromSDK converts the sdk-go type to the mirror.
+func StopSandboxRequestFromSDK(v *sdk.StopSandboxRequest) (*StopSandboxRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StopSandboxRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// UpdateSandboxRequestToSDK converts the mirror to the sdk-go type.
+func UpdateSandboxRequestToSDK(w *UpdateSandboxRequest) (*sdk.UpdateSandboxRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateSandboxRequest{}
+	out.Name = w.Name
+	conv15, err := SandboxToSDK(w.Sandbox)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSandboxRequest.Sandbox", err)
+	}
+	out.Sandbox = conv15
+	mask16, err := fieldMaskFromString[sdk.Sandbox](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateSandboxRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask16
+	return out, nil
+}
+
+// UpdateSandboxRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateSandboxRequestFromSDK(v *sdk.UpdateSandboxRequest) (*UpdateSandboxRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	sandboxWireValue, err := SandboxFromSDK(v.Sandbox)
+	out := &UpdateSandboxRequest{}
+	out.Name = v.Name
+	conv17, err := SandboxFromSDK(v.Sandbox)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateSandboxRequest.Sandbox", err)
 	}
-	return &UpdateSandboxRequest{
-		Name:       v.Name,
-		Sandbox:    sandboxWireValue,
-		UpdateMask: fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.Sandbox = conv17
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -506,4 +652,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

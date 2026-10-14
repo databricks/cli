@@ -43,59 +43,11 @@ const (
 	WorkspacePermission_Admin                                = sdk.WorkspacePermission_Admin
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type AccessControlRequest struct {
 	UserName             *string         `json:"user_name,omitempty"`
 	GroupName            *string         `json:"group_name,omitempty"`
 	ServicePrincipalName *string         `json:"service_principal_name,omitempty"`
 	PermissionLevel      PermissionLevel `json:"permission_level,omitempty"`
-}
-
-func AccessControlRequestFromSDK(v *sdk.AccessControlRequest) (*AccessControlRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var principalNameUserNameWire *string
-	var principalNameGroupNameWire *string
-	var principalNameServicePrincipalNameWire *string
-	switch value := v.PrincipalName.(type) {
-	case nil:
-	case *sdk.AccessControlRequest_PrincipalName_UserName:
-		if value != nil {
-			principalNameUserNameWire = new(value.UserName)
-		}
-	case *sdk.AccessControlRequest_PrincipalName_GroupName:
-		if value != nil {
-			principalNameGroupNameWire = new(value.GroupName)
-		}
-	case *sdk.AccessControlRequest_PrincipalName_ServicePrincipalName:
-		if value != nil {
-			principalNameServicePrincipalNameWire = new(value.ServicePrincipalName)
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "AccessControlRequest.PrincipalName", value)
-	}
-	return &AccessControlRequest{
-		UserName:             principalNameUserNameWire,
-		GroupName:            principalNameGroupNameWire,
-		ServicePrincipalName: principalNameServicePrincipalNameWire,
-		PermissionLevel:      v.PermissionLevel,
-	}, nil
 }
 
 type AccessControlResponse struct {
@@ -108,71 +60,11 @@ type AccessControlResponse struct {
 	AllPermissions []Permission `json:"all_permissions,omitempty"`
 }
 
-func AccessControlResponseToSDK(w *AccessControlResponse) (*sdk.AccessControlResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	principalNameMembers := 0
-	if w.UserName != nil {
-		principalNameMembers++
-	}
-	if w.GroupName != nil {
-		principalNameMembers++
-	}
-	if w.ServicePrincipalName != nil {
-		principalNameMembers++
-	}
-	if principalNameMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlResponse.PrincipalName")
-	}
-	allPermissionsPublicValue, err := convertSlice(w.AllPermissions, PermissionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessControlResponse.AllPermissions", err)
-	}
-	principalNameSelection := (&sdk.AccessControlResponse{}).PrincipalName
-	switch {
-	case w.UserName != nil:
-		principalNameSelection = &sdk.AccessControlResponse_PrincipalName_UserName{UserName: *w.UserName}
-	case w.GroupName != nil:
-		principalNameSelection = &sdk.AccessControlResponse_PrincipalName_GroupName{GroupName: *w.GroupName}
-	case w.ServicePrincipalName != nil:
-		principalNameSelection = &sdk.AccessControlResponse_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
-	}
-	return &sdk.AccessControlResponse{
-		DisplayName:    w.DisplayName,
-		AllPermissions: allPermissionsPublicValue,
-		PrincipalName:  principalNameSelection,
-	}, nil
-}
-
 // represents an identity trying to access a resource - user or a service
 // principal group can be a principal of a permission set assignment but an
 // actor is always a user or a service principal.
 type Actor struct {
 	ActorId *int64 `json:"actor_id,omitempty"`
-}
-
-func ActorFromSDK(v *sdk.Actor) (*Actor, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var kindActorIdWire *int64
-	switch value := v.Kind.(type) {
-	case nil:
-	case *sdk.Actor_Kind_ActorId:
-		if value != nil {
-			kindActorIdConverted, err := int64ToWire(&value.ActorId)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", "Actor.Kind.ActorId", err)
-			}
-			kindActorIdWire = kindActorIdConverted
-		}
-	default:
-		return nil, fmt.Errorf("%s: unsupported oneof implementation %T", "Actor.Kind", value)
-	}
-	return &Actor{
-		ActorId: kindActorIdWire,
-	}, nil
 }
 
 type CheckPolicyRequest struct {
@@ -187,71 +79,13 @@ type CheckPolicyRequest struct {
 	ResourceInfo     *ResourceInfo        `json:"resource_info,omitempty"`
 }
 
-func CheckPolicyRequestFromSDK(v *sdk.CheckPolicyRequest) (*CheckPolicyRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	actorWireValue, err := ActorFromSDK(v.Actor)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.Actor", err)
-	}
-	consistencyTokenWireValue, err := ConsistencyTokenFromSDK(v.ConsistencyToken)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ConsistencyToken", err)
-	}
-	resourceInfoWireValue, err := ResourceInfoFromSDK(v.ResourceInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ResourceInfo", err)
-	}
-	return &CheckPolicyRequest{
-		Actor:            actorWireValue,
-		Permission:       v.Permission,
-		Resource:         v.Resource,
-		ConsistencyToken: consistencyTokenWireValue,
-		AuthzIdentity:    v.AuthzIdentity,
-		ResourceInfo:     resourceInfoWireValue,
-	}, nil
-}
-
 type CheckPolicyResponse struct {
 	IsPermitted      *bool             `json:"is_permitted,omitempty"`
 	ConsistencyToken *ConsistencyToken `json:"consistency_token,omitempty"`
 }
 
-func CheckPolicyResponseToSDK(w *CheckPolicyResponse) (*sdk.CheckPolicyResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	consistencyTokenPublicValue, err := ConsistencyTokenToSDK(w.ConsistencyToken)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CheckPolicyResponse.ConsistencyToken", err)
-	}
-	return &sdk.CheckPolicyResponse{
-		IsPermitted:      w.IsPermitted,
-		ConsistencyToken: consistencyTokenPublicValue,
-	}, nil
-}
-
 type ConsistencyToken struct {
 	Value *string `json:"value,omitempty"`
-}
-
-func ConsistencyTokenFromSDK(v *sdk.ConsistencyToken) (*ConsistencyToken, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ConsistencyToken{
-		Value: v.Value,
-	}, nil
-}
-
-func ConsistencyTokenToSDK(w *ConsistencyToken) (*sdk.ConsistencyToken, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ConsistencyToken{
-		Value: w.Value,
-	}, nil
 }
 
 type GetRuleSetRequest struct {
@@ -283,17 +117,6 @@ type GetRuleSetRequest struct {
 	Etag *string `json:"etag,omitempty"`
 }
 
-func GetRuleSetRequestFromSDK(v *sdk.GetRuleSetRequest) (*GetRuleSetRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetRuleSetRequest{
-		AccountId: v.AccountId,
-		Name:      v.Name,
-		Etag:      v.Etag,
-	}, nil
-}
-
 type GrantRule struct {
 	// Principals this grant rule applies to. A principal can be a user (for end
 	// users), a service principal (for applications and compute workloads), or an
@@ -303,26 +126,6 @@ type GrantRule struct {
 	Principals []string `json:"principals,omitempty"`
 	// Role that is assigned to the list of principals.
 	Role *string `json:"role,omitempty"`
-}
-
-func GrantRuleFromSDK(v *sdk.GrantRule) (*GrantRule, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GrantRule{
-		Principals: v.Principals,
-		Role:       v.Role,
-	}, nil
-}
-
-func GrantRuleToSDK(w *GrantRule) (*sdk.GrantRule, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GrantRule{
-		Principals: w.Principals,
-		Role:       w.Role,
-	}, nil
 }
 
 type ListAssignableRolesForResourceRequest struct {
@@ -340,31 +143,8 @@ type ListAssignableRolesForResourceRequest struct {
 	Resource *string `json:"resource,omitempty"`
 }
 
-func ListAssignableRolesForResourceRequestFromSDK(v *sdk.ListAssignableRolesForResourceRequest) (*ListAssignableRolesForResourceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListAssignableRolesForResourceRequest{
-		AccountId: v.AccountId,
-		Resource:  v.Resource,
-	}, nil
-}
-
 type ListAssignableRolesForResourceResponse struct {
 	Roles []Role `json:"roles,omitempty"`
-}
-
-func ListAssignableRolesForResourceResponseToSDK(w *ListAssignableRolesForResourceResponse) (*sdk.ListAssignableRolesForResourceResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rolesPublicValue, err := convertSlice(w.Roles, RoleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListAssignableRolesForResourceResponse.Roles", err)
-	}
-	return &sdk.ListAssignableRolesForResourceResponse{
-		Roles: rolesPublicValue,
-	}, nil
 }
 
 type ListPermissionLevelsResponse struct {
@@ -372,53 +152,14 @@ type ListPermissionLevelsResponse struct {
 	PermissionLevels []PermissionsDescription `json:"permission_levels,omitempty"`
 }
 
-func ListPermissionLevelsResponseToSDK(w *ListPermissionLevelsResponse) (*sdk.ListPermissionLevelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	permissionLevelsPublicValue, err := convertSlice(w.PermissionLevels, PermissionsDescriptionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListPermissionLevelsResponse.PermissionLevels", err)
-	}
-	return &sdk.ListPermissionLevelsResponse{
-		PermissionLevels: permissionLevelsPublicValue,
-	}, nil
-}
-
 type ListWorkspacePermissionAssignmentsResponse struct {
 	// Array of permissions assignments defined for a workspace.
 	PermissionAssignments []WorkspacePermissionAssignmentOutput `json:"permission_assignments,omitempty"`
 }
 
-func ListWorkspacePermissionAssignmentsResponseToSDK(w *ListWorkspacePermissionAssignmentsResponse) (*sdk.ListWorkspacePermissionAssignmentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	permissionAssignmentsPublicValue, err := convertSlice(w.PermissionAssignments, WorkspacePermissionAssignmentOutputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionAssignmentsResponse.PermissionAssignments", err)
-	}
-	return &sdk.ListWorkspacePermissionAssignmentsResponse{
-		PermissionAssignments: permissionAssignmentsPublicValue,
-	}, nil
-}
-
 type ListWorkspacePermissionsResponse struct {
 	// Array of permissions defined for a workspace.
 	Permissions []PermissionOutput `json:"permissions,omitempty"`
-}
-
-func ListWorkspacePermissionsResponseToSDK(w *ListWorkspacePermissionsResponse) (*sdk.ListWorkspacePermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	permissionsPublicValue, err := convertSlice(w.Permissions, PermissionOutputToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionsResponse.Permissions", err)
-	}
-	return &sdk.ListWorkspacePermissionsResponse{
-		Permissions: permissionsPublicValue,
-	}, nil
 }
 
 type Permission struct {
@@ -427,31 +168,10 @@ type Permission struct {
 	InheritedFromObject []string        `json:"inherited_from_object,omitempty"`
 }
 
-func PermissionToSDK(w *Permission) (*sdk.Permission, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Permission{
-		PermissionLevel:     w.PermissionLevel,
-		Inherited:           w.Inherited,
-		InheritedFromObject: w.InheritedFromObject,
-	}, nil
-}
-
 type PermissionOutput struct {
 	PermissionLevel WorkspacePermission `json:"permission_level,omitempty"`
 	// The results of a permissions query.
 	Description *string `json:"description,omitempty"`
-}
-
-func PermissionOutputToSDK(w *PermissionOutput) (*sdk.PermissionOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PermissionOutput{
-		PermissionLevel: w.PermissionLevel,
-		Description:     w.Description,
-	}, nil
 }
 
 type PermissionsDescription struct {
@@ -459,35 +179,10 @@ type PermissionsDescription struct {
 	Description     *string         `json:"description,omitempty"`
 }
 
-func PermissionsDescriptionToSDK(w *PermissionsDescription) (*sdk.PermissionsDescription, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.PermissionsDescription{
-		PermissionLevel: w.PermissionLevel,
-		Description:     w.Description,
-	}, nil
-}
-
 type PermissionsResponse struct {
 	ObjectId          *string                 `json:"object_id,omitempty"`
 	ObjectType        *string                 `json:"object_type,omitempty"`
 	AccessControlList []AccessControlResponse `json:"access_control_list,omitempty"`
-}
-
-func PermissionsResponseToSDK(w *PermissionsResponse) (*sdk.PermissionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	accessControlListPublicValue, err := convertSlice(w.AccessControlList, AccessControlResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PermissionsResponse.AccessControlList", err)
-	}
-	return &sdk.PermissionsResponse{
-		ObjectId:          w.ObjectId,
-		ObjectType:        w.ObjectType,
-		AccessControlList: accessControlListPublicValue,
-	}, nil
 }
 
 // Information about the principal assigned to the workspace..
@@ -501,43 +196,6 @@ type PrincipalOutput struct {
 	DisplayName *string `json:"display_name,omitempty"`
 }
 
-func PrincipalOutputToSDK(w *PrincipalOutput) (*sdk.PrincipalOutput, error) {
-	if w == nil {
-		return nil, nil
-	}
-	principalNameMembers := 0
-	if w.UserName != nil {
-		principalNameMembers++
-	}
-	if w.GroupName != nil {
-		principalNameMembers++
-	}
-	if w.ServicePrincipalName != nil {
-		principalNameMembers++
-	}
-	if principalNameMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PrincipalOutput.PrincipalName")
-	}
-	principalIdPublicValue, err := int64FromWire(w.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "PrincipalOutput.PrincipalId", err)
-	}
-	principalNameSelection := (&sdk.PrincipalOutput{}).PrincipalName
-	switch {
-	case w.UserName != nil:
-		principalNameSelection = &sdk.PrincipalOutput_PrincipalName_UserName{UserName: *w.UserName}
-	case w.GroupName != nil:
-		principalNameSelection = &sdk.PrincipalOutput_PrincipalName_GroupName{GroupName: *w.GroupName}
-	case w.ServicePrincipalName != nil:
-		principalNameSelection = &sdk.PrincipalOutput_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
-	}
-	return &sdk.PrincipalOutput{
-		PrincipalId:   principalIdPublicValue,
-		DisplayName:   w.DisplayName,
-		PrincipalName: principalNameSelection,
-	}, nil
-}
-
 type ResourceInfo struct {
 	// Id of the current resource.
 	Id *string `json:"id,omitempty"`
@@ -548,33 +206,9 @@ type ResourceInfo struct {
 	LegacyAclPath *string `json:"legacy_acl_path,omitempty"`
 }
 
-func ResourceInfoFromSDK(v *sdk.ResourceInfo) (*ResourceInfo, error) {
-	if v == nil {
-		return nil, nil
-	}
-	parentResourceInfoWireValue, err := ResourceInfoFromSDK(v.ParentResourceInfo)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResourceInfo.ParentResourceInfo", err)
-	}
-	return &ResourceInfo{
-		Id:                 v.Id,
-		ParentResourceInfo: parentResourceInfoWireValue,
-		LegacyAclPath:      v.LegacyAclPath,
-	}, nil
-}
-
 type Role struct {
 	// Role to assign to a principal or a list of principals on a resource.
 	Name *string `json:"name,omitempty"`
-}
-
-func RoleToSDK(w *Role) (*sdk.Role, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Role{
-		Name: w.Name,
-	}, nil
 }
 
 type RuleSet struct {
@@ -592,21 +226,6 @@ type RuleSet struct {
 	GrantRules []GrantRule `json:"grant_rules,omitempty"`
 }
 
-func RuleSetToSDK(w *RuleSet) (*sdk.RuleSet, error) {
-	if w == nil {
-		return nil, nil
-	}
-	grantRulesPublicValue, err := convertSlice(w.GrantRules, GrantRuleToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RuleSet.GrantRules", err)
-	}
-	return &sdk.RuleSet{
-		Name:       w.Name,
-		Etag:       w.Etag,
-		GrantRules: grantRulesPublicValue,
-	}, nil
-}
-
 type RuleSetUpdateRequest struct {
 	// Name of the rule set.
 	Name *string `json:"name,omitempty"`
@@ -622,21 +241,6 @@ type RuleSetUpdateRequest struct {
 	GrantRules []GrantRule `json:"grant_rules,omitempty"`
 }
 
-func RuleSetUpdateRequestFromSDK(v *sdk.RuleSetUpdateRequest) (*RuleSetUpdateRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	grantRulesWireValue, err := convertSlice(v.GrantRules, GrantRuleFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RuleSetUpdateRequest.GrantRules", err)
-	}
-	return &RuleSetUpdateRequest{
-		Name:       v.Name,
-		Etag:       v.Etag,
-		GrantRules: grantRulesWireValue,
-	}, nil
-}
-
 type SetObjectPermissionsRequest struct {
 	// The type of the request object. Can be one of the following: alerts,
 	// alertsv2, authorization, clusters, cluster-policies, dashboards,
@@ -648,21 +252,6 @@ type SetObjectPermissionsRequest struct {
 	// The id of the request object.
 	RequestObjectId   *string                `json:"request_object_id,omitempty"`
 	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
-}
-
-func SetObjectPermissionsRequestFromSDK(v *sdk.SetObjectPermissionsRequest) (*SetObjectPermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accessControlListWireValue, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SetObjectPermissionsRequest.AccessControlList", err)
-	}
-	return &SetObjectPermissionsRequest{
-		RequestObjectType: v.RequestObjectType,
-		RequestObjectId:   v.RequestObjectId,
-		AccessControlList: accessControlListWireValue,
-	}, nil
 }
 
 type UpdateObjectPermissionsRequest struct {
@@ -678,42 +267,12 @@ type UpdateObjectPermissionsRequest struct {
 	AccessControlList []AccessControlRequest `json:"access_control_list,omitempty"`
 }
 
-func UpdateObjectPermissionsRequestFromSDK(v *sdk.UpdateObjectPermissionsRequest) (*UpdateObjectPermissionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	accessControlListWireValue, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateObjectPermissionsRequest.AccessControlList", err)
-	}
-	return &UpdateObjectPermissionsRequest{
-		RequestObjectType: v.RequestObjectType,
-		RequestObjectId:   v.RequestObjectId,
-		AccessControlList: accessControlListWireValue,
-	}, nil
-}
-
 type UpdateRuleSetRequest struct {
 	// <Databricks> account ID.
 	AccountId *string `json:"account_id,omitempty"`
 	// Name of the rule set.
 	Name    *string               `json:"name,omitempty"`
 	RuleSet *RuleSetUpdateRequest `json:"rule_set,omitempty"`
-}
-
-func UpdateRuleSetRequestFromSDK(v *sdk.UpdateRuleSetRequest) (*UpdateRuleSetRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	ruleSetWireValue, err := RuleSetUpdateRequestFromSDK(v.RuleSet)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRuleSetRequest.RuleSet", err)
-	}
-	return &UpdateRuleSetRequest{
-		AccountId: v.AccountId,
-		Name:      v.Name,
-		RuleSet:   ruleSetWireValue,
-	}, nil
 }
 
 type UpdateWorkspacePermissionAssignmentRequest struct {
@@ -732,26 +291,6 @@ type UpdateWorkspacePermissionAssignmentRequest struct {
 	Permissions []WorkspacePermission `json:"permissions,omitempty"`
 }
 
-func UpdateWorkspacePermissionAssignmentRequestFromSDK(v *sdk.UpdateWorkspacePermissionAssignmentRequest) (*UpdateWorkspacePermissionAssignmentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspacePermissionAssignmentRequest.WorkspaceId", err)
-	}
-	principalIdWireValue, err := int64ToWire(v.PrincipalId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateWorkspacePermissionAssignmentRequest.PrincipalId", err)
-	}
-	return &UpdateWorkspacePermissionAssignmentRequest{
-		AccountId:   v.AccountId,
-		WorkspaceId: workspaceIdWireValue,
-		PrincipalId: principalIdWireValue,
-		Permissions: v.Permissions,
-	}, nil
-}
-
 // The output format for existing workspace PermissionAssignment records, which
 // contains some info for user consumption..
 type WorkspacePermissionAssignmentOutput struct {
@@ -763,19 +302,878 @@ type WorkspacePermissionAssignmentOutput struct {
 	Error *string `json:"error,omitempty"`
 }
 
+// AccessControlRequestToSDK converts the mirror to the sdk-go type.
+func AccessControlRequestToSDK(w *AccessControlRequest) (*sdk.AccessControlRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccessControlRequest{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlRequest.PrincipalName")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_UserName{UserName: *w.UserName}
+	case w.GroupName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_GroupName{GroupName: *w.GroupName}
+	case w.ServicePrincipalName != nil:
+		out.PrincipalName = &sdk.AccessControlRequest_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	}
+	out.PermissionLevel = w.PermissionLevel
+	return out, nil
+}
+
+// AccessControlRequestFromSDK converts the sdk-go type to the mirror.
+func AccessControlRequestFromSDK(v *sdk.AccessControlRequest) (*AccessControlRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccessControlRequest{}
+	switch value := v.PrincipalName.(type) {
+	case *sdk.AccessControlRequest_PrincipalName_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.AccessControlRequest_PrincipalName_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	case *sdk.AccessControlRequest_PrincipalName_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	}
+	out.PermissionLevel = v.PermissionLevel
+	return out, nil
+}
+
+// AccessControlResponseToSDK converts the mirror to the sdk-go type.
+func AccessControlResponseToSDK(w *AccessControlResponse) (*sdk.AccessControlResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccessControlResponse{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "AccessControlResponse.PrincipalName")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.PrincipalName = &sdk.AccessControlResponse_PrincipalName_UserName{UserName: *w.UserName}
+	case w.GroupName != nil:
+		out.PrincipalName = &sdk.AccessControlResponse_PrincipalName_GroupName{GroupName: *w.GroupName}
+	case w.ServicePrincipalName != nil:
+		out.PrincipalName = &sdk.AccessControlResponse_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	}
+	out.DisplayName = w.DisplayName
+	conv1, err := convertSlice(w.AllPermissions, PermissionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessControlResponse.AllPermissions", err)
+	}
+	out.AllPermissions = conv1
+	return out, nil
+}
+
+// AccessControlResponseFromSDK converts the sdk-go type to the mirror.
+func AccessControlResponseFromSDK(v *sdk.AccessControlResponse) (*AccessControlResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccessControlResponse{}
+	switch value := v.PrincipalName.(type) {
+	case *sdk.AccessControlResponse_PrincipalName_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.AccessControlResponse_PrincipalName_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	case *sdk.AccessControlResponse_PrincipalName_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	}
+	out.DisplayName = v.DisplayName
+	conv2, err := convertSlice(v.AllPermissions, PermissionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessControlResponse.AllPermissions", err)
+	}
+	out.AllPermissions = conv2
+	return out, nil
+}
+
+// ActorToSDK converts the mirror to the sdk-go type.
+func ActorToSDK(w *Actor) (*sdk.Actor, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Actor{}
+	{
+		members := 0
+		if w.ActorId != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Actor.Kind")
+		}
+	}
+	switch {
+	case w.ActorId != nil:
+		out.Kind = &sdk.Actor_Kind_ActorId{ActorId: *w.ActorId}
+	}
+	return out, nil
+}
+
+// ActorFromSDK converts the sdk-go type to the mirror.
+func ActorFromSDK(v *sdk.Actor) (*Actor, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Actor{}
+	switch value := v.Kind.(type) {
+	case *sdk.Actor_Kind_ActorId:
+		if value != nil {
+			out.ActorId = new(value.ActorId)
+		}
+	}
+	return out, nil
+}
+
+// CheckPolicyRequestToSDK converts the mirror to the sdk-go type.
+func CheckPolicyRequestToSDK(w *CheckPolicyRequest) (*sdk.CheckPolicyRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CheckPolicyRequest{}
+	conv3, err := ActorToSDK(w.Actor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.Actor", err)
+	}
+	out.Actor = conv3
+	out.Permission = w.Permission
+	out.Resource = w.Resource
+	conv4, err := ConsistencyTokenToSDK(w.ConsistencyToken)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ConsistencyToken", err)
+	}
+	out.ConsistencyToken = conv4
+	out.AuthzIdentity = w.AuthzIdentity
+	conv5, err := ResourceInfoToSDK(w.ResourceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ResourceInfo", err)
+	}
+	out.ResourceInfo = conv5
+	return out, nil
+}
+
+// CheckPolicyRequestFromSDK converts the sdk-go type to the mirror.
+func CheckPolicyRequestFromSDK(v *sdk.CheckPolicyRequest) (*CheckPolicyRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CheckPolicyRequest{}
+	conv6, err := ActorFromSDK(v.Actor)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.Actor", err)
+	}
+	out.Actor = conv6
+	out.Permission = v.Permission
+	out.Resource = v.Resource
+	conv7, err := ConsistencyTokenFromSDK(v.ConsistencyToken)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ConsistencyToken", err)
+	}
+	out.ConsistencyToken = conv7
+	out.AuthzIdentity = v.AuthzIdentity
+	conv8, err := ResourceInfoFromSDK(v.ResourceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyRequest.ResourceInfo", err)
+	}
+	out.ResourceInfo = conv8
+	return out, nil
+}
+
+// CheckPolicyResponseToSDK converts the mirror to the sdk-go type.
+func CheckPolicyResponseToSDK(w *CheckPolicyResponse) (*sdk.CheckPolicyResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CheckPolicyResponse{}
+	out.IsPermitted = w.IsPermitted
+	conv9, err := ConsistencyTokenToSDK(w.ConsistencyToken)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyResponse.ConsistencyToken", err)
+	}
+	out.ConsistencyToken = conv9
+	return out, nil
+}
+
+// CheckPolicyResponseFromSDK converts the sdk-go type to the mirror.
+func CheckPolicyResponseFromSDK(v *sdk.CheckPolicyResponse) (*CheckPolicyResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CheckPolicyResponse{}
+	out.IsPermitted = v.IsPermitted
+	conv10, err := ConsistencyTokenFromSDK(v.ConsistencyToken)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CheckPolicyResponse.ConsistencyToken", err)
+	}
+	out.ConsistencyToken = conv10
+	return out, nil
+}
+
+// ConsistencyTokenToSDK converts the mirror to the sdk-go type.
+func ConsistencyTokenToSDK(w *ConsistencyToken) (*sdk.ConsistencyToken, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ConsistencyToken{}
+	out.Value = w.Value
+	return out, nil
+}
+
+// ConsistencyTokenFromSDK converts the sdk-go type to the mirror.
+func ConsistencyTokenFromSDK(v *sdk.ConsistencyToken) (*ConsistencyToken, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ConsistencyToken{}
+	out.Value = v.Value
+	return out, nil
+}
+
+// GetRuleSetRequestToSDK converts the mirror to the sdk-go type.
+func GetRuleSetRequestToSDK(w *GetRuleSetRequest) (*sdk.GetRuleSetRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRuleSetRequest{}
+	out.AccountId = w.AccountId
+	out.Name = w.Name
+	out.Etag = w.Etag
+	return out, nil
+}
+
+// GetRuleSetRequestFromSDK converts the sdk-go type to the mirror.
+func GetRuleSetRequestFromSDK(v *sdk.GetRuleSetRequest) (*GetRuleSetRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRuleSetRequest{}
+	out.AccountId = v.AccountId
+	out.Name = v.Name
+	out.Etag = v.Etag
+	return out, nil
+}
+
+// GrantRuleToSDK converts the mirror to the sdk-go type.
+func GrantRuleToSDK(w *GrantRule) (*sdk.GrantRule, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GrantRule{}
+	out.Principals = w.Principals
+	out.Role = w.Role
+	return out, nil
+}
+
+// GrantRuleFromSDK converts the sdk-go type to the mirror.
+func GrantRuleFromSDK(v *sdk.GrantRule) (*GrantRule, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GrantRule{}
+	out.Principals = v.Principals
+	out.Role = v.Role
+	return out, nil
+}
+
+// ListAssignableRolesForResourceRequestToSDK converts the mirror to the sdk-go type.
+func ListAssignableRolesForResourceRequestToSDK(w *ListAssignableRolesForResourceRequest) (*sdk.ListAssignableRolesForResourceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAssignableRolesForResourceRequest{}
+	out.AccountId = w.AccountId
+	out.Resource = w.Resource
+	return out, nil
+}
+
+// ListAssignableRolesForResourceRequestFromSDK converts the sdk-go type to the mirror.
+func ListAssignableRolesForResourceRequestFromSDK(v *sdk.ListAssignableRolesForResourceRequest) (*ListAssignableRolesForResourceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAssignableRolesForResourceRequest{}
+	out.AccountId = v.AccountId
+	out.Resource = v.Resource
+	return out, nil
+}
+
+// ListAssignableRolesForResourceResponseToSDK converts the mirror to the sdk-go type.
+func ListAssignableRolesForResourceResponseToSDK(w *ListAssignableRolesForResourceResponse) (*sdk.ListAssignableRolesForResourceResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListAssignableRolesForResourceResponse{}
+	conv11, err := convertSlice(w.Roles, RoleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAssignableRolesForResourceResponse.Roles", err)
+	}
+	out.Roles = conv11
+	return out, nil
+}
+
+// ListAssignableRolesForResourceResponseFromSDK converts the sdk-go type to the mirror.
+func ListAssignableRolesForResourceResponseFromSDK(v *sdk.ListAssignableRolesForResourceResponse) (*ListAssignableRolesForResourceResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListAssignableRolesForResourceResponse{}
+	conv12, err := convertSlice(v.Roles, RoleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListAssignableRolesForResourceResponse.Roles", err)
+	}
+	out.Roles = conv12
+	return out, nil
+}
+
+// ListPermissionLevelsResponseToSDK converts the mirror to the sdk-go type.
+func ListPermissionLevelsResponseToSDK(w *ListPermissionLevelsResponse) (*sdk.ListPermissionLevelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListPermissionLevelsResponse{}
+	conv13, err := convertSlice(w.PermissionLevels, PermissionsDescriptionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPermissionLevelsResponse.PermissionLevels", err)
+	}
+	out.PermissionLevels = conv13
+	return out, nil
+}
+
+// ListPermissionLevelsResponseFromSDK converts the sdk-go type to the mirror.
+func ListPermissionLevelsResponseFromSDK(v *sdk.ListPermissionLevelsResponse) (*ListPermissionLevelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListPermissionLevelsResponse{}
+	conv14, err := convertSlice(v.PermissionLevels, PermissionsDescriptionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListPermissionLevelsResponse.PermissionLevels", err)
+	}
+	out.PermissionLevels = conv14
+	return out, nil
+}
+
+// ListWorkspacePermissionAssignmentsResponseToSDK converts the mirror to the sdk-go type.
+func ListWorkspacePermissionAssignmentsResponseToSDK(w *ListWorkspacePermissionAssignmentsResponse) (*sdk.ListWorkspacePermissionAssignmentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspacePermissionAssignmentsResponse{}
+	conv15, err := convertSlice(w.PermissionAssignments, WorkspacePermissionAssignmentOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionAssignmentsResponse.PermissionAssignments", err)
+	}
+	out.PermissionAssignments = conv15
+	return out, nil
+}
+
+// ListWorkspacePermissionAssignmentsResponseFromSDK converts the sdk-go type to the mirror.
+func ListWorkspacePermissionAssignmentsResponseFromSDK(v *sdk.ListWorkspacePermissionAssignmentsResponse) (*ListWorkspacePermissionAssignmentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspacePermissionAssignmentsResponse{}
+	conv16, err := convertSlice(v.PermissionAssignments, WorkspacePermissionAssignmentOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionAssignmentsResponse.PermissionAssignments", err)
+	}
+	out.PermissionAssignments = conv16
+	return out, nil
+}
+
+// ListWorkspacePermissionsResponseToSDK converts the mirror to the sdk-go type.
+func ListWorkspacePermissionsResponseToSDK(w *ListWorkspacePermissionsResponse) (*sdk.ListWorkspacePermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListWorkspacePermissionsResponse{}
+	conv17, err := convertSlice(w.Permissions, PermissionOutputToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionsResponse.Permissions", err)
+	}
+	out.Permissions = conv17
+	return out, nil
+}
+
+// ListWorkspacePermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func ListWorkspacePermissionsResponseFromSDK(v *sdk.ListWorkspacePermissionsResponse) (*ListWorkspacePermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListWorkspacePermissionsResponse{}
+	conv18, err := convertSlice(v.Permissions, PermissionOutputFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListWorkspacePermissionsResponse.Permissions", err)
+	}
+	out.Permissions = conv18
+	return out, nil
+}
+
+// PermissionToSDK converts the mirror to the sdk-go type.
+func PermissionToSDK(w *Permission) (*sdk.Permission, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Permission{}
+	out.PermissionLevel = w.PermissionLevel
+	out.Inherited = w.Inherited
+	out.InheritedFromObject = w.InheritedFromObject
+	return out, nil
+}
+
+// PermissionFromSDK converts the sdk-go type to the mirror.
+func PermissionFromSDK(v *sdk.Permission) (*Permission, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Permission{}
+	out.PermissionLevel = v.PermissionLevel
+	out.Inherited = v.Inherited
+	out.InheritedFromObject = v.InheritedFromObject
+	return out, nil
+}
+
+// PermissionOutputToSDK converts the mirror to the sdk-go type.
+func PermissionOutputToSDK(w *PermissionOutput) (*sdk.PermissionOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermissionOutput{}
+	out.PermissionLevel = w.PermissionLevel
+	out.Description = w.Description
+	return out, nil
+}
+
+// PermissionOutputFromSDK converts the sdk-go type to the mirror.
+func PermissionOutputFromSDK(v *sdk.PermissionOutput) (*PermissionOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermissionOutput{}
+	out.PermissionLevel = v.PermissionLevel
+	out.Description = v.Description
+	return out, nil
+}
+
+// PermissionsDescriptionToSDK converts the mirror to the sdk-go type.
+func PermissionsDescriptionToSDK(w *PermissionsDescription) (*sdk.PermissionsDescription, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermissionsDescription{}
+	out.PermissionLevel = w.PermissionLevel
+	out.Description = w.Description
+	return out, nil
+}
+
+// PermissionsDescriptionFromSDK converts the sdk-go type to the mirror.
+func PermissionsDescriptionFromSDK(v *sdk.PermissionsDescription) (*PermissionsDescription, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermissionsDescription{}
+	out.PermissionLevel = v.PermissionLevel
+	out.Description = v.Description
+	return out, nil
+}
+
+// PermissionsResponseToSDK converts the mirror to the sdk-go type.
+func PermissionsResponseToSDK(w *PermissionsResponse) (*sdk.PermissionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PermissionsResponse{}
+	out.ObjectId = w.ObjectId
+	out.ObjectType = w.ObjectType
+	conv19, err := convertSlice(w.AccessControlList, AccessControlResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PermissionsResponse.AccessControlList", err)
+	}
+	out.AccessControlList = conv19
+	return out, nil
+}
+
+// PermissionsResponseFromSDK converts the sdk-go type to the mirror.
+func PermissionsResponseFromSDK(v *sdk.PermissionsResponse) (*PermissionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PermissionsResponse{}
+	out.ObjectId = v.ObjectId
+	out.ObjectType = v.ObjectType
+	conv20, err := convertSlice(v.AccessControlList, AccessControlResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "PermissionsResponse.AccessControlList", err)
+	}
+	out.AccessControlList = conv20
+	return out, nil
+}
+
+// PrincipalOutputToSDK converts the mirror to the sdk-go type.
+func PrincipalOutputToSDK(w *PrincipalOutput) (*sdk.PrincipalOutput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PrincipalOutput{}
+	{
+		members := 0
+		if w.UserName != nil {
+			members++
+		}
+		if w.GroupName != nil {
+			members++
+		}
+		if w.ServicePrincipalName != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PrincipalOutput.PrincipalName")
+		}
+	}
+	switch {
+	case w.UserName != nil:
+		out.PrincipalName = &sdk.PrincipalOutput_PrincipalName_UserName{UserName: *w.UserName}
+	case w.GroupName != nil:
+		out.PrincipalName = &sdk.PrincipalOutput_PrincipalName_GroupName{GroupName: *w.GroupName}
+	case w.ServicePrincipalName != nil:
+		out.PrincipalName = &sdk.PrincipalOutput_PrincipalName_ServicePrincipalName{ServicePrincipalName: *w.ServicePrincipalName}
+	}
+	out.PrincipalId = w.PrincipalId
+	out.DisplayName = w.DisplayName
+	return out, nil
+}
+
+// PrincipalOutputFromSDK converts the sdk-go type to the mirror.
+func PrincipalOutputFromSDK(v *sdk.PrincipalOutput) (*PrincipalOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PrincipalOutput{}
+	switch value := v.PrincipalName.(type) {
+	case *sdk.PrincipalOutput_PrincipalName_UserName:
+		if value != nil {
+			out.UserName = new(value.UserName)
+		}
+	case *sdk.PrincipalOutput_PrincipalName_GroupName:
+		if value != nil {
+			out.GroupName = new(value.GroupName)
+		}
+	case *sdk.PrincipalOutput_PrincipalName_ServicePrincipalName:
+		if value != nil {
+			out.ServicePrincipalName = new(value.ServicePrincipalName)
+		}
+	}
+	out.PrincipalId = v.PrincipalId
+	out.DisplayName = v.DisplayName
+	return out, nil
+}
+
+// ResourceInfoToSDK converts the mirror to the sdk-go type.
+func ResourceInfoToSDK(w *ResourceInfo) (*sdk.ResourceInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResourceInfo{}
+	out.Id = w.Id
+	conv21, err := ResourceInfoToSDK(w.ParentResourceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResourceInfo.ParentResourceInfo", err)
+	}
+	out.ParentResourceInfo = conv21
+	out.LegacyAclPath = w.LegacyAclPath
+	return out, nil
+}
+
+// ResourceInfoFromSDK converts the sdk-go type to the mirror.
+func ResourceInfoFromSDK(v *sdk.ResourceInfo) (*ResourceInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResourceInfo{}
+	out.Id = v.Id
+	conv22, err := ResourceInfoFromSDK(v.ParentResourceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResourceInfo.ParentResourceInfo", err)
+	}
+	out.ParentResourceInfo = conv22
+	out.LegacyAclPath = v.LegacyAclPath
+	return out, nil
+}
+
+// RoleToSDK converts the mirror to the sdk-go type.
+func RoleToSDK(w *Role) (*sdk.Role, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Role{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// RoleFromSDK converts the sdk-go type to the mirror.
+func RoleFromSDK(v *sdk.Role) (*Role, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Role{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// RuleSetToSDK converts the mirror to the sdk-go type.
+func RuleSetToSDK(w *RuleSet) (*sdk.RuleSet, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RuleSet{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	conv23, err := convertSlice(w.GrantRules, GrantRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RuleSet.GrantRules", err)
+	}
+	out.GrantRules = conv23
+	return out, nil
+}
+
+// RuleSetFromSDK converts the sdk-go type to the mirror.
+func RuleSetFromSDK(v *sdk.RuleSet) (*RuleSet, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RuleSet{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	conv24, err := convertSlice(v.GrantRules, GrantRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RuleSet.GrantRules", err)
+	}
+	out.GrantRules = conv24
+	return out, nil
+}
+
+// RuleSetUpdateRequestToSDK converts the mirror to the sdk-go type.
+func RuleSetUpdateRequestToSDK(w *RuleSetUpdateRequest) (*sdk.RuleSetUpdateRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RuleSetUpdateRequest{}
+	out.Name = w.Name
+	out.Etag = w.Etag
+	conv25, err := convertSlice(w.GrantRules, GrantRuleToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RuleSetUpdateRequest.GrantRules", err)
+	}
+	out.GrantRules = conv25
+	return out, nil
+}
+
+// RuleSetUpdateRequestFromSDK converts the sdk-go type to the mirror.
+func RuleSetUpdateRequestFromSDK(v *sdk.RuleSetUpdateRequest) (*RuleSetUpdateRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RuleSetUpdateRequest{}
+	out.Name = v.Name
+	out.Etag = v.Etag
+	conv26, err := convertSlice(v.GrantRules, GrantRuleFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RuleSetUpdateRequest.GrantRules", err)
+	}
+	out.GrantRules = conv26
+	return out, nil
+}
+
+// SetObjectPermissionsRequestToSDK converts the mirror to the sdk-go type.
+func SetObjectPermissionsRequestToSDK(w *SetObjectPermissionsRequest) (*sdk.SetObjectPermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetObjectPermissionsRequest{}
+	out.RequestObjectType = w.RequestObjectType
+	out.RequestObjectId = w.RequestObjectId
+	conv27, err := convertSlice(w.AccessControlList, AccessControlRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetObjectPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv27
+	return out, nil
+}
+
+// SetObjectPermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func SetObjectPermissionsRequestFromSDK(v *sdk.SetObjectPermissionsRequest) (*SetObjectPermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetObjectPermissionsRequest{}
+	out.RequestObjectType = v.RequestObjectType
+	out.RequestObjectId = v.RequestObjectId
+	conv28, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SetObjectPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv28
+	return out, nil
+}
+
+// UpdateObjectPermissionsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateObjectPermissionsRequestToSDK(w *UpdateObjectPermissionsRequest) (*sdk.UpdateObjectPermissionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateObjectPermissionsRequest{}
+	out.RequestObjectType = w.RequestObjectType
+	out.RequestObjectId = w.RequestObjectId
+	conv29, err := convertSlice(w.AccessControlList, AccessControlRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateObjectPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv29
+	return out, nil
+}
+
+// UpdateObjectPermissionsRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateObjectPermissionsRequestFromSDK(v *sdk.UpdateObjectPermissionsRequest) (*UpdateObjectPermissionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateObjectPermissionsRequest{}
+	out.RequestObjectType = v.RequestObjectType
+	out.RequestObjectId = v.RequestObjectId
+	conv30, err := convertSlice(v.AccessControlList, AccessControlRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateObjectPermissionsRequest.AccessControlList", err)
+	}
+	out.AccessControlList = conv30
+	return out, nil
+}
+
+// UpdateRuleSetRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRuleSetRequestToSDK(w *UpdateRuleSetRequest) (*sdk.UpdateRuleSetRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRuleSetRequest{}
+	out.AccountId = w.AccountId
+	out.Name = w.Name
+	conv31, err := RuleSetUpdateRequestToSDK(w.RuleSet)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRuleSetRequest.RuleSet", err)
+	}
+	out.RuleSet = conv31
+	return out, nil
+}
+
+// UpdateRuleSetRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRuleSetRequestFromSDK(v *sdk.UpdateRuleSetRequest) (*UpdateRuleSetRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRuleSetRequest{}
+	out.AccountId = v.AccountId
+	out.Name = v.Name
+	conv32, err := RuleSetUpdateRequestFromSDK(v.RuleSet)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRuleSetRequest.RuleSet", err)
+	}
+	out.RuleSet = conv32
+	return out, nil
+}
+
+// UpdateWorkspacePermissionAssignmentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateWorkspacePermissionAssignmentRequestToSDK(w *UpdateWorkspacePermissionAssignmentRequest) (*sdk.UpdateWorkspacePermissionAssignmentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateWorkspacePermissionAssignmentRequest{}
+	out.AccountId = w.AccountId
+	out.WorkspaceId = w.WorkspaceId
+	out.PrincipalId = w.PrincipalId
+	out.Permissions = w.Permissions
+	return out, nil
+}
+
+// UpdateWorkspacePermissionAssignmentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateWorkspacePermissionAssignmentRequestFromSDK(v *sdk.UpdateWorkspacePermissionAssignmentRequest) (*UpdateWorkspacePermissionAssignmentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateWorkspacePermissionAssignmentRequest{}
+	out.AccountId = v.AccountId
+	out.WorkspaceId = v.WorkspaceId
+	out.PrincipalId = v.PrincipalId
+	out.Permissions = v.Permissions
+	return out, nil
+}
+
+// WorkspacePermissionAssignmentOutputToSDK converts the mirror to the sdk-go type.
 func WorkspacePermissionAssignmentOutputToSDK(w *WorkspacePermissionAssignmentOutput) (*sdk.WorkspacePermissionAssignmentOutput, error) {
 	if w == nil {
 		return nil, nil
 	}
-	principalPublicValue, err := PrincipalOutputToSDK(w.Principal)
+	out := &sdk.WorkspacePermissionAssignmentOutput{}
+	conv33, err := PrincipalOutputToSDK(w.Principal)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "WorkspacePermissionAssignmentOutput.Principal", err)
 	}
-	return &sdk.WorkspacePermissionAssignmentOutput{
-		Principal:   principalPublicValue,
-		Permissions: w.Permissions,
-		Error:       w.Error,
-	}, nil
+	out.Principal = conv33
+	out.Permissions = w.Permissions
+	out.Error = w.Error
+	return out, nil
+}
+
+// WorkspacePermissionAssignmentOutputFromSDK converts the sdk-go type to the mirror.
+func WorkspacePermissionAssignmentOutputFromSDK(v *sdk.WorkspacePermissionAssignmentOutput) (*WorkspacePermissionAssignmentOutput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &WorkspacePermissionAssignmentOutput{}
+	conv34, err := PrincipalOutputFromSDK(v.Principal)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "WorkspacePermissionAssignmentOutput.Principal", err)
+	}
+	out.Principal = conv34
+	out.Permissions = v.Permissions
+	out.Error = v.Error
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

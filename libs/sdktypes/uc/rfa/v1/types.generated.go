@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/uc/rfa/v1"
+	strings "strings"
 )
 
 type (
@@ -63,14 +64,6 @@ const (
 	SpecialDestination_SpecialDestinationRegisteredModelOwner  = sdk.SpecialDestination_SpecialDestinationRegisteredModelOwner
 )
 
-func fieldMaskToWire[T any](mask *types.FieldMask[T]) *string {
-	if mask == nil {
-		return nil
-	}
-	value := mask.String()
-	return &value
-}
-
 type AccessRequestDestinations struct {
 	// The access request destinations for the securable.
 	Destinations []NotificationDestination `json:"destinations,omitempty"`
@@ -93,58 +86,6 @@ type AccessRequestDestinations struct {
 	FullName *string `json:"full_name,omitempty"`
 }
 
-func AccessRequestDestinationsFromSDK(v *sdk.AccessRequestDestinations) (*AccessRequestDestinations, error) {
-	if v == nil {
-		return nil, nil
-	}
-	destinationsWireValue, err := convertSlice(v.Destinations, NotificationDestinationFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Destinations", err)
-	}
-	securableWireValue, err := SecurableFromSDK(v.Securable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Securable", err)
-	}
-	destinationSourceSecurableWireValue, err := SecurableFromSDK(v.DestinationSourceSecurable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.DestinationSourceSecurable", err)
-	}
-	return &AccessRequestDestinations{
-		Destinations:               destinationsWireValue,
-		Securable:                  securableWireValue,
-		AreAnyDestinationsHidden:   v.AreAnyDestinationsHidden,
-		DestinationSourceSecurable: destinationSourceSecurableWireValue,
-		SecurableType:              v.SecurableType,
-		FullName:                   v.FullName,
-	}, nil
-}
-
-func AccessRequestDestinationsToSDK(w *AccessRequestDestinations) (*sdk.AccessRequestDestinations, error) {
-	if w == nil {
-		return nil, nil
-	}
-	destinationsPublicValue, err := convertSlice(w.Destinations, NotificationDestinationToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Destinations", err)
-	}
-	securablePublicValue, err := SecurableToSDK(w.Securable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Securable", err)
-	}
-	destinationSourceSecurablePublicValue, err := SecurableToSDK(w.DestinationSourceSecurable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.DestinationSourceSecurable", err)
-	}
-	return &sdk.AccessRequestDestinations{
-		Destinations:               destinationsPublicValue,
-		Securable:                  securablePublicValue,
-		AreAnyDestinationsHidden:   w.AreAnyDestinationsHidden,
-		DestinationSourceSecurable: destinationSourceSecurablePublicValue,
-		SecurableType:              w.SecurableType,
-		FullName:                   w.FullName,
-	}, nil
-}
-
 type BatchCreateAccessRequestsRequest struct {
 	// A list of individual access requests, where each request corresponds to a set
 	// of permissions being requested on a list of securables for a specified
@@ -154,36 +95,10 @@ type BatchCreateAccessRequestsRequest struct {
 	Requests []CreateAccessRequest `json:"requests,omitempty"`
 }
 
-func BatchCreateAccessRequestsRequestFromSDK(v *sdk.BatchCreateAccessRequestsRequest) (*BatchCreateAccessRequestsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	requestsWireValue, err := convertSlice(v.Requests, CreateAccessRequestFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsRequest.Requests", err)
-	}
-	return &BatchCreateAccessRequestsRequest{
-		Requests: requestsWireValue,
-	}, nil
-}
-
 type BatchCreateAccessRequestsResponse struct {
 	// The access request destinations for each securable object the principal
 	// requested.
 	Responses []CreateAccessRequestResponse `json:"responses,omitempty"`
-}
-
-func BatchCreateAccessRequestsResponseToSDK(w *BatchCreateAccessRequestsResponse) (*sdk.BatchCreateAccessRequestsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	responsesPublicValue, err := convertSlice(w.Responses, CreateAccessRequestResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsResponse.Responses", err)
-	}
-	return &sdk.BatchCreateAccessRequestsResponse{
-		Responses: responsesPublicValue,
-	}, nil
 }
 
 type CreateAccessRequest struct {
@@ -204,49 +119,12 @@ type CreateAccessRequest struct {
 	SecurablePermissions []SecurablePermissions `json:"securable_permissions,omitempty"`
 }
 
-func CreateAccessRequestFromSDK(v *sdk.CreateAccessRequest) (*CreateAccessRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	behalfOfWireValue, err := PrincipalFromSDK(v.BehalfOf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.BehalfOf", err)
-	}
-	securablePermissionsWireValue, err := convertSlice(v.SecurablePermissions, SecurablePermissionsFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.SecurablePermissions", err)
-	}
-	return &CreateAccessRequest{
-		BehalfOf:             behalfOfWireValue,
-		Comment:              v.Comment,
-		SecurablePermissions: securablePermissionsWireValue,
-	}, nil
-}
-
 type CreateAccessRequestResponse struct {
 	// The principal the request was made on behalf of.
 	BehalfOf *Principal `json:"behalf_of,omitempty"`
 	// The access request destinations for all the securables the principal
 	// requested.
 	RequestDestinations []AccessRequestDestinations `json:"request_destinations,omitempty"`
-}
-
-func CreateAccessRequestResponseToSDK(w *CreateAccessRequestResponse) (*sdk.CreateAccessRequestResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	behalfOfPublicValue, err := PrincipalToSDK(w.BehalfOf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.BehalfOf", err)
-	}
-	requestDestinationsPublicValue, err := convertSlice(w.RequestDestinations, AccessRequestDestinationsToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.RequestDestinations", err)
-	}
-	return &sdk.CreateAccessRequestResponse{
-		BehalfOf:            behalfOfPublicValue,
-		RequestDestinations: requestDestinationsPublicValue,
-	}, nil
 }
 
 type NotificationDestination struct {
@@ -265,52 +143,10 @@ type NotificationDestination struct {
 	SpecialDestination SpecialDestination `json:"special_destination,omitempty"`
 }
 
-func NotificationDestinationFromSDK(v *sdk.NotificationDestination) (*NotificationDestination, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &NotificationDestination{
-		DestinationId:      v.DestinationId,
-		DestinationType:    v.DestinationType,
-		SpecialDestination: v.SpecialDestination,
-	}, nil
-}
-
-func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.NotificationDestination{
-		DestinationId:      w.DestinationId,
-		DestinationType:    w.DestinationType,
-		SpecialDestination: w.SpecialDestination,
-	}, nil
-}
-
 type Principal struct {
 	// <Databricks> user, group or service principal ID.
 	Id            *string       `json:"id,omitempty"`
 	PrincipalType PrincipalType `json:"principal_type,omitempty"`
-}
-
-func PrincipalFromSDK(v *sdk.Principal) (*Principal, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Principal{
-		Id:            v.Id,
-		PrincipalType: v.PrincipalType,
-	}, nil
-}
-
-func PrincipalToSDK(w *Principal) (*sdk.Principal, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Principal{
-		Id:            w.Id,
-		PrincipalType: w.PrincipalType,
-	}, nil
 }
 
 // Generic definition of a securable, which is uniquely defined in a metastore
@@ -327,47 +163,11 @@ type Securable struct {
 	ProviderShare *string `json:"provider_share,omitempty"`
 }
 
-func SecurableFromSDK(v *sdk.Securable) (*Securable, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &Securable{
-		Type:          v.Type,
-		FullName:      v.FullName,
-		ProviderShare: v.ProviderShare,
-	}, nil
-}
-
-func SecurableToSDK(w *Securable) (*sdk.Securable, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Securable{
-		Type:          w.Type,
-		FullName:      w.FullName,
-		ProviderShare: w.ProviderShare,
-	}, nil
-}
-
 type SecurablePermissions struct {
 	// The securable for which the access request destinations are being requested.
 	Securable *Securable `json:"securable,omitempty"`
 	// List of requested Unity Catalog permissions.
 	Permissions []string `json:"permissions,omitempty"`
-}
-
-func SecurablePermissionsFromSDK(v *sdk.SecurablePermissions) (*SecurablePermissions, error) {
-	if v == nil {
-		return nil, nil
-	}
-	securableWireValue, err := SecurableFromSDK(v.Securable)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SecurablePermissions.Securable", err)
-	}
-	return &SecurablePermissions{
-		Securable:   securableWireValue,
-		Permissions: v.Permissions,
-	}, nil
 }
 
 type UpdateAccessRequestDestinationsRequest struct {
@@ -377,18 +177,326 @@ type UpdateAccessRequestDestinationsRequest struct {
 	UpdateMask                *string                    `json:"update_mask,omitempty"`
 }
 
+// AccessRequestDestinationsToSDK converts the mirror to the sdk-go type.
+func AccessRequestDestinationsToSDK(w *AccessRequestDestinations) (*sdk.AccessRequestDestinations, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.AccessRequestDestinations{}
+	conv1, err := convertSlice(w.Destinations, NotificationDestinationToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Destinations", err)
+	}
+	out.Destinations = conv1
+	conv2, err := SecurableToSDK(w.Securable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Securable", err)
+	}
+	out.Securable = conv2
+	out.AreAnyDestinationsHidden = w.AreAnyDestinationsHidden
+	conv3, err := SecurableToSDK(w.DestinationSourceSecurable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.DestinationSourceSecurable", err)
+	}
+	out.DestinationSourceSecurable = conv3
+	out.SecurableType = w.SecurableType
+	out.FullName = w.FullName
+	return out, nil
+}
+
+// AccessRequestDestinationsFromSDK converts the sdk-go type to the mirror.
+func AccessRequestDestinationsFromSDK(v *sdk.AccessRequestDestinations) (*AccessRequestDestinations, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &AccessRequestDestinations{}
+	conv4, err := convertSlice(v.Destinations, NotificationDestinationFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Destinations", err)
+	}
+	out.Destinations = conv4
+	conv5, err := SecurableFromSDK(v.Securable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.Securable", err)
+	}
+	out.Securable = conv5
+	out.AreAnyDestinationsHidden = v.AreAnyDestinationsHidden
+	conv6, err := SecurableFromSDK(v.DestinationSourceSecurable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "AccessRequestDestinations.DestinationSourceSecurable", err)
+	}
+	out.DestinationSourceSecurable = conv6
+	out.SecurableType = v.SecurableType
+	out.FullName = v.FullName
+	return out, nil
+}
+
+// BatchCreateAccessRequestsRequestToSDK converts the mirror to the sdk-go type.
+func BatchCreateAccessRequestsRequestToSDK(w *BatchCreateAccessRequestsRequest) (*sdk.BatchCreateAccessRequestsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchCreateAccessRequestsRequest{}
+	conv7, err := convertSlice(w.Requests, CreateAccessRequestToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsRequest.Requests", err)
+	}
+	out.Requests = conv7
+	return out, nil
+}
+
+// BatchCreateAccessRequestsRequestFromSDK converts the sdk-go type to the mirror.
+func BatchCreateAccessRequestsRequestFromSDK(v *sdk.BatchCreateAccessRequestsRequest) (*BatchCreateAccessRequestsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchCreateAccessRequestsRequest{}
+	conv8, err := convertSlice(v.Requests, CreateAccessRequestFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsRequest.Requests", err)
+	}
+	out.Requests = conv8
+	return out, nil
+}
+
+// BatchCreateAccessRequestsResponseToSDK converts the mirror to the sdk-go type.
+func BatchCreateAccessRequestsResponseToSDK(w *BatchCreateAccessRequestsResponse) (*sdk.BatchCreateAccessRequestsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.BatchCreateAccessRequestsResponse{}
+	conv9, err := convertSlice(w.Responses, CreateAccessRequestResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsResponse.Responses", err)
+	}
+	out.Responses = conv9
+	return out, nil
+}
+
+// BatchCreateAccessRequestsResponseFromSDK converts the sdk-go type to the mirror.
+func BatchCreateAccessRequestsResponseFromSDK(v *sdk.BatchCreateAccessRequestsResponse) (*BatchCreateAccessRequestsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &BatchCreateAccessRequestsResponse{}
+	conv10, err := convertSlice(v.Responses, CreateAccessRequestResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "BatchCreateAccessRequestsResponse.Responses", err)
+	}
+	out.Responses = conv10
+	return out, nil
+}
+
+// CreateAccessRequestToSDK converts the mirror to the sdk-go type.
+func CreateAccessRequestToSDK(w *CreateAccessRequest) (*sdk.CreateAccessRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccessRequest{}
+	conv11, err := PrincipalToSDK(w.BehalfOf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.BehalfOf", err)
+	}
+	out.BehalfOf = conv11
+	out.Comment = w.Comment
+	conv12, err := convertSlice(w.SecurablePermissions, SecurablePermissionsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.SecurablePermissions", err)
+	}
+	out.SecurablePermissions = conv12
+	return out, nil
+}
+
+// CreateAccessRequestFromSDK converts the sdk-go type to the mirror.
+func CreateAccessRequestFromSDK(v *sdk.CreateAccessRequest) (*CreateAccessRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccessRequest{}
+	conv13, err := PrincipalFromSDK(v.BehalfOf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.BehalfOf", err)
+	}
+	out.BehalfOf = conv13
+	out.Comment = v.Comment
+	conv14, err := convertSlice(v.SecurablePermissions, SecurablePermissionsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequest.SecurablePermissions", err)
+	}
+	out.SecurablePermissions = conv14
+	return out, nil
+}
+
+// CreateAccessRequestResponseToSDK converts the mirror to the sdk-go type.
+func CreateAccessRequestResponseToSDK(w *CreateAccessRequestResponse) (*sdk.CreateAccessRequestResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateAccessRequestResponse{}
+	conv15, err := PrincipalToSDK(w.BehalfOf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.BehalfOf", err)
+	}
+	out.BehalfOf = conv15
+	conv16, err := convertSlice(w.RequestDestinations, AccessRequestDestinationsToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.RequestDestinations", err)
+	}
+	out.RequestDestinations = conv16
+	return out, nil
+}
+
+// CreateAccessRequestResponseFromSDK converts the sdk-go type to the mirror.
+func CreateAccessRequestResponseFromSDK(v *sdk.CreateAccessRequestResponse) (*CreateAccessRequestResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateAccessRequestResponse{}
+	conv17, err := PrincipalFromSDK(v.BehalfOf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.BehalfOf", err)
+	}
+	out.BehalfOf = conv17
+	conv18, err := convertSlice(v.RequestDestinations, AccessRequestDestinationsFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateAccessRequestResponse.RequestDestinations", err)
+	}
+	out.RequestDestinations = conv18
+	return out, nil
+}
+
+// NotificationDestinationToSDK converts the mirror to the sdk-go type.
+func NotificationDestinationToSDK(w *NotificationDestination) (*sdk.NotificationDestination, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.NotificationDestination{}
+	out.DestinationId = w.DestinationId
+	out.DestinationType = w.DestinationType
+	out.SpecialDestination = w.SpecialDestination
+	return out, nil
+}
+
+// NotificationDestinationFromSDK converts the sdk-go type to the mirror.
+func NotificationDestinationFromSDK(v *sdk.NotificationDestination) (*NotificationDestination, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &NotificationDestination{}
+	out.DestinationId = v.DestinationId
+	out.DestinationType = v.DestinationType
+	out.SpecialDestination = v.SpecialDestination
+	return out, nil
+}
+
+// PrincipalToSDK converts the mirror to the sdk-go type.
+func PrincipalToSDK(w *Principal) (*sdk.Principal, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Principal{}
+	out.Id = w.Id
+	out.PrincipalType = w.PrincipalType
+	return out, nil
+}
+
+// PrincipalFromSDK converts the sdk-go type to the mirror.
+func PrincipalFromSDK(v *sdk.Principal) (*Principal, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Principal{}
+	out.Id = v.Id
+	out.PrincipalType = v.PrincipalType
+	return out, nil
+}
+
+// SecurableToSDK converts the mirror to the sdk-go type.
+func SecurableToSDK(w *Securable) (*sdk.Securable, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Securable{}
+	out.Type = w.Type
+	out.FullName = w.FullName
+	out.ProviderShare = w.ProviderShare
+	return out, nil
+}
+
+// SecurableFromSDK converts the sdk-go type to the mirror.
+func SecurableFromSDK(v *sdk.Securable) (*Securable, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Securable{}
+	out.Type = v.Type
+	out.FullName = v.FullName
+	out.ProviderShare = v.ProviderShare
+	return out, nil
+}
+
+// SecurablePermissionsToSDK converts the mirror to the sdk-go type.
+func SecurablePermissionsToSDK(w *SecurablePermissions) (*sdk.SecurablePermissions, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SecurablePermissions{}
+	conv19, err := SecurableToSDK(w.Securable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SecurablePermissions.Securable", err)
+	}
+	out.Securable = conv19
+	out.Permissions = w.Permissions
+	return out, nil
+}
+
+// SecurablePermissionsFromSDK converts the sdk-go type to the mirror.
+func SecurablePermissionsFromSDK(v *sdk.SecurablePermissions) (*SecurablePermissions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SecurablePermissions{}
+	conv20, err := SecurableFromSDK(v.Securable)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SecurablePermissions.Securable", err)
+	}
+	out.Securable = conv20
+	out.Permissions = v.Permissions
+	return out, nil
+}
+
+// UpdateAccessRequestDestinationsRequestToSDK converts the mirror to the sdk-go type.
+func UpdateAccessRequestDestinationsRequestToSDK(w *UpdateAccessRequestDestinationsRequest) (*sdk.UpdateAccessRequestDestinationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateAccessRequestDestinationsRequest{}
+	conv21, err := AccessRequestDestinationsToSDK(w.AccessRequestDestinations)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccessRequestDestinationsRequest.AccessRequestDestinations", err)
+	}
+	out.AccessRequestDestinations = conv21
+	mask22, err := fieldMaskFromString[sdk.AccessRequestDestinations](w.UpdateMask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateAccessRequestDestinationsRequest.UpdateMask", err)
+	}
+	out.UpdateMask = mask22
+	return out, nil
+}
+
+// UpdateAccessRequestDestinationsRequestFromSDK converts the sdk-go type to the mirror.
 func UpdateAccessRequestDestinationsRequestFromSDK(v *sdk.UpdateAccessRequestDestinationsRequest) (*UpdateAccessRequestDestinationsRequest, error) {
 	if v == nil {
 		return nil, nil
 	}
-	accessRequestDestinationsWireValue, err := AccessRequestDestinationsFromSDK(v.AccessRequestDestinations)
+	out := &UpdateAccessRequestDestinationsRequest{}
+	conv23, err := AccessRequestDestinationsFromSDK(v.AccessRequestDestinations)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateAccessRequestDestinationsRequest.AccessRequestDestinations", err)
 	}
-	return &UpdateAccessRequestDestinationsRequest{
-		AccessRequestDestinations: accessRequestDestinationsWireValue,
-		UpdateMask:                fieldMaskToWire(v.UpdateMask),
-	}, nil
+	out.AccessRequestDestinations = conv23
+	out.UpdateMask = fieldMaskToString(v.UpdateMask)
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
@@ -404,4 +512,23 @@ func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {
 		out[i] = *converted
 	}
 	return out, nil
+}
+
+func fieldMaskToString[T any](mask *types.FieldMask[T]) *string {
+	if mask == nil {
+		return nil
+	}
+	value := mask.String()
+	return &value
+}
+
+func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
+	if s == nil {
+		return nil, nil
+	}
+	var paths []string
+	if *s != "" {
+		paths = strings.Split(*s, ",")
+	}
+	return types.NewFieldMask[T](paths...)
 }

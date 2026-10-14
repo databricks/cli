@@ -67,22 +67,6 @@ const (
 	RegistryWebhookStatus_TestMode                            = sdk.RegistryWebhookStatus_TestMode
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 // For activities, this contains the activity recorded for the action. For
 // comments, this contains the comment details. For transition requests, this
 // contains the transition request details..
@@ -118,32 +102,6 @@ type Activity struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func ActivityToSDK(w *Activity) (*sdk.Activity, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Activity.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Activity.LastUpdatedTimestamp", err)
-	}
-	return &sdk.Activity{
-		CreationTimestamp:    creationTimestampPublicValue,
-		UserId:               w.UserId,
-		ActivityType:         w.ActivityType,
-		Comment:              w.Comment,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		FromStage:            w.FromStage,
-		ToStage:              w.ToStage,
-		SystemComment:        w.SystemComment,
-		AvailableActions:     w.AvailableActions,
-		Id:                   w.Id,
-	}, nil
-}
-
 // Details required to identify and approve a model version stage transition
 // request..
 type ApproveTransitionRequest struct {
@@ -161,35 +119,9 @@ type ApproveTransitionRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func ApproveTransitionRequestFromSDK(v *sdk.ApproveTransitionRequest) (*ApproveTransitionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ApproveTransitionRequest{
-		Name:                    v.Name,
-		Version:                 v.Version,
-		Stage:                   v.Stage,
-		ArchiveExistingVersions: v.ArchiveExistingVersions,
-		Comment:                 v.Comment,
-	}, nil
-}
-
 type ApproveTransitionResponse struct {
 	// New activity generated as a result of this operation.
 	Activity *Activity `json:"activity,omitempty"`
-}
-
-func ApproveTransitionResponseToSDK(w *ApproveTransitionResponse) (*sdk.ApproveTransitionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	activityPublicValue, err := ActivityToSDK(w.Activity)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ApproveTransitionResponse.Activity", err)
-	}
-	return &sdk.ApproveTransitionResponse{
-		Activity: activityPublicValue,
-	}, nil
 }
 
 // For activities, this contains the activity recorded for the action. For
@@ -227,32 +159,6 @@ type CommentObject struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func CommentObjectToSDK(w *CommentObject) (*sdk.CommentObject, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CommentObject.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CommentObject.LastUpdatedTimestamp", err)
-	}
-	return &sdk.CommentObject{
-		CreationTimestamp:    creationTimestampPublicValue,
-		UserId:               w.UserId,
-		ActivityType:         w.ActivityType,
-		Comment:              w.Comment,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		FromStage:            w.FromStage,
-		ToStage:              w.ToStage,
-		SystemComment:        w.SystemComment,
-		AvailableActions:     w.AvailableActions,
-		Id:                   w.Id,
-	}, nil
-}
-
 // Details required to create a comment on a model version..
 type CreateCommentRequest struct {
 	// Name of the model.
@@ -263,33 +169,9 @@ type CreateCommentRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func CreateCommentRequestFromSDK(v *sdk.CreateCommentRequest) (*CreateCommentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateCommentRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Comment: v.Comment,
-	}, nil
-}
-
 type CreateCommentResponse struct {
 	// New comment object
 	Comment *CommentObject `json:"comment,omitempty"`
-}
-
-func CreateCommentResponseToSDK(w *CreateCommentResponse) (*sdk.CreateCommentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	commentPublicValue, err := CommentObjectToSDK(w.Comment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateCommentResponse.Comment", err)
-	}
-	return &sdk.CreateCommentResponse{
-		Comment: commentPublicValue,
-	}, nil
 }
 
 type CreateModelVersionRequest struct {
@@ -309,40 +191,9 @@ type CreateModelVersionRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func CreateModelVersionRequestFromSDK(v *sdk.CreateModelVersionRequest) (*CreateModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := convertSlice(v.Tags, ModelVersionTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateModelVersionRequest.Tags", err)
-	}
-	return &CreateModelVersionRequest{
-		Name:        v.Name,
-		Source:      v.Source,
-		RunId:       v.RunId,
-		Tags:        tagsWireValue,
-		RunLink:     v.RunLink,
-		Description: v.Description,
-	}, nil
-}
-
 type CreateModelVersionResponse struct {
 	// Return new version number generated for this model in registry.
 	ModelVersion *ModelVersion `json:"model_version,omitempty"`
-}
-
-func CreateModelVersionResponseToSDK(w *CreateModelVersionResponse) (*sdk.CreateModelVersionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionPublicValue, err := ModelVersionToSDK(w.ModelVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateModelVersionResponse.ModelVersion", err)
-	}
-	return &sdk.CreateModelVersionResponse{
-		ModelVersion: modelVersionPublicValue,
-	}, nil
 }
 
 type CreateRegisteredModelRequest struct {
@@ -354,36 +205,8 @@ type CreateRegisteredModelRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func CreateRegisteredModelRequestFromSDK(v *sdk.CreateRegisteredModelRequest) (*CreateRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tagsWireValue, err := convertSlice(v.Tags, RegisteredModelTagFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Tags", err)
-	}
-	return &CreateRegisteredModelRequest{
-		Name:        v.Name,
-		Tags:        tagsWireValue,
-		Description: v.Description,
-	}, nil
-}
-
 type CreateRegisteredModelResponse struct {
 	RegisteredModel *RegisteredModel `json:"registered_model,omitempty"`
-}
-
-func CreateRegisteredModelResponseToSDK(w *CreateRegisteredModelResponse) (*sdk.CreateRegisteredModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelPublicValue, err := RegisteredModelToSDK(w.RegisteredModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelResponse.RegisteredModel", err)
-	}
-	return &sdk.CreateRegisteredModelResponse{
-		RegisteredModel: registeredModelPublicValue,
-	}, nil
 }
 
 // Details required to create a registry webhook..
@@ -424,43 +247,8 @@ type CreateRegistryWebhookRequest struct {
 	JobSpec *JobSpec `json:"job_spec,omitempty"`
 }
 
-func CreateRegistryWebhookRequestFromSDK(v *sdk.CreateRegistryWebhookRequest) (*CreateRegistryWebhookRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	httpUrlSpecWireValue, err := HttpUrlSpecFromSDK(v.HttpUrlSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.HttpUrlSpec", err)
-	}
-	jobSpecWireValue, err := JobSpecFromSDK(v.JobSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.JobSpec", err)
-	}
-	return &CreateRegistryWebhookRequest{
-		ModelName:   v.ModelName,
-		Events:      v.Events,
-		Description: v.Description,
-		Status:      v.Status,
-		HttpUrlSpec: httpUrlSpecWireValue,
-		JobSpec:     jobSpecWireValue,
-	}, nil
-}
-
 type CreateRegistryWebhookResponse struct {
 	Webhook *RegistryWebhook `json:"webhook,omitempty"`
-}
-
-func CreateRegistryWebhookResponseToSDK(w *CreateRegistryWebhookResponse) (*sdk.CreateRegistryWebhookResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	webhookPublicValue, err := RegistryWebhookToSDK(w.Webhook)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookResponse.Webhook", err)
-	}
-	return &sdk.CreateRegistryWebhookResponse{
-		Webhook: webhookPublicValue,
-	}, nil
 }
 
 // Details required to create a model version stage transition request..
@@ -477,34 +265,9 @@ type CreateTransitionRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func CreateTransitionRequestFromSDK(v *sdk.CreateTransitionRequest) (*CreateTransitionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &CreateTransitionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Stage:   v.Stage,
-		Comment: v.Comment,
-	}, nil
-}
-
 type CreateTransitionResponse struct {
 	// New activity generated for stage transition request.
 	Request *TransitionRequest `json:"request,omitempty"`
-}
-
-func CreateTransitionResponseToSDK(w *CreateTransitionResponse) (*sdk.CreateTransitionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestPublicValue, err := TransitionRequestToSDK(w.Request)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateTransitionResponse.Request", err)
-	}
-	return &sdk.CreateTransitionResponse{
-		Request: requestPublicValue,
-	}, nil
 }
 
 type DeleteCommentRequest struct {
@@ -512,30 +275,11 @@ type DeleteCommentRequest struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func DeleteCommentRequestFromSDK(v *sdk.DeleteCommentRequest) (*DeleteCommentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteCommentRequest{
-		Id: v.Id,
-	}, nil
-}
-
 type DeleteModelVersionRequest struct {
 	// Name of the registered model
 	Name *string `json:"name,omitempty"`
 	// Model version number
 	Version *string `json:"version,omitempty"`
-}
-
-func DeleteModelVersionRequestFromSDK(v *sdk.DeleteModelVersionRequest) (*DeleteModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteModelVersionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-	}, nil
 }
 
 type DeleteModelVersionTagRequest struct {
@@ -548,29 +292,9 @@ type DeleteModelVersionTagRequest struct {
 	Key *string `json:"key,omitempty"`
 }
 
-func DeleteModelVersionTagRequestFromSDK(v *sdk.DeleteModelVersionTagRequest) (*DeleteModelVersionTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteModelVersionTagRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Key:     v.Key,
-	}, nil
-}
-
 type DeleteRegisteredModelRequest struct {
 	// Registered model unique name identifier.
 	Name *string `json:"name,omitempty"`
-}
-
-func DeleteRegisteredModelRequestFromSDK(v *sdk.DeleteRegisteredModelRequest) (*DeleteRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRegisteredModelRequest{
-		Name: v.Name,
-	}, nil
 }
 
 type DeleteRegisteredModelTagRequest struct {
@@ -581,30 +305,11 @@ type DeleteRegisteredModelTagRequest struct {
 	Key *string `json:"key,omitempty"`
 }
 
-func DeleteRegisteredModelTagRequestFromSDK(v *sdk.DeleteRegisteredModelTagRequest) (*DeleteRegisteredModelTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRegisteredModelTagRequest{
-		Name: v.Name,
-		Key:  v.Key,
-	}, nil
-}
-
 // .. note:: Experimental: This entity may change or be removed in a future
 // release without warning..
 type DeleteRegistryWebhookRequest struct {
 	// Webhook ID required to delete a registry webhook.
 	Id *string `json:"id,omitempty"`
-}
-
-func DeleteRegistryWebhookRequestFromSDK(v *sdk.DeleteRegistryWebhookRequest) (*DeleteRegistryWebhookRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteRegistryWebhookRequest{
-		Id: v.Id,
-	}, nil
 }
 
 type DeleteTransitionRequest struct {
@@ -624,53 +329,14 @@ type DeleteTransitionRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func DeleteTransitionRequestFromSDK(v *sdk.DeleteTransitionRequest) (*DeleteTransitionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DeleteTransitionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Stage:   v.Stage,
-		Creator: v.Creator,
-		Comment: v.Comment,
-	}, nil
-}
-
 type DeleteTransitionResponse struct {
 	// New activity generated as a result of this operation.
 	Activity *Activity `json:"activity,omitempty"`
 }
 
-func DeleteTransitionResponseToSDK(w *DeleteTransitionResponse) (*sdk.DeleteTransitionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	activityPublicValue, err := ActivityToSDK(w.Activity)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "DeleteTransitionResponse.Activity", err)
-	}
-	return &sdk.DeleteTransitionResponse{
-		Activity: activityPublicValue,
-	}, nil
-}
-
 // Feature list wrap all the features for a model version.
 type FeatureList struct {
 	Features []LinkedFeature `json:"features,omitempty"`
-}
-
-func FeatureListToSDK(w *FeatureList) (*sdk.FeatureList, error) {
-	if w == nil {
-		return nil, nil
-	}
-	featuresPublicValue, err := convertSlice(w.Features, LinkedFeatureToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "FeatureList.Features", err)
-	}
-	return &sdk.FeatureList{
-		Features: featuresPublicValue,
-	}, nil
 }
 
 type GetLatestVersionsResponse struct {
@@ -680,19 +346,6 @@ type GetLatestVersionsResponse struct {
 	ModelVersions []ModelVersion `json:"model_versions,omitempty"`
 }
 
-func GetLatestVersionsResponseToSDK(w *GetLatestVersionsResponse) (*sdk.GetLatestVersionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionsPublicValue, err := convertSlice(w.ModelVersions, ModelVersionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetLatestVersionsResponse.ModelVersions", err)
-	}
-	return &sdk.GetLatestVersionsResponse{
-		ModelVersions: modelVersionsPublicValue,
-	}, nil
-}
-
 type GetModelVersionDownloadUriRequest struct {
 	// Name of the registered model
 	Name *string `json:"name,omitempty"`
@@ -700,28 +353,9 @@ type GetModelVersionDownloadUriRequest struct {
 	Version *string `json:"version,omitempty"`
 }
 
-func GetModelVersionDownloadUriRequestFromSDK(v *sdk.GetModelVersionDownloadUriRequest) (*GetModelVersionDownloadUriRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetModelVersionDownloadUriRequest{
-		Name:    v.Name,
-		Version: v.Version,
-	}, nil
-}
-
 type GetModelVersionDownloadUriResponse struct {
 	// URI corresponding to where artifacts for this model version are stored.
 	ArtifactUri *string `json:"artifact_uri,omitempty"`
-}
-
-func GetModelVersionDownloadUriResponseToSDK(w *GetModelVersionDownloadUriResponse) (*sdk.GetModelVersionDownloadUriResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GetModelVersionDownloadUriResponse{
-		ArtifactUri: w.ArtifactUri,
-	}, nil
 }
 
 type GetModelVersionRequest struct {
@@ -731,31 +365,8 @@ type GetModelVersionRequest struct {
 	Version *string `json:"version,omitempty"`
 }
 
-func GetModelVersionRequestFromSDK(v *sdk.GetModelVersionRequest) (*GetModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetModelVersionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-	}, nil
-}
-
 type GetModelVersionResponse struct {
 	ModelVersion *ModelVersion `json:"model_version,omitempty"`
-}
-
-func GetModelVersionResponseToSDK(w *GetModelVersionResponse) (*sdk.GetModelVersionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionPublicValue, err := ModelVersionToSDK(w.ModelVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetModelVersionResponse.ModelVersion", err)
-	}
-	return &sdk.GetModelVersionResponse{
-		ModelVersion: modelVersionPublicValue,
-	}, nil
 }
 
 type GetRegisteredModelDatabricksRequest struct {
@@ -763,30 +374,8 @@ type GetRegisteredModelDatabricksRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func GetRegisteredModelDatabricksRequestFromSDK(v *sdk.GetRegisteredModelDatabricksRequest) (*GetRegisteredModelDatabricksRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GetRegisteredModelDatabricksRequest{
-		Name: v.Name,
-	}, nil
-}
-
 type GetRegisteredModelDatabricksResponse struct {
 	RegisteredModelDatabricks *RegisteredModelDatabricks `json:"registered_model_databricks,omitempty"`
-}
-
-func GetRegisteredModelDatabricksResponseToSDK(w *GetRegisteredModelDatabricksResponse) (*sdk.GetRegisteredModelDatabricksResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelDatabricksPublicValue, err := RegisteredModelDatabricksToSDK(w.RegisteredModelDatabricks)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetRegisteredModelDatabricksResponse.RegisteredModelDatabricks", err)
-	}
-	return &sdk.GetRegisteredModelDatabricksResponse{
-		RegisteredModelDatabricks: registeredModelDatabricksPublicValue,
-	}, nil
 }
 
 type HttpUrlSpec struct {
@@ -810,30 +399,6 @@ type HttpUrlSpec struct {
 	Authorization *string `json:"authorization,omitempty"`
 }
 
-func HttpUrlSpecFromSDK(v *sdk.HttpUrlSpec) (*HttpUrlSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &HttpUrlSpec{
-		Url:                   v.Url,
-		EnableSslVerification: v.EnableSslVerification,
-		Secret:                v.Secret,
-		Authorization:         v.Authorization,
-	}, nil
-}
-
-func HttpUrlSpecToSDK(w *HttpUrlSpec) (*sdk.HttpUrlSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.HttpUrlSpec{
-		Url:                   w.Url,
-		EnableSslVerification: w.EnableSslVerification,
-		Secret:                w.Secret,
-		Authorization:         w.Authorization,
-	}, nil
-}
-
 type JobSpec struct {
 	// ID of the job that the webhook runs.
 	JobId *string `json:"job_id,omitempty"`
@@ -843,28 +408,6 @@ type JobSpec struct {
 	WorkspaceUrl *string `json:"workspace_url,omitempty"`
 	// The personal access token used to authorize webhook's job runs.
 	AccessToken *string `json:"access_token,omitempty"`
-}
-
-func JobSpecFromSDK(v *sdk.JobSpec) (*JobSpec, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &JobSpec{
-		JobId:        v.JobId,
-		WorkspaceUrl: v.WorkspaceUrl,
-		AccessToken:  v.AccessToken,
-	}, nil
-}
-
-func JobSpecToSDK(w *JobSpec) (*sdk.JobSpec, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.JobSpec{
-		JobId:        w.JobId,
-		WorkspaceUrl: w.WorkspaceUrl,
-		AccessToken:  w.AccessToken,
-	}, nil
 }
 
 // Feature for model version..
@@ -877,32 +420,11 @@ type LinkedFeature struct {
 	FeatureTableId *string `json:"feature_table_id,omitempty"`
 }
 
-func LinkedFeatureToSDK(w *LinkedFeature) (*sdk.LinkedFeature, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.LinkedFeature{
-		FeatureTableName: w.FeatureTableName,
-		FeatureName:      w.FeatureName,
-		FeatureTableId:   w.FeatureTableId,
-	}, nil
-}
-
 type ListLatestVersionsRequest struct {
 	// Registered model unique name identifier.
 	Name *string `json:"name,omitempty"`
 	// List of stages.
 	Stages []string `json:"stages,omitempty"`
-}
-
-func ListLatestVersionsRequestFromSDK(v *sdk.ListLatestVersionsRequest) (*ListLatestVersionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListLatestVersionsRequest{
-		Name:   v.Name,
-		Stages: v.Stages,
-	}, nil
 }
 
 type ListRegisteredModelsRequest struct {
@@ -912,38 +434,10 @@ type ListRegisteredModelsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func ListRegisteredModelsRequestFromSDK(v *sdk.ListRegisteredModelsRequest) (*ListRegisteredModelsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsRequest.MaxResults", err)
-	}
-	return &ListRegisteredModelsRequest{
-		MaxResults: maxResultsWireValue,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type ListRegisteredModelsResponse struct {
 	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 	// Pagination token to request next page of models for the same query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListRegisteredModelsResponseToSDK(w *ListRegisteredModelsResponse) (*sdk.ListRegisteredModelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelsPublicValue, err := convertSlice(w.RegisteredModels, RegisteredModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
-	}
-	return &sdk.ListRegisteredModelsResponse{
-		RegisteredModels: registeredModelsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type ListRegistryWebhooksRequest struct {
@@ -976,41 +470,11 @@ type ListRegistryWebhooksRequest struct {
 	MaxResults *int64  `json:"max_results,omitempty"`
 }
 
-func ListRegistryWebhooksRequestFromSDK(v *sdk.ListRegistryWebhooksRequest) (*ListRegistryWebhooksRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegistryWebhooksRequest.MaxResults", err)
-	}
-	return &ListRegistryWebhooksRequest{
-		ModelName:  v.ModelName,
-		Events:     v.Events,
-		PageToken:  v.PageToken,
-		MaxResults: maxResultsWireValue,
-	}, nil
-}
-
 type ListRegistryWebhooksResponse struct {
 	// Array of registry webhooks.
 	Webhooks []RegistryWebhook `json:"webhooks,omitempty"`
 	// Token that can be used to retrieve the next page of artifact results
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func ListRegistryWebhooksResponseToSDK(w *ListRegistryWebhooksResponse) (*sdk.ListRegistryWebhooksResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	webhooksPublicValue, err := convertSlice(w.Webhooks, RegistryWebhookToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListRegistryWebhooksResponse.Webhooks", err)
-	}
-	return &sdk.ListRegistryWebhooksResponse{
-		Webhooks:      webhooksPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type ListTransitionRequest struct {
@@ -1020,32 +484,9 @@ type ListTransitionRequest struct {
 	Version *string `json:"version,omitempty"`
 }
 
-func ListTransitionRequestFromSDK(v *sdk.ListTransitionRequest) (*ListTransitionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ListTransitionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-	}, nil
-}
-
 type ListTransitionResponse struct {
 	// Array of open transition requests.
 	Requests []Activity `json:"requests,omitempty"`
-}
-
-func ListTransitionResponseToSDK(w *ListTransitionResponse) (*sdk.ListTransitionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	requestsPublicValue, err := convertSlice(w.Requests, ActivityToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListTransitionResponse.Requests", err)
-	}
-	return &sdk.ListTransitionResponse{
-		Requests: requestsPublicValue,
-	}, nil
 }
 
 type ModelVersion struct {
@@ -1077,39 +518,6 @@ type ModelVersion struct {
 	Tags []ModelVersionTag `json:"tags,omitempty"`
 	// Run Link: Direct link to the run that generated this version
 	RunLink *string `json:"run_link,omitempty"`
-}
-
-func ModelVersionToSDK(w *ModelVersion) (*sdk.ModelVersion, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersion.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersion.LastUpdatedTimestamp", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, ModelVersionTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersion.Tags", err)
-	}
-	return &sdk.ModelVersion{
-		Name:                 w.Name,
-		Version:              w.Version,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		UserId:               w.UserId,
-		CurrentStage:         w.CurrentStage,
-		Description:          w.Description,
-		Source:               w.Source,
-		RunId:                w.RunId,
-		Status:               w.Status,
-		StatusMessage:        w.StatusMessage,
-		Tags:                 tagsPublicValue,
-		RunLink:              w.RunLink,
-	}, nil
 }
 
 type ModelVersionDatabricks struct {
@@ -1153,76 +561,11 @@ type ModelVersionDatabricks struct {
 	FeatureList *FeatureList `json:"feature_list,omitempty"`
 }
 
-func ModelVersionDatabricksToSDK(w *ModelVersionDatabricks) (*sdk.ModelVersionDatabricks, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.LastUpdatedTimestamp", err)
-	}
-	openRequestsPublicValue, err := convertSlice(w.OpenRequests, ActivityToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.OpenRequests", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, ModelVersionTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.Tags", err)
-	}
-	featureListPublicValue, err := FeatureListToSDK(w.FeatureList)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.FeatureList", err)
-	}
-	return &sdk.ModelVersionDatabricks{
-		Name:                    w.Name,
-		Version:                 w.Version,
-		CreationTimestamp:       creationTimestampPublicValue,
-		LastUpdatedTimestamp:    lastUpdatedTimestampPublicValue,
-		UserId:                  w.UserId,
-		CurrentStage:            w.CurrentStage,
-		Description:             w.Description,
-		Source:                  w.Source,
-		RunId:                   w.RunId,
-		Status:                  w.Status,
-		StatusMessage:           w.StatusMessage,
-		OpenRequests:            openRequestsPublicValue,
-		PermissionLevel:         w.PermissionLevel,
-		Tags:                    tagsPublicValue,
-		RunLink:                 w.RunLink,
-		EmailSubscriptionStatus: w.EmailSubscriptionStatus,
-		FeatureList:             featureListPublicValue,
-	}, nil
-}
-
 type ModelVersionTag struct {
 	// The tag key.
 	Key *string `json:"key,omitempty"`
 	// The tag value.
 	Value *string `json:"value,omitempty"`
-}
-
-func ModelVersionTagFromSDK(v *sdk.ModelVersionTag) (*ModelVersionTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ModelVersionTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func ModelVersionTagToSDK(w *ModelVersionTag) (*sdk.ModelVersionTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ModelVersionTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type RegisteredModel struct {
@@ -1242,37 +585,6 @@ type RegisteredModel struct {
 	LatestVersions []ModelVersion `json:"latest_versions,omitempty"`
 	// Tags: Additional metadata key-value pairs for this `registered_model`.
 	Tags []RegisteredModelTag `json:"tags,omitempty"`
-}
-
-func RegisteredModelToSDK(w *RegisteredModel) (*sdk.RegisteredModel, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModel.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModel.LastUpdatedTimestamp", err)
-	}
-	latestVersionsPublicValue, err := convertSlice(w.LatestVersions, ModelVersionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModel.LatestVersions", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, RegisteredModelTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModel.Tags", err)
-	}
-	return &sdk.RegisteredModel{
-		Name:                 w.Name,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		UserId:               w.UserId,
-		Description:          w.Description,
-		LatestVersions:       latestVersionsPublicValue,
-		Tags:                 tagsPublicValue,
-	}, nil
 }
 
 type RegisteredModelDatabricks struct {
@@ -1296,65 +608,12 @@ type RegisteredModelDatabricks struct {
 	Tags []RegisteredModelTag `json:"tags,omitempty"`
 }
 
-func RegisteredModelDatabricksToSDK(w *RegisteredModelDatabricks) (*sdk.RegisteredModelDatabricks, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.LastUpdatedTimestamp", err)
-	}
-	latestVersionsPublicValue, err := convertSlice(w.LatestVersions, ModelVersionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.LatestVersions", err)
-	}
-	tagsPublicValue, err := convertSlice(w.Tags, RegisteredModelTagToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.Tags", err)
-	}
-	return &sdk.RegisteredModelDatabricks{
-		Name:                 w.Name,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		UserId:               w.UserId,
-		Description:          w.Description,
-		LatestVersions:       latestVersionsPublicValue,
-		Id:                   w.Id,
-		PermissionLevel:      w.PermissionLevel,
-		Tags:                 tagsPublicValue,
-	}, nil
-}
-
 // Tag for a registered model.
 type RegisteredModelTag struct {
 	// The tag key.
 	Key *string `json:"key,omitempty"`
 	// The tag value.
 	Value *string `json:"value,omitempty"`
-}
-
-func RegisteredModelTagFromSDK(v *sdk.RegisteredModelTag) (*RegisteredModelTag, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RegisteredModelTag{
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
-func RegisteredModelTagToSDK(w *RegisteredModelTag) (*sdk.RegisteredModelTag, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.RegisteredModelTag{
-		Key:   w.Key,
-		Value: w.Value,
-	}, nil
 }
 
 type RegistryWebhook struct {
@@ -1391,39 +650,6 @@ type RegistryWebhook struct {
 	ModelName *string `json:"model_name,omitempty"`
 }
 
-func RegistryWebhookToSDK(w *RegistryWebhook) (*sdk.RegistryWebhook, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.LastUpdatedTimestamp", err)
-	}
-	httpUrlSpecPublicValue, err := HttpUrlSpecToSDK(w.HttpUrlSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.HttpUrlSpec", err)
-	}
-	jobSpecPublicValue, err := JobSpecToSDK(w.JobSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.JobSpec", err)
-	}
-	return &sdk.RegistryWebhook{
-		Id:                   w.Id,
-		Events:               w.Events,
-		CreationTimestamp:    creationTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		Description:          w.Description,
-		Status:               w.Status,
-		HttpUrlSpec:          httpUrlSpecPublicValue,
-		JobSpec:              jobSpecPublicValue,
-		ModelName:            w.ModelName,
-	}, nil
-}
-
 // Details required to identify and reject a model version stage transition
 // request..
 type RejectTransitionRequest struct {
@@ -1439,34 +665,9 @@ type RejectTransitionRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func RejectTransitionRequestFromSDK(v *sdk.RejectTransitionRequest) (*RejectTransitionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RejectTransitionRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Stage:   v.Stage,
-		Comment: v.Comment,
-	}, nil
-}
-
 type RejectTransitionResponse struct {
 	// New activity generated as a result of this operation.
 	Activity *Activity `json:"activity,omitempty"`
-}
-
-func RejectTransitionResponseToSDK(w *RejectTransitionResponse) (*sdk.RejectTransitionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	activityPublicValue, err := ActivityToSDK(w.Activity)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RejectTransitionResponse.Activity", err)
-	}
-	return &sdk.RejectTransitionResponse{
-		Activity: activityPublicValue,
-	}, nil
 }
 
 type RenameRegisteredModelRequest struct {
@@ -1476,31 +677,8 @@ type RenameRegisteredModelRequest struct {
 	NewName *string `json:"new_name,omitempty"`
 }
 
-func RenameRegisteredModelRequestFromSDK(v *sdk.RenameRegisteredModelRequest) (*RenameRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &RenameRegisteredModelRequest{
-		Name:    v.Name,
-		NewName: v.NewName,
-	}, nil
-}
-
 type RenameRegisteredModelResponse struct {
 	RegisteredModel *RegisteredModel `json:"registered_model,omitempty"`
-}
-
-func RenameRegisteredModelResponseToSDK(w *RenameRegisteredModelResponse) (*sdk.RenameRegisteredModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelPublicValue, err := RegisteredModelToSDK(w.RegisteredModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "RenameRegisteredModelResponse.RegisteredModel", err)
-	}
-	return &sdk.RenameRegisteredModelResponse{
-		RegisteredModel: registeredModelPublicValue,
-	}, nil
 }
 
 type SearchModelVersionsRequest struct {
@@ -1518,41 +696,11 @@ type SearchModelVersionsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func SearchModelVersionsRequestFromSDK(v *sdk.SearchModelVersionsRequest) (*SearchModelVersionsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchModelVersionsRequest.MaxResults", err)
-	}
-	return &SearchModelVersionsRequest{
-		Filter:     v.Filter,
-		MaxResults: maxResultsWireValue,
-		OrderBy:    v.OrderBy,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type SearchModelVersionsResponse struct {
 	// Models that match the search criteria
 	ModelVersions []ModelVersion `json:"model_versions,omitempty"`
 	// Pagination token to request next page of models for the same search query.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func SearchModelVersionsResponseToSDK(w *SearchModelVersionsResponse) (*sdk.SearchModelVersionsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionsPublicValue, err := convertSlice(w.ModelVersions, ModelVersionToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchModelVersionsResponse.ModelVersions", err)
-	}
-	return &sdk.SearchModelVersionsResponse{
-		ModelVersions: modelVersionsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type SearchRegisteredModelsRequest struct {
@@ -1570,41 +718,11 @@ type SearchRegisteredModelsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func SearchRegisteredModelsRequestFromSDK(v *sdk.SearchRegisteredModelsRequest) (*SearchRegisteredModelsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	maxResultsWireValue, err := int64ToWire(v.MaxResults)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchRegisteredModelsRequest.MaxResults", err)
-	}
-	return &SearchRegisteredModelsRequest{
-		Filter:     v.Filter,
-		MaxResults: maxResultsWireValue,
-		OrderBy:    v.OrderBy,
-		PageToken:  v.PageToken,
-	}, nil
-}
-
 type SearchRegisteredModelsResponse struct {
 	// Registered Models that match the search criteria.
 	RegisteredModels []RegisteredModel `json:"registered_models,omitempty"`
 	// Pagination token to request the next page of models.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func SearchRegisteredModelsResponseToSDK(w *SearchRegisteredModelsResponse) (*sdk.SearchRegisteredModelsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelsPublicValue, err := convertSlice(w.RegisteredModels, RegisteredModelToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "SearchRegisteredModelsResponse.RegisteredModels", err)
-	}
-	return &sdk.SearchRegisteredModelsResponse{
-		RegisteredModels: registeredModelsPublicValue,
-		NextPageToken:    w.NextPageToken,
-	}, nil
 }
 
 type SetModelVersionTagRequest struct {
@@ -1623,18 +741,6 @@ type SetModelVersionTagRequest struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func SetModelVersionTagRequestFromSDK(v *sdk.SetModelVersionTagRequest) (*SetModelVersionTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SetModelVersionTagRequest{
-		Name:    v.Name,
-		Version: v.Version,
-		Key:     v.Key,
-		Value:   v.Value,
-	}, nil
-}
-
 type SetRegisteredModelTagRequest struct {
 	// Unique name of the model.
 	Name *string `json:"name,omitempty"`
@@ -1649,17 +755,6 @@ type SetRegisteredModelTagRequest struct {
 	Value *string `json:"value,omitempty"`
 }
 
-func SetRegisteredModelTagRequestFromSDK(v *sdk.SetRegisteredModelTagRequest) (*SetRegisteredModelTagRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &SetRegisteredModelTagRequest{
-		Name:  v.Name,
-		Key:   v.Key,
-		Value: v.Value,
-	}, nil
-}
-
 // Details required to test a registry webhook..
 type TestRegistryWebhookRequest struct {
 	// Webhook ID
@@ -1670,31 +765,11 @@ type TestRegistryWebhookRequest struct {
 	Event RegistryWebhookEvent `json:"event,omitempty"`
 }
 
-func TestRegistryWebhookRequestFromSDK(v *sdk.TestRegistryWebhookRequest) (*TestRegistryWebhookRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TestRegistryWebhookRequest{
-		Id:    v.Id,
-		Event: v.Event,
-	}, nil
-}
-
 type TestRegistryWebhookResponse struct {
 	// Status code returned by the webhook URL
 	StatusCode *int `json:"status_code,omitempty"`
 	// Body of the response from the webhook URL
 	Body *string `json:"body,omitempty"`
-}
-
-func TestRegistryWebhookResponseToSDK(w *TestRegistryWebhookResponse) (*sdk.TestRegistryWebhookResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TestRegistryWebhookResponse{
-		StatusCode: w.StatusCode,
-		Body:       w.Body,
-	}, nil
 }
 
 // Details required to transition a model version's stage..
@@ -1713,35 +788,9 @@ type TransitionModelVersionStageDatabricksRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func TransitionModelVersionStageDatabricksRequestFromSDK(v *sdk.TransitionModelVersionStageDatabricksRequest) (*TransitionModelVersionStageDatabricksRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &TransitionModelVersionStageDatabricksRequest{
-		Name:                    v.Name,
-		Version:                 v.Version,
-		Stage:                   v.Stage,
-		ArchiveExistingVersions: v.ArchiveExistingVersions,
-		Comment:                 v.Comment,
-	}, nil
-}
-
 type TransitionModelVersionStageDatabricksResponse struct {
 	// Updated model version
 	ModelVersionDatabricks *ModelVersionDatabricks `json:"model_version_databricks,omitempty"`
-}
-
-func TransitionModelVersionStageDatabricksResponseToSDK(w *TransitionModelVersionStageDatabricksResponse) (*sdk.TransitionModelVersionStageDatabricksResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionDatabricksPublicValue, err := ModelVersionDatabricksToSDK(w.ModelVersionDatabricks)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TransitionModelVersionStageDatabricksResponse.ModelVersionDatabricks", err)
-	}
-	return &sdk.TransitionModelVersionStageDatabricksResponse{
-		ModelVersionDatabricks: modelVersionDatabricksPublicValue,
-	}, nil
 }
 
 // For activities, this contains the activity recorded for the action. For
@@ -1779,32 +828,6 @@ type TransitionRequest struct {
 	Id *string `json:"id,omitempty"`
 }
 
-func TransitionRequestToSDK(w *TransitionRequest) (*sdk.TransitionRequest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	creationTimestampPublicValue, err := int64FromWire(w.CreationTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TransitionRequest.CreationTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "TransitionRequest.LastUpdatedTimestamp", err)
-	}
-	return &sdk.TransitionRequest{
-		CreationTimestamp:    creationTimestampPublicValue,
-		UserId:               w.UserId,
-		ActivityType:         w.ActivityType,
-		Comment:              w.Comment,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		FromStage:            w.FromStage,
-		ToStage:              w.ToStage,
-		SystemComment:        w.SystemComment,
-		AvailableActions:     w.AvailableActions,
-		Id:                   w.Id,
-	}, nil
-}
-
 // Details required to edit a comment on a model version..
 type UpdateCommentRequest struct {
 	// Unique identifier of an activity
@@ -1813,32 +836,9 @@ type UpdateCommentRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-func UpdateCommentRequestFromSDK(v *sdk.UpdateCommentRequest) (*UpdateCommentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateCommentRequest{
-		Id:      v.Id,
-		Comment: v.Comment,
-	}, nil
-}
-
 type UpdateCommentResponse struct {
 	// Updated comment object
 	Comment *CommentObject `json:"comment,omitempty"`
-}
-
-func UpdateCommentResponseToSDK(w *UpdateCommentResponse) (*sdk.UpdateCommentResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	commentPublicValue, err := CommentObjectToSDK(w.Comment)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateCommentResponse.Comment", err)
-	}
-	return &sdk.UpdateCommentResponse{
-		Comment: commentPublicValue,
-	}, nil
 }
 
 type UpdateModelVersionRequest struct {
@@ -1850,33 +850,9 @@ type UpdateModelVersionRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func UpdateModelVersionRequestFromSDK(v *sdk.UpdateModelVersionRequest) (*UpdateModelVersionRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateModelVersionRequest{
-		Name:        v.Name,
-		Version:     v.Version,
-		Description: v.Description,
-	}, nil
-}
-
 type UpdateModelVersionResponse struct {
 	// Return new version number generated for this model in registry.
 	ModelVersion *ModelVersion `json:"model_version,omitempty"`
-}
-
-func UpdateModelVersionResponseToSDK(w *UpdateModelVersionResponse) (*sdk.UpdateModelVersionResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	modelVersionPublicValue, err := ModelVersionToSDK(w.ModelVersion)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionResponse.ModelVersion", err)
-	}
-	return &sdk.UpdateModelVersionResponse{
-		ModelVersion: modelVersionPublicValue,
-	}, nil
 }
 
 type UpdateRegisteredModelRequest struct {
@@ -1886,31 +862,8 @@ type UpdateRegisteredModelRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func UpdateRegisteredModelRequestFromSDK(v *sdk.UpdateRegisteredModelRequest) (*UpdateRegisteredModelRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &UpdateRegisteredModelRequest{
-		Name:        v.Name,
-		Description: v.Description,
-	}, nil
-}
-
 type UpdateRegisteredModelResponse struct {
 	RegisteredModel *RegisteredModel `json:"registered_model,omitempty"`
-}
-
-func UpdateRegisteredModelResponseToSDK(w *UpdateRegisteredModelResponse) (*sdk.UpdateRegisteredModelResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	registeredModelPublicValue, err := RegisteredModelToSDK(w.RegisteredModel)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelResponse.RegisteredModel", err)
-	}
-	return &sdk.UpdateRegisteredModelResponse{
-		RegisteredModel: registeredModelPublicValue,
-	}, nil
 }
 
 // Details required to update a registry webhook. Only the fields that need to
@@ -1944,43 +897,2034 @@ type UpdateRegistryWebhookRequest struct {
 	JobSpec     *JobSpec              `json:"job_spec,omitempty"`
 }
 
-func UpdateRegistryWebhookRequestFromSDK(v *sdk.UpdateRegistryWebhookRequest) (*UpdateRegistryWebhookRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	httpUrlSpecWireValue, err := HttpUrlSpecFromSDK(v.HttpUrlSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.HttpUrlSpec", err)
-	}
-	jobSpecWireValue, err := JobSpecFromSDK(v.JobSpec)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.JobSpec", err)
-	}
-	return &UpdateRegistryWebhookRequest{
-		Id:          v.Id,
-		Events:      v.Events,
-		Description: v.Description,
-		Status:      v.Status,
-		HttpUrlSpec: httpUrlSpecWireValue,
-		JobSpec:     jobSpecWireValue,
-	}, nil
-}
-
 type UpdateRegistryWebhookResponse struct {
 	Webhook *RegistryWebhook `json:"webhook,omitempty"`
 }
 
+// ActivityToSDK converts the mirror to the sdk-go type.
+func ActivityToSDK(w *Activity) (*sdk.Activity, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Activity{}
+	out.CreationTimestamp = w.CreationTimestamp
+	out.UserId = w.UserId
+	out.ActivityType = w.ActivityType
+	out.Comment = w.Comment
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.FromStage = w.FromStage
+	out.ToStage = w.ToStage
+	out.SystemComment = w.SystemComment
+	out.AvailableActions = w.AvailableActions
+	out.Id = w.Id
+	return out, nil
+}
+
+// ActivityFromSDK converts the sdk-go type to the mirror.
+func ActivityFromSDK(v *sdk.Activity) (*Activity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Activity{}
+	out.CreationTimestamp = v.CreationTimestamp
+	out.UserId = v.UserId
+	out.ActivityType = v.ActivityType
+	out.Comment = v.Comment
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.FromStage = v.FromStage
+	out.ToStage = v.ToStage
+	out.SystemComment = v.SystemComment
+	out.AvailableActions = v.AvailableActions
+	out.Id = v.Id
+	return out, nil
+}
+
+// ApproveTransitionRequestToSDK converts the mirror to the sdk-go type.
+func ApproveTransitionRequestToSDK(w *ApproveTransitionRequest) (*sdk.ApproveTransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApproveTransitionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Stage = w.Stage
+	out.ArchiveExistingVersions = w.ArchiveExistingVersions
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// ApproveTransitionRequestFromSDK converts the sdk-go type to the mirror.
+func ApproveTransitionRequestFromSDK(v *sdk.ApproveTransitionRequest) (*ApproveTransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApproveTransitionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Stage = v.Stage
+	out.ArchiveExistingVersions = v.ArchiveExistingVersions
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// ApproveTransitionResponseToSDK converts the mirror to the sdk-go type.
+func ApproveTransitionResponseToSDK(w *ApproveTransitionResponse) (*sdk.ApproveTransitionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ApproveTransitionResponse{}
+	conv1, err := ActivityToSDK(w.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ApproveTransitionResponse.Activity", err)
+	}
+	out.Activity = conv1
+	return out, nil
+}
+
+// ApproveTransitionResponseFromSDK converts the sdk-go type to the mirror.
+func ApproveTransitionResponseFromSDK(v *sdk.ApproveTransitionResponse) (*ApproveTransitionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ApproveTransitionResponse{}
+	conv2, err := ActivityFromSDK(v.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ApproveTransitionResponse.Activity", err)
+	}
+	out.Activity = conv2
+	return out, nil
+}
+
+// CommentObjectToSDK converts the mirror to the sdk-go type.
+func CommentObjectToSDK(w *CommentObject) (*sdk.CommentObject, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CommentObject{}
+	out.CreationTimestamp = w.CreationTimestamp
+	out.UserId = w.UserId
+	out.ActivityType = w.ActivityType
+	out.Comment = w.Comment
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.FromStage = w.FromStage
+	out.ToStage = w.ToStage
+	out.SystemComment = w.SystemComment
+	out.AvailableActions = w.AvailableActions
+	out.Id = w.Id
+	return out, nil
+}
+
+// CommentObjectFromSDK converts the sdk-go type to the mirror.
+func CommentObjectFromSDK(v *sdk.CommentObject) (*CommentObject, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CommentObject{}
+	out.CreationTimestamp = v.CreationTimestamp
+	out.UserId = v.UserId
+	out.ActivityType = v.ActivityType
+	out.Comment = v.Comment
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.FromStage = v.FromStage
+	out.ToStage = v.ToStage
+	out.SystemComment = v.SystemComment
+	out.AvailableActions = v.AvailableActions
+	out.Id = v.Id
+	return out, nil
+}
+
+// CreateCommentRequestToSDK converts the mirror to the sdk-go type.
+func CreateCommentRequestToSDK(w *CreateCommentRequest) (*sdk.CreateCommentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCommentRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// CreateCommentRequestFromSDK converts the sdk-go type to the mirror.
+func CreateCommentRequestFromSDK(v *sdk.CreateCommentRequest) (*CreateCommentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCommentRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// CreateCommentResponseToSDK converts the mirror to the sdk-go type.
+func CreateCommentResponseToSDK(w *CreateCommentResponse) (*sdk.CreateCommentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateCommentResponse{}
+	conv3, err := CommentObjectToSDK(w.Comment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCommentResponse.Comment", err)
+	}
+	out.Comment = conv3
+	return out, nil
+}
+
+// CreateCommentResponseFromSDK converts the sdk-go type to the mirror.
+func CreateCommentResponseFromSDK(v *sdk.CreateCommentResponse) (*CreateCommentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateCommentResponse{}
+	conv4, err := CommentObjectFromSDK(v.Comment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateCommentResponse.Comment", err)
+	}
+	out.Comment = conv4
+	return out, nil
+}
+
+// CreateModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func CreateModelVersionRequestToSDK(w *CreateModelVersionRequest) (*sdk.CreateModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateModelVersionRequest{}
+	out.Name = w.Name
+	out.Source = w.Source
+	out.RunId = w.RunId
+	conv5, err := convertSlice(w.Tags, ModelVersionTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelVersionRequest.Tags", err)
+	}
+	out.Tags = conv5
+	out.RunLink = w.RunLink
+	out.Description = w.Description
+	return out, nil
+}
+
+// CreateModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateModelVersionRequestFromSDK(v *sdk.CreateModelVersionRequest) (*CreateModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateModelVersionRequest{}
+	out.Name = v.Name
+	out.Source = v.Source
+	out.RunId = v.RunId
+	conv6, err := convertSlice(v.Tags, ModelVersionTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelVersionRequest.Tags", err)
+	}
+	out.Tags = conv6
+	out.RunLink = v.RunLink
+	out.Description = v.Description
+	return out, nil
+}
+
+// CreateModelVersionResponseToSDK converts the mirror to the sdk-go type.
+func CreateModelVersionResponseToSDK(w *CreateModelVersionResponse) (*sdk.CreateModelVersionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateModelVersionResponse{}
+	conv7, err := ModelVersionToSDK(w.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv7
+	return out, nil
+}
+
+// CreateModelVersionResponseFromSDK converts the sdk-go type to the mirror.
+func CreateModelVersionResponseFromSDK(v *sdk.CreateModelVersionResponse) (*CreateModelVersionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateModelVersionResponse{}
+	conv8, err := ModelVersionFromSDK(v.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv8
+	return out, nil
+}
+
+// CreateRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func CreateRegisteredModelRequestToSDK(w *CreateRegisteredModelRequest) (*sdk.CreateRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRegisteredModelRequest{}
+	out.Name = w.Name
+	conv9, err := convertSlice(w.Tags, RegisteredModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Tags", err)
+	}
+	out.Tags = conv9
+	out.Description = w.Description
+	return out, nil
+}
+
+// CreateRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRegisteredModelRequestFromSDK(v *sdk.CreateRegisteredModelRequest) (*CreateRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRegisteredModelRequest{}
+	out.Name = v.Name
+	conv10, err := convertSlice(v.Tags, RegisteredModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelRequest.Tags", err)
+	}
+	out.Tags = conv10
+	out.Description = v.Description
+	return out, nil
+}
+
+// CreateRegisteredModelResponseToSDK converts the mirror to the sdk-go type.
+func CreateRegisteredModelResponseToSDK(w *CreateRegisteredModelResponse) (*sdk.CreateRegisteredModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRegisteredModelResponse{}
+	conv11, err := RegisteredModelToSDK(w.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv11
+	return out, nil
+}
+
+// CreateRegisteredModelResponseFromSDK converts the sdk-go type to the mirror.
+func CreateRegisteredModelResponseFromSDK(v *sdk.CreateRegisteredModelResponse) (*CreateRegisteredModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRegisteredModelResponse{}
+	conv12, err := RegisteredModelFromSDK(v.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv12
+	return out, nil
+}
+
+// CreateRegistryWebhookRequestToSDK converts the mirror to the sdk-go type.
+func CreateRegistryWebhookRequestToSDK(w *CreateRegistryWebhookRequest) (*sdk.CreateRegistryWebhookRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRegistryWebhookRequest{}
+	out.ModelName = w.ModelName
+	out.Events = w.Events
+	out.Description = w.Description
+	out.Status = w.Status
+	conv13, err := HttpUrlSpecToSDK(w.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv13
+	conv14, err := JobSpecToSDK(w.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.JobSpec", err)
+	}
+	out.JobSpec = conv14
+	return out, nil
+}
+
+// CreateRegistryWebhookRequestFromSDK converts the sdk-go type to the mirror.
+func CreateRegistryWebhookRequestFromSDK(v *sdk.CreateRegistryWebhookRequest) (*CreateRegistryWebhookRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRegistryWebhookRequest{}
+	out.ModelName = v.ModelName
+	out.Events = v.Events
+	out.Description = v.Description
+	out.Status = v.Status
+	conv15, err := HttpUrlSpecFromSDK(v.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv15
+	conv16, err := JobSpecFromSDK(v.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookRequest.JobSpec", err)
+	}
+	out.JobSpec = conv16
+	return out, nil
+}
+
+// CreateRegistryWebhookResponseToSDK converts the mirror to the sdk-go type.
+func CreateRegistryWebhookResponseToSDK(w *CreateRegistryWebhookResponse) (*sdk.CreateRegistryWebhookResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateRegistryWebhookResponse{}
+	conv17, err := RegistryWebhookToSDK(w.Webhook)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookResponse.Webhook", err)
+	}
+	out.Webhook = conv17
+	return out, nil
+}
+
+// CreateRegistryWebhookResponseFromSDK converts the sdk-go type to the mirror.
+func CreateRegistryWebhookResponseFromSDK(v *sdk.CreateRegistryWebhookResponse) (*CreateRegistryWebhookResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateRegistryWebhookResponse{}
+	conv18, err := RegistryWebhookFromSDK(v.Webhook)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateRegistryWebhookResponse.Webhook", err)
+	}
+	out.Webhook = conv18
+	return out, nil
+}
+
+// CreateTransitionRequestToSDK converts the mirror to the sdk-go type.
+func CreateTransitionRequestToSDK(w *CreateTransitionRequest) (*sdk.CreateTransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTransitionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Stage = w.Stage
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// CreateTransitionRequestFromSDK converts the sdk-go type to the mirror.
+func CreateTransitionRequestFromSDK(v *sdk.CreateTransitionRequest) (*CreateTransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTransitionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Stage = v.Stage
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// CreateTransitionResponseToSDK converts the mirror to the sdk-go type.
+func CreateTransitionResponseToSDK(w *CreateTransitionResponse) (*sdk.CreateTransitionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateTransitionResponse{}
+	conv19, err := TransitionRequestToSDK(w.Request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTransitionResponse.Request", err)
+	}
+	out.Request = conv19
+	return out, nil
+}
+
+// CreateTransitionResponseFromSDK converts the sdk-go type to the mirror.
+func CreateTransitionResponseFromSDK(v *sdk.CreateTransitionResponse) (*CreateTransitionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateTransitionResponse{}
+	conv20, err := TransitionRequestFromSDK(v.Request)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "CreateTransitionResponse.Request", err)
+	}
+	out.Request = conv20
+	return out, nil
+}
+
+// DeleteCommentRequestToSDK converts the mirror to the sdk-go type.
+func DeleteCommentRequestToSDK(w *DeleteCommentRequest) (*sdk.DeleteCommentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteCommentRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// DeleteCommentRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteCommentRequestFromSDK(v *sdk.DeleteCommentRequest) (*DeleteCommentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteCommentRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// DeleteModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func DeleteModelVersionRequestToSDK(w *DeleteModelVersionRequest) (*sdk.DeleteModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteModelVersionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	return out, nil
+}
+
+// DeleteModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteModelVersionRequestFromSDK(v *sdk.DeleteModelVersionRequest) (*DeleteModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteModelVersionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	return out, nil
+}
+
+// DeleteModelVersionTagRequestToSDK converts the mirror to the sdk-go type.
+func DeleteModelVersionTagRequestToSDK(w *DeleteModelVersionTagRequest) (*sdk.DeleteModelVersionTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteModelVersionTagRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Key = w.Key
+	return out, nil
+}
+
+// DeleteModelVersionTagRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteModelVersionTagRequestFromSDK(v *sdk.DeleteModelVersionTagRequest) (*DeleteModelVersionTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteModelVersionTagRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Key = v.Key
+	return out, nil
+}
+
+// DeleteRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRegisteredModelRequestToSDK(w *DeleteRegisteredModelRequest) (*sdk.DeleteRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRegisteredModelRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// DeleteRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRegisteredModelRequestFromSDK(v *sdk.DeleteRegisteredModelRequest) (*DeleteRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRegisteredModelRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// DeleteRegisteredModelTagRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRegisteredModelTagRequestToSDK(w *DeleteRegisteredModelTagRequest) (*sdk.DeleteRegisteredModelTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRegisteredModelTagRequest{}
+	out.Name = w.Name
+	out.Key = w.Key
+	return out, nil
+}
+
+// DeleteRegisteredModelTagRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRegisteredModelTagRequestFromSDK(v *sdk.DeleteRegisteredModelTagRequest) (*DeleteRegisteredModelTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRegisteredModelTagRequest{}
+	out.Name = v.Name
+	out.Key = v.Key
+	return out, nil
+}
+
+// DeleteRegistryWebhookRequestToSDK converts the mirror to the sdk-go type.
+func DeleteRegistryWebhookRequestToSDK(w *DeleteRegistryWebhookRequest) (*sdk.DeleteRegistryWebhookRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteRegistryWebhookRequest{}
+	out.Id = w.Id
+	return out, nil
+}
+
+// DeleteRegistryWebhookRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteRegistryWebhookRequestFromSDK(v *sdk.DeleteRegistryWebhookRequest) (*DeleteRegistryWebhookRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteRegistryWebhookRequest{}
+	out.Id = v.Id
+	return out, nil
+}
+
+// DeleteTransitionRequestToSDK converts the mirror to the sdk-go type.
+func DeleteTransitionRequestToSDK(w *DeleteTransitionRequest) (*sdk.DeleteTransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteTransitionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Stage = w.Stage
+	out.Creator = w.Creator
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// DeleteTransitionRequestFromSDK converts the sdk-go type to the mirror.
+func DeleteTransitionRequestFromSDK(v *sdk.DeleteTransitionRequest) (*DeleteTransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteTransitionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Stage = v.Stage
+	out.Creator = v.Creator
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// DeleteTransitionResponseToSDK converts the mirror to the sdk-go type.
+func DeleteTransitionResponseToSDK(w *DeleteTransitionResponse) (*sdk.DeleteTransitionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DeleteTransitionResponse{}
+	conv21, err := ActivityToSDK(w.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteTransitionResponse.Activity", err)
+	}
+	out.Activity = conv21
+	return out, nil
+}
+
+// DeleteTransitionResponseFromSDK converts the sdk-go type to the mirror.
+func DeleteTransitionResponseFromSDK(v *sdk.DeleteTransitionResponse) (*DeleteTransitionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DeleteTransitionResponse{}
+	conv22, err := ActivityFromSDK(v.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "DeleteTransitionResponse.Activity", err)
+	}
+	out.Activity = conv22
+	return out, nil
+}
+
+// FeatureListToSDK converts the mirror to the sdk-go type.
+func FeatureListToSDK(w *FeatureList) (*sdk.FeatureList, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.FeatureList{}
+	conv23, err := convertSlice(w.Features, LinkedFeatureToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FeatureList.Features", err)
+	}
+	out.Features = conv23
+	return out, nil
+}
+
+// FeatureListFromSDK converts the sdk-go type to the mirror.
+func FeatureListFromSDK(v *sdk.FeatureList) (*FeatureList, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &FeatureList{}
+	conv24, err := convertSlice(v.Features, LinkedFeatureFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "FeatureList.Features", err)
+	}
+	out.Features = conv24
+	return out, nil
+}
+
+// GetLatestVersionsResponseToSDK converts the mirror to the sdk-go type.
+func GetLatestVersionsResponseToSDK(w *GetLatestVersionsResponse) (*sdk.GetLatestVersionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetLatestVersionsResponse{}
+	conv25, err := convertSlice(w.ModelVersions, ModelVersionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLatestVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv25
+	return out, nil
+}
+
+// GetLatestVersionsResponseFromSDK converts the sdk-go type to the mirror.
+func GetLatestVersionsResponseFromSDK(v *sdk.GetLatestVersionsResponse) (*GetLatestVersionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetLatestVersionsResponse{}
+	conv26, err := convertSlice(v.ModelVersions, ModelVersionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetLatestVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv26
+	return out, nil
+}
+
+// GetModelVersionDownloadUriRequestToSDK converts the mirror to the sdk-go type.
+func GetModelVersionDownloadUriRequestToSDK(w *GetModelVersionDownloadUriRequest) (*sdk.GetModelVersionDownloadUriRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionDownloadUriRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	return out, nil
+}
+
+// GetModelVersionDownloadUriRequestFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionDownloadUriRequestFromSDK(v *sdk.GetModelVersionDownloadUriRequest) (*GetModelVersionDownloadUriRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionDownloadUriRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	return out, nil
+}
+
+// GetModelVersionDownloadUriResponseToSDK converts the mirror to the sdk-go type.
+func GetModelVersionDownloadUriResponseToSDK(w *GetModelVersionDownloadUriResponse) (*sdk.GetModelVersionDownloadUriResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionDownloadUriResponse{}
+	out.ArtifactUri = w.ArtifactUri
+	return out, nil
+}
+
+// GetModelVersionDownloadUriResponseFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionDownloadUriResponseFromSDK(v *sdk.GetModelVersionDownloadUriResponse) (*GetModelVersionDownloadUriResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionDownloadUriResponse{}
+	out.ArtifactUri = v.ArtifactUri
+	return out, nil
+}
+
+// GetModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func GetModelVersionRequestToSDK(w *GetModelVersionRequest) (*sdk.GetModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	return out, nil
+}
+
+// GetModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionRequestFromSDK(v *sdk.GetModelVersionRequest) (*GetModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	return out, nil
+}
+
+// GetModelVersionResponseToSDK converts the mirror to the sdk-go type.
+func GetModelVersionResponseToSDK(w *GetModelVersionResponse) (*sdk.GetModelVersionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetModelVersionResponse{}
+	conv27, err := ModelVersionToSDK(w.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv27
+	return out, nil
+}
+
+// GetModelVersionResponseFromSDK converts the sdk-go type to the mirror.
+func GetModelVersionResponseFromSDK(v *sdk.GetModelVersionResponse) (*GetModelVersionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetModelVersionResponse{}
+	conv28, err := ModelVersionFromSDK(v.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv28
+	return out, nil
+}
+
+// GetRegisteredModelDatabricksRequestToSDK converts the mirror to the sdk-go type.
+func GetRegisteredModelDatabricksRequestToSDK(w *GetRegisteredModelDatabricksRequest) (*sdk.GetRegisteredModelDatabricksRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRegisteredModelDatabricksRequest{}
+	out.Name = w.Name
+	return out, nil
+}
+
+// GetRegisteredModelDatabricksRequestFromSDK converts the sdk-go type to the mirror.
+func GetRegisteredModelDatabricksRequestFromSDK(v *sdk.GetRegisteredModelDatabricksRequest) (*GetRegisteredModelDatabricksRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRegisteredModelDatabricksRequest{}
+	out.Name = v.Name
+	return out, nil
+}
+
+// GetRegisteredModelDatabricksResponseToSDK converts the mirror to the sdk-go type.
+func GetRegisteredModelDatabricksResponseToSDK(w *GetRegisteredModelDatabricksResponse) (*sdk.GetRegisteredModelDatabricksResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetRegisteredModelDatabricksResponse{}
+	conv29, err := RegisteredModelDatabricksToSDK(w.RegisteredModelDatabricks)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRegisteredModelDatabricksResponse.RegisteredModelDatabricks", err)
+	}
+	out.RegisteredModelDatabricks = conv29
+	return out, nil
+}
+
+// GetRegisteredModelDatabricksResponseFromSDK converts the sdk-go type to the mirror.
+func GetRegisteredModelDatabricksResponseFromSDK(v *sdk.GetRegisteredModelDatabricksResponse) (*GetRegisteredModelDatabricksResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetRegisteredModelDatabricksResponse{}
+	conv30, err := RegisteredModelDatabricksFromSDK(v.RegisteredModelDatabricks)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GetRegisteredModelDatabricksResponse.RegisteredModelDatabricks", err)
+	}
+	out.RegisteredModelDatabricks = conv30
+	return out, nil
+}
+
+// HttpUrlSpecToSDK converts the mirror to the sdk-go type.
+func HttpUrlSpecToSDK(w *HttpUrlSpec) (*sdk.HttpUrlSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.HttpUrlSpec{}
+	out.Url = w.Url
+	out.EnableSslVerification = w.EnableSslVerification
+	out.Secret = w.Secret
+	out.Authorization = w.Authorization
+	return out, nil
+}
+
+// HttpUrlSpecFromSDK converts the sdk-go type to the mirror.
+func HttpUrlSpecFromSDK(v *sdk.HttpUrlSpec) (*HttpUrlSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &HttpUrlSpec{}
+	out.Url = v.Url
+	out.EnableSslVerification = v.EnableSslVerification
+	out.Secret = v.Secret
+	out.Authorization = v.Authorization
+	return out, nil
+}
+
+// JobSpecToSDK converts the mirror to the sdk-go type.
+func JobSpecToSDK(w *JobSpec) (*sdk.JobSpec, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.JobSpec{}
+	out.JobId = w.JobId
+	out.WorkspaceUrl = w.WorkspaceUrl
+	out.AccessToken = w.AccessToken
+	return out, nil
+}
+
+// JobSpecFromSDK converts the sdk-go type to the mirror.
+func JobSpecFromSDK(v *sdk.JobSpec) (*JobSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &JobSpec{}
+	out.JobId = v.JobId
+	out.WorkspaceUrl = v.WorkspaceUrl
+	out.AccessToken = v.AccessToken
+	return out, nil
+}
+
+// LinkedFeatureToSDK converts the mirror to the sdk-go type.
+func LinkedFeatureToSDK(w *LinkedFeature) (*sdk.LinkedFeature, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.LinkedFeature{}
+	out.FeatureTableName = w.FeatureTableName
+	out.FeatureName = w.FeatureName
+	out.FeatureTableId = w.FeatureTableId
+	return out, nil
+}
+
+// LinkedFeatureFromSDK converts the sdk-go type to the mirror.
+func LinkedFeatureFromSDK(v *sdk.LinkedFeature) (*LinkedFeature, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &LinkedFeature{}
+	out.FeatureTableName = v.FeatureTableName
+	out.FeatureName = v.FeatureName
+	out.FeatureTableId = v.FeatureTableId
+	return out, nil
+}
+
+// ListLatestVersionsRequestToSDK converts the mirror to the sdk-go type.
+func ListLatestVersionsRequestToSDK(w *ListLatestVersionsRequest) (*sdk.ListLatestVersionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListLatestVersionsRequest{}
+	out.Name = w.Name
+	out.Stages = w.Stages
+	return out, nil
+}
+
+// ListLatestVersionsRequestFromSDK converts the sdk-go type to the mirror.
+func ListLatestVersionsRequestFromSDK(v *sdk.ListLatestVersionsRequest) (*ListLatestVersionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListLatestVersionsRequest{}
+	out.Name = v.Name
+	out.Stages = v.Stages
+	return out, nil
+}
+
+// ListRegisteredModelsRequestToSDK converts the mirror to the sdk-go type.
+func ListRegisteredModelsRequestToSDK(w *ListRegisteredModelsRequest) (*sdk.ListRegisteredModelsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegisteredModelsRequest{}
+	out.MaxResults = w.MaxResults
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// ListRegisteredModelsRequestFromSDK converts the sdk-go type to the mirror.
+func ListRegisteredModelsRequestFromSDK(v *sdk.ListRegisteredModelsRequest) (*ListRegisteredModelsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegisteredModelsRequest{}
+	out.MaxResults = v.MaxResults
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// ListRegisteredModelsResponseToSDK converts the mirror to the sdk-go type.
+func ListRegisteredModelsResponseToSDK(w *ListRegisteredModelsResponse) (*sdk.ListRegisteredModelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegisteredModelsResponse{}
+	conv31, err := convertSlice(w.RegisteredModels, RegisteredModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv31
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRegisteredModelsResponseFromSDK converts the sdk-go type to the mirror.
+func ListRegisteredModelsResponseFromSDK(v *sdk.ListRegisteredModelsResponse) (*ListRegisteredModelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegisteredModelsResponse{}
+	conv32, err := convertSlice(v.RegisteredModels, RegisteredModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv32
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListRegistryWebhooksRequestToSDK converts the mirror to the sdk-go type.
+func ListRegistryWebhooksRequestToSDK(w *ListRegistryWebhooksRequest) (*sdk.ListRegistryWebhooksRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegistryWebhooksRequest{}
+	out.ModelName = w.ModelName
+	out.Events = w.Events
+	out.PageToken = w.PageToken
+	out.MaxResults = w.MaxResults
+	return out, nil
+}
+
+// ListRegistryWebhooksRequestFromSDK converts the sdk-go type to the mirror.
+func ListRegistryWebhooksRequestFromSDK(v *sdk.ListRegistryWebhooksRequest) (*ListRegistryWebhooksRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegistryWebhooksRequest{}
+	out.ModelName = v.ModelName
+	out.Events = v.Events
+	out.PageToken = v.PageToken
+	out.MaxResults = v.MaxResults
+	return out, nil
+}
+
+// ListRegistryWebhooksResponseToSDK converts the mirror to the sdk-go type.
+func ListRegistryWebhooksResponseToSDK(w *ListRegistryWebhooksResponse) (*sdk.ListRegistryWebhooksResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListRegistryWebhooksResponse{}
+	conv33, err := convertSlice(w.Webhooks, RegistryWebhookToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegistryWebhooksResponse.Webhooks", err)
+	}
+	out.Webhooks = conv33
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// ListRegistryWebhooksResponseFromSDK converts the sdk-go type to the mirror.
+func ListRegistryWebhooksResponseFromSDK(v *sdk.ListRegistryWebhooksResponse) (*ListRegistryWebhooksResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListRegistryWebhooksResponse{}
+	conv34, err := convertSlice(v.Webhooks, RegistryWebhookFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListRegistryWebhooksResponse.Webhooks", err)
+	}
+	out.Webhooks = conv34
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// ListTransitionRequestToSDK converts the mirror to the sdk-go type.
+func ListTransitionRequestToSDK(w *ListTransitionRequest) (*sdk.ListTransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTransitionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	return out, nil
+}
+
+// ListTransitionRequestFromSDK converts the sdk-go type to the mirror.
+func ListTransitionRequestFromSDK(v *sdk.ListTransitionRequest) (*ListTransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTransitionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	return out, nil
+}
+
+// ListTransitionResponseToSDK converts the mirror to the sdk-go type.
+func ListTransitionResponseToSDK(w *ListTransitionResponse) (*sdk.ListTransitionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListTransitionResponse{}
+	conv35, err := convertSlice(w.Requests, ActivityToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTransitionResponse.Requests", err)
+	}
+	out.Requests = conv35
+	return out, nil
+}
+
+// ListTransitionResponseFromSDK converts the sdk-go type to the mirror.
+func ListTransitionResponseFromSDK(v *sdk.ListTransitionResponse) (*ListTransitionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListTransitionResponse{}
+	conv36, err := convertSlice(v.Requests, ActivityFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListTransitionResponse.Requests", err)
+	}
+	out.Requests = conv36
+	return out, nil
+}
+
+// ModelVersionToSDK converts the mirror to the sdk-go type.
+func ModelVersionToSDK(w *ModelVersion) (*sdk.ModelVersion, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelVersion{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.UserId = w.UserId
+	out.CurrentStage = w.CurrentStage
+	out.Description = w.Description
+	out.Source = w.Source
+	out.RunId = w.RunId
+	out.Status = w.Status
+	out.StatusMessage = w.StatusMessage
+	conv37, err := convertSlice(w.Tags, ModelVersionTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersion.Tags", err)
+	}
+	out.Tags = conv37
+	out.RunLink = w.RunLink
+	return out, nil
+}
+
+// ModelVersionFromSDK converts the sdk-go type to the mirror.
+func ModelVersionFromSDK(v *sdk.ModelVersion) (*ModelVersion, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelVersion{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.UserId = v.UserId
+	out.CurrentStage = v.CurrentStage
+	out.Description = v.Description
+	out.Source = v.Source
+	out.RunId = v.RunId
+	out.Status = v.Status
+	out.StatusMessage = v.StatusMessage
+	conv38, err := convertSlice(v.Tags, ModelVersionTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersion.Tags", err)
+	}
+	out.Tags = conv38
+	out.RunLink = v.RunLink
+	return out, nil
+}
+
+// ModelVersionDatabricksToSDK converts the mirror to the sdk-go type.
+func ModelVersionDatabricksToSDK(w *ModelVersionDatabricks) (*sdk.ModelVersionDatabricks, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelVersionDatabricks{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.UserId = w.UserId
+	out.CurrentStage = w.CurrentStage
+	out.Description = w.Description
+	out.Source = w.Source
+	out.RunId = w.RunId
+	out.Status = w.Status
+	out.StatusMessage = w.StatusMessage
+	conv39, err := convertSlice(w.OpenRequests, ActivityToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.OpenRequests", err)
+	}
+	out.OpenRequests = conv39
+	out.PermissionLevel = w.PermissionLevel
+	conv40, err := convertSlice(w.Tags, ModelVersionTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.Tags", err)
+	}
+	out.Tags = conv40
+	out.RunLink = w.RunLink
+	out.EmailSubscriptionStatus = w.EmailSubscriptionStatus
+	conv41, err := FeatureListToSDK(w.FeatureList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.FeatureList", err)
+	}
+	out.FeatureList = conv41
+	return out, nil
+}
+
+// ModelVersionDatabricksFromSDK converts the sdk-go type to the mirror.
+func ModelVersionDatabricksFromSDK(v *sdk.ModelVersionDatabricks) (*ModelVersionDatabricks, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelVersionDatabricks{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.UserId = v.UserId
+	out.CurrentStage = v.CurrentStage
+	out.Description = v.Description
+	out.Source = v.Source
+	out.RunId = v.RunId
+	out.Status = v.Status
+	out.StatusMessage = v.StatusMessage
+	conv42, err := convertSlice(v.OpenRequests, ActivityFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.OpenRequests", err)
+	}
+	out.OpenRequests = conv42
+	out.PermissionLevel = v.PermissionLevel
+	conv43, err := convertSlice(v.Tags, ModelVersionTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.Tags", err)
+	}
+	out.Tags = conv43
+	out.RunLink = v.RunLink
+	out.EmailSubscriptionStatus = v.EmailSubscriptionStatus
+	conv44, err := FeatureListFromSDK(v.FeatureList)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ModelVersionDatabricks.FeatureList", err)
+	}
+	out.FeatureList = conv44
+	return out, nil
+}
+
+// ModelVersionTagToSDK converts the mirror to the sdk-go type.
+func ModelVersionTagToSDK(w *ModelVersionTag) (*sdk.ModelVersionTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ModelVersionTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// ModelVersionTagFromSDK converts the sdk-go type to the mirror.
+func ModelVersionTagFromSDK(v *sdk.ModelVersionTag) (*ModelVersionTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ModelVersionTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// RegisteredModelToSDK converts the mirror to the sdk-go type.
+func RegisteredModelToSDK(w *RegisteredModel) (*sdk.RegisteredModel, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModel{}
+	out.Name = w.Name
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.UserId = w.UserId
+	out.Description = w.Description
+	conv45, err := convertSlice(w.LatestVersions, ModelVersionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModel.LatestVersions", err)
+	}
+	out.LatestVersions = conv45
+	conv46, err := convertSlice(w.Tags, RegisteredModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModel.Tags", err)
+	}
+	out.Tags = conv46
+	return out, nil
+}
+
+// RegisteredModelFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelFromSDK(v *sdk.RegisteredModel) (*RegisteredModel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModel{}
+	out.Name = v.Name
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.UserId = v.UserId
+	out.Description = v.Description
+	conv47, err := convertSlice(v.LatestVersions, ModelVersionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModel.LatestVersions", err)
+	}
+	out.LatestVersions = conv47
+	conv48, err := convertSlice(v.Tags, RegisteredModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModel.Tags", err)
+	}
+	out.Tags = conv48
+	return out, nil
+}
+
+// RegisteredModelDatabricksToSDK converts the mirror to the sdk-go type.
+func RegisteredModelDatabricksToSDK(w *RegisteredModelDatabricks) (*sdk.RegisteredModelDatabricks, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModelDatabricks{}
+	out.Name = w.Name
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.UserId = w.UserId
+	out.Description = w.Description
+	conv49, err := convertSlice(w.LatestVersions, ModelVersionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.LatestVersions", err)
+	}
+	out.LatestVersions = conv49
+	out.Id = w.Id
+	out.PermissionLevel = w.PermissionLevel
+	conv50, err := convertSlice(w.Tags, RegisteredModelTagToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.Tags", err)
+	}
+	out.Tags = conv50
+	return out, nil
+}
+
+// RegisteredModelDatabricksFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelDatabricksFromSDK(v *sdk.RegisteredModelDatabricks) (*RegisteredModelDatabricks, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModelDatabricks{}
+	out.Name = v.Name
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.UserId = v.UserId
+	out.Description = v.Description
+	conv51, err := convertSlice(v.LatestVersions, ModelVersionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.LatestVersions", err)
+	}
+	out.LatestVersions = conv51
+	out.Id = v.Id
+	out.PermissionLevel = v.PermissionLevel
+	conv52, err := convertSlice(v.Tags, RegisteredModelTagFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegisteredModelDatabricks.Tags", err)
+	}
+	out.Tags = conv52
+	return out, nil
+}
+
+// RegisteredModelTagToSDK converts the mirror to the sdk-go type.
+func RegisteredModelTagToSDK(w *RegisteredModelTag) (*sdk.RegisteredModelTag, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegisteredModelTag{}
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// RegisteredModelTagFromSDK converts the sdk-go type to the mirror.
+func RegisteredModelTagFromSDK(v *sdk.RegisteredModelTag) (*RegisteredModelTag, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegisteredModelTag{}
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// RegistryWebhookToSDK converts the mirror to the sdk-go type.
+func RegistryWebhookToSDK(w *RegistryWebhook) (*sdk.RegistryWebhook, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RegistryWebhook{}
+	out.Id = w.Id
+	out.Events = w.Events
+	out.CreationTimestamp = w.CreationTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.Description = w.Description
+	out.Status = w.Status
+	conv53, err := HttpUrlSpecToSDK(w.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv53
+	conv54, err := JobSpecToSDK(w.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.JobSpec", err)
+	}
+	out.JobSpec = conv54
+	out.ModelName = w.ModelName
+	return out, nil
+}
+
+// RegistryWebhookFromSDK converts the sdk-go type to the mirror.
+func RegistryWebhookFromSDK(v *sdk.RegistryWebhook) (*RegistryWebhook, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RegistryWebhook{}
+	out.Id = v.Id
+	out.Events = v.Events
+	out.CreationTimestamp = v.CreationTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.Description = v.Description
+	out.Status = v.Status
+	conv55, err := HttpUrlSpecFromSDK(v.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv55
+	conv56, err := JobSpecFromSDK(v.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RegistryWebhook.JobSpec", err)
+	}
+	out.JobSpec = conv56
+	out.ModelName = v.ModelName
+	return out, nil
+}
+
+// RejectTransitionRequestToSDK converts the mirror to the sdk-go type.
+func RejectTransitionRequestToSDK(w *RejectTransitionRequest) (*sdk.RejectTransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RejectTransitionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Stage = w.Stage
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// RejectTransitionRequestFromSDK converts the sdk-go type to the mirror.
+func RejectTransitionRequestFromSDK(v *sdk.RejectTransitionRequest) (*RejectTransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RejectTransitionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Stage = v.Stage
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// RejectTransitionResponseToSDK converts the mirror to the sdk-go type.
+func RejectTransitionResponseToSDK(w *RejectTransitionResponse) (*sdk.RejectTransitionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RejectTransitionResponse{}
+	conv57, err := ActivityToSDK(w.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RejectTransitionResponse.Activity", err)
+	}
+	out.Activity = conv57
+	return out, nil
+}
+
+// RejectTransitionResponseFromSDK converts the sdk-go type to the mirror.
+func RejectTransitionResponseFromSDK(v *sdk.RejectTransitionResponse) (*RejectTransitionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RejectTransitionResponse{}
+	conv58, err := ActivityFromSDK(v.Activity)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RejectTransitionResponse.Activity", err)
+	}
+	out.Activity = conv58
+	return out, nil
+}
+
+// RenameRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func RenameRegisteredModelRequestToSDK(w *RenameRegisteredModelRequest) (*sdk.RenameRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RenameRegisteredModelRequest{}
+	out.Name = w.Name
+	out.NewName = w.NewName
+	return out, nil
+}
+
+// RenameRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func RenameRegisteredModelRequestFromSDK(v *sdk.RenameRegisteredModelRequest) (*RenameRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RenameRegisteredModelRequest{}
+	out.Name = v.Name
+	out.NewName = v.NewName
+	return out, nil
+}
+
+// RenameRegisteredModelResponseToSDK converts the mirror to the sdk-go type.
+func RenameRegisteredModelResponseToSDK(w *RenameRegisteredModelResponse) (*sdk.RenameRegisteredModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.RenameRegisteredModelResponse{}
+	conv59, err := RegisteredModelToSDK(w.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RenameRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv59
+	return out, nil
+}
+
+// RenameRegisteredModelResponseFromSDK converts the sdk-go type to the mirror.
+func RenameRegisteredModelResponseFromSDK(v *sdk.RenameRegisteredModelResponse) (*RenameRegisteredModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &RenameRegisteredModelResponse{}
+	conv60, err := RegisteredModelFromSDK(v.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "RenameRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv60
+	return out, nil
+}
+
+// SearchModelVersionsRequestToSDK converts the mirror to the sdk-go type.
+func SearchModelVersionsRequestToSDK(w *SearchModelVersionsRequest) (*sdk.SearchModelVersionsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchModelVersionsRequest{}
+	out.Filter = w.Filter
+	out.MaxResults = w.MaxResults
+	out.OrderBy = w.OrderBy
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// SearchModelVersionsRequestFromSDK converts the sdk-go type to the mirror.
+func SearchModelVersionsRequestFromSDK(v *sdk.SearchModelVersionsRequest) (*SearchModelVersionsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchModelVersionsRequest{}
+	out.Filter = v.Filter
+	out.MaxResults = v.MaxResults
+	out.OrderBy = v.OrderBy
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// SearchModelVersionsResponseToSDK converts the mirror to the sdk-go type.
+func SearchModelVersionsResponseToSDK(w *SearchModelVersionsResponse) (*sdk.SearchModelVersionsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchModelVersionsResponse{}
+	conv61, err := convertSlice(w.ModelVersions, ModelVersionToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchModelVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv61
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchModelVersionsResponseFromSDK converts the sdk-go type to the mirror.
+func SearchModelVersionsResponseFromSDK(v *sdk.SearchModelVersionsResponse) (*SearchModelVersionsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchModelVersionsResponse{}
+	conv62, err := convertSlice(v.ModelVersions, ModelVersionFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchModelVersionsResponse.ModelVersions", err)
+	}
+	out.ModelVersions = conv62
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SearchRegisteredModelsRequestToSDK converts the mirror to the sdk-go type.
+func SearchRegisteredModelsRequestToSDK(w *SearchRegisteredModelsRequest) (*sdk.SearchRegisteredModelsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchRegisteredModelsRequest{}
+	out.Filter = w.Filter
+	out.MaxResults = w.MaxResults
+	out.OrderBy = w.OrderBy
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// SearchRegisteredModelsRequestFromSDK converts the sdk-go type to the mirror.
+func SearchRegisteredModelsRequestFromSDK(v *sdk.SearchRegisteredModelsRequest) (*SearchRegisteredModelsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchRegisteredModelsRequest{}
+	out.Filter = v.Filter
+	out.MaxResults = v.MaxResults
+	out.OrderBy = v.OrderBy
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// SearchRegisteredModelsResponseToSDK converts the mirror to the sdk-go type.
+func SearchRegisteredModelsResponseToSDK(w *SearchRegisteredModelsResponse) (*sdk.SearchRegisteredModelsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SearchRegisteredModelsResponse{}
+	conv63, err := convertSlice(w.RegisteredModels, RegisteredModelToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv63
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// SearchRegisteredModelsResponseFromSDK converts the sdk-go type to the mirror.
+func SearchRegisteredModelsResponseFromSDK(v *sdk.SearchRegisteredModelsResponse) (*SearchRegisteredModelsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SearchRegisteredModelsResponse{}
+	conv64, err := convertSlice(v.RegisteredModels, RegisteredModelFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "SearchRegisteredModelsResponse.RegisteredModels", err)
+	}
+	out.RegisteredModels = conv64
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// SetModelVersionTagRequestToSDK converts the mirror to the sdk-go type.
+func SetModelVersionTagRequestToSDK(w *SetModelVersionTagRequest) (*sdk.SetModelVersionTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetModelVersionTagRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// SetModelVersionTagRequestFromSDK converts the sdk-go type to the mirror.
+func SetModelVersionTagRequestFromSDK(v *sdk.SetModelVersionTagRequest) (*SetModelVersionTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetModelVersionTagRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// SetRegisteredModelTagRequestToSDK converts the mirror to the sdk-go type.
+func SetRegisteredModelTagRequestToSDK(w *SetRegisteredModelTagRequest) (*sdk.SetRegisteredModelTagRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.SetRegisteredModelTagRequest{}
+	out.Name = w.Name
+	out.Key = w.Key
+	out.Value = w.Value
+	return out, nil
+}
+
+// SetRegisteredModelTagRequestFromSDK converts the sdk-go type to the mirror.
+func SetRegisteredModelTagRequestFromSDK(v *sdk.SetRegisteredModelTagRequest) (*SetRegisteredModelTagRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &SetRegisteredModelTagRequest{}
+	out.Name = v.Name
+	out.Key = v.Key
+	out.Value = v.Value
+	return out, nil
+}
+
+// TestRegistryWebhookRequestToSDK converts the mirror to the sdk-go type.
+func TestRegistryWebhookRequestToSDK(w *TestRegistryWebhookRequest) (*sdk.TestRegistryWebhookRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TestRegistryWebhookRequest{}
+	out.Id = w.Id
+	out.Event = w.Event
+	return out, nil
+}
+
+// TestRegistryWebhookRequestFromSDK converts the sdk-go type to the mirror.
+func TestRegistryWebhookRequestFromSDK(v *sdk.TestRegistryWebhookRequest) (*TestRegistryWebhookRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TestRegistryWebhookRequest{}
+	out.Id = v.Id
+	out.Event = v.Event
+	return out, nil
+}
+
+// TestRegistryWebhookResponseToSDK converts the mirror to the sdk-go type.
+func TestRegistryWebhookResponseToSDK(w *TestRegistryWebhookResponse) (*sdk.TestRegistryWebhookResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TestRegistryWebhookResponse{}
+	out.StatusCode = w.StatusCode
+	out.Body = w.Body
+	return out, nil
+}
+
+// TestRegistryWebhookResponseFromSDK converts the sdk-go type to the mirror.
+func TestRegistryWebhookResponseFromSDK(v *sdk.TestRegistryWebhookResponse) (*TestRegistryWebhookResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TestRegistryWebhookResponse{}
+	out.StatusCode = v.StatusCode
+	out.Body = v.Body
+	return out, nil
+}
+
+// TransitionModelVersionStageDatabricksRequestToSDK converts the mirror to the sdk-go type.
+func TransitionModelVersionStageDatabricksRequestToSDK(w *TransitionModelVersionStageDatabricksRequest) (*sdk.TransitionModelVersionStageDatabricksRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TransitionModelVersionStageDatabricksRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Stage = w.Stage
+	out.ArchiveExistingVersions = w.ArchiveExistingVersions
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// TransitionModelVersionStageDatabricksRequestFromSDK converts the sdk-go type to the mirror.
+func TransitionModelVersionStageDatabricksRequestFromSDK(v *sdk.TransitionModelVersionStageDatabricksRequest) (*TransitionModelVersionStageDatabricksRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TransitionModelVersionStageDatabricksRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Stage = v.Stage
+	out.ArchiveExistingVersions = v.ArchiveExistingVersions
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// TransitionModelVersionStageDatabricksResponseToSDK converts the mirror to the sdk-go type.
+func TransitionModelVersionStageDatabricksResponseToSDK(w *TransitionModelVersionStageDatabricksResponse) (*sdk.TransitionModelVersionStageDatabricksResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TransitionModelVersionStageDatabricksResponse{}
+	conv65, err := ModelVersionDatabricksToSDK(w.ModelVersionDatabricks)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TransitionModelVersionStageDatabricksResponse.ModelVersionDatabricks", err)
+	}
+	out.ModelVersionDatabricks = conv65
+	return out, nil
+}
+
+// TransitionModelVersionStageDatabricksResponseFromSDK converts the sdk-go type to the mirror.
+func TransitionModelVersionStageDatabricksResponseFromSDK(v *sdk.TransitionModelVersionStageDatabricksResponse) (*TransitionModelVersionStageDatabricksResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TransitionModelVersionStageDatabricksResponse{}
+	conv66, err := ModelVersionDatabricksFromSDK(v.ModelVersionDatabricks)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "TransitionModelVersionStageDatabricksResponse.ModelVersionDatabricks", err)
+	}
+	out.ModelVersionDatabricks = conv66
+	return out, nil
+}
+
+// TransitionRequestToSDK converts the mirror to the sdk-go type.
+func TransitionRequestToSDK(w *TransitionRequest) (*sdk.TransitionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TransitionRequest{}
+	out.CreationTimestamp = w.CreationTimestamp
+	out.UserId = w.UserId
+	out.ActivityType = w.ActivityType
+	out.Comment = w.Comment
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.FromStage = w.FromStage
+	out.ToStage = w.ToStage
+	out.SystemComment = w.SystemComment
+	out.AvailableActions = w.AvailableActions
+	out.Id = w.Id
+	return out, nil
+}
+
+// TransitionRequestFromSDK converts the sdk-go type to the mirror.
+func TransitionRequestFromSDK(v *sdk.TransitionRequest) (*TransitionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TransitionRequest{}
+	out.CreationTimestamp = v.CreationTimestamp
+	out.UserId = v.UserId
+	out.ActivityType = v.ActivityType
+	out.Comment = v.Comment
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.FromStage = v.FromStage
+	out.ToStage = v.ToStage
+	out.SystemComment = v.SystemComment
+	out.AvailableActions = v.AvailableActions
+	out.Id = v.Id
+	return out, nil
+}
+
+// UpdateCommentRequestToSDK converts the mirror to the sdk-go type.
+func UpdateCommentRequestToSDK(w *UpdateCommentRequest) (*sdk.UpdateCommentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCommentRequest{}
+	out.Id = w.Id
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// UpdateCommentRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateCommentRequestFromSDK(v *sdk.UpdateCommentRequest) (*UpdateCommentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCommentRequest{}
+	out.Id = v.Id
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// UpdateCommentResponseToSDK converts the mirror to the sdk-go type.
+func UpdateCommentResponseToSDK(w *UpdateCommentResponse) (*sdk.UpdateCommentResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateCommentResponse{}
+	conv67, err := CommentObjectToSDK(w.Comment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCommentResponse.Comment", err)
+	}
+	out.Comment = conv67
+	return out, nil
+}
+
+// UpdateCommentResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateCommentResponseFromSDK(v *sdk.UpdateCommentResponse) (*UpdateCommentResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateCommentResponse{}
+	conv68, err := CommentObjectFromSDK(v.Comment)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateCommentResponse.Comment", err)
+	}
+	out.Comment = conv68
+	return out, nil
+}
+
+// UpdateModelVersionRequestToSDK converts the mirror to the sdk-go type.
+func UpdateModelVersionRequestToSDK(w *UpdateModelVersionRequest) (*sdk.UpdateModelVersionRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateModelVersionRequest{}
+	out.Name = w.Name
+	out.Version = w.Version
+	out.Description = w.Description
+	return out, nil
+}
+
+// UpdateModelVersionRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateModelVersionRequestFromSDK(v *sdk.UpdateModelVersionRequest) (*UpdateModelVersionRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateModelVersionRequest{}
+	out.Name = v.Name
+	out.Version = v.Version
+	out.Description = v.Description
+	return out, nil
+}
+
+// UpdateModelVersionResponseToSDK converts the mirror to the sdk-go type.
+func UpdateModelVersionResponseToSDK(w *UpdateModelVersionResponse) (*sdk.UpdateModelVersionResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateModelVersionResponse{}
+	conv69, err := ModelVersionToSDK(w.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv69
+	return out, nil
+}
+
+// UpdateModelVersionResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateModelVersionResponseFromSDK(v *sdk.UpdateModelVersionResponse) (*UpdateModelVersionResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateModelVersionResponse{}
+	conv70, err := ModelVersionFromSDK(v.ModelVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateModelVersionResponse.ModelVersion", err)
+	}
+	out.ModelVersion = conv70
+	return out, nil
+}
+
+// UpdateRegisteredModelRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRegisteredModelRequestToSDK(w *UpdateRegisteredModelRequest) (*sdk.UpdateRegisteredModelRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRegisteredModelRequest{}
+	out.Name = w.Name
+	out.Description = w.Description
+	return out, nil
+}
+
+// UpdateRegisteredModelRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRegisteredModelRequestFromSDK(v *sdk.UpdateRegisteredModelRequest) (*UpdateRegisteredModelRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRegisteredModelRequest{}
+	out.Name = v.Name
+	out.Description = v.Description
+	return out, nil
+}
+
+// UpdateRegisteredModelResponseToSDK converts the mirror to the sdk-go type.
+func UpdateRegisteredModelResponseToSDK(w *UpdateRegisteredModelResponse) (*sdk.UpdateRegisteredModelResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRegisteredModelResponse{}
+	conv71, err := RegisteredModelToSDK(w.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv71
+	return out, nil
+}
+
+// UpdateRegisteredModelResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateRegisteredModelResponseFromSDK(v *sdk.UpdateRegisteredModelResponse) (*UpdateRegisteredModelResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRegisteredModelResponse{}
+	conv72, err := RegisteredModelFromSDK(v.RegisteredModel)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegisteredModelResponse.RegisteredModel", err)
+	}
+	out.RegisteredModel = conv72
+	return out, nil
+}
+
+// UpdateRegistryWebhookRequestToSDK converts the mirror to the sdk-go type.
+func UpdateRegistryWebhookRequestToSDK(w *UpdateRegistryWebhookRequest) (*sdk.UpdateRegistryWebhookRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.UpdateRegistryWebhookRequest{}
+	out.Id = w.Id
+	out.Events = w.Events
+	out.Description = w.Description
+	out.Status = w.Status
+	conv73, err := HttpUrlSpecToSDK(w.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv73
+	conv74, err := JobSpecToSDK(w.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.JobSpec", err)
+	}
+	out.JobSpec = conv74
+	return out, nil
+}
+
+// UpdateRegistryWebhookRequestFromSDK converts the sdk-go type to the mirror.
+func UpdateRegistryWebhookRequestFromSDK(v *sdk.UpdateRegistryWebhookRequest) (*UpdateRegistryWebhookRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRegistryWebhookRequest{}
+	out.Id = v.Id
+	out.Events = v.Events
+	out.Description = v.Description
+	out.Status = v.Status
+	conv75, err := HttpUrlSpecFromSDK(v.HttpUrlSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.HttpUrlSpec", err)
+	}
+	out.HttpUrlSpec = conv75
+	conv76, err := JobSpecFromSDK(v.JobSpec)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookRequest.JobSpec", err)
+	}
+	out.JobSpec = conv76
+	return out, nil
+}
+
+// UpdateRegistryWebhookResponseToSDK converts the mirror to the sdk-go type.
 func UpdateRegistryWebhookResponseToSDK(w *UpdateRegistryWebhookResponse) (*sdk.UpdateRegistryWebhookResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	webhookPublicValue, err := RegistryWebhookToSDK(w.Webhook)
+	out := &sdk.UpdateRegistryWebhookResponse{}
+	conv77, err := RegistryWebhookToSDK(w.Webhook)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookResponse.Webhook", err)
 	}
-	return &sdk.UpdateRegistryWebhookResponse{
-		Webhook: webhookPublicValue,
-	}, nil
+	out.Webhook = conv77
+	return out, nil
+}
+
+// UpdateRegistryWebhookResponseFromSDK converts the sdk-go type to the mirror.
+func UpdateRegistryWebhookResponseFromSDK(v *sdk.UpdateRegistryWebhookResponse) (*UpdateRegistryWebhookResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &UpdateRegistryWebhookResponse{}
+	conv78, err := RegistryWebhookFromSDK(v.Webhook)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "UpdateRegistryWebhookResponse.Webhook", err)
+	}
+	out.Webhook = conv78
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

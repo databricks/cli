@@ -278,22 +278,6 @@ const (
 	StatementStatus_State_Closed                                       = sdk.StatementStatus_State_Closed
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ChunkInfo struct {
 	// The position within the sequence of result set chunks.
 	ChunkIndex *int `json:"chunk_index,omitempty"`
@@ -313,32 +297,6 @@ type ChunkInfo struct {
 	// joined with your `$DATABRICKS_HOST`, and should be treated as an opaque link.
 	// This is an alternative to using `next_chunk_index`.
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
-}
-
-func ChunkInfoToSDK(w *ChunkInfo) (*sdk.ChunkInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ChunkInfo.ByteCount", err)
-	}
-	return &sdk.ChunkInfo{
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
 }
 
 type ColumnInfo struct {
@@ -366,30 +324,6 @@ type ColumnInfo struct {
 	Mask           *ColumnMask `json:"mask,omitempty"`
 }
 
-func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
-	if w == nil {
-		return nil, nil
-	}
-	maskPublicValue, err := ColumnMaskToSDK(w.Mask)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
-	}
-	return &sdk.ColumnInfo{
-		Name:             w.Name,
-		TypeText:         w.TypeText,
-		TypeName:         w.TypeName,
-		Position:         w.Position,
-		TypePrecision:    w.TypePrecision,
-		TypeScale:        w.TypeScale,
-		TypeIntervalType: w.TypeIntervalType,
-		TypeJson:         w.TypeJson,
-		Comment:          w.Comment,
-		Nullable:         w.Nullable,
-		PartitionIndex:   w.PartitionIndex,
-		Mask:             maskPublicValue,
-	}, nil
-}
-
 type ColumnMask struct {
 	// The full name of the column mask SQL UDF.
 	FunctionName *string `json:"function_name,omitempty"`
@@ -404,21 +338,6 @@ type ColumnMask struct {
 	UsingArguments []PolicyFunctionArgument `json:"using_arguments,omitempty"`
 }
 
-func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
-	if w == nil {
-		return nil, nil
-	}
-	usingArgumentsPublicValue, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
-	}
-	return &sdk.ColumnMask{
-		FunctionName:     w.FunctionName,
-		UsingColumnNames: w.UsingColumnNames,
-		UsingArguments:   usingArgumentsPublicValue,
-	}, nil
-}
-
 // Serialization format for DatabricksServiceException. Note the definition of
 // this message should be in sync with
 // DatabricksServiceExceptionWithDetailsProto defined in
@@ -428,17 +347,6 @@ type DatabricksServiceExceptionProto struct {
 	ErrorCode  ErrorCode `json:"error_code,omitempty"`
 	Message    *string   `json:"message,omitempty"`
 	StackTrace *string   `json:"stack_trace,omitempty"`
-}
-
-func DatabricksServiceExceptionProtoToSDK(w *DatabricksServiceExceptionProto) (*sdk.DatabricksServiceExceptionProto, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.DatabricksServiceExceptionProto{
-		ErrorCode:  w.ErrorCode,
-		Message:    w.Message,
-		StackTrace: w.StackTrace,
-	}, nil
 }
 
 type ExternalLink struct {
@@ -476,35 +384,6 @@ type ExternalLink struct {
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
 }
 
-func ExternalLinkToSDK(w *ExternalLink) (*sdk.ExternalLink, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ExternalLink.ByteCount", err)
-	}
-	return &sdk.ExternalLink{
-		ExternalLink:          w.ExternalLink,
-		Expiration:            w.Expiration,
-		HttpHeaders:           w.HttpHeaders,
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
-}
-
 // Genie AI Response.
 type GenieAttachment struct {
 	Text               *TextAttachment                    `json:"text,omitempty"`
@@ -515,59 +394,6 @@ type GenieAttachment struct {
 	AttachmentId *string `json:"attachment_id,omitempty"`
 }
 
-func GenieAttachmentToSDK(w *GenieAttachment) (*sdk.GenieAttachment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	attachmentMembers := 0
-	if w.Text != nil {
-		attachmentMembers++
-	}
-	if w.Query != nil {
-		attachmentMembers++
-	}
-	if w.SuggestedQuestions != nil {
-		attachmentMembers++
-	}
-	if w.Viz != nil {
-		attachmentMembers++
-	}
-	if attachmentMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "GenieAttachment.Attachment")
-	}
-	attachmentSelection := (&sdk.GenieAttachment{}).Attachment
-	switch {
-	case w.Text != nil:
-		attachmentTextConverted, err := TextAttachmentToSDK(w.Text)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment.Text", err)
-		}
-		attachmentSelection = &sdk.GenieAttachment_Attachment_Text{Text: *attachmentTextConverted}
-	case w.Query != nil:
-		attachmentQueryConverted, err := GenieQueryAttachmentToSDK(w.Query)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment.Query", err)
-		}
-		attachmentSelection = &sdk.GenieAttachment_Attachment_Query{Query: *attachmentQueryConverted}
-	case w.SuggestedQuestions != nil:
-		attachmentSuggestedQuestionsConverted, err := GenieSuggestedQuestionsAttachmentToSDK(w.SuggestedQuestions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment.SuggestedQuestions", err)
-		}
-		attachmentSelection = &sdk.GenieAttachment_Attachment_SuggestedQuestions{SuggestedQuestions: *attachmentSuggestedQuestionsConverted}
-	case w.Viz != nil:
-		attachmentVizConverted, err := GenieVizAttachmentToSDK(w.Viz)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment.Viz", err)
-		}
-		attachmentSelection = &sdk.GenieAttachment_Attachment_Viz{Viz: *attachmentVizConverted}
-	}
-	return &sdk.GenieAttachment{
-		AttachmentId: w.AttachmentId,
-		Attachment:   attachmentSelection,
-	}, nil
-}
-
 // Request to cancel an in-flight agent-mode response..
 type GenieCancelResponseRequest struct {
 	// The ID of the Genie agent (synonymous with the Genie space ID).
@@ -576,17 +402,6 @@ type GenieCancelResponseRequest struct {
 	ConversationId *string `json:"conversation_id,omitempty"`
 	// The ID of the response to cancel (the id from the `response.created` event).
 	ResponseId *string `json:"response_id,omitempty"`
-}
-
-func GenieCancelResponseRequestFromSDK(v *sdk.GenieCancelResponseRequest) (*GenieCancelResponseRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieCancelResponseRequest{
-		AgentId:        v.AgentId,
-		ConversationId: v.ConversationId,
-		ResponseId:     v.ResponseId,
-	}, nil
 }
 
 // A Genie conversation. Use chat-mode message endpoints for classic chats and
@@ -609,33 +424,6 @@ type GenieConversation struct {
 	ConversationId *string `json:"conversation_id,omitempty"`
 }
 
-func GenieConversationToSDK(w *GenieConversation) (*sdk.GenieConversation, error) {
-	if w == nil {
-		return nil, nil
-	}
-	userIdPublicValue, err := int64FromWire(w.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieConversation.UserId", err)
-	}
-	createdTimestampPublicValue, err := int64FromWire(w.CreatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieConversation.CreatedTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieConversation.LastUpdatedTimestamp", err)
-	}
-	return &sdk.GenieConversation{
-		Id:                   w.Id,
-		SpaceId:              w.SpaceId,
-		UserId:               userIdPublicValue,
-		CreatedTimestamp:     createdTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		Title:                w.Title,
-		ConversationId:       w.ConversationId,
-	}, nil
-}
-
 type GenieConversationSummary struct {
 	ConversationId   *string `json:"conversation_id,omitempty"`
 	Title            *string `json:"title,omitempty"`
@@ -643,22 +431,6 @@ type GenieConversationSummary struct {
 	// Whether this is a classic chat or an agent-mode conversation. Allows callers
 	// to route message retrieval (chat vs. agent endpoint) without an extra lookup.
 	AgentType GenieConversationType `json:"agent_type,omitempty"`
-}
-
-func GenieConversationSummaryToSDK(w *GenieConversationSummary) (*sdk.GenieConversationSummary, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdTimestampPublicValue, err := int64FromWire(w.CreatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieConversationSummary.CreatedTimestamp", err)
-	}
-	return &sdk.GenieConversationSummary{
-		ConversationId:   w.ConversationId,
-		Title:            w.Title,
-		CreatedTimestamp: createdTimestampPublicValue,
-		AgentType:        w.AgentType,
-	}, nil
 }
 
 type GenieCreateConversationMessageRequest struct {
@@ -672,18 +444,6 @@ type GenieCreateConversationMessageRequest struct {
 	EnableVisualization *bool `json:"enable_visualization,omitempty"`
 }
 
-func GenieCreateConversationMessageRequestFromSDK(v *sdk.GenieCreateConversationMessageRequest) (*GenieCreateConversationMessageRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieCreateConversationMessageRequest{
-		SpaceId:             v.SpaceId,
-		ConversationId:      v.ConversationId,
-		Content:             v.Content,
-		EnableVisualization: v.EnableVisualization,
-	}, nil
-}
-
 type GenieCreateEvalRunRequest struct {
 	// The ID associated with the Genie space where the evaluations will be
 	// executed.
@@ -692,16 +452,6 @@ type GenieCreateEvalRunRequest struct {
 	// specified Genie space. If none are specified, then all benchmark questions
 	// are evaluated.
 	BenchmarkQuestionIds []string `json:"benchmark_question_ids,omitempty"`
-}
-
-func GenieCreateEvalRunRequestFromSDK(v *sdk.GenieCreateEvalRunRequest) (*GenieCreateEvalRunRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieCreateEvalRunRequest{
-		SpaceId:              v.SpaceId,
-		BenchmarkQuestionIds: v.BenchmarkQuestionIds,
-	}, nil
 }
 
 type GenieCreateMessageCommentRequest struct {
@@ -713,18 +463,6 @@ type GenieCreateMessageCommentRequest struct {
 	MessageId *string `json:"message_id,omitempty"`
 	// Comment text content.
 	Content *string `json:"content,omitempty"`
-}
-
-func GenieCreateMessageCommentRequestFromSDK(v *sdk.GenieCreateMessageCommentRequest) (*GenieCreateMessageCommentRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieCreateMessageCommentRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		MessageId:      v.MessageId,
-		Content:        v.Content,
-	}, nil
 }
 
 type GenieCreateSpaceRequest struct {
@@ -743,19 +481,6 @@ type GenieCreateSpaceRequest struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func GenieCreateSpaceRequestFromSDK(v *sdk.GenieCreateSpaceRequest) (*GenieCreateSpaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieCreateSpaceRequest{
-		WarehouseId:     v.WarehouseId,
-		ParentPath:      v.ParentPath,
-		SerializedSpace: v.SerializedSpace,
-		Title:           v.Title,
-		Description:     v.Description,
-	}, nil
-}
-
 type GenieEvalResponse struct {
 	// The response content (either text or SQL query).
 	Response *string `json:"response,omitempty"`
@@ -763,21 +488,6 @@ type GenieEvalResponse struct {
 	SqlExecutionResult *StatementResponse `json:"sql_execution_result,omitempty"`
 	// Type of response
 	ResponseType GenieEvalResponseType `json:"response_type,omitempty"`
-}
-
-func GenieEvalResponseToSDK(w *GenieEvalResponse) (*sdk.GenieEvalResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	sqlExecutionResultPublicValue, err := StatementResponseToSDK(w.SqlExecutionResult)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalResponse.SqlExecutionResult", err)
-	}
-	return &sdk.GenieEvalResponse{
-		Response:           w.Response,
-		SqlExecutionResult: sqlExecutionResultPublicValue,
-		ResponseType:       w.ResponseType,
-	}, nil
 }
 
 // Shows summary information for an evaluation result. For detailed information
@@ -798,25 +508,6 @@ type GenieEvalResult struct {
 	BenchmarkAnswer *string `json:"benchmark_answer,omitempty"`
 	// User ID who created evaluation result.
 	CreatedByUser *int64 `json:"created_by_user,omitempty"`
-}
-
-func GenieEvalResultToSDK(w *GenieEvalResult) (*sdk.GenieEvalResult, error) {
-	if w == nil {
-		return nil, nil
-	}
-	createdByUserPublicValue, err := int64FromWire(w.CreatedByUser)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalResult.CreatedByUser", err)
-	}
-	return &sdk.GenieEvalResult{
-		ResultId:            w.ResultId,
-		SpaceId:             w.SpaceId,
-		BenchmarkQuestionId: w.BenchmarkQuestionId,
-		Status:              w.Status,
-		Question:            w.Question,
-		BenchmarkAnswer:     w.BenchmarkAnswer,
-		CreatedByUser:       createdByUserPublicValue,
-	}, nil
 }
 
 // Shows detailed information for an evaluation result..
@@ -888,31 +579,6 @@ type GenieEvalResultDetails struct {
 	ExpectedResponse []GenieEvalResponse `json:"expected_response,omitempty"`
 }
 
-func GenieEvalResultDetailsToSDK(w *GenieEvalResultDetails) (*sdk.GenieEvalResultDetails, error) {
-	if w == nil {
-		return nil, nil
-	}
-	actualResponsePublicValue, err := convertSlice(w.ActualResponse, GenieEvalResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ActualResponse", err)
-	}
-	expectedResponsePublicValue, err := convertSlice(w.ExpectedResponse, GenieEvalResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ExpectedResponse", err)
-	}
-	return &sdk.GenieEvalResultDetails{
-		ResultId:            w.ResultId,
-		SpaceId:             w.SpaceId,
-		BenchmarkQuestionId: w.BenchmarkQuestionId,
-		EvalRunStatus:       w.EvalRunStatus,
-		Assessment:          w.Assessment,
-		ManualAssessment:    w.ManualAssessment,
-		AssessmentReasons:   w.AssessmentReasons,
-		ActualResponse:      actualResponsePublicValue,
-		ExpectedResponse:    expectedResponsePublicValue,
-	}, nil
-}
-
 // A benchmark evaluation run. The public benchmark API currently evaluates
 // chat-mode responses..
 type GenieEvalRunResponse struct {
@@ -937,51 +603,6 @@ type GenieEvalRunResponse struct {
 	LastUpdatedTimestamp *int64 `json:"last_updated_timestamp,omitempty"`
 }
 
-func GenieEvalRunResponseToSDK(w *GenieEvalRunResponse) (*sdk.GenieEvalRunResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	runByUserPublicValue, err := int64FromWire(w.RunByUser)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.RunByUser", err)
-	}
-	createdTimestampPublicValue, err := int64FromWire(w.CreatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.CreatedTimestamp", err)
-	}
-	numQuestionsPublicValue, err := int64FromWire(w.NumQuestions)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.NumQuestions", err)
-	}
-	numCorrectPublicValue, err := int64FromWire(w.NumCorrect)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.NumCorrect", err)
-	}
-	numNeedsReviewPublicValue, err := int64FromWire(w.NumNeedsReview)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.NumNeedsReview", err)
-	}
-	numDonePublicValue, err := int64FromWire(w.NumDone)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.NumDone", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieEvalRunResponse.LastUpdatedTimestamp", err)
-	}
-	return &sdk.GenieEvalRunResponse{
-		EvalRunId:            w.EvalRunId,
-		EvalRunStatus:        w.EvalRunStatus,
-		RunByUser:            runByUserPublicValue,
-		CreatedTimestamp:     createdTimestampPublicValue,
-		NumQuestions:         numQuestionsPublicValue,
-		NumCorrect:           numCorrectPublicValue,
-		NumNeedsReview:       numNeedsReviewPublicValue,
-		NumDone:              numDonePublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-	}, nil
-}
-
 type GenieExecuteMessageAttachmentQueryRequest struct {
 	// Message ID
 	MessageId *string `json:"message_id,omitempty"`
@@ -993,18 +614,6 @@ type GenieExecuteMessageAttachmentQueryRequest struct {
 	AttachmentId *string `json:"attachment_id,omitempty"`
 }
 
-func GenieExecuteMessageAttachmentQueryRequestFromSDK(v *sdk.GenieExecuteMessageAttachmentQueryRequest) (*GenieExecuteMessageAttachmentQueryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieExecuteMessageAttachmentQueryRequest{
-		MessageId:      v.MessageId,
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		AttachmentId:   v.AttachmentId,
-	}, nil
-}
-
 type GenieExecuteMessageQueryRequest struct {
 	// Message ID
 	MessageId *string `json:"message_id,omitempty"`
@@ -1014,33 +623,12 @@ type GenieExecuteMessageQueryRequest struct {
 	ConversationId *string `json:"conversation_id,omitempty"`
 }
 
-func GenieExecuteMessageQueryRequestFromSDK(v *sdk.GenieExecuteMessageQueryRequest) (*GenieExecuteMessageQueryRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieExecuteMessageQueryRequest{
-		MessageId:      v.MessageId,
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-	}, nil
-}
-
 // Feedback containing rating and optional comment.
 type GenieFeedback struct {
 	// The feedback rating
 	Rating GenieFeedbackRating `json:"rating,omitempty"`
 	// Optional feedback comment text
 	Comment *string `json:"comment,omitempty"`
-}
-
-func GenieFeedbackToSDK(w *GenieFeedback) (*sdk.GenieFeedback, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieFeedback{
-		Rating:  w.Rating,
-		Comment: w.Comment,
-	}, nil
 }
 
 type GenieGenerateDownloadFullQueryResultRequest struct {
@@ -1054,34 +642,12 @@ type GenieGenerateDownloadFullQueryResultRequest struct {
 	AttachmentId *string `json:"attachment_id,omitempty"`
 }
 
-func GenieGenerateDownloadFullQueryResultRequestFromSDK(v *sdk.GenieGenerateDownloadFullQueryResultRequest) (*GenieGenerateDownloadFullQueryResultRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieGenerateDownloadFullQueryResultRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		MessageId:      v.MessageId,
-		AttachmentId:   v.AttachmentId,
-	}, nil
-}
-
 type GenieGenerateDownloadFullQueryResultResponse struct {
 	// Download ID. Use this ID to track the download request in subsequent polling
 	// calls
 	DownloadId *string `json:"download_id,omitempty"`
 	// JWT signature for the download_id to ensure secure access to query results
 	DownloadIdSignature *string `json:"download_id_signature,omitempty"`
-}
-
-func GenieGenerateDownloadFullQueryResultResponseToSDK(w *GenieGenerateDownloadFullQueryResultResponse) (*sdk.GenieGenerateDownloadFullQueryResultResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieGenerateDownloadFullQueryResultResponse{
-		DownloadId:          w.DownloadId,
-		DownloadIdSignature: w.DownloadIdSignature,
-	}, nil
 }
 
 type GenieGetDownloadFullQueryResultRequest struct {
@@ -1100,37 +666,10 @@ type GenieGetDownloadFullQueryResultRequest struct {
 	DownloadIdSignature *string `json:"download_id_signature,omitempty"`
 }
 
-func GenieGetDownloadFullQueryResultRequestFromSDK(v *sdk.GenieGetDownloadFullQueryResultRequest) (*GenieGetDownloadFullQueryResultRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieGetDownloadFullQueryResultRequest{
-		SpaceId:             v.SpaceId,
-		ConversationId:      v.ConversationId,
-		MessageId:           v.MessageId,
-		AttachmentId:        v.AttachmentId,
-		DownloadId:          v.DownloadId,
-		DownloadIdSignature: v.DownloadIdSignature,
-	}, nil
-}
-
 type GenieGetDownloadFullQueryResultResponse struct {
 	// SQL Statement Execution response. See [Get status, manifest, and result first
 	// chunk](:method:statementexecution/getstatement) for more details.
 	StatementResponse *StatementResponse `json:"statement_response,omitempty"`
-}
-
-func GenieGetDownloadFullQueryResultResponseToSDK(w *GenieGetDownloadFullQueryResultResponse) (*sdk.GenieGetDownloadFullQueryResultResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statementResponsePublicValue, err := StatementResponseToSDK(w.StatementResponse)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieGetDownloadFullQueryResultResponse.StatementResponse", err)
-	}
-	return &sdk.GenieGetDownloadFullQueryResultResponse{
-		StatementResponse: statementResponsePublicValue,
-	}, nil
 }
 
 type GenieGetMessageQueryResultResponse struct {
@@ -1139,35 +678,12 @@ type GenieGetMessageQueryResultResponse struct {
 	StatementResponse *StatementResponse `json:"statement_response,omitempty"`
 }
 
-func GenieGetMessageQueryResultResponseToSDK(w *GenieGetMessageQueryResultResponse) (*sdk.GenieGetMessageQueryResultResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statementResponsePublicValue, err := StatementResponseToSDK(w.StatementResponse)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieGetMessageQueryResultResponse.StatementResponse", err)
-	}
-	return &sdk.GenieGetMessageQueryResultResponse{
-		StatementResponse: statementResponsePublicValue,
-	}, nil
-}
-
 type GenieGetSpaceRequest struct {
 	// The ID associated with the Genie space
 	SpaceId *string `json:"space_id,omitempty"`
 	// Whether to include the serialized space export in the response. Requires at
 	// least CAN EDIT permission on the space.
 	IncludeSerializedSpace *bool `json:"include_serialized_space,omitempty"`
-}
-
-func GenieGetSpaceRequestFromSDK(v *sdk.GenieGetSpaceRequest) (*GenieGetSpaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieGetSpaceRequest{
-		SpaceId:                v.SpaceId,
-		IncludeSerializedSpace: v.IncludeSerializedSpace,
-	}, nil
 }
 
 type GenieListConversationCommentsRequest struct {
@@ -1181,37 +697,11 @@ type GenieListConversationCommentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListConversationCommentsRequestFromSDK(v *sdk.GenieListConversationCommentsRequest) (*GenieListConversationCommentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListConversationCommentsRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		PageSize:       v.PageSize,
-		PageToken:      v.PageToken,
-	}, nil
-}
-
 type GenieListConversationCommentsResponse struct {
 	// List of comments in the conversation.
 	Comments []GenieMessageComment `json:"comments,omitempty"`
 	// Token to get the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListConversationCommentsResponseToSDK(w *GenieListConversationCommentsResponse) (*sdk.GenieListConversationCommentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	commentsPublicValue, err := convertSlice(w.Comments, GenieMessageCommentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListConversationCommentsResponse.Comments", err)
-	}
-	return &sdk.GenieListConversationCommentsResponse{
-		Comments:      commentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListConversationMessagesRequest struct {
@@ -1225,37 +715,11 @@ type GenieListConversationMessagesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListConversationMessagesRequestFromSDK(v *sdk.GenieListConversationMessagesRequest) (*GenieListConversationMessagesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListConversationMessagesRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		PageSize:       v.PageSize,
-		PageToken:      v.PageToken,
-	}, nil
-}
-
 type GenieListConversationMessagesResponse struct {
 	// List of messages in the conversation.
 	Messages []GenieMessage `json:"messages,omitempty"`
 	// The token to use for retrieving the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListConversationMessagesResponseToSDK(w *GenieListConversationMessagesResponse) (*sdk.GenieListConversationMessagesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	messagesPublicValue, err := convertSlice(w.Messages, GenieMessageToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListConversationMessagesResponse.Messages", err)
-	}
-	return &sdk.GenieListConversationMessagesResponse{
-		Messages:      messagesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListConversationsRequest struct {
@@ -1270,37 +734,11 @@ type GenieListConversationsRequest struct {
 	IncludeAll *bool `json:"include_all,omitempty"`
 }
 
-func GenieListConversationsRequestFromSDK(v *sdk.GenieListConversationsRequest) (*GenieListConversationsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListConversationsRequest{
-		SpaceId:    v.SpaceId,
-		PageSize:   v.PageSize,
-		PageToken:  v.PageToken,
-		IncludeAll: v.IncludeAll,
-	}, nil
-}
-
 type GenieListConversationsResponse struct {
 	// List of conversations in the Genie space
 	Conversations []GenieConversationSummary `json:"conversations,omitempty"`
 	// Token to get the next page of results
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListConversationsResponseToSDK(w *GenieListConversationsResponse) (*sdk.GenieListConversationsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	conversationsPublicValue, err := convertSlice(w.Conversations, GenieConversationSummaryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListConversationsResponse.Conversations", err)
-	}
-	return &sdk.GenieListConversationsResponse{
-		Conversations: conversationsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListEvalResultsRequest struct {
@@ -1314,37 +752,11 @@ type GenieListEvalResultsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListEvalResultsRequestFromSDK(v *sdk.GenieListEvalResultsRequest) (*GenieListEvalResultsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListEvalResultsRequest{
-		SpaceId:   v.SpaceId,
-		EvalRunId: v.EvalRunId,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type GenieListEvalResultsResponse struct {
 	// List of evaluation results for the specified run.
 	EvalResults []GenieEvalResult `json:"eval_results,omitempty"`
 	// The token to use for retrieving the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListEvalResultsResponseToSDK(w *GenieListEvalResultsResponse) (*sdk.GenieListEvalResultsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	evalResultsPublicValue, err := convertSlice(w.EvalResults, GenieEvalResultToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListEvalResultsResponse.EvalResults", err)
-	}
-	return &sdk.GenieListEvalResultsResponse{
-		EvalResults:   evalResultsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListEvalRunsRequest struct {
@@ -1356,36 +768,11 @@ type GenieListEvalRunsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListEvalRunsRequestFromSDK(v *sdk.GenieListEvalRunsRequest) (*GenieListEvalRunsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListEvalRunsRequest{
-		SpaceId:   v.SpaceId,
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type GenieListEvalRunsResponse struct {
 	// List of evaluation runs for a space on provided page token and page size
 	EvalRuns []GenieEvalRunResponse `json:"eval_runs,omitempty"`
 	// The token to use for retrieving the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListEvalRunsResponseToSDK(w *GenieListEvalRunsResponse) (*sdk.GenieListEvalRunsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	evalRunsPublicValue, err := convertSlice(w.EvalRuns, GenieEvalRunResponseToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListEvalRunsResponse.EvalRuns", err)
-	}
-	return &sdk.GenieListEvalRunsResponse{
-		EvalRuns:      evalRunsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListMessageCommentsRequest struct {
@@ -1401,38 +788,11 @@ type GenieListMessageCommentsRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListMessageCommentsRequestFromSDK(v *sdk.GenieListMessageCommentsRequest) (*GenieListMessageCommentsRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListMessageCommentsRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		MessageId:      v.MessageId,
-		PageSize:       v.PageSize,
-		PageToken:      v.PageToken,
-	}, nil
-}
-
 type GenieListMessageCommentsResponse struct {
 	// List of comments on the message.
 	Comments []GenieMessageComment `json:"comments,omitempty"`
 	// Token to get the next page of results.
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListMessageCommentsResponseToSDK(w *GenieListMessageCommentsResponse) (*sdk.GenieListMessageCommentsResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	commentsPublicValue, err := convertSlice(w.Comments, GenieMessageCommentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListMessageCommentsResponse.Comments", err)
-	}
-	return &sdk.GenieListMessageCommentsResponse{
-		Comments:      commentsPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieListSpacesRequest struct {
@@ -1442,35 +802,11 @@ type GenieListSpacesRequest struct {
 	PageToken *string `json:"page_token,omitempty"`
 }
 
-func GenieListSpacesRequestFromSDK(v *sdk.GenieListSpacesRequest) (*GenieListSpacesRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieListSpacesRequest{
-		PageSize:  v.PageSize,
-		PageToken: v.PageToken,
-	}, nil
-}
-
 type GenieListSpacesResponse struct {
 	// List of Genie spaces
 	Spaces []GenieSpace `json:"spaces,omitempty"`
 	// Token to get the next page of results
 	NextPageToken *string `json:"next_page_token,omitempty"`
-}
-
-func GenieListSpacesResponseToSDK(w *GenieListSpacesResponse) (*sdk.GenieListSpacesResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	spacesPublicValue, err := convertSlice(w.Spaces, GenieSpaceToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieListSpacesResponse.Spaces", err)
-	}
-	return &sdk.GenieListSpacesResponse{
-		Spaces:        spacesPublicValue,
-		NextPageToken: w.NextPageToken,
-	}, nil
 }
 
 type GenieMessage struct {
@@ -1502,55 +838,6 @@ type GenieMessage struct {
 	Feedback *GenieFeedback `json:"feedback,omitempty"`
 }
 
-func GenieMessageToSDK(w *GenieMessage) (*sdk.GenieMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	userIdPublicValue, err := int64FromWire(w.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.UserId", err)
-	}
-	createdTimestampPublicValue, err := int64FromWire(w.CreatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.CreatedTimestamp", err)
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.LastUpdatedTimestamp", err)
-	}
-	attachmentsPublicValue, err := convertSlice(w.Attachments, GenieAttachmentToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.Attachments", err)
-	}
-	queryResultPublicValue, err := ResultToSDK(w.QueryResult)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.QueryResult", err)
-	}
-	errorPublicValue, err := MessageErrorToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.Error", err)
-	}
-	feedbackPublicValue, err := GenieFeedbackToSDK(w.Feedback)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessage.Feedback", err)
-	}
-	return &sdk.GenieMessage{
-		Id:                   w.Id,
-		SpaceId:              w.SpaceId,
-		ConversationId:       w.ConversationId,
-		UserId:               userIdPublicValue,
-		CreatedTimestamp:     createdTimestampPublicValue,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		Status:               w.Status,
-		Content:              w.Content,
-		Attachments:          attachmentsPublicValue,
-		QueryResult:          queryResultPublicValue,
-		Error:                errorPublicValue,
-		MessageId:            w.MessageId,
-		Feedback:             feedbackPublicValue,
-	}, nil
-}
-
 // A comment on a Genie conversation message..
 type GenieMessageComment struct {
 	// Genie space ID
@@ -1567,29 +854,6 @@ type GenieMessageComment struct {
 	Content *string `json:"content,omitempty"`
 	// Timestamp when the comment was created
 	CreatedTimestamp *int64 `json:"created_timestamp,omitempty"`
-}
-
-func GenieMessageCommentToSDK(w *GenieMessageComment) (*sdk.GenieMessageComment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	userIdPublicValue, err := int64FromWire(w.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessageComment.UserId", err)
-	}
-	createdTimestampPublicValue, err := int64FromWire(w.CreatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieMessageComment.CreatedTimestamp", err)
-	}
-	return &sdk.GenieMessageComment{
-		SpaceId:          w.SpaceId,
-		ConversationId:   w.ConversationId,
-		MessageId:        w.MessageId,
-		MessageCommentId: w.MessageCommentId,
-		UserId:           userIdPublicValue,
-		Content:          w.Content,
-		CreatedTimestamp: createdTimestampPublicValue,
-	}, nil
 }
 
 type GenieQueryAttachment struct {
@@ -1613,58 +877,11 @@ type GenieQueryAttachment struct {
 	Thoughts []Thought `json:"thoughts,omitempty"`
 }
 
-func GenieQueryAttachmentToSDK(w *GenieQueryAttachment) (*sdk.GenieQueryAttachment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	lastUpdatedTimestampPublicValue, err := int64FromWire(w.LastUpdatedTimestamp)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.LastUpdatedTimestamp", err)
-	}
-	parametersPublicValue, err := convertSlice(w.Parameters, QueryAttachmentParameterToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Parameters", err)
-	}
-	queryResultMetadataPublicValue, err := GenieResultMetadataToSDK(w.QueryResultMetadata)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.QueryResultMetadata", err)
-	}
-	thoughtsPublicValue, err := convertSlice(w.Thoughts, ThoughtToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Thoughts", err)
-	}
-	return &sdk.GenieQueryAttachment{
-		Title:                w.Title,
-		Query:                w.Query,
-		Description:          w.Description,
-		LastUpdatedTimestamp: lastUpdatedTimestampPublicValue,
-		Parameters:           parametersPublicValue,
-		Id:                   w.Id,
-		StatementId:          w.StatementId,
-		QueryResultMetadata:  queryResultMetadataPublicValue,
-		Thoughts:             thoughtsPublicValue,
-	}, nil
-}
-
 type GenieResultMetadata struct {
 	// The number of rows in the result set.
 	RowCount *int64 `json:"row_count,omitempty"`
 	// Indicates whether the result set is truncated.
 	IsTruncated *bool `json:"is_truncated,omitempty"`
-}
-
-func GenieResultMetadataToSDK(w *GenieResultMetadata) (*sdk.GenieResultMetadata, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieResultMetadata.RowCount", err)
-	}
-	return &sdk.GenieResultMetadata{
-		RowCount:    rowCountPublicValue,
-		IsTruncated: w.IsTruncated,
-	}, nil
 }
 
 type GenieSendMessageFeedbackRequest struct {
@@ -1678,19 +895,6 @@ type GenieSendMessageFeedbackRequest struct {
 	Rating GenieFeedbackRating `json:"rating,omitempty"`
 	// Optional text feedback that will be stored as a comment.
 	Comment *string `json:"comment,omitempty"`
-}
-
-func GenieSendMessageFeedbackRequestFromSDK(v *sdk.GenieSendMessageFeedbackRequest) (*GenieSendMessageFeedbackRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieSendMessageFeedbackRequest{
-		SpaceId:        v.SpaceId,
-		ConversationId: v.ConversationId,
-		MessageId:      v.MessageId,
-		Rating:         v.Rating,
-		Comment:        v.Comment,
-	}, nil
 }
 
 type GenieSpace struct {
@@ -1720,23 +924,6 @@ type GenieSpace struct {
 	UpdateTime *types.Time `json:"update_time,omitempty"`
 }
 
-func GenieSpaceToSDK(w *GenieSpace) (*sdk.GenieSpace, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieSpace{
-		SpaceId:         w.SpaceId,
-		Title:           w.Title,
-		Description:     w.Description,
-		WarehouseId:     w.WarehouseId,
-		ParentPath:      w.ParentPath,
-		SerializedSpace: w.SerializedSpace,
-		Etag:            w.Etag,
-		CreateTime:      w.CreateTime,
-		UpdateTime:      w.UpdateTime,
-	}, nil
-}
-
 type GenieStartConversationRequest struct {
 	// The ID associated with the Genie space where you want to start a
 	// conversation.
@@ -1745,17 +932,6 @@ type GenieStartConversationRequest struct {
 	Content *string `json:"content,omitempty"`
 	// Enable visualization generation.
 	EnableVisualization *bool `json:"enable_visualization,omitempty"`
-}
-
-func GenieStartConversationRequestFromSDK(v *sdk.GenieStartConversationRequest) (*GenieStartConversationRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieStartConversationRequest{
-		SpaceId:             v.SpaceId,
-		Content:             v.Content,
-		EnableVisualization: v.EnableVisualization,
-	}, nil
 }
 
 type GenieStartConversationResponse struct {
@@ -1767,39 +943,10 @@ type GenieStartConversationResponse struct {
 	Conversation   *GenieConversation `json:"conversation,omitempty"`
 }
 
-func GenieStartConversationResponseToSDK(w *GenieStartConversationResponse) (*sdk.GenieStartConversationResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	messagePublicValue, err := GenieMessageToSDK(w.Message)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Message", err)
-	}
-	conversationPublicValue, err := GenieConversationToSDK(w.Conversation)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Conversation", err)
-	}
-	return &sdk.GenieStartConversationResponse{
-		MessageId:      w.MessageId,
-		Message:        messagePublicValue,
-		ConversationId: w.ConversationId,
-		Conversation:   conversationPublicValue,
-	}, nil
-}
-
 // Follow-up questions suggested by Genie.
 type GenieSuggestedQuestionsAttachment struct {
 	// The suggested follow-up questions
 	Questions []string `json:"questions,omitempty"`
-}
-
-func GenieSuggestedQuestionsAttachmentToSDK(w *GenieSuggestedQuestionsAttachment) (*sdk.GenieSuggestedQuestionsAttachment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieSuggestedQuestionsAttachment{
-		Questions: w.Questions,
-	}, nil
 }
 
 type GenieUpdateSpaceRequest struct {
@@ -1824,21 +971,6 @@ type GenieUpdateSpaceRequest struct {
 	ParentPath *string `json:"parent_path,omitempty"`
 }
 
-func GenieUpdateSpaceRequestFromSDK(v *sdk.GenieUpdateSpaceRequest) (*GenieUpdateSpaceRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &GenieUpdateSpaceRequest{
-		SpaceId:         v.SpaceId,
-		SerializedSpace: v.SerializedSpace,
-		Title:           v.Title,
-		Description:     v.Description,
-		WarehouseId:     v.WarehouseId,
-		Etag:            v.Etag,
-		ParentPath:      v.ParentPath,
-	}, nil
-}
-
 // Visualization generated by Genie for a query result. Use the attachment ID
 // with the download visualization API to retrieve the rendered image..
 type GenieVizAttachment struct {
@@ -1846,16 +978,6 @@ type GenieVizAttachment struct {
 	Title *string `json:"title,omitempty"`
 	// The ID of the query attachment the visualization was generated from
 	QueryAttachmentId *string `json:"query_attachment_id,omitempty"`
-}
-
-func GenieVizAttachmentToSDK(w *GenieVizAttachment) (*sdk.GenieVizAttachment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.GenieVizAttachment{
-		Title:             w.Title,
-		QueryAttachmentId: w.QueryAttachmentId,
-	}, nil
 }
 
 // copied from proto3 / Google Well Known Types, source:
@@ -1868,19 +990,6 @@ type ListValue struct {
 	Values []Value `json:"values,omitempty"`
 }
 
-func ListValueToSDK(w *ListValue) (*sdk.ListValue, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuesPublicValue, err := convertSlice(w.Values, ValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
-	}
-	return &sdk.ListValue{
-		Values: valuesPublicValue,
-	}, nil
-}
-
 // <Databricks> proto compiler is too old and does not support map. This is wire
 // compatible with map<string,string>. See
 // https://developers.google.com/protocol-buffers/docs/proto#backwards_compatibility..
@@ -1889,33 +998,9 @@ type MapStringValueEntry struct {
 	Value *Value  `json:"value,omitempty"`
 }
 
-func MapStringValueEntryToSDK(w *MapStringValueEntry) (*sdk.MapStringValueEntry, error) {
-	if w == nil {
-		return nil, nil
-	}
-	valuePublicValue, err := ValueToSDK(w.Value)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
-	}
-	return &sdk.MapStringValueEntry{
-		Key:   w.Key,
-		Value: valuePublicValue,
-	}, nil
-}
-
 type MessageError struct {
 	Error *string           `json:"error,omitempty"`
 	Type  MessageError_Type `json:"type,omitempty"`
-}
-
-func MessageErrorToSDK(w *MessageError) (*sdk.MessageError, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.MessageError{
-		Error: w.Error,
-		Type:  w.Type,
-	}, nil
 }
 
 // A positional argument passed to a row filter or column mask function.
@@ -1925,47 +1010,10 @@ type PolicyFunctionArgument struct {
 	Constant *string `json:"constant,omitempty"`
 }
 
-func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
-	if w == nil {
-		return nil, nil
-	}
-	argMembers := 0
-	if w.Column != nil {
-		argMembers++
-	}
-	if w.Constant != nil {
-		argMembers++
-	}
-	if argMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
-	}
-	argSelection := (&sdk.PolicyFunctionArgument{}).Arg
-	switch {
-	case w.Column != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
-	case w.Constant != nil:
-		argSelection = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
-	}
-	return &sdk.PolicyFunctionArgument{
-		Arg: argSelection,
-	}, nil
-}
-
 type QueryAttachmentParameter struct {
 	Keyword *string `json:"keyword,omitempty"`
 	Value   *string `json:"value,omitempty"`
 	SqlType *string `json:"sql_type,omitempty"`
-}
-
-func QueryAttachmentParameterToSDK(w *QueryAttachmentParameter) (*sdk.QueryAttachmentParameter, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.QueryAttachmentParameter{
-		Keyword: w.Keyword,
-		Value:   w.Value,
-		SqlType: w.SqlType,
-	}, nil
 }
 
 type Result struct {
@@ -1979,22 +1027,6 @@ type Result struct {
 	IsTruncated *bool `json:"is_truncated,omitempty"`
 	// JWT corresponding to the statement contained in this result
 	StatementIdSignature *string `json:"statement_id_signature,omitempty"`
-}
-
-func ResultToSDK(w *Result) (*sdk.Result, error) {
-	if w == nil {
-		return nil, nil
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Result.RowCount", err)
-	}
-	return &sdk.Result{
-		StatementId:          w.StatementId,
-		RowCount:             rowCountPublicValue,
-		IsTruncated:          w.IsTruncated,
-		StatementIdSignature: w.StatementIdSignature,
-	}, nil
 }
 
 // Contains the result data of a single chunk when using `INLINE` disposition.
@@ -2028,42 +1060,6 @@ type ResultData struct {
 	NextChunkInternalLink *string `json:"next_chunk_internal_link,omitempty"`
 }
 
-func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
-	if w == nil {
-		return nil, nil
-	}
-	externalLinksPublicValue, err := convertSlice(w.ExternalLinks, ExternalLinkToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
-	}
-	dataArrayPublicValue, err := convertSlice(w.DataArray, ListValueToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.DataArray", err)
-	}
-	rowOffsetPublicValue, err := int64FromWire(w.RowOffset)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.RowOffset", err)
-	}
-	rowCountPublicValue, err := int64FromWire(w.RowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.RowCount", err)
-	}
-	byteCountPublicValue, err := int64FromWire(w.ByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultData.ByteCount", err)
-	}
-	return &sdk.ResultData{
-		ExternalLinks:         externalLinksPublicValue,
-		DataArray:             dataArrayPublicValue,
-		ChunkIndex:            w.ChunkIndex,
-		RowOffset:             rowOffsetPublicValue,
-		RowCount:              rowCountPublicValue,
-		ByteCount:             byteCountPublicValue,
-		NextChunkIndex:        w.NextChunkIndex,
-		NextChunkInternalLink: w.NextChunkInternalLink,
-	}, nil
-}
-
 // The result manifest provides schema and metadata for the result set..
 type ResultManifest struct {
 	Format Format  `json:"format,omitempty"`
@@ -2081,54 +1077,9 @@ type ResultManifest struct {
 	Truncated *bool `json:"truncated,omitempty"`
 }
 
-func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
-	if w == nil {
-		return nil, nil
-	}
-	schemaPublicValue, err := SchemaToSDK(w.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
-	}
-	chunksPublicValue, err := convertSlice(w.Chunks, ChunkInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
-	}
-	totalRowCountPublicValue, err := int64FromWire(w.TotalRowCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.TotalRowCount", err)
-	}
-	totalByteCountPublicValue, err := int64FromWire(w.TotalByteCount)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "ResultManifest.TotalByteCount", err)
-	}
-	return &sdk.ResultManifest{
-		Format:          w.Format,
-		Schema:          schemaPublicValue,
-		TotalChunkCount: w.TotalChunkCount,
-		Chunks:          chunksPublicValue,
-		TotalRowCount:   totalRowCountPublicValue,
-		TotalByteCount:  totalByteCountPublicValue,
-		Truncated:       w.Truncated,
-	}, nil
-}
-
 type Schema struct {
 	ColumnCount *int         `json:"column_count,omitempty"`
 	Columns     []ColumnInfo `json:"columns,omitempty"`
-}
-
-func SchemaToSDK(w *Schema) (*sdk.Schema, error) {
-	if w == nil {
-		return nil, nil
-	}
-	columnsPublicValue, err := convertSlice(w.Columns, ColumnInfoToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
-	}
-	return &sdk.Schema{
-		ColumnCount: w.ColumnCount,
-		Columns:     columnsPublicValue,
-	}, nil
 }
 
 type StatementResponse struct {
@@ -2138,30 +1089,6 @@ type StatementResponse struct {
 	Status      *StatementStatus `json:"status,omitempty"`
 	Manifest    *ResultManifest  `json:"manifest,omitempty"`
 	Result      *ResultData      `json:"result,omitempty"`
-}
-
-func StatementResponseToSDK(w *StatementResponse) (*sdk.StatementResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	statusPublicValue, err := StatementStatusToSDK(w.Status)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
-	}
-	manifestPublicValue, err := ResultManifestToSDK(w.Manifest)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
-	}
-	resultPublicValue, err := ResultDataToSDK(w.Result)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
-	}
-	return &sdk.StatementResponse{
-		StatementId: w.StatementId,
-		Status:      statusPublicValue,
-		Manifest:    manifestPublicValue,
-		Result:      resultPublicValue,
-	}, nil
 }
 
 // The status response includes execution state and if relevant, error
@@ -2181,21 +1108,6 @@ type StatementStatus struct {
 	SqlState *string `json:"sql_state,omitempty"`
 }
 
-func StatementStatusToSDK(w *StatementStatus) (*sdk.StatementStatus, error) {
-	if w == nil {
-		return nil, nil
-	}
-	errorPublicValue, err := DatabricksServiceExceptionProtoToSDK(w.Error)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "StatementStatus.Error", err)
-	}
-	return &sdk.StatementStatus{
-		State:    w.State,
-		Error:    errorPublicValue,
-		SqlState: w.SqlState,
-	}, nil
-}
-
 // copied from proto3 / Google Well Known Types, source:
 // https://github.com/protocolbuffers/protobuf/blob/450d24ca820750c5db5112a6f0b0c2efb9758021/src/google/protobuf/struct.proto
 // `Struct` represents a structured data value, consisting of fields which map
@@ -2208,19 +1120,6 @@ func StatementStatusToSDK(w *StatementStatus) (*sdk.StatementStatus, error) {
 type Struct struct {
 	// Unordered map of dynamically typed values.
 	Fields []MapStringValueEntry `json:"fields,omitempty"`
-}
-
-func StructToSDK(w *Struct) (*sdk.Struct, error) {
-	if w == nil {
-		return nil, nil
-	}
-	fieldsPublicValue, err := convertSlice(w.Fields, MapStringValueEntryToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
-	}
-	return &sdk.Struct{
-		Fields: fieldsPublicValue,
-	}, nil
 }
 
 // A text response on a conversation message: the answer, the final summary, or
@@ -2238,17 +1137,6 @@ type TextAttachment struct {
 	Purpose TextAttachmentPurpose `json:"purpose,omitempty"`
 }
 
-func TextAttachmentToSDK(w *TextAttachment) (*sdk.TextAttachment, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.TextAttachment{
-		Content: w.Content,
-		Id:      w.Id,
-		Purpose: w.Purpose,
-	}, nil
-}
-
 // A single thought in the AI's reasoning process for a query..
 type Thought struct {
 	// The category of this thought. The possible values are: *
@@ -2261,16 +1149,6 @@ type Thought struct {
 	ThoughtType ThoughtType `json:"thought_type,omitempty"`
 	// The md formatted content for this thought.
 	Content *string `json:"content,omitempty"`
-}
-
-func ThoughtToSDK(w *Thought) (*sdk.Thought, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.Thought{
-		ThoughtType: w.ThoughtType,
-		Content:     w.Content,
-	}, nil
 }
 
 // copied from proto3 / Google Well Known Types, source:
@@ -2290,58 +1168,2178 @@ type Value struct {
 	ListValue   *ListValue `json:"list_value,omitempty"`
 }
 
+// ChunkInfoToSDK converts the mirror to the sdk-go type.
+func ChunkInfoToSDK(w *ChunkInfo) (*sdk.ChunkInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ChunkInfo{}
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ChunkInfoFromSDK converts the sdk-go type to the mirror.
+func ChunkInfoFromSDK(v *sdk.ChunkInfo) (*ChunkInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ChunkInfo{}
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// ColumnInfoToSDK converts the mirror to the sdk-go type.
+func ColumnInfoToSDK(w *ColumnInfo) (*sdk.ColumnInfo, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnInfo{}
+	out.Name = w.Name
+	out.TypeText = w.TypeText
+	out.TypeName = w.TypeName
+	out.Position = w.Position
+	out.TypePrecision = w.TypePrecision
+	out.TypeScale = w.TypeScale
+	out.TypeIntervalType = w.TypeIntervalType
+	out.TypeJson = w.TypeJson
+	out.Comment = w.Comment
+	out.Nullable = w.Nullable
+	out.PartitionIndex = w.PartitionIndex
+	conv1, err := ColumnMaskToSDK(w.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv1
+	return out, nil
+}
+
+// ColumnInfoFromSDK converts the sdk-go type to the mirror.
+func ColumnInfoFromSDK(v *sdk.ColumnInfo) (*ColumnInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnInfo{}
+	out.Name = v.Name
+	out.TypeText = v.TypeText
+	out.TypeName = v.TypeName
+	out.Position = v.Position
+	out.TypePrecision = v.TypePrecision
+	out.TypeScale = v.TypeScale
+	out.TypeIntervalType = v.TypeIntervalType
+	out.TypeJson = v.TypeJson
+	out.Comment = v.Comment
+	out.Nullable = v.Nullable
+	out.PartitionIndex = v.PartitionIndex
+	conv2, err := ColumnMaskFromSDK(v.Mask)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnInfo.Mask", err)
+	}
+	out.Mask = conv2
+	return out, nil
+}
+
+// ColumnMaskToSDK converts the mirror to the sdk-go type.
+func ColumnMaskToSDK(w *ColumnMask) (*sdk.ColumnMask, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ColumnMask{}
+	out.FunctionName = w.FunctionName
+	out.UsingColumnNames = w.UsingColumnNames
+	conv3, err := convertSlice(w.UsingArguments, PolicyFunctionArgumentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv3
+	return out, nil
+}
+
+// ColumnMaskFromSDK converts the sdk-go type to the mirror.
+func ColumnMaskFromSDK(v *sdk.ColumnMask) (*ColumnMask, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ColumnMask{}
+	out.FunctionName = v.FunctionName
+	out.UsingColumnNames = v.UsingColumnNames
+	conv4, err := convertSlice(v.UsingArguments, PolicyFunctionArgumentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ColumnMask.UsingArguments", err)
+	}
+	out.UsingArguments = conv4
+	return out, nil
+}
+
+// DatabricksServiceExceptionProtoToSDK converts the mirror to the sdk-go type.
+func DatabricksServiceExceptionProtoToSDK(w *DatabricksServiceExceptionProto) (*sdk.DatabricksServiceExceptionProto, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DatabricksServiceExceptionProto{}
+	out.ErrorCode = w.ErrorCode
+	out.Message = w.Message
+	out.StackTrace = w.StackTrace
+	return out, nil
+}
+
+// DatabricksServiceExceptionProtoFromSDK converts the sdk-go type to the mirror.
+func DatabricksServiceExceptionProtoFromSDK(v *sdk.DatabricksServiceExceptionProto) (*DatabricksServiceExceptionProto, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DatabricksServiceExceptionProto{}
+	out.ErrorCode = v.ErrorCode
+	out.Message = v.Message
+	out.StackTrace = v.StackTrace
+	return out, nil
+}
+
+// ExternalLinkToSDK converts the mirror to the sdk-go type.
+func ExternalLinkToSDK(w *ExternalLink) (*sdk.ExternalLink, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalLink{}
+	out.ExternalLink = w.ExternalLink
+	out.Expiration = w.Expiration
+	out.HttpHeaders = w.HttpHeaders
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ExternalLinkFromSDK converts the sdk-go type to the mirror.
+func ExternalLinkFromSDK(v *sdk.ExternalLink) (*ExternalLink, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalLink{}
+	out.ExternalLink = v.ExternalLink
+	out.Expiration = v.Expiration
+	out.HttpHeaders = v.HttpHeaders
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// GenieAttachmentToSDK converts the mirror to the sdk-go type.
+func GenieAttachmentToSDK(w *GenieAttachment) (*sdk.GenieAttachment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieAttachment{}
+	{
+		members := 0
+		if w.Text != nil {
+			members++
+		}
+		if w.Query != nil {
+			members++
+		}
+		if w.SuggestedQuestions != nil {
+			members++
+		}
+		if w.Viz != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "GenieAttachment.Attachment")
+		}
+	}
+	switch {
+	case w.Text != nil:
+		conv5, err := TextAttachmentToSDK(w.Text)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+		}
+		out.Attachment = &sdk.GenieAttachment_Attachment_Text{Text: *conv5}
+	case w.Query != nil:
+		conv6, err := GenieQueryAttachmentToSDK(w.Query)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+		}
+		out.Attachment = &sdk.GenieAttachment_Attachment_Query{Query: *conv6}
+	case w.SuggestedQuestions != nil:
+		conv7, err := GenieSuggestedQuestionsAttachmentToSDK(w.SuggestedQuestions)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+		}
+		out.Attachment = &sdk.GenieAttachment_Attachment_SuggestedQuestions{SuggestedQuestions: *conv7}
+	case w.Viz != nil:
+		conv8, err := GenieVizAttachmentToSDK(w.Viz)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+		}
+		out.Attachment = &sdk.GenieAttachment_Attachment_Viz{Viz: *conv8}
+	}
+	out.AttachmentId = w.AttachmentId
+	return out, nil
+}
+
+// GenieAttachmentFromSDK converts the sdk-go type to the mirror.
+func GenieAttachmentFromSDK(v *sdk.GenieAttachment) (*GenieAttachment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieAttachment{}
+	switch value := v.Attachment.(type) {
+	case *sdk.GenieAttachment_Attachment_Text:
+		if value != nil {
+			conv9, err := TextAttachmentFromSDK(&value.Text)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+			}
+			out.Text = conv9
+		}
+	case *sdk.GenieAttachment_Attachment_Query:
+		if value != nil {
+			conv10, err := GenieQueryAttachmentFromSDK(&value.Query)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+			}
+			out.Query = conv10
+		}
+	case *sdk.GenieAttachment_Attachment_SuggestedQuestions:
+		if value != nil {
+			conv11, err := GenieSuggestedQuestionsAttachmentFromSDK(&value.SuggestedQuestions)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+			}
+			out.SuggestedQuestions = conv11
+		}
+	case *sdk.GenieAttachment_Attachment_Viz:
+		if value != nil {
+			conv12, err := GenieVizAttachmentFromSDK(&value.Viz)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "GenieAttachment.Attachment", err)
+			}
+			out.Viz = conv12
+		}
+	}
+	out.AttachmentId = v.AttachmentId
+	return out, nil
+}
+
+// GenieCancelResponseRequestToSDK converts the mirror to the sdk-go type.
+func GenieCancelResponseRequestToSDK(w *GenieCancelResponseRequest) (*sdk.GenieCancelResponseRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieCancelResponseRequest{}
+	out.AgentId = w.AgentId
+	out.ConversationId = w.ConversationId
+	out.ResponseId = w.ResponseId
+	return out, nil
+}
+
+// GenieCancelResponseRequestFromSDK converts the sdk-go type to the mirror.
+func GenieCancelResponseRequestFromSDK(v *sdk.GenieCancelResponseRequest) (*GenieCancelResponseRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieCancelResponseRequest{}
+	out.AgentId = v.AgentId
+	out.ConversationId = v.ConversationId
+	out.ResponseId = v.ResponseId
+	return out, nil
+}
+
+// GenieConversationToSDK converts the mirror to the sdk-go type.
+func GenieConversationToSDK(w *GenieConversation) (*sdk.GenieConversation, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieConversation{}
+	out.Id = w.Id
+	out.SpaceId = w.SpaceId
+	out.UserId = w.UserId
+	out.CreatedTimestamp = w.CreatedTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.Title = w.Title
+	out.ConversationId = w.ConversationId
+	return out, nil
+}
+
+// GenieConversationFromSDK converts the sdk-go type to the mirror.
+func GenieConversationFromSDK(v *sdk.GenieConversation) (*GenieConversation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieConversation{}
+	out.Id = v.Id
+	out.SpaceId = v.SpaceId
+	out.UserId = v.UserId
+	out.CreatedTimestamp = v.CreatedTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.Title = v.Title
+	out.ConversationId = v.ConversationId
+	return out, nil
+}
+
+// GenieConversationSummaryToSDK converts the mirror to the sdk-go type.
+func GenieConversationSummaryToSDK(w *GenieConversationSummary) (*sdk.GenieConversationSummary, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieConversationSummary{}
+	out.ConversationId = w.ConversationId
+	out.Title = w.Title
+	out.CreatedTimestamp = w.CreatedTimestamp
+	out.AgentType = w.AgentType
+	return out, nil
+}
+
+// GenieConversationSummaryFromSDK converts the sdk-go type to the mirror.
+func GenieConversationSummaryFromSDK(v *sdk.GenieConversationSummary) (*GenieConversationSummary, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieConversationSummary{}
+	out.ConversationId = v.ConversationId
+	out.Title = v.Title
+	out.CreatedTimestamp = v.CreatedTimestamp
+	out.AgentType = v.AgentType
+	return out, nil
+}
+
+// GenieCreateConversationMessageRequestToSDK converts the mirror to the sdk-go type.
+func GenieCreateConversationMessageRequestToSDK(w *GenieCreateConversationMessageRequest) (*sdk.GenieCreateConversationMessageRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieCreateConversationMessageRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.Content = w.Content
+	out.EnableVisualization = w.EnableVisualization
+	return out, nil
+}
+
+// GenieCreateConversationMessageRequestFromSDK converts the sdk-go type to the mirror.
+func GenieCreateConversationMessageRequestFromSDK(v *sdk.GenieCreateConversationMessageRequest) (*GenieCreateConversationMessageRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieCreateConversationMessageRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.Content = v.Content
+	out.EnableVisualization = v.EnableVisualization
+	return out, nil
+}
+
+// GenieCreateEvalRunRequestToSDK converts the mirror to the sdk-go type.
+func GenieCreateEvalRunRequestToSDK(w *GenieCreateEvalRunRequest) (*sdk.GenieCreateEvalRunRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieCreateEvalRunRequest{}
+	out.SpaceId = w.SpaceId
+	out.BenchmarkQuestionIds = w.BenchmarkQuestionIds
+	return out, nil
+}
+
+// GenieCreateEvalRunRequestFromSDK converts the sdk-go type to the mirror.
+func GenieCreateEvalRunRequestFromSDK(v *sdk.GenieCreateEvalRunRequest) (*GenieCreateEvalRunRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieCreateEvalRunRequest{}
+	out.SpaceId = v.SpaceId
+	out.BenchmarkQuestionIds = v.BenchmarkQuestionIds
+	return out, nil
+}
+
+// GenieCreateMessageCommentRequestToSDK converts the mirror to the sdk-go type.
+func GenieCreateMessageCommentRequestToSDK(w *GenieCreateMessageCommentRequest) (*sdk.GenieCreateMessageCommentRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieCreateMessageCommentRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.Content = w.Content
+	return out, nil
+}
+
+// GenieCreateMessageCommentRequestFromSDK converts the sdk-go type to the mirror.
+func GenieCreateMessageCommentRequestFromSDK(v *sdk.GenieCreateMessageCommentRequest) (*GenieCreateMessageCommentRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieCreateMessageCommentRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.Content = v.Content
+	return out, nil
+}
+
+// GenieCreateSpaceRequestToSDK converts the mirror to the sdk-go type.
+func GenieCreateSpaceRequestToSDK(w *GenieCreateSpaceRequest) (*sdk.GenieCreateSpaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieCreateSpaceRequest{}
+	out.WarehouseId = w.WarehouseId
+	out.ParentPath = w.ParentPath
+	out.SerializedSpace = w.SerializedSpace
+	out.Title = w.Title
+	out.Description = w.Description
+	return out, nil
+}
+
+// GenieCreateSpaceRequestFromSDK converts the sdk-go type to the mirror.
+func GenieCreateSpaceRequestFromSDK(v *sdk.GenieCreateSpaceRequest) (*GenieCreateSpaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieCreateSpaceRequest{}
+	out.WarehouseId = v.WarehouseId
+	out.ParentPath = v.ParentPath
+	out.SerializedSpace = v.SerializedSpace
+	out.Title = v.Title
+	out.Description = v.Description
+	return out, nil
+}
+
+// GenieEvalResponseToSDK converts the mirror to the sdk-go type.
+func GenieEvalResponseToSDK(w *GenieEvalResponse) (*sdk.GenieEvalResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieEvalResponse{}
+	out.Response = w.Response
+	conv13, err := StatementResponseToSDK(w.SqlExecutionResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResponse.SqlExecutionResult", err)
+	}
+	out.SqlExecutionResult = conv13
+	out.ResponseType = w.ResponseType
+	return out, nil
+}
+
+// GenieEvalResponseFromSDK converts the sdk-go type to the mirror.
+func GenieEvalResponseFromSDK(v *sdk.GenieEvalResponse) (*GenieEvalResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieEvalResponse{}
+	out.Response = v.Response
+	conv14, err := StatementResponseFromSDK(v.SqlExecutionResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResponse.SqlExecutionResult", err)
+	}
+	out.SqlExecutionResult = conv14
+	out.ResponseType = v.ResponseType
+	return out, nil
+}
+
+// GenieEvalResultToSDK converts the mirror to the sdk-go type.
+func GenieEvalResultToSDK(w *GenieEvalResult) (*sdk.GenieEvalResult, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieEvalResult{}
+	out.ResultId = w.ResultId
+	out.SpaceId = w.SpaceId
+	out.BenchmarkQuestionId = w.BenchmarkQuestionId
+	out.Status = w.Status
+	out.Question = w.Question
+	out.BenchmarkAnswer = w.BenchmarkAnswer
+	out.CreatedByUser = w.CreatedByUser
+	return out, nil
+}
+
+// GenieEvalResultFromSDK converts the sdk-go type to the mirror.
+func GenieEvalResultFromSDK(v *sdk.GenieEvalResult) (*GenieEvalResult, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieEvalResult{}
+	out.ResultId = v.ResultId
+	out.SpaceId = v.SpaceId
+	out.BenchmarkQuestionId = v.BenchmarkQuestionId
+	out.Status = v.Status
+	out.Question = v.Question
+	out.BenchmarkAnswer = v.BenchmarkAnswer
+	out.CreatedByUser = v.CreatedByUser
+	return out, nil
+}
+
+// GenieEvalResultDetailsToSDK converts the mirror to the sdk-go type.
+func GenieEvalResultDetailsToSDK(w *GenieEvalResultDetails) (*sdk.GenieEvalResultDetails, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieEvalResultDetails{}
+	out.ResultId = w.ResultId
+	out.SpaceId = w.SpaceId
+	out.BenchmarkQuestionId = w.BenchmarkQuestionId
+	out.EvalRunStatus = w.EvalRunStatus
+	out.Assessment = w.Assessment
+	out.ManualAssessment = w.ManualAssessment
+	out.AssessmentReasons = w.AssessmentReasons
+	conv15, err := convertSlice(w.ActualResponse, GenieEvalResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ActualResponse", err)
+	}
+	out.ActualResponse = conv15
+	conv16, err := convertSlice(w.ExpectedResponse, GenieEvalResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ExpectedResponse", err)
+	}
+	out.ExpectedResponse = conv16
+	return out, nil
+}
+
+// GenieEvalResultDetailsFromSDK converts the sdk-go type to the mirror.
+func GenieEvalResultDetailsFromSDK(v *sdk.GenieEvalResultDetails) (*GenieEvalResultDetails, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieEvalResultDetails{}
+	out.ResultId = v.ResultId
+	out.SpaceId = v.SpaceId
+	out.BenchmarkQuestionId = v.BenchmarkQuestionId
+	out.EvalRunStatus = v.EvalRunStatus
+	out.Assessment = v.Assessment
+	out.ManualAssessment = v.ManualAssessment
+	out.AssessmentReasons = v.AssessmentReasons
+	conv17, err := convertSlice(v.ActualResponse, GenieEvalResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ActualResponse", err)
+	}
+	out.ActualResponse = conv17
+	conv18, err := convertSlice(v.ExpectedResponse, GenieEvalResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieEvalResultDetails.ExpectedResponse", err)
+	}
+	out.ExpectedResponse = conv18
+	return out, nil
+}
+
+// GenieEvalRunResponseToSDK converts the mirror to the sdk-go type.
+func GenieEvalRunResponseToSDK(w *GenieEvalRunResponse) (*sdk.GenieEvalRunResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieEvalRunResponse{}
+	out.EvalRunId = w.EvalRunId
+	out.EvalRunStatus = w.EvalRunStatus
+	out.RunByUser = w.RunByUser
+	out.CreatedTimestamp = w.CreatedTimestamp
+	out.NumQuestions = w.NumQuestions
+	out.NumCorrect = w.NumCorrect
+	out.NumNeedsReview = w.NumNeedsReview
+	out.NumDone = w.NumDone
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	return out, nil
+}
+
+// GenieEvalRunResponseFromSDK converts the sdk-go type to the mirror.
+func GenieEvalRunResponseFromSDK(v *sdk.GenieEvalRunResponse) (*GenieEvalRunResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieEvalRunResponse{}
+	out.EvalRunId = v.EvalRunId
+	out.EvalRunStatus = v.EvalRunStatus
+	out.RunByUser = v.RunByUser
+	out.CreatedTimestamp = v.CreatedTimestamp
+	out.NumQuestions = v.NumQuestions
+	out.NumCorrect = v.NumCorrect
+	out.NumNeedsReview = v.NumNeedsReview
+	out.NumDone = v.NumDone
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	return out, nil
+}
+
+// GenieExecuteMessageAttachmentQueryRequestToSDK converts the mirror to the sdk-go type.
+func GenieExecuteMessageAttachmentQueryRequestToSDK(w *GenieExecuteMessageAttachmentQueryRequest) (*sdk.GenieExecuteMessageAttachmentQueryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieExecuteMessageAttachmentQueryRequest{}
+	out.MessageId = w.MessageId
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.AttachmentId = w.AttachmentId
+	return out, nil
+}
+
+// GenieExecuteMessageAttachmentQueryRequestFromSDK converts the sdk-go type to the mirror.
+func GenieExecuteMessageAttachmentQueryRequestFromSDK(v *sdk.GenieExecuteMessageAttachmentQueryRequest) (*GenieExecuteMessageAttachmentQueryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieExecuteMessageAttachmentQueryRequest{}
+	out.MessageId = v.MessageId
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.AttachmentId = v.AttachmentId
+	return out, nil
+}
+
+// GenieExecuteMessageQueryRequestToSDK converts the mirror to the sdk-go type.
+func GenieExecuteMessageQueryRequestToSDK(w *GenieExecuteMessageQueryRequest) (*sdk.GenieExecuteMessageQueryRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieExecuteMessageQueryRequest{}
+	out.MessageId = w.MessageId
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	return out, nil
+}
+
+// GenieExecuteMessageQueryRequestFromSDK converts the sdk-go type to the mirror.
+func GenieExecuteMessageQueryRequestFromSDK(v *sdk.GenieExecuteMessageQueryRequest) (*GenieExecuteMessageQueryRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieExecuteMessageQueryRequest{}
+	out.MessageId = v.MessageId
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	return out, nil
+}
+
+// GenieFeedbackToSDK converts the mirror to the sdk-go type.
+func GenieFeedbackToSDK(w *GenieFeedback) (*sdk.GenieFeedback, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieFeedback{}
+	out.Rating = w.Rating
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// GenieFeedbackFromSDK converts the sdk-go type to the mirror.
+func GenieFeedbackFromSDK(v *sdk.GenieFeedback) (*GenieFeedback, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieFeedback{}
+	out.Rating = v.Rating
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// GenieGenerateDownloadFullQueryResultRequestToSDK converts the mirror to the sdk-go type.
+func GenieGenerateDownloadFullQueryResultRequestToSDK(w *GenieGenerateDownloadFullQueryResultRequest) (*sdk.GenieGenerateDownloadFullQueryResultRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGenerateDownloadFullQueryResultRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.AttachmentId = w.AttachmentId
+	return out, nil
+}
+
+// GenieGenerateDownloadFullQueryResultRequestFromSDK converts the sdk-go type to the mirror.
+func GenieGenerateDownloadFullQueryResultRequestFromSDK(v *sdk.GenieGenerateDownloadFullQueryResultRequest) (*GenieGenerateDownloadFullQueryResultRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGenerateDownloadFullQueryResultRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.AttachmentId = v.AttachmentId
+	return out, nil
+}
+
+// GenieGenerateDownloadFullQueryResultResponseToSDK converts the mirror to the sdk-go type.
+func GenieGenerateDownloadFullQueryResultResponseToSDK(w *GenieGenerateDownloadFullQueryResultResponse) (*sdk.GenieGenerateDownloadFullQueryResultResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGenerateDownloadFullQueryResultResponse{}
+	out.DownloadId = w.DownloadId
+	out.DownloadIdSignature = w.DownloadIdSignature
+	return out, nil
+}
+
+// GenieGenerateDownloadFullQueryResultResponseFromSDK converts the sdk-go type to the mirror.
+func GenieGenerateDownloadFullQueryResultResponseFromSDK(v *sdk.GenieGenerateDownloadFullQueryResultResponse) (*GenieGenerateDownloadFullQueryResultResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGenerateDownloadFullQueryResultResponse{}
+	out.DownloadId = v.DownloadId
+	out.DownloadIdSignature = v.DownloadIdSignature
+	return out, nil
+}
+
+// GenieGetDownloadFullQueryResultRequestToSDK converts the mirror to the sdk-go type.
+func GenieGetDownloadFullQueryResultRequestToSDK(w *GenieGetDownloadFullQueryResultRequest) (*sdk.GenieGetDownloadFullQueryResultRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGetDownloadFullQueryResultRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.AttachmentId = w.AttachmentId
+	out.DownloadId = w.DownloadId
+	out.DownloadIdSignature = w.DownloadIdSignature
+	return out, nil
+}
+
+// GenieGetDownloadFullQueryResultRequestFromSDK converts the sdk-go type to the mirror.
+func GenieGetDownloadFullQueryResultRequestFromSDK(v *sdk.GenieGetDownloadFullQueryResultRequest) (*GenieGetDownloadFullQueryResultRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGetDownloadFullQueryResultRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.AttachmentId = v.AttachmentId
+	out.DownloadId = v.DownloadId
+	out.DownloadIdSignature = v.DownloadIdSignature
+	return out, nil
+}
+
+// GenieGetDownloadFullQueryResultResponseToSDK converts the mirror to the sdk-go type.
+func GenieGetDownloadFullQueryResultResponseToSDK(w *GenieGetDownloadFullQueryResultResponse) (*sdk.GenieGetDownloadFullQueryResultResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGetDownloadFullQueryResultResponse{}
+	conv19, err := StatementResponseToSDK(w.StatementResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieGetDownloadFullQueryResultResponse.StatementResponse", err)
+	}
+	out.StatementResponse = conv19
+	return out, nil
+}
+
+// GenieGetDownloadFullQueryResultResponseFromSDK converts the sdk-go type to the mirror.
+func GenieGetDownloadFullQueryResultResponseFromSDK(v *sdk.GenieGetDownloadFullQueryResultResponse) (*GenieGetDownloadFullQueryResultResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGetDownloadFullQueryResultResponse{}
+	conv20, err := StatementResponseFromSDK(v.StatementResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieGetDownloadFullQueryResultResponse.StatementResponse", err)
+	}
+	out.StatementResponse = conv20
+	return out, nil
+}
+
+// GenieGetMessageQueryResultResponseToSDK converts the mirror to the sdk-go type.
+func GenieGetMessageQueryResultResponseToSDK(w *GenieGetMessageQueryResultResponse) (*sdk.GenieGetMessageQueryResultResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGetMessageQueryResultResponse{}
+	conv21, err := StatementResponseToSDK(w.StatementResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieGetMessageQueryResultResponse.StatementResponse", err)
+	}
+	out.StatementResponse = conv21
+	return out, nil
+}
+
+// GenieGetMessageQueryResultResponseFromSDK converts the sdk-go type to the mirror.
+func GenieGetMessageQueryResultResponseFromSDK(v *sdk.GenieGetMessageQueryResultResponse) (*GenieGetMessageQueryResultResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGetMessageQueryResultResponse{}
+	conv22, err := StatementResponseFromSDK(v.StatementResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieGetMessageQueryResultResponse.StatementResponse", err)
+	}
+	out.StatementResponse = conv22
+	return out, nil
+}
+
+// GenieGetSpaceRequestToSDK converts the mirror to the sdk-go type.
+func GenieGetSpaceRequestToSDK(w *GenieGetSpaceRequest) (*sdk.GenieGetSpaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieGetSpaceRequest{}
+	out.SpaceId = w.SpaceId
+	out.IncludeSerializedSpace = w.IncludeSerializedSpace
+	return out, nil
+}
+
+// GenieGetSpaceRequestFromSDK converts the sdk-go type to the mirror.
+func GenieGetSpaceRequestFromSDK(v *sdk.GenieGetSpaceRequest) (*GenieGetSpaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieGetSpaceRequest{}
+	out.SpaceId = v.SpaceId
+	out.IncludeSerializedSpace = v.IncludeSerializedSpace
+	return out, nil
+}
+
+// GenieListConversationCommentsRequestToSDK converts the mirror to the sdk-go type.
+func GenieListConversationCommentsRequestToSDK(w *GenieListConversationCommentsRequest) (*sdk.GenieListConversationCommentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationCommentsRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListConversationCommentsRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationCommentsRequestFromSDK(v *sdk.GenieListConversationCommentsRequest) (*GenieListConversationCommentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationCommentsRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListConversationCommentsResponseToSDK converts the mirror to the sdk-go type.
+func GenieListConversationCommentsResponseToSDK(w *GenieListConversationCommentsResponse) (*sdk.GenieListConversationCommentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationCommentsResponse{}
+	conv23, err := convertSlice(w.Comments, GenieMessageCommentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationCommentsResponse.Comments", err)
+	}
+	out.Comments = conv23
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListConversationCommentsResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationCommentsResponseFromSDK(v *sdk.GenieListConversationCommentsResponse) (*GenieListConversationCommentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationCommentsResponse{}
+	conv24, err := convertSlice(v.Comments, GenieMessageCommentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationCommentsResponse.Comments", err)
+	}
+	out.Comments = conv24
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListConversationMessagesRequestToSDK converts the mirror to the sdk-go type.
+func GenieListConversationMessagesRequestToSDK(w *GenieListConversationMessagesRequest) (*sdk.GenieListConversationMessagesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationMessagesRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListConversationMessagesRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationMessagesRequestFromSDK(v *sdk.GenieListConversationMessagesRequest) (*GenieListConversationMessagesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationMessagesRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListConversationMessagesResponseToSDK converts the mirror to the sdk-go type.
+func GenieListConversationMessagesResponseToSDK(w *GenieListConversationMessagesResponse) (*sdk.GenieListConversationMessagesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationMessagesResponse{}
+	conv25, err := convertSlice(w.Messages, GenieMessageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationMessagesResponse.Messages", err)
+	}
+	out.Messages = conv25
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListConversationMessagesResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationMessagesResponseFromSDK(v *sdk.GenieListConversationMessagesResponse) (*GenieListConversationMessagesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationMessagesResponse{}
+	conv26, err := convertSlice(v.Messages, GenieMessageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationMessagesResponse.Messages", err)
+	}
+	out.Messages = conv26
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListConversationsRequestToSDK converts the mirror to the sdk-go type.
+func GenieListConversationsRequestToSDK(w *GenieListConversationsRequest) (*sdk.GenieListConversationsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationsRequest{}
+	out.SpaceId = w.SpaceId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	out.IncludeAll = w.IncludeAll
+	return out, nil
+}
+
+// GenieListConversationsRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationsRequestFromSDK(v *sdk.GenieListConversationsRequest) (*GenieListConversationsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationsRequest{}
+	out.SpaceId = v.SpaceId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	out.IncludeAll = v.IncludeAll
+	return out, nil
+}
+
+// GenieListConversationsResponseToSDK converts the mirror to the sdk-go type.
+func GenieListConversationsResponseToSDK(w *GenieListConversationsResponse) (*sdk.GenieListConversationsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListConversationsResponse{}
+	conv27, err := convertSlice(w.Conversations, GenieConversationSummaryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationsResponse.Conversations", err)
+	}
+	out.Conversations = conv27
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListConversationsResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListConversationsResponseFromSDK(v *sdk.GenieListConversationsResponse) (*GenieListConversationsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListConversationsResponse{}
+	conv28, err := convertSlice(v.Conversations, GenieConversationSummaryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListConversationsResponse.Conversations", err)
+	}
+	out.Conversations = conv28
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListEvalResultsRequestToSDK converts the mirror to the sdk-go type.
+func GenieListEvalResultsRequestToSDK(w *GenieListEvalResultsRequest) (*sdk.GenieListEvalResultsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListEvalResultsRequest{}
+	out.SpaceId = w.SpaceId
+	out.EvalRunId = w.EvalRunId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListEvalResultsRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListEvalResultsRequestFromSDK(v *sdk.GenieListEvalResultsRequest) (*GenieListEvalResultsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListEvalResultsRequest{}
+	out.SpaceId = v.SpaceId
+	out.EvalRunId = v.EvalRunId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListEvalResultsResponseToSDK converts the mirror to the sdk-go type.
+func GenieListEvalResultsResponseToSDK(w *GenieListEvalResultsResponse) (*sdk.GenieListEvalResultsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListEvalResultsResponse{}
+	conv29, err := convertSlice(w.EvalResults, GenieEvalResultToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListEvalResultsResponse.EvalResults", err)
+	}
+	out.EvalResults = conv29
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListEvalResultsResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListEvalResultsResponseFromSDK(v *sdk.GenieListEvalResultsResponse) (*GenieListEvalResultsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListEvalResultsResponse{}
+	conv30, err := convertSlice(v.EvalResults, GenieEvalResultFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListEvalResultsResponse.EvalResults", err)
+	}
+	out.EvalResults = conv30
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListEvalRunsRequestToSDK converts the mirror to the sdk-go type.
+func GenieListEvalRunsRequestToSDK(w *GenieListEvalRunsRequest) (*sdk.GenieListEvalRunsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListEvalRunsRequest{}
+	out.SpaceId = w.SpaceId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListEvalRunsRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListEvalRunsRequestFromSDK(v *sdk.GenieListEvalRunsRequest) (*GenieListEvalRunsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListEvalRunsRequest{}
+	out.SpaceId = v.SpaceId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListEvalRunsResponseToSDK converts the mirror to the sdk-go type.
+func GenieListEvalRunsResponseToSDK(w *GenieListEvalRunsResponse) (*sdk.GenieListEvalRunsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListEvalRunsResponse{}
+	conv31, err := convertSlice(w.EvalRuns, GenieEvalRunResponseToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListEvalRunsResponse.EvalRuns", err)
+	}
+	out.EvalRuns = conv31
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListEvalRunsResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListEvalRunsResponseFromSDK(v *sdk.GenieListEvalRunsResponse) (*GenieListEvalRunsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListEvalRunsResponse{}
+	conv32, err := convertSlice(v.EvalRuns, GenieEvalRunResponseFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListEvalRunsResponse.EvalRuns", err)
+	}
+	out.EvalRuns = conv32
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListMessageCommentsRequestToSDK converts the mirror to the sdk-go type.
+func GenieListMessageCommentsRequestToSDK(w *GenieListMessageCommentsRequest) (*sdk.GenieListMessageCommentsRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListMessageCommentsRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListMessageCommentsRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListMessageCommentsRequestFromSDK(v *sdk.GenieListMessageCommentsRequest) (*GenieListMessageCommentsRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListMessageCommentsRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListMessageCommentsResponseToSDK converts the mirror to the sdk-go type.
+func GenieListMessageCommentsResponseToSDK(w *GenieListMessageCommentsResponse) (*sdk.GenieListMessageCommentsResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListMessageCommentsResponse{}
+	conv33, err := convertSlice(w.Comments, GenieMessageCommentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListMessageCommentsResponse.Comments", err)
+	}
+	out.Comments = conv33
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListMessageCommentsResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListMessageCommentsResponseFromSDK(v *sdk.GenieListMessageCommentsResponse) (*GenieListMessageCommentsResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListMessageCommentsResponse{}
+	conv34, err := convertSlice(v.Comments, GenieMessageCommentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListMessageCommentsResponse.Comments", err)
+	}
+	out.Comments = conv34
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieListSpacesRequestToSDK converts the mirror to the sdk-go type.
+func GenieListSpacesRequestToSDK(w *GenieListSpacesRequest) (*sdk.GenieListSpacesRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListSpacesRequest{}
+	out.PageSize = w.PageSize
+	out.PageToken = w.PageToken
+	return out, nil
+}
+
+// GenieListSpacesRequestFromSDK converts the sdk-go type to the mirror.
+func GenieListSpacesRequestFromSDK(v *sdk.GenieListSpacesRequest) (*GenieListSpacesRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListSpacesRequest{}
+	out.PageSize = v.PageSize
+	out.PageToken = v.PageToken
+	return out, nil
+}
+
+// GenieListSpacesResponseToSDK converts the mirror to the sdk-go type.
+func GenieListSpacesResponseToSDK(w *GenieListSpacesResponse) (*sdk.GenieListSpacesResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieListSpacesResponse{}
+	conv35, err := convertSlice(w.Spaces, GenieSpaceToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListSpacesResponse.Spaces", err)
+	}
+	out.Spaces = conv35
+	out.NextPageToken = w.NextPageToken
+	return out, nil
+}
+
+// GenieListSpacesResponseFromSDK converts the sdk-go type to the mirror.
+func GenieListSpacesResponseFromSDK(v *sdk.GenieListSpacesResponse) (*GenieListSpacesResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieListSpacesResponse{}
+	conv36, err := convertSlice(v.Spaces, GenieSpaceFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieListSpacesResponse.Spaces", err)
+	}
+	out.Spaces = conv36
+	out.NextPageToken = v.NextPageToken
+	return out, nil
+}
+
+// GenieMessageToSDK converts the mirror to the sdk-go type.
+func GenieMessageToSDK(w *GenieMessage) (*sdk.GenieMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieMessage{}
+	out.Id = w.Id
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.UserId = w.UserId
+	out.CreatedTimestamp = w.CreatedTimestamp
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	out.Status = w.Status
+	out.Content = w.Content
+	conv37, err := convertSlice(w.Attachments, GenieAttachmentToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Attachments", err)
+	}
+	out.Attachments = conv37
+	conv38, err := ResultToSDK(w.QueryResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.QueryResult", err)
+	}
+	out.QueryResult = conv38
+	conv39, err := MessageErrorToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Error", err)
+	}
+	out.Error = conv39
+	out.MessageId = w.MessageId
+	conv40, err := GenieFeedbackToSDK(w.Feedback)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Feedback", err)
+	}
+	out.Feedback = conv40
+	return out, nil
+}
+
+// GenieMessageFromSDK converts the sdk-go type to the mirror.
+func GenieMessageFromSDK(v *sdk.GenieMessage) (*GenieMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieMessage{}
+	out.Id = v.Id
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.UserId = v.UserId
+	out.CreatedTimestamp = v.CreatedTimestamp
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	out.Status = v.Status
+	out.Content = v.Content
+	conv41, err := convertSlice(v.Attachments, GenieAttachmentFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Attachments", err)
+	}
+	out.Attachments = conv41
+	conv42, err := ResultFromSDK(v.QueryResult)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.QueryResult", err)
+	}
+	out.QueryResult = conv42
+	conv43, err := MessageErrorFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Error", err)
+	}
+	out.Error = conv43
+	out.MessageId = v.MessageId
+	conv44, err := GenieFeedbackFromSDK(v.Feedback)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieMessage.Feedback", err)
+	}
+	out.Feedback = conv44
+	return out, nil
+}
+
+// GenieMessageCommentToSDK converts the mirror to the sdk-go type.
+func GenieMessageCommentToSDK(w *GenieMessageComment) (*sdk.GenieMessageComment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieMessageComment{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.MessageCommentId = w.MessageCommentId
+	out.UserId = w.UserId
+	out.Content = w.Content
+	out.CreatedTimestamp = w.CreatedTimestamp
+	return out, nil
+}
+
+// GenieMessageCommentFromSDK converts the sdk-go type to the mirror.
+func GenieMessageCommentFromSDK(v *sdk.GenieMessageComment) (*GenieMessageComment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieMessageComment{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.MessageCommentId = v.MessageCommentId
+	out.UserId = v.UserId
+	out.Content = v.Content
+	out.CreatedTimestamp = v.CreatedTimestamp
+	return out, nil
+}
+
+// GenieQueryAttachmentToSDK converts the mirror to the sdk-go type.
+func GenieQueryAttachmentToSDK(w *GenieQueryAttachment) (*sdk.GenieQueryAttachment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieQueryAttachment{}
+	out.Title = w.Title
+	out.Query = w.Query
+	out.Description = w.Description
+	out.LastUpdatedTimestamp = w.LastUpdatedTimestamp
+	conv45, err := convertSlice(w.Parameters, QueryAttachmentParameterToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Parameters", err)
+	}
+	out.Parameters = conv45
+	out.Id = w.Id
+	out.StatementId = w.StatementId
+	conv46, err := GenieResultMetadataToSDK(w.QueryResultMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.QueryResultMetadata", err)
+	}
+	out.QueryResultMetadata = conv46
+	conv47, err := convertSlice(w.Thoughts, ThoughtToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Thoughts", err)
+	}
+	out.Thoughts = conv47
+	return out, nil
+}
+
+// GenieQueryAttachmentFromSDK converts the sdk-go type to the mirror.
+func GenieQueryAttachmentFromSDK(v *sdk.GenieQueryAttachment) (*GenieQueryAttachment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieQueryAttachment{}
+	out.Title = v.Title
+	out.Query = v.Query
+	out.Description = v.Description
+	out.LastUpdatedTimestamp = v.LastUpdatedTimestamp
+	conv48, err := convertSlice(v.Parameters, QueryAttachmentParameterFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Parameters", err)
+	}
+	out.Parameters = conv48
+	out.Id = v.Id
+	out.StatementId = v.StatementId
+	conv49, err := GenieResultMetadataFromSDK(v.QueryResultMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.QueryResultMetadata", err)
+	}
+	out.QueryResultMetadata = conv49
+	conv50, err := convertSlice(v.Thoughts, ThoughtFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieQueryAttachment.Thoughts", err)
+	}
+	out.Thoughts = conv50
+	return out, nil
+}
+
+// GenieResultMetadataToSDK converts the mirror to the sdk-go type.
+func GenieResultMetadataToSDK(w *GenieResultMetadata) (*sdk.GenieResultMetadata, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieResultMetadata{}
+	out.RowCount = w.RowCount
+	out.IsTruncated = w.IsTruncated
+	return out, nil
+}
+
+// GenieResultMetadataFromSDK converts the sdk-go type to the mirror.
+func GenieResultMetadataFromSDK(v *sdk.GenieResultMetadata) (*GenieResultMetadata, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieResultMetadata{}
+	out.RowCount = v.RowCount
+	out.IsTruncated = v.IsTruncated
+	return out, nil
+}
+
+// GenieSendMessageFeedbackRequestToSDK converts the mirror to the sdk-go type.
+func GenieSendMessageFeedbackRequestToSDK(w *GenieSendMessageFeedbackRequest) (*sdk.GenieSendMessageFeedbackRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieSendMessageFeedbackRequest{}
+	out.SpaceId = w.SpaceId
+	out.ConversationId = w.ConversationId
+	out.MessageId = w.MessageId
+	out.Rating = w.Rating
+	out.Comment = w.Comment
+	return out, nil
+}
+
+// GenieSendMessageFeedbackRequestFromSDK converts the sdk-go type to the mirror.
+func GenieSendMessageFeedbackRequestFromSDK(v *sdk.GenieSendMessageFeedbackRequest) (*GenieSendMessageFeedbackRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieSendMessageFeedbackRequest{}
+	out.SpaceId = v.SpaceId
+	out.ConversationId = v.ConversationId
+	out.MessageId = v.MessageId
+	out.Rating = v.Rating
+	out.Comment = v.Comment
+	return out, nil
+}
+
+// GenieSpaceToSDK converts the mirror to the sdk-go type.
+func GenieSpaceToSDK(w *GenieSpace) (*sdk.GenieSpace, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieSpace{}
+	out.SpaceId = w.SpaceId
+	out.Title = w.Title
+	out.Description = w.Description
+	out.WarehouseId = w.WarehouseId
+	out.ParentPath = w.ParentPath
+	out.SerializedSpace = w.SerializedSpace
+	out.Etag = w.Etag
+	out.CreateTime = w.CreateTime
+	out.UpdateTime = w.UpdateTime
+	return out, nil
+}
+
+// GenieSpaceFromSDK converts the sdk-go type to the mirror.
+func GenieSpaceFromSDK(v *sdk.GenieSpace) (*GenieSpace, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieSpace{}
+	out.SpaceId = v.SpaceId
+	out.Title = v.Title
+	out.Description = v.Description
+	out.WarehouseId = v.WarehouseId
+	out.ParentPath = v.ParentPath
+	out.SerializedSpace = v.SerializedSpace
+	out.Etag = v.Etag
+	out.CreateTime = v.CreateTime
+	out.UpdateTime = v.UpdateTime
+	return out, nil
+}
+
+// GenieStartConversationRequestToSDK converts the mirror to the sdk-go type.
+func GenieStartConversationRequestToSDK(w *GenieStartConversationRequest) (*sdk.GenieStartConversationRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieStartConversationRequest{}
+	out.SpaceId = w.SpaceId
+	out.Content = w.Content
+	out.EnableVisualization = w.EnableVisualization
+	return out, nil
+}
+
+// GenieStartConversationRequestFromSDK converts the sdk-go type to the mirror.
+func GenieStartConversationRequestFromSDK(v *sdk.GenieStartConversationRequest) (*GenieStartConversationRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieStartConversationRequest{}
+	out.SpaceId = v.SpaceId
+	out.Content = v.Content
+	out.EnableVisualization = v.EnableVisualization
+	return out, nil
+}
+
+// GenieStartConversationResponseToSDK converts the mirror to the sdk-go type.
+func GenieStartConversationResponseToSDK(w *GenieStartConversationResponse) (*sdk.GenieStartConversationResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieStartConversationResponse{}
+	out.MessageId = w.MessageId
+	conv51, err := GenieMessageToSDK(w.Message)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Message", err)
+	}
+	out.Message = conv51
+	out.ConversationId = w.ConversationId
+	conv52, err := GenieConversationToSDK(w.Conversation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Conversation", err)
+	}
+	out.Conversation = conv52
+	return out, nil
+}
+
+// GenieStartConversationResponseFromSDK converts the sdk-go type to the mirror.
+func GenieStartConversationResponseFromSDK(v *sdk.GenieStartConversationResponse) (*GenieStartConversationResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieStartConversationResponse{}
+	out.MessageId = v.MessageId
+	conv53, err := GenieMessageFromSDK(v.Message)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Message", err)
+	}
+	out.Message = conv53
+	out.ConversationId = v.ConversationId
+	conv54, err := GenieConversationFromSDK(v.Conversation)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "GenieStartConversationResponse.Conversation", err)
+	}
+	out.Conversation = conv54
+	return out, nil
+}
+
+// GenieSuggestedQuestionsAttachmentToSDK converts the mirror to the sdk-go type.
+func GenieSuggestedQuestionsAttachmentToSDK(w *GenieSuggestedQuestionsAttachment) (*sdk.GenieSuggestedQuestionsAttachment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieSuggestedQuestionsAttachment{}
+	out.Questions = w.Questions
+	return out, nil
+}
+
+// GenieSuggestedQuestionsAttachmentFromSDK converts the sdk-go type to the mirror.
+func GenieSuggestedQuestionsAttachmentFromSDK(v *sdk.GenieSuggestedQuestionsAttachment) (*GenieSuggestedQuestionsAttachment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieSuggestedQuestionsAttachment{}
+	out.Questions = v.Questions
+	return out, nil
+}
+
+// GenieUpdateSpaceRequestToSDK converts the mirror to the sdk-go type.
+func GenieUpdateSpaceRequestToSDK(w *GenieUpdateSpaceRequest) (*sdk.GenieUpdateSpaceRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieUpdateSpaceRequest{}
+	out.SpaceId = w.SpaceId
+	out.SerializedSpace = w.SerializedSpace
+	out.Title = w.Title
+	out.Description = w.Description
+	out.WarehouseId = w.WarehouseId
+	out.Etag = w.Etag
+	out.ParentPath = w.ParentPath
+	return out, nil
+}
+
+// GenieUpdateSpaceRequestFromSDK converts the sdk-go type to the mirror.
+func GenieUpdateSpaceRequestFromSDK(v *sdk.GenieUpdateSpaceRequest) (*GenieUpdateSpaceRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieUpdateSpaceRequest{}
+	out.SpaceId = v.SpaceId
+	out.SerializedSpace = v.SerializedSpace
+	out.Title = v.Title
+	out.Description = v.Description
+	out.WarehouseId = v.WarehouseId
+	out.Etag = v.Etag
+	out.ParentPath = v.ParentPath
+	return out, nil
+}
+
+// GenieVizAttachmentToSDK converts the mirror to the sdk-go type.
+func GenieVizAttachmentToSDK(w *GenieVizAttachment) (*sdk.GenieVizAttachment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GenieVizAttachment{}
+	out.Title = w.Title
+	out.QueryAttachmentId = w.QueryAttachmentId
+	return out, nil
+}
+
+// GenieVizAttachmentFromSDK converts the sdk-go type to the mirror.
+func GenieVizAttachmentFromSDK(v *sdk.GenieVizAttachment) (*GenieVizAttachment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GenieVizAttachment{}
+	out.Title = v.Title
+	out.QueryAttachmentId = v.QueryAttachmentId
+	return out, nil
+}
+
+// ListValueToSDK converts the mirror to the sdk-go type.
+func ListValueToSDK(w *ListValue) (*sdk.ListValue, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ListValue{}
+	conv55, err := convertSlice(w.Values, ValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
+	}
+	out.Values = conv55
+	return out, nil
+}
+
+// ListValueFromSDK converts the sdk-go type to the mirror.
+func ListValueFromSDK(v *sdk.ListValue) (*ListValue, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ListValue{}
+	conv56, err := convertSlice(v.Values, ValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ListValue.Values", err)
+	}
+	out.Values = conv56
+	return out, nil
+}
+
+// MapStringValueEntryToSDK converts the mirror to the sdk-go type.
+func MapStringValueEntryToSDK(w *MapStringValueEntry) (*sdk.MapStringValueEntry, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MapStringValueEntry{}
+	out.Key = w.Key
+	conv57, err := ValueToSDK(w.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
+	}
+	out.Value = conv57
+	return out, nil
+}
+
+// MapStringValueEntryFromSDK converts the sdk-go type to the mirror.
+func MapStringValueEntryFromSDK(v *sdk.MapStringValueEntry) (*MapStringValueEntry, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MapStringValueEntry{}
+	out.Key = v.Key
+	conv58, err := ValueFromSDK(v.Value)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "MapStringValueEntry.Value", err)
+	}
+	out.Value = conv58
+	return out, nil
+}
+
+// MessageErrorToSDK converts the mirror to the sdk-go type.
+func MessageErrorToSDK(w *MessageError) (*sdk.MessageError, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.MessageError{}
+	out.Error = w.Error
+	out.Type = w.Type
+	return out, nil
+}
+
+// MessageErrorFromSDK converts the sdk-go type to the mirror.
+func MessageErrorFromSDK(v *sdk.MessageError) (*MessageError, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &MessageError{}
+	out.Error = v.Error
+	out.Type = v.Type
+	return out, nil
+}
+
+// PolicyFunctionArgumentToSDK converts the mirror to the sdk-go type.
+func PolicyFunctionArgumentToSDK(w *PolicyFunctionArgument) (*sdk.PolicyFunctionArgument, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.PolicyFunctionArgument{}
+	{
+		members := 0
+		if w.Column != nil {
+			members++
+		}
+		if w.Constant != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "PolicyFunctionArgument.Arg")
+		}
+	}
+	switch {
+	case w.Column != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Column{Column: *w.Column}
+	case w.Constant != nil:
+		out.Arg = &sdk.PolicyFunctionArgument_Arg_Constant{Constant: *w.Constant}
+	}
+	return out, nil
+}
+
+// PolicyFunctionArgumentFromSDK converts the sdk-go type to the mirror.
+func PolicyFunctionArgumentFromSDK(v *sdk.PolicyFunctionArgument) (*PolicyFunctionArgument, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &PolicyFunctionArgument{}
+	switch value := v.Arg.(type) {
+	case *sdk.PolicyFunctionArgument_Arg_Column:
+		if value != nil {
+			out.Column = new(value.Column)
+		}
+	case *sdk.PolicyFunctionArgument_Arg_Constant:
+		if value != nil {
+			out.Constant = new(value.Constant)
+		}
+	}
+	return out, nil
+}
+
+// QueryAttachmentParameterToSDK converts the mirror to the sdk-go type.
+func QueryAttachmentParameterToSDK(w *QueryAttachmentParameter) (*sdk.QueryAttachmentParameter, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryAttachmentParameter{}
+	out.Keyword = w.Keyword
+	out.Value = w.Value
+	out.SqlType = w.SqlType
+	return out, nil
+}
+
+// QueryAttachmentParameterFromSDK converts the sdk-go type to the mirror.
+func QueryAttachmentParameterFromSDK(v *sdk.QueryAttachmentParameter) (*QueryAttachmentParameter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryAttachmentParameter{}
+	out.Keyword = v.Keyword
+	out.Value = v.Value
+	out.SqlType = v.SqlType
+	return out, nil
+}
+
+// ResultToSDK converts the mirror to the sdk-go type.
+func ResultToSDK(w *Result) (*sdk.Result, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Result{}
+	out.StatementId = w.StatementId
+	out.RowCount = w.RowCount
+	out.IsTruncated = w.IsTruncated
+	out.StatementIdSignature = w.StatementIdSignature
+	return out, nil
+}
+
+// ResultFromSDK converts the sdk-go type to the mirror.
+func ResultFromSDK(v *sdk.Result) (*Result, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Result{}
+	out.StatementId = v.StatementId
+	out.RowCount = v.RowCount
+	out.IsTruncated = v.IsTruncated
+	out.StatementIdSignature = v.StatementIdSignature
+	return out, nil
+}
+
+// ResultDataToSDK converts the mirror to the sdk-go type.
+func ResultDataToSDK(w *ResultData) (*sdk.ResultData, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultData{}
+	conv59, err := convertSlice(w.ExternalLinks, ExternalLinkToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
+	}
+	out.ExternalLinks = conv59
+	conv60, err := convertSlice(w.DataArray, ListValueToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.DataArray", err)
+	}
+	out.DataArray = conv60
+	out.ChunkIndex = w.ChunkIndex
+	out.RowOffset = w.RowOffset
+	out.RowCount = w.RowCount
+	out.ByteCount = w.ByteCount
+	out.NextChunkIndex = w.NextChunkIndex
+	out.NextChunkInternalLink = w.NextChunkInternalLink
+	return out, nil
+}
+
+// ResultDataFromSDK converts the sdk-go type to the mirror.
+func ResultDataFromSDK(v *sdk.ResultData) (*ResultData, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultData{}
+	conv61, err := convertSlice(v.ExternalLinks, ExternalLinkFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.ExternalLinks", err)
+	}
+	out.ExternalLinks = conv61
+	conv62, err := convertSlice(v.DataArray, ListValueFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultData.DataArray", err)
+	}
+	out.DataArray = conv62
+	out.ChunkIndex = v.ChunkIndex
+	out.RowOffset = v.RowOffset
+	out.RowCount = v.RowCount
+	out.ByteCount = v.ByteCount
+	out.NextChunkIndex = v.NextChunkIndex
+	out.NextChunkInternalLink = v.NextChunkInternalLink
+	return out, nil
+}
+
+// ResultManifestToSDK converts the mirror to the sdk-go type.
+func ResultManifestToSDK(w *ResultManifest) (*sdk.ResultManifest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ResultManifest{}
+	out.Format = w.Format
+	conv63, err := SchemaToSDK(w.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
+	}
+	out.Schema = conv63
+	out.TotalChunkCount = w.TotalChunkCount
+	conv64, err := convertSlice(w.Chunks, ChunkInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
+	}
+	out.Chunks = conv64
+	out.TotalRowCount = w.TotalRowCount
+	out.TotalByteCount = w.TotalByteCount
+	out.Truncated = w.Truncated
+	return out, nil
+}
+
+// ResultManifestFromSDK converts the sdk-go type to the mirror.
+func ResultManifestFromSDK(v *sdk.ResultManifest) (*ResultManifest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ResultManifest{}
+	out.Format = v.Format
+	conv65, err := SchemaFromSDK(v.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Schema", err)
+	}
+	out.Schema = conv65
+	out.TotalChunkCount = v.TotalChunkCount
+	conv66, err := convertSlice(v.Chunks, ChunkInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "ResultManifest.Chunks", err)
+	}
+	out.Chunks = conv66
+	out.TotalRowCount = v.TotalRowCount
+	out.TotalByteCount = v.TotalByteCount
+	out.Truncated = v.Truncated
+	return out, nil
+}
+
+// SchemaToSDK converts the mirror to the sdk-go type.
+func SchemaToSDK(w *Schema) (*sdk.Schema, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Schema{}
+	out.ColumnCount = w.ColumnCount
+	conv67, err := convertSlice(w.Columns, ColumnInfoToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
+	}
+	out.Columns = conv67
+	return out, nil
+}
+
+// SchemaFromSDK converts the sdk-go type to the mirror.
+func SchemaFromSDK(v *sdk.Schema) (*Schema, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Schema{}
+	out.ColumnCount = v.ColumnCount
+	conv68, err := convertSlice(v.Columns, ColumnInfoFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Schema.Columns", err)
+	}
+	out.Columns = conv68
+	return out, nil
+}
+
+// StatementResponseToSDK converts the mirror to the sdk-go type.
+func StatementResponseToSDK(w *StatementResponse) (*sdk.StatementResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StatementResponse{}
+	out.StatementId = w.StatementId
+	conv69, err := StatementStatusToSDK(w.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
+	}
+	out.Status = conv69
+	conv70, err := ResultManifestToSDK(w.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
+	}
+	out.Manifest = conv70
+	conv71, err := ResultDataToSDK(w.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
+	}
+	out.Result = conv71
+	return out, nil
+}
+
+// StatementResponseFromSDK converts the sdk-go type to the mirror.
+func StatementResponseFromSDK(v *sdk.StatementResponse) (*StatementResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StatementResponse{}
+	out.StatementId = v.StatementId
+	conv72, err := StatementStatusFromSDK(v.Status)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Status", err)
+	}
+	out.Status = conv72
+	conv73, err := ResultManifestFromSDK(v.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Manifest", err)
+	}
+	out.Manifest = conv73
+	conv74, err := ResultDataFromSDK(v.Result)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementResponse.Result", err)
+	}
+	out.Result = conv74
+	return out, nil
+}
+
+// StatementStatusToSDK converts the mirror to the sdk-go type.
+func StatementStatusToSDK(w *StatementStatus) (*sdk.StatementStatus, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.StatementStatus{}
+	out.State = w.State
+	conv75, err := DatabricksServiceExceptionProtoToSDK(w.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementStatus.Error", err)
+	}
+	out.Error = conv75
+	out.SqlState = w.SqlState
+	return out, nil
+}
+
+// StatementStatusFromSDK converts the sdk-go type to the mirror.
+func StatementStatusFromSDK(v *sdk.StatementStatus) (*StatementStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &StatementStatus{}
+	out.State = v.State
+	conv76, err := DatabricksServiceExceptionProtoFromSDK(v.Error)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "StatementStatus.Error", err)
+	}
+	out.Error = conv76
+	out.SqlState = v.SqlState
+	return out, nil
+}
+
+// StructToSDK converts the mirror to the sdk-go type.
+func StructToSDK(w *Struct) (*sdk.Struct, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Struct{}
+	conv77, err := convertSlice(w.Fields, MapStringValueEntryToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
+	}
+	out.Fields = conv77
+	return out, nil
+}
+
+// StructFromSDK converts the sdk-go type to the mirror.
+func StructFromSDK(v *sdk.Struct) (*Struct, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Struct{}
+	conv78, err := convertSlice(v.Fields, MapStringValueEntryFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "Struct.Fields", err)
+	}
+	out.Fields = conv78
+	return out, nil
+}
+
+// TextAttachmentToSDK converts the mirror to the sdk-go type.
+func TextAttachmentToSDK(w *TextAttachment) (*sdk.TextAttachment, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.TextAttachment{}
+	out.Content = w.Content
+	out.Id = w.Id
+	out.Purpose = w.Purpose
+	return out, nil
+}
+
+// TextAttachmentFromSDK converts the sdk-go type to the mirror.
+func TextAttachmentFromSDK(v *sdk.TextAttachment) (*TextAttachment, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &TextAttachment{}
+	out.Content = v.Content
+	out.Id = v.Id
+	out.Purpose = v.Purpose
+	return out, nil
+}
+
+// ThoughtToSDK converts the mirror to the sdk-go type.
+func ThoughtToSDK(w *Thought) (*sdk.Thought, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.Thought{}
+	out.ThoughtType = w.ThoughtType
+	out.Content = w.Content
+	return out, nil
+}
+
+// ThoughtFromSDK converts the sdk-go type to the mirror.
+func ThoughtFromSDK(v *sdk.Thought) (*Thought, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Thought{}
+	out.ThoughtType = v.ThoughtType
+	out.Content = v.Content
+	return out, nil
+}
+
+// ValueToSDK converts the mirror to the sdk-go type.
 func ValueToSDK(w *Value) (*sdk.Value, error) {
 	if w == nil {
 		return nil, nil
 	}
-	kindMembers := 0
-	if w.NullValue != "" {
-		kindMembers++
+	out := &sdk.Value{}
+	{
+		members := 0
+		if w.NullValue != "" {
+			members++
+		}
+		if w.NumberValue != nil {
+			members++
+		}
+		if w.StringValue != nil {
+			members++
+		}
+		if w.BoolValue != nil {
+			members++
+		}
+		if w.StructValue != nil {
+			members++
+		}
+		if w.ListValue != nil {
+			members++
+		}
+		if members > 1 {
+			return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
+		}
 	}
-	if w.NumberValue != nil {
-		kindMembers++
-	}
-	if w.StringValue != nil {
-		kindMembers++
-	}
-	if w.BoolValue != nil {
-		kindMembers++
-	}
-	if w.StructValue != nil {
-		kindMembers++
-	}
-	if w.ListValue != nil {
-		kindMembers++
-	}
-	if kindMembers > 1 {
-		return nil, fmt.Errorf("%s: multiple oneof members set", "Value.Kind")
-	}
-	kindSelection := (&sdk.Value{}).Kind
 	switch {
 	case w.NullValue != "":
-		kindSelection = &sdk.Value_Kind_NullValue{NullValue: w.NullValue}
+		out.Kind = &sdk.Value_Kind_NullValue{NullValue: w.NullValue}
 	case w.NumberValue != nil:
-		kindSelection = &sdk.Value_Kind_NumberValue{NumberValue: *w.NumberValue}
+		out.Kind = &sdk.Value_Kind_NumberValue{NumberValue: *w.NumberValue}
 	case w.StringValue != nil:
-		kindSelection = &sdk.Value_Kind_StringValue{StringValue: *w.StringValue}
+		out.Kind = &sdk.Value_Kind_StringValue{StringValue: *w.StringValue}
 	case w.BoolValue != nil:
-		kindSelection = &sdk.Value_Kind_BoolValue{BoolValue: *w.BoolValue}
+		out.Kind = &sdk.Value_Kind_BoolValue{BoolValue: *w.BoolValue}
 	case w.StructValue != nil:
-		kindStructValueConverted, err := StructToSDK(w.StructValue)
+		conv79, err := StructToSDK(w.StructValue)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Value.Kind.StructValue", err)
+			return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
 		}
-		kindSelection = &sdk.Value_Kind_StructValue{StructValue: *kindStructValueConverted}
+		out.Kind = &sdk.Value_Kind_StructValue{StructValue: *conv79}
 	case w.ListValue != nil:
-		kindListValueConverted, err := ListValueToSDK(w.ListValue)
+		conv80, err := ListValueToSDK(w.ListValue)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "Value.Kind.ListValue", err)
+			return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
 		}
-		kindSelection = &sdk.Value_Kind_ListValue{ListValue: *kindListValueConverted}
+		out.Kind = &sdk.Value_Kind_ListValue{ListValue: *conv80}
 	}
-	return &sdk.Value{
-		Kind: kindSelection,
-	}, nil
+	return out, nil
+}
+
+// ValueFromSDK converts the sdk-go type to the mirror.
+func ValueFromSDK(v *sdk.Value) (*Value, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &Value{}
+	switch value := v.Kind.(type) {
+	case *sdk.Value_Kind_NullValue:
+		if value != nil {
+			out.NullValue = value.NullValue
+		}
+	case *sdk.Value_Kind_NumberValue:
+		if value != nil {
+			out.NumberValue = new(value.NumberValue)
+		}
+	case *sdk.Value_Kind_StringValue:
+		if value != nil {
+			out.StringValue = new(value.StringValue)
+		}
+	case *sdk.Value_Kind_BoolValue:
+		if value != nil {
+			out.BoolValue = new(value.BoolValue)
+		}
+	case *sdk.Value_Kind_StructValue:
+		if value != nil {
+			conv81, err := StructFromSDK(&value.StructValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+			}
+			out.StructValue = conv81
+		}
+	case *sdk.Value_Kind_ListValue:
+		if value != nil {
+			conv82, err := ListValueFromSDK(&value.ListValue)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", "Value.Kind", err)
+			}
+			out.ListValue = conv82
+		}
+	}
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

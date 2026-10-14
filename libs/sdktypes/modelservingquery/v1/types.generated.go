@@ -27,47 +27,11 @@ const (
 	QueryEndpointResponseObject_List                       = sdk.QueryEndpointResponseObject_List
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type ChatMessage struct {
 	// The role of the message. One of [system, user, assistant].
 	Role ChatMessageRole `json:"role,omitempty"`
 	// The content of the message.
 	Content *string `json:"content,omitempty"`
-}
-
-func ChatMessageFromSDK(v *sdk.ChatMessage) (*ChatMessage, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &ChatMessage{
-		Role:    v.Role,
-		Content: v.Content,
-	}, nil
-}
-
-func ChatMessageToSDK(w *ChatMessage) (*sdk.ChatMessage, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ChatMessage{
-		Role:    w.Role,
-		Content: w.Content,
-	}, nil
 }
 
 type DataframeSplitInput struct {
@@ -79,17 +43,6 @@ type DataframeSplitInput struct {
 	Data []json.RawMessage `json:"data,omitempty"`
 }
 
-func DataframeSplitInputFromSDK(v *sdk.DataframeSplitInput) (*DataframeSplitInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return &DataframeSplitInput{
-		Index:   v.Index,
-		Columns: v.Columns,
-		Data:    v.Data,
-	}, nil
-}
-
 type EmbeddingsV1ResponseEmbeddingElement struct {
 	// The embedding vector
 	Embedding []float64 `json:"embedding,omitempty"`
@@ -99,17 +52,6 @@ type EmbeddingsV1ResponseEmbeddingElement struct {
 	Object EmbeddingsV1ResponseEmbeddingElementObject `json:"object,omitempty"`
 }
 
-func EmbeddingsV1ResponseEmbeddingElementToSDK(w *EmbeddingsV1ResponseEmbeddingElement) (*sdk.EmbeddingsV1ResponseEmbeddingElement, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.EmbeddingsV1ResponseEmbeddingElement{
-		Embedding: w.Embedding,
-		Index:     w.Index,
-		Object:    w.Object,
-	}, nil
-}
-
 type ExternalModelUsageElement struct {
 	// The number of tokens in the prompt.
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
@@ -117,17 +59,6 @@ type ExternalModelUsageElement struct {
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
 	// The total number of tokens in the prompt and response.
 	TotalTokens *int `json:"total_tokens,omitempty"`
-}
-
-func ExternalModelUsageElementToSDK(w *ExternalModelUsageElement) (*sdk.ExternalModelUsageElement, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.ExternalModelUsageElement{
-		PromptTokens:     w.PromptTokens,
-		CompletionTokens: w.CompletionTokens,
-		TotalTokens:      w.TotalTokens,
-	}, nil
 }
 
 type QueryEndpointRequest struct {
@@ -189,38 +120,6 @@ type QueryEndpointRequest struct {
 	UsageContext map[string]string `json:"usage_context,omitempty"`
 }
 
-func QueryEndpointRequestFromSDK(v *sdk.QueryEndpointRequest) (*QueryEndpointRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	messagesWireValue, err := convertSlice(v.Messages, ChatMessageFromSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.Messages", err)
-	}
-	dataframeSplitWireValue, err := DataframeSplitInputFromSDK(v.DataframeSplit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.DataframeSplit", err)
-	}
-	return &QueryEndpointRequest{
-		Name:             v.Name,
-		Prompt:           v.Prompt,
-		Input:            v.Input,
-		Messages:         messagesWireValue,
-		Temperature:      v.Temperature,
-		Stop:             v.Stop,
-		MaxTokens:        v.MaxTokens,
-		N:                v.N,
-		Stream:           v.Stream,
-		ExtraParams:      v.ExtraParams,
-		DataframeRecords: v.DataframeRecords,
-		DataframeSplit:   dataframeSplitWireValue,
-		Instances:        v.Instances,
-		Inputs:           v.Inputs,
-		ClientRequestId:  v.ClientRequestId,
-		UsageContext:     v.UsageContext,
-	}, nil
-}
-
 type QueryEndpointResponse struct {
 	// The list of choices returned by the __chat or completions external/foundation
 	// model__ serving endpoint.
@@ -250,39 +149,6 @@ type QueryEndpointResponse struct {
 	Outputs []json.RawMessage `json:"outputs,omitempty"`
 }
 
-func QueryEndpointResponseToSDK(w *QueryEndpointResponse) (*sdk.QueryEndpointResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	choicesPublicValue, err := convertSlice(w.Choices, V1ResponseChoiceElementToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Choices", err)
-	}
-	dataPublicValue, err := convertSlice(w.Data, EmbeddingsV1ResponseEmbeddingElementToSDK)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Data", err)
-	}
-	usagePublicValue, err := ExternalModelUsageElementToSDK(w.Usage)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Usage", err)
-	}
-	createdPublicValue, err := int64FromWire(w.Created)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Created", err)
-	}
-	return &sdk.QueryEndpointResponse{
-		Choices:     choicesPublicValue,
-		Data:        dataPublicValue,
-		Model:       w.Model,
-		Usage:       usagePublicValue,
-		Id:          w.Id,
-		Created:     createdPublicValue,
-		Object:      w.Object,
-		Predictions: w.Predictions,
-		Outputs:     w.Outputs,
-	}, nil
-}
-
 type V1ResponseChoiceElement struct {
 	// The text response from the __completions__ endpoint.
 	Text *string `json:"text,omitempty"`
@@ -296,21 +162,260 @@ type V1ResponseChoiceElement struct {
 	Logprobs *int `json:"logprobs,omitempty"`
 }
 
+// ChatMessageToSDK converts the mirror to the sdk-go type.
+func ChatMessageToSDK(w *ChatMessage) (*sdk.ChatMessage, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ChatMessage{}
+	out.Role = w.Role
+	out.Content = w.Content
+	return out, nil
+}
+
+// ChatMessageFromSDK converts the sdk-go type to the mirror.
+func ChatMessageFromSDK(v *sdk.ChatMessage) (*ChatMessage, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ChatMessage{}
+	out.Role = v.Role
+	out.Content = v.Content
+	return out, nil
+}
+
+// DataframeSplitInputToSDK converts the mirror to the sdk-go type.
+func DataframeSplitInputToSDK(w *DataframeSplitInput) (*sdk.DataframeSplitInput, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.DataframeSplitInput{}
+	out.Index = w.Index
+	out.Columns = w.Columns
+	out.Data = w.Data
+	return out, nil
+}
+
+// DataframeSplitInputFromSDK converts the sdk-go type to the mirror.
+func DataframeSplitInputFromSDK(v *sdk.DataframeSplitInput) (*DataframeSplitInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &DataframeSplitInput{}
+	out.Index = v.Index
+	out.Columns = v.Columns
+	out.Data = v.Data
+	return out, nil
+}
+
+// EmbeddingsV1ResponseEmbeddingElementToSDK converts the mirror to the sdk-go type.
+func EmbeddingsV1ResponseEmbeddingElementToSDK(w *EmbeddingsV1ResponseEmbeddingElement) (*sdk.EmbeddingsV1ResponseEmbeddingElement, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.EmbeddingsV1ResponseEmbeddingElement{}
+	out.Embedding = w.Embedding
+	out.Index = w.Index
+	out.Object = w.Object
+	return out, nil
+}
+
+// EmbeddingsV1ResponseEmbeddingElementFromSDK converts the sdk-go type to the mirror.
+func EmbeddingsV1ResponseEmbeddingElementFromSDK(v *sdk.EmbeddingsV1ResponseEmbeddingElement) (*EmbeddingsV1ResponseEmbeddingElement, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &EmbeddingsV1ResponseEmbeddingElement{}
+	out.Embedding = v.Embedding
+	out.Index = v.Index
+	out.Object = v.Object
+	return out, nil
+}
+
+// ExternalModelUsageElementToSDK converts the mirror to the sdk-go type.
+func ExternalModelUsageElementToSDK(w *ExternalModelUsageElement) (*sdk.ExternalModelUsageElement, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.ExternalModelUsageElement{}
+	out.PromptTokens = w.PromptTokens
+	out.CompletionTokens = w.CompletionTokens
+	out.TotalTokens = w.TotalTokens
+	return out, nil
+}
+
+// ExternalModelUsageElementFromSDK converts the sdk-go type to the mirror.
+func ExternalModelUsageElementFromSDK(v *sdk.ExternalModelUsageElement) (*ExternalModelUsageElement, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &ExternalModelUsageElement{}
+	out.PromptTokens = v.PromptTokens
+	out.CompletionTokens = v.CompletionTokens
+	out.TotalTokens = v.TotalTokens
+	return out, nil
+}
+
+// QueryEndpointRequestToSDK converts the mirror to the sdk-go type.
+func QueryEndpointRequestToSDK(w *QueryEndpointRequest) (*sdk.QueryEndpointRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryEndpointRequest{}
+	out.Name = w.Name
+	out.Prompt = w.Prompt
+	out.Input = w.Input
+	conv1, err := convertSlice(w.Messages, ChatMessageToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.Messages", err)
+	}
+	out.Messages = conv1
+	out.Temperature = w.Temperature
+	out.Stop = w.Stop
+	out.MaxTokens = w.MaxTokens
+	out.N = w.N
+	out.Stream = w.Stream
+	out.ExtraParams = w.ExtraParams
+	out.DataframeRecords = w.DataframeRecords
+	conv2, err := DataframeSplitInputToSDK(w.DataframeSplit)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.DataframeSplit", err)
+	}
+	out.DataframeSplit = conv2
+	out.Instances = w.Instances
+	out.Inputs = w.Inputs
+	out.ClientRequestId = w.ClientRequestId
+	out.UsageContext = w.UsageContext
+	return out, nil
+}
+
+// QueryEndpointRequestFromSDK converts the sdk-go type to the mirror.
+func QueryEndpointRequestFromSDK(v *sdk.QueryEndpointRequest) (*QueryEndpointRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryEndpointRequest{}
+	out.Name = v.Name
+	out.Prompt = v.Prompt
+	out.Input = v.Input
+	conv3, err := convertSlice(v.Messages, ChatMessageFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.Messages", err)
+	}
+	out.Messages = conv3
+	out.Temperature = v.Temperature
+	out.Stop = v.Stop
+	out.MaxTokens = v.MaxTokens
+	out.N = v.N
+	out.Stream = v.Stream
+	out.ExtraParams = v.ExtraParams
+	out.DataframeRecords = v.DataframeRecords
+	conv4, err := DataframeSplitInputFromSDK(v.DataframeSplit)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointRequest.DataframeSplit", err)
+	}
+	out.DataframeSplit = conv4
+	out.Instances = v.Instances
+	out.Inputs = v.Inputs
+	out.ClientRequestId = v.ClientRequestId
+	out.UsageContext = v.UsageContext
+	return out, nil
+}
+
+// QueryEndpointResponseToSDK converts the mirror to the sdk-go type.
+func QueryEndpointResponseToSDK(w *QueryEndpointResponse) (*sdk.QueryEndpointResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.QueryEndpointResponse{}
+	conv5, err := convertSlice(w.Choices, V1ResponseChoiceElementToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Choices", err)
+	}
+	out.Choices = conv5
+	conv6, err := convertSlice(w.Data, EmbeddingsV1ResponseEmbeddingElementToSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Data", err)
+	}
+	out.Data = conv6
+	out.Model = w.Model
+	conv7, err := ExternalModelUsageElementToSDK(w.Usage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Usage", err)
+	}
+	out.Usage = conv7
+	out.Id = w.Id
+	out.Created = w.Created
+	out.Object = w.Object
+	out.Predictions = w.Predictions
+	out.Outputs = w.Outputs
+	return out, nil
+}
+
+// QueryEndpointResponseFromSDK converts the sdk-go type to the mirror.
+func QueryEndpointResponseFromSDK(v *sdk.QueryEndpointResponse) (*QueryEndpointResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &QueryEndpointResponse{}
+	conv8, err := convertSlice(v.Choices, V1ResponseChoiceElementFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Choices", err)
+	}
+	out.Choices = conv8
+	conv9, err := convertSlice(v.Data, EmbeddingsV1ResponseEmbeddingElementFromSDK)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Data", err)
+	}
+	out.Data = conv9
+	out.Model = v.Model
+	conv10, err := ExternalModelUsageElementFromSDK(v.Usage)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "QueryEndpointResponse.Usage", err)
+	}
+	out.Usage = conv10
+	out.Id = v.Id
+	out.Created = v.Created
+	out.Object = v.Object
+	out.Predictions = v.Predictions
+	out.Outputs = v.Outputs
+	return out, nil
+}
+
+// V1ResponseChoiceElementToSDK converts the mirror to the sdk-go type.
 func V1ResponseChoiceElementToSDK(w *V1ResponseChoiceElement) (*sdk.V1ResponseChoiceElement, error) {
 	if w == nil {
 		return nil, nil
 	}
-	messagePublicValue, err := ChatMessageToSDK(w.Message)
+	out := &sdk.V1ResponseChoiceElement{}
+	out.Text = w.Text
+	conv11, err := ChatMessageToSDK(w.Message)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", "V1ResponseChoiceElement.Message", err)
 	}
-	return &sdk.V1ResponseChoiceElement{
-		Text:         w.Text,
-		Message:      messagePublicValue,
-		Index:        w.Index,
-		FinishReason: w.FinishReason,
-		Logprobs:     w.Logprobs,
-	}, nil
+	out.Message = conv11
+	out.Index = w.Index
+	out.FinishReason = w.FinishReason
+	out.Logprobs = w.Logprobs
+	return out, nil
+}
+
+// V1ResponseChoiceElementFromSDK converts the sdk-go type to the mirror.
+func V1ResponseChoiceElementFromSDK(v *sdk.V1ResponseChoiceElement) (*V1ResponseChoiceElement, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &V1ResponseChoiceElement{}
+	out.Text = v.Text
+	conv12, err := ChatMessageFromSDK(v.Message)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "V1ResponseChoiceElement.Message", err)
+	}
+	out.Message = conv12
+	out.Index = v.Index
+	out.FinishReason = v.FinishReason
+	out.Logprobs = v.Logprobs
+	return out, nil
 }
 
 func convertSlice[T, W any](s []T, conv func(*T) (*W, error)) ([]W, error) {

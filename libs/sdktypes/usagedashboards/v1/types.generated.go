@@ -3,8 +3,6 @@
 package usagedashboards
 
 import (
-	fmt "fmt"
-
 	sdk "github.com/databricks/sdk-go/usagedashboards/v1"
 )
 
@@ -22,22 +20,6 @@ const (
 	UsageDashboardType_UsageDashboardTypeGlobal            = sdk.UsageDashboardType_UsageDashboardTypeGlobal
 )
 
-func int64ToWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
-func int64FromWire(v *int64) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	converted := int64(*v)
-	return &converted, nil
-}
-
 type CreateBillingUsageDashboardRequest struct {
 	// The workspace ID of the workspace in which the usage dashboard is created.
 	WorkspaceId *int64 `json:"workspace_id,omitempty"`
@@ -52,34 +34,9 @@ type CreateBillingUsageDashboardRequest struct {
 	MajorVersion UsageDashboardMajorVersion `json:"major_version,omitempty"`
 }
 
-func CreateBillingUsageDashboardRequestFromSDK(v *sdk.CreateBillingUsageDashboardRequest) (*CreateBillingUsageDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "CreateBillingUsageDashboardRequest.WorkspaceId", err)
-	}
-	return &CreateBillingUsageDashboardRequest{
-		WorkspaceId:   workspaceIdWireValue,
-		AccountId:     v.AccountId,
-		DashboardType: v.DashboardType,
-		MajorVersion:  v.MajorVersion,
-	}, nil
-}
-
 type CreateBillingUsageDashboardResponse struct {
 	// The unique id of the usage dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
-}
-
-func CreateBillingUsageDashboardResponseToSDK(w *CreateBillingUsageDashboardResponse) (*sdk.CreateBillingUsageDashboardResponse, error) {
-	if w == nil {
-		return nil, nil
-	}
-	return &sdk.CreateBillingUsageDashboardResponse{
-		DashboardId: w.DashboardId,
-	}, nil
 }
 
 type GetBillingUsageDashboardRequest struct {
@@ -93,21 +50,6 @@ type GetBillingUsageDashboardRequest struct {
 	DashboardType UsageDashboardType `json:"dashboard_type,omitempty"`
 }
 
-func GetBillingUsageDashboardRequestFromSDK(v *sdk.GetBillingUsageDashboardRequest) (*GetBillingUsageDashboardRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	workspaceIdWireValue, err := int64ToWire(v.WorkspaceId)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "GetBillingUsageDashboardRequest.WorkspaceId", err)
-	}
-	return &GetBillingUsageDashboardRequest{
-		WorkspaceId:   workspaceIdWireValue,
-		AccountId:     v.AccountId,
-		DashboardType: v.DashboardType,
-	}, nil
-}
-
 type GetBillingUsageDashboardResponse struct {
 	// The unique id of the usage dashboard.
 	DashboardId *string `json:"dashboard_id,omitempty"`
@@ -115,12 +57,94 @@ type GetBillingUsageDashboardResponse struct {
 	DashboardUrl *string `json:"dashboard_url,omitempty"`
 }
 
+// CreateBillingUsageDashboardRequestToSDK converts the mirror to the sdk-go type.
+func CreateBillingUsageDashboardRequestToSDK(w *CreateBillingUsageDashboardRequest) (*sdk.CreateBillingUsageDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBillingUsageDashboardRequest{}
+	out.WorkspaceId = w.WorkspaceId
+	out.AccountId = w.AccountId
+	out.DashboardType = w.DashboardType
+	out.MajorVersion = w.MajorVersion
+	return out, nil
+}
+
+// CreateBillingUsageDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func CreateBillingUsageDashboardRequestFromSDK(v *sdk.CreateBillingUsageDashboardRequest) (*CreateBillingUsageDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBillingUsageDashboardRequest{}
+	out.WorkspaceId = v.WorkspaceId
+	out.AccountId = v.AccountId
+	out.DashboardType = v.DashboardType
+	out.MajorVersion = v.MajorVersion
+	return out, nil
+}
+
+// CreateBillingUsageDashboardResponseToSDK converts the mirror to the sdk-go type.
+func CreateBillingUsageDashboardResponseToSDK(w *CreateBillingUsageDashboardResponse) (*sdk.CreateBillingUsageDashboardResponse, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.CreateBillingUsageDashboardResponse{}
+	out.DashboardId = w.DashboardId
+	return out, nil
+}
+
+// CreateBillingUsageDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func CreateBillingUsageDashboardResponseFromSDK(v *sdk.CreateBillingUsageDashboardResponse) (*CreateBillingUsageDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &CreateBillingUsageDashboardResponse{}
+	out.DashboardId = v.DashboardId
+	return out, nil
+}
+
+// GetBillingUsageDashboardRequestToSDK converts the mirror to the sdk-go type.
+func GetBillingUsageDashboardRequestToSDK(w *GetBillingUsageDashboardRequest) (*sdk.GetBillingUsageDashboardRequest, error) {
+	if w == nil {
+		return nil, nil
+	}
+	out := &sdk.GetBillingUsageDashboardRequest{}
+	out.WorkspaceId = w.WorkspaceId
+	out.AccountId = w.AccountId
+	out.DashboardType = w.DashboardType
+	return out, nil
+}
+
+// GetBillingUsageDashboardRequestFromSDK converts the sdk-go type to the mirror.
+func GetBillingUsageDashboardRequestFromSDK(v *sdk.GetBillingUsageDashboardRequest) (*GetBillingUsageDashboardRequest, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetBillingUsageDashboardRequest{}
+	out.WorkspaceId = v.WorkspaceId
+	out.AccountId = v.AccountId
+	out.DashboardType = v.DashboardType
+	return out, nil
+}
+
+// GetBillingUsageDashboardResponseToSDK converts the mirror to the sdk-go type.
 func GetBillingUsageDashboardResponseToSDK(w *GetBillingUsageDashboardResponse) (*sdk.GetBillingUsageDashboardResponse, error) {
 	if w == nil {
 		return nil, nil
 	}
-	return &sdk.GetBillingUsageDashboardResponse{
-		DashboardId:  w.DashboardId,
-		DashboardUrl: w.DashboardUrl,
-	}, nil
+	out := &sdk.GetBillingUsageDashboardResponse{}
+	out.DashboardId = w.DashboardId
+	out.DashboardUrl = w.DashboardUrl
+	return out, nil
+}
+
+// GetBillingUsageDashboardResponseFromSDK converts the sdk-go type to the mirror.
+func GetBillingUsageDashboardResponseFromSDK(v *sdk.GetBillingUsageDashboardResponse) (*GetBillingUsageDashboardResponse, error) {
+	if v == nil {
+		return nil, nil
+	}
+	out := &GetBillingUsageDashboardResponse{}
+	out.DashboardId = v.DashboardId
+	out.DashboardUrl = v.DashboardUrl
+	return out, nil
 }
