@@ -114,6 +114,10 @@ type logRequest struct {
 	// `air run --watch -o json` to emit STATUS events.
 	onStatusChange func(current, previous string)
 	retryTracker   *retryTracker
+	// exitOnCompletion ends the stream once the streamed node prints the entry
+	// script's success summary, without waiting for Jobs to report the run
+	// terminal. Used by `air run --watch`.
+	exitOnCompletion bool
 }
 
 // logRunStatus is the subset of a run's state the log path needs, resolved once
@@ -355,6 +359,8 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
+	// completion watches the streamed node's new lines for the success summary.
+	completion completionMatcher
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -518,6 +524,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
 		}
+		if st.req.exitOnCompletion && st.completion.completed {
+			log.Infof(st.ctx, "air logs: run %d succeeded on node %d; not waiting for Jobs to report it terminal", st.req.runID, st.req.node)
+			return true, nil
+		}
 		if !st.firstLogSeen {
 			emptyStreamPolls++
 			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
@@ -634,6 +644,7 @@ func (st *bricklensStreamer) drainPages(toSec int64, suppressInitialHistory bool
 			if st.seen.has(rec) {
 				continue
 			}
+			st.completion.observe(rec.Body)
 			if !suppressInitialHistory || (nano != 0 && nano > initialTailNano) {
 				st.emit(rec.Body)
 				emitted++
