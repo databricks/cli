@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -236,7 +237,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return true
 			}
 
-			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			remoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
@@ -314,7 +315,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		remoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {

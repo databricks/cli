@@ -1184,6 +1184,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
 	// TODO: map via StringToStringVar: parameters
+	cmd.Flags().StringVar(&updateReq.ParentPath, "parent-path", updateReq.ParentPath, `Path of the pipeline parent folder in workspace file tree.`)
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
 	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)

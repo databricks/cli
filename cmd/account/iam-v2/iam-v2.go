@@ -39,12 +39,14 @@ These APIs are used to manage identities and the workspace access of these
 	// Add methods
 	cmd.AddCommand(newCreateDirectGroupMember())
 	cmd.AddCommand(newCreateGroup())
+	cmd.AddCommand(newCreateIdentityVisibilityFilter())
 	cmd.AddCommand(newCreateServicePrincipal())
 	cmd.AddCommand(newCreateUser())
 	cmd.AddCommand(newCreateWorkspaceAssignment())
 	cmd.AddCommand(newCreateWorkspaceAssignmentDetail())
 	cmd.AddCommand(newDeleteDirectGroupMember())
 	cmd.AddCommand(newDeleteGroup())
+	cmd.AddCommand(newDeleteIdentityVisibilityFilter())
 	cmd.AddCommand(newDeleteServicePrincipal())
 	cmd.AddCommand(newDeleteUser())
 	cmd.AddCommand(newDeleteWorkspaceAssignment())
@@ -54,6 +56,7 @@ These APIs are used to manage identities and the workspace access of these
 	cmd.AddCommand(newGetExternalServicePrincipal())
 	cmd.AddCommand(newGetExternalUser())
 	cmd.AddCommand(newGetGroup())
+	cmd.AddCommand(newGetIdentityVisibilityFilter())
 	cmd.AddCommand(newGetServicePrincipal())
 	cmd.AddCommand(newGetUser())
 	cmd.AddCommand(newGetWorkspaceAccessDetail())
@@ -61,6 +64,7 @@ These APIs are used to manage identities and the workspace access of these
 	cmd.AddCommand(newGetWorkspaceAssignmentDetail())
 	cmd.AddCommand(newListDirectGroupMembers())
 	cmd.AddCommand(newListGroups())
+	cmd.AddCommand(newListIdentityVisibilityFilters())
 	cmd.AddCommand(newListServicePrincipals())
 	cmd.AddCommand(newListTransitiveParentGroups())
 	cmd.AddCommand(newListUsers())
@@ -261,6 +265,105 @@ Create a group in the account.
 	// Apply optional overrides to this command.
 	for _, fn := range createGroupOverrides {
 		fn(cmd, &createGroupReq)
+	}
+
+	return cmd
+}
+
+// start create-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.CreateIdentityVisibilityFilterRequest,
+)
+
+func newCreateIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createIdentityVisibilityFilterReq iamv2.CreateIdentityVisibilityFilterRequest
+	createIdentityVisibilityFilterReq.IdentityVisibilityFilter = iamv2.IdentityVisibilityFilter{}
+	var createIdentityVisibilityFilterJson flags.JsonFlag
+
+	cmd.Flags().Var(&createIdentityVisibilityFilterJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, "identity-visibility-filter-id", createIdentityVisibilityFilterReq.IdentityVisibilityFilterId, `Optional.`)
+	// TODO: complex arg: exact
+	// TODO: complex arg: prefix
+
+	cmd.Use = "create-identity-visibility-filter PARENT PRINCIPAL_TYPE"
+	cmd.Short = `Create an identity-visibility filter in the account.`
+	cmd.Long = `Create an identity-visibility filter in the account.
+
+  Creates an identity-visibility filter in the account.
+
+  Arguments:
+    PARENT: Required. The parent account. Format: accounts/{account_id}
+    PRINCIPAL_TYPE: Which type of principal (user, service principal, or group) this rule
+      applies to.
+      Supported values: [GROUP, SERVICE_PRINCIPAL, USER]`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'principal_type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createIdentityVisibilityFilterJson.Unmarshal(&createIdentityVisibilityFilterReq.IdentityVisibilityFilter)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createIdentityVisibilityFilterReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createIdentityVisibilityFilterReq.IdentityVisibilityFilter.PrincipalType)
+			if err != nil {
+				return fmt.Errorf("invalid PRINCIPAL_TYPE: %s", args[1])
+			}
+
+		}
+
+		response, err := a.IamV2.CreateIdentityVisibilityFilter(ctx, createIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createIdentityVisibilityFilterOverrides {
+		fn(cmd, &createIdentityVisibilityFilterReq)
 	}
 
 	return cmd
@@ -819,6 +922,68 @@ Delete a group in the account.
 	// Apply optional overrides to this command.
 	for _, fn := range deleteGroupOverrides {
 		fn(cmd, &deleteGroupReq)
+	}
+
+	return cmd
+}
+
+// start delete-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.DeleteIdentityVisibilityFilterRequest,
+)
+
+func newDeleteIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteIdentityVisibilityFilterReq iamv2.DeleteIdentityVisibilityFilterRequest
+
+	cmd.Use = "delete-identity-visibility-filter NAME"
+	cmd.Short = `Delete an identity-visibility filter.`
+	cmd.Long = `Delete an identity-visibility filter.
+
+  Deletes an identity-visibility filter by resource name.
+
+  Arguments:
+    NAME: Required. The resource name of the filter. Format:
+      accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		deleteIdentityVisibilityFilterReq.Name = args[0]
+
+		err = a.IamV2.DeleteIdentityVisibilityFilter(ctx, deleteIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteIdentityVisibilityFilterOverrides {
+		fn(cmd, &deleteIdentityVisibilityFilterReq)
 	}
 
 	return cmd
@@ -1417,6 +1582,69 @@ Get a group in the account.
 	return cmd
 }
 
+// start get-identity-visibility-filter command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getIdentityVisibilityFilterOverrides []func(
+	*cobra.Command,
+	*iamv2.GetIdentityVisibilityFilterRequest,
+)
+
+func newGetIdentityVisibilityFilter() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getIdentityVisibilityFilterReq iamv2.GetIdentityVisibilityFilterRequest
+
+	cmd.Use = "get-identity-visibility-filter NAME"
+	cmd.Short = `Get an identity-visibility filter.`
+	cmd.Long = `Get an identity-visibility filter.
+
+  Fetches an identity-visibility filter by resource name.
+
+  Arguments:
+    NAME: Required. The resource name of the filter. Format:
+      accounts/{account_id}/identity-visibility-filters/{identity_visibility_filter_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getIdentityVisibilityFilterReq.Name = args[0]
+
+		response, err := a.IamV2.GetIdentityVisibilityFilter(ctx, getIdentityVisibilityFilterReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getIdentityVisibilityFilterOverrides {
+		fn(cmd, &getIdentityVisibilityFilterReq)
+	}
+
+	return cmd
+}
+
 // start get-service-principal command
 
 // Slice with functions to override default command behavior.
@@ -1913,6 +2141,85 @@ List groups in the account.
 	// Apply optional overrides to this command.
 	for _, fn := range listGroupsOverrides {
 		fn(cmd, &listGroupsReq)
+	}
+
+	return cmd
+}
+
+// start list-identity-visibility-filters command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listIdentityVisibilityFiltersOverrides []func(
+	*cobra.Command,
+	*iamv2.ListIdentityVisibilityFiltersRequest,
+)
+
+func newListIdentityVisibilityFilters() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listIdentityVisibilityFiltersReq iamv2.ListIdentityVisibilityFiltersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listIdentityVisibilityFiltersLimit int
+
+	cmd.Flags().IntVar(&listIdentityVisibilityFiltersReq.PageSize, "page-size", listIdentityVisibilityFiltersReq.PageSize, `The maximum number of filters to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listIdentityVisibilityFiltersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listIdentityVisibilityFiltersReq.PageToken, "page-token", listIdentityVisibilityFiltersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-identity-visibility-filters PARENT"
+	cmd.Short = `List the identity-visibility filters in the account.`
+	cmd.Long = `List the identity-visibility filters in the account.
+
+  Lists the identity-visibility filters in the account, returning one page per
+  call.
+
+  Arguments:
+    PARENT: Required. The parent account. Format: accounts/{account_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listIdentityVisibilityFiltersReq.Parent = args[0]
+
+		response := a.IamV2.ListIdentityVisibilityFilters(ctx, listIdentityVisibilityFiltersReq)
+		if listIdentityVisibilityFiltersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listIdentityVisibilityFiltersLimit)
+		}
+		if listIdentityVisibilityFiltersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listIdentityVisibilityFiltersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listIdentityVisibilityFiltersOverrides {
+		fn(cmd, &listIdentityVisibilityFiltersReq)
 	}
 
 	return cmd
@@ -2598,7 +2905,8 @@ Update a group in the account.
 
   When AIM is enabled and the group is an external identity (its external_id is
   set), only external_id can be updated; its other fields are sourced from your
-  identity provider.
+  identity provider. With AIM and group visibility filters, a new nonempty
+  external_id must identify a visible group. Clearing external_id is allowed.
 
   Authorization: the caller must be an account admin or a manager of the group
   (holds the roles/group.manager role on it).

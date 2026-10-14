@@ -4,6 +4,8 @@ Use this when you want to develop or debug a Databricks project locally: it inst
 
 In a uv workspace member, the command uses the shared .venv at the workspace root and writes the dependency constraints to the root pyproject.toml, because uv reads them only from there. uv sync installs the current member's dependencies into the shared .venv and removes packages that only other members need. All members share one environment, so they must target compatible compute.
 
+If UV_PROJECT_ENVIRONMENT is set, the command uses that environment instead of .venv, as uv does.
+
 Usage:
   databricks environments setup-local [flags]
 

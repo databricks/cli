@@ -1,0 +1,24 @@
+# .gitignore excludes itself so that hello.py is the only uploaded file and the injected fault always hits it.
+mkdir .git
+cat > .gitignore << EOF2
+.databricks/
+.gitignore
+EOF2
+
+# Use an ephemeral remote directory so concurrent test runs do not interfere.
+remote_dir="/Users/$CURRENT_USER_NAME/sync-504-$UNIQUE_NAME"
+
+cleanup() {
+  MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$remote_dir" 2>/dev/null || true
+  rm -rf .git .gitignore .databricks "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# Inject a single 504 on the first file upload. Uploads overwrite, so they are retried and the sync succeeds.
+fault.py "POST /api/2.0/workspace/import" 504 0 1
+
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from converting /Users/... to C:/Program Files/Git/Users/...
+MSYS_NO_PATHCONV=1 $CLI sync . "$remote_dir"
+
+# Two requests for hello.py should appear: the initial 504 and the successful retry.
+print_requests.py //api/2.0/workspace/import | jq -r .body.multipart_form.path

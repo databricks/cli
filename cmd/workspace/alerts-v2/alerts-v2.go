@@ -66,6 +66,7 @@ func newCreateAlert() *cobra.Command {
 
 	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
 	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().Var(&createAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
 	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
@@ -391,6 +392,7 @@ func newUpdateAlert() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
 	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().Var(&updateAlertReq.Alert.CustomTemplateFormat, "custom-template-format", `The format used to interpret the custom_summary and custom_description templates. Supported values: [HTML, MARKDOWN]`)
 	// TODO: complex arg: effective_run_as
 	// TODO: array: parameters
 	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)

@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package mason
+package agent_kit
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/mason"
+	"github.com/databricks/databricks-sdk-go/service/agentkit"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mason",
+		Use:   "agent-kit",
 		Short: `APIs for managing agent memory and durable session state.`,
 		Long: `APIs for managing agent memory and durable session state. This interface is
   under active development and may change.`,
@@ -80,13 +80,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var appendSessionItemsOverrides []func(
 	*cobra.Command,
-	*mason.AppendSessionItemsRequest,
+	*agentkit.AppendSessionItemsRequest,
 )
 
 func newAppendSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var appendSessionItemsReq mason.AppendSessionItemsRequest
+	var appendSessionItemsReq agentkit.AppendSessionItemsRequest
 	var appendSessionItemsJson flags.JsonFlag
 
 	cmd.Flags().Var(&appendSessionItemsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -131,7 +131,7 @@ func newAppendSessionItems() *cobra.Command {
 		}
 		appendSessionItemsReq.Parent = args[0]
 
-		response, err := w.Mason.AppendSessionItems(ctx, appendSessionItemsReq)
+		response, err := w.AgentKit.AppendSessionItems(ctx, appendSessionItemsReq)
 		if err != nil {
 			return err
 		}
@@ -157,13 +157,13 @@ func newAppendSessionItems() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var clearSessionItemsOverrides []func(
 	*cobra.Command,
-	*mason.ClearSessionItemsRequest,
+	*agentkit.ClearSessionItemsRequest,
 )
 
 func newClearSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var clearSessionItemsReq mason.ClearSessionItemsRequest
+	var clearSessionItemsReq agentkit.ClearSessionItemsRequest
 
 	cmd.Use = "clear-session-items PARENT"
 	cmd.Short = `Clear items from a session.`
@@ -191,7 +191,7 @@ func newClearSessionItems() *cobra.Command {
 
 		clearSessionItemsReq.Parent = args[0]
 
-		response, err := w.Mason.ClearSessionItems(ctx, clearSessionItemsReq)
+		response, err := w.AgentKit.ClearSessionItems(ctx, clearSessionItemsReq)
 		if err != nil {
 			return err
 		}
@@ -217,14 +217,14 @@ func newClearSessionItems() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMemoryOverrides []func(
 	*cobra.Command,
-	*mason.CreateManagedMemoryEntryRequest,
+	*agentkit.CreateManagedMemoryEntryRequest,
 )
 
 func newCreateMemory() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createMemoryReq mason.CreateManagedMemoryEntryRequest
-	createMemoryReq.ManagedMemoryEntry = mason.ManagedMemoryEntry{}
+	var createMemoryReq agentkit.CreateManagedMemoryEntryRequest
+	createMemoryReq.ManagedMemoryEntry = agentkit.ManagedMemoryEntry{}
 	var createMemoryJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMemoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -296,7 +296,7 @@ func newCreateMemory() *cobra.Command {
 			createMemoryReq.ManagedMemoryEntry.Path = args[2]
 		}
 
-		response, err := w.Mason.CreateMemory(ctx, createMemoryReq)
+		response, err := w.AgentKit.CreateMemory(ctx, createMemoryReq)
 		if err != nil {
 			return err
 		}
@@ -322,14 +322,14 @@ func newCreateMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMemoryStoreOverrides []func(
 	*cobra.Command,
-	*mason.CreateManagedMemoryStoreRequest,
+	*agentkit.CreateManagedMemoryStoreRequest,
 )
 
 func newCreateMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createMemoryStoreReq mason.CreateManagedMemoryStoreRequest
-	createMemoryStoreReq.ManagedMemoryStore = mason.ManagedMemoryStore{}
+	var createMemoryStoreReq agentkit.CreateManagedMemoryStoreRequest
+	createMemoryStoreReq.ManagedMemoryStore = agentkit.ManagedMemoryStore{}
 	var createMemoryStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMemoryStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -377,7 +377,7 @@ func newCreateMemoryStore() *cobra.Command {
 		}
 		createMemoryStoreReq.ManagedMemoryStoreId = args[0]
 
-		response, err := w.Mason.CreateMemoryStore(ctx, createMemoryStoreReq)
+		response, err := w.AgentKit.CreateMemoryStore(ctx, createMemoryStoreReq)
 		if err != nil {
 			return err
 		}
@@ -403,14 +403,14 @@ func newCreateMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSessionOverrides []func(
 	*cobra.Command,
-	*mason.CreateSessionRequest,
+	*agentkit.CreateSessionRequest,
 )
 
 func newCreateSession() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createSessionReq mason.CreateSessionRequest
-	createSessionReq.Session = mason.Session{}
+	var createSessionReq agentkit.CreateSessionRequest
+	createSessionReq.Session = agentkit.Session{}
 	var createSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -474,7 +474,7 @@ func newCreateSession() *cobra.Command {
 			createSessionReq.Session.ActorId = args[1]
 		}
 
-		response, err := w.Mason.CreateSession(ctx, createSessionReq)
+		response, err := w.AgentKit.CreateSession(ctx, createSessionReq)
 		if err != nil {
 			return err
 		}
@@ -500,14 +500,14 @@ func newCreateSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSessionStoreOverrides []func(
 	*cobra.Command,
-	*mason.CreateSessionStoreRequest,
+	*agentkit.CreateSessionStoreRequest,
 )
 
 func newCreateSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createSessionStoreReq mason.CreateSessionStoreRequest
-	createSessionStoreReq.SessionStore = mason.SessionStore{}
+	var createSessionStoreReq agentkit.CreateSessionStoreRequest
+	createSessionStoreReq.SessionStore = agentkit.SessionStore{}
 	var createSessionStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSessionStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -554,7 +554,7 @@ func newCreateSessionStore() *cobra.Command {
 		}
 		createSessionStoreReq.SessionStoreId = args[0]
 
-		response, err := w.Mason.CreateSessionStore(ctx, createSessionStoreReq)
+		response, err := w.AgentKit.CreateSessionStore(ctx, createSessionStoreReq)
 		if err != nil {
 			return err
 		}
@@ -580,13 +580,13 @@ func newCreateSessionStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMemoryOverrides []func(
 	*cobra.Command,
-	*mason.DeleteManagedMemoryEntryRequest,
+	*agentkit.DeleteManagedMemoryEntryRequest,
 )
 
 func newDeleteMemory() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteMemoryReq mason.DeleteManagedMemoryEntryRequest
+	var deleteMemoryReq agentkit.DeleteManagedMemoryEntryRequest
 
 	cmd.Use = "delete-memory NAME"
 	cmd.Short = `Delete a managed memory entry by resource name.`
@@ -615,7 +615,7 @@ func newDeleteMemory() *cobra.Command {
 
 		deleteMemoryReq.Name = args[0]
 
-		err = w.Mason.DeleteMemory(ctx, deleteMemoryReq)
+		err = w.AgentKit.DeleteMemory(ctx, deleteMemoryReq)
 		if err != nil {
 			return err
 		}
@@ -640,13 +640,13 @@ func newDeleteMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMemoryStoreOverrides []func(
 	*cobra.Command,
-	*mason.DeleteManagedMemoryStoreRequest,
+	*agentkit.DeleteManagedMemoryStoreRequest,
 )
 
 func newDeleteMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteMemoryStoreReq mason.DeleteManagedMemoryStoreRequest
+	var deleteMemoryStoreReq agentkit.DeleteManagedMemoryStoreRequest
 
 	cmd.Use = "delete-memory-store NAME"
 	cmd.Short = `Delete a managed memory store by resource name.`
@@ -674,7 +674,7 @@ func newDeleteMemoryStore() *cobra.Command {
 
 		deleteMemoryStoreReq.Name = args[0]
 
-		err = w.Mason.DeleteMemoryStore(ctx, deleteMemoryStoreReq)
+		err = w.AgentKit.DeleteMemoryStore(ctx, deleteMemoryStoreReq)
 		if err != nil {
 			return err
 		}
@@ -699,13 +699,13 @@ func newDeleteMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSessionOverrides []func(
 	*cobra.Command,
-	*mason.DeleteSessionRequest,
+	*agentkit.DeleteSessionRequest,
 )
 
 func newDeleteSession() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteSessionReq mason.DeleteSessionRequest
+	var deleteSessionReq agentkit.DeleteSessionRequest
 
 	cmd.Use = "delete-session NAME"
 	cmd.Short = `Delete a session.`
@@ -734,7 +734,7 @@ func newDeleteSession() *cobra.Command {
 
 		deleteSessionReq.Name = args[0]
 
-		err = w.Mason.DeleteSession(ctx, deleteSessionReq)
+		err = w.AgentKit.DeleteSession(ctx, deleteSessionReq)
 		if err != nil {
 			return err
 		}
@@ -759,13 +759,13 @@ func newDeleteSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSessionStoreOverrides []func(
 	*cobra.Command,
-	*mason.DeleteSessionStoreRequest,
+	*agentkit.DeleteSessionStoreRequest,
 )
 
 func newDeleteSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteSessionStoreReq mason.DeleteSessionStoreRequest
+	var deleteSessionStoreReq agentkit.DeleteSessionStoreRequest
 
 	cmd.Use = "delete-session-store NAME"
 	cmd.Short = `Delete a session store.`
@@ -793,7 +793,7 @@ func newDeleteSessionStore() *cobra.Command {
 
 		deleteSessionStoreReq.Name = args[0]
 
-		err = w.Mason.DeleteSessionStore(ctx, deleteSessionStoreReq)
+		err = w.AgentKit.DeleteSessionStore(ctx, deleteSessionStoreReq)
 		if err != nil {
 			return err
 		}
@@ -818,13 +818,13 @@ func newDeleteSessionStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var extractMemoriesOverrides []func(
 	*cobra.Command,
-	*mason.ExtractMemoriesRequest,
+	*agentkit.ExtractMemoriesRequest,
 )
 
 func newExtractMemories() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var extractMemoriesReq mason.ExtractMemoriesRequest
+	var extractMemoriesReq agentkit.ExtractMemoriesRequest
 	var extractMemoriesJson flags.JsonFlag
 
 	cmd.Flags().Var(&extractMemoriesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -885,7 +885,7 @@ func newExtractMemories() *cobra.Command {
 			extractMemoriesReq.MemoryStore = args[2]
 		}
 
-		response, err := w.Mason.ExtractMemories(ctx, extractMemoriesReq)
+		response, err := w.AgentKit.ExtractMemories(ctx, extractMemoriesReq)
 		if err != nil {
 			return err
 		}
@@ -911,13 +911,13 @@ func newExtractMemories() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var forkSessionOverrides []func(
 	*cobra.Command,
-	*mason.ForkSessionRequest,
+	*agentkit.ForkSessionRequest,
 )
 
 func newForkSession() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var forkSessionReq mason.ForkSessionRequest
+	var forkSessionReq agentkit.ForkSessionRequest
 	var forkSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&forkSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -980,7 +980,7 @@ func newForkSession() *cobra.Command {
 			forkSessionReq.ActorId = args[2]
 		}
 
-		response, err := w.Mason.ForkSession(ctx, forkSessionReq)
+		response, err := w.AgentKit.ForkSession(ctx, forkSessionReq)
 		if err != nil {
 			return err
 		}
@@ -1006,23 +1006,24 @@ func newForkSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMemoryOverrides []func(
 	*cobra.Command,
-	*mason.GetManagedMemoryEntryRequest,
+	*agentkit.GetManagedMemoryEntryRequest,
 )
 
 func newGetMemory() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getMemoryReq mason.GetManagedMemoryEntryRequest
+	var getMemoryReq agentkit.GetManagedMemoryEntryRequest
 
 	var readMaskParam string
-	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Fields to return, using proto field names such as content (not contents). Wire name: 'read_mask'.`)
+	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Deprecated. Wire name: 'read_mask'.`)
 
 	cmd.Use = "get-memory NAME"
 	cmd.Short = `Get a managed memory entry by resource name.`
 	cmd.Long = `Get a managed memory entry by resource name.
 
-  Retrieves a managed memory entry, including its content, by resource name.
-  Returns NOT_FOUND when the entry does not exist in the caller's workspace.
+  Retrieves a managed memory entry by resource name. view controls whether the
+  response includes memory content. Returns NOT_FOUND when the entry does not
+  exist in the caller's workspace.
 
   Arguments:
     NAME: Resource name in the form
@@ -1049,7 +1050,7 @@ func newGetMemory() *cobra.Command {
 			getMemoryReq.ReadMask = fieldmask.New(readMaskArray)
 		}
 
-		response, err := w.Mason.GetMemory(ctx, getMemoryReq)
+		response, err := w.AgentKit.GetMemory(ctx, getMemoryReq)
 		if err != nil {
 			return err
 		}
@@ -1075,13 +1076,13 @@ func newGetMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMemoryStoreOverrides []func(
 	*cobra.Command,
-	*mason.GetManagedMemoryStoreRequest,
+	*agentkit.GetManagedMemoryStoreRequest,
 )
 
 func newGetMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getMemoryStoreReq mason.GetManagedMemoryStoreRequest
+	var getMemoryStoreReq agentkit.GetManagedMemoryStoreRequest
 
 	cmd.Use = "get-memory-store NAME"
 	cmd.Short = `Get a managed memory store by resource name.`
@@ -1109,7 +1110,7 @@ func newGetMemoryStore() *cobra.Command {
 
 		getMemoryStoreReq.Name = args[0]
 
-		response, err := w.Mason.GetMemoryStore(ctx, getMemoryStoreReq)
+		response, err := w.AgentKit.GetMemoryStore(ctx, getMemoryStoreReq)
 		if err != nil {
 			return err
 		}
@@ -1135,13 +1136,13 @@ func newGetMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSessionOverrides []func(
 	*cobra.Command,
-	*mason.GetSessionRequest,
+	*agentkit.GetSessionRequest,
 )
 
 func newGetSession() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getSessionReq mason.GetSessionRequest
+	var getSessionReq agentkit.GetSessionRequest
 
 	cmd.Use = "get-session NAME"
 	cmd.Short = `Get a session.`
@@ -1169,7 +1170,7 @@ func newGetSession() *cobra.Command {
 
 		getSessionReq.Name = args[0]
 
-		response, err := w.Mason.GetSession(ctx, getSessionReq)
+		response, err := w.AgentKit.GetSession(ctx, getSessionReq)
 		if err != nil {
 			return err
 		}
@@ -1195,13 +1196,13 @@ func newGetSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSessionStoreOverrides []func(
 	*cobra.Command,
-	*mason.GetSessionStoreRequest,
+	*agentkit.GetSessionStoreRequest,
 )
 
 func newGetSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getSessionStoreReq mason.GetSessionStoreRequest
+	var getSessionStoreReq agentkit.GetSessionStoreRequest
 
 	cmd.Use = "get-session-store NAME"
 	cmd.Short = `Get a session store.`
@@ -1228,7 +1229,7 @@ func newGetSessionStore() *cobra.Command {
 
 		getSessionStoreReq.Name = args[0]
 
-		response, err := w.Mason.GetSessionStore(ctx, getSessionStoreReq)
+		response, err := w.AgentKit.GetSessionStore(ctx, getSessionStoreReq)
 		if err != nil {
 			return err
 		}
@@ -1254,13 +1255,13 @@ func newGetSessionStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listMemoriesOverrides []func(
 	*cobra.Command,
-	*mason.ListManagedMemoryEntriesRequest,
+	*agentkit.ListManagedMemoryEntriesRequest,
 )
 
 func newListMemories() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listMemoriesReq mason.ListManagedMemoryEntriesRequest
+	var listMemoriesReq agentkit.ListManagedMemoryEntriesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1269,7 +1270,7 @@ func newListMemories() *cobra.Command {
 	cmd.Flags().IntVar(&listMemoriesReq.PageSize, "page-size", listMemoriesReq.PageSize, `Maximum number of entries to return. Wire name: 'page_size'.`)
 	cmd.Flags().StringVar(&listMemoriesReq.PathPrefix, "path-prefix", listMemoriesReq.PathPrefix, `Optional path prefix used to restrict entries within the actor partition. Wire name: 'path_prefix'.`)
 	var readMaskParam string
-	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Fields to return in each entry, using proto field names such as content (not contents). Wire name: 'read_mask'.`)
+	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Deprecated. Wire name: 'read_mask'.`)
 	cmd.Flags().StringVar(&listMemoriesReq.SessionId, "session-id", listMemoriesReq.SessionId, `Optional session identifier. Wire name: 'session_id'.`)
 
 	// Limit flag for total result capping.
@@ -1285,8 +1286,8 @@ func newListMemories() *cobra.Command {
 
   Lists managed memory entries for one actor. An exact path filters entries
   across sessions, ignoring session metadata. Otherwise, session_id and
-  path_prefix restrict the actor partition. read_mask selects fields in each
-  returned entry.
+  path_prefix restrict the actor partition. view controls whether each
+  returned entry includes memory content.
 
   Arguments:
     PARENT: Managed memory store whose entries are listed, in the form
@@ -1315,7 +1316,7 @@ func newListMemories() *cobra.Command {
 			listMemoriesReq.ReadMask = fieldmask.New(readMaskArray)
 		}
 
-		response := w.Mason.ListMemories(ctx, listMemoriesReq)
+		response := w.AgentKit.ListMemories(ctx, listMemoriesReq)
 		if listMemoriesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMemoriesLimit)
 		}
@@ -1344,13 +1345,13 @@ func newListMemories() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listMemoryStoresOverrides []func(
 	*cobra.Command,
-	*mason.ListManagedMemoryStoresRequest,
+	*agentkit.ListManagedMemoryStoresRequest,
 )
 
 func newListMemoryStores() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listMemoryStoresReq mason.ListManagedMemoryStoresRequest
+	var listMemoryStoresReq agentkit.ListManagedMemoryStoresRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1385,7 +1386,7 @@ func newListMemoryStores() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.Mason.ListMemoryStores(ctx, listMemoryStoresReq)
+		response := w.AgentKit.ListMemoryStores(ctx, listMemoryStoresReq)
 		if listMemoryStoresLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMemoryStoresLimit)
 		}
@@ -1414,13 +1415,13 @@ func newListMemoryStores() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSessionItemsOverrides []func(
 	*cobra.Command,
-	*mason.ListSessionItemsRequest,
+	*agentkit.ListSessionItemsRequest,
 )
 
 func newListSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listSessionItemsReq mason.ListSessionItemsRequest
+	var listSessionItemsReq agentkit.ListSessionItemsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1462,7 +1463,7 @@ func newListSessionItems() *cobra.Command {
 
 		listSessionItemsReq.Parent = args[0]
 
-		response := w.Mason.ListSessionItems(ctx, listSessionItemsReq)
+		response := w.AgentKit.ListSessionItems(ctx, listSessionItemsReq)
 		if listSessionItemsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionItemsLimit)
 		}
@@ -1491,13 +1492,13 @@ func newListSessionItems() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSessionStoresOverrides []func(
 	*cobra.Command,
-	*mason.ListSessionStoresRequest,
+	*agentkit.ListSessionStoresRequest,
 )
 
 func newListSessionStores() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listSessionStoresReq mason.ListSessionStoresRequest
+	var listSessionStoresReq agentkit.ListSessionStoresRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1532,7 +1533,7 @@ func newListSessionStores() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.Mason.ListSessionStores(ctx, listSessionStoresReq)
+		response := w.AgentKit.ListSessionStores(ctx, listSessionStoresReq)
 		if listSessionStoresLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionStoresLimit)
 		}
@@ -1561,13 +1562,13 @@ func newListSessionStores() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSessionsOverrides []func(
 	*cobra.Command,
-	*mason.ListSessionsRequest,
+	*agentkit.ListSessionsRequest,
 )
 
 func newListSessions() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listSessionsReq mason.ListSessionsRequest
+	var listSessionsReq agentkit.ListSessionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1610,7 +1611,7 @@ func newListSessions() *cobra.Command {
 
 		listSessionsReq.Parent = args[0]
 
-		response := w.Mason.ListSessions(ctx, listSessionsReq)
+		response := w.AgentKit.ListSessions(ctx, listSessionsReq)
 		if listSessionsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionsLimit)
 		}
@@ -1639,13 +1640,13 @@ func newListSessions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var popSessionItemOverrides []func(
 	*cobra.Command,
-	*mason.PopSessionItemRequest,
+	*agentkit.PopSessionItemRequest,
 )
 
 func newPopSessionItem() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var popSessionItemReq mason.PopSessionItemRequest
+	var popSessionItemReq agentkit.PopSessionItemRequest
 
 	cmd.Use = "pop-session-item PARENT"
 	cmd.Short = `Pop an item from a session.`
@@ -1673,7 +1674,7 @@ func newPopSessionItem() *cobra.Command {
 
 		popSessionItemReq.Parent = args[0]
 
-		response, err := w.Mason.PopSessionItem(ctx, popSessionItemReq)
+		response, err := w.AgentKit.PopSessionItem(ctx, popSessionItemReq)
 		if err != nil {
 			return err
 		}
@@ -1699,13 +1700,13 @@ func newPopSessionItem() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchMemoriesOverrides []func(
 	*cobra.Command,
-	*mason.SearchManagedMemoryEntriesRequest,
+	*agentkit.SearchManagedMemoryEntriesRequest,
 )
 
 func newSearchMemories() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var searchMemoriesReq mason.SearchManagedMemoryEntriesRequest
+	var searchMemoriesReq agentkit.SearchManagedMemoryEntriesRequest
 	var searchMemoriesJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -1717,7 +1718,7 @@ func newSearchMemories() *cobra.Command {
 	cmd.Flags().IntVar(&searchMemoriesReq.PageSize, "page-size", searchMemoriesReq.PageSize, `Maximum number of relevance-ranked entries to return. Wire name: 'page_size'.`)
 	cmd.Flags().StringVar(&searchMemoriesReq.PathPrefix, "path-prefix", searchMemoriesReq.PathPrefix, `Optional absolute, case-sensitive path prefix used to restrict searched entries within the actor partition. Wire name: 'path_prefix'.`)
 	var readMaskParam string
-	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Fields to return in each matching entry, using proto field names such as content (not contents). Wire name: 'read_mask'.`)
+	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Deprecated. Wire name: 'read_mask'.`)
 	cmd.Flags().StringVar(&searchMemoriesReq.SessionId, "session-id", searchMemoriesReq.SessionId, `Optional session identifier. Wire name: 'session_id'.`)
 
 	// Limit flag for total result capping.
@@ -1732,8 +1733,8 @@ func newSearchMemories() *cobra.Command {
 	cmd.Long = `Search managed memory entries.
 
   Searches managed memory entries by text query for one actor. Returns matching
-  entries and scores ranked by relevance; read_mask selects fields in each
-  returned entry.
+  entries and scores ranked by relevance; view controls whether each returned
+  entry includes content.
 
   Arguments:
     PARENT: Managed memory store whose entries are searched, in the form
@@ -1787,7 +1788,7 @@ func newSearchMemories() *cobra.Command {
 			searchMemoriesReq.ReadMask = fieldmask.New(readMaskArray)
 		}
 
-		response := w.Mason.SearchMemories(ctx, searchMemoriesReq)
+		response := w.AgentKit.SearchMemories(ctx, searchMemoriesReq)
 		if searchMemoriesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchMemoriesLimit)
 		}
@@ -1816,14 +1817,14 @@ func newSearchMemories() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateMemoryOverrides []func(
 	*cobra.Command,
-	*mason.UpdateManagedMemoryEntryRequest,
+	*agentkit.UpdateManagedMemoryEntryRequest,
 )
 
 func newUpdateMemory() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateMemoryReq mason.UpdateManagedMemoryEntryRequest
-	updateMemoryReq.ManagedMemoryEntry = mason.ManagedMemoryEntry{}
+	var updateMemoryReq agentkit.UpdateManagedMemoryEntryRequest
+	updateMemoryReq.ManagedMemoryEntry = agentkit.ManagedMemoryEntry{}
 	var updateMemoryJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMemoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1895,7 +1896,7 @@ func newUpdateMemory() *cobra.Command {
 			updateMemoryReq.ManagedMemoryEntry.Path = args[3]
 		}
 
-		response, err := w.Mason.UpdateMemory(ctx, updateMemoryReq)
+		response, err := w.AgentKit.UpdateMemory(ctx, updateMemoryReq)
 		if err != nil {
 			return err
 		}
@@ -1921,14 +1922,14 @@ func newUpdateMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateMemoryStoreOverrides []func(
 	*cobra.Command,
-	*mason.UpdateManagedMemoryStoreRequest,
+	*agentkit.UpdateManagedMemoryStoreRequest,
 )
 
 func newUpdateMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateMemoryStoreReq mason.UpdateManagedMemoryStoreRequest
-	updateMemoryStoreReq.ManagedMemoryStore = mason.ManagedMemoryStore{}
+	var updateMemoryStoreReq agentkit.UpdateManagedMemoryStoreRequest
+	updateMemoryStoreReq.ManagedMemoryStore = agentkit.ManagedMemoryStore{}
 	var updateMemoryStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMemoryStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1941,11 +1942,12 @@ func newUpdateMemoryStore() *cobra.Command {
 	cmd.Short = `Update a managed memory store.`
 	cmd.Long = `Update a managed memory store.
 
-  Updates a managed memory store's description.
+  Updates a managed memory store's description and metadata.
 
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.
-    UPDATE_MASK: Only description may be updated.`
+    UPDATE_MASK: Only description and metadata may be updated. Selecting metadata
+      replaces the entire map.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
@@ -1979,7 +1981,7 @@ func newUpdateMemoryStore() *cobra.Command {
 			updateMemoryStoreReq.UpdateMask = *fieldmask.New(updateMaskArray)
 		}
 
-		response, err := w.Mason.UpdateMemoryStore(ctx, updateMemoryStoreReq)
+		response, err := w.AgentKit.UpdateMemoryStore(ctx, updateMemoryStoreReq)
 		if err != nil {
 			return err
 		}
@@ -2005,14 +2007,14 @@ func newUpdateMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateSessionOverrides []func(
 	*cobra.Command,
-	*mason.UpdateSessionRequest,
+	*agentkit.UpdateSessionRequest,
 )
 
 func newUpdateSession() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateSessionReq mason.UpdateSessionRequest
-	updateSessionReq.Session = mason.Session{}
+	var updateSessionReq agentkit.UpdateSessionRequest
+	updateSessionReq.Session = agentkit.Session{}
 	var updateSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2081,7 +2083,7 @@ func newUpdateSession() *cobra.Command {
 			updateSessionReq.Session.ActorId = args[2]
 		}
 
-		response, err := w.Mason.UpdateSession(ctx, updateSessionReq)
+		response, err := w.AgentKit.UpdateSession(ctx, updateSessionReq)
 		if err != nil {
 			return err
 		}
@@ -2107,14 +2109,14 @@ func newUpdateSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateSessionStoreOverrides []func(
 	*cobra.Command,
-	*mason.UpdateSessionStoreRequest,
+	*agentkit.UpdateSessionStoreRequest,
 )
 
 func newUpdateSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateSessionStoreReq mason.UpdateSessionStoreRequest
-	updateSessionStoreReq.SessionStore = mason.SessionStore{}
+	var updateSessionStoreReq agentkit.UpdateSessionStoreRequest
+	updateSessionStoreReq.SessionStore = agentkit.SessionStore{}
 	var updateSessionStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSessionStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2165,7 +2167,7 @@ func newUpdateSessionStore() *cobra.Command {
 			updateSessionStoreReq.UpdateMask = *fieldmask.New(updateMaskArray)
 		}
 
-		response, err := w.Mason.UpdateSessionStore(ctx, updateSessionStoreReq)
+		response, err := w.AgentKit.UpdateSessionStore(ctx, updateSessionStoreReq)
 		if err != nil {
 			return err
 		}
@@ -2185,4 +2187,4 @@ func newUpdateSessionStore() *cobra.Command {
 	return cmd
 }
 
-// end service Mason
+// end service AgentKit

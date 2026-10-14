@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -114,10 +115,11 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	filer, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}
+	filer := retry.Filer(workspaceFiler)
 
 	var notifier EventNotifier
 	outputWaitGroup := &stdsync.WaitGroup{}

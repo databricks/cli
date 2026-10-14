@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrList
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrList,
+    VariableOrOptional,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -14,7 +18,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigModelTargetConfig:
     """
-    Model target configuration for an external model destination.
+    Model target configuration shared by model provider service targets and
+    external model destinations on model services.
     """
 
     model: VariableOr[str]
@@ -24,12 +29,25 @@ class ModelProviderServiceConfigModelTargetConfig:
     Catalog model resource.
     """
 
+    endpoint_route: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Relative path appended to a custom provider's `base_url` for this model,
+    such as `serve/openai/chat`. Only custom model provider service targets
+    use this field; other provider types ignore it, and model service
+    destinations reject it. Do not include URI templates, queries, or
+    fragments. When empty, `base_url` is used unchanged.
+    """
+
     native_api_types: VariableOrList[str] = field(default_factory=list)
     """
     Provider-native API types supported by this model, such as
-    `openai/v1/chat/completions`. At least one value is required. AI Gateway
-    uses these values to translate requests and responses. At most 64 entries
-    of 256 characters each are allowed.
+    `openai/v1/chat/completions`. A model provider service target requires at
+    least one value. A model service destination may omit the list to use the
+    matching provider service target's types when available. AI Gateway uses
+    the selected types for translation. At most 64 entries of 256 characters
+    each are allowed.
     """
 
     @classmethod
@@ -52,12 +70,25 @@ class ModelProviderServiceConfigModelTargetConfigDict(TypedDict, total=False):
     Catalog model resource.
     """
 
+    endpoint_route: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Relative path appended to a custom provider's `base_url` for this model,
+    such as `serve/openai/chat`. Only custom model provider service targets
+    use this field; other provider types ignore it, and model service
+    destinations reject it. Do not include URI templates, queries, or
+    fragments. When empty, `base_url` is used unchanged.
+    """
+
     native_api_types: VariableOrList[str]
     """
     Provider-native API types supported by this model, such as
-    `openai/v1/chat/completions`. At least one value is required. AI Gateway
-    uses these values to translate requests and responses. At most 64 entries
-    of 256 characters each are allowed.
+    `openai/v1/chat/completions`. A model provider service target requires at
+    least one value. A model service destination may omit the list to use the
+    matching provider service target's types when available. AI Gateway uses
+    the selected types for translation. At most 64 entries of 256 characters
+    each are allowed.
     """
 
 

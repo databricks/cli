@@ -70,6 +70,9 @@ __all__ = [
     "ModelProviderServiceConfigOpenAiProviderDirectConfigDict",
     "ModelProviderServiceConfigOpenAiProviderDirectConfigParam",
     "ModelProviderServiceConfigParam",
+    "ModelProviderServiceConfigProviderPricingConfig",
+    "ModelProviderServiceConfigProviderPricingConfigDict",
+    "ModelProviderServiceConfigProviderPricingConfigParam",
     "ModelProviderServiceConfigProviderSecret",
     "ModelProviderServiceConfigProviderSecretDict",
     "ModelProviderServiceConfigProviderSecretParam",
@@ -214,6 +217,11 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigOpenAiProviderDirectConfig,
     ModelProviderServiceConfigOpenAiProviderDirectConfigDict,
     ModelProviderServiceConfigOpenAiProviderDirectConfigParam,
+)
+from databricks.bundles.model_provider_services._models.model_provider_service_config_provider_pricing_config import (
+    ModelProviderServiceConfigProviderPricingConfig,
+    ModelProviderServiceConfigProviderPricingConfigDict,
+    ModelProviderServiceConfigProviderPricingConfigParam,
 )
 from databricks.bundles.model_provider_services._models.model_provider_service_config_provider_secret import (
     ModelProviderServiceConfigProviderSecret,

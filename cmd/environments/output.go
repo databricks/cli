@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
 
@@ -155,9 +156,23 @@ func activateHint(venvPath string) string {
 	if runtime.GOOS == "windows" {
 		// venvPath is in slash form; cmd.exe reads "/" as a switch character, so a
 		// relative path such as ../../.venv needs backslashes.
-		return filepath.FromSlash(venvPath) + `\Scripts\activate`
+		return quoteForCmd(filepath.FromSlash(venvPath) + `\Scripts\activate`)
 	}
-	return "source " + venvPath + "/bin/activate"
+	// A leading dash would be read as an option of source.
+	if strings.HasPrefix(venvPath, "-") {
+		venvPath = "./" + venvPath
+	}
+	return "source " + shellquote.BashArg(venvPath+"/bin/activate")
+}
+
+// quoteForCmd wraps path in double quotes when cmd.exe would otherwise split
+// it at a space or a command separator (UV_PROJECT_ENVIRONMENT can name such a
+// folder). Quotes do not stop %VAR% expansion; such folder names are rare.
+func quoteForCmd(path string) string {
+	if strings.ContainsAny(path, " \t&^()<>|,;=!") {
+		return `"` + path + `"`
+	}
+	return path
 }
 
 // failureClause maps the failing phase to a human clause for the failure line,

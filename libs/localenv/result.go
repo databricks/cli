@@ -321,7 +321,9 @@ type Result struct {
 	Resolved      *ResolvedInfo `json:"resolved,omitempty"`
 	Greenfield    bool          `json:"greenfield"`
 	Plan          *Plan         `json:"plan,omitempty"`
-	VenvPath      string        `json:"venvPath,omitempty"`
+	// VenvPath is the provisioned venv folder in slash form, relative to the
+	// project folder, or absolute when UV_PROJECT_ENVIRONMENT is absolute.
+	VenvPath string `json:"venvPath,omitempty"`
 	// UvWorkspaceRoot is the uv workspace root (absolute, slash form) when the
 	// project is a workspace member. The [tool.uv] constraint block and the venv
 	// live there. Empty for a standalone project.

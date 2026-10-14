@@ -180,6 +180,7 @@ func newCreateDeployment() *cobra.Command {
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.DisplayName, "display-name", createDeploymentReq.Deployment.DisplayName, `Human-readable name for the deployment, up to 256 characters.`)
 	// TODO: complex arg: git_info
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the existing folder where the deployment is initially created.`)
+	cmd.Flags().StringVar(&createDeploymentReq.Deployment.Name, "name", createDeploymentReq.Deployment.Name, `Resource name of the deployment.`)
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.TargetName, "target-name", createDeploymentReq.Deployment.TargetName, `The bundle target name associated with this deployment.`)
 	// TODO: complex arg: workspace_info
 
@@ -257,6 +258,7 @@ func newCreateVersion() *cobra.Command {
 	cmd.Flags().Var(&createVersionReq.Version.DeploymentMode, "deployment-mode", `Bundle target deployment mode (development or production), captured at the time of this version. Supported values: [DEPLOYMENT_MODE_DEVELOPMENT, DEPLOYMENT_MODE_PRODUCTION]`)
 	cmd.Flags().StringVar(&createVersionReq.Version.DisplayName, "display-name", createVersionReq.Version.DisplayName, `Display name for the deployment, captured at the time of this version.`)
 	// TODO: complex arg: git_info
+	cmd.Flags().StringVar(&createVersionReq.Version.Name, "name", createVersionReq.Version.Name, `Resource name of the version.`)
 	// TODO: array: operations
 	cmd.Flags().StringVar(&createVersionReq.Version.PreviousVersionId, "previous-version-id", createVersionReq.Version.PreviousVersionId, `The version_id this version was created on top of — the deployment's most recent version at creation time.`)
 	cmd.Flags().StringVar(&createVersionReq.Version.TargetName, "target-name", createVersionReq.Version.TargetName, `Target name of the deployment, captured at the time of this version.`)
