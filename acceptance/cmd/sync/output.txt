@@ -1,6 +1,6 @@
 
 >>> [CLI] sync . /Users/[USERNAME]
-Action: PUT: .gitignore, dryrun-missing-remote/hello.py, dryrun-missing-remote/out.test.toml, dryrun-missing-remote/output.txt, dryrun/out.test.toml, dryrun/output.txt, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql, upload-504/hello.py, upload-504/out.test.toml, upload-504/output.txt
+Action: PUT: .gitignore, dryrun-missing-remote/hello.py, dryrun-missing-remote/out.test.toml, dryrun-missing-remote/output.txt, dryrun/out.test.toml, dryrun/output.txt, get-status-504/hello.py, get-status-504/out.test.toml, get-status-504/output.txt, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql, upload-504/hello.py, upload-504/out.test.toml, upload-504/output.txt
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded dryrun
@@ -10,6 +10,10 @@ Uploaded dryrun-missing-remote/out.test.toml
 Uploaded dryrun-missing-remote/output.txt
 Uploaded dryrun/out.test.toml
 Uploaded dryrun/output.txt
+Uploaded get-status-504
+Uploaded get-status-504/hello.py
+Uploaded get-status-504/out.test.toml
+Uploaded get-status-504/output.txt
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml

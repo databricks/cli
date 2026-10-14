@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/env"
@@ -48,6 +50,21 @@ func IsTransient(ctx context.Context, err error) bool {
 		return false
 	}
 	return apiErr.StatusCode >= 500 || apiErr.StatusCode == http.StatusRequestTimeout
+}
+
+// IsTransientRead returns true for errors worth retrying on an idempotent read: the transient
+// server errors IsTransient covers, plus the HTTP/2 REFUSED_STREAM in issue #6472, where the
+// server refused the stream before processing the request so the read is safe to replay. The
+// SDK already retries the transport errors it recognizes (connection reset/refused, i/o timeout,
+// TLS handshake) for its full RetryTimeout, so retrying every *url.Error would restart that
+// multi-minute loop; REFUSED_STREAM is the gap it leaves. net/http bundles unexported http2
+// types, so we match the message, as the SDK does for its own transient url errors.
+func IsTransientRead(ctx context.Context, err error) bool {
+	if IsTransient(ctx, err) {
+		return true
+	}
+	_, ok := errors.AsType[*url.Error](err)
+	return ok && strings.Contains(err.Error(), "REFUSED_STREAM")
 }
 
 // With retries fn while check returns true for the error, up to MaxRetries times.
