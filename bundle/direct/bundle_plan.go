@@ -269,19 +269,35 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+		// A bound resource is read by the id being bound; it has no state entry yet.
+		adopt := b.BindKey == resourceKey
 		// Tolerate empty-ID entries from older partial-recreate failures
 		// (apply.Recreate now deletes state on the way through, but pre-fix
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
-		if !hasEntry || dbentry.ID == "" {
+		if !adopt && (!hasEntry || dbentry.ID == "") {
 			entry.Action = deployplan.Create
 			return true
 		}
 
-		savedState, err := parseState(adapter.StateType(), dbentry.State)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
+		}
+
+		resourceID := dbentry.ID
+		var savedState any
+		if adopt {
+			resourceID = b.BindID
+			// No saved state, so diff the config against itself: only remote drift shows below.
+			savedState = sv.Value
+		} else {
+			savedState, err = parseState(adapter.StateType(), dbentry.State)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+				return false
+			}
 		}
 
 		// Compact the saved state so hashed_fields fields are hashes
@@ -297,11 +313,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		sv, ok := b.StateCache.Load(resourceKey)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
-			return false
-		}
 		// Compact a copy for comparison only; sv.Value keeps the full contents, which
 		// the deploy sends to the API.
 		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
@@ -316,13 +327,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		remoteState, err := retry.With(ctx, retry.IsTransient, func() (any, error) {
-			return adapter.DoRead(ctx, dbentry.ID)
+			return adapter.DoRead(ctx, resourceID)
 		})
 		if err != nil {
 			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, resourceID, err))
 				return false
 			}
 		}
@@ -338,7 +349,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		if remoteState != nil {
 			remoteStateComparable, err = adapter.RemapState(remoteState)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, resourceID, err))
 				return false
 			}
 
@@ -346,7 +357,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// is a hash on all three sides of the diff (saved, local, remote)
 			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, resourceID, err))
 				return false
 			}
 
@@ -369,11 +380,28 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		if remoteState == nil {
+		switch {
+		case remoteState == nil && adopt:
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot bind to id=%q: resource not found", errorPrefix, resourceID))
+			return false
+		case remoteState == nil:
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
-		} else {
+		case adopt:
+			// Bind adopts the resource as is or updates it in place; it does not recreate or resize.
+			switch maxAction := getMaxAction(entry.Changes); maxAction {
+			case deployplan.Skip:
+				action = deployplan.Bind
+			case deployplan.Update:
+				action = deployplan.BindAndUpdate
+			default:
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot bind id=%q: the config differs from the resource in a field that requires %s, which bind does not apply; align the config with the existing resource first", errorPrefix, resourceID, maxAction))
+				return false
+			}
+			// The id is not in state yet, so the plan entry carries it to apply.
+			entry.ID = resourceID
+		default:
 			action = getMaxAction(entry.Changes)
 		}
 
@@ -382,7 +410,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		b.RemoteStateCache.Store(resourceKey, remoteState)
 
 		// Validate that resources without DoUpdate don't have update actions
-		if action == deployplan.Update && !adapter.HasDoUpdate() {
+		if (action == deployplan.Update || action == deployplan.BindAndUpdate) && !adapter.HasDoUpdate() {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
 			return false
 		}
@@ -984,7 +1012,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
-			id := b.StateDB.GetResourceID(targetResourceKey)
+			// A resource being bound is not in state yet; its plan entry carries the id.
+			id := targetEntry.ID
+			if targetAction != deployplan.Bind && targetAction != deployplan.BindAndUpdate {
+				id = b.StateDB.GetResourceID(targetResourceKey)
+			}
 			if id == "" {
 				return nil, errors.New("internal error: no db entry")
 			}

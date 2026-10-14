@@ -502,6 +502,23 @@ func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }
 
+// A resource being bound is not in state yet, so a reference to its id (from its own
+// permissions, say) resolves from the plan entry.
+func TestLookupReferencePreDeploy_BoundResourceID(t *testing.T) {
+	for _, action := range []deployplan.ActionType{deployplan.Bind, deployplan.BindAndUpdate} {
+		t.Run(string(action), func(t *testing.T) {
+			plan := deployplan.NewPlanDirect()
+			plan.Plan["resources.jobs.foo"] = &deployplan.PlanEntry{ID: "123", Action: action}
+			b := &DeploymentBundle{Plan: plan}
+
+			value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath("resources.jobs.foo.id"))
+
+			require.NoError(t, err)
+			assert.Equal(t, "123", value)
+		})
+	}
+}
+
 // jobRunResultStateAction classifies the result_state drift of a run in the given
 // state. Old == New because a deploy records the outcome it asked for, and only
 // the remote says whether the run reached it.
