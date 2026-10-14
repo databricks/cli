@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -49,10 +50,11 @@ func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) di
 
 		for i := range job.Tasks {
 			task := &job.Tasks[i]
+			taskPath := fmt.Sprintf("resources.jobs.%s.tasks[%d]", name, i)
 			if task.ForEachTask != nil {
-				setGitTaskSource(&task.ForEachTask.Task)
+				setGitTaskSource(b, taskPath+".for_each_task.task", &task.ForEachTask.Task)
 			}
-			setGitTaskSource(task)
+			setGitTaskSource(b, taskPath, task)
 		}
 	}
 	return nil
@@ -62,27 +64,35 @@ func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) di
 // supports the field, unless the user already set it.
 // The task types are the ones that support the `source` field:
 // https://docs.databricks.com/api/workspace/jobs/create
-func setGitTaskSource(task *jobs.Task) {
-	var sources []*jobs.Source
+func setGitTaskSource(b *bundle.Bundle, taskPath string, task *jobs.Task) {
+	type taskSource struct {
+		key    string
+		source *jobs.Source
+	}
+	var sources []taskSource
 	if task.DbtTask != nil {
-		sources = append(sources, &task.DbtTask.Source)
+		sources = append(sources, taskSource{"dbt_task", &task.DbtTask.Source})
 	}
 	if task.GenAiComputeTask != nil {
-		sources = append(sources, &task.GenAiComputeTask.Source)
+		sources = append(sources, taskSource{"gen_ai_compute_task", &task.GenAiComputeTask.Source})
 	}
 	if task.NotebookTask != nil {
-		sources = append(sources, &task.NotebookTask.Source)
+		sources = append(sources, taskSource{"notebook_task", &task.NotebookTask.Source})
 	}
 	if task.SparkPythonTask != nil {
-		sources = append(sources, &task.SparkPythonTask.Source)
+		sources = append(sources, taskSource{"spark_python_task", &task.SparkPythonTask.Source})
 	}
 	if task.SqlTask != nil && task.SqlTask.File != nil {
-		sources = append(sources, &task.SqlTask.File.Source)
+		sources = append(sources, taskSource{"sql_task.file", &task.SqlTask.File.Source})
 	}
-	for _, source := range sources {
-		if *source == "" {
-			*source = jobs.SourceGit
-			return
+	for _, s := range sources {
+		// An explicit `source: ""` is set by the user, although the typed value is
+		// empty; not every task type has ForceSendFields to record it, but it is
+		// defined in the configuration.
+		if *s.source != "" || b.Config.DefinitionLocation(taskPath+"."+s.key+".source").File != "" {
+			continue
 		}
+		*s.source = jobs.SourceGit
+		return
 	}
 }
