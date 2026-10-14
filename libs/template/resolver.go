@@ -132,7 +132,7 @@ func customWriter(templatePathOrUrl, templateDir string, isGit bool) Writer {
 		if dir := filepath.ToSlash(filepath.Clean(templateDir)); dir != "." {
 			name += "/" + dir
 		}
-		return &writerWithFullTelemetry{defaultWriter: defaultWriter{name: TemplateName(name)}}
+		return &writerWithFullTelemetry{name: TemplateName(name)}
 	}
 	return &defaultWriter{name: Custom}
 }

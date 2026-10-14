@@ -289,7 +289,7 @@ func TestBuildRequestBody(t *testing.T) {
 			var p flags.JsonFlag
 			require.NoError(t, p.Set(`{"a": 1,}`))
 			_, err := buildRequestBody(method, &p)
-			assert.ErrorContains(t, err, "error decoding JSON at (inline):1:9")
+			assert.ErrorContains(t, err, "error decoding JSON at (inline):1:8")
 		})
 	}
 }

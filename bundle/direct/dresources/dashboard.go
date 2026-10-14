@@ -130,27 +130,25 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardSt
 	}
 
 	return &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         dashboard.DisplayName,
-			Etag:                dashboard.Etag,
-			WarehouseId:         dashboard.WarehouseId,
-			SerializedDashboard: dashboard.SerializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
-			// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
-			DatasetCatalog: "",
-			DatasetSchema:  "",
+		DisplayName:         dashboard.DisplayName,
+		Etag:                dashboard.Etag,
+		WarehouseId:         dashboard.WarehouseId,
+		SerializedDashboard: dashboard.SerializedDashboard,
+		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
+		DatasetCatalog: "",
+		DatasetSchema:  "",
 
-			// Output only fields.
-			CreateTime:      dashboard.CreateTime,
-			DashboardId:     dashboard.DashboardId,
-			LifecycleState:  dashboard.LifecycleState,
-			Path:            dashboard.Path,
-			UpdateTime:      dashboard.UpdateTime,
-			ForceSendFields: forceSendFields,
+		// Output only fields.
+		CreateTime:      dashboard.CreateTime,
+		DashboardId:     dashboard.DashboardId,
+		LifecycleState:  dashboard.LifecycleState,
+		Path:            dashboard.Path,
+		UpdateTime:      dashboard.UpdateTime,
+		ForceSendFields: forceSendFields,
 
-			EmbedCredentials: embedCredentials,
-		},
-		Published: published,
+		EmbedCredentials: embedCredentials,
+		Published:        published,
 	}, nil
 }
 
@@ -233,26 +231,24 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 	}
 
 	return &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         createOrUpdateResp.DisplayName,
-			Etag:                createOrUpdateResp.Etag,
-			WarehouseId:         createOrUpdateResp.WarehouseId,
-			SerializedDashboard: serializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
-			DatasetCatalog:      "",
-			DatasetSchema:       "",
+		DisplayName:         createOrUpdateResp.DisplayName,
+		Etag:                createOrUpdateResp.Etag,
+		WarehouseId:         createOrUpdateResp.WarehouseId,
+		SerializedDashboard: serializedDashboard,
+		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+		DatasetCatalog:      "",
+		DatasetSchema:       "",
 
-			// Output only fields
-			CreateTime:      createOrUpdateResp.CreateTime,
-			DashboardId:     createOrUpdateResp.DashboardId,
-			LifecycleState:  createOrUpdateResp.LifecycleState,
-			Path:            createOrUpdateResp.Path,
-			UpdateTime:      createOrUpdateResp.UpdateTime,
-			ForceSendFields: forceSendFields,
+		// Output only fields
+		CreateTime:      createOrUpdateResp.CreateTime,
+		DashboardId:     createOrUpdateResp.DashboardId,
+		LifecycleState:  createOrUpdateResp.LifecycleState,
+		Path:            createOrUpdateResp.Path,
+		UpdateTime:      createOrUpdateResp.UpdateTime,
+		ForceSendFields: forceSendFields,
 
-			EmbedCredentials: embedCredentials,
-		},
-		Published: published,
+		EmbedCredentials: embedCredentials,
+		Published:        published,
 	}
 }
 

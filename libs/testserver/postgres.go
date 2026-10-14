@@ -893,11 +893,11 @@ func maskCovers(mask, path string) bool {
 
 // parentPath returns path with its last segment removed, or "" when it has only one.
 func parentPath(path string) string {
-	i := strings.LastIndex(path, ".")
-	if i < 0 {
+	before, _, ok := strings.CutLast(path, ".")
+	if !ok {
 		return ""
 	}
-	return path[:i]
+	return before
 }
 
 // missingMaskedField returns the first update_mask path the API would reject
