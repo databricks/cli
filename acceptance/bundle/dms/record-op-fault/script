@@ -3,9 +3,45 @@ envsubst < databricks.yml.tmpl > databricks.yml
 job_id=$($CLI jobs create --json '{"name": "target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
 add_repl "$job_id" JOB_ID
 
+title "Declining the first bind creates no deployment or version"
+trace musterr $CLI bundle deployment bind foo "$job_id" &> LOG.confirm
+contains.py 'requires user confirmation' < LOG.confirm > LOG.confirm.checked
+trace print_requests.py --dms --method POST //api/2.0/bundle
+
+title "A failed resource update records the existing job state and completes its version"
+trace fault.py "POST /api/2.2/jobs/reset" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle deployment bind foo "$job_id" --auto-approve
+trace $CLI jobs get "$job_id" | jq '{name: .settings.name}'
+trace read_state.py jobs foo id name
+trace print_requests.py --dms --method POST //versions
+
+title "A failed bind still persists the remote deployment-history marker"
+state_path=$($CLI bundle validate -o json | jq -r '.workspace.state_path')
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$state_path/resources.json" > LOG.remote-state
+trace jq -e '.features | has("deployment_history")' LOG.remote-state
+
+title "Deploy finishes applying the configuration to the bound job"
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --dms --method POST //versions
+trace read_state.py jobs foo id name
+
+title "Bind a second job with the first job omitted from configuration"
+trace update_file.py databricks.yml foo bar
+bar_id=$($CLI jobs create --json '{"name": "second-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$bar_id" BAR_ID
+
 title "The service rejects the operation upload, so recording the bind fails"
 trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
-trace musterr $CLI bundle deployment bind foo "$job_id" --auto-approve
+trace musterr $CLI bundle deployment bind bar "$bar_id" --auto-approve
 
 title "The version is still completed - with failure - rather than left holding its lease"
 trace print_requests.py --dms --method POST //versions
+
+title "Retrying the bind succeeds without a dangling version"
+trace $CLI bundle deployment bind bar "$bar_id" --auto-approve
+trace print_requests.py --dms --method POST //versions
+
+title "Both resources remain managed; binding bar did not delete foo"
+trace read_state.py jobs foo id name
+trace read_state.py jobs bar id name
+trace $CLI bundle plan
