@@ -1,1 +1,1 @@
-Badness = "Target-level compute_id is reported without the target in the path (at compute_id instead of at targets.dev.compute_id), and is reported even when that target is not selected."
+Badness = "A target-level compute_id is reported even when that target is not selected: the deprecation is rewritten for every target before target selection."
