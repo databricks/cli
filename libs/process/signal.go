@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 )
 
 // NotifyContext is like signal.NotifyContext, but stops relaying as soon as
@@ -19,30 +20,57 @@ import (
 // SIGHUP or SIGINT if the process started with it ignored (e.g. under nohup);
 // signal.Stop ignores it again.
 //
-// The returned stop uninstalls the handler, cancels the context, and waits for
-// the handler goroutine to exit. It is safe to call more than once; the caller
-// must defer it.
+// A signal cancels the context with a *SignalError cause, so a caller can tell
+// it apart from its own call to stop.
+//
+// The returned stop uninstalls the handler, waits for the handler goroutine to
+// exit, and cancels the context. A signal relayed before stop uninstalls the
+// handler is still reported as the cause rather than dropped, so after stop
+// returns the caller can check whether one came in without racing a late
+// signal. It is safe to call more than once; the caller must defer it.
 func NotifyContext(parent context.Context, sigs ...os.Signal) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
+	ctx, cancel := context.WithCancelCause(parent)
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, sigs...)
 
+	stopping := make(chan struct{})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
-		// signal) path: signal.Stop unregisters the channel but never closes it.
+		// Selecting on ctx.Done() and stopping too lets the goroutine exit on the
+		// normal (no signal) path: signal.Stop unregisters the channel but never
+		// closes it.
 		select {
-		case <-sigCh:
+		case sig := <-sigCh:
+			signal.Stop(sigCh)
+			cancel(&SignalError{Signal: sig})
 		case <-ctx.Done():
+			signal.Stop(sigCh)
+		case <-stopping:
+			// stop has already called signal.Stop, so a signal that arrived
+			// before then is buffered in sigCh. Report it rather than drop it.
+			select {
+			case sig := <-sigCh:
+				cancel(&SignalError{Signal: sig})
+			default:
+			}
 		}
-		signal.Stop(sigCh)
-		cancel()
 	}()
 
-	return ctx, func() {
+	return ctx, sync.OnceFunc(func() {
 		signal.Stop(sigCh)
-		cancel()
+		close(stopping)
 		<-done
-	}
+		cancel(nil)
+	})
+}
+
+// SignalError is the cause NotifyContext cancels its context with when a
+// signal arrives.
+type SignalError struct {
+	Signal os.Signal
+}
+
+func (e *SignalError) Error() string {
+	return e.Signal.String() + " signal received"
 }

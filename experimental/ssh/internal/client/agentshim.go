@@ -120,11 +120,13 @@ func agentByName(name string) (agentSpec, bool) {
 }
 
 func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
-	// Without a handler, Ctrl-C, SIGTERM, or SIGHUP (the SSH connection dropping) would
-	// terminate the process outright, skipping the failure event below and cmd/root's upload.
-	// Cancelling ctx instead aborts the in-flight step, so the launch fails as USER_ABORTED.
-	// Set up before the deferred event so that defer runs first (LIFO) and sees ctx cancelled
-	// only by a signal or the caller, never by stopSignals itself.
+	// Cancel ctx on Ctrl-C, SIGTERM, or SIGHUP (the SSH connection dropping) so the in-flight
+	// step aborts and the launch is reported as USER_ABORTED, instead of the signal killing the
+	// process before any event is logged. The event defer below runs before the deferred
+	// stopSignals (LIFO), so a failed step sees ctx cancelled only by a signal or the caller. Once
+	// the launch is committed,
+	// late signals get the default handling again.
+	parentCtx := ctx
 	ctx, stopSignals := process.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stopSignals()
 
@@ -174,14 +176,22 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 		return ensureCategory(protos.SshAgentShimErrorCategoryAgentLaunchFailed, err)
 	}
 
+	// From here a signal should kill the shim outright, as it would without a handler. A
+	// signal during a step that ignores ctx (warm bootstrap, file I/O) only cancelled it, so
+	// check after stopping the handler, which leaves no window for one to be swallowed.
+	// stopSignals cancels ctx, so tell a signal apart by its cause, and the success path
+	// uses the caller's context.
+	stopSignals()
+	_, signalled := errors.AsType[*process.SignalError](context.Cause(ctx))
+	if signalled || parentCtx.Err() != nil {
+		return fmt.Errorf("agent launch interrupted: %w", ctx.Err())
+	}
+
 	// The agent is ready to launch. execProcess replaces this process, so cmd/root's
 	// end-of-command telemetry upload never runs; emit and flush the success event first.
 	launched = true
-	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
-	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
-	// Nothing below observes ctx, so restore the default signal handling: a signal from here
-	// on terminates the process instead of cancelling a context no step checks any more.
-	stopSignals()
+	logAgentShimEvent(parentCtx, agentName, outcome, time.Since(start))
+	uploadAgentShimTelemetry(parentCtx, agentName, time.Since(start))
 	return execProcess(argv0, argv, environ)
 }
 
@@ -309,6 +319,12 @@ type gatewayProbe struct {
 	resourceAvailable bool
 }
 
+// gatewayCheckInterrupted reports a cancelled probe as such. Classifying its results would
+// misreport a Ctrl-C as a disabled gateway or a transient error to retry.
+func gatewayCheckInterrupted(err error) error {
+	return fmt.Errorf("the Unity AI Gateway check was interrupted: %w", err)
+}
+
 func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) error {
 	host := strings.TrimRight(wsclient.Config.Host, "/")
 
@@ -323,6 +339,9 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	}
 
 	modelSvc := probeModelServices(ctx, apiClient)
+	if err := ctx.Err(); err != nil {
+		return gatewayCheckInterrupted(err)
+	}
 	// A 401 (or a 400 "invalid token") can't be rescued by trying another API,
 	// so surface it before the fallback probe.
 	if !modelSvc.reachable && looksLikeDefinitiveAuthFailure(modelSvc.err) {
@@ -333,6 +352,9 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	}
 
 	legacy := probeLegacyEndpoints(ctx, apiClient)
+	if err := ctx.Err(); err != nil {
+		return gatewayCheckInterrupted(err)
+	}
 	switch {
 	case legacy.reachable:
 		// The legacy endpoints API answered, so the gateway is enabled even if no
