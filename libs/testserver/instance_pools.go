@@ -1,16 +1,15 @@
 package testserver
 
 import (
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
 	"encoding/json"
 	"fmt"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 	// Unmarshal into the stored (GET) type directly: CreateInstancePool and
 	// GetInstancePool share JSON field names, so every config field is carried over.
-	var pool compute.GetInstancePool
+	var pool instancepools.GetInstancePoolResponse
 	if err := json.Unmarshal(req.Body, &pool); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -21,7 +20,7 @@ func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 	pool.InstancePoolId = id
 	s.InstancePools[id] = pool
 
-	return Response{Body: compute.CreateInstancePoolResponse{InstancePoolId: id}}
+	return Response{Body: instancepools.CreateInstancePoolResponse{InstancePoolId: id}}
 }
 
 func (s *FakeWorkspace) InstancePoolsGet(req Request, instancePoolId string) any {
@@ -36,7 +35,7 @@ func (s *FakeWorkspace) InstancePoolsGet(req Request, instancePoolId string) any
 }
 
 func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
-	var request compute.EditInstancePool
+	var request instancepools.EditInstancePoolRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -64,7 +63,7 @@ func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
 }
 
 func (s *FakeWorkspace) InstancePoolsDelete(req Request) any {
-	var request compute.DeleteInstancePool
+	var request instancepools.DeleteInstancePoolRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}

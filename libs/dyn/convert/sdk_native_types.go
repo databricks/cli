@@ -8,22 +8,22 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
-	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 )
 
-// sdkNativeTypes is a list of SDK native types that use custom JSON marshaling
-// and should be treated as strings in dyn.Value. These types all implement
-// json.Marshaler and json.Unmarshaler interfaces.
-var sdkNativeTypes = []reflect.Type{
-	reflect.TypeFor[sdkduration.Duration](),   // Protobuf duration format (e.g., "300s")
-	reflect.TypeFor[sdktime.Time](),           // RFC3339 timestamp format (e.g., "2023-12-25T10:30:00Z")
-	reflect.TypeFor[sdkfieldmask.FieldMask](), // Comma-separated paths (e.g., "name,age,email")
+// sdkTypesPkgPath is the package of the SDK native types: types.Time (RFC3339
+// timestamp, e.g. "2023-12-25T10:30:00Z"), types.Duration (protobuf duration,
+// e.g. "300s") and types.FieldMask[T] (comma-separated paths). They use custom
+// JSON marshaling to a string and are treated as strings in dyn.Value.
+const sdkTypesPkgPath = "github.com/databricks/sdk-go/core/types"
+
+// isSDKNativeType reports whether typ is one of the SDK native types. FieldMask
+// is generic, so its instantiations are matched by package rather than by type.
+func isSDKNativeType(typ reflect.Type) bool {
+	return typ.Kind() == reflect.Struct && typ.PkgPath() == sdkTypesPkgPath
 }
 
 // fromTypedSDKNative converts SDK native types to dyn.Value.
-// SDK native types (duration.Duration, time.Time, fieldmask.FieldMask) use
+// SDK native types (types.Time, types.Duration, types.FieldMask[T]) use
 // custom JSON marshaling with string representations.
 func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
@@ -66,7 +66,7 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 }
 
 // toTypedSDKNative converts a dyn.Value to an SDK native type.
-// SDK native types (duration.Duration, time.Time, fieldmask.FieldMask) use
+// SDK native types (types.Time, types.Duration, types.FieldMask[T]) use
 // custom JSON marshaling with string representations.
 func toTypedSDKNative(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {

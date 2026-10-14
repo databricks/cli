@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
@@ -20,7 +19,7 @@ const schemaNameManagedDefaults = "schema_managed_defaults"
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var schema catalog.SchemaInfo
+	var schema schemas.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schema); err != nil {
 		return Response{
@@ -40,7 +39,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.UpdatedAt = schema.CreatedAt
 	schema.CreatedBy = s.CurrentUser().UserName
 	schema.UpdatedBy = s.CurrentUser().UserName
-	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
+	schema.EffectivePredictiveOptimizationFlag = &schemas.EffectivePredictiveOptimizationFlag{
 		InheritedFromName: testMetastoreName,
 		InheritedFromType: catalog.EffectivePredictiveOptimizationFlagInheritedFromType("METASTORE"),
 		// Mirror the real test metastore, which inherits ENABLE, so a single
@@ -86,7 +85,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		return *errResponse
 	}
 
-	var schemaUpdate catalog.SchemaInfo
+	var schemaUpdate schemas.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
 		return Response{

@@ -1,6 +1,38 @@
 package testserver
 
 import (
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
+	files "github.com/databricks/cli/libs/sdktypes/files/v2"
+	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
+	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
+	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"archive/zip"
 	"bytes"
 	"encoding/binary"
@@ -18,25 +50,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/libs/structs/structtag"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/files"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const (
@@ -57,12 +73,12 @@ const (
 	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
-var TestUser = iam.User{
+var TestUser = scim.User{
 	Id:       UserID,
 	UserName: "tester@databricks.com",
 }
 
-var TestUserSP = iam.User{
+var TestUserSP = scim.User{
 	Id:       UserID,
 	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
 }
@@ -79,7 +95,7 @@ func isGuestToken(token string) bool {
 
 // userForToken returns the identity behind a token: any service-principal token
 // (primary or guest) is the SP, otherwise the user.
-func userForToken(token string) iam.User {
+func userForToken(token string) scim.User {
 	if strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token) {
 		return TestUserSP
 	}
@@ -88,7 +104,7 @@ func userForToken(token string) iam.User {
 
 // MeUser returns the /Me identity for a token. Only the guest SP carries a
 // display name, so single-identity SP tests are unaffected.
-func (s *FakeWorkspace) MeUser(token string) iam.User {
+func (s *FakeWorkspace) MeUser(token string) scim.User {
 	user := userForToken(token)
 	if isGuestToken(token) {
 		user.DisplayName = guestServicePrincipalDisplayName
@@ -169,12 +185,12 @@ func nextDashboardID() string {
 }
 
 type FileEntry struct {
-	Info workspace.ObjectInfo
+	Info workspaceapi.ObjectInfo
 	Data []byte
 }
 
 type fakeDashboard struct {
-	dashboards.Dashboard
+	lakeview.Dashboard
 
 	// Input value of the serialized dashboard provided. This is used
 	// to detect if the etag needs to be updated.
@@ -194,41 +210,41 @@ type FakeWorkspace struct {
 	// recreates without polling) keep immediate deletion.
 	eventualConsistency bool
 
-	directories  map[string]workspace.ObjectInfo
+	directories  map[string]workspaceapi.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	Jobs                  map[int64]jobs.Job
+	Jobs                  map[int64]jobs.GetJobResponse
 	JobRuns               map[int64]jobs.Run
-	JobRunOutputs         map[int64]jobs.RunOutput
+	JobRunOutputs         map[int64]jobs.GetRunOutputResponse
 	JobRunIdempotency     map[string]int64
 	Pipelines             map[string]pipelines.GetPipelineResponse
 	PipelineUpdates       map[string]bool
-	Monitors              map[string]catalog.MonitorInfo
+	Monitors              map[string]qualitymonitors.MonitorInfo
 	Apps                  map[string]apps.App
-	Schemas               map[string]catalog.SchemaInfo
-	Grants                map[string][]catalog.PrivilegeAssignment
-	Volumes               map[string]catalog.VolumeInfo
+	Schemas               map[string]schemas.SchemaInfo
+	Grants                map[string][]grants.PrivilegeAssignment
+	Volumes               map[string]volumes.VolumeInfo
 	Dashboards            *EventualMap[string, *fakeDashboard]
-	PublishedDashboards   map[string]dashboards.PublishedDashboard
-	GenieSpaces           map[string]dashboards.GenieSpace
-	SqlWarehouses         map[string]sql.GetWarehouseResponse
-	Alerts                map[string]sql.AlertV2
-	Experiments           map[string]ml.GetExperimentResponse
-	ModelRegistryModels   map[string]ml.Model
+	PublishedDashboards   map[string]lakeview.PublishedDashboard
+	GenieSpaces           map[string]genie.GenieSpace
+	SqlWarehouses         map[string]warehouses.GetWarehouseResponse
+	Alerts                map[string]alerts.Alert
+	Experiments           map[string]experiments.GetExperimentResponse
+	ModelRegistryModels   map[string]modelregistry.RegisteredModel
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
-	Clusters              map[string]compute.ClusterDetails
-	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
-	InstancePools         map[string]compute.GetInstancePool
-	ClusterPolicies       map[string]compute.Policy
-	Catalogs              map[string]catalog.CatalogInfo
-	ExternalLocations     map[string]catalog.ExternalLocationInfo
-	RegisteredModels      map[string]catalog.RegisteredModelInfo
-	ModelServices         map[string]catalog.ModelService
-	McpServices           map[string]catalog.McpService
-	ModelProviderServices map[string]catalog.ModelProviderService
-	ServingEndpoints      map[string]serving.ServingEndpointDetailed
-	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+	Clusters              map[string]clusters.ClusterInfo
+	ClusterLibraries      map[string][]clusterlibraries.Library // cluster id -> installed libraries
+	InstancePools         map[string]instancepools.GetInstancePoolResponse
+	ClusterPolicies       map[string]clusterpolicies.Policy
+	Catalogs              map[string]catalogs.CatalogInfo
+	ExternalLocations     map[string]externallocations.ExternalLocationInfo
+	RegisteredModels      map[string]registeredmodels.RegisteredModelInfo
+	ModelServices         map[string]aigateway.ModelService
+	McpServices           map[string]aigateway.McpService
+	ModelProviderServices map[string]aigateway.ModelProviderService
+	ServingEndpoints      map[string]serving.InferenceEndpointDetailed
+	VectorSearchEndpoints map[string]vectorsearch.Endpoint
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
 	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
@@ -236,17 +252,17 @@ type FakeWorkspace struct {
 	// VectorSearchIndexDelete.
 	VectorSearchIndexesPendingDeletion map[string]int
 
-	SecretScopes map[string]workspace.SecretScope
+	SecretScopes map[string]secrets.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
-	Acls         map[string][]workspace.AclItem
-	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
+	Acls         map[string][]secrets.AclItem
+	UCSecrets    map[string]ucsecrets.Secret // full_name -> secret (Unity Catalog secrets)
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
-	Permissions map[string]iam.ObjectPermissions
+	Permissions map[string]accessmanagement.PermissionsResponse
 
-	Groups map[string]iam.Group
+	Groups map[string]scim.Group
 
-	Repos map[string]workspace.RepoInfo
+	Repos map[string]repos.RepoInfo
 
 	DatabaseInstances    map[string]database.DatabaseInstance
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
@@ -448,7 +464,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		url:                 url,
 		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		eventualConsistency: eventualConsistency,
-		directories: map[string]workspace.ObjectInfo{
+		directories: map[string]workspaceapi.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
 				Path:       "/Workspace",
@@ -491,42 +507,42 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                  map[int64]jobs.Job{},
+		Jobs:                  map[int64]jobs.GetJobResponse{},
 		JobRuns:               map[int64]jobs.Run{},
-		JobRunOutputs:         map[int64]jobs.RunOutput{},
+		JobRunOutputs:         map[int64]jobs.GetRunOutputResponse{},
 		JobRunIdempotency:     map[string]int64{},
-		Grants:                map[string][]catalog.PrivilegeAssignment{},
+		Grants:                map[string][]grants.PrivilegeAssignment{},
 		Pipelines:             map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:       map[string]bool{},
-		Monitors:              map[string]catalog.MonitorInfo{},
+		Monitors:              map[string]qualitymonitors.MonitorInfo{},
 		Apps:                  map[string]apps.App{},
-		Catalogs:              map[string]catalog.CatalogInfo{},
-		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
-		Schemas:               map[string]catalog.SchemaInfo{},
-		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
-		ModelServices:         map[string]catalog.ModelService{},
-		McpServices:           map[string]catalog.McpService{},
-		ModelProviderServices: map[string]catalog.ModelProviderService{},
-		Volumes:               map[string]catalog.VolumeInfo{},
+		Catalogs:              map[string]catalogs.CatalogInfo{},
+		ExternalLocations:     map[string]externallocations.ExternalLocationInfo{},
+		Schemas:               map[string]schemas.SchemaInfo{},
+		RegisteredModels:      map[string]registeredmodels.RegisteredModelInfo{},
+		ModelServices:         map[string]aigateway.ModelService{},
+		McpServices:           map[string]aigateway.McpService{},
+		ModelProviderServices: map[string]aigateway.ModelProviderService{},
+		Volumes:               map[string]volumes.VolumeInfo{},
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
-		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:           map[string]dashboards.GenieSpace{},
-		SqlWarehouses: map[string]sql.GetWarehouseResponse{
+		PublishedDashboards:   map[string]lakeview.PublishedDashboard{},
+		GenieSpaces:           map[string]genie.GenieSpace{},
+		SqlWarehouses: map[string]warehouses.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
 				Name:  "DEFAULT Test SQL Warehouse",
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
+		ServingEndpoints:          map[string]serving.InferenceEndpointDetailed{},
+		VectorSearchEndpoints:     map[string]vectorsearch.Endpoint{},
 		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
-		Repos:                     map[string]workspace.RepoInfo{},
-		SecretScopes:              map[string]workspace.SecretScope{},
+		Repos:                     map[string]repos.RepoInfo{},
+		SecretScopes:              map[string]secrets.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
-		Acls:                      map[string][]workspace.AclItem{},
-		Permissions:               map[string]iam.ObjectPermissions{},
-		Groups:                    map[string]iam.Group{},
+		Acls:                      map[string][]secrets.AclItem{},
+		Permissions:               map[string]accessmanagement.PermissionsResponse{},
+		Groups:                    map[string]scim.Group{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
@@ -544,11 +560,11 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		clusterVenvs:              map[string]*clusterEnv{},
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
-		Alerts:                    map[string]sql.AlertV2{},
-		Experiments:               map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:       map[string]ml.Model{},
+		Alerts:                    map[string]alerts.Alert{},
+		Experiments:               map[string]experiments.GetExperimentResponse{},
+		ModelRegistryModels:       map[string]modelregistry.RegisteredModel{},
 		ModelRegistryModelIDs:     map[string]string{},
-		Clusters: map[string]compute.ClusterDetails{
+		Clusters: map[string]clusters.ClusterInfo{
 			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
 			// requires (ValidateClusterAccess rejects anything else), matching the cloud
 			// TEST_DEFAULT_CLUSTER_ID this stands in for.
@@ -556,13 +572,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				ClusterId:        TestDefaultClusterId,
 				ClusterName:      "DEFAULT Test Cluster",
 				State:            compute.StateRunning,
-				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				DataSecurityMode: clusters.DataSecurityMode_SingleUser,
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools:    map[string]compute.GetInstancePool{},
-		ClusterLibraries: map[string][]compute.Library{},
-		ClusterPolicies: map[string]compute.Policy{
+		InstancePools:    map[string]instancepools.GetInstancePoolResponse{},
+		ClusterLibraries: map[string][]clusterlibraries.Library{},
+		ClusterPolicies: map[string]clusterpolicies.Policy{
 			// Seeded so the stateful list keeps backing the variable-lookup tests
 			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
 			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
@@ -572,7 +588,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	}
 }
 
-func (s *FakeWorkspace) CurrentUser() iam.User {
+func (s *FakeWorkspace) CurrentUser() scim.User {
 	if s != nil && s.isServicePrincipal {
 		return TestUserSP
 	} else {
@@ -581,7 +597,7 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 }
 
 // gitInfoBlock is the git_info block get-status adds for return_git_info=true.
-// workspace.ObjectInfo does not model it (the field is undocumented), so it is
+// workspaceapi.ObjectInfo does not model it (the field is undocumented), so it is
 // merged into the response separately, see withGitInfo.
 //
 // A Git folder that has Git CLI access does not store the git metadata on the
@@ -597,12 +613,12 @@ type gitInfoBlock struct {
 
 // withGitInfo returns info as an object with a git_info block added.
 //
-// It cannot be a struct embedding workspace.ObjectInfo: ObjectInfo declares
+// It cannot be a struct embedding workspaceapi.ObjectInfo: ObjectInfo declares
 // MarshalJSON, which gets promoted to the embedding struct, so the outer
 // git_info field would be dropped from the output without any error. The
 // intermediate map holds json.RawMessage rather than any, so that large ids do
 // not lose precision by passing through float64.
-func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
+func withGitInfo(info workspaceapi.ObjectInfo, gi gitInfoBlock) (any, error) {
 	infoJSON, err := json.Marshal(info)
 	if err != nil {
 		return nil, err
@@ -623,7 +639,7 @@ func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
 // longest registered Git folder path that is a prefix of it. get-status reports
 // the containing folder's metadata for paths inside a Git folder, not just for
 // its root.
-func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
+func (s *FakeWorkspace) gitFolderFor(objectPath string) (repos.RepoInfo, bool) {
 	longest := ""
 	for repoPath := range s.repoIdByPath {
 		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
@@ -634,7 +650,7 @@ func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, boo
 		}
 	}
 	if longest == "" {
-		return workspace.RepoInfo{}, false
+		return repos.RepoInfo{}, false
 	}
 	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
 }
@@ -660,7 +676,7 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(requestPath)
 
-	var info workspace.ObjectInfo
+	var info workspaceapi.ObjectInfo
 	// A Git folder root is reported as the repo, before any directory entry for
 	// the same path: mkdirs of a path inside a Git folder seeds its ancestors,
 	// which would otherwise shadow the root and report the wrong object id.
@@ -668,11 +684,11 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 		// Control-plane repos (under /Repos) report the REPO object type, while
 		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
 		// nodes. Both resolve to a valid repo ID via the repos API.
-		objectType := workspace.ObjectTypeRepo
+		objectType := workspaceapi.ObjectTypeRepo
 		if isGitCliFolder(cleaned) {
-			objectType = workspace.ObjectTypeDirectory
+			objectType = workspaceapi.ObjectTypeDirectory
 		}
-		info = workspace.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
+		info = workspaceapi.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
 	} else if dirInfo, ok := s.directories[cleaned]; ok {
 		info = dirInfo
 	} else if entry, ok := s.files[cleaned]; ok {
@@ -699,7 +715,7 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 			// prefix, whichever spelling the folder was created with.
 			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
 			if isGitCliFolder(repo.Path) {
-				info.DirectoryInfo = &workspace.DirectoryInfo{IsGitFolder: true}
+				info.DirectoryInfo = &workspaceapi.DirectoryInfo{IsGitFolder: true}
 			} else {
 				gi.Branch = repo.Branch
 				gi.HeadCommitID = repo.HeadCommitId
@@ -736,7 +752,7 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 		}
 	}
 
-	var objects []workspace.ObjectInfo
+	var objects []workspaceapi.ObjectInfo
 
 	for filePath, entry := range s.files {
 		if path.Dir(filePath) == cleaned {
@@ -749,12 +765,12 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 		}
 	}
 
-	slices.SortFunc(objects, func(a, b workspace.ObjectInfo) int {
+	slices.SortFunc(objects, func(a, b workspaceapi.ObjectInfo) int {
 		return strings.Compare(a.Path, b.Path)
 	})
 
 	return Response{
-		Body: workspace.ListResponse{Objects: objects},
+		Body: workspaceapi.ListResponse{Objects: objects},
 	}
 }
 
@@ -823,13 +839,13 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	return Response{}
 }
 
-func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
+func (s *FakeWorkspace) WorkspaceMkdirs(request workspaceapi.Mkdirs) {
 	defer s.LockUnlock()()
 	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
 	// so seed every ancestor up to the root.
 	for dir := request.Path; dir != "/" && dir != "" && dir != "."; dir = path.Dir(dir) {
 		if _, exists := s.directories[dir]; !exists {
-			s.directories[dir] = workspace.ObjectInfo{
+			s.directories[dir] = workspaceapi.ObjectInfo{
 				ObjectType: "DIRECTORY",
 				Path:       dir,
 				ObjectId:   nextTreenodeID(),
@@ -899,23 +915,23 @@ func (s *FakeWorkspace) hasChildren(dirPath string) bool {
 //
 // The extension is lowercased because the real endpoint matches it
 // case-insensitively, and ".R" is the conventional spelling for R sources.
-func detectNotebookLanguage(extension string, body []byte) (workspace.Language, bool) {
+func detectNotebookLanguage(extension string, body []byte) (workspaceapi.Language, bool) {
 	switch strings.ToLower(extension) {
 	case ".py":
 		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
-			return workspace.LanguagePython, true
+			return workspaceapi.LanguagePython, true
 		}
 	case ".sql":
 		if bytes.HasPrefix(body, []byte("-- Databricks notebook source")) {
-			return workspace.LanguageSql, true
+			return workspaceapi.LanguageSql, true
 		}
 	case ".scala":
 		if bytes.HasPrefix(body, []byte("// Databricks notebook source")) {
-			return workspace.LanguageScala, true
+			return workspaceapi.LanguageScala, true
 		}
 	case ".r":
 		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
-			return workspace.LanguageR, true
+			return workspaceapi.LanguageR, true
 		}
 	}
 	return "", false
@@ -989,11 +1005,11 @@ func (s *FakeWorkspace) WorkspaceImportZipFolder(zipPath string, body []byte, ov
 		return name
 	}
 
-	s.WorkspaceMkdirs(workspace.Mkdirs{Path: targetDir})
+	s.WorkspaceMkdirs(workspaceapi.Mkdirs{Path: targetDir})
 	for _, entry := range entries {
 		entryPath := path.Join(baseDir, rebase(entry.Name))
 		if entry.FileInfo().IsDir() {
-			s.WorkspaceMkdirs(workspace.Mkdirs{Path: entryPath})
+			s.WorkspaceMkdirs(workspaceapi.Mkdirs{Path: entryPath})
 			continue
 		}
 		data, err := readZipEntry(entry)
@@ -1053,7 +1069,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 		// Notebooks are stripped of their extension by the workspace import API.
 		workspacePath = strings.TrimSuffix(filePath, extension)
 		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
+			Info: workspaceapi.ObjectInfo{
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
 				Language:   lang,
@@ -1066,7 +1082,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite, dete
 		// here as well.
 		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
 		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
+			Info: workspaceapi.ObjectInfo{
 				ObjectType: "FILE",
 				Path:       workspacePath,
 				ObjectId:   nextTreenodeID(),
@@ -1102,7 +1118,7 @@ func (s *FakeWorkspace) requireParentDirectory(objectPath string) (Response, boo
 // Unlike AUTO format, SOURCE keeps the path as-is (no extension stripping) and
 // the notebook language is provided explicitly rather than sniffed from a
 // "# Databricks notebook source" header.
-func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, language workspace.Language, overwrite bool) Response {
+func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, language workspaceapi.Language, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -1123,7 +1139,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 	}
 
 	s.files[filePath] = FileEntry{
-		Info: workspace.ObjectInfo{
+		Info: workspaceapi.ObjectInfo{
 			ObjectType: "NOTEBOOK",
 			Path:       filePath,
 			Language:   language,

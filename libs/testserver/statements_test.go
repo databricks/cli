@@ -1,22 +1,22 @@
 package testserver
 
 import (
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 	"encoding/json"
 	"regexp"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // submitSQL runs a statement through the POST handler and returns the response.
-func submitSQL(t *testing.T, server *Server, statement string) *sql.StatementResponse {
+func submitSQL(t *testing.T, server *Server, statement string) *statementexecution.StatementResponse {
 	t.Helper()
-	body, err := json.Marshal(sql.ExecuteStatementRequest{Statement: statement, WaitTimeout: "10s"})
+	body, err := json.Marshal(statementexecution.ExecuteStatementRequest{Statement: statement, WaitTimeout: "10s"})
 	require.NoError(t, err)
-	resp, ok := server.sqlExecuteStatement(Request{Body: body}).(*sql.StatementResponse)
+	resp, ok := server.sqlExecuteStatement(Request{Body: body}).(*statementexecution.StatementResponse)
 	require.True(t, ok)
 	return resp
 }

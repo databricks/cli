@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
 	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +37,7 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
 	require.Equal(t, 0, getResponse.StatusCode)
 
-	body, ok := getResponse.Body.(catalog.CatalogInfo)
+	body, ok := getResponse.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
 	assert.Equal(t, "my_catalog", body.Name)
 	assert.Equal(t, "my_catalog", body.FullName)
@@ -78,7 +77,7 @@ func TestCatalogsCreate_EchoesEveryAcceptedField(t *testing.T) {
 	response := workspace.CatalogsCreate(Request{Body: []byte(createCatalogRequest)})
 	assert.Equal(t, 0, response.StatusCode)
 
-	info, ok := response.Body.(catalog.CatalogInfo)
+	info, ok := response.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
 
 	assert.Equal(t, "my_catalog", info.Name)
@@ -102,7 +101,7 @@ func TestCatalogsCreate_RequestCoversEveryAcceptedField(t *testing.T) {
 	var sent map[string]any
 	require.NoError(t, json.Unmarshal([]byte(createCatalogRequest), &sent))
 
-	for _, name := range jsonFieldNames(reflect.TypeFor[catalog.CreateCatalog]()) {
+	for _, name := range jsonFieldNames(reflect.TypeFor[catalogs.CreateCatalogRequest]()) {
 		assert.Contains(t, sent, name)
 	}
 }
@@ -123,7 +122,7 @@ func TestCatalogsUpdate_AppliesUpdatableFields(t *testing.T) {
 	}`)}, "my_catalog")
 	assert.Equal(t, 0, response.StatusCode)
 
-	info, ok := response.Body.(catalog.CatalogInfo)
+	info, ok := response.Body.(catalogs.CatalogInfo)
 	require.True(t, ok)
 
 	assert.Equal(t, "updated", info.Comment)

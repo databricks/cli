@@ -13,6 +13,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -182,6 +183,15 @@ func addQuery(query url.Values, v any) error {
 			}
 		}
 		return nil
+	case map[string]any:
+		// Like the previous SDK: zero values are skipped, everything else is
+		// formatted with %v.
+		for _, k := range slices.Sorted(maps.Keys(x)) {
+			if v := x[k]; v != nil && !reflect.ValueOf(v).IsZero() {
+				query.Add(k, fmt.Sprintf("%v", v))
+			}
+		}
+		return nil
 	}
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -192,6 +202,9 @@ func addQuery(query url.Values, v any) error {
 	var decoded any
 	if err := dec.Decode(&decoded); err != nil {
 		return err
+	}
+	if decoded == nil {
+		return nil
 	}
 	m, ok := decoded.(map[string]any)
 	if !ok {

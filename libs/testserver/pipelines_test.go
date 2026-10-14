@@ -1,9 +1,8 @@
 package testserver
 
 import (
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,5 +82,5 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 	stopBody, ok := stopResponse.Body.(pipelines.GetPipelineResponse)
 	require.True(t, ok)
 	assert.Equal(t, pipelineId, stopBody.PipelineId)
-	assert.Equal(t, pipelines.PipelineStateIdle, stopBody.State)
+	assert.Equal(t, pipelines.PipelineState_PipelineState_Idle, stopBody.State)
 }

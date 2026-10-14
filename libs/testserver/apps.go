@@ -1,14 +1,13 @@
 package testserver
 
 import (
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 const (
@@ -22,7 +21,7 @@ const (
 // securable types get none. See https://github.com/databricks/cli/issues/6342
 func setUcSecurableKinds(app *apps.App) {
 	for _, res := range app.Resources {
-		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurableUcSecurableTypeTable {
+		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurable_UcSecurableType_Table {
 			res.UcSecurable.SecurableKind = "TABLE_DELTA"
 		}
 	}
@@ -105,7 +104,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	return Response{
 		Body: apps.AppUpdate{
 			Status: &apps.AppUpdateUpdateStatus{
-				State: apps.AppUpdateUpdateStatusUpdateStateSucceeded,
+				State: apps.AppUpdate_UpdateStatus_UpdateState_Succeeded,
 			},
 		},
 	}
@@ -122,7 +121,7 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 	return Response{
 		Body: apps.AppUpdate{
 			Status: &apps.AppUpdateUpdateStatus{
-				State: apps.AppUpdateUpdateStatusUpdateStateSucceeded,
+				State: apps.AppUpdate_UpdateStatus_UpdateState_Succeeded,
 			},
 		},
 	}
@@ -143,7 +142,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 
 	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 	deployment.Status = &apps.AppDeploymentStatus{
-		State:   apps.AppDeploymentStateSucceeded,
+		State:   apps.AppDeployment_State_Succeeded,
 		Message: "Deployment succeeded",
 	}
 
@@ -348,7 +347,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 		deployment.Status = &apps.AppDeploymentStatus{
-			State:   apps.AppDeploymentStateSucceeded,
+			State:   apps.AppDeployment_State_Succeeded,
 			Message: "Deployment succeeded",
 		}
 
@@ -381,10 +380,10 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		if res.Job == nil {
 			continue
 		}
-		s.upsertPermission("/jobs/"+res.Job.Id, iam.AccessControlResponse{
+		s.upsertPermission("/jobs/"+res.Job.Id, accessmanagement.AccessControlResponse{
 			ServicePrincipalName: app.ServicePrincipalName,
-			AllPermissions: []iam.Permission{{
-				PermissionLevel: iam.PermissionLevel(res.Job.Permission),
+			AllPermissions: []accessmanagement.Permission{{
+				PermissionLevel: accessmanagement.PermissionLevel(res.Job.Permission),
 				ForceSendFields: []string{"Inherited"},
 			}},
 		})

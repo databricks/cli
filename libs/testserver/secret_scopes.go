@@ -1,16 +1,16 @@
 package testserver
 
 import (
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"encoding/json"
 	"fmt"
-
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.CreateScope
+	var request secrets.CreateScopeRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -29,10 +29,10 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	// Create the scope
 	backendType := request.ScopeBackendType
 	if backendType == "" {
-		backendType = workspace.ScopeBackendTypeDatabricks
+		backendType = workspaceapi.ScopeBackendTypeDatabricks
 	}
 
-	scope := workspace.SecretScope{
+	scope := secrets.SecretScope{
 		Name:             request.Scope,
 		BackendType:      backendType,
 		KeyvaultMetadata: request.BackendAzureKeyvault,
@@ -43,12 +43,12 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	// Automatically grant MANAGE permission to the creator (current user)
 	// This matches real Databricks behavior
 	if s.Acls == nil {
-		s.Acls = make(map[string][]workspace.AclItem)
+		s.Acls = make(map[string][]secrets.AclItem)
 	}
-	s.Acls[request.Scope] = []workspace.AclItem{
+	s.Acls[request.Scope] = []secrets.AclItem{
 		{
 			Principal:  s.CurrentUser().UserName,
-			Permission: workspace.AclPermissionManage,
+			Permission: workspaceapi.AclPermissionManage,
 		},
 	}
 
@@ -58,13 +58,13 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 func (s *FakeWorkspace) SecretsListScopes(req Request) Response {
 	defer s.LockUnlock()()
 
-	scopes := make([]workspace.SecretScope, 0, len(s.SecretScopes))
+	scopes := make([]secrets.SecretScope, 0, len(s.SecretScopes))
 	for _, scope := range s.SecretScopes {
 		scopes = append(scopes, scope)
 	}
 
 	return Response{
-		Body: workspace.ListScopesResponse{
+		Body: secrets.ListScopesResponse{
 			Scopes: scopes,
 		},
 	}
@@ -73,7 +73,7 @@ func (s *FakeWorkspace) SecretsListScopes(req Request) Response {
 func (s *FakeWorkspace) SecretsDeleteScope(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.DeleteScope
+	var request secrets.DeleteScopeRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -111,11 +111,11 @@ func (s *FakeWorkspace) SecretsListAcls(req Request) Response {
 
 	acls := s.Acls[scope]
 	if acls == nil {
-		acls = []workspace.AclItem{}
+		acls = []secrets.AclItem{}
 	}
 
 	return Response{
-		Body: workspace.ListAclsResponse{
+		Body: secrets.ListAclsResponse{
 			Items: acls,
 		},
 	}

@@ -1,11 +1,10 @@
 package testserver
 
 import (
+	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // modelNameBrowseOnly scopes the computed browse_only flag to the browse_only
@@ -15,7 +14,7 @@ const modelNameBrowseOnly = "model_browse_only"
 func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createRequest catalog.CreateRegisteredModelRequest
+	var createRequest registeredmodels.CreateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &createRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -26,7 +25,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
-	registeredModel := catalog.RegisteredModelInfo{
+	registeredModel := registeredmodels.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
 		Comment:         createRequest.Comment,
 		Name:            createRequest.Name,
@@ -67,7 +66,7 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		return *errResponse
 	}
 
-	var updateRequest catalog.UpdateRegisteredModelRequest
+	var updateRequest registeredmodels.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

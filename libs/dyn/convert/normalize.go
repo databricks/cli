@@ -55,7 +55,7 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 	switch typ.Kind() {
 	case reflect.Struct:
 		// Handle SDK native types as strings since they use custom JSON marshaling.
-		if slices.Contains(sdkNativeTypes, typ) {
+		if isSDKNativeType(typ) {
 			return n.normalizeString(reflect.TypeFor[string](), src, path)
 		}
 		return n.normalizeStruct(typ, src, append(seen, typ), path)

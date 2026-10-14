@@ -1,17 +1,16 @@
 package testserver
 
 import (
+	volumes "github.com/databricks/cli/libs/sdktypes/uc/volumes/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {
-	var volume catalog.VolumeInfo
+	var volume volumes.VolumeInfo
 
 	if err := json.Unmarshal(req.Body, &volume); err != nil {
 		return Response{
@@ -25,7 +24,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	volume.Name = strings.ToLower(volume.Name)
 	volume.FullName = volume.CatalogName + "." + volume.SchemaName + "." + volume.Name
 
-	if volume.StorageLocation != "" && volume.VolumeType != catalog.VolumeTypeExternal {
+	if volume.StorageLocation != "" && volume.VolumeType != volumes.VolumeType_External {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -56,7 +55,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	// Register the volume path as a directory so that fs cp works without
 	// requiring an explicit mkdir.
 	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", volume.CatalogName, volume.SchemaName, volume.Name)
-	s.directories[volumePath] = workspace.ObjectInfo{
+	s.directories[volumePath] = workspaceapi.ObjectInfo{
 		ObjectType: "DIRECTORY",
 		Path:       volumePath,
 	}
@@ -81,7 +80,7 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		return *errResponse
 	}
 
-	var request catalog.UpdateVolumeRequestContent
+	var request volumes.UpdateVolumeRequest
 
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{

@@ -1,16 +1,16 @@
 package testserver
 
 import (
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
-	var request compute.ClusterDetails
+	var request clusters.ClusterInfo
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -28,7 +28,7 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	// Match cloud behavior: SINGLE_USER clusters automatically get single_user_name set
 	// to the current user. This enables terraform drift detection when the bundle config
 	// doesn't specify single_user_name.
-	if request.DataSecurityMode == compute.DataSecurityModeSingleUser && request.SingleUserName == "" {
+	if request.DataSecurityMode == clusters.DataSecurityMode_SingleUser && request.SingleUserName == "" {
 		request.SingleUserName = s.CurrentUser().UserName
 	}
 
@@ -46,38 +46,38 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	clusterFixUps(&request)
 
 	// The cluster GET API returns apply_policy_default_values only under .spec, not at the top
-	// level (compute.ClusterDetails has no such field, so it is dropped by the unmarshal above).
+	// level (clusters.ClusterInfo has no such field, so it is dropped by the unmarshal above).
 	// Snapshot it from the raw body so re-reads match cloud.
 	request.Spec = specSnapshot(req.Body)
 
 	s.Clusters[clusterId] = request
 
 	return Response{
-		Body: compute.ClusterDetails{
+		Body: clusters.ClusterInfo{
 			ClusterId: clusterId,
 		},
 	}
 }
 
 // specSnapshot mirrors how the cluster GET API returns apply_policy_default_values under .spec
-// (it is absent from compute.ClusterDetails and thus invisible at the top level of a re-read).
+// (it is absent from clusters.ClusterInfo and thus invisible at the top level of a re-read).
 // Returns nil when the field is unset so re-reads of clusters that don't use it are unchanged;
 // a nil .spec reads back as false, which is what the field's absence means anyway.
-func specSnapshot(body []byte) *compute.ClusterSpec {
-	var spec compute.ClusterSpec
+func specSnapshot(body []byte) *clusters.ClusterSpec {
+	var spec clusters.ClusterSpec
 	if err := json.Unmarshal(body, &spec); err != nil {
 		return nil
 	}
 	if !spec.ApplyPolicyDefaultValues {
 		return nil
 	}
-	return &compute.ClusterSpec{
+	return &clusters.ClusterSpec{
 		ApplyPolicyDefaultValues: true,
 	}
 }
 
 func (s *FakeWorkspace) ClustersResize(req Request) any {
-	var request compute.ResizeCluster
+	var request clusters.ResizeClusterRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -107,7 +107,7 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 }
 
 func (s *FakeWorkspace) ClustersEdit(req Request) any {
-	var request compute.ClusterDetails
+	var request clusters.ClusterInfo
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -157,14 +157,14 @@ func setDefault(obj any, path string, value any) {
 }
 
 // clusterFixUps applies server-side defaults that the real API sets.
-func clusterFixUps(cluster *compute.ClusterDetails) {
+func clusterFixUps(cluster *clusters.ClusterInfo) {
 	gcp := cluster.GcpAttributes
 	if gcp != nil {
 		setDefault(gcp, "first_on_demand", 1)
 		setDefault(gcp, "use_preemptible_executors", false)
 	} else if cluster.AwsAttributes == nil {
-		cluster.AwsAttributes = &compute.AwsAttributes{
-			Availability: compute.AwsAvailabilitySpotWithFallback,
+		cluster.AwsAttributes = &clusters.AwsAttributes{
+			Availability: clusters.AwsAvailability_SpotWithFallback,
 			ZoneId:       "us-east-1c",
 		}
 		cluster.AwsAttributes.ForceSendFields = append(
@@ -203,7 +203,7 @@ func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 
 // ClustersDelete terminates a cluster (sets state to TERMINATED without removing it).
 func (s *FakeWorkspace) ClustersDelete(req Request) any {
-	var request compute.DeleteCluster
+	var request clusters.DeleteClusterRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -224,7 +224,7 @@ func (s *FakeWorkspace) ClustersDelete(req Request) any {
 }
 
 func (s *FakeWorkspace) ClustersStart(req Request) any {
-	var request compute.StartCluster
+	var request clusters.StartClusterRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -245,7 +245,7 @@ func (s *FakeWorkspace) ClustersStart(req Request) any {
 }
 
 func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
-	var request compute.PermanentDeleteCluster
+	var request clusters.PermanentDeleteClusterRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,

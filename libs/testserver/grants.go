@@ -1,18 +1,17 @@
 package testserver
 
 import (
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // notImpliedByAllPrivileges are the privileges UC does not include in
 // ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
-var notImpliedByAllPrivileges = map[catalog.Privilege]bool{
+var notImpliedByAllPrivileges = map[string]bool{
 	catalog.PrivilegeManage:              true,
 	catalog.PrivilegeReadMetadata:        true,
 	catalog.PrivilegeExternalUseSchema:   true,
@@ -24,7 +23,7 @@ func grantsKey(securableType, fullName string) string {
 }
 
 func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string) Response {
-	var request catalog.UpdatePermissions
+	var request grants.UpdatePermissionsRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: http.StatusBadRequest,
@@ -37,12 +36,12 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	defer s.LockUnlock()()
 
 	// Build a map of principals to privileges (using Privilege type directly)
-	principalPrivs := make(map[string]map[catalog.Privilege]bool)
+	principalPrivs := make(map[string]map[string]bool)
 
 	// Load current grants
 	for _, assignment := range s.Grants[key] {
 		if principalPrivs[assignment.Principal] == nil {
-			principalPrivs[assignment.Principal] = make(map[catalog.Privilege]bool)
+			principalPrivs[assignment.Principal] = make(map[string]bool)
 		}
 		for _, privilege := range assignment.Privileges {
 			principalPrivs[assignment.Principal][privilege] = true
@@ -51,7 +50,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Validate: reject duplicate privileges in Add and Remove for the same principal
 	for _, change := range request.Changes {
-		addSet := make(map[catalog.Privilege]bool, len(change.Add))
+		addSet := make(map[string]bool, len(change.Add))
 		for _, p := range change.Add {
 			addSet[p] = true
 		}
@@ -74,7 +73,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 			continue
 		}
 		if principalPrivs[change.Principal] == nil {
-			principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
+			principalPrivs[change.Principal] = make(map[string]bool)
 		}
 
 		// Remove privileges
@@ -105,22 +104,22 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	// Note order of assignments is randomized due to map. This is intentional, azure backend behaves the same way
 	// (deco env run -i -n azure-prod-ucws -- go test ./acceptance -run ^TestAccept$/^bundle$/^resources$/^grants$/^schemas$/^out_of_band_principal$/direct -count=10 -failfast -timeout=1h)
 
-	var assignments []catalog.PrivilegeAssignment
+	var assignments []grants.PrivilegeAssignment
 	for principal, privs := range principalPrivs {
 		if len(privs) == 0 {
 			continue
 		}
 
 		// Collect and sort privileges directly
-		privileges := make([]catalog.Privilege, 0, len(privs))
+		privileges := make([]string, 0, len(privs))
 		for priv := range privs {
 			privileges = append(privileges, priv)
 		}
-		slices.SortFunc(privileges, func(a, b catalog.Privilege) int {
+		slices.SortFunc(privileges, func(a, b string) int {
 			return strings.Compare(string(a), string(b))
 		})
 
-		assignments = append(assignments, catalog.PrivilegeAssignment{
+		assignments = append(assignments, grants.PrivilegeAssignment{
 			Principal:  principal,
 			Privileges: privileges,
 		})
@@ -137,7 +136,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		}
 	}
 
-	return Response{Body: catalog.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
+	return Response{Body: grants.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
 }
 
 func (s *FakeWorkspace) GrantsGet(_ Request, securableType, fullName string) Response {
@@ -146,5 +145,5 @@ func (s *FakeWorkspace) GrantsGet(_ Request, securableType, fullName string) Res
 	key := grantsKey(securableType, fullName)
 	assignments := s.Grants[key]
 
-	return Response{Body: catalog.GetPermissionsResponse{PrivilegeAssignments: assignments}}
+	return Response{Body: grants.GetPermissionsResponse{PrivilegeAssignments: assignments}}
 }

@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -8,9 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.
@@ -76,7 +74,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	}
 	objectID := nextTreenodeID()
 	s.files[nodePath] = FileEntry{
-		Info: workspace.ObjectInfo{
+		Info: workspaceapi.ObjectInfo{
 			// The service registers its own node type, which get-status reports back;
 			// a plain FILE is what the fake used to claim and the real API never returns.
 			ObjectType: "BUNDLE_DEPLOYMENT",

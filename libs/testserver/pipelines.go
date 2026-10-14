@@ -1,11 +1,10 @@
 package testserver
 
 import (
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
@@ -55,7 +54,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	// parameters is not on PipelineSpec (only on CreatePipeline), so the decode above
 	// drops it. The backend echoes it on GetPipelineResponse.Parameters; mirror that
 	// here, else a re-read misses it and the CLI plans a perpetual update.
-	var create pipelines.CreatePipeline
+	var create pipelines.CreatePipelineRequest
 	if err := json.Unmarshal(req.Body, &create); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
@@ -76,7 +75,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	}
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
-	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
+	r.EffectivePublishingMode = pipelines.PublishingMode_DefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
@@ -119,7 +118,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 
 	// parameters is on EditPipeline, not PipelineSpec; round-trip it like
 	// PipelineCreate does.
-	var edit pipelines.EditPipeline
+	var edit pipelines.EditPipelineRequest
 	if err := json.Unmarshal(req.Body, &edit); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -226,7 +225,7 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 	return Response{
 		Body: pipelines.GetPipelineResponse{
 			PipelineId: pipelineId,
-			State:      pipelines.PipelineStateIdle,
+			State:      pipelines.PipelineState_PipelineState_Idle,
 		},
 	}
 }

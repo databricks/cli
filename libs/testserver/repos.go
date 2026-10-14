@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // fakeHeadCommitID is the commit the fake reports a clone is checked out to.
@@ -17,7 +16,7 @@ const fakeHeadCommitID = "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f"
 func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var repoReq workspace.CreateRepoRequest
+	var repoReq repos.CreateRepoRequest
 
 	if err := json.Unmarshal(req.Body, &repoReq); err != nil {
 		return Response{
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	repoId := nextTreenodeID()
 	id := strconv.FormatInt(repoId, 10)
 
-	repoInfo := workspace.RepoInfo{
+	repoInfo := repos.RepoInfo{
 		Id:           repoId,
 		Path:         repoReq.Path,
 		Provider:     repoReq.Provider,
@@ -49,7 +48,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var repoReq workspace.UpdateRepoRequest
+	var repoReq repos.UpdateRepoRequest
 
 	if err := json.Unmarshal(req.Body, &repoReq); err != nil {
 		return Response{

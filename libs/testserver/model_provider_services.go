@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // ModelProviderServicesCreate fakes POST
@@ -17,7 +16,7 @@ import (
 func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var ms catalog.ModelProviderService
+	var ms aigateway.ModelProviderService
 	if err := json.Unmarshal(req.Body, &ms); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -51,7 +50,7 @@ func (s *FakeWorkspace) ModelProviderServicesUpdate(req Request, name string) Re
 		}
 	}
 
-	var incoming catalog.ModelProviderService
+	var incoming aigateway.ModelProviderService
 	if err := json.Unmarshal(req.Body, &incoming); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

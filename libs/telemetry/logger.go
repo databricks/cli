@@ -9,13 +9,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/google/uuid"
 )
 
@@ -108,7 +108,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		return nil
 	}
 
-	apiClient, err := client.New(cmdctx.ConfigUsed(ctx))
+	apiClient, err := apiclient.New(cmdctx.ConfigUsed(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -170,18 +170,16 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 			return fmt.Errorf("uploading telemetry logs timed out: %w", err)
 		}
 
-		// We retry for all 5xx responses. Note that the SDK only retries for 503 and 429
+		// We retry for all 5xx responses. Note that the client transport only retries for 503 and 429
 		// (as of 6th March 2025) so we need some additional logic here to retry for other
 		// 5xx responses.
-		// Note: We should never see a 503 or 429 here because the SDK default timeout
-		// of 1 minute is more than the 3 second timeout we set above.
-		//
-		// SDK ref: https://github.com/databricks/databricks-sdk-go/blob/cdb28002afacb8b762348534a4c4040a9f19c24b/apierr/errors.go#L91
+		// Note: We should never see a 503 or 429 here because the transport retry
+		// timeout is more than the 3 second timeout we set above.
 		//
 		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
 		// all 5xx responses.
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 500 {
-			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() >= 500 {
+			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.HTTPStatusCode())
 
 			remainingTime := time.Until(deadline)
 			if remainingTime < waitBetweenRetries {
@@ -197,7 +195,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	return errors.New("failed to upload telemetry logs after three attempts")
 }
 
-func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
+func attempt(ctx context.Context, apiClient *apiclient.Client, protoLogs []string) (*ResponseBody, error) {
 	// Without the workspace routing header, telemetry on unified hosts is
 	// recorded in a central shard instead of the user's workspace.
 	resp := &ResponseBody{}

@@ -1,13 +1,12 @@
 package testserver
 
 import (
+	genie "github.com/databricks/cli/libs/sdktypes/genie/v1"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
 // generateGenieSpaceId returns a random 32-character hex string.
@@ -54,7 +53,7 @@ func canonicalizeGenieSerializedSpace(serialized string) string {
 func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createReq dashboards.GenieCreateSpaceRequest
+	var createReq genie.GenieCreateSpaceRequest
 	if err := json.Unmarshal(req.Body, &createReq); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -86,7 +85,7 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		createReq.ParentPath = strings.TrimPrefix(createReq.ParentPath, "/Workspace")
 	}
 
-	genieSpace := dashboards.GenieSpace{
+	genieSpace := genie.GenieSpace{
 		SpaceId:         spaceId,
 		Title:           createReq.Title,
 		Description:     createReq.Description,
@@ -149,7 +148,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		}
 	}
 
-	var updateReq dashboards.GenieUpdateSpaceRequest
+	var updateReq genie.GenieUpdateSpaceRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
 		return Response{
 			StatusCode: 400,

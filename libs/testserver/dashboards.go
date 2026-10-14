@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -8,9 +10,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // Generate 32 character hex string for dashboard ID
@@ -96,7 +95,7 @@ func (s *FakeWorkspace) DashboardGet(req Request) Response {
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var dashboard dashboards.Dashboard
+	var dashboard lakeview.Dashboard
 	if err := json.Unmarshal(req.Body, &dashboard); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -129,7 +128,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	// All dashboards are active by default:
-	dashboard.LifecycleState = dashboards.LifecycleStateActive
+	dashboard.LifecycleState = lakeview.LifecycleState_Active
 
 	// Remove /Workspace prefix from parent_path. This matches the remote behavior.
 	if strings.HasPrefix(dashboard.ParentPath, "/Workspace/") {
@@ -165,7 +164,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 
 	workspacePath := path.Join("/Workspace", dashboard.Path)
 	s.files[workspacePath] = FileEntry{
-		Info: workspace.ObjectInfo{
+		Info: workspaceapi.ObjectInfo{
 			ObjectType: "DASHBOARD",
 			// Include the /Workspace prefix for workspace get-status API.
 			Path:       workspacePath,
@@ -182,7 +181,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var updateReq dashboards.Dashboard
+	var updateReq lakeview.Dashboard
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -215,7 +214,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	}
 
 	// Update the dashboard.
-	updated.LifecycleState = dashboards.LifecycleStateActive
+	updated.LifecycleState = lakeview.LifecycleState_Active
 	if updateReq.DisplayName != "" {
 		updated.DisplayName = updateReq.DisplayName
 		dir := path.Dir(updated.Path)
@@ -244,7 +243,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	defer s.LockUnlock()()
 
-	var publishReq dashboards.PublishRequest
+	var publishReq lakeview.PublishDashboardRequest
 	if err := json.Unmarshal(req.Body, &publishReq); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -259,7 +258,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		}
 	}
 
-	publishedDashboard := dashboards.PublishedDashboard{
+	publishedDashboard := lakeview.PublishedDashboard{
 		WarehouseId:        dashboard.WarehouseId,
 		DisplayName:        dashboard.DisplayName,
 		EmbedCredentials:   publishReq.EmbedCredentials,
@@ -277,7 +276,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	s.PublishedDashboards[dashboardId] = publishedDashboard
 
 	return Response{
-		Body: dashboards.PublishedDashboard{
+		Body: lakeview.PublishedDashboard{
 			WarehouseId:        publishedDashboard.WarehouseId,
 			DisplayName:        publishedDashboard.DisplayName,
 			EmbedCredentials:   publishedDashboard.EmbedCredentials,
@@ -302,7 +301,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Etag:           dashboard.Etag,
 		DashboardId:    dashboardId,
-		LifecycleState: dashboards.LifecycleStateTrashed,
+		LifecycleState: lakeview.LifecycleState_Trashed,
 		ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
 	})
 

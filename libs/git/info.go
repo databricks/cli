@@ -8,15 +8,16 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/sdk-go/repos/v1"
 )
 
 type RepositoryInfo struct {
@@ -48,7 +49,7 @@ type response struct {
 //   - If we could determine git worktree root but there were errors when reading metadata (origin, branch, commit), those errors
 //     will be logged as warnings, RepositoryInfo is guaranteed to have non-empty WorktreeRoot and other fields on best effort basis.
 //   - In successful case, all fields are set to proper git repository metadata.
-func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+func FetchRepositoryInfo(ctx context.Context, path string, w *sdkclients.Clients) (RepositoryInfo, error) {
 	var info RepositoryInfo
 	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
@@ -67,7 +68,7 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	return info, err
 }
 
-func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *sdkclients.Clients) (RepositoryInfo, error) {
 	info, err := FetchRepositoryInfoAPI(ctx, path, w)
 	if err == nil && info.WorktreeRoot == "" {
 		// Fall back to Git information from .git for unsupported Git folders like worktree folders
@@ -82,10 +83,10 @@ func fetchRepositoryInfoFromWorkspace(ctx context.Context, path string, w *datab
 //
 // A path that does not exist is reported as fs.ErrNotExist; callers that treat
 // that as "no repository here" must normalize it the way FetchRepositoryInfo does.
-func FetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+func FetchRepositoryInfoAPI(ctx context.Context, path string, w *sdkclients.Clients) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return result, err
 	}
@@ -111,7 +112,7 @@ func FetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		// Normalize it to fs.ErrNotExist, the same signal fetchRepositoryInfoDotGit
 		// produces for a missing local path, so FetchRepositoryInfo can treat
 		// "no path" as "no repository" uniformly.
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return result, fs.ErrNotExist
 		}
 		return result, err
@@ -131,13 +132,13 @@ func FetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		// Repos API still has the metadata, and git_info.id identifies the Git
 		// folder root even when the queried path is a subdirectory of it.
 		if gi.ID != 0 && gi.Branch == "" && gi.HeadCommitID == "" && gi.URL == "" {
-			repo, err := w.Repos.Get(ctx, workspace.GetRepoRequest{RepoId: gi.ID})
+			repo, err := w.Repos.GetRepo(ctx, repos.GetRepoRequest{Id: new(gi.ID)})
 			if err != nil {
 				log.Warnf(ctx, "failed to load git info for repo %d: %s", gi.ID, err)
 			} else {
-				result.OriginURL = repo.Url
-				result.LatestCommit = repo.HeadCommitId
-				result.CurrentBranch = repo.Branch
+				result.OriginURL = utils.Deref(repo.Url)
+				result.LatestCommit = utils.Deref(repo.HeadCommitId)
+				result.CurrentBranch = utils.Deref(repo.Branch)
 			}
 		}
 	} else {

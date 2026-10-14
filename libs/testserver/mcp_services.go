@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // McpServicesCreate fakes POST /api/2.1/unity-catalog/mcp-services. See
@@ -16,7 +15,7 @@ import (
 func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var ms catalog.McpService
+	var ms aigateway.McpService
 	if err := json.Unmarshal(req.Body, &ms); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -50,7 +49,7 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 		}
 	}
 
-	var incoming catalog.McpService
+	var incoming aigateway.McpService
 	if err := json.Unmarshal(req.Body, &incoming); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

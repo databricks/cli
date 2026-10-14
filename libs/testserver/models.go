@@ -1,17 +1,16 @@
 package testserver
 
 import (
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"encoding/json"
 	"fmt"
 	"strconv"
-
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 	defer s.LockUnlock()()
 
-	var request ml.CreateModelRequest
+	var request modelregistry.CreateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -33,7 +32,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 
 	// Create the model with a numeric ID (matching real API behavior)
 	modelId := strconv.FormatInt(nextID(), 10)
-	model := ml.Model{
+	model := modelregistry.RegisteredModel{
 		Name:        request.Name,
 		Description: request.Description,
 		Tags:        request.Tags,
@@ -43,7 +42,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 	s.ModelRegistryModelIDs[request.Name] = modelId
 
 	return Response{
-		Body: ml.CreateModelResponse{
+		Body: modelregistry.CreateRegisteredModelResponse{
 			RegisteredModel: &model,
 		},
 	}
@@ -52,7 +51,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 	defer s.LockUnlock()()
 
-	var request ml.UpdateModelRequest
+	var request modelregistry.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -73,7 +72,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 	s.ModelRegistryModels[request.Name] = existingModel
 
 	return Response{
-		Body: ml.UpdateModelResponse{
+		Body: modelregistry.UpdateRegisteredModelResponse{
 			RegisteredModel: &existingModel,
 		},
 	}
@@ -93,8 +92,8 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	}
 
 	return Response{
-		Body: ml.GetModelResponse{
-			RegisteredModelDatabricks: &ml.ModelDatabricks{
+		Body: modelregistry.GetRegisteredModelDatabricksResponse{
+			RegisteredModelDatabricks: &modelregistry.RegisteredModelDatabricks{
 				Id:              s.ModelRegistryModelIDs[name],
 				Name:            model.Name,
 				Description:     model.Description,

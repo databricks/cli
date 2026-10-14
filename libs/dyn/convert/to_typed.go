@@ -3,7 +3,6 @@ package convert
 import (
 	"fmt"
 	"reflect"
-	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -41,7 +40,7 @@ func ToTyped(dst any, src dyn.Value) error {
 	switch dstv.Kind() {
 	case reflect.Struct:
 		// Handle SDK native types using JSON unmarshaling.
-		if slices.Contains(sdkNativeTypes, dstv.Type()) {
+		if isSDKNativeType(dstv.Type()) {
 			return toTypedSDKNative(dstv, src)
 		}
 		return toTypedStruct(dstv, src)
@@ -92,17 +91,6 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
 				return err
-			}
-
-			if pv.IsZero() {
-				// The field's zero value must still serialize, so append its Go name
-				// to the ForceSendFields of the struct that declares it. That struct
-				// shares a prefix with the field's index path, so it is already
-				// allocated by the walk above.
-				if fsfIndex, ok := info.ForceSendFieldsIndex[jsonKey]; ok {
-					fsf := getOrNewFieldByIndex(dst, fsfIndex)
-					fsf.Set(reflect.Append(fsf, reflect.ValueOf(info.GolangNames[jsonKey])))
-				}
 			}
 		}
 

@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // ModelServicesCreate fakes POST /api/2.1/unity-catalog/model-services.
@@ -22,7 +21,7 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 
 	// The SDK sends the ModelService body directly (not wrapped in
 	// "model_service"); parent and model_service_id are query parameters.
-	var ms catalog.ModelService
+	var ms aigateway.ModelService
 	if err := json.Unmarshal(req.Body, &ms); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -57,7 +56,7 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	}
 
 	// The SDK sends the ModelService body directly; update_mask is a query param.
-	var incoming catalog.ModelService
+	var incoming aigateway.ModelService
 	if err := json.Unmarshal(req.Body, &incoming); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"encoding/json"
 	"fmt"
 	"slices"
 	"time"
-
-	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 var ForceSendFields []string = []string{
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 
 	// set default fields:
 	databaseInstance.Uid = nextUUID()
-	databaseInstance.State = database.DatabaseInstanceStateAvailable
+	databaseInstance.State = database.DatabaseInstance_State_Available
 	databaseInstance.PgVersion = "PG_VERSION_16"
 	databaseInstance.EffectiveNodeCount = 1
 	databaseInstance.EffectiveRetentionWindowInDays = 7

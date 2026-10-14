@@ -1,10 +1,9 @@
 package testserver
 
 import (
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
 	"encoding/json"
 	"fmt"
-
-	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {

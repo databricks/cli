@@ -2,7 +2,6 @@ package convert
 
 import (
 	"reflect"
-	"slices"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -27,16 +26,6 @@ type structInfo struct {
 
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
-
-	// ForceSendFieldsIndex maps the JSON-name of the field to the index path (for
-	// use with [reflect.Value.FieldByIndex]) of the ForceSendFields slice that
-	// governs it: the one declared by the struct that also declares the field.
-	// The path is static per type, so we resolve it once here rather than walking
-	// the value at conversion time. It can be more than one element deep because a
-	// field's declaring struct may be embedded several levels down (e.g.
-	// PostgresProject -> PostgresProjectConfig -> ProjectSpec). A field whose
-	// declaring struct has no ForceSendFields has no entry.
-	ForceSendFieldsIndex map[string][]int
 }
 
 // structInfoCache caches type information.
@@ -64,10 +53,9 @@ func getStructInfo(typ reflect.Type) structInfo {
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
 	out := structInfo{
-		Fields:               make(map[string][]int),
-		ForceEmpty:           make(map[string]bool),
-		GolangNames:          make(map[string]string),
-		ForceSendFieldsIndex: make(map[string][]int),
+		Fields:      make(map[string][]int),
+		ForceEmpty:  make(map[string]bool),
+		GolangNames: make(map[string]string),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -85,15 +73,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		// Dereference pointer type.
 		if styp.Kind() == reflect.Pointer {
 			styp = styp.Elem()
-		}
-
-		// Index path to the ForceSendFields declared by this struct, if any. All
-		// fields declared directly by this struct are governed by it. The len==1
-		// check excludes a ForceSendFields promoted from an embedded struct: that
-		// one governs the embedded struct's own fields, which we visit separately.
-		var forceSendFieldsIndex []int
-		if sf, ok := styp.FieldByName("ForceSendFields"); ok && len(sf.Index) == 1 {
-			forceSendFieldsIndex = append(slices.Clone(prefix), sf.Index...)
 		}
 
 		nf := styp.NumField()
@@ -134,11 +113,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 			out.GolangNames[name] = sf.Name
 
-			// The field is declared directly in this struct, so it is governed by
-			// this struct's ForceSendFields (if it has one).
-			if forceSendFieldsIndex != nil {
-				out.ForceSendFieldsIndex[name] = forceSendFieldsIndex
-			}
 		}
 	}
 
@@ -146,9 +120,8 @@ func buildStructInfo(typ reflect.Type) structInfo {
 }
 
 type FieldValue struct {
-	Key      string
-	Value    reflect.Value
-	IsForced bool
+	Key   string
+	Value reflect.Value
 }
 
 func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
@@ -158,36 +131,14 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 		fv := fieldByIndex(v, s.Fields[k])
 
 		if fv.IsValid() {
-			isForced := true
-
-			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
-			if fv.IsZero() {
-				isForced = s.isForceSend(v, k)
-			}
-
 			out = append(out, FieldValue{
-				Key:      k,
-				Value:    fv,
-				IsForced: isForced,
+				Key:   k,
+				Value: fv,
 			})
 		}
 	}
 
 	return out
-}
-
-// isForceSend reports whether the field named k is listed in the ForceSendFields
-// that governs it (see structInfo.ForceSendFieldsIndex).
-func (s *structInfo) isForceSend(v reflect.Value, k string) bool {
-	index, ok := s.ForceSendFieldsIndex[k]
-	if !ok {
-		return false
-	}
-	fsf := fieldByIndex(v, index)
-	if !fsf.IsValid() {
-		return false
-	}
-	return slices.Contains(fsf.Interface().([]string), s.GolangNames[k])
 }
 
 // fieldByIndex resolves the value at the given index path, dereferencing embedded

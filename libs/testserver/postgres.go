@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 func nowTime() *sdktime.Time {
@@ -367,7 +367,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 		branch.UpdateTime = now
 		branch.Status = &postgres.BranchStatus{
 			BranchId:         branchID,
-			CurrentState:     postgres.BranchStatusStateReady,
+			CurrentState:     postgres.BranchStatus_State_Ready,
 			StateChangeTime:  now,
 			Default:          false,
 			IsProtected:      false,
@@ -669,7 +669,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 		endpoint.Status = &postgres.EndpointStatus{
 			EndpointId:             endpointID,
-			CurrentState:           postgres.EndpointStatusStateActive,
+			CurrentState:           postgres.EndpointStatus_State_Active,
 			Disabled:               false,
 			Settings:               &postgres.EndpointSettings{},
 			SuspendTimeoutDuration: defaultSuspendTimeout,
@@ -1184,7 +1184,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	now := nowTime()
 	if exists {
 		// Preserve identifying / output-only fields; apply incoming spec to status.
-		status := &postgres.DatabaseDatabaseStatus{
+		status := &postgres.Database_DatabaseStatus{
 			DatabaseId:       databaseID,
 			PostgresDatabase: database.Spec.PostgresDatabase,
 			Role:             database.Spec.Role,
@@ -1206,7 +1206,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	database.UpdateTime = now
 
 	// Mirror spec onto status; the real API only echoes Status on GET.
-	status := &postgres.DatabaseDatabaseStatus{
+	status := &postgres.Database_DatabaseStatus{
 		DatabaseId:       databaseID,
 		PostgresDatabase: database.Spec.PostgresDatabase,
 		Role:             database.Spec.Role,
@@ -1318,8 +1318,8 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 
 // databaseStatusFromSpec mirrors the real Postgres Database server's behavior of
 // echoing the spec onto Status while leaving Spec=nil on GET responses.
-func databaseStatusFromSpec(spec *postgres.DatabaseDatabaseSpec) *postgres.DatabaseDatabaseStatus {
-	status := &postgres.DatabaseDatabaseStatus{}
+func databaseStatusFromSpec(spec *postgres.Database_DatabaseSpec) *postgres.Database_DatabaseStatus {
+	status := &postgres.Database_DatabaseStatus{}
 	if spec == nil {
 		return status
 	}
@@ -1332,7 +1332,7 @@ func databaseStatusFromSpec(spec *postgres.DatabaseDatabaseSpec) *postgres.Datab
 // desired onto existing. Paths are relative to the Database and "spec."-prefixed;
 // the bare path "spec" replaces the whole subtree, and an empty paths slice
 // replaces everything. Same shape as applyRoleSpecMask.
-func applyDatabaseSpecMask(existing, desired *postgres.DatabaseDatabaseStatus, paths []string) *postgres.DatabaseDatabaseStatus {
+func applyDatabaseSpecMask(existing, desired *postgres.Database_DatabaseStatus, paths []string) *postgres.Database_DatabaseStatus {
 	if len(paths) == 0 || existing == nil {
 		return desired
 	}
@@ -1399,7 +1399,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
 
-	status := &postgres.CatalogCatalogStatus{}
+	status := &postgres.Catalog_CatalogStatus{}
 	if catalog.Spec != nil {
 		status.Branch = catalog.Spec.Branch
 		status.PostgresDatabase = catalog.Spec.PostgresDatabase
@@ -1449,8 +1449,8 @@ var roleIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{3,62}$`)
 // roleStatusFromSpec mirrors the real Postgres Role server's behavior of echoing
 // the spec onto Status (plus default-deriving fields the user did not specify)
 // while leaving Spec=nil on GET responses.
-func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
-	status := &postgres.RoleRoleStatus{}
+func roleStatusFromSpec(spec *postgres.Role_RoleSpec) *postgres.Role_RoleStatus {
+	status := &postgres.Role_RoleStatus{}
 	if spec == nil {
 		return status
 	}
@@ -1464,18 +1464,18 @@ func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
 	status.AuthMethod = spec.AuthMethod
 	if status.AuthMethod == "" {
 		// Server derives auth_method from identity_type when the user omits it:
-		// see SDK comment on postgres.RoleRoleSpec.AuthMethod.
+		// see SDK comment on postgres.Role_RoleSpec.AuthMethod.
 		switch spec.IdentityType {
-		case postgres.RoleIdentityTypeGroup:
-			status.AuthMethod = postgres.RoleAuthMethodNoLogin
-		case postgres.RoleIdentityTypeUser, postgres.RoleIdentityTypeServicePrincipal:
-			status.AuthMethod = postgres.RoleAuthMethodLakebaseOauthV1
+		case postgres.Role_IdentityType_Group:
+			status.AuthMethod = postgres.Role_AuthMethod_NoLogin
+		case postgres.Role_IdentityType_User, postgres.Role_IdentityType_ServicePrincipal:
+			status.AuthMethod = postgres.Role_AuthMethod_LakebaseOauthV1
 		default:
-			status.AuthMethod = postgres.RoleAuthMethodPgPasswordScramSha256
+			status.AuthMethod = postgres.Role_AuthMethod_PgPasswordScramSha256
 		}
 	}
 	// Real server always echoes an attributes block (all-false when unspecified).
-	attrs := &postgres.RoleAttributes{
+	attrs := &postgres.Role_Attributes{
 		ForceSendFields: []string{"Bypassrls", "Createdb", "Createrole"},
 	}
 	if spec.Attributes != nil {
@@ -1670,7 +1670,7 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 // dogfood 2026-06-16 — update_mask=spec.attributes.createdb leaves the sibling
 // attributes untouched), but the direct engine always sends the full spec in the
 // request body, so the collapsed result is identical for the requests it makes.
-func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
+func applyRoleSpecMask(existing, desired *postgres.Role_RoleStatus, paths []string) *postgres.Role_RoleStatus {
 	if len(paths) == 0 || existing == nil {
 		return desired
 	}
@@ -1796,9 +1796,9 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 
 	// GET on the real API returns only status; clear spec to match.
 	table.Spec = nil
-	table.Status = &postgres.SyncedTableSyncedTableStatus{
-		DetailedState:                 postgres.SyncedTableStateSyncedTableOnline,
-		UnityCatalogProvisioningState: postgres.ProvisioningInfoStateActive,
+	table.Status = &postgres.SyncedTable_SyncedTableStatus{
+		DetailedState:                 postgres.SyncedTableState_SyncedTableOnline,
+		UnityCatalogProvisioningState: postgres.ProvisioningInfo_State_Active,
 	}
 
 	s.PostgresSyncedTables[name] = table
@@ -1837,10 +1837,10 @@ func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	}
 
 	if table.Status == nil {
-		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+		table.Status = &postgres.SyncedTable_SyncedTableStatus{}
 	}
-	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
-	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
+	table.Status.DetailedState = postgres.SyncedTableState_SyncedTableOffline
+	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfo_State_Deleting
 	s.PostgresSyncedTables[name] = table
 
 	return Response{Body: s.createOperationLocked(name, nil)}
@@ -1862,7 +1862,7 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 		UpdateTime: now,
 		Status: &postgres.BranchStatus{
 			BranchId:         "production",
-			CurrentState:     postgres.BranchStatusStateReady,
+			CurrentState:     postgres.BranchStatus_State_Ready,
 			StateChangeTime:  now,
 			Default:          true,
 			IsProtected:      false,
@@ -1911,8 +1911,8 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 		UpdateTime: now,
 		Status: &postgres.EndpointStatus{
 			EndpointId:             "primary",
-			EndpointType:           postgres.EndpointTypeEndpointTypeReadWrite,
-			CurrentState:           postgres.EndpointStatusStateActive,
+			EndpointType:           postgres.EndpointType_EndpointTypeReadWrite,
+			CurrentState:           postgres.EndpointStatus_State_Active,
 			Disabled:               false,
 			Settings:               &postgres.EndpointSettings{},
 			AutoscalingLimitMinCu:  minCu,

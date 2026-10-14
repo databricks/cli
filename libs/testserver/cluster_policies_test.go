@@ -1,10 +1,10 @@
 package testserver
 
 import (
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"encoding/json"
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ const testPolicyDefinition = `{
 }`
 
 func policyWorkspace() *FakeWorkspace {
-	return &FakeWorkspace{ClusterPolicies: map[string]compute.Policy{
+	return &FakeWorkspace{ClusterPolicies: map[string]clusterpolicies.Policy{
 		"p1": {PolicyId: "p1", Definition: testPolicyDefinition},
 	}}
 }
@@ -28,7 +28,7 @@ func TestApplyClusterPolicy(t *testing.T) {
 	tests := []struct {
 		name          string
 		policyID      string
-		spec          compute.ClusterSpec
+		spec          clusters.ClusterSpec
 		want          string
 		wantForceSend []string
 		wantErr       string
@@ -36,53 +36,53 @@ func TestApplyClusterPolicy(t *testing.T) {
 		{
 			name:          "fixed applies without apply_policy_default_values, defaultValue does not",
 			policyID:      "p1",
-			spec:          compute.ClusterSpec{PolicyId: "p1"},
+			spec:          clusters.ClusterSpec{PolicyId: "p1"},
 			want:          `{"custom_tags":{"Fixed":"f"},"policy_id":"p1","spark_version":"policy-version"}`,
 			wantForceSend: []string{"SparkVersion"},
 		},
 		{
 			name:          "defaultValue applies with apply_policy_default_values",
 			policyID:      "p1",
-			spec:          compute.ClusterSpec{PolicyId: "p1", ApplyPolicyDefaultValues: true},
+			spec:          clusters.ClusterSpec{PolicyId: "p1", ApplyPolicyDefaultValues: true},
 			want:          `{"apply_policy_default_values":true,"custom_tags":{"Default":"d","Fixed":"f"},"node_type_id":"policy-node","policy_id":"p1","spark_version":"policy-version"}`,
 			wantForceSend: []string{"NodeTypeId", "SparkVersion"},
 		},
 		{
 			name:          "a defaultValue does not override what the request supplied",
 			policyID:      "p1",
-			spec:          compute.ClusterSpec{PolicyId: "p1", ApplyPolicyDefaultValues: true, NodeTypeId: "user-node"},
+			spec:          clusters.ClusterSpec{PolicyId: "p1", ApplyPolicyDefaultValues: true, NodeTypeId: "user-node"},
 			want:          `{"apply_policy_default_values":true,"custom_tags":{"Default":"d","Fixed":"f"},"node_type_id":"user-node","policy_id":"p1","spark_version":"policy-version"}`,
 			wantForceSend: []string{"SparkVersion"},
 		},
 		{
 			name:          "policy tags merge into tags the request supplied",
 			policyID:      "p1",
-			spec:          compute.ClusterSpec{PolicyId: "p1", CustomTags: map[string]string{"Mine": "yes"}},
+			spec:          clusters.ClusterSpec{PolicyId: "p1", CustomTags: map[string]string{"Mine": "yes"}},
 			want:          `{"custom_tags":{"Fixed":"f","Mine":"yes"},"policy_id":"p1","spark_version":"policy-version"}`,
 			wantForceSend: []string{"SparkVersion"},
 		},
 		{
 			name:     "a value contradicting a fixed element is rejected",
 			policyID: "p1",
-			spec:     compute.ClusterSpec{PolicyId: "p1", SparkVersion: "user-version"},
+			spec:     clusters.ClusterSpec{PolicyId: "p1", SparkVersion: "user-version"},
 			wantErr:  `Cluster validation error: Validation failed for spark_version must be policy-version (is "user-version")`,
 		},
 		{
 			name:     "a tag contradicting a fixed element is rejected",
 			policyID: "p1",
-			spec:     compute.ClusterSpec{PolicyId: "p1", CustomTags: map[string]string{"Fixed": "mine"}},
+			spec:     clusters.ClusterSpec{PolicyId: "p1", CustomTags: map[string]string{"Fixed": "mine"}},
 			wantErr:  `Cluster validation error: Validation failed for custom_tags, Fixed must be f (is "mine")`,
 		},
 		{
 			name:     "no policy attached leaves the spec untouched",
 			policyID: "",
-			spec:     compute.ClusterSpec{SparkVersion: "v"},
+			spec:     clusters.ClusterSpec{SparkVersion: "v"},
 			want:     `{"spark_version":"v"}`,
 		},
 		{
 			name:     "unknown policy leaves the spec untouched",
 			policyID: "missing",
-			spec:     compute.ClusterSpec{PolicyId: "missing", SparkVersion: "v"},
+			spec:     clusters.ClusterSpec{PolicyId: "missing", SparkVersion: "v"},
 			want:     `{"policy_id":"missing","spark_version":"v"}`,
 		},
 	}

@@ -1,10 +1,9 @@
 package testserver
 
 import (
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
 	"net/url"
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +40,7 @@ func TestModelRegistryCreateModel_AllowsNonEmptyName(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, 0, getResponse.StatusCode)
 
-	body, ok := getResponse.Body.(ml.GetModelResponse)
+	body, ok := getResponse.Body.(modelregistry.GetRegisteredModelDatabricksResponse)
 	require.True(t, ok)
 	assert.Equal(t, "my_model", body.RegisteredModelDatabricks.Name)
 	assert.NotEmpty(t, body.RegisteredModelDatabricks.Id)

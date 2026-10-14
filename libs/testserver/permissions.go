@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	iam "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 )
 
 // source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
@@ -42,12 +42,12 @@ var requestObjectTypeToObjectType = map[string]string{
 // aclPrincipalKey returns a unique key identifying the principal in an ACL entry.
 func aclPrincipalKey(acl iam.AccessControlResponse) string {
 	switch {
-	case acl.UserName != "":
-		return "user:" + acl.UserName
-	case acl.GroupName != "":
-		return "group:" + acl.GroupName
-	case acl.ServicePrincipalName != "":
-		return "sp:" + acl.ServicePrincipalName
+	case val(acl.UserName) != "":
+		return "user:" + *acl.UserName
+	case val(acl.GroupName) != "":
+		return "group:" + *acl.GroupName
+	case val(acl.ServicePrincipalName) != "":
+		return "sp:" + *acl.ServicePrincipalName
 	default:
 		return ""
 	}
@@ -55,7 +55,7 @@ func aclPrincipalKey(acl iam.AccessControlResponse) string {
 
 // upsertACL adds or replaces an ACL entry by principal key.
 // Entries with no principal key are ignored.
-func upsertACL(perms *iam.ObjectPermissions, entry iam.AccessControlResponse) {
+func upsertACL(perms *iam.PermissionsResponse, entry iam.AccessControlResponse) {
 	key := aclPrincipalKey(entry)
 	if key == "" {
 		return
@@ -80,14 +80,14 @@ func (s *FakeWorkspace) upsertPermission(objectKey string, entry iam.AccessContr
 // jobPrincipalHasAccess reports whether the principal has a direct ACL entry
 // (hasAccess) and whether the ACL names an explicit owner (hasOwner). hasOwner
 // lets callers grant the creator implicit access only until ownership moves.
-func jobPrincipalHasAccess(perms iam.ObjectPermissions, principal string) (hasAccess, hasOwner bool) {
+func jobPrincipalHasAccess(perms iam.PermissionsResponse, principal string) (hasAccess, hasOwner bool) {
 	for _, acl := range perms.AccessControlList {
 		for _, p := range acl.AllPermissions {
 			if p.PermissionLevel == "IS_OWNER" {
 				hasOwner = true
 			}
 		}
-		if len(acl.AllPermissions) > 0 && (acl.UserName == principal || acl.ServicePrincipalName == principal) {
+		if len(acl.AllPermissions) > 0 && (val(acl.UserName) == principal || val(acl.ServicePrincipalName) == principal) {
 			hasAccess = true
 		}
 	}
@@ -103,7 +103,7 @@ func (s *FakeWorkspace) guestHasJobAccess(jobId int64, principal string) bool {
 		return true
 	}
 	if !hasOwner {
-		if job, ok := s.Jobs[jobId]; ok && job.CreatorUserName == principal {
+		if job, ok := s.Jobs[jobId]; ok && val(job.CreatorUserName) == principal {
 			return true
 		}
 	}
@@ -169,9 +169,9 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 
 	if !exists {
 		// Return empty permissions structure if not found
-		permissions = iam.ObjectPermissions{
-			ObjectId:          responseObjectID,
-			ObjectType:        objectType,
+		permissions = iam.PermissionsResponse{
+			ObjectId:          new(responseObjectID),
+			ObjectType:        new(objectType),
 			AccessControlList: []iam.AccessControlResponse{},
 		}
 	}
@@ -189,7 +189,7 @@ func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId stri
 	switch requestObjectType {
 	case "vector-search-endpoints":
 		for _, ep := range s.VectorSearchEndpoints {
-			if ep.Id == objectId {
+			if val(ep.Id) == objectId {
 				return true
 			}
 		}
@@ -230,7 +230,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	var updateRequest iam.UpdateObjectPermissions
+	var updateRequest iam.UpdateObjectPermissionsRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -259,9 +259,9 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	// Get existing permissions or create new ones
 	existingPermissions, exists := s.Permissions[responseObjectID]
 	if !exists {
-		existingPermissions = iam.ObjectPermissions{
-			ObjectId:          responseObjectID,
-			ObjectType:        objectType,
+		existingPermissions = iam.PermissionsResponse{
+			ObjectId:          new(responseObjectID),
+			ObjectType:        new(objectType),
 			AccessControlList: []iam.AccessControlResponse{},
 		}
 	}
@@ -270,7 +270,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	existingPermissions.AccessControlList = nil
 	for _, acl := range updateRequest.AccessControlList {
 		display := acl.UserName
-		if display == "" {
+		if val(display) == "" {
 			display = acl.ServicePrincipalName
 		}
 
@@ -283,9 +283,8 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 
 		if acl.PermissionLevel != "" {
 			response.AllPermissions = []iam.Permission{{
-				Inherited:       false,
+				Inherited:       new(false),
 				PermissionLevel: acl.PermissionLevel,
-				ForceSendFields: []string{"Inherited"},
 			}}
 		}
 
@@ -297,12 +296,12 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           true,
+					Inherited:           new(true),
 					InheritedFromObject: []string{"/jobs/"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			GroupName: "admins",
+			GroupName: new("admins"),
 		})
 	}
 
@@ -311,22 +310,22 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           true,
+					Inherited:           new(true),
 					InheritedFromObject: []string{"/directories/4454031293888593"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			UserName:    "shreyas.goenka@databricks.com",
-			DisplayName: "shreyas.goenka@databricks.com",
+			UserName:    new("shreyas.goenka@databricks.com"),
+			DisplayName: new("shreyas.goenka@databricks.com"),
 		}, iam.AccessControlResponse{
 			AllPermissions: []iam.Permission{
 				{
-					Inherited:           true,
+					Inherited:           new(true),
 					InheritedFromObject: []string{"/directories/"},
 					PermissionLevel:     "CAN_MANAGE",
 				},
 			},
-			GroupName: "admins",
+			GroupName: new("admins"),
 		})
 	}
 
@@ -367,8 +366,8 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		if owner := s.directoryHomeOwner(objectId); owner != "" {
 			response.AccessControlList = slices.Clone(existingPermissions.AccessControlList)
 			upsertACL(&response, iam.AccessControlResponse{
-				UserName:       owner,
-				AllPermissions: []iam.Permission{{PermissionLevel: "CAN_MANAGE", Inherited: true}},
+				UserName:       new(owner),
+				AllPermissions: []iam.Permission{{PermissionLevel: "CAN_MANAGE", Inherited: new(true)}},
 			})
 		}
 	}

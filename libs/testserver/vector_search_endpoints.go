@@ -1,17 +1,16 @@
 package testserver
 
 import (
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createReq vectorsearch.CreateEndpoint
+	var createReq vectorsearch.CreateEndpointRequest
 	if err := json.Unmarshal(req.Body, &createReq); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
@@ -26,7 +25,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
-	endpoint := vectorsearch.EndpointInfo{
+	endpoint := vectorsearch.Endpoint{
 		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
@@ -36,7 +35,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		LastUpdatedUser:         s.CurrentUser().UserName,
 		Name:                    createReq.Name,
 		EndpointStatus: &vectorsearch.EndpointStatus{
-			State: vectorsearch.EndpointStatusStateOnline, // initial create is no-op, returns ONLINE immediately
+			State: vectorsearch.EndpointStatus_State_Online, // initial create is no-op, returns ONLINE immediately
 		},
 		ScalingInfo: &vectorsearch.EndpointScalingInfo{
 			RequestedTargetQps: createReq.TargetQps,

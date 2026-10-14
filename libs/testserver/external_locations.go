@@ -1,17 +1,16 @@
 package testserver
 
 import (
+	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createRequest catalog.CreateExternalLocation
+	var createRequest externallocations.CreateExternalLocationRequest
 	if err := json.Unmarshal(req.Body, &createRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -26,7 +25,7 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		}
 	}
 
-	locationInfo := catalog.ExternalLocationInfo{
+	locationInfo := externallocations.ExternalLocationInfo{
 		Name:              createRequest.Name,
 		Url:               createRequest.Url,
 		CredentialName:    createRequest.CredentialName,
@@ -66,7 +65,7 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		return *errResponse
 	}
 
-	var updateRequest catalog.UpdateExternalLocation
+	var updateRequest externallocations.UpdateExternalLocationRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

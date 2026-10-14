@@ -1,14 +1,13 @@
 package testserver
 
 import (
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
+func sqlWarehouseFixUps(warehouse *warehouses.GetWarehouseResponse, userName string) {
 	if warehouse.CreatorName == "" {
 		warehouse.CreatorName = userName
 	}
@@ -24,7 +23,7 @@ func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
 }
 
 func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Response {
-	var warehouse sql.GetWarehouseResponse
+	var warehouse warehouses.GetWarehouseResponse
 
 	if err := json.Unmarshal(req.Body, &warehouse); err != nil {
 		return Response{
@@ -88,16 +87,16 @@ func (s *FakeWorkspace) SqlWarehousesStop(req Request, warehouseId string) Respo
 }
 
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
-	var warehouses []sql.EndpointInfo
+	var warehouses []warehouses.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {
-		warehouses = append(warehouses, sql.EndpointInfo{
+		warehouses = append(warehouses, warehouses.EndpointInfo{
 			Id:   warehouse.Id,
 			Name: warehouse.Name,
 		})
 	}
 	return Response{
 		StatusCode: 200,
-		Body: sql.ListWarehousesResponse{
+		Body: warehouses.ListWarehousesResponse{
 			Warehouses: warehouses,
 		},
 	}

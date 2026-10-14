@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	iam "github.com/databricks/cli/libs/sdktypes/scim/v1"
 )
 
 func (s *FakeWorkspace) GroupsCreate(req Request) Response {
@@ -23,7 +23,7 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 	groupId := strconv.FormatInt(nextID(), 10)
 
 	group := iam.Group{
-		Id:          groupId,
+		Id:          new(groupId),
 		DisplayName: request.DisplayName,
 	}
 

@@ -1,12 +1,11 @@
 package testserver
 
 import (
+	catalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // catalogNameManagedDefaults scopes the managed-property injection to the
@@ -17,7 +16,7 @@ const catalogNameManagedDefaults = "catalog_managed_defaults"
 func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createRequest catalog.CreateCatalog
+	var createRequest catalogs.CreateCatalogRequest
 	if err := json.Unmarshal(req.Body, &createRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -39,7 +38,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 
 	// Echo back every field create accepts: a dropped one makes the next plan see a
 	// phantom change.
-	catalogInfo := catalog.CatalogInfo{
+	catalogInfo := catalogs.CatalogInfo{
 		Name:                      createRequest.Name,
 		Comment:                   createRequest.Comment,
 		ConnectionName:            createRequest.ConnectionName,
@@ -57,7 +56,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		UpdatedBy:    s.CurrentUser().UserName,
 		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,
-		CatalogType:  catalog.CatalogTypeManagedCatalog,
+		CatalogType:  catalogs.CatalogType_ManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
@@ -95,7 +94,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		return *errResponse
 	}
 
-	var updateRequest catalog.UpdateCatalog
+	var updateRequest catalogs.UpdateCatalogRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

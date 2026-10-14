@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // HandleSQL registers a matcher that runs fn when a submitted statement equals
@@ -27,7 +27,7 @@ func (s *Server) HandleSQLPattern(re *regexp.Regexp, fn func(testsql.Request) te
 // terminates as FAILED comes back as HTTP 200 with state=FAILED; the engine
 // builds that response and this HTTP layer is just transport.
 func (s *Server) sqlExecuteStatement(req Request) any {
-	var r sql.ExecuteStatementRequest
+	var r statementexecution.ExecuteStatementRequest
 	if err := json.Unmarshal(req.Body, &r); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: fmt.Sprintf("invalid execute statement request: %s", err)}
 	}

@@ -1,13 +1,13 @@
 package testserver
 
 import (
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // SecretsUcCreateSecret handles POST /api/2.1/unity-catalog/secrets
@@ -15,7 +15,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	defer s.LockUnlock()()
 
 	// The API accepts flat fields, not wrapped in a "secret" object
-	var inputSecret catalog.Secret
+	var inputSecret ucsecrets.Secret
 	if err := json.Unmarshal(req.Body, &inputSecret); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -24,7 +24,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	}
 
 	if s.UCSecrets == nil {
-		s.UCSecrets = make(map[string]catalog.Secret)
+		s.UCSecrets = make(map[string]ucsecrets.Secret)
 	}
 
 	fullName := fmt.Sprintf("%s.%s.%s",
@@ -44,7 +44,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	}
 
 	now := sdktime.New(time.Now())
-	secret := catalog.Secret{
+	secret := ucsecrets.Secret{
 		CatalogName:    inputSecret.CatalogName,
 		SchemaName:     inputSecret.SchemaName,
 		Name:           inputSecret.Name,
@@ -125,7 +125,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	}
 
 	// The API accepts flat fields
-	var updateSecret catalog.Secret
+	var updateSecret ucsecrets.Secret
 	if err := json.Unmarshal(req.Body, &updateSecret); err != nil {
 		return Response{
 			StatusCode: 400,

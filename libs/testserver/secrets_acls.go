@@ -1,10 +1,9 @@
 package testserver
 
 import (
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"encoding/json"
 	"fmt"
-
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
@@ -24,7 +23,7 @@ func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.PutAcl
+	var request secrets.PutAclRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -36,7 +35,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	scopeAcls := s.Acls[request.Scope]
 	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			s.Acls[request.Scope][i] = workspace.AclItem{
+			s.Acls[request.Scope][i] = secrets.AclItem{
 				Principal:  request.Principal,
 				Permission: request.Permission,
 			}
@@ -45,7 +44,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// Otherwise, add a new ACL
-	s.Acls[request.Scope] = append(s.Acls[request.Scope], workspace.AclItem{
+	s.Acls[request.Scope] = append(s.Acls[request.Scope], secrets.AclItem{
 		Principal:  request.Principal,
 		Permission: request.Permission,
 	})
@@ -55,7 +54,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.DeleteAcl
+	var request secrets.DeleteAclRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

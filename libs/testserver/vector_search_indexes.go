@@ -1,14 +1,13 @@
 package testserver
 
 import (
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 // indexNamePart matches each catalog.schema.table component the real backend
@@ -85,7 +84,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	// The backend assigns index_subtype when the request omits it (HYBRID by default)
 	indexSubtype := createReq.IndexSubtype
 	if indexSubtype == "" {
-		indexSubtype = vectorsearch.IndexSubtypeHybrid
+		indexSubtype = vectorsearch.IndexSubtype_Hybrid
 	}
 
 	// The backend rewrites schema_json on create: user-facing type names are
@@ -205,11 +204,11 @@ func normalizeColumnType(columnType string) string {
 }
 
 // remapDeltaSyncSpec converts a request spec to a response spec.
-func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vectorsearch.DeltaSyncVectorIndexSpecResponse {
+func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vectorsearch.DeltaSyncVectorIndexSpec {
 	if req == nil {
 		return nil
 	}
-	return &vectorsearch.DeltaSyncVectorIndexSpecResponse{
+	return &vectorsearch.DeltaSyncVectorIndexSpec{
 		ColumnsToIndex:          req.ColumnsToIndex,
 		ColumnsToSync:           req.ColumnsToSync,
 		EmbeddingSourceColumns:  req.EmbeddingSourceColumns,

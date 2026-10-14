@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/databricks/cli/libs/apierrs"
 	"io"
 	"maps"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/genie/agentstream"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // genieResponsesPath is the backend route. The server-side tool is still named
@@ -64,7 +65,7 @@ func BuildRequest(question, warehouseID, conversationID string) GenieRequest {
 func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.ReadCloser, error) {
 	cfg.HTTPTimeoutSeconds = StreamingTimeoutSeconds
 
-	api, err := client.New(cfg)
+	api, err := apiclient.New(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -83,15 +84,15 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 	// plain ErrNotFound). A 404 RESOURCE_DOES_NOT_EXIST is excluded: it refers
 	// to something the request named (e.g. the warehouse) and must keep the
 	// backend's own message instead of blaming the endpoint.
-	if errors.Is(err, apierr.ErrNotFound) && !errors.Is(err, apierr.ErrResourceDoesNotExist) {
+	if apierrs.Is(err, apierrs.ErrNotFound) && !apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 		return nil, fmt.Errorf("the Genie API is not available on this workspace: %w; the endpoint may have moved since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
 	}
 	// A request body the backend cannot interpret (e.g. after its expected
 	// request shape changed) surfaces as a 500 INTERNAL_ERROR with an empty
 	// message (observed live), leaving the user a blank error. Transient
 	// backend faults share the status code, hence the hedged advice.
-	if errors.Is(err, apierr.ErrInternalError) {
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.Message == "" {
+	if apierrs.Is(err, apierrs.ErrInternalError) {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.Message() == "" {
 			// An empty message would render as "request: ;" mid-sentence, so
 			// the observed no-details shape gets its own wording. The %w
 			// keeps the error chain and renders as nothing.

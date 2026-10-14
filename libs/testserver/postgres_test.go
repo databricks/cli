@@ -1,13 +1,13 @@
 package testserver_test
 
 import (
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

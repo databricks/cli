@@ -1,15 +1,15 @@
 package testserver
 
 import (
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
 	"slices"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // policyFamilyDefinition mimics the real backend: a policy created from a policy
@@ -24,7 +24,7 @@ func policyFamilyDefinition(familyID string) string {
 func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	// Unmarshal into the stored (GET) type directly: CreatePolicy and Policy
 	// share JSON field names, so every config field is carried over.
-	var policy compute.Policy
+	var policy clusterpolicies.Policy
 	if err := json.Unmarshal(req.Body, &policy); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -50,7 +50,7 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	policy.PolicyId = id
 	s.ClusterPolicies[id] = policy
 
-	return Response{Body: compute.CreatePolicyResponse{PolicyId: id}}
+	return Response{Body: clusterpolicies.CreatePolicyResponse{PolicyId: id}}
 }
 
 func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
@@ -62,12 +62,12 @@ func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
 	}
 	slices.Sort(ids)
 
-	policies := make([]compute.Policy, 0, len(ids))
+	policies := make([]clusterpolicies.Policy, 0, len(ids))
 	for _, id := range ids {
 		policies = append(policies, s.ClusterPolicies[id])
 	}
 
-	return Response{Body: compute.ListPoliciesResponse{Policies: policies}}
+	return Response{Body: clusterpolicies.ListPoliciesResponse{Policies: policies}}
 }
 
 func (s *FakeWorkspace) ClusterPoliciesGet(req Request, policyId string) any {
@@ -82,7 +82,7 @@ func (s *FakeWorkspace) ClusterPoliciesGet(req Request, policyId string) any {
 }
 
 func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
-	var request compute.EditPolicy
+	var request clusterpolicies.EditPolicyRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -112,7 +112,7 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 }
 
 func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
-	var request compute.DeletePolicy
+	var request clusterpolicies.DeletePolicyRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -178,8 +178,8 @@ func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool)
 // "fixed" element, or "" when the spec is acceptable; callers must hold the workspace lock and
 // surface a non-empty message as a 400.
 //
-// spec is a pointer to any struct with cluster-spec JSON tags (compute.ClusterDetails or
-// compute.ClusterSpec); the policy's attribute paths are applied against its JSON shape so
+// spec is a pointer to any struct with cluster-spec JSON tags (clusters.ClusterInfo or
+// clusters.ClusterSpec); the policy's attribute paths are applied against its JSON shape so
 // one implementation covers both.
 func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefaults bool) string {
 	if policyID == "" {
@@ -270,9 +270,9 @@ func setPatch(patch map[string]any, path []string, value any) {
 }
 
 // applyPolicyDefaultValues reads apply_policy_default_values from a raw cluster request body.
-// compute.ClusterDetails has no such field, so it cannot be read off the decoded request.
+// clusters.ClusterInfo has no such field, so it cannot be read off the decoded request.
 func applyPolicyDefaultValues(body []byte) bool {
-	var spec compute.ClusterSpec
+	var spec clusters.ClusterSpec
 	if err := json.Unmarshal(body, &spec); err != nil {
 		return false
 	}
@@ -306,7 +306,7 @@ func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) stri
 	return ""
 }
 
-func (s *FakeWorkspace) applyClusterSpecPolicy(spec *compute.ClusterSpec) string {
+func (s *FakeWorkspace) applyClusterSpecPolicy(spec *clusters.ClusterSpec) string {
 	if spec == nil {
 		return ""
 	}

@@ -1,19 +1,18 @@
 package testserver
 
 import (
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var experiment ml.CreateExperiment
+	var experiment experiments.CreateExperimentRequest
 	if err := json.Unmarshal(req.Body, &experiment); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("request parsing error: %s", err),
@@ -25,7 +24,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 
 	// Server appends these tags automatically to experiments.
 	// We replicate that behaviour in the test server as well.
-	appendTags := []ml.ExperimentTag{
+	appendTags := []experiments.ExperimentTag{
 		{
 			Key:   "mlflow.ownerId",
 			Value: testUser.Id,
@@ -65,7 +64,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	experimentName = strings.TrimPrefix(experimentName, "/Workspace")
 
 	// Create the experiment
-	exp := ml.Experiment{
+	exp := experiments.Experiment{
 		ExperimentId:     experimentId,
 		Name:             experimentName,
 		ArtifactLocation: experiment.ArtifactLocation,
@@ -75,12 +74,12 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		TraceLocation: experiment.TraceLocation,
 	}
 
-	s.Experiments[experimentId] = ml.GetExperimentResponse{
+	s.Experiments[experimentId] = experiments.GetExperimentResponse{
 		Experiment: &exp,
 	}
 
 	return Response{
-		Body: ml.CreateExperimentResponse{
+		Body: experiments.CreateExperimentResponse{
 			ExperimentId: experimentId,
 		},
 	}
@@ -89,7 +88,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var updateReq ml.UpdateExperiment
+	var updateReq experiments.UpdateExperimentRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("request parsing error: %s", err),
@@ -124,7 +123,7 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 }
 
 func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
-	var deleteReq ml.DeleteExperiment
+	var deleteReq experiments.DeleteExperimentRequest
 	if err := json.Unmarshal(req.Body, &deleteReq); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("request parsing error: %s", err),

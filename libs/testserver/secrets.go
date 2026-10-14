@@ -1,18 +1,17 @@
 package testserver
 
 import (
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"slices"
-
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.PutSecret
+	var request secrets.PutSecretRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -74,13 +73,13 @@ func (s *FakeWorkspace) SecretsList(req Request) Response {
 	}
 	slices.Sort(keys)
 
-	secrets := make([]workspace.SecretMetadata, 0, len(keys))
+	secrets := make([]secrets.SecretMetadata, 0, len(keys))
 	for _, key := range keys {
-		secrets = append(secrets, workspace.SecretMetadata{Key: key})
+		secrets = append(secrets, secrets.SecretMetadata{Key: key})
 	}
 
 	return Response{
-		Body: workspace.ListSecretsResponse{
+		Body: secrets.ListSecretsResponse{
 			Secrets: secrets,
 		},
 	}
@@ -120,7 +119,7 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	encodedValue := base64.StdEncoding.EncodeToString([]byte(secretValue))
 
 	return Response{
-		Body: workspace.GetSecretResponse{
+		Body: secrets.GetSecretResponse{
 			Key:   key,
 			Value: encodedValue,
 		},

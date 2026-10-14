@@ -7,9 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
-	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,12 +29,12 @@ func TestDurationRoundtrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test value type
 			t.Run("value", func(t *testing.T) {
-				src := *sdkduration.New(tt.duration)
+				src := *types.NewFromDuration(tt.duration)
 				dynValue, err := FromTyped(src, dyn.NilValue)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out sdkduration.Duration
+				var out types.Duration
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				assert.Equal(t, src.AsDuration(), out.AsDuration())
@@ -44,12 +42,12 @@ func TestDurationRoundtrip(t *testing.T) {
 
 			// Test pointer type
 			t.Run("pointer", func(t *testing.T) {
-				src := *sdkduration.New(tt.duration)
+				src := *types.NewFromDuration(tt.duration)
 				dynValue, err := FromTyped(&src, dyn.NilValue)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out *sdkduration.Duration
+				var out *types.Duration
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
@@ -86,12 +84,17 @@ func TestTimeRoundtrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test value type
 			t.Run("value", func(t *testing.T) {
-				src := *sdktime.New(tt.time)
+				src := *types.NewFromTime(tt.time)
 				dynValue, err := FromTyped(src, dyn.NilValue)
 				require.NoError(t, err)
+				if reflect.ValueOf(src).IsZero() {
+					// The epoch is the zero value of types.Time; by value it means "unset".
+					assert.Equal(t, dyn.NilValue, dynValue)
+					return
+				}
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out sdktime.Time
+				var out types.Time
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				assert.Equal(t, src.AsTime(), out.AsTime())
@@ -99,12 +102,12 @@ func TestTimeRoundtrip(t *testing.T) {
 
 			// Test pointer type
 			t.Run("pointer", func(t *testing.T) {
-				src := *sdktime.New(tt.time)
+				src := *types.NewFromTime(tt.time)
 				dynValue, err := FromTyped(&src, dyn.NilValue)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out *sdktime.Time
+				var out *types.Time
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
@@ -121,37 +124,37 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 		expectedString string
 	}{
 		{"single", []string{"name"}, "name"},
-		{"multiple", []string{"name", "age", "email"}, "name,age,email"},
-		{"nested", []string{"user.name", "user.email"}, "user.name,user.email"},
+		{"multiple", []string{"name", "age", "email"}, "age,email,name"},
+		{"nested", []string{"user.name", "user.email"}, "user.email,user.name"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test value type
 			t.Run("value", func(t *testing.T) {
-				src := *sdkfieldmask.New(tt.paths)
+				src := *newFieldMask(t, tt.paths...)
 				dynValue, err := FromTyped(src, dyn.NilValue)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out sdkfieldmask.FieldMask
+				var out fieldMask
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
-				assert.Equal(t, src.Paths, out.Paths)
+				assert.Equal(t, src.String(), out.String())
 			})
 
 			// Test pointer type
 			t.Run("pointer", func(t *testing.T) {
-				src := *sdkfieldmask.New(tt.paths)
+				src := *newFieldMask(t, tt.paths...)
 				dynValue, err := FromTyped(&src, dyn.NilValue)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedString, dynValue.MustString())
 
-				var out *sdkfieldmask.FieldMask
+				var out *fieldMask
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
-				assert.Equal(t, src.Paths, out.Paths)
+				assert.Equal(t, src.String(), out.String())
 			})
 		})
 	}
@@ -164,9 +167,9 @@ func TestNilValues(t *testing.T) {
 		name string
 		typ  any
 	}{
-		{"duration", (*sdkduration.Duration)(nil)},
-		{"time", (*sdktime.Time)(nil)},
-		{"fieldmask", (*sdkfieldmask.FieldMask)(nil)},
+		{"duration", (*types.Duration)(nil)},
+		{"time", (*types.Time)(nil)},
+		{"fieldmask", (*fieldMask)(nil)},
 	}
 
 	t.Run("from_typed", func(t *testing.T) {
@@ -203,31 +206,31 @@ func TestToTypedErrors(t *testing.T) {
 	}{
 		{
 			name:          "duration_wrong_type",
-			destValue:     new(sdkduration.Duration),
+			destValue:     new(types.Duration),
 			input:         wrongTypeInput,
 			expectedError: "expected a string",
 		},
 		{
 			name:          "duration_invalid_format",
-			destValue:     new(sdkduration.Duration),
+			destValue:     new(types.Duration),
 			input:         dyn.V("7d"),
-			expectedError: "invalid google.protobuf.Duration value",
+			expectedError: "parse duration",
 		},
 		{
 			name:          "time_wrong_type",
-			destValue:     new(sdktime.Time),
+			destValue:     new(types.Time),
 			input:         wrongTypeInput,
 			expectedError: "expected a string",
 		},
 		{
 			name:          "time_invalid_format",
-			destValue:     new(sdktime.Time),
+			destValue:     new(types.Time),
 			input:         dyn.V("not-a-time"),
-			expectedError: "invalid google.protobuf.Timestamp value",
+			expectedError: "parse timestamp",
 		},
 		{
 			name:          "fieldmask_wrong_type",
-			destValue:     new(sdkfieldmask.FieldMask),
+			destValue:     new(fieldMask),
 			input:         wrongTypeInput,
 			expectedError: "expected a string",
 		},
@@ -249,15 +252,15 @@ func TestFromTypedVariableReferences(t *testing.T) {
 	}{
 		{
 			name: "duration",
-			src:  *sdkduration.New(5 * time.Minute),
+			src:  *types.NewFromDuration(5 * time.Minute),
 		},
 		{
 			name: "time",
-			src:  *sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
+			src:  *types.NewFromTime(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
 		},
 		{
 			name: "fieldmask",
-			src:  *sdkfieldmask.New([]string{"name", "age"}),
+			src:  *newFieldMask(t, []string{"name", "age"}...),
 		},
 	}
 
@@ -279,18 +282,18 @@ func TestToTypedVariableReferences(t *testing.T) {
 	}{
 		{
 			name: "duration",
-			dst:  sdkduration.New(5 * time.Minute),
-			zero: sdkduration.Duration{},
+			dst:  types.NewFromDuration(5 * time.Minute),
+			zero: types.Duration{},
 		},
 		{
 			name: "time",
-			dst:  sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
-			zero: sdktime.Time{},
+			dst:  types.NewFromTime(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
+			zero: types.Time{},
 		},
 		{
 			name: "fieldmask",
-			dst:  sdkfieldmask.New([]string{"name", "age"}),
-			zero: sdkfieldmask.FieldMask{},
+			dst:  newFieldMask(t, []string{"name", "age"}...),
+			zero: fieldMask{},
 		},
 	}
 
@@ -305,14 +308,14 @@ func TestToTypedVariableReferences(t *testing.T) {
 
 func TestSpecialCases(t *testing.T) {
 	t.Run("duration_zero", func(t *testing.T) {
-		var src sdkduration.Duration
+		var src types.Duration
 		nv, err := FromTyped(src, dyn.NilValue)
 		require.NoError(t, err)
 		assert.Equal(t, dyn.NilValue, nv)
 	})
 
 	t.Run("fieldmask_empty_fromtyped", func(t *testing.T) {
-		src := sdkfieldmask.New([]string{})
+		src := newFieldMask(t, []string{}...)
 		nv, err := FromTyped(src, dyn.NilValue)
 		require.NoError(t, err)
 		// Empty field mask marshals to empty string
@@ -320,10 +323,10 @@ func TestSpecialCases(t *testing.T) {
 	})
 
 	t.Run("fieldmask_empty_totyped", func(t *testing.T) {
-		var out sdkfieldmask.FieldMask
+		var out fieldMask
 		err := ToTyped(&out, dyn.V(""))
 		require.NoError(t, err)
-		assert.Empty(t, out.Paths)
+		assert.Empty(t, out.String())
 	})
 }
 
@@ -331,16 +334,16 @@ func TestSpecialCases(t *testing.T) {
 
 func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 	type BranchSpec struct {
-		ExpireTime       *sdktime.Time         `json:"expire_time,omitempty"`
-		SourceBranchTime *sdktime.Time         `json:"source_branch_time,omitempty"`
-		Ttl              *sdkduration.Duration `json:"ttl,omitempty"`
-		IsProtected      bool                  `json:"is_protected,omitempty"`
+		ExpireTime       *types.Time     `json:"expire_time,omitempty"`
+		SourceBranchTime *types.Time     `json:"source_branch_time,omitempty"`
+		Ttl              *types.Duration `json:"ttl,omitempty"`
+		IsProtected      bool            `json:"is_protected,omitempty"`
 	}
 
 	original := BranchSpec{
-		ExpireTime:       sdktime.New(time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)),
-		SourceBranchTime: sdktime.New(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
-		Ttl:              sdkduration.New(7 * 24 * time.Hour),
+		ExpireTime:       types.NewFromTime(time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)),
+		SourceBranchTime: types.NewFromTime(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+		Ttl:              types.NewFromDuration(7 * 24 * time.Hour),
 		IsProtected:      true,
 	}
 
@@ -365,32 +368,32 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 
 func TestSDKTypesRoundTripWithUpdateRequest(t *testing.T) {
 	type UpdateRequest struct {
-		Name       string                 `json:"name"`
-		UpdateMask sdkfieldmask.FieldMask `json:"update_mask"`
+		Name       string    `json:"name"`
+		UpdateMask fieldMask `json:"update_mask"`
 	}
 
 	original := UpdateRequest{
 		Name:       "projects/123/branches/456",
-		UpdateMask: *sdkfieldmask.New([]string{"spec.ttl", "spec.is_protected"}),
+		UpdateMask: *newFieldMask(t, []string{"spec.ttl", "spec.is_protected"}...),
 	}
 
 	dynValue, err := FromTyped(original, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, "projects/123/branches/456", dynValue.Get("name").MustString())
-	assert.Equal(t, "spec.ttl,spec.is_protected", dynValue.Get("update_mask").MustString())
+	assert.Equal(t, "spec.is_protected,spec.ttl", dynValue.Get("update_mask").MustString())
 
 	var roundtrip UpdateRequest
 	err = ToTyped(&roundtrip, dynValue)
 	require.NoError(t, err)
 	assert.Equal(t, original.Name, roundtrip.Name)
-	assert.Equal(t, []string{"spec.ttl", "spec.is_protected"}, roundtrip.UpdateMask.Paths)
+	assert.Equal(t, "spec.is_protected,spec.ttl", roundtrip.UpdateMask.String())
 }
 
 func TestSDKTypesNormalizeWithStruct(t *testing.T) {
 	type BranchSpec struct {
-		ExpireTime  *sdktime.Time         `json:"expire_time,omitempty"`
-		Ttl         *sdkduration.Duration `json:"ttl,omitempty"`
-		IsProtected bool                  `json:"is_protected,omitempty"`
+		ExpireTime  *types.Time     `json:"expire_time,omitempty"`
+		Ttl         *types.Duration `json:"ttl,omitempty"`
+		IsProtected bool            `json:"is_protected,omitempty"`
 	}
 
 	var typ BranchSpec
@@ -414,4 +417,32 @@ func TestSDKTypesNormalizeWithStruct(t *testing.T) {
 	assert.Equal(t, time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC), out.ExpireTime.AsTime())
 	assert.Equal(t, 7*24*time.Hour, out.Ttl.AsDuration())
 	assert.True(t, out.IsProtected)
+}
+
+type fieldMaskUser struct {
+	Name  *string `fieldmask:"name"`
+	Email *string `fieldmask:"email"`
+}
+
+type fieldMaskSpec struct {
+	Ttl         *string `fieldmask:"ttl"`
+	IsProtected *bool   `fieldmask:"is_protected"`
+}
+
+// fieldMaskTarget mirrors the fieldmask tags sdk-go generates on its models,
+// which types.FieldMask validates paths against.
+type fieldMaskTarget struct {
+	Name  *string        `fieldmask:"name"`
+	Age   *int           `fieldmask:"age"`
+	Email *string        `fieldmask:"email"`
+	User  *fieldMaskUser `fieldmask:"user"`
+	Spec  *fieldMaskSpec `fieldmask:"spec"`
+}
+
+type fieldMask = types.FieldMask[fieldMaskTarget]
+
+func newFieldMask(t *testing.T, paths ...string) *fieldMask {
+	m, err := types.NewFieldMask[fieldMaskTarget](paths...)
+	require.NoError(t, err)
+	return m
 }

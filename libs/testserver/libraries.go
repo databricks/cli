@@ -1,16 +1,15 @@
 package testserver
 
 import (
+	clusterlibraries "github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 func (s *FakeWorkspace) LibrariesInstall(req Request) any {
-	var request compute.InstallLibraries
+	var request clusterlibraries.InstallLibrariesRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -34,7 +33,7 @@ func (s *FakeWorkspace) LibrariesInstall(req Request) any {
 }
 
 func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
-	var request compute.UninstallLibraries
+	var request clusterlibraries.UninstallLibrariesRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
@@ -42,7 +41,7 @@ func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
 	defer s.LockUnlock()()
 
 	installed := s.ClusterLibraries[request.ClusterId]
-	remaining := make([]compute.Library, 0, len(installed))
+	remaining := make([]clusterlibraries.Library, 0, len(installed))
 	for _, lib := range installed {
 		if !containsLibrary(request.Libraries, lib) {
 			remaining = append(remaining, lib)
@@ -61,23 +60,23 @@ func (s *FakeWorkspace) LibrariesClusterStatus(req Request, clusterId string) an
 	}
 
 	installed := s.ClusterLibraries[clusterId]
-	statuses := make([]compute.LibraryFullStatus, 0, len(installed))
+	statuses := make([]clusterlibraries.LibraryFullStatus, 0, len(installed))
 	for i := range installed {
-		statuses = append(statuses, compute.LibraryFullStatus{
+		statuses = append(statuses, clusterlibraries.LibraryFullStatus{
 			Library: &installed[i],
-			Status:  compute.LibraryInstallStatusInstalled,
+			Status:  clusterlibraries.LibraryInstallStatus_Installed,
 		})
 	}
 
 	return Response{
-		Body: compute.ClusterLibraryStatuses{
+		Body: clusterlibraries.ClusterLibraryStatuses{
 			ClusterId:       clusterId,
 			LibraryStatuses: statuses,
 		},
 	}
 }
 
-func containsLibrary(libs []compute.Library, target compute.Library) bool {
+func containsLibrary(libs []clusterlibraries.Library, target clusterlibraries.Library) bool {
 	for _, l := range libs {
 		if reflect.DeepEqual(l, target) {
 			return true

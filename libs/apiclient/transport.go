@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/databricks/databricks-sdk-go/logger/httplog"
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // transport makes sdk-go requests look like the ones the CLI always sent: the
@@ -111,6 +115,38 @@ func retryDelay(resp *http.Response, attempt int) time.Duration {
 }
 
 func (t *transport) send(ctx context.Context, req *http.Request) (*http.Response, error) {
+	resp, err := t.sendLogged(ctx, req)
+	if resp != nil && resp.StatusCode >= 400 {
+		// sdk-go errors keep the response headers but not the request; record
+		// it so error messages can name the failing endpoint (see RequestOf).
+		resp.Header.Set(requestHeader, req.Method+" "+req.URL.String())
+	}
+	return resp, err
+}
+
+// requestHeader is a synthetic response header carrying the request line of
+// a failed call. It is never sent to the server.
+const requestHeader = "X-Databricks-Cli-Request"
+
+// RequestOf returns the method and URL of the request that produced the API
+// error in err's chain, when it was sent through this package's transport.
+func RequestOf(err error) (method string, u *url.URL, ok bool) {
+	apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
+	if !isAPIErr {
+		return "", nil, false
+	}
+	method, rawURL, ok := strings.Cut(apiErr.HTTPHeader().Get(requestHeader), " ")
+	if !ok {
+		return "", nil, false
+	}
+	u, parseErr := url.Parse(rawURL)
+	if parseErr != nil {
+		return "", nil, false
+	}
+	return method, u, true
+}
+
+func (t *transport) sendLogged(ctx context.Context, req *http.Request) (*http.Response, error) {
 	if !logger.Get(ctx).Enabled(ctx, logger.LevelDebug) {
 		return t.base.RoundTrip(req)
 	}
