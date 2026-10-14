@@ -28,6 +28,8 @@ func TestNotifyContextStopsWithoutSignal(t *testing.T) {
 		t.Fatal("stop() blocked: the signal goroutine was never joined")
 	}
 	assert.ErrorIs(t, ctx.Err(), context.Canceled)
+	var sigErr *SignalError
+	assert.NotErrorAs(t, context.Cause(ctx), &sigErr, "stop must not look like a signal")
 }
 
 // TestNotifyContextParentCancel checks that cancelling the parent cancels the

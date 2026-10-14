@@ -108,3 +108,23 @@ func TestNotifyContextSecondSignalStillKills(t *testing.T) {
 		})
 	}
 }
+
+// TestNotifyContextSignalCause checks that a signal cancels the context with a
+// *SignalError cause and that stop leaves it in place, so a caller that stops
+// the handler before checking can still tell a signal apart from the stop.
+func TestNotifyContextSignalCause(t *testing.T) {
+	ctx, stop := NotifyContext(t.Context(), syscall.SIGHUP)
+	defer stop()
+
+	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGHUP))
+	select {
+	case <-ctx.Done():
+	case <-time.After(10 * time.Second):
+		t.Fatal("SIGHUP did not cancel the context")
+	}
+	stop()
+
+	var sigErr *SignalError
+	require.ErrorAs(t, context.Cause(ctx), &sigErr)
+	assert.Equal(t, syscall.SIGHUP, sigErr.Signal)
+}
