@@ -3,6 +3,8 @@ package internal
 import (
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -10,6 +12,49 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestLiteboxDirectDMS(t *testing.T) {
+	for _, tc := range []struct {
+		name, path string
+		direct     bool
+		want       string
+	}{
+		{"gateway compatibility", dmsAPIPath + "/123?x=1", false, "gateway"},
+		{"DMS direct", dmsAPIPath + "/123?x=1", true, "dms"},
+		{"workspace stays on gateway", "/api/2.0/workspace/get-status?path=/test", true, "gateway"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Empty(t, r.Header.Get("X-Test-Principal"))
+				assert.Empty(t, r.Header.Get("Authorization"))
+				assert.Equal(t, tc.path, r.URL.RequestURI())
+				_, _ = io.WriteString(w, "gateway")
+			}))
+			defer gateway.Close()
+			dms := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "fixture-owner", r.Header.Get("X-Test-Principal"))
+				assert.Equal(t, testserver.TestUser.Id, r.Header.Get("X-Databricks-User-Id"))
+				assert.Empty(t, r.Header.Get("Authorization"))
+				assert.Equal(t, tc.path, r.URL.RequestURI())
+				_, _ = io.WriteString(w, "dms")
+			}))
+			defer dms.Close()
+			settings := &dmsLiteboxSettings{URL: gateway.URL}
+			if tc.direct {
+				settings.DMSURL = dms.URL
+				settings.DMSHeaders = map[string]string{"X-Test-Principal": "fixture-owner"}
+			}
+			endpoint, err := url.Parse(tc.path)
+			require.NoError(t, err)
+			response := liteboxHandler(t, settings, gateway.Client())(testserver.Request{
+				Context: t.Context(), Method: "GET", URL: endpoint,
+				Headers: http.Header{"Authorization": {"Bearer test-token"}},
+			}).(testserver.Response)
+			assert.Equal(t, http.StatusOK, response.StatusCode)
+			assert.Equal(t, []byte(tc.want), response.Body)
+		})
+	}
+}
 
 func TestLiteboxWorkspaceRouting(t *testing.T) {
 	server := testserver.New(t)

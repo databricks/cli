@@ -33,8 +33,6 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	if settings == nil {
 		return
 	}
-	dmsURL := liteboxURL(t, settings.URL)
-
 	cert, err := tls.LoadX509KeyPair(settings.Cert, settings.Key)
 	require.NoError(t, err, "load Litebox client certificate and key")
 	pem, err := os.ReadFile(settings.CA)
@@ -59,12 +57,25 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 			return http.ErrUseLastResponse
 		},
 	}
-	handler := func(r testserver.Request) any {
+	routeLitebox(server, liteboxHandler(t, settings, client))
+}
+
+func liteboxHandler(t *testing.T, settings *dmsLiteboxSettings, client *http.Client) testserver.HandlerFunc {
+	gatewayURL := liteboxURL(t, settings.URL)
+	directDMSURL := gatewayURL
+	if settings.DMSURL != "" {
+		directDMSURL = liteboxURL(t, settings.DMSURL)
+		require.NotEmpty(t, settings.DMSHeaders, "direct DMS requires the fixture's test identity headers")
+	}
+	return func(r testserver.Request) any {
 		if env.Get(t.Context(), "DMS_CLI_TRACE") != "" {
 			start := time.Now()
 			defer func() { t.Logf("DMS_CLI_TRACE %s %s %s", r.Method, r.URL.RequestURI(), time.Since(start)) }()
 		}
-		target := *dmsURL
+		target := *gatewayURL
+		if isDMSPath(r.URL.Path) {
+			target = *directDMSURL
+		}
 		target.Path, target.RawPath, target.RawQuery = r.URL.Path, r.URL.RawPath, r.URL.RawQuery
 		req, err := http.NewRequestWithContext(r.Context, r.Method, target.String(), bytes.NewReader(r.Body))
 		if err != nil {
@@ -78,6 +89,11 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		req.Header.Set("X-Databricks-Workspace-Id", "456")
 		req.Header.Set("X-Databricks-User-Id", testserver.TestUser.Id)
 		req.Header.Set("X-Databricks-User-Name", testserver.TestUser.UserName)
+		if settings.DMSURL != "" && isDMSPath(r.URL.Path) {
+			for key, value := range settings.DMSHeaders {
+				req.Header.Set(key, value)
+			}
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			return liteboxFailure(err)
@@ -89,7 +105,6 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		}
 		return testserver.Response{StatusCode: resp.StatusCode, Headers: resp.Header, Body: body}
 	}
-	routeLitebox(server, handler)
 }
 
 func liteboxURL(t *testing.T, endpoint string) *url.URL {

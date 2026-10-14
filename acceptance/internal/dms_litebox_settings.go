@@ -12,10 +12,12 @@ import (
 )
 
 type dmsLiteboxSettings struct {
-	URL  string `json:"url"`
-	Cert string `json:"cert"`
-	Key  string `json:"key"`
-	CA   string `json:"ca"`
+	URL        string            `json:"url"`
+	Cert       string            `json:"cert"`
+	Key        string            `json:"key"`
+	CA         string            `json:"ca"`
+	DMSURL     string            `json:"dms_url"`
+	DMSHeaders map[string]string `json:"dms_headers"`
 }
 
 func loadDMSLiteboxSettings(t *testing.T) *dmsLiteboxSettings {
