@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -116,7 +118,7 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		streamCtx := ctx
 		if downloadTo == "" && root.OutputType(cmd) != flags.OutputJSON {
 			var stop context.CancelFunc
-			streamCtx, stop = notifyInterrupt(ctx)
+			streamCtx, stop = process.NotifyContext(ctx, os.Interrupt)
 			defer stop()
 		}
 

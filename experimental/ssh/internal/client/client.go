@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -30,6 +29,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
@@ -304,15 +304,13 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 }
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) (retErr error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM)
+	ctx, stopSignals := process.NotifyContext(ctx, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM)
+	defer stopSignals()
 	go func() {
-		<-sigCh
-		cmdio.LogString(ctx, "Received termination signal, cleaning up...")
-		cancel()
+		<-ctx.Done()
+		if _, ok := errors.AsType[*process.SignalError](context.Cause(ctx)); ok {
+			cmdio.LogString(ctx, "Received termination signal, cleaning up...")
+		}
 	}()
 
 	// Report the outcome of every path below, so a failure is attributable to the step that
@@ -326,7 +324,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		// A cancelled context is the only trace a Ctrl-C leaves: exec.CommandContext kills the
 		// child and reports *exec.ExitError, which does not wrap context.Canceled, so a step
 		// that shells out cannot recognise the interruption itself. This defer is registered
-		// after `defer cancel()` and so runs before it (LIFO), which means ctx is cancelled
+		// after `defer stopSignals()` and so runs before it (LIFO), which means ctx is cancelled
 		// here only by the signal handler or the caller, never by Run's own cleanup.
 		outcome.ctxErr = ctx.Err()
 		logSshTunnelEvent(ctx, opts, outcome)
