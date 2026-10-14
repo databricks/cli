@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -418,10 +417,10 @@ resources:
 }
 
 func TestBuildNestedMaps(t *testing.T) {
-	targetPath, err := yamlpatch.ParsePath("/targets/default/resources/pipelines/my_pipeline/tags/foo")
+	targetPath, err := parseYAMLPath("/targets/default/resources/pipelines/my_pipeline/tags/foo")
 	require.NoError(t, err)
 
-	missingPath, err := yamlpatch.ParsePath("/targets/default/resources")
+	missingPath, err := parseYAMLPath("/targets/default/resources")
 	require.NoError(t, err)
 
 	result := buildNestedMaps(targetPath, missingPath, "bar")
