@@ -405,7 +405,7 @@ func AddDefaultHandlers(server *Server) {
 				req.Workspace.directories[dir] = workspace.ObjectInfo{
 					ObjectType: "DIRECTORY",
 					Path:       dir,
-					ObjectId:   nextWorkspaceID(),
+					ObjectId:   nextTreenodeID(),
 				}
 			}
 		}
