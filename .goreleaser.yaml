@@ -41,6 +41,23 @@ builds:
       - -gcflags=github.com/BurntSushi/...=-l
       - -gcflags=github.com/tailscale/...=-l
       - -gcflags=golang.org/x/...=-l
+      # Standard library packages that do per-connection or per-request work
+      # (~0.5 MB). Benchmarked over loopback HTTPS: download throughput and
+      # handshake cost are unchanged; a small request on a reused connection
+      # costs ~20us more CPU, negligible next to network latency. Never add
+      # crypto/internal/fips140/...: release builds use the certified module.
+      - -gcflags=net=-l
+      - -gcflags=net/http/...=-l
+      - -gcflags=net/textproto=-l
+      - -gcflags=net/url=-l
+      - -gcflags=mime/...=-l
+      - -gcflags=crypto/tls/...=-l
+      - -gcflags=crypto/x509/...=-l
+      - -gcflags=vendor/golang.org/x/...=-l
+      - -gcflags=encoding/gob=-l
+      - -gcflags=encoding/xml=-l
+      - -gcflags=html/...=-l
+      - -gcflags=math/big=-l
     ldflags:
       - '-s -w'
       - -X github.com/databricks/cli/internal/build.buildProjectName={{ .ProjectName }}
