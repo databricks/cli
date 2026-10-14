@@ -1,0 +1,14 @@
+bundle:
+  name: dms-state-resolution-$UNIQUE_NAME
+
+experimental:
+  deployment_history: true
+
+sync:
+  exclude:
+    - LOG.*
+
+resources:
+  jobs:
+    foo:
+      name: foo

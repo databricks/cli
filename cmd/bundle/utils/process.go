@@ -363,14 +363,21 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting {
+		b.MigratingToDMS = opts.Deploy && stateDesc.Engine.IsDirect() && !stateDesc.IsDMS() && configuresDeploymentHistory(ctx, b)
+		// TODO: Support applying plans computed against direct state after migration to DMS.
+		// This restriction blocks automatic migration with --plan once deployment history reaches GA.
+		if b.MigratingToDMS && opts.ReadPlanPath != "" {
+			return b, stateDesc, errors.New("migrating to deployment history does not support --plan; run 'bundle deploy' without --plan")
+		}
+		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting && !b.MigratingToDMS {
 			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
-		if needDirectState && stateDesc.IsDMS() {
+		// Repeated migrations may already have a DMS deployment even when the state lacks its history marker.
+		if needDirectState && (stateDesc.IsDMS() || b.MigratingToDMS) {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
@@ -379,15 +386,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 
 			// Stamp the deployment and the version this run records onto every job and pipeline so
-			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
-			// does not exist until a first deploy creates it, so it is left off here and the deploy
-			// phase stamps the created id.
+			// the plan carries them. The deployment version follows the last recorded version or
+			// the initial registration version; deployment_id does not exist until a first deploy
+			// creates it, so it is left off here and the deploy phase stamps the created id.
 			lastVersionID, err := parseLastVersionID(dmsDeployment)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 			nextVersion := lastVersionID + 1
+			if b.MigratingToDMS {
+				nextVersion = max(b.DeploymentBundle.StateDB.Data.Serial, lastVersionID) + 2
+			}
 			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 			if dmsDeploymentID != "" {
 				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
@@ -404,7 +414,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if !cmdctx.HasWorkspaceClient(ctx) {
 				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+			if b.MigratingToDMS {
+				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
+				b.DeploymentBundle.StateDB.VersionID = lastVersionID
+			} else if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -692,6 +705,7 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	return nil
 }
 
+// configuresDeploymentHistory reports whether the configuration or environment enables history.
 func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
 	var configured *bool
 	if b.Config.Experimental != nil {

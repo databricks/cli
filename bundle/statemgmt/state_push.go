@@ -3,6 +3,7 @@ package statemgmt
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 
@@ -41,6 +42,27 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle) {
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
+}
+
+// BackupRemoteResourcesState preserves the remote state before deployment history replaces it.
+func BackupRemoteResourcesState(ctx context.Context, b *bundle.Bundle) error {
+	f, err := deploy.StateFiler(ctx, b)
+	if err != nil {
+		return fmt.Errorf("backing up resource state: creating state filer: %w", err)
+	}
+
+	remotePath, _ := b.StateFilenameDirect(ctx)
+	reader, err := f.Read(ctx, remotePath)
+	if err != nil {
+		return fmt.Errorf("backing up resource state: reading %s: %w", remotePath, err)
+	}
+	defer reader.Close()
+
+	backupPath := remotePath + ".backup"
+	if err := f.Write(ctx, backupPath, reader, filer.OverwriteIfExists); err != nil {
+		return fmt.Errorf("backing up resource state: writing %s: %w", backupPath, err)
+	}
+	return nil
 }
 
 func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {

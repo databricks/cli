@@ -1,0 +1,50 @@
+
+=== Setup (LOG.setup)
+Current: DMS enabled; remote reference snapshot saved.
+
+=== 1. Stale cache
+Expect: remote beats serial 999/wrong lineage; cache matches remote.
+
+>>> jq {serial, lineage} .databricks/bundle/default/resources.json
+{
+  "serial": 999,
+  "lineage": "stale-[UUID]"
+}
+
+>>> [CLI] bundle debug states --force-pull
+resources.json: remote direct state serial=1 lineage="[UUID]"
+
+>>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+PASS: stale cache replaced
+
+=== 2. Invalid cache
+Input: YAML in JSON cache paths.
+Expect: use remote state; overwrite broken JSON; remove Terraform cache; no resource changes.
+
+>>> cp databricks.yml .databricks/bundle/default/resources.json
+
+>>> mkdir -p .databricks/bundle/default/terraform
+
+>>> cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> test ! -e .databricks/bundle/default/terraform/terraform.tfstate
+
+>>> cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+PASS: invalid caches handled
+
+=== 3. Missing remote
+Expect: bad JSON fails; local cache bytes remain unchanged.
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-resolution-[UNIQUE_NAME]/default/state/resources.json
+
+>>> cp databricks.yml .databricks/bundle/default/resources.json
+
+>>> musterr [CLI] bundle plan
+Error: invalid character 'b' looking for beginning of value
+
+
+>>> cmp databricks.yml .databricks/bundle/default/resources.json
+PASS: failure preserved cache

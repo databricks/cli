@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -34,6 +35,7 @@ type StateDesc struct {
 	// additional fields describing state:
 	SourcePath string
 	Content    []byte
+	readErr    error
 
 	Engine  engine.EngineType `json:"-"`
 	IsLocal bool              `json:"-"`
@@ -73,19 +75,17 @@ func (s *StateDesc) IsDMS() bool {
 	return ok
 }
 
-func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
+func localRead(fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
-		}
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 
 	state := &StateDesc{}
-	err = json.Unmarshal(content, state)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
+		state.readErr = fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err)
+	} else if err := json.Unmarshal(content, state); err != nil {
+		state.readErr = fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err)
 	}
 
 	state.SourcePath = filepath.ToSlash(fullPath)
@@ -134,7 +134,8 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 	return state
 }
 
-// PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
+// PullResourcesState selects the newest Terraform or direct state.
+// Deployment history selects only remote state and writes a local copy when present.
 func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) *StateDesc {
 	var err error
 
@@ -142,7 +143,33 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, alwaysPull)
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	historyEnabled := bundleenv.RecordsDeploymentHistory(ctx, configured)
+	states := readStates(ctx, b, AlwaysPull(bool(alwaysPull) || historyEnabled))
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+	if historyEnabled {
+		states = slices.DeleteFunc(states, func(state *StateDesc) bool {
+			if !state.IsLocal {
+				return false
+			}
+			if !state.Engine.IsDirect() {
+				if err := os.Remove(state.SourcePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+					logdiag.LogError(ctx, fmt.Errorf("removing cached resource state %s: %w", state.SourcePath, err))
+				}
+			}
+			return true
+		})
+	}
+	for _, state := range states {
+		if state.readErr != nil {
+			logdiag.LogError(ctx, state.readErr)
+		}
+	}
 
 	if logdiag.HasError(ctx) {
 		return nil
@@ -207,8 +234,8 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return nil
 	}
 
-	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
-	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
+	directLocalState := localRead(localPathDirect, engine.EngineDirect)
+	terraformLocalState := localRead(localPathTerraform, engine.EngineTerraform)
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)

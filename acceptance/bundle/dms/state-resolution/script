@@ -1,0 +1,40 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+state_path="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-resolution-${UNIQUE_NAME}/default/state"
+
+title "Setup (LOG.setup)\nCurrent: DMS enabled; remote reference snapshot saved.\n"
+{
+    trace $CLI bundle deploy
+    trace cp .databricks/bundle/default/resources.json .databricks/resources.remote.json
+} &> LOG.setup
+
+title "1. Stale cache\nExpect: remote beats serial 999/wrong lineage; cache matches remote.\n"
+{
+    trace update_file.py .databricks/bundle/default/resources.json '"serial": 1,' '"serial": 999,'
+    trace update_file.py .databricks/bundle/default/resources.json '"lineage": "' '"lineage": "stale-'
+} &> LOG.stale-cache
+trace jq '{serial, lineage}' .databricks/bundle/default/resources.json
+trace $CLI bundle debug states --force-pull 2>&1 | contains.py 'remote direct state' '!local ' '!stale-' '!serial=999'
+trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+echo "PASS: stale cache replaced"
+
+title "2. Invalid cache\nInput: YAML in JSON cache paths.\nExpect: use remote state; overwrite broken JSON; remove Terraform cache; no resource changes.\n"
+trace cp databricks.yml .databricks/bundle/default/resources.json
+trace mkdir -p .databricks/bundle/default/terraform
+trace cp databricks.yml .databricks/bundle/default/terraform/terraform.tfstate
+trace $CLI bundle plan | contains.py 'Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged'
+trace test ! -e .databricks/bundle/default/terraform/terraform.tfstate
+trace cmp .databricks/resources.remote.json .databricks/bundle/default/resources.json
+echo "PASS: invalid caches handled"
+
+title "3. Missing remote\nExpect: bad JSON fails; local cache bytes remain unchanged.\n"
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "$state_path/resources.json"
+trace cp databricks.yml .databricks/bundle/default/resources.json
+trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'invalid character'
+trace cmp databricks.yml .databricks/bundle/default/resources.json
+echo "PASS: failure preserved cache"
+
+{
+    trace MSYS_NO_PATHCONV=1 $CLI workspace import "$state_path/resources.json" --file .databricks/resources.remote.json --format AUTO --overwrite
+    trace $CLI bundle destroy --auto-approve
+} &> LOG.cleanup
+rm -f "$OUT_REQUESTS"

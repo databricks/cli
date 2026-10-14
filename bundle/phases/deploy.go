@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/deploy/dmsmigration"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -294,6 +295,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	if b.MigratingToDMS {
+		if err := statemgmt.BackupRemoteResourcesState(ctx, b); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		createOrUpdateDeployment(ctx, b, dmsDeployment)
+		if logdiag.HasError(ctx) {
+			return
+		}
+		cmdio.LogString(ctx, "Enabling deployment history...")
+		if err := dmsmigration.Migrate(ctx, &b.DeploymentBundle.StateDB); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		logDeploymentVersion(ctx, b, "Deployment history enabled")
+		statemgmt.PushResourcesState(ctx, b)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
 	// and the migration commit above, so a declined deploy never opens a WAL it must discard,
 	// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
@@ -321,12 +343,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
 	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
-		createOrUpdateDeployment(ctx, b, dmsDeployment)
+		injectDeploymentIdInPlan := b.DeploymentBundle.StateDB.DeploymentID == "" || b.MigratingToDMS
+		if !b.MigratingToDMS {
+			createOrUpdateDeployment(ctx, b, dmsDeployment)
+		}
 		if logdiag.HasError(ctx) {
 			return
 		}
-		if firstDeploy {
+		if injectDeploymentIdInPlan {
 			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
 				logdiag.LogError(ctx, err)
 				return
@@ -345,7 +369,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				logdiag.LogError(ctx, err)
 				return
 			}
-			logDeploymentVersion(ctx, b)
+			logDeploymentVersion(ctx, b, "Current Deployment Version")
 		}
 	}
 
