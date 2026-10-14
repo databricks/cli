@@ -1,3 +1,5 @@
+# This test asserts wheel uploads; DMS checkpoints are not rewritten on later deploys.
+# Exact resources.json write counts are covered by bundle/dms/marker-writes.
 [[Repls]]
-Old = '(resources.json|terraform.tfstate)'
-New = 'STATE_FILENAME'
+Old = '(?m)^/Workspace/Users/[^\r\n]+/\.bundle/test-bundle/default/state/(resources\.json|terraform\.tfstate)\r?\n'
+New = ''
