@@ -932,6 +932,16 @@ func AddDefaultHandlers(server *Server) {
 		// relative_path. The real API uses the workspace user UUID (not email) in the path,
 		// matching service-principal identities used in cloud acceptance tests.
 		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relativePath)
+		// Snapshots are immutable, so a relative_path can be created only once. The real API
+		// answers with a 400 that carries the code in the message and sets no error_code.
+		if _, exists := req.Workspace.SnapshotInfo(contentPath); exists {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"message": "RESOURCE_ALREADY_EXISTS: relative_path already exists",
+				},
+			}
+		}
 		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
 		// Record after mkdirs so the snapshot's own creation write is not counted as tampering.
 		req.Workspace.RecordSnapshot(contentPath, relativePath, acl, canManage)

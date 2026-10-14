@@ -20,7 +20,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check can_manage_principals sent to the snapshot create API
->>> [CLI] api get /api/2.0/snapshots/info?relative_path=[SNAPSHOT_HASH]/[SNAPSHOT_HASH]
+>>> [CLI] api get /api/2.0/snapshots/info?relative_path=[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]
 {
   "can_manage_principals": [
     {

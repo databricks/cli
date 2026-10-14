@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -52,38 +51,26 @@ type Snapshot struct {
 	// from top-level bundle.permissions entries with level CAN_MANAGE.
 	CanManage []snapshot.ManagePrincipal `json:"can_manage,omitempty"`
 	// ZipPath is the local path of the bundle zip staged by the deploy pipeline.
-	// The file is named "<sha256>.zip", so its base name is the content hash used
-	// as the last component of RelativePath. Storing the path (not the bytes) keeps
-	// the zip off the config, the state, and the plan file, and lets DoCreate stream
-	// it straight from disk at upload time.
-	// Example: "/.../.databricks/bundle/default/snapshots/e3b0c4...zip".
+	// The file is named "<sha256>-<uuid>.zip", and its base name is the last component
+	// of RelativePath. Storing the path (not the bytes) keeps the zip off the config,
+	// the state, and the plan file, and lets DoCreate stream it straight from disk at
+	// upload time.
+	// Example: "/.../.databricks/bundle/default/snapshots/e3b0c4...-0199e2c1-....zip".
 	ZipPath string `json:"zip_path"`
 	// RemoteRoot is the workspace directory that holds every snapshot for this user,
 	// returned by the snapshot rootpath API.
 	// Example: "/Workspace/Users/<user>/.snapshots".
 	RemoteRoot string `json:"remote_root"`
 
-	// Generation is 0 for the initial snapshot and incremented each time "deploy --force"
-	// moves off a snapshot that was modified outside the bundle, appending a "-<generation>"
-	// suffix to the content hash so the new snapshot gets a distinct path. It is carried
-	// forward in state across deploys, so that path keeps being reused until it is modified
-	// in turn.
-	Generation int `json:"generation,omitempty"`
-
 	Lifecycle Lifecycle `json:"-"`
 }
 
-// RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<zip_hash>".
-// It is the resource ID; the last component is the zip content hash (the ZipPath base
-// name), which makes the pre-computed path match the uploaded content. A non-zero
-// Generation appends a "-<generation>" suffix to the hash so a snapshot replacing one that was
-// modified outside the bundle uploads to a distinct path (e.g. "1a2b3c4d-.../e3b0c4...-1").
+// RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<name>". It is the
+// resource ID. The name is the ZipPath base name, "<zip hash>-<uuid>": every new snapshot gets a
+// fresh one, because a path can be uploaded to only once (see snapshot.PlanUpload).
+// Example: "1a2b3c4d-.../e3b0c4...-0199e2c1-...".
 func (s *Snapshot) RelativePath() string {
-	hash := strings.TrimSuffix(path.Base(s.ZipPath), ".zip")
-	if s.Generation > 0 {
-		hash = fmt.Sprintf("%s-%d", hash, s.Generation)
-	}
-	return path.Join(s.BundleID, hash)
+	return path.Join(s.BundleID, strings.TrimSuffix(path.Base(s.ZipPath), ".zip"))
 }
 
 // FullPath is the absolute workspace content path of the snapshot:

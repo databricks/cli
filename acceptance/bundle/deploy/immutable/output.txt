@@ -15,7 +15,7 @@ Building python_artifact...
 [
   {
     "notebook_task": {
-      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
@@ -30,7 +30,7 @@ Building python_artifact...
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py"
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
@@ -42,7 +42,7 @@ Building python_artifact...
     "environment_key": "env",
     "spec": {
       "dependencies": [
-        "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+        "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
       ],
       "environment_version": "4"
     }
@@ -54,8 +54,8 @@ Building python_artifact...
   "action": "create",
   "new_state": {
     "value": {
-      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
+      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot",
       "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
@@ -68,7 +68,7 @@ Building python_artifact...
           "user_name": "[USERNAME]"
         }
       ],
-      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip"
+      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip"
     }
   }
 }
@@ -81,14 +81,14 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/notebook"
 
 >>> jq .settings.environments[0].spec.dependencies job.json
 [
-  "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> title Check snapshot plan after deploy
@@ -102,8 +102,8 @@ Building python_artifact...
   "action": "recreate",
   "new_state": {
     "value": {
-      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
+      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot",
       "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
@@ -116,12 +116,12 @@ Building python_artifact...
           "user_name": "[USERNAME]"
         }
       ],
-      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip"
+      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip"
     }
   },
   "remote_state": {
-    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot"
+    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"
   },
   "changes": {
     "acl": {
@@ -165,22 +165,22 @@ Building python_artifact...
     "full_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
-      "new": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
-      "remote": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot"
+      "old": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot",
+      "new": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot",
+      "remote": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"
     },
     "relative_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "new": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "remote": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
+      "old": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
+      "new": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
+      "remote": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]"
     },
     "zip_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip",
-      "new": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip",
+      "old": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip",
+      "new": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip",
       "remote": ""
     }
   }

@@ -5,10 +5,10 @@ Created internal_immutable_snapshots.immutable
 Created jobs.my_job
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py
+First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 
 === Break the glass out of band
->>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/tampered
+>>> [CLI] workspace mkdirs /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/tampered
 
 === Deploy without --force fails
 >>> musterr [CLI] bundle deploy
@@ -22,14 +22,14 @@ Recreated internal_immutable_snapshots.immutable
 Updated jobs.my_job
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
-Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-1/snapshot/files/src/main.py
+Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 OK: --force created a new snapshot path
 
 === Redeploy reuses the new snapshot
 >>> [CLI] bundle deploy
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
-Third snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-1/snapshot/files/src/main.py
+Third snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py
 OK: new snapshot reused on redeploy
 
 >>> [CLI] bundle destroy --auto-approve

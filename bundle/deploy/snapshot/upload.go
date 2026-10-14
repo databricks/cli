@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/google/uuid"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -25,9 +28,9 @@ const fileLimitWarning = 1000
 
 type snapshotUpload struct {
 	// clean is true for a fresh plan or deploy: the mutator discards zips staged by a
-	// previous run (so content-addressed "<hash>.zip" files don't accumulate) and
-	// stages the current one. It is false when applying a pre-existing plan
-	// (deploy --plan): the mutator reuses the zip staged when the plan was produced
+	// previous run (so they don't accumulate), decides the snapshot's path and stages the
+	// current zip. It is false when applying a pre-existing plan (deploy --plan): the mutator
+	// reuses the zip staged when the plan was produced, and with it the path the plan chose,
 	// instead of rebuilding it.
 	clean bool
 }
@@ -38,11 +41,11 @@ type PlanUploadOptions struct {
 
 // PlanUpload returns a mutator that registers the immutable snapshot as an internal
 // resource. When Clean is true it discards zips staged by a previous run, builds the
-// bundle zip, stages it under the bundle's local state directory as "<hash>.zip", and
-// records the path on the resource; the staged file is uploaded when the resource is
-// created on apply. Pass Clean=false when applying a pre-existing plan: the mutator reuses the
-// zip staged when the plan was produced. Either way the resource is registered in the config,
-// so its path is known to the rest of the deploy before the snapshot is uploaded.
+// bundle zip, stages it under the bundle's local state directory as "<name>.zip" (see
+// snapshotName), and records the path on the resource; the staged file is uploaded when the
+// resource is created on apply. Pass Clean=false when applying a pre-existing plan: the mutator
+// reuses the zip staged when the plan was produced. Either way the resource is registered in the
+// config, so its path is known to the rest of the deploy before the snapshot is uploaded.
 func PlanUpload(opts PlanUploadOptions) bundle.Mutator {
 	return &snapshotUpload{clean: opts.Clean}
 }
@@ -69,17 +72,17 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return nil
 	}
 
-	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
-	// modified outside the bundle fails before building a zip.
-	generation, err := resolveGeneration(ctx, b, uploader, remoteRoot)
-	if err != nil {
-		return diag.FromErr(err)
+	snap := &resources.Snapshot{
+		BundleID:   BundleID(b),
+		ACL:        BuildACL(b),
+		CanManage:  BuildCanManage(b),
+		RemoteRoot: remoteRoot,
 	}
 
 	var zipPath string
 	var diags diag.Diagnostics
 	if m.clean {
-		zipPath, diags, err = stageZip(ctx, b)
+		zipPath, diags, err = stageZip(ctx, b, uploader, snap)
 	} else {
 		zipPath, err = stagedZipPath(ctx, b)
 	}
@@ -87,22 +90,23 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diags.Extend(diag.FromErr(err))
 	}
 
-	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
-		BundleID:   BundleID(b),
-		ACL:        BuildACL(b),
-		CanManage:  BuildCanManage(b),
-		RemoteRoot: remoteRoot,
-		ZipPath:    filepath.ToSlash(zipPath),
-		Generation: generation,
-	}
+	snap.ZipPath = filepath.ToSlash(zipPath)
+	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = snap
 
 	return diags
 }
 
 // stageZip builds the bundle zip and stages it under the bundle's local state directory as
-// "<hash>.zip", discarding zips staged by a previous run so content-addressed files don't
+// "<name>.zip" (see snapshotName), discarding zips staged by a previous run so they don't
 // accumulate.
-func stageZip(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics, error) {
+func stageZip(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, snap *resources.Snapshot) (string, diag.Diagnostics, error) {
+	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
+	// modified outside the bundle fails before building a zip.
+	prev, err := checkPrevSnapshot(ctx, b, uploader, snap.RemoteRoot)
+	if err != nil {
+		return "", nil, err
+	}
+
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to build snapshot zip: %w", err)
@@ -115,7 +119,11 @@ func stageZip(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics, 
 	if err != nil {
 		return "", nil, err
 	}
-	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
+	name, err := snapshotName(snap, prev, dir, snapshot.HashFromContent(zipContent))
+	if err != nil {
+		return "", nil, err
+	}
+	zipPath := filepath.Join(dir, name+".zip")
 	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
 		return "", nil, fmt.Errorf("failed to write snapshot zip: %w", err)
 	}
@@ -128,6 +136,31 @@ func stageZip(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics, 
 		)
 	}
 	return zipPath, diags, nil
+}
+
+// snapshotName returns the name the zip is staged under, which is also the last component of
+// the snapshot's path: "<content hash>-<uuid>". A snapshot cannot be deleted, so a path can be
+// uploaded to only once and stays taken after "bundle destroy" or a deploy that moved on to other
+// content. Every new snapshot therefore goes to a path of its own, made unique by a UUIDv7
+// (a timestamp followed by random bits). The previous snapshot's name is kept only when nothing
+// about the snapshot would change, so the deploy leaves it in place instead of uploading it again.
+func snapshotName(snap *resources.Snapshot, prev *dresources.SnapshotState, dir, hash string) (string, error) {
+	if prev != nil {
+		name := path.Base(prev.RelativePath)
+		reused := *snap
+		reused.ZipPath = filepath.ToSlash(filepath.Join(dir, name+".zip"))
+		// The name carries the hash of the content uploaded to it. The rest of the state has to
+		// match as well: any difference makes the engine recreate the snapshot, which needs a new path.
+		if strings.HasPrefix(name, hash+"-") && reflect.DeepEqual((&dresources.ResourceSnapshot{}).PrepareState(&reused), prev) {
+			return name, nil
+		}
+	}
+
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+	return hash + "-" + id.String(), nil
 }
 
 // stagedZipPath returns the zip staged when the plan being applied was produced. Each fresh
@@ -203,46 +236,43 @@ func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
 	return canManage
 }
 
-// resolveGeneration asks the backend whether the snapshot deployed last time was modified
-// outside of the bundle, and returns the generation the new snapshot should use:
-//   - the previous generation while the snapshot is untouched, so a path reached by an earlier
-//     recovery keeps being reused;
-//   - the previous generation + 1 when it was modified and --force was given, which moves the
-//     deployment to a fresh path;
+// checkPrevSnapshot asks the backend whether the snapshot deployed last time was modified outside
+// of the bundle, and returns its state when the deployment may keep using it:
+//   - the previous state while the snapshot is untouched;
+//   - nil when there is no previous snapshot, or it was modified and --force was given, which
+//     moves the deployment to a new snapshot;
 //   - an error when it was modified and --force was not given.
 //
-// The check has to happen here rather than in the resource's DoRead: the generation decides
-// the snapshot's path, and resources referencing ${...full_path} resolve it from the desired
-// state computed before any resource is read (see LookupReferencePreDeploy). Erroring unless
-// --force also has no equivalent in the resource layer. CheckDashboardsModifiedRemotely is the
-// same shape: read state, ask the API, refuse unless forced.
-//
-// On the first deploy (no snapshot in state) the generation is 0.
-func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (int, error) {
+// The check has to happen here rather than in the resource's DoRead: it decides the snapshot's
+// path, and resources referencing ${...full_path} resolve it from the desired state computed
+// before any resource is read (see LookupReferencePreDeploy). Erroring unless --force also has no
+// equivalent in the resource layer. CheckDashboardsModifiedRemotely is the same shape: read state,
+// ask the API, refuse unless forced.
+func checkPrevSnapshot(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (*dresources.SnapshotState, error) {
 	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
 	// exercise PlanUpload in isolation (unit tests) may not. No open state means no previous
 	// snapshot to check, which is the first-deploy case.
 	if !b.DeploymentBundle.StateDB.IsOpen() {
-		return 0, nil
+		return nil, nil
 	}
 
 	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
 	if !ok || len(entry.State) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 
 	// Decode into the state type the engine persists, so the field names cannot drift apart.
 	var prev dresources.SnapshotState
 	if err := json.Unmarshal(entry.State, &prev); err != nil {
-		return 0, fmt.Errorf("reading previous snapshot state: %w", err)
+		return nil, fmt.Errorf("reading previous snapshot state: %w", err)
 	}
 	if prev.RelativePath == "" {
-		return 0, nil
+		return nil, nil
 	}
 
 	// Compose the content path from relative_path rather than reading full_path: relative_path
-	// already encodes the previous generation and means the same thing in every CLI version,
-	// while full_path from a CLI that predates the content subfolder points one level too high.
+	// means the same thing in every CLI version, while full_path from a CLI that predates the
+	// content subfolder points one level too high.
 	contentPath := path.Join(remoteRoot, prev.RelativePath, snapshot.ContentSubdir)
 
 	status, err := uploader.InspectSnapshot(ctx, contentPath)
@@ -251,16 +281,16 @@ func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot
 	// Failing here would also be a dead end, since this runs before the --force check and so
 	// could not be forced past.
 	if errors.Is(err, apierr.ErrNotFound) {
-		return prev.Generation, nil
+		return nil, nil
 	}
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if !status.Dirty {
-		return prev.Generation, nil
+		return &prev, nil
 	}
 	if !b.Config.Bundle.Force {
-		return 0, fmt.Errorf("the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag")
+		return nil, errors.New("the last deployment was modified in the workspace. Changes might be overwritten by this deployment. To confirm it, use the --force flag")
 	}
-	return prev.Generation + 1, nil
+	return nil, nil
 }

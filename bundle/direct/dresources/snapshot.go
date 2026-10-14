@@ -27,12 +27,9 @@ type SnapshotState struct {
 	CanManage []snapshot.ManagePrincipal `json:"can_manage,omitempty"`
 	// ZipPath locates the bundle zip staged locally by the deploy pipeline. It is
 	// small enough to round-trip through the plan file, so deploying from a plan
-	// restores it directly (no re-injection needed). The file name is the content
-	// hash, which is also the last component of RelativePath.
+	// restores it directly (no re-injection needed). The file name is also the last
+	// component of RelativePath.
 	ZipPath string `json:"zip_path"`
-	// Generation is folded into RelativePath (see resources.Snapshot.Generation). Carried
-	// forward in state; bumped when --force moves off a snapshot modified outside the bundle.
-	Generation int `json:"generation,omitempty"`
 }
 
 type SnapshotRemote struct {
@@ -66,7 +63,6 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 		ACL:          input.ACL,
 		CanManage:    input.CanManage,
 		ZipPath:      input.ZipPath,
-		Generation:   input.Generation,
 	}
 }
 
@@ -78,7 +74,6 @@ func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 		ACL:          nil,
 		CanManage:    nil,
 		ZipPath:      "",
-		Generation:   0,
 	}
 }
 
