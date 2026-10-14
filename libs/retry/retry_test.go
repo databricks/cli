@@ -3,6 +3,7 @@ package retry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -84,4 +85,11 @@ func TestWithStopsOnContextCancel(t *testing.T) {
 	})
 	require.ErrorIs(t, err, context.Canceled)
 	assert.Equal(t, 1, calls)
+}
+
+func TestRetryMessage(t *testing.T) {
+	apiErr := &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "boom"}
+	assert.Equal(t, "retrying", retryMessage(errors.New("x")))
+	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
+	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
 }

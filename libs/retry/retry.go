@@ -58,16 +58,7 @@ func With[T any](ctx context.Context, check func(context.Context, error) bool, f
 		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
-		msg := "retrying"
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-			endpoint := ""
-			if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-				req := rw.Response.Request
-				endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
-			}
-			msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
-		}
-		log.Warnf(ctx, "%s", msg)
+		log.Warnf(ctx, "%s", retryMessage(err))
 		select {
 		case <-ctx.Done():
 			var zero T
@@ -75,4 +66,22 @@ func With[T any](ctx context.Context, check func(context.Context, error) bool, f
 		case <-time.After(wait):
 		}
 	}
+}
+
+// retryMessage describes the error that triggered a retry.
+func retryMessage(err error) string {
+	msg := "retrying"
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		endpoint := ""
+		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
+			req := rw.Response.Request
+			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		}
+		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		// Include the context the caller added to the error, e.g. the path of the file being written.
+		if err.Error() != apiErr.Error() {
+			msg += ": " + err.Error()
+		}
+	}
+	return msg
 }
