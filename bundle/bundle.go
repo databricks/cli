@@ -26,11 +26,11 @@ import (
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 )
 
@@ -165,7 +165,7 @@ type Bundle struct {
 	Metadata metadata.Metadata
 
 	// Returns the workspace client, initializing it on first call.
-	getClient func() (*databricks.WorkspaceClient, error)
+	getClient func() (*sdkclients.Clients, error)
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
@@ -285,7 +285,7 @@ func TryLoad(ctx context.Context) *Bundle {
 }
 
 func (b *Bundle) initClientOnce(ctx context.Context) {
-	b.getClient = sync.OnceValues(func() (*databricks.WorkspaceClient, error) {
+	b.getClient = sync.OnceValues(func() (*sdkclients.Clients, error) {
 		w, err := b.Config.Workspace.Client(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
@@ -294,14 +294,14 @@ func (b *Bundle) initClientOnce(ctx context.Context) {
 	})
 }
 
-func (b *Bundle) WorkspaceClientE(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func (b *Bundle) WorkspaceClientE(ctx context.Context) (*sdkclients.Clients, error) {
 	if b.getClient == nil {
 		b.initClientOnce(ctx)
 	}
 	return b.getClient()
 }
 
-func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
+func (b *Bundle) WorkspaceClient(ctx context.Context) *sdkclients.Clients {
 	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		panic(err)
@@ -312,8 +312,8 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 
 // SetWorkpaceClient sets the workspace client for this bundle.
 // This is used to inject a mock client for testing.
-func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
-	b.getClient = func() (*databricks.WorkspaceClient, error) {
+func (b *Bundle) SetWorkpaceClient(w *sdkclients.Clients) {
+	b.getClient = func() (*sdkclients.Clients, error) {
 		return w, nil
 	}
 }

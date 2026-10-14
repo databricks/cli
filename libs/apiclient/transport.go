@@ -1,8 +1,9 @@
-package sdkclients
+package apiclient
 
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"io"
 	"net/http"
 	"strconv"
@@ -25,6 +26,17 @@ type transport struct {
 
 func newTransport(cfg *config.Config) http.RoundTripper {
 	return &transport{cfg: cfg, base: baseTransport(cfg)}
+}
+
+func baseTransport(cfg *config.Config) http.RoundTripper {
+	if cfg.HTTPTransport != nil {
+		return cfg.HTTPTransport
+	}
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	if cfg.InsecureSkipVerify {
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	return t
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -130,7 +142,7 @@ func (t *transport) send(ctx context.Context, req *http.Request) (*http.Response
 }
 
 // HTTPClient returns an http.Client that sends requests the way sdk-go clients
-// built by this package do. It does not authenticate requests.
+// built by libs/sdkclients do. It does not authenticate requests.
 func HTTPClient(cfg *config.Config) *http.Client {
 	return &http.Client{Transport: newTransport(cfg)}
 }

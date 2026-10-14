@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/liteswap"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -170,7 +170,7 @@ func (w *Workspace) NormalizeHostURL() {
 	}
 }
 
-func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func (w *Workspace) Client(ctx context.Context) (*sdkclients.Clients, error) {
 	// Extract query parameters (?o=, ?a=) from the host URL before building
 	// the SDK config. This ensures workspace_id and account_id are available
 	// for profile resolution during EnsureResolved().
@@ -212,5 +212,5 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 		}
 	}
 
-	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	return sdkclients.New(ctx, cfg)
 }

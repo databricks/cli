@@ -9,10 +9,9 @@ package sdkclients
 
 import (
 	"context"
-	"crypto/tls"
-	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/options/client"
@@ -32,6 +31,9 @@ type Clients struct {
 // resolved (config.Config.EnsureResolved) and is shared, not copied, because
 // config.Config embeds a sync.Mutex.
 func New(ctx context.Context, cfg *config.Config) (*Clients, error) {
+	if err := cfg.EnsureResolved(); err != nil {
+		return nil, err
+	}
 	s, err := newServices(ctx, Options(cfg)...)
 	if err != nil {
 		return nil, err
@@ -44,8 +46,8 @@ func New(ctx context.Context, cfg *config.Config) (*Clients, error) {
 func Options(cfg *config.Config) []client.Option {
 	opts := []client.Option{
 		client.WithHost(cfg.CanonicalHostName()),
-		client.WithCredentials(NewCredentials(cfg)),
-		client.WithHTTPClient(HTTPClient(cfg)),
+		client.WithCredentials(apiclient.NewCredentials(cfg)),
+		client.WithHTTPClient(apiclient.HTTPClient(cfg)),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
 	}
@@ -61,15 +63,4 @@ func Options(cfg *config.Config) []client.Option {
 		opts = append(opts, client.WithTimeout(time.Duration(cfg.HTTPTimeoutSeconds)*time.Second))
 	}
 	return opts
-}
-
-func baseTransport(cfg *config.Config) http.RoundTripper {
-	if cfg.HTTPTransport != nil {
-		return cfg.HTTPTransport
-	}
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	if cfg.InsecureSkipVerify {
-		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	}
-	return t
 }

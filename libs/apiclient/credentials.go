@@ -1,4 +1,4 @@
-package sdkclients
+package apiclient
 
 import (
 	"context"

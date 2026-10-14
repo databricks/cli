@@ -14,7 +14,7 @@ import (
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +31,8 @@ import (
 // metadata resolution), but the CLI was already synthesizing it locally. The
 // SDK removed the variable entirely in v0.127.0, so we now own it here.
 var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
+
+var errNotAccountClient = errors.New("invalid Databricks Account configuration - host incorrect or account_id missing")
 
 type ErrNoWorkspaceProfiles struct {
 	path string
@@ -123,8 +125,8 @@ func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProf
 }
 
 // Helper function to create an account client or prompt once if the given configuration is not valid.
-func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
-	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*sdkclients.Clients, error) {
+	a, err := sdkclients.New(ctx, cfg)
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -160,7 +162,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 
 	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
 		if err == nil {
-			err = databricks.ErrNotAccountClient
+			err = errNotAccountClient
 		}
 		return a, err
 	}
@@ -173,7 +175,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
+	a, err = sdkclients.New(ctx, &config.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -257,8 +259,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 }
 
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
-func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*sdkclients.Clients, error) {
+	w, err := sdkclients.New(ctx, cfg)
 	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
 		(cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) {
 		// Account-only profile (created with --skip-workspace): account_id is
@@ -325,7 +327,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
+	w, err = sdkclients.New(ctx, &config.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}

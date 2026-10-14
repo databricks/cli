@@ -16,7 +16,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
 )
@@ -40,7 +39,7 @@ func New(cfg *config.Config) (*Client, error) {
 	return &Client{
 		Config:     cfg,
 		host:       strings.TrimSuffix(cfg.CanonicalHostName(), "/"),
-		httpClient: sdkclients.HTTPClient(cfg),
+		httpClient: HTTPClient(cfg),
 	}, nil
 }
 
