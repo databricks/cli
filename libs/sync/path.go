@@ -15,7 +15,7 @@ import (
 )
 
 // getStatusWithRetry returns the workspace object at remotePath, retrying transient failures.
-// The read has no side effects, so a refused HTTP/2 stream or other transient error
+// The read has no side effects, so a transient server error or a refused HTTP/2 stream
 // (https://github.com/databricks/cli/issues/6472) is safe to replay instead of failing the sync.
 func getStatusWithRetry(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) (*workspace.ObjectInfo, error) {
 	return retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {

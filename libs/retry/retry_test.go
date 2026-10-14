@@ -32,9 +32,12 @@ func TestIsTransientRead(t *testing.T) {
 	// Everything IsTransient covers is transient for a read too.
 	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusInternalServerError}))
 	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusRequestTimeout}))
-	// A transport-level failure with no HTTP response is safe to replay on a read (issue #6472).
+	// REFUSED_STREAM is the transport failure the SDK leaves unretried, so we replay the read (issue #6472).
 	refusedStream := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("stream error: stream ID 1; REFUSED_STREAM; received from peer")}
 	assert.True(t, IsTransientRead(ctx, refusedStream))
+	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
+	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
+	assert.False(t, IsTransientRead(ctx, connRefused))
 	// Not transient: retried by the SDK, client errors, and plain non-url errors.
 	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusServiceUnavailable}))
 	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusNotFound}))
