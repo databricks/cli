@@ -95,13 +95,14 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
+		path := structpath.NewPath(nil, "resources", "dashboards", key)
 		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, structpath.NewPath(nil, "resources", "dashboards", key))
+			nameLocations = append(nameLocations, b.Config.GetLocations(path.String())...)
+			namePaths = append(namePaths, path)
 		}
 		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, structpath.NewPath(nil, "resources", "dashboards", key))
+			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations(path.String())...)
+			warehouseIdPaths = append(warehouseIdPaths, path)
 		}
 	}
 
