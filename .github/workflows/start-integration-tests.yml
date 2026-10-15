@@ -10,8 +10,8 @@ jobs:
   trigger:
 
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-org-emu-access-runner-group
+      labels: linux-ubuntu-latest-emu-access-2core-8gb
 
     # Use the environment only to gate its secrets; skip creating a deployment
     # object so these runs don't post "deployed to test-trigger-is" items on the
