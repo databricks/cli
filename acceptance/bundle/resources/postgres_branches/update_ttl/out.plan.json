@@ -1,6 +1,16 @@
 {
   "action": "update",
   "changes": {
+    "is_protected": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
+    },
+    "no_expiry": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
+    },
     "ttl": {
       "action": "update",
       "old": "604800s",

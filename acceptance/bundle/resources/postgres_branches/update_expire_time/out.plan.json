@@ -5,6 +5,16 @@
       "action": "update",
       "old": "[EXPIRE_TIME_BEFORE]",
       "new": "[EXPIRE_TIME_AFTER]"
+    },
+    "is_protected": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
+    },
+    "no_expiry": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
     }
   }
 }

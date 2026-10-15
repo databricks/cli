@@ -79,6 +79,17 @@ func makePostgresBranchRemote(resp *sdkpostgres.Branch) (*PostgresBranchRemote, 
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
+	// Ensure that missing optional bool fields are represented as false pointers
+	// rather than nil, so they serialize in JSON as false instead of being omitted.
+	// This matches the old SDK's behavior where value fields always appeared in JSON.
+	if spec.IsProtected == nil {
+		falseVal := false
+		spec.IsProtected = &falseVal
+	}
+	if spec.NoExpiry == nil {
+		falseVal := false
+		spec.NoExpiry = &falseVal
+	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
 		BranchId:   utils.Deref(branch.BranchId),
@@ -102,8 +113,8 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	// Only spec is set; the other Branch fields are output-only.
 	request, err := postgres.CreateBranchRequestToSDK(&postgres.CreateBranchRequest{
-		BranchId:        new(config.BranchId),
-		Parent:          new(config.Parent),
+		BranchId:        nonEmpty(config.BranchId),
+		Parent:          nonEmpty(config.Parent),
 		Branch:          &postgres.Branch{Spec: &config.BranchSpec},
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
@@ -128,9 +139,10 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return remote.Name, remote, nil
 }
 
-// expire_time, no_expiry and ttl are three sides of one oneof, and the API accepts them
-// in update_mask only under the group name: masking the field itself is answered with
-// "Unknown field path in update_mask". Probed against a real workspace on 2026-08-31.
+// expire_time, no_expiry and ttl are three sides of one oneof. The API accepts them
+// in update_mask under the group name "expiration", but the SDK's field mask validation
+// doesn't recognize group names. So we map field names to their group name for the API,
+// and the UpdateMask string is passed through without validation by the converter.
 var branchOneofGroups = map[string]string{
 	"expire_time": "expiration",
 	"no_expiry":   "expiration",

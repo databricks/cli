@@ -134,8 +134,8 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
 	// Only spec is set; the other Endpoint fields are output-only.
 	request, err := postgres.CreateEndpointRequestToSDK(&postgres.CreateEndpointRequest{
-		EndpointId:      new(config.EndpointId),
-		Parent:          new(config.Parent),
+		EndpointId:      nonEmpty(config.EndpointId),
+		Parent:          nonEmpty(config.Parent),
 		Endpoint:        &postgres.Endpoint{Spec: &config.EndpointSpec},
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
@@ -162,8 +162,10 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-// no_suspension and suspend_timeout_duration are two sides of one oneof, which the API
-// accepts in update_mask only under the group name; see branchOneofGroups.
+// no_suspension and suspend_timeout_duration are two sides of one oneof. The API accepts
+// them in update_mask under the group name "suspension", but the SDK's field mask
+// validation doesn't recognize group names. So we map field names to their group name
+// for the API, and the UpdateMask string is passed through without validation.
 var endpointOneofGroups = map[string]string{
 	"no_suspension":            "suspension",
 	"suspend_timeout_duration": "suspension",

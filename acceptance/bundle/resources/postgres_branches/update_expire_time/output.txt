@@ -37,9 +37,29 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.postgres_branches.dev_branch: updating id=projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch: UpdateBranchRequest.UpdateMask: invalid field mask path "spec.expiration": field "expiration" does not exist
-
+Updated postgres_branches.dev_branch
 Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
+{
+  "branch_id": "dev-branch",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_id": "dev-branch",
+    "current_state": "READY",
+    "default": false,
+    "expire_time": "[EXPIRE_TIME_AFTER]",
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -57,5 +77,3 @@ All data stored in them will be permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
-
-Exit code: 1

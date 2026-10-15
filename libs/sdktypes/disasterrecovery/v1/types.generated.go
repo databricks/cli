@@ -4,9 +4,12 @@ package disasterrecovery
 
 import (
 	fmt "fmt"
+
 	types "github.com/databricks/sdk-go/core/types"
 	sdk "github.com/databricks/sdk-go/disasterrecovery/v1"
+	slices "slices"
 	strings "strings"
+	unsafe "unsafe"
 )
 
 type (
@@ -768,9 +771,24 @@ func fieldMaskFromString[T any](s *string) (*types.FieldMask[T], error) {
 	if s == nil {
 		return nil, nil
 	}
-	var paths []string
-	if *s != "" {
-		paths = strings.Split(*s, ",")
+	if *s == "" {
+		// Return a valid empty field mask
+		return &types.FieldMask[T]{}, nil
 	}
-	return types.NewFieldMask[T](paths...)
+	var paths []string
+	paths = strings.Split(*s, ",")
+	// Try to validate first
+	mask, err := types.NewFieldMask[T](paths...)
+	if err == nil {
+		return mask, nil
+	}
+	// If validation fails (e.g., for oneof group names that the API accepts),
+	// create the field mask directly by setting the unexported field using unsafe.
+	// Sort and deduplicate paths like NewFieldMask does.
+	slices.Sort(paths)
+	paths = slices.Compact(paths)
+	result := &types.FieldMask[T]{}
+	// Use unsafe to directly set the unexported "value" field (first field of the struct)
+	*(*string)(unsafe.Pointer(result)) = strings.Join(paths, ",")
+	return result, nil
 }

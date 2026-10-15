@@ -4,6 +4,7 @@ package instanceprofiles
 
 import (
 	fmt "fmt"
+
 	sdk "github.com/databricks/sdk-go/instanceprofiles/v2"
 )
 

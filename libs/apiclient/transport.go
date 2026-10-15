@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -125,7 +126,28 @@ func retryDelay(resp *http.Response, attempt int) time.Duration {
 }
 
 func (t *transport) send(ctx context.Context, req *http.Request) (*http.Response, error) {
+	timeout := time.Duration(t.cfg.HTTPTimeoutSeconds) * time.Second
+	if timeout <= 0 {
+		timeout = defaultHTTPTimeout
+	}
+	timeoutCtx, ticker := newTimeoutContext(ctx, timeout)
+	req = req.WithContext(timeoutCtx)
+	if req.Body != nil && req.Body != http.NoBody {
+		req.Body = tickingReadCloser{rc: req.Body, t: ticker}
+	}
 	resp, err := t.sendLogged(ctx, req)
+	if err != nil {
+		ticker.Cancel()
+		if ctx.Err() == nil && timeoutCtx.Err() != nil {
+			return nil, fmt.Errorf("request timed out after %s of inactivity", timeout)
+		}
+		return nil, err
+	}
+	if resp.Body != nil {
+		resp.Body = tickingReadCloser{rc: resp.Body, t: ticker, cancelOnClose: true}
+	} else {
+		ticker.Cancel()
+	}
 	if resp != nil && resp.StatusCode >= 400 {
 		// sdk-go errors keep the response headers but not the request; record
 		// it so error messages can name the failing endpoint (see RequestOf).

@@ -88,7 +88,7 @@ func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*Postg
 
 func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
 	request, err := postgres.CreateCatalogRequestToSDK(&postgres.CreateCatalogRequest{
-		CatalogId: new(config.CatalogId),
+		CatalogId: nonEmpty(config.CatalogId),
 		Catalog:   &postgres.Catalog{Spec: &config.Catalog_CatalogSpec},
 	})
 	if err != nil {

@@ -98,7 +98,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	// Only spec is set; the other Project fields are output-only.
 	request, err := postgres.CreateProjectRequestToSDK(&postgres.CreateProjectRequest{
-		ProjectId: new(config.ProjectId),
+		ProjectId: nonEmpty(config.ProjectId),
 		Project:   &postgres.Project{Spec: &config.ProjectSpec},
 	})
 	if err != nil {
@@ -123,7 +123,9 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 }
 
 // The default endpoint settings carry the same suspension oneof as an endpoint does;
-// see branchOneofGroups.
+// the API accepts these under the group name "suspension", but the SDK's field mask
+// validation doesn't recognize group names. So we map field names to their group name
+// for the API, and the UpdateMask string is passed through without validation.
 var projectOneofGroups = map[string]string{
 	"default_endpoint_settings.no_suspension":            "default_endpoint_settings.suspension",
 	"default_endpoint_settings.suspend_timeout_duration": "default_endpoint_settings.suspension",

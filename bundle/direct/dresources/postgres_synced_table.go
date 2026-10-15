@@ -95,7 +95,7 @@ func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*P
 
 func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
 	request, err := postgres.CreateSyncedTableRequestToSDK(&postgres.CreateSyncedTableRequest{
-		SyncedTableId: new(config.SyncedTableId),
+		SyncedTableId: nonEmpty(config.SyncedTableId),
 		SyncedTable:   &postgres.SyncedTable{Spec: &config.SyncedTable_SyncedTableSpec},
 	})
 	if err != nil {

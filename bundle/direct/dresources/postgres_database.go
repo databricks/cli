@@ -73,6 +73,13 @@ func makePostgresDatabaseRemote(resp *sdkpostgres.Database) (*PostgresDatabaseRe
 	if database.Spec != nil {
 		spec = *database.Spec
 	}
+	// Ensure that missing optional fields are represented as empty string pointers
+	// rather than nil, so they serialize in JSON as "" instead of being omitted.
+	// This matches the old SDK's behavior where value fields always appeared in JSON.
+	if spec.Role == nil {
+		empty := ""
+		spec.Role = &empty
+	}
 	return &PostgresDatabaseRemote{
 		Database_DatabaseSpec: spec,
 		DatabaseId:            utils.Deref(database.DatabaseId),
@@ -94,8 +101,8 @@ func (r *ResourcePostgresDatabase) DoRead(ctx context.Context, id string) (*Post
 
 func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *PostgresDatabaseState) (string, *PostgresDatabaseRemote, error) {
 	request, err := postgres.CreateDatabaseRequestToSDK(&postgres.CreateDatabaseRequest{
-		DatabaseId:      new(config.DatabaseId),
-		Parent:          new(config.Parent),
+		DatabaseId:      nonEmpty(config.DatabaseId),
+		Parent:          nonEmpty(config.Parent),
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 		Database:        &postgres.Database{Spec: &config.Database_DatabaseSpec},
 	})

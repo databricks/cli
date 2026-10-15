@@ -4,7 +4,9 @@ package instancepools
 
 import (
 	fmt "fmt"
+
 	sdk "github.com/databricks/sdk-go/instancepools/v2"
+
 	strings "strings"
 )
 

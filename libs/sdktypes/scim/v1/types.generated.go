@@ -5,6 +5,7 @@ package scim
 import (
 	json "encoding/json"
 	fmt "fmt"
+
 	sdk "github.com/databricks/sdk-go/scim/v1"
 )
 

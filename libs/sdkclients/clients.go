@@ -9,7 +9,6 @@ package sdkclients
 
 import (
 	"context"
-	"time"
 
 	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/bundledeployments"
@@ -84,8 +83,7 @@ func Options(cfg *config.Config) []client.Option {
 	if cfg.AccountID != "" {
 		opts = append(opts, client.WithAccountID(cfg.AccountID))
 	}
-	if cfg.HTTPTimeoutSeconds > 0 {
-		opts = append(opts, client.WithTimeout(time.Duration(cfg.HTTPTimeoutSeconds)*time.Second))
-	}
+	// cfg.HTTPTimeoutSeconds is enforced by the transport as an inactivity
+	// timeout (see apiclient.HTTPClient), not as a deadline for the whole call.
 	return opts
 }

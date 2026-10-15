@@ -5,6 +5,7 @@ package modelservingquery
 import (
 	json "encoding/json"
 	fmt "fmt"
+
 	sdk "github.com/databricks/sdk-go/modelservingquery/v1"
 )
 

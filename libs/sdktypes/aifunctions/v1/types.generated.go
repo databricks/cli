@@ -5,6 +5,7 @@ package aifunctions
 import (
 	json "encoding/json"
 	fmt "fmt"
+
 	sdk "github.com/databricks/sdk-go/aifunctions/v1"
 )
 

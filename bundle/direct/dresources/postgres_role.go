@@ -111,8 +111,8 @@ func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*Postgres
 
 func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
 	request, err := postgres.CreateRoleRequestToSDK(&postgres.CreateRoleRequest{
-		RoleId:          new(config.RoleId),
-		Parent:          new(config.Parent),
+		RoleId:          nonEmpty(config.RoleId),
+		Parent:          nonEmpty(config.Parent),
 		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 		Role:            &postgres.Role{Spec: &config.Role_RoleSpec},
 	})
