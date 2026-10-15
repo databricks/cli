@@ -403,6 +403,12 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	ctx := logdiag.InitContext(cmd.Context())
 	cmd.SetContext(ctx)
 
+	// For dashboard, --resource and --watch require an existing bundle, so error if --init-bare is used
+	_, err := ensureGenerateBundle(cmd, errors.New("dashboard generate requires an existing bundle (either run in a bundle directory or use a different generator)"))
+	if err != nil {
+		return err
+	}
+
 	b := root.MustConfigureBundle(cmd)
 	if b == nil || logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted

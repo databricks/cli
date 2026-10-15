@@ -69,8 +69,11 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().BoolVar(&downloadSparkPythonFiles, "download-spark-python-files", false, `download workspace files referenced by spark_python_task and rewrite them to a relative path`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := cmd.Context()
+		if !logdiag.IsSetup(ctx) {
+			ctx = logdiag.InitContext(ctx)
+			cmd.SetContext(ctx)
+		}
 
 		_, err := ensureGenerateBundle(cmd, nil)
 		if err != nil {
