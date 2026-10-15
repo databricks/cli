@@ -1,6 +1,7 @@
 package postgrescmd
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -8,8 +9,8 @@ import (
 	"math"
 	"math/big"
 	"strconv"
-	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -24,11 +25,21 @@ const safeIntegerBound = 1<<53 - 1
 // sinks render. Integers, floats, booleans, bytea and date/time types map to
 // native Go types; everything else (numeric, uuid, interval, arrays, json,
 // ...) stays as the server's canonical text, which is already the
-// representation we want to print. Timestamps Go cannot represent
-// (infinity, BC dates) also stay as text.
+// representation we want to print. Date/time values use pgtype's own text
+// parsers, so they decode exactly as they did with pgx.Conn; infinity stays
+// as text.
 func decodeTextValue(oid uint32, raw []byte) (any, error) {
 	if raw == nil {
 		return nil, nil
+	}
+	if oid == pgtype.ByteaOID {
+		hexPart, ok := bytes.CutPrefix(raw, []byte(`\x`))
+		if !ok {
+			return nil, fmt.Errorf("unsupported bytea text format %q", raw)
+		}
+		b := make([]byte, hex.DecodedLen(len(hexPart)))
+		_, err := hex.Decode(b, hexPart)
+		return b, err
 	}
 	s := string(raw)
 	switch oid {
@@ -47,26 +58,20 @@ func decodeTextValue(oid uint32, raw []byte) (any, error) {
 		return strconv.ParseFloat(s, 64)
 	case pgtype.BoolOID:
 		return s == "t", nil
-	case pgtype.ByteaOID:
-		hexPart, ok := strings.CutPrefix(s, `\x`)
-		if !ok {
-			return nil, fmt.Errorf("unsupported bytea text format %q", s)
-		}
-		return hex.DecodeString(hexPart)
 	case pgtype.DateOID:
-		if t, err := time.Parse("2006-01-02", s); err == nil {
-			return t, nil
+		var d pgtype.Date
+		if err := d.Scan(s); err == nil && d.InfinityModifier == pgtype.Finite {
+			return d.Time, nil
 		}
 	case pgtype.TimestampOID:
-		if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
-			return t, nil
+		var ts pgtype.Timestamp
+		if err := ts.Scan(s); err == nil && ts.InfinityModifier == pgtype.Finite {
+			return ts.Time, nil
 		}
 	case pgtype.TimestamptzOID:
-		// The server prints the UTC offset as +HH, +HH:MM or +HH:MM:SS.
-		for _, layout := range []string{"2006-01-02 15:04:05-07", "2006-01-02 15:04:05-07:00", "2006-01-02 15:04:05-07:00:00"} {
-			if t, err := time.Parse(layout, s); err == nil {
-				return t.UTC(), nil
-			}
+		var ts pgtype.Timestamptz
+		if err := ts.Scan(s); err == nil && ts.InfinityModifier == pgtype.Finite {
+			return ts.Time, nil
 		}
 	}
 	return s, nil
@@ -207,9 +212,9 @@ func jsonValueWithOID(v any, oid uint32) any {
 	case pgtype.JSONOID, pgtype.JSONBOID:
 		switch x := v.(type) {
 		case []byte:
-			return json.RawMessage(x)
+			return rawJSON(x)
 		case string:
-			return json.RawMessage(x)
+			return rawJSON([]byte(x))
 		}
 	case pgtype.ByteaOID:
 		if b, ok := v.([]byte); ok {
@@ -218,4 +223,19 @@ func jsonValueWithOID(v any, oid uint32) any {
 	}
 
 	return jsonValue(v)
+}
+
+// rawJSON passes JSON text through unchanged. Invalid UTF-8 (possible with a
+// non-UTF8 client_encoding) would be copied into the output verbatim, so
+// such values are decoded instead, which replaces it the way encoding/json
+// does for strings.
+func rawJSON(b []byte) any {
+	if utf8.Valid(b) {
+		return json.RawMessage(b)
+	}
+	var decoded any
+	if err := json.Unmarshal(b, &decoded); err == nil {
+		return decoded
+	}
+	return string(b)
 }

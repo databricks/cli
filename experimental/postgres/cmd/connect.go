@@ -80,6 +80,11 @@ func buildPgxConfig(c connectConfig) (*pgconn.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse pgx config: %w", err)
 	}
+	// pgx.ParseConfig strips its own options, which a PGSERVICE file may
+	// set; pgconn would send them to the server as unknown parameters.
+	for _, k := range []string{"statement_cache_capacity", "description_cache_capacity", "default_query_exec_mode"} {
+		delete(cfg.RuntimeParams, k)
+	}
 	cfg.User = c.Username
 	cfg.Password = c.Password
 	cfg.ConnectTimeout = c.ConnectTimeout

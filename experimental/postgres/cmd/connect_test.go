@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -151,4 +153,16 @@ func TestBuildPgxConfig(t *testing.T) {
 	// "Invalid protocol version: 196608".
 	require.NotNil(t, cfg.TLSConfig, "TLSConfig must be set for sslmode=require")
 	assert.Equal(t, "host.example.com", cfg.TLSConfig.ServerName)
+}
+
+func TestBuildPgxConfigDropsPgxOnlyServiceOptions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pg_service.conf")
+	require.NoError(t, os.WriteFile(path, []byte("[svc]\nstatement_cache_capacity=0\ndescription_cache_capacity=0\ndefault_query_exec_mode=exec\napplication_name=app\n"), 0o600))
+	t.Setenv("PGSERVICEFILE", path)
+	t.Setenv("PGSERVICE", "svc")
+
+	cfg, err := buildPgxConfig(connectConfig{Host: "host.example.com", Port: 5432, Database: "db"})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"application_name": "app"}, cfg.RuntimeParams)
 }

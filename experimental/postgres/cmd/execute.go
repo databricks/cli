@@ -39,10 +39,12 @@ type rowSink interface {
 // Go-typed input.
 func executeOne(ctx context.Context, conn *pgconn.PgConn, sql string, sink rowSink) error {
 	rr := conn.ExecParams(ctx, sql, nil, nil, nil, nil)
+	// Close is idempotent; the explicit call below reports the command tag
+	// and any server error.
+	defer func() { _, _ = rr.Close() }()
 
 	fields := rr.FieldDescriptions()
 	if err := sink.Begin(fields); err != nil {
-		_, _ = rr.Close()
 		return err
 	}
 
@@ -52,14 +54,12 @@ func executeOne(ctx context.Context, conn *pgconn.PgConn, sql string, sink rowSi
 		for i, b := range raw {
 			v, err := decodeTextValue(fields[i].DataTypeOID, b)
 			if err != nil {
-				_, _ = rr.Close()
 				sink.OnError(err)
 				return fmt.Errorf("decode row: %w", err)
 			}
 			values[i] = v
 		}
 		if err := sink.Row(values); err != nil {
-			_, _ = rr.Close()
 			sink.OnError(err)
 			return err
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJSONValue_PrimitiveTypes(t *testing.T) {
@@ -92,4 +93,42 @@ func TestTextValue_FloatSpecials(t *testing.T) {
 func TestTextValue_FiniteFloat(t *testing.T) {
 	assert.Equal(t, "3.14", textValue(float64(3.14)))
 	assert.Equal(t, "0", textValue(float64(0)))
+}
+
+func TestDecodeTextValue_DateTime(t *testing.T) {
+	v, err := decodeTextValue(pgtype.DateOID, []byte("10000-01-02"))
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(10000, 1, 2, 0, 0, 0, 0, time.UTC), v)
+
+	v, err = decodeTextValue(pgtype.DateOID, []byte("0044-03-15 BC"))
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(-43, 3, 15, 0, 0, 0, 0, time.UTC), v)
+
+	v, err = decodeTextValue(pgtype.TimestampOID, []byte("2024-01-02 03:04:05.123456"))
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(2024, 1, 2, 3, 4, 5, 123456000, time.UTC), v)
+
+	v, err = decodeTextValue(pgtype.TimestamptzOID, []byte("2024-06-01 10:00:00.5+02"))
+	require.NoError(t, err)
+	assert.True(t, time.Date(2024, 6, 1, 8, 0, 0, 500000000, time.UTC).Equal(v.(time.Time)))
+
+	v, err = decodeTextValue(pgtype.DateOID, []byte("infinity"))
+	require.NoError(t, err)
+	assert.Equal(t, "infinity", v)
+}
+
+func TestDecodeTextValue_Bytea(t *testing.T) {
+	v, err := decodeTextValue(pgtype.ByteaOID, []byte(`\xdeadbeef`))
+	require.NoError(t, err)
+	assert.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, v)
+
+	_, err = decodeTextValue(pgtype.ByteaOID, []byte(`\336`))
+	assert.Error(t, err)
+}
+
+func TestJSONValueWithOID_InvalidUTF8(t *testing.T) {
+	v := jsonValueWithOID("{\"x\":\"\xe9\"}", pgtype.JSONOID)
+	encoded, err := json.Marshal(v)
+	require.NoError(t, err)
+	assert.Equal(t, `{"x":"�"}`, string(encoded))
 }
