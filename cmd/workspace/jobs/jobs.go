@@ -265,7 +265,16 @@ func newCancelRun() *cobra.Command {
 			return err
 		}
 		if cancelRunSkipWait {
-			return cmdio.Render(ctx, map[string]any{"run_id": wait.GetRunId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
+			if err != nil {
+				return err
+			}
+			out, err := jobs.GetRunResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for cancel-run to complete...")
@@ -1396,7 +1405,16 @@ func newRepairRun() *cobra.Command {
 			return err
 		}
 		if repairRunSkipWait {
-			return cmdio.Render(ctx, map[string]any{"run_id": wait.GetRunId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
+			if err != nil {
+				return err
+			}
+			out, err := jobs.GetRunResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for repair-run to complete...")
@@ -1613,7 +1631,16 @@ func newRunNow() *cobra.Command {
 			return err
 		}
 		if runNowSkipWait {
-			return cmdio.Render(ctx, map[string]any{"run_id": wait.GetRunId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
+			if err != nil {
+				return err
+			}
+			out, err := jobs.GetRunResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for run-now to complete...")
@@ -1837,7 +1864,16 @@ func newSubmit() *cobra.Command {
 			return err
 		}
 		if submitSkipWait {
-			return cmdio.Render(ctx, map[string]any{"run_id": wait.GetRunId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
+			if err != nil {
+				return err
+			}
+			out, err := jobs.GetRunResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for submit to complete...")

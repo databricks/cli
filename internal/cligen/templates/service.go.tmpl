@@ -526,8 +526,19 @@ func new{{.PascalName}}() *cobra.Command {
 		}
 		{{- if or .Wait .LongRunningOperation }}
 		if {{.CamelName}}SkipWait {
-			{{- if .Bind.WaiterID }}
-			return cmdio.Render(ctx, map[string]any{"{{.Bind.WaiterIDJSON}}": wait.{{.Bind.WaiterID}}()})
+			{{- if .Bind.PollCall }}
+			// Render the current state, as of right after the call.
+			current, err := {{.Bind.PollCall}}
+			if err != nil {
+				return err
+			}
+			out, err := {{.Bind.PollFromSDK}}(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
+			{{- else if .Bind.WaiterIDs }}
+			return cmdio.Render(ctx, map[string]any{ {{- .Bind.WaiterIDs -}} })
 			{{- else }}
 			return nil
 			{{- end }}

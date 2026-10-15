@@ -2,11 +2,11 @@ package metastores
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	ucmetastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, req *catalog.ListMetastoresRequest) {
+func listOverride(listCmd *cobra.Command, req *ucmetastores.ListMetastoresRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{"Region"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

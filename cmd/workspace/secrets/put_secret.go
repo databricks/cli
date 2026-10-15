@@ -1,7 +1,6 @@
 package secrets
 
 import (
-	"encoding/base64"
 	"errors"
 	"io"
 
@@ -10,20 +9,21 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/spf13/cobra"
 )
 
 func newPutSecret() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var putSecretReq workspace.PutSecret
+	var putSecretReq secrets.PutSecretRequest
 	var putSecretJson flags.JsonFlag
+	var bytesValue, stringValue string
 
 	cmd.Flags().Var(&putSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&putSecretReq.BytesValue, "bytes-value", putSecretReq.BytesValue, `If specified, value will be stored as bytes.`)
-	cmd.Flags().StringVar(&putSecretReq.StringValue, "string-value", putSecretReq.StringValue, `If specified, note that the value will be stored in UTF-8 (MB4) form.`)
+	cmd.Flags().StringVar(&bytesValue, "bytes-value", bytesValue, `If specified, value will be stored as bytes.`)
+	cmd.Flags().StringVar(&stringValue, "string-value", stringValue, `If specified, note that the value will be stored in UTF-8 (MB4) form.`)
 
 	cmd.Use = "put-secret SCOPE KEY"
 	cmd.Short = `Add a secret.`
@@ -82,26 +82,30 @@ func newPutSecret() *cobra.Command {
 				}
 			}
 		} else {
-			putSecretReq.Scope = args[0]
-			putSecretReq.Key = args[1]
+			putSecretReq.Scope = new(args[0])
+			putSecretReq.Key = new(args[1])
 
+			// bytes_value is base64 on the wire; the request type encodes it.
 			switch {
 			case bytesValueChanged:
-				// Bytes value set; encode as base64.
-				putSecretReq.BytesValue = base64.StdEncoding.EncodeToString([]byte(putSecretReq.BytesValue))
+				putSecretReq.BytesValue = []byte(bytesValue)
 			case stringValueChanged:
-				// String value set; nothing to do.
+				putSecretReq.StringValue = new(stringValue)
 			default:
 				// Neither is specified; read secret value from stdin.
 				bytes, err := promptSecret(cmd)
 				if err != nil {
 					return err
 				}
-				putSecretReq.BytesValue = base64.StdEncoding.EncodeToString(bytes)
+				putSecretReq.BytesValue = bytes
 			}
 		}
 
-		err = w.Secrets.PutSecret(ctx, putSecretReq)
+		sdkReq, err := secrets.PutSecretRequestToSDK(&putSecretReq)
+		if err != nil {
+			return err
+		}
+		_, err = w.Secrets.PutSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}

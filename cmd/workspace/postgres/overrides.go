@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"math"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/spf13/cobra"
 )
 
@@ -187,7 +186,7 @@ func reconcileBranchExpiration(spec *postgres.BranchSpec, ttlChanged bool, ttl s
 		if spec == nil {
 			spec = &postgres.BranchSpec{}
 		}
-		spec.NoExpiry = true
+		spec.NoExpiry = new(true)
 	case jsonHasExpiration:
 		// Expiration comes from --json; leave spec for the generated RunE to merge.
 	}
@@ -196,18 +195,17 @@ func reconcileBranchExpiration(spec *postgres.BranchSpec, ttlChanged bool, ttl s
 
 // specHasExpiration reports whether a decoded BranchSpec sets an expiration:
 // spec.ttl, spec.expire_time, or spec.no_expiry. no_expiry present as false still
-// counts as "set" (detected via ForceSendFields, which the SDK decode populates
-// for explicit zero values), so combining it with --no-expiry is caught as a
-// conflict instead of the json silently overriding the flag on the wire.
+// counts as "set" (the pointer is non-nil for explicit values), so combining it
+// with --no-expiry is caught as a conflict instead of the json silently
+// overriding the flag on the wire.
 func specHasExpiration(s *postgres.BranchSpec) bool {
-	return s != nil && (s.Ttl != nil || s.ExpireTime != nil || s.NoExpiry ||
-		slices.Contains(s.ForceSendFields, "NoExpiry"))
+	return s != nil && (s.Ttl != nil || s.ExpireTime != nil || s.NoExpiry != nil)
 }
 
-// parseTTL parses the --ttl value into a *duration.Duration. It accepts the REST
+// parseTTL parses the --ttl value into a *types.Duration. It accepts the REST
 // API's protobuf-duration form ("604800s"), Go-style durations ("168h"), and the
-// day/week extension ("7d", "3w"); duration.New re-serializes to the API form.
-func parseTTL(s string) (*duration.Duration, error) {
+// day/week extension ("7d", "3w"); types.NewFromDuration re-serializes to the API form.
+func parseTTL(s string) (*types.Duration, error) {
 	if s == "" {
 		return nil, errors.New("--ttl must not be empty; use e.g. 604800s, 168h, or 7d for 7 days")
 	}
@@ -218,7 +216,7 @@ func parseTTL(s string) (*duration.Duration, error) {
 	if d <= 0 {
 		return nil, fmt.Errorf("invalid --ttl %q: must be a positive duration", s)
 	}
-	return duration.New(d), nil
+	return types.NewFromDuration(d), nil
 }
 
 // ttlComponent matches one leading "<number><unit>" component of a duration

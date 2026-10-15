@@ -201,13 +201,51 @@ func (b *MethodBind) FromSDK() string {
 	return b.pkg.MirrorAlias + "." + t + "FromSDK"
 }
 
-// WaiterIDJSON is the JSON key under which --no-wait prints the identifier
-// of a waiter, e.g. "run_id" for GetRunId.
-func (b *MethodBind) WaiterIDJSON() string {
-	return snakeName(strings.TrimPrefix(b.sdk.WaiterID, "Get"))
+// WaiterIDs renders the identifiers of a waiter, printed by --no-wait, as
+// map entries keyed by their JSON names (e.g. "run_id": wait.GetRunId()).
+func (b *MethodBind) WaiterIDs() string {
+	var parts []string
+	for _, g := range b.sdk.WaiterIDs {
+		parts = append(parts, fmt.Sprintf("%q: wait.%s()", snakeName(strings.TrimPrefix(g, "Get")), g))
+	}
+	return strings.Join(parts, ", ")
 }
 
-func (b *MethodBind) WaiterID() string { return b.sdk.WaiterID }
+// PollCall returns the call fetching the current state of a waiter's
+// resource (used by --no-wait), or "" if the poll method is unknown.
+func (b *MethodBind) PollCall() string {
+	pm := b.pollMethod()
+	if pm == nil {
+		return ""
+	}
+	var fields []string
+	for _, g := range b.sdk.WaiterIDs {
+		fields = append(fields, fmt.Sprintf("%s: new(wait.%s())", strings.TrimPrefix(g, "Get"), g))
+	}
+	return fmt.Sprintf("%s.%s(ctx, %s.%s{%s})", b.ClientExpr(), pm.Name, b.pkg.SdkAlias, pm.Request, strings.Join(fields, ", "))
+}
+
+func (b *MethodBind) PollFromSDK() string {
+	return b.pkg.MirrorAlias + "." + b.pollMethod().Result + "FromSDK"
+}
+
+func (b *MethodBind) pollMethod() *SdkMethod {
+	if b.sdk.pollRequest == "" {
+		return nil
+	}
+	var names []string
+	for name := range b.pkg.methods {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		m := b.pkg.methods[name]
+		if m.Request == b.sdk.pollRequest && m.Kind == "resp" && m.Result == b.sdk.Result && b.pkg.structs[m.Result] != nil {
+			return m
+		}
+	}
+	return nil
+}
 
 // GetOperation returns the sdk-go method polling the operation of an LRO, if
 // there is one with the name cli.json uses.

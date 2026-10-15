@@ -174,7 +174,16 @@ func newCreateExperiment() *cobra.Command {
 			return err
 		}
 		if createExperimentSkipWait {
-			return cmdio.Render(ctx, map[string]any{"experiment_id": wait.GetExperimentId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Forecasting.GetForecastingExperiment(ctx, sdkforecasting.GetForecastingExperimentRequest{ExperimentId: new(wait.GetExperimentId())})
+			if err != nil {
+				return err
+			}
+			out, err := forecasting.ForecastingExperimentFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-experiment to complete...")

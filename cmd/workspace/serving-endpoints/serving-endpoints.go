@@ -239,7 +239,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
@@ -336,7 +345,16 @@ Create a new PT serving endpoint.`
 			return err
 		}
 		if createProvisionedThroughputEndpointSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-provisioned-throughput-endpoint to complete...")
@@ -1577,7 +1595,16 @@ func newUpdateConfig() *cobra.Command {
 			return err
 		}
 		if updateConfigSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update-config to complete...")
@@ -1856,7 +1883,16 @@ Update config of a PT serving endpoint.
 			return err
 		}
 		if updateProvisionedThroughputEndpointConfigSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := modelserving.InferenceEndpointDetailedFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update-provisioned-throughput-endpoint-config to complete...")

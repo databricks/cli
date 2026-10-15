@@ -137,7 +137,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.CleanRooms.GetCleanRoom(ctx, sdkcleanrooms.GetCleanRoomRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := cleanrooms.CleanRoomFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")

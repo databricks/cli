@@ -5,7 +5,9 @@ import (
 
 	appsCli "github.com/databricks/cli/cmd/apps"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +34,7 @@ func createOverride(createCmd *cobra.Command, createReq *apps.CreateAppRequest) 
 	originalRunE := createCmd.RunE
 	createCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		err := originalRunE(cmd, args)
-		return wrapDeploymentError(cmd, createReq.App.Name, err)
+		return wrapDeploymentError(cmd, utils.Deref(createReq.App.Name), err)
 	}
 }
 
@@ -40,7 +42,7 @@ func createUpdateOverride(createUpdateCmd *cobra.Command, createUpdateReq *apps.
 	originalRunE := createUpdateCmd.RunE
 	createUpdateCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		err := originalRunE(cmd, args)
-		return wrapDeploymentError(cmd, createUpdateReq.AppName, err)
+		return wrapDeploymentError(cmd, utils.Deref(createUpdateReq.AppName), err)
 	}
 }
 
@@ -87,9 +89,9 @@ func init() {
 	listOverrides = append(listOverrides, listOverride)
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 	createOverrides = append(createOverrides, createOverride)
-	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError))
-	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
-	startOverrides = append(startOverrides, appsCli.BundleStartOverrideWithWrapper(wrapDeploymentError))
-	stopOverrides = append(stopOverrides, appsCli.BundleStopOverrideWithWrapper(wrapDeploymentError))
+	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](wrapDeploymentError))
+	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper[sdkapps.DeleteAppRequest](wrapDeploymentError))
+	startOverrides = append(startOverrides, appsCli.BundleStartOverrideWithWrapper[apps.StartAppRequest](wrapDeploymentError))
+	stopOverrides = append(stopOverrides, appsCli.BundleStopOverrideWithWrapper[apps.StopAppRequest](wrapDeploymentError))
 	createUpdateOverrides = append(createUpdateOverrides, createUpdateOverride)
 }

@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/spf13/cobra"
 )
 

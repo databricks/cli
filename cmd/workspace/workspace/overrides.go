@@ -8,14 +8,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceRequest) {
+func listOverride(listCmd *cobra.Command, listReq *workspaceapi.ListWorkspaceRequest) {
 	listReq.Path = "/"
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Type"}}	{{header "Language"}}	{{header "Path"}}`)
@@ -24,7 +24,7 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 	{{end}}`)
 }
 
-func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest) {
+func exportOverride(exportCmd *cobra.Command, exportReq *workspaceapi.ExportRequest) {
 	// The export command prints the contents of the file to stdout by default.
 	exportCmd.Annotations["template"] = `{{.Content | b64_decode}}`
 	exportCmd.Use = "export SOURCE_PATH"
@@ -57,20 +57,20 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 }
 
 // Give better errors / hints for common API errors.
-func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
+func wrapImportAPIErrors(err error, importReq *workspaceapi.Import) error {
+	apiErr, ok := apierrs.Get(err)
 	if !ok {
 		return err
 	}
-	isFormatSource := importReq.Format == workspace.ImportFormatSource || importReq.Format == ""
-	if isFormatSource && apiErr.StatusCode == http.StatusBadRequest &&
-		strings.Contains(apiErr.Message, "The zip file may not be valid or may be an unsupported version.") {
+	isFormatSource := importReq.Format == workspaceapi.ImportFormatSource || importReq.Format == ""
+	if isFormatSource && apiErr.HTTPStatusCode() == http.StatusBadRequest &&
+		strings.Contains(apiErr.Message(), "The zip file may not be valid or may be an unsupported version.") {
 		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are expected to be zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook", err)
 	}
 	return err
 }
 
-func importOverride(importCmd *cobra.Command, importReq *workspace.Import) {
+func importOverride(importCmd *cobra.Command, importReq *workspaceapi.Import) {
 	var filePath string
 	importCmd.Use = "import TARGET_PATH"
 	importCmd.Flags().StringVar(&filePath, "file", "", `Path of local file to import`)

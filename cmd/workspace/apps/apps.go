@@ -181,7 +181,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := apps.AppFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
@@ -446,7 +455,16 @@ func newCreateUpdate() *cobra.Command {
 			return err
 		}
 		if createUpdateSkipWait {
-			return cmdio.Render(ctx, map[string]any{"app_name": wait.GetAppName()})
+			// Render the current state, as of right after the call.
+			current, err := w.Apps.GetAppUpdate(ctx, sdkapps.GetAppUpdateRequest{AppName: new(wait.GetAppName())})
+			if err != nil {
+				return err
+			}
+			out, err := apps.AppUpdateFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-update to complete...")
@@ -779,7 +797,16 @@ func newDeploy() *cobra.Command {
 			return err
 		}
 		if deploySkipWait {
-			return cmdio.Render(ctx, map[string]any{"deployment_id": wait.GetDeploymentId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Apps.GetAppDeployment(ctx, sdkapps.GetAppDeploymentRequest{DeploymentId: new(wait.GetDeploymentId()), AppName: new(wait.GetAppName())})
+			if err != nil {
+				return err
+			}
+			out, err := apps.AppDeploymentFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for deploy to complete...")
@@ -1649,7 +1676,16 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := apps.AppFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start to complete...")
@@ -1732,7 +1768,16 @@ func newStop() *cobra.Command {
 			return err
 		}
 		if stopSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := apps.AppFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for stop to complete...")

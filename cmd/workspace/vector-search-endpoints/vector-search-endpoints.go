@@ -148,7 +148,16 @@ func newCreateEndpoint() *cobra.Command {
 			return err
 		}
 		if createEndpointSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.VectorSearch.GetEndpoint(ctx, sdkvectorsearch.GetEndpointRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := vectorsearch.EndpointFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-endpoint to complete...")

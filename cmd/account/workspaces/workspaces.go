@@ -183,7 +183,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"workspace_id": wait.GetWorkspaceId()})
+			// Render the current state, as of right after the call.
+			current, err := a.Workspaces.GetWorkspacePublic(ctx, sdkworkspaces.GetWorkspaceRequest{WorkspaceId: new(wait.GetWorkspaceId())})
+			if err != nil {
+				return err
+			}
+			out, err := workspaces.WorkspaceFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
@@ -505,7 +514,16 @@ func newUpdate() *cobra.Command {
 			return err
 		}
 		if updateSkipWait {
-			return cmdio.Render(ctx, map[string]any{"workspace_id": wait.GetWorkspaceId()})
+			// Render the current state, as of right after the call.
+			current, err := a.Workspaces.GetWorkspacePublic(ctx, sdkworkspaces.GetWorkspaceRequest{WorkspaceId: new(wait.GetWorkspaceId())})
+			if err != nil {
+				return err
+			}
+			out, err := workspaces.WorkspaceFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update to complete...")

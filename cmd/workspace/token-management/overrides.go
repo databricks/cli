@@ -2,11 +2,11 @@ package token_management
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/settings"
+	tokenmanagement "github.com/databricks/cli/libs/sdktypes/tokenmanagement/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *settings.ListTokenManagementRequest) {
+func listOverride(listCmd *cobra.Command, listReq *tokenmanagement.ListTokensRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Created By"}}	{{header "Comment"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

@@ -2,11 +2,11 @@ package queries
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	queries "github.com/databricks/cli/libs/sdktypes/queries/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *sql.ListQueriesRequest) {
+func listOverride(listCmd *cobra.Command, listReq *queries.ListQueriesRequest) {
 	// TODO: figure out colored/non-colored headers and colspan shifts
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "Author"}}`)

@@ -2,11 +2,11 @@ package catalogs
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	uccatalogs "github.com/databricks/cli/libs/sdktypes/uc/catalogs/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *catalog.ListCatalogsRequest) {
+func listOverride(listCmd *cobra.Command, listReq *uccatalogs.ListCatalogsRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Name"}}	{{header "Type"}}	{{header "Comment"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

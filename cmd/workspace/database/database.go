@@ -267,7 +267,16 @@ Create a Database Instance.
 			return err
 		}
 		if createDatabaseInstanceSkipWait {
-			return cmdio.Render(ctx, map[string]any{"name": wait.GetName()})
+			// Render the current state, as of right after the call.
+			current, err := w.Database.GetDatabaseInstance(ctx, sdkdatabase.GetDatabaseInstanceRequest{Name: new(wait.GetName())})
+			if err != nil {
+				return err
+			}
+			out, err := database.DatabaseInstanceFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-database-instance to complete...")

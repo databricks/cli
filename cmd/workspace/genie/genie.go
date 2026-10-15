@@ -165,7 +165,16 @@ func newCreateMessage() *cobra.Command {
 			return err
 		}
 		if createMessageSkipWait {
-			return cmdio.Render(ctx, map[string]any{"space_id": wait.GetSpaceId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Genie.GenieGetConversationMessage(ctx, sdkgenie.GenieGetConversationMessageRequest{MessageId: new(wait.GetMessageId()), ConversationId: new(wait.GetConversationId()), SpaceId: new(wait.GetSpaceId())})
+			if err != nil {
+				return err
+			}
+			out, err := genie.GenieMessageFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create-message to complete...")
@@ -2272,7 +2281,16 @@ func newStartConversation() *cobra.Command {
 			return err
 		}
 		if startConversationSkipWait {
-			return cmdio.Render(ctx, map[string]any{"conversation_id": wait.GetConversationId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Genie.GenieGetConversationMessage(ctx, sdkgenie.GenieGetConversationMessageRequest{MessageId: new(wait.GetMessageId()), ConversationId: new(wait.GetConversationId()), SpaceId: new(wait.GetSpaceId())})
+			if err != nil {
+				return err
+			}
+			out, err := genie.GenieMessageFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start-conversation to complete...")

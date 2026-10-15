@@ -80,9 +80,10 @@ type SdkMethod struct {
 	// Iter is the name of the companion ...Iter method and ItemType its element type.
 	Iter     string
 	ItemType string
-	// WaiterID names the getter of a waiter's identifier, e.g. "GetRunId".
-	WaiterID     string
-	WaiterIDJSON string
+	// WaiterIDs name the getters of a waiter's identifiers, e.g. "GetRunId".
+	WaiterIDs []string
+	// pollRequest is the request type of the method a waiter polls.
+	pollRequest string
 
 	verb       string
 	path       string
@@ -306,9 +307,14 @@ func (p *SdkPackage) loadMethods(dir string) error {
 		case strings.HasSuffix(first, "Waiter"):
 			m.Kind = "waiter"
 			m.Result = waitResult(waiters, strings.TrimPrefix(first, "*"))
-			for k, wf := range waiters {
-				if strings.HasPrefix(k, strings.TrimPrefix(first, "*")+".Get") && wf.Type.Results.NumFields() == 1 {
-					m.WaiterID = strings.TrimPrefix(k, strings.TrimPrefix(first, "*")+".")
+			m.pollRequest = waiterPollRequest(f, strings.TrimPrefix(first, "*"))
+			for _, d := range f.Decls {
+				fd, ok := d.(*ast.FuncDecl)
+				if !ok || fd.Recv == nil || exprString(fd.Recv.List[0].Type) != first {
+					continue
+				}
+				if strings.HasPrefix(fd.Name.Name, "Get") && fd.Type.Results.NumFields() == 1 {
+					m.WaiterIDs = append(m.WaiterIDs, fd.Name.Name)
 				}
 			}
 		case strings.HasSuffix(first, "Operation"):
@@ -344,6 +350,26 @@ func (p *SdkPackage) loadMethods(dir string) error {
 		}
 	}
 	return nil
+}
+
+// waiterPollRequest returns the request type of the waiter's poll function,
+// from its `poll func(context.Context, GetXRequest, ...call.Option) (...)` field.
+func waiterPollRequest(f *ast.File, waiter string) string {
+	req := ""
+	ast.Inspect(f, func(n ast.Node) bool {
+		ts, ok := n.(*ast.TypeSpec)
+		if !ok || ts.Name.Name != waiter {
+			return true
+		}
+		for _, fl := range ts.Type.(*ast.StructType).Fields.List {
+			ft, ok := fl.Type.(*ast.FuncType)
+			if ok && len(fl.Names) == 1 && fl.Names[0].Name == "poll" && len(ft.Params.List) >= 2 {
+				req = exprString(ft.Params.List[1].Type)
+			}
+		}
+		return false
+	})
+	return req
 }
 
 func waitResult(waiters map[string]*ast.FuncDecl, typ string) string {

@@ -335,7 +335,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
@@ -461,7 +470,16 @@ func newDelete() *cobra.Command {
 			return err
 		}
 		if deleteSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for delete to complete...")
@@ -634,7 +652,16 @@ func newEdit() *cobra.Command {
 			return err
 		}
 		if editSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for edit to complete...")
@@ -1521,7 +1548,16 @@ func newResize() *cobra.Command {
 			return err
 		}
 		if resizeSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for resize to complete...")
@@ -1648,7 +1684,16 @@ func newRestart() *cobra.Command {
 			return err
 		}
 		if restartSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for restart to complete...")
@@ -1931,7 +1976,16 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start to complete...")
@@ -2170,7 +2224,16 @@ func newUpdate() *cobra.Command {
 			return err
 		}
 		if updateSkipWait {
-			return cmdio.Render(ctx, map[string]any{"cluster_id": wait.GetClusterId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Clusters.GetCluster(ctx, sdkclusters.GetClusterRequest{ClusterId: new(wait.GetClusterId())})
+			if err != nil {
+				return err
+			}
+			out, err := clusters.ClusterInfoFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for update to complete...")

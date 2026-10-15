@@ -149,7 +149,16 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, map[string]any{"id": wait.GetId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for create to complete...")
@@ -530,7 +539,16 @@ func newEdit() *cobra.Command {
 			return err
 		}
 		if editSkipWait {
-			return cmdio.Render(ctx, map[string]any{"id": wait.GetId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for edit to complete...")
@@ -1335,7 +1353,16 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return cmdio.Render(ctx, map[string]any{"id": wait.GetId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for start to complete...")
@@ -1430,7 +1457,16 @@ func newStop() *cobra.Command {
 			return err
 		}
 		if stopSkipWait {
-			return cmdio.Render(ctx, map[string]any{"id": wait.GetId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for stop to complete...")

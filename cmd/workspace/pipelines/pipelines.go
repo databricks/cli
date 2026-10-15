@@ -1099,7 +1099,16 @@ func newStop() *cobra.Command {
 			return err
 		}
 		if stopSkipWait {
-			return cmdio.Render(ctx, map[string]any{"pipeline_id": wait.GetPipelineId()})
+			// Render the current state, as of right after the call.
+			current, err := w.Pipelines.Get(ctx, sdkpipelines.GetPipelineRequest{PipelineId: new(wait.GetPipelineId())})
+			if err != nil {
+				return err
+			}
+			out, err := pipelines.GetPipelineResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("Waiting for stop to complete...")
