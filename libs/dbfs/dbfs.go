@@ -1,6 +1,6 @@
 // Package dbfs provides streaming file handles over the DBFS API, built on the
 // sdk-go files client. It ports the handle helpers of the previous SDK
-// (DbfsAPI.Open, ReadFile, WriteFile, RecursiveList), which sdk-go lacks.
+// (DbfsAPI.Open, ReadFile, WriteFile), which sdk-go lacks.
 package dbfs
 
 import (
@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/utils"
 	files "github.com/databricks/sdk-go/files/v2"
 )
@@ -212,31 +211,4 @@ func WriteFile(ctx context.Context, api *files.Client, name string, data []byte)
 		err = cerr
 	}
 	return err
-}
-
-// RecursiveList traverses the DBFS tree and returns all non-directory objects
-// under the path.
-func RecursiveList(ctx context.Context, api *files.Client, path string) ([]files.FileInfo, error) {
-	var results []files.FileInfo
-	queue := []string{path}
-	for len(queue) > 0 {
-		path := queue[0]
-		queue = queue[1:]
-		res, err := api.List(ctx, files.ListStatusRequest{Path: new(path)})
-		if apierrs.IsMissing(err) {
-			// skip on path deleted during iteration
-			continue
-		}
-		if err != nil {
-			return nil, fmt.Errorf("list %s: %w", path, err)
-		}
-		for _, v := range res.Files {
-			if utils.Deref(v.IsDir) {
-				queue = append(queue, utils.Deref(v.Path))
-				continue
-			}
-			results = append(results, v)
-		}
-	}
-	return results, nil
 }

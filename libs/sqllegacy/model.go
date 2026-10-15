@@ -98,38 +98,6 @@ const DatePrecisionMinutePrecision DatePrecision = `MINUTE_PRECISION`
 
 const DatePrecisionSecondPrecision DatePrecision = `SECOND_PRECISION`
 
-// String representation for [fmt.Print]
-func (f *DatePrecision) String() string {
-	return string(*f)
-}
-
-// Set raw string value and validate it against allowed values
-func (f *DatePrecision) Set(v string) error {
-	switch v {
-	case `DAY_PRECISION`, `MINUTE_PRECISION`, `SECOND_PRECISION`:
-		*f = DatePrecision(v)
-		return nil
-	default:
-		return fmt.Errorf(`value "%s" is not one of "DAY_PRECISION", "MINUTE_PRECISION", "SECOND_PRECISION"`, v)
-	}
-}
-
-// Values returns all possible values for DatePrecision.
-//
-// There is no guarantee on the order of the values in the slice.
-func (f *DatePrecision) Values() []DatePrecision {
-	return []DatePrecision{
-		DatePrecisionDayPrecision,
-		DatePrecisionMinutePrecision,
-		DatePrecisionSecondPrecision,
-	}
-}
-
-// Type always returns DatePrecision to satisfy [pflag.Value] interface
-func (f *DatePrecision) Type() string {
-	return "DatePrecision"
-}
-
 type DateRange struct {
 	End string `json:"end"`
 
@@ -184,52 +152,6 @@ const DateRangeValueDynamicDateRangeToday DateRangeValueDynamicDateRange = `TODA
 
 const DateRangeValueDynamicDateRangeYesterday DateRangeValueDynamicDateRange = `YESTERDAY`
 
-// String representation for [fmt.Print]
-func (f *DateRangeValueDynamicDateRange) String() string {
-	return string(*f)
-}
-
-// Set raw string value and validate it against allowed values
-func (f *DateRangeValueDynamicDateRange) Set(v string) error {
-	switch v {
-	case `LAST_12_MONTHS`, `LAST_14_DAYS`, `LAST_24_HOURS`, `LAST_30_DAYS`, `LAST_60_DAYS`, `LAST_7_DAYS`, `LAST_8_HOURS`, `LAST_90_DAYS`, `LAST_HOUR`, `LAST_MONTH`, `LAST_WEEK`, `LAST_YEAR`, `THIS_MONTH`, `THIS_WEEK`, `THIS_YEAR`, `TODAY`, `YESTERDAY`:
-		*f = DateRangeValueDynamicDateRange(v)
-		return nil
-	default:
-		return fmt.Errorf(`value "%s" is not one of "LAST_12_MONTHS", "LAST_14_DAYS", "LAST_24_HOURS", "LAST_30_DAYS", "LAST_60_DAYS", "LAST_7_DAYS", "LAST_8_HOURS", "LAST_90_DAYS", "LAST_HOUR", "LAST_MONTH", "LAST_WEEK", "LAST_YEAR", "THIS_MONTH", "THIS_WEEK", "THIS_YEAR", "TODAY", "YESTERDAY"`, v)
-	}
-}
-
-// Values returns all possible values for DateRangeValueDynamicDateRange.
-//
-// There is no guarantee on the order of the values in the slice.
-func (f *DateRangeValueDynamicDateRange) Values() []DateRangeValueDynamicDateRange {
-	return []DateRangeValueDynamicDateRange{
-		DateRangeValueDynamicDateRangeLast12Months,
-		DateRangeValueDynamicDateRangeLast14Days,
-		DateRangeValueDynamicDateRangeLast24Hours,
-		DateRangeValueDynamicDateRangeLast30Days,
-		DateRangeValueDynamicDateRangeLast60Days,
-		DateRangeValueDynamicDateRangeLast7Days,
-		DateRangeValueDynamicDateRangeLast8Hours,
-		DateRangeValueDynamicDateRangeLast90Days,
-		DateRangeValueDynamicDateRangeLastHour,
-		DateRangeValueDynamicDateRangeLastMonth,
-		DateRangeValueDynamicDateRangeLastWeek,
-		DateRangeValueDynamicDateRangeLastYear,
-		DateRangeValueDynamicDateRangeThisMonth,
-		DateRangeValueDynamicDateRangeThisWeek,
-		DateRangeValueDynamicDateRangeThisYear,
-		DateRangeValueDynamicDateRangeToday,
-		DateRangeValueDynamicDateRangeYesterday,
-	}
-}
-
-// Type always returns DateRangeValueDynamicDateRange to satisfy [pflag.Value] interface
-func (f *DateRangeValueDynamicDateRange) Type() string {
-	return "DateRangeValueDynamicDateRange"
-}
-
 type DateValue struct {
 	// Manually specified date-time value.
 	DateValue string `json:"date_value,omitempty"`
@@ -245,37 +167,6 @@ type DateValueDynamicDate string
 const DateValueDynamicDateNow DateValueDynamicDate = `NOW`
 
 const DateValueDynamicDateYesterday DateValueDynamicDate = `YESTERDAY`
-
-// String representation for [fmt.Print]
-func (f *DateValueDynamicDate) String() string {
-	return string(*f)
-}
-
-// Set raw string value and validate it against allowed values
-func (f *DateValueDynamicDate) Set(v string) error {
-	switch v {
-	case `NOW`, `YESTERDAY`:
-		*f = DateValueDynamicDate(v)
-		return nil
-	default:
-		return fmt.Errorf(`value "%s" is not one of "NOW", "YESTERDAY"`, v)
-	}
-}
-
-// Values returns all possible values for DateValueDynamicDate.
-//
-// There is no guarantee on the order of the values in the slice.
-func (f *DateValueDynamicDate) Values() []DateValueDynamicDate {
-	return []DateValueDynamicDate{
-		DateValueDynamicDateNow,
-		DateValueDynamicDateYesterday,
-	}
-}
-
-// Type always returns DateValueDynamicDate to satisfy [pflag.Value] interface
-func (f *DateValueDynamicDate) Type() string {
-	return "DateValueDynamicDate"
-}
 
 type EnumValue struct {
 	// List of valid query parameter values, newline delimited.
@@ -389,37 +280,6 @@ type LifecycleState string
 const LifecycleStateActive LifecycleState = `ACTIVE`
 
 const LifecycleStateTrashed LifecycleState = `TRASHED`
-
-// String representation for [fmt.Print]
-func (f *LifecycleState) String() string {
-	return string(*f)
-}
-
-// Set raw string value and validate it against allowed values
-func (f *LifecycleState) Set(v string) error {
-	switch v {
-	case `ACTIVE`, `TRASHED`:
-		*f = LifecycleState(v)
-		return nil
-	default:
-		return fmt.Errorf(`value "%s" is not one of "ACTIVE", "TRASHED"`, v)
-	}
-}
-
-// Values returns all possible values for LifecycleState.
-//
-// There is no guarantee on the order of the values in the slice.
-func (f *LifecycleState) Values() []LifecycleState {
-	return []LifecycleState{
-		LifecycleStateActive,
-		LifecycleStateTrashed,
-	}
-}
-
-// Type always returns LifecycleState to satisfy [pflag.Value] interface
-func (f *LifecycleState) Type() string {
-	return "LifecycleState"
-}
 
 type ListDashboardsRequest struct {
 	// Name of dashboard attribute to order by.
@@ -698,37 +558,6 @@ type RunAsMode string
 const RunAsModeOwner RunAsMode = `OWNER`
 
 const RunAsModeViewer RunAsMode = `VIEWER`
-
-// String representation for [fmt.Print]
-func (f *RunAsMode) String() string {
-	return string(*f)
-}
-
-// Set raw string value and validate it against allowed values
-func (f *RunAsMode) Set(v string) error {
-	switch v {
-	case `OWNER`, `VIEWER`:
-		*f = RunAsMode(v)
-		return nil
-	default:
-		return fmt.Errorf(`value "%s" is not one of "OWNER", "VIEWER"`, v)
-	}
-}
-
-// Values returns all possible values for RunAsMode.
-//
-// There is no guarantee on the order of the values in the slice.
-func (f *RunAsMode) Values() []RunAsMode {
-	return []RunAsMode{
-		RunAsModeOwner,
-		RunAsModeViewer,
-	}
-}
-
-// Type always returns RunAsMode to satisfy [pflag.Value] interface
-func (f *RunAsMode) Type() string {
-	return "RunAsMode"
-}
 
 type RunAsRole string
 
