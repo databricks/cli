@@ -14,7 +14,6 @@ import (
 	"time"
 
 	authcmd "github.com/databricks/cli/cmd/auth"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
@@ -239,9 +238,10 @@ func TestPromptForWorkspaceSelectionListError(t *testing.T) {
 // newWorkspaceListServer exercises the SDK's actual list decoding without a live account.
 func newWorkspaceListServer(t *testing.T, status int, workspaces []provisioning.Workspace) (*auth.AuthArguments, *atomic.Int32) {
 	t.Helper()
-	// The SDK client reads DATABRICKS_* variables and ~/.databrickscfg, so a
-	// developer's DATABRICKS_CONFIG_PROFILE would otherwise break client setup.
-	testutil.CleanupEnvironment(t)
+	// A developer's DATABRICKS_CONFIG_PROFILE would make the SDK client load
+	// ~/.databrickscfg and fail on a missing profile. Clearing the whole
+	// environment instead breaks sockets on Windows, which needs SystemRoot.
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
 	body, err := json.Marshal(workspaces)
 	require.NoError(t, err)
 	if status != http.StatusOK {
