@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
@@ -39,12 +40,12 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	// dotted catalog.schema value is rejected; the catalog belongs in the separate
 	// catalog field. Only the dot trips this check, but the backend's canned error
 	// also lists dashes and other characters as invalid.
-	if strings.Contains(spec.Target, ".") {
+	if strings.Contains(utils.Deref(spec.Target), ".") {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", spec.Target),
+				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", utils.Deref(spec.Target)),
 			},
 		}
 	}
@@ -55,7 +56,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	// parameters is not on PipelineSpec (only on CreatePipeline), so the decode above
 	// drops it. The backend echoes it on GetPipelineResponse.Parameters; mirror that
 	// here, else a re-read misses it and the CLI plans a perpetual update.
-	var create pipelines.CreatePipeline
+	var create pipelines.CreatePipelineRequest
 	if err := json.Unmarshal(req.Body, &create); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
@@ -65,36 +66,36 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Parameters = create.Parameters
 
 	pipelineId := nextUUID()
-	r.PipelineId = pipelineId
-	r.CreatorUserName = "tester@databricks.com"
-	r.LastModified = nowMilli()
+	r.PipelineId = utils.NonZero(pipelineId)
+	r.CreatorUserName = utils.NonZero("tester@databricks.com")
+	r.LastModified = utils.NonZero(nowMilli())
 	r.Name = r.Spec.Name
 	// run_as is on CreatePipeline, not PipelineSpec, so the spec decode drops it. The backend
 	// echoes it top-level on GetPipelineResponse.RunAs; mirror that so a re-read is faithful.
 	if create.RunAs != nil {
 		r.RunAs = create.RunAs
 	}
-	r.RunAsUserName = "tester@databricks.com"
+	r.RunAsUserName = utils.NonZero("tester@databricks.com")
 	r.State = "IDLE"
-	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
+	r.EffectivePublishingMode = pipelines.PublishingMode_DefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
+			PipelineId: utils.NonZero(pipelineId),
 		},
 	}
 }
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
-	spec.Id = pipelineId
+	spec.Id = utils.NonZero(pipelineId)
 	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
 	// and if the storage location is not specified, API automatically generates a storage location
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
-	if spec.Storage == "" && spec.Catalog == "" {
-		spec.Storage = "dbfs:/pipelines/" + pipelineId
+	if utils.Deref(spec.Storage) == "" && utils.Deref(spec.Catalog) == "" {
+		spec.Storage = utils.NonZero("dbfs:/pipelines/" + pipelineId)
 	}
 }
 
@@ -119,7 +120,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 
 	// parameters is on EditPipeline, not PipelineSpec; round-trip it like
 	// PipelineCreate does.
-	var edit pipelines.EditPipeline
+	var edit pipelines.EditPipelineRequest
 	if err := json.Unmarshal(req.Body, &edit); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -159,7 +160,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
-			UpdateId: updateId,
+			UpdateId: utils.NonZero(updateId),
 		},
 	}
 }
@@ -205,8 +206,8 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 	return Response{
 		Body: pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{
-				UpdateId: updateId,
-				State:    pipelines.UpdateInfoStateCompleted,
+				UpdateId: utils.NonZero(updateId),
+				State:    pipelines.UpdateState_Completed,
 			},
 		},
 	}
@@ -225,8 +226,8 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 
 	return Response{
 		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			State:      pipelines.PipelineStateIdle,
+			PipelineId: utils.NonZero(pipelineId),
+			State:      pipelines.PipelineState_PipelineState_Idle,
 		},
 	}
 }

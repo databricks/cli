@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/sdkclients"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
 )
 
 // AI Gateway model service.
@@ -27,10 +28,10 @@ import (
 const modelServiceNamePrefix = "model-services/"
 
 type ResourceModelService struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceModelService) New(client *databricks.WorkspaceClient) *ResourceModelService {
+func (*ResourceModelService) New(client *sdkclients.Clients) *ResourceModelService {
 	return &ResourceModelService{client: client}
 }
 
@@ -53,42 +54,44 @@ func modelServiceIdentityFromName(name string) (parent, modelServiceId string, e
 	return "schemas/" + parts[0] + "." + parts[1], parts[2], nil
 }
 
-func responseToModelServiceConfig(ms *catalog.ModelService) (*resources.ModelServiceConfig, error) {
-	parent, id, err := modelServiceIdentityFromName(ms.Name)
+func responseToModelServiceConfig(resp *sdkaigateway.ModelService) (*resources.ModelServiceConfig, error) {
+	ms, err := aigateway.ModelServiceFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	parent, id, err := modelServiceIdentityFromName(utils.Deref(ms.Name))
 	if err != nil {
 		return nil, err
 	}
 	return &resources.ModelServiceConfig{
-		Parent:          parent,
-		ModelServiceId:  id,
-		Comment:         ms.Comment,
-		Config:          ms.Config,
-		ForceSendFields: nil,
+		Parent:         parent,
+		ModelServiceId: id,
+		Comment:        utils.Deref(ms.Comment),
+		Config:         ms.Config,
 	}, nil
 }
 
 // modelServiceBody builds the ModelService write payload from the bundle config.
 // Only comment and config are client-settable; every other field is OUTPUT_ONLY
-// (server-derived) and sent as its zero value.
-func modelServiceBody(config *resources.ModelServiceConfig) catalog.ModelService {
-	return catalog.ModelService{
-		Comment:           config.Comment,
+// (server-derived) and not sent. name addresses the resource on update.
+func modelServiceBody(config *resources.ModelServiceConfig, name *string) *aigateway.ModelService {
+	return &aigateway.ModelService{
+		Name:              name,
+		Comment:           nonEmpty(config.Comment),
 		Config:            config.Config,
-		CreateTime:        nil,
-		CreatedBy:         "",
-		EffectiveOwner:    "",
-		Etag:              "",
-		MetastoreId:       "",
-		Name:              "",
-		SupportedApiTypes: nil,
-		UpdateTime:        nil,
-		UpdatedBy:         "",
-		ForceSendFields:   nil,
+		CreateTime:        nil, // Not set by DABs
+		CreatedBy:         nil, // Not set by DABs
+		EffectiveOwner:    nil, // Not set by DABs
+		Etag:              nil, // Not set by DABs
+		MetastoreId:       nil, // Not set by DABs
+		SupportedApiTypes: nil, // Not set by DABs
+		UpdateTime:        nil, // Not set by DABs
+		UpdatedBy:         nil, // Not set by DABs
 	}
 }
 
 func (r *ResourceModelService) DoRead(ctx context.Context, id string) (*resources.ModelServiceConfig, error) {
-	ms, err := r.client.AiGateway.GetModelService(ctx, catalog.GetModelServiceRequest{Name: modelServiceNamePrefix + id})
+	ms, err := r.client.AiGateway.GetModelService(ctx, sdkaigateway.GetModelServiceRequest{Name: new(modelServiceNamePrefix + id)})
 	if err != nil {
 		return nil, err
 	}
@@ -96,11 +99,15 @@ func (r *ResourceModelService) DoRead(ctx context.Context, id string) (*resource
 }
 
 func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.ModelServiceConfig) (string, *resources.ModelServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateModelService(ctx, catalog.CreateModelServiceRequest{
-		Parent:         config.Parent,
-		ModelServiceId: config.ModelServiceId,
-		ModelService:   modelServiceBody(config),
+	request, err := aigateway.CreateModelServiceRequestToSDK(&aigateway.CreateModelServiceRequest{
+		Parent:         new(config.Parent),
+		ModelServiceId: new(config.ModelServiceId),
+		ModelService:   modelServiceBody(config, nil),
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := r.client.AiGateway.CreateModelService(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -108,7 +115,7 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 	if err != nil {
 		return "", nil, err
 	}
-	return strings.TrimPrefix(resp.Name, modelServiceNamePrefix), state, nil
+	return strings.TrimPrefix(utils.Deref(resp.Name), modelServiceNamePrefix), state, nil
 }
 
 // DoUpdate sends update_mask "*" on every update. name, parent and
@@ -121,13 +128,15 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 // which also does not send etag. We deliberately do not do optimistic
 // concurrency on these resources.
 func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *resources.ModelServiceConfig, _ *PlanEntry) (*resources.ModelServiceConfig, error) {
-	resp, err := r.client.AiGateway.UpdateModelService(ctx, catalog.UpdateModelServiceRequest{
-		Etag:            "",
-		ModelService:    modelServiceBody(config),
-		Name:            modelServiceNamePrefix + id,
-		UpdateMask:      fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields: nil,
+	request, err := aigateway.UpdateModelServiceRequestToSDK(&aigateway.UpdateModelServiceRequest{
+		ModelService: modelServiceBody(config, new(modelServiceNamePrefix+id)),
+		UpdateMask:   new("*"),
+		Etag:         nil, // Not set by DABs
 	})
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.AiGateway.UpdateModelService(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +144,8 @@ func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *
 }
 
 func (r *ResourceModelService) DoDelete(ctx context.Context, id string, _ *resources.ModelServiceConfig) error {
-	return r.client.AiGateway.DeleteModelService(ctx, catalog.DeleteModelServiceRequest{
-		Etag:            "",
-		Name:            modelServiceNamePrefix + id,
-		ForceSendFields: nil,
+	return r.client.AiGateway.DeleteModelService(ctx, sdkaigateway.DeleteModelServiceRequest{
+		Name: new(modelServiceNamePrefix + id),
+		Etag: nil, // Not set by DABs
 	})
 }

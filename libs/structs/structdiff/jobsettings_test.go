@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -464,6 +464,17 @@ func TestJobEqual(t *testing.T) {
 	testEqual(t, jobExampleResponseNils)
 }
 
+func findChange(t *testing.T, changes []Change, path string) Change {
+	t.Helper()
+	for _, ch := range changes {
+		if ch.Path.String() == path {
+			return ch
+		}
+	}
+	t.Fatalf("no change at %s", path)
+	return Change{}
+}
+
 func TestJobDiff(t *testing.T) {
 	var job, zero, nils jobs.JobSettings
 
@@ -474,54 +485,52 @@ func TestJobDiff(t *testing.T) {
 	changes, err := GetStructDiff(job, zero, nil)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(changes), 75)
-	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
-	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
-	assert.Empty(t, changes[0].New)
-	// Note: pause_status shows up as nil here because Continuous does not have ForceSendFields field
-	assert.Equal(t, "continuous.pause_status", changes[1].Path.String())
-	assert.Equal(t, jobs.PauseStatus("UNPAUSED"), changes[1].Old)
-	assert.Nil(t, changes[1].New)
-	assert.Equal(t, "deployment.kind", changes[2].Path.String())
-	assert.Equal(t, jobs.JobDeploymentKind("BUNDLE"), changes[2].Old)
-	assert.Equal(t, jobs.JobDeploymentKind(""), changes[2].New)
-	assert.Equal(t, "deployment.metadata_file_path", changes[3].Path.String())
-	assert.Equal(t, "string", changes[3].Old)
-	assert.Empty(t, changes[3].New)
+	// Explicit zero values are kept behind pointers.
+	ch := findChange(t, changes, "budget_policy_id")
+	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", ch.Old)
+	assert.Empty(t, ch.New)
+	// Enums are not pointers: an empty enum is absent.
+	ch = findChange(t, changes, "continuous.pause_status")
+	assert.Equal(t, jobs.SchedulePauseStatus("UNPAUSED"), ch.Old)
+	assert.Nil(t, ch.New)
+	ch = findChange(t, changes, "deployment.kind")
+	assert.Equal(t, jobs.JobDeployment_DeploymentKind("BUNDLE"), ch.Old)
+	assert.Nil(t, ch.New)
+	ch = findChange(t, changes, "deployment.metadata_file_path")
+	assert.Equal(t, "string", ch.Old)
+	assert.Empty(t, ch.New)
 
 	changes, err = GetStructDiff(job, nils, nil)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(changes), 77)
-	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
-	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
-	assert.Nil(t, changes[0].New)
+	ch = findChange(t, changes, "budget_policy_id")
+	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", ch.Old)
+	assert.Nil(t, ch.New)
 
 	// continuous is completely deleted from jobExampleResponseNils
-	assert.Equal(t, "continuous", changes[1].Path.String())
-	assert.Equal(t, jobs.Continuous{PauseStatus: "UNPAUSED"}, changes[1].Old)
-	assert.Nil(t, changes[1].New)
+	ch = findChange(t, changes, "continuous")
+	assert.Equal(t, jobs.ContinuousSettings{PauseStatus: "UNPAUSED"}, ch.Old)
+	assert.Nil(t, ch.New)
 
-	// deployment.kind is not omitempty field, so it does not show up as nil here
-	assert.Equal(t, "deployment.kind", changes[2].Path.String())
-	assert.Equal(t, jobs.JobDeploymentKind("BUNDLE"), changes[2].Old)
-	assert.Equal(t, jobs.JobDeploymentKind(""), changes[2].New)
+	ch = findChange(t, changes, "deployment.kind")
+	assert.Equal(t, jobs.JobDeployment_DeploymentKind("BUNDLE"), ch.Old)
+	assert.Nil(t, ch.New)
 
-	assert.Equal(t, "deployment.metadata_file_path", changes[3].Path.String())
-	assert.Equal(t, "string", changes[3].Old)
-	assert.Nil(t, changes[3].New)
+	ch = findChange(t, changes, "deployment.metadata_file_path")
+	assert.Equal(t, "string", ch.Old)
+	assert.Nil(t, ch.New)
 
 	changes, err = GetStructDiff(zero, nils, nil)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(changes), 58)
-	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
-	assert.Empty(t, changes[0].Old)
-	assert.Nil(t, changes[0].New)
-	assert.Equal(t, "continuous", changes[1].Path.String())
-	assert.Equal(t, jobs.Continuous{}, changes[1].Old)
-	assert.Nil(t, changes[1].New)
+	ch = findChange(t, changes, "budget_policy_id")
+	assert.Empty(t, ch.Old)
+	assert.Nil(t, ch.New)
+	ch = findChange(t, changes, "continuous")
+	assert.Equal(t, jobs.ContinuousSettings{}, ch.Old)
+	assert.Nil(t, ch.New)
 
-	// deployment.kind is "" in both
-
-	assert.Equal(t, "deployment.metadata_file_path", changes[2].Path.String())
-	assert.Empty(t, changes[2].Old)
-	assert.Nil(t, changes[2].New)
+	ch = findChange(t, changes, "deployment.metadata_file_path")
+	assert.Empty(t, ch.Old)
+	assert.Nil(t, ch.New)
 }

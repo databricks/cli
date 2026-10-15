@@ -23,6 +23,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[INLINE_DASH_ID]/published",
   "body": {
+    "dashboard_id": "[INLINE_DASH_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

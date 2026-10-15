@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,22 +15,22 @@ func TestVisitPipelinePaths(t *testing.T) {
 		Resources: config.Resources{
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline0": {
-					CreatePipeline: pipelines.CreatePipeline{
-						RootPath: "src",
+					CreatePipelineRequest: pipelines.CreatePipelineRequest{
+						RootPath: new("src"),
 						Libraries: []pipelines.PipelineLibrary{
 							{
-								File: &pipelines.FileLibrary{
-									Path: "dist/foo.whl",
+								File: &pipelines.NotebookLibrary{
+									Path: new("dist/foo.whl"),
 								},
 							},
 							{
 								Notebook: &pipelines.NotebookLibrary{
-									Path: "src/foo.py",
+									Path: new("src/foo.py"),
 								},
 							},
 							{
 								Glob: &pipelines.PathPattern{
-									Include: "a/b/c/**",
+									Include: new("a/b/c/**"),
 								},
 							},
 						},

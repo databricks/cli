@@ -30,6 +30,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "body": {
     "catalog_name": "main",
     "comment": "",
+    "full_name_arg": "main.test-schema-[UNIQUE_NAME].test-model-[UNIQUE_NAME]",
     "name": "test-model-[UNIQUE_NAME]",
     "schema_name": "test-schema-[UNIQUE_NAME]"
   }

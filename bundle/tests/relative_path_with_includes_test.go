@@ -4,6 +4,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +40,6 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 		b.Config.Sync.Exclude,
 	)
 
-	assert.Equal(t, "dist/job_a.whl", b.Config.Resources.Jobs["job_a"].Tasks[0].Libraries[0].Whl)
-	assert.Equal(t, "subfolder/dist/job_b.whl", b.Config.Resources.Jobs["job_b"].Tasks[0].Libraries[0].Whl)
+	assert.Equal(t, "dist/job_a.whl", utils.Deref(b.Config.Resources.Jobs["job_a"].Tasks[0].Libraries[0].Whl))
+	assert.Equal(t, "subfolder/dist/job_b.whl", utils.Deref(b.Config.Resources.Jobs["job_b"].Tasks[0].Libraries[0].Whl))
 }

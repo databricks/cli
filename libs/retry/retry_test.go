@@ -10,28 +10,29 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIsTransient(t *testing.T) {
 	ctx := t.Context()
-	assert.True(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "TEMPORARILY_UNAVAILABLE"}))
-	assert.True(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusInternalServerError}))
-	assert.True(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusRequestTimeout}))
-	// Retried by the SDK already.
-	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusServiceUnavailable}))
-	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "deadline exceeded"}))
-	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
+	assert.True(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusGatewayTimeout, nil, []byte(`{"message":"TEMPORARILY_UNAVAILABLE"}`))))
+	assert.True(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusInternalServerError, nil, nil)))
+	assert.True(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusRequestTimeout, nil, nil)))
+	assert.True(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusGatewayTimeout, nil, []byte(`{"message":"deadline exceeded"}`))))
+	// Retried by the transport already.
+	assert.False(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusServiceUnavailable, nil, nil)))
+	assert.False(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusTooManyRequests, nil, nil)))
+	assert.False(t, IsTransient(ctx, apierr.FromHTTPError(http.StatusForbidden, nil, nil)))
 	assert.False(t, IsTransient(ctx, errors.New("boom")))
 }
 
 func TestIsTransientRead(t *testing.T) {
 	ctx := t.Context()
 	// Everything IsTransient covers is transient for a read too.
-	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusInternalServerError}))
-	assert.True(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusRequestTimeout}))
+	assert.True(t, IsTransientRead(ctx, apierr.FromHTTPError(http.StatusInternalServerError, nil, nil)))
+	assert.True(t, IsTransientRead(ctx, apierr.FromHTTPError(http.StatusRequestTimeout, nil, nil)))
 	// REFUSED_STREAM is the transport failure the SDK leaves unretried, so we replay the read (issue #6472).
 	refusedStream := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("stream error: stream ID 1; REFUSED_STREAM; received from peer")}
 	assert.True(t, IsTransientRead(ctx, refusedStream))
@@ -42,9 +43,9 @@ func TestIsTransientRead(t *testing.T) {
 	cancelled := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: context.Canceled}
 	assert.False(t, IsTransientRead(ctx, cancelled))
 	// Not transient: retried by the SDK, client errors, and plain non-url errors.
-	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusServiceUnavailable}))
-	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusNotFound}))
-	assert.False(t, IsTransientRead(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
+	assert.False(t, IsTransientRead(ctx, apierr.FromHTTPError(http.StatusServiceUnavailable, nil, nil)))
+	assert.False(t, IsTransientRead(ctx, apierr.FromHTTPError(http.StatusNotFound, nil, nil)))
+	assert.False(t, IsTransientRead(ctx, apierr.FromHTTPError(http.StatusForbidden, nil, nil)))
 	assert.False(t, IsTransientRead(ctx, errors.New("boom")))
 }
 
@@ -110,7 +111,7 @@ func TestWithStopsOnContextCancel(t *testing.T) {
 }
 
 func TestRetryMessage(t *testing.T) {
-	apiErr := &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "boom"}
+	apiErr := apierr.FromHTTPError(http.StatusGatewayTimeout, nil, []byte(`{"message":"boom"}`))
 	assert.Equal(t, "retrying", retryMessage(errors.New("x")))
 	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
 	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))

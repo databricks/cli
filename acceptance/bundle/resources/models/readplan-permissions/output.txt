@@ -25,7 +25,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MODEL_ID]",
+    "request_object_type": "registered-models"
   }
 }
 
@@ -49,7 +51,9 @@ Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MODEL_ID]",
+    "request_object_type": "registered-models"
   }
 }
 

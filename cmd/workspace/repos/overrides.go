@@ -8,21 +8,23 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	sdkrepos "github.com/databricks/sdk-go/repos/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
+func listOverride(listCmd *cobra.Command, listReq *repos.ListReposRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
 }
 
-func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoRequest) {
+func createOverride(createCmd *cobra.Command, createReq *repos.CreateRepoRequest) {
 	createCmd.Use = "create URL [PROVIDER]"
 	createCmd.Args = func(cmd *cobra.Command, args []string) error {
 		// If the provider argument is not specified, we try to detect it from the URL.
@@ -49,36 +51,46 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 				}
 			}
 		} else {
-			createReq.Url = args[0]
+			createReq.Url = new(args[0])
 			if len(args) > 1 {
-				createReq.Provider = args[1]
+				createReq.Provider = new(args[1])
 			} else {
-				createReq.Provider = DetectProvider(createReq.Url)
-				if createReq.Provider == "" {
+				provider := DetectProvider(args[0])
+				if provider == "" {
 					return fmt.Errorf(
-						"could not detect provider from URL %q; please specify", createReq.Url)
+						"could not detect provider from URL %q; please specify", args[0])
 				}
+				createReq.Provider = new(provider)
 			}
 		}
-		response, err := w.Repos.Create(ctx, *createReq)
+		sdkReq, err := repos.CreateRepoRequestToSDK(createReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		response, err := w.Repos.CreateRepo(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+		out, err := repos.CreateRepoResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 }
 
-func deleteOverride(deleteCmd *cobra.Command, deleteReq *workspace.DeleteRepoRequest) {
+func deleteOverride(deleteCmd *cobra.Command, deleteReq *sdkrepos.DeleteRepoRequest) {
 	deleteCmd.Use = "delete REPO_ID_OR_PATH"
 	deleteCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
+		id, err := repoArgumentToRepoID(ctx, w, args)
 		if err != nil {
 			return err
 		}
-		err = w.Repos.Delete(ctx, *deleteReq)
+		deleteReq.Id = &id
+		_, err = w.Repos.DeleteRepo(ctx, *deleteReq)
 		if err != nil {
 			return err
 		}
@@ -86,25 +98,30 @@ func deleteOverride(deleteCmd *cobra.Command, deleteReq *workspace.DeleteRepoReq
 	}
 }
 
-func getOverride(getCmd *cobra.Command, getReq *workspace.GetRepoRequest) {
+func getOverride(getCmd *cobra.Command, getReq *sdkrepos.GetRepoRequest) {
 	getCmd.Use = "get REPO_ID_OR_PATH"
 	getCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		getReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
+		id, err := repoArgumentToRepoID(ctx, w, args)
 		if err != nil {
 			return err
 		}
+		getReq.Id = &id
 
-		response, err := w.Repos.Get(ctx, *getReq)
+		response, err := w.Repos.GetRepo(ctx, *getReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		out, err := repos.GetRepoResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 }
 
-func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoRequest) {
+func updateOverride(updateCmd *cobra.Command, updateReq *repos.UpdateRepoRequest) {
 	updateCmd.Use = "update REPO_ID_OR_PATH"
 
 	updateJson := updateCmd.Flag("json").Value.(*flags.JsonFlag)
@@ -124,13 +141,18 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 				}
 			}
 		} else {
-			updateReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
+			id, err := repoArgumentToRepoID(ctx, w, args)
 			if err != nil {
 				return err
 			}
+			updateReq.Id = &id
 		}
 
-		err = w.Repos.Update(ctx, *updateReq)
+		sdkReq, err := repos.UpdateRepoRequestToSDK(updateReq)
+		if err != nil {
+			return err
+		}
+		_, err = w.Repos.UpdateRepo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -138,12 +160,12 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 	}
 }
 
-func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, args []string) (int64, error) {
+func repoArgumentToRepoID(ctx context.Context, w *sdkclients.Clients, args []string) (int64, error) {
 	// ---- Begin copy from cmd/workspace/repos/repos.go ----
 	if len(args) == 0 {
 		sp := cmdio.NewSpinner(ctx)
 		sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
-		names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+		names, err := cmdgen.NamedIdMap(ctx, w.Repos.ListReposIter(ctx, sdkrepos.ListReposRequest{}), []string{"Path"}, []string{"Id"})
 		sp.Close()
 		if err != nil {
 			return 0, fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)

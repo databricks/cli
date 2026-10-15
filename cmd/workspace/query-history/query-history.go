@@ -6,8 +6,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	queryhistory "github.com/databricks/cli/libs/sdktypes/queryhistory/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -45,18 +47,17 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*sql.ListQueryHistoryRequest,
+	*queryhistory.ListQueriesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var listReq sql.ListQueryHistoryRequest
+	var listReq queryhistory.ListQueriesRequest
 
 	// TODO: complex arg: filter_by
-	cmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include the query metrics with each query.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Limit the number of results returned in one page.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeMetrics, "include-metrics", `Whether to include the query metrics with each query.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Limit the number of results returned in one page.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `A token that can be used to get the next page of results.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List Queries.`
@@ -82,13 +83,22 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.QueryHistory.List(ctx, listReq)
+		sdkReq, err := queryhistory.ListQueriesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.QueryHistory.ListQueries(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := queryhistory.ListQueriesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

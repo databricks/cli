@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // aiTrainingWorkflowsPath is the AiTrainingService index of the caller's own AIR
@@ -40,8 +40,8 @@ type aiTrainingWorkflowsResponse struct {
 // listAiTrainingWorkflows pages the index and returns every workflow ref the
 // caller owns. Pagination stops at the end or when a page token repeats, which
 // guards against a stuck or cycling cursor without an arbitrary page cap.
-func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient, activeOnly bool) ([]workflowRef, error) {
-	apiClient, err := client.New(w.Config)
+func listAiTrainingWorkflows(ctx context.Context, w *sdkclients.Clients, activeOnly bool) ([]workflowRef, error) {
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}

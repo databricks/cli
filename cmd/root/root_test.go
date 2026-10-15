@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,11 +24,7 @@ func TestExecuteEnrichesAuthErrors(t *testing.T) {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return &apierr.APIError{
-				StatusCode: 403,
-				ErrorCode:  "PERMISSION_DENIED",
-				Message:    "no access",
-			}
+			return apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED","message":"no access"}`))
 		},
 	}
 	cmd.SetErr(stderr)
@@ -62,11 +58,7 @@ func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return &apierr.APIError{
-				StatusCode: 403,
-				ErrorCode:  "PERMISSION_DENIED",
-				Message:    "no access",
-			}
+			return apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED","message":"no access"}`))
 		},
 	}
 	cmd.SetErr(stderr)
@@ -91,7 +83,7 @@ func TestExecuteAppendsAccountHostHint(t *testing.T) {
 			setup: func(ctx context.Context) context.Context {
 				cfg := &config.Config{Host: "https://accounts.test", Profile: "acc"}
 				ctx = cmdctx.SetConfigUsed(ctx, cfg)
-				return cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{Config: cfg})
+				return cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{Config: cfg})
 			},
 			wantHint: true,
 		},
@@ -100,7 +92,7 @@ func TestExecuteAppendsAccountHostHint(t *testing.T) {
 			setup: func(ctx context.Context) context.Context {
 				cfg := &config.Config{Host: "https://adb-123.test", Profile: "ws"}
 				ctx = cmdctx.SetConfigUsed(ctx, cfg)
-				return cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{Config: cfg})
+				return cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{Config: cfg})
 			},
 			wantHint: false,
 		},
@@ -111,7 +103,7 @@ func TestExecuteAppendsAccountHostHint(t *testing.T) {
 			setup: func(ctx context.Context) context.Context {
 				cfg := &config.Config{Host: "https://accounts.test", Profile: "acc"}
 				ctx = cmdctx.SetConfigUsed(ctx, cfg)
-				return cmdctx.SetAccountClient(ctx, &databricks.AccountClient{Config: cfg})
+				return cmdctx.SetAccountClient(ctx, &sdkclients.Clients{Config: cfg})
 			},
 			wantHint: false,
 		},

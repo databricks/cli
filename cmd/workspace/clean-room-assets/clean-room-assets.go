@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
 	"github.com/spf13/cobra"
+
+	cleanrooms "github.com/databricks/cli/libs/sdktypes/cleanrooms/v1"
+	sdkcleanrooms "github.com/databricks/sdk-go/cleanrooms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -59,14 +62,14 @@ var createOverrides []func(
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createReq cleanrooms.CreateCleanRoomAssetRequest
-	createReq.Asset = cleanrooms.CleanRoomAsset{}
+	createReq.Asset = &cleanrooms.CleanRoomAsset{}
+
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Asset.CleanRoomName, "clean-room-name", `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
 	// TODO: complex arg: jar_analysis
@@ -129,6 +132,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Asset)
@@ -142,24 +146,28 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		createReq.CleanRoomName = args[0]
+		createReq.Asset.CleanRoomName = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createReq.Asset.Name = args[1]
+			createReq.Asset.Name = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createReq.Asset.AssetType)
-			if err != nil {
-				return fmt.Errorf("invalid ASSET_TYPE: %s", args[2])
-			}
-
+			createReq.Asset.AssetType = cleanrooms.CleanRoomAsset_AssetType(args[2])
 		}
 
-		response, err := w.CleanRoomAssets.Create(ctx, createReq)
+		sdkReq, err := cleanrooms.CreateCleanRoomAssetRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CleanRooms.CreateCleanRoomAsset(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAssetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -185,8 +193,8 @@ var createCleanRoomAssetReviewOverrides []func(
 
 func newCreateCleanRoomAssetReview() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createCleanRoomAssetReviewReq cleanrooms.CreateCleanRoomAssetReviewRequest
+
 	var createCleanRoomAssetReviewJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCleanRoomAssetReviewJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -228,6 +236,7 @@ Create a review (e.g. approval) for an asset.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCleanRoomAssetReviewJson.Unmarshal(&createCleanRoomAssetReviewReq)
@@ -241,20 +250,24 @@ Create a review (e.g. approval) for an asset.
 				}
 			}
 		}
-		createCleanRoomAssetReviewReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &createCleanRoomAssetReviewReq.AssetType)
+		createCleanRoomAssetReviewReq.CleanRoomName = new(args[0])
+		createCleanRoomAssetReviewReq.AssetType = cleanrooms.CleanRoomAsset_AssetType(args[1])
+		createCleanRoomAssetReviewReq.Name = new(args[2])
+
+		sdkReq, err := cleanrooms.CreateCleanRoomAssetReviewRequestToSDK(&createCleanRoomAssetReviewReq)
 		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
+			return err
 		}
-
-		createCleanRoomAssetReviewReq.Name = args[2]
-
-		response, err := w.CleanRoomAssets.CreateCleanRoomAssetReview(ctx, createCleanRoomAssetReviewReq)
+		response, err := w.CleanRooms.CreateCleanRoomAssetReview(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CreateCleanRoomAssetReviewResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,13 +288,12 @@ Create a review (e.g. approval) for an asset.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*cleanrooms.DeleteCleanRoomAssetRequest,
+	*sdkcleanrooms.DeleteCleanRoomAssetRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq cleanrooms.DeleteCleanRoomAssetRequest
+	var deleteReq sdkcleanrooms.DeleteCleanRoomAssetRequest
 
 	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Delete an asset.`
@@ -316,19 +328,19 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &deleteReq.AssetType)
-		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
-		}
+		deleteReq.CleanRoomName = new(args[0])
+		deleteReq.AssetType = sdkcleanrooms.CleanRoomAsset_AssetType(args[1])
+		deleteReq.Name = new(args[2])
 
-		deleteReq.Name = args[2]
-
-		err = w.CleanRoomAssets.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.CleanRooms.DeleteCleanRoomAsset(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -350,13 +362,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*cleanrooms.GetCleanRoomAssetRequest,
+	*sdkcleanrooms.GetCleanRoomAssetRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq cleanrooms.GetCleanRoomAssetRequest
+	var getReq sdkcleanrooms.GetCleanRoomAssetRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Get an asset.`
@@ -391,21 +402,23 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &getReq.AssetType)
-		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
-		}
+		getReq.CleanRoomName = new(args[0])
+		getReq.AssetType = sdkcleanrooms.CleanRoomAsset_AssetType(args[1])
+		getReq.Name = new(args[2])
 
-		getReq.Name = args[2]
-
-		response, err := w.CleanRoomAssets.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.CleanRooms.GetCleanRoomAsset(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAssetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -431,8 +444,8 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq cleanrooms.ListCleanRoomAssetsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -442,7 +455,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
@@ -465,18 +478,22 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CleanRoomName = args[0]
+		listReq.CleanRoomName = new(args[0])
 
-		response := w.CleanRoomAssets.List(ctx, listReq)
+		sdkReq, err := cleanrooms.ListCleanRoomAssetsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomAssetsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomAssetFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -502,14 +519,14 @@ var updateOverrides []func(
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateReq cleanrooms.UpdateCleanRoomAssetRequest
-	updateReq.Asset = cleanrooms.CleanRoomAsset{}
+	updateReq.Asset = &cleanrooms.CleanRoomAsset{}
+
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CleanRoomName, "clean-room-name", `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
 	// TODO: complex arg: jar_analysis
@@ -561,6 +578,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Asset)
@@ -574,20 +592,24 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &updateReq.AssetType)
+		updateReq.CleanRoomName = new(args[0])
+		updateReq.Asset.AssetType = cleanrooms.CleanRoomAsset_AssetType(args[1])
+		updateReq.Asset.Name = new(args[2])
+
+		sdkReq, err := cleanrooms.UpdateCleanRoomAssetRequestToSDK(&updateReq)
 		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
+			return err
 		}
-
-		updateReq.Name = args[2]
-
-		response, err := w.CleanRoomAssets.Update(ctx, updateReq)
+		response, err := w.CleanRooms.UpdateCleanRoomAsset(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAssetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

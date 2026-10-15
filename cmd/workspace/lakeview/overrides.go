@@ -1,15 +1,17 @@
 package lakeview
 
 import (
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
 	"github.com/spf13/cobra"
 )
 
-func publishOverride(cmd *cobra.Command, req *dashboards.PublishRequest) {
+func publishOverride(cmd *cobra.Command, req *lakeview.PublishDashboardRequest) {
 	originalRunE := cmd.RunE
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		// Force send embed_credentials even when false, otherwise the API defaults to true.
-		req.ForceSendFields = append(req.ForceSendFields, "EmbedCredentials")
+		// Always send embed_credentials, otherwise the API defaults to true.
+		if req.EmbedCredentials == nil {
+			req.EmbedCredentials = new(false)
+		}
 		return originalRunE(cmd, args)
 	}
 }

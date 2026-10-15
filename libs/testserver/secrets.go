@@ -6,13 +6,28 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.PutSecret
+	// bytes_value arrives base64-encoded; reject malformed input the way the
+	// API does instead of failing to decode the request.
+	var raw struct {
+		BytesValue string `json:"bytes_value"`
+	}
+	if err := json.Unmarshal(req.Body, &raw); err == nil && raw.BytesValue != "" {
+		if _, err := base64.StdEncoding.DecodeString(raw.BytesValue); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "bytes_value must be base64-encoded"},
+			}
+		}
+	}
+
+	var request secrets.PutSecretRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -21,35 +36,28 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	}
 
 	// Check if scope exists
-	if _, exists := s.SecretScopes[request.Scope]; !exists {
+	if _, exists := s.SecretScopes[utils.Deref(request.Scope)]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
+			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", utils.Deref(request.Scope))},
 		}
 	}
 
 	if s.Secrets == nil {
 		s.Secrets = make(map[string]map[string]string)
 	}
-	if s.Secrets[request.Scope] == nil {
-		s.Secrets[request.Scope] = make(map[string]string)
+	if s.Secrets[utils.Deref(request.Scope)] == nil {
+		s.Secrets[utils.Deref(request.Scope)] = make(map[string]string)
 	}
 
-	// Exactly one of string_value / bytes_value is set. bytes_value arrives
-	// already base64-encoded, and GET returns whatever was stored re-encoded,
-	// so decode it here to keep the stored form the raw secret in both cases.
-	value := request.StringValue
-	if request.BytesValue != "" {
-		decoded, err := base64.StdEncoding.DecodeString(request.BytesValue)
-		if err != nil {
-			return Response{
-				StatusCode: 400,
-				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "bytes_value must be base64-encoded"},
-			}
-		}
-		value = string(decoded)
+	// Exactly one of string_value / bytes_value is set. bytes_value was decoded
+	// from base64 with the request and GET re-encodes whatever was stored, so the
+	// stored form is the raw secret in both cases.
+	value := utils.Deref(request.StringValue)
+	if len(request.BytesValue) > 0 {
+		value = string(request.BytesValue)
 	}
-	s.Secrets[request.Scope][request.Key] = value
+	s.Secrets[utils.Deref(request.Scope)][utils.Deref(request.Key)] = value
 
 	return Response{}
 }
@@ -74,14 +82,14 @@ func (s *FakeWorkspace) SecretsList(req Request) Response {
 	}
 	slices.Sort(keys)
 
-	secrets := make([]workspace.SecretMetadata, 0, len(keys))
+	list := make([]secrets.SecretMetadata, 0, len(keys))
 	for _, key := range keys {
-		secrets = append(secrets, workspace.SecretMetadata{Key: key})
+		list = append(list, secrets.SecretMetadata{Key: utils.NonZero(key)})
 	}
 
 	return Response{
-		Body: workspace.ListSecretsResponse{
-			Secrets: secrets,
+		Body: secrets.ListSecretsResponse{
+			Secrets: list,
 		},
 	}
 }
@@ -116,13 +124,11 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 		}
 	}
 
-	// Base64 encode the secret value, to match the server side behavior.
-	encodedValue := base64.StdEncoding.EncodeToString([]byte(secretValue))
-
+	// encoding/json base64-encodes []byte, matching the server side behavior.
 	return Response{
-		Body: workspace.GetSecretResponse{
-			Key:   key,
-			Value: encodedValue,
+		Body: secrets.GetSecretResponse{
+			Key:   utils.NonZero(key),
+			Value: []byte(secretValue),
 		},
 	}
 }

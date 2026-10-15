@@ -11,6 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "created_time": [UNIX_TIME_MILLIS],
     "creator_user_name": "[USERNAME]",
     "job_id": [JOB1_ID],
+    "run_as_user_name": "[USERNAME]",
     "settings": {
       "deployment": {
         "kind": "BUNDLE",

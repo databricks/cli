@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
+
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
@@ -106,6 +108,12 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	if !shouldHandle {
 		return s
 	}
+	// API types without a previous SDK name are only reachable through fields
+	// cli.json does not define; their definitions are dropped (see
+	// dropUnreachableAPIDefinitions), so they need no documentation.
+	if isUnmappedAPIPath(refPath) {
+		return s
+	}
 
 	ta := d.parsedAnnotations[refPath]
 	assignAnnotation(&s, ta.Self)
@@ -140,8 +148,35 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typ
 	return nil
 }
 
+// getPath returns the key annotations of typ are stored under. API types use
+// their previous SDK type path (see legacyTypePaths), so that several sdk-go
+// types standing for one previous type share their documentation.
 func getPath(typ reflect.Type) string {
-	return typ.PkgPath() + "." + typ.Name()
+	return legacyTypePath(typ.PkgPath() + "." + typ.Name())
+}
+
+// legacyTypePaths maps jsonschema type paths of API types to the type paths of
+// the previous SDK types. It is set once the configuration is mapped.
+var legacyTypePaths map[string]string
+
+func legacyTypePath(p string) string {
+	if l, ok := legacyTypePaths[p]; ok {
+		return l
+	}
+	return p
+}
+
+func isUnmappedAPIPath(p string) bool {
+	return strings.HasPrefix(p, "github.com/databricks/cli/libs/sdktypes/") || strings.HasPrefix(p, "github.com/databricks/sdk-go/")
+}
+
+func setLegacyTypePaths(meta *sdkmeta.Meta) {
+	legacyTypePaths = map[string]string{}
+	for t := range meta.Types() {
+		if name, ok := meta.DefinitionName(t); ok {
+			legacyTypePaths[jsonschemaTypePath(t)] = name
+		}
+	}
 }
 
 func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {

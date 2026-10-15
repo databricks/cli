@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ the server-side state if you need certainty.`,
 // cancelStatementExecution issues CancelExecution and reports state=CANCELED on success.
 // CancelExecution returns no body; the actual server-side state is verified
 // asynchronously. Use 'statement status' to confirm if certainty is required.
-func cancelStatementExecution(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
+func cancelStatementExecution(ctx context.Context, api sqlexec.API, statementID string) (statementInfo, error) {
 	// Cancel doesn't use the warehouse ID.
 	client := sqlexec.New(api, "")
 	if err := client.Cancel(ctx, statementID); err != nil {
@@ -48,6 +48,6 @@ func cancelStatementExecution(ctx context.Context, api sql.StatementExecutionInt
 	}
 	return statementInfo{
 		StatementID: statementID,
-		State:       sql.StatementStateCanceled,
+		State:       sql.StatementStatus_State_Canceled,
 	}, nil
 }

@@ -3,20 +3,18 @@ package aircmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // runDetailText fetches a run and renders the same styled view as `air get` into
 // a string, for the list picker's detail pane.
-func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (string, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+func runDetailText(ctx context.Context, w *sdkclients.Clients, runID int64) (string, error) {
+	run, err := getRun(ctx, w, runID)
 	if err != nil {
-		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return "", fmt.Errorf("run %d not found", runID)
 		}
 		return "", fmt.Errorf("failed to fetch run: %w", err)
@@ -40,10 +38,10 @@ func runDetailText(ctx context.Context, w *databricks.WorkspaceClient, runID int
 
 // runLogsSnapshot fetches a one-shot tail of a run's logs into a string, for the
 // list picker's detail pane.
-func runLogsSnapshot(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (string, error) {
+func runLogsSnapshot(ctx context.Context, w *sdkclients.Clients, runID int64) (string, error) {
 	status, err := resolveRunStatus(ctx, w, runID)
 	if err != nil {
-		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return "", fmt.Errorf("run %d not found", runID)
 		}
 		return "", fmt.Errorf("failed to fetch run status: %w", err)

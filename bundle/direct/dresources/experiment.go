@@ -6,74 +6,72 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
+	experiments "github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 type ResourceExperiment struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceExperiment) New(client *databricks.WorkspaceClient) *ResourceExperiment {
+func (*ResourceExperiment) New(client *sdkclients.Clients) *ResourceExperiment {
 	return &ResourceExperiment{
 		client: client,
 	}
 }
 
-func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
-		Name:             input.Name,
-		ArtifactLocation: input.ArtifactLocation,
-		Tags:             input.Tags,
-		TraceLocation:    input.TraceLocation,
-		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](input.ForceSendFields),
-	}
+func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *experiments.CreateExperimentRequest {
+	return &input.CreateExperimentRequest
 }
 
-func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
+func (*ResourceExperiment) RemapState(experiment *experiments.Experiment) *experiments.CreateExperimentRequest {
+	return &experiments.CreateExperimentRequest{
 		Name:             experiment.Name,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             experiment.Tags,
 		TraceLocation:    experiment.TraceLocation,
-		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](experiment.ForceSendFields),
 	}
 }
 
-func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experiment, error) {
-	result, err := r.client.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
-		ExperimentId: id,
+func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*experiments.Experiment, error) {
+	result, err := r.client.Experiments.GetExperiment(ctx, sdkexperiments.GetExperimentRequest{
+		ExperimentId: new(id),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.Experiment, nil
+	return sdkconv.FromSDK[experiments.Experiment](result.Experiment)
 }
 
-func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, *ml.Experiment, error) {
-	result, err := r.client.Experiments.CreateExperiment(ctx, *config)
+func (r *ResourceExperiment) DoCreate(ctx context.Context, config *experiments.CreateExperimentRequest) (string, *experiments.Experiment, error) {
+	request, err := toSDK[sdkexperiments.CreateExperimentRequest](config)
 	if err != nil {
 		return "", nil, err
 	}
-	return result.ExperimentId, nil, nil
-}
-
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
-	updateReq := ml.UpdateExperiment{
-		ExperimentId:    id,
-		NewName:         config.Name,
-		ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
+	result, err := r.client.Experiments.CreateExperiment(ctx, request)
+	if err != nil {
+		return "", nil, err
 	}
-
-	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)
+	return utils.Deref(result.ExperimentId), nil, nil
 }
 
-func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.CreateExperiment) error {
-	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
-		ExperimentId: id,
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *experiments.CreateExperimentRequest, _ *PlanEntry) (*experiments.Experiment, error) {
+	_, err := r.client.Experiments.UpdateExperiment(ctx, sdkexperiments.UpdateExperimentRequest{
+		ExperimentId: new(id),
+		NewName:      config.Name,
 	})
+	return nil, err
+}
+
+func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *experiments.CreateExperimentRequest) error {
+	_, err := r.client.Experiments.DeleteExperiment(ctx, sdkexperiments.DeleteExperimentRequest{
+		ExperimentId: new(id),
+	})
+	return err
 }
 
 // OverrideChangeDesc suppresses drift for the experiment name field when the
@@ -83,7 +81,7 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.Crea
 //
 // This matches the Terraform provider's experimentNameSuppressDiff behavior.
 // https://github.com/databricks/terraform-provider-databricks/blob/8945a7b2328659b1fc976d04e32457305860131f/mlflow/resource_mlflow_experiment.go#L13
-func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.Experiment) error {
+func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *experiments.Experiment) error {
 	if change.Action == deployplan.Skip {
 		return nil
 	}

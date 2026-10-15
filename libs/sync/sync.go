@@ -11,9 +11,9 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type OutputHandler func(context.Context, <-chan Event)
@@ -41,9 +41,9 @@ type SyncOptions struct {
 
 	PollInterval time.Duration
 
-	WorkspaceClient *databricks.WorkspaceClient
+	WorkspaceClient *sdkclients.Clients
 
-	CurrentUser *iam.User
+	CurrentUser *scim.User
 
 	Host string
 

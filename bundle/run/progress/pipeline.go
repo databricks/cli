@@ -6,8 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 )
 
 // The dlt backend computes events for pipeline runs which are accessible through
@@ -23,18 +25,18 @@ type ProgressEvent pipelines.PipelineEvent
 
 func (event *ProgressEvent) String() string {
 	result := strings.Builder{}
-	result.WriteString(event.Timestamp + " ")
+	result.WriteString(utils.Deref(event.Timestamp) + " ")
 
 	// Print event type with some padding to make output more pretty
-	result.WriteString(fmt.Sprintf("%-15s", event.EventType) + " ")
+	result.WriteString(fmt.Sprintf("%-15s", utils.Deref(event.EventType)) + " ")
 
-	result.WriteString(event.Level.String() + " ")
-	fmt.Fprintf(&result, `"%s"`, event.Message)
+	result.WriteString(string(event.Level) + " ")
+	fmt.Fprintf(&result, `"%s"`, utils.Deref(event.Message))
 
 	// construct error string if level=`Error`
-	if event.Level == pipelines.EventLevelError && event.Error != nil {
+	if event.Level == pipelines.EventLevel_Error && event.Error != nil {
 		for _, exception := range event.Error.Exceptions {
-			result.WriteString("\n" + exception.Message)
+			result.WriteString("\n" + utils.Deref(exception.Message))
 		}
 	}
 	return result.String()
@@ -44,10 +46,10 @@ type UpdateTracker struct {
 	UpdateId             string
 	PipelineId           string
 	LatestEventTimestamp string
-	w                    *databricks.WorkspaceClient
+	w                    *sdkclients.Clients
 }
 
-func NewUpdateTracker(pipelineId, updateId string, w *databricks.WorkspaceClient) *UpdateTracker {
+func NewUpdateTracker(pipelineId, updateId string, w *sdkclients.Clients) *UpdateTracker {
 	return &UpdateTracker{
 		w:                    w,
 		PipelineId:           pipelineId,
@@ -74,10 +76,10 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	}
 
 	// we only check the most recent 100 events for progress
-	events, err := l.w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		PipelineId: l.PipelineId,
-		MaxResults: 100,
-		Filter:     filter,
+	events, err := ListEvents(ctx, l.w, sdkpipelines.ListPipelineEventsRequest{
+		PipelineId: new(l.PipelineId),
+		MaxResults: new(100),
+		Filter:     new(filter),
 	})
 	if err != nil {
 		return nil, err
@@ -87,15 +89,32 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	// Return events in chronological order.
 	for _, event := range slices.Backward(events) {
 		// filter to only include update_progress and flow_progress events
-		if event.EventType == "flow_progress" || event.EventType == "update_progress" {
+		eventType := utils.Deref(event.EventType)
+		if eventType == "flow_progress" || eventType == "update_progress" {
 			result = append(result, ProgressEvent(event))
 		}
 	}
 
 	// update latest event timestamp for next time
 	if len(result) > 0 {
-		l.LatestEventTimestamp = result[len(result)-1].Timestamp
+		l.LatestEventTimestamp = utils.Deref(result[len(result)-1].Timestamp)
 	}
 
 	return result, nil
+}
+
+// ListEvents returns all pipeline events matching req, most recent first.
+func ListEvents(ctx context.Context, w *sdkclients.Clients, req sdkpipelines.ListPipelineEventsRequest) ([]pipelines.PipelineEvent, error) {
+	var events []pipelines.PipelineEvent
+	for event, err := range w.Pipelines.EventsIter(ctx, req) {
+		if err != nil {
+			return nil, err
+		}
+		e, err := pipelines.PipelineEventFromSDK(event)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, *e)
+	}
+	return events, nil
 }

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 	defer s.LockUnlock()()
 
-	var request ml.CreateModelRequest
+	var request modelregistry.CreateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -21,7 +22,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 
 	// MLflow rejects an empty name; the fake would otherwise store a model under a key
 	// nothing can look up.
-	if request.Name == "" {
+	if utils.Deref(request.Name) == "" {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -33,17 +34,17 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 
 	// Create the model with a numeric ID (matching real API behavior)
 	modelId := strconv.FormatInt(nextID(), 10)
-	model := ml.Model{
+	model := modelregistry.RegisteredModel{
 		Name:        request.Name,
 		Description: request.Description,
 		Tags:        request.Tags,
 	}
 
-	s.ModelRegistryModels[request.Name] = model
-	s.ModelRegistryModelIDs[request.Name] = modelId
+	s.ModelRegistryModels[utils.Deref(request.Name)] = model
+	s.ModelRegistryModelIDs[utils.Deref(request.Name)] = modelId
 
 	return Response{
-		Body: ml.CreateModelResponse{
+		Body: modelregistry.CreateRegisteredModelResponse{
 			RegisteredModel: &model,
 		},
 	}
@@ -52,7 +53,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 	defer s.LockUnlock()()
 
-	var request ml.UpdateModelRequest
+	var request modelregistry.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -60,7 +61,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
-	existingModel, ok := s.ModelRegistryModels[request.Name]
+	existingModel, ok := s.ModelRegistryModels[utils.Deref(request.Name)]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -70,10 +71,10 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 
 	// Update the model
 	existingModel.Description = request.Description
-	s.ModelRegistryModels[request.Name] = existingModel
+	s.ModelRegistryModels[utils.Deref(request.Name)] = existingModel
 
 	return Response{
-		Body: ml.UpdateModelResponse{
+		Body: modelregistry.UpdateRegisteredModelResponse{
 			RegisteredModel: &existingModel,
 		},
 	}
@@ -93,13 +94,12 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	}
 
 	return Response{
-		Body: ml.GetModelResponse{
-			RegisteredModelDatabricks: &ml.ModelDatabricks{
-				Id:              s.ModelRegistryModelIDs[name],
-				Name:            model.Name,
-				Description:     model.Description,
-				Tags:            model.Tags,
-				ForceSendFields: model.ForceSendFields,
+		Body: modelregistry.GetRegisteredModelDatabricksResponse{
+			RegisteredModelDatabricks: &modelregistry.RegisteredModelDatabricks{
+				Id:          utils.NonZero(s.ModelRegistryModelIDs[name]),
+				Name:        model.Name,
+				Description: model.Description,
+				Tags:        model.Tags,
 			},
 		},
 	}

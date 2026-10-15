@@ -3,7 +3,11 @@
 package redash_config
 
 import (
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -63,11 +67,21 @@ func newGetConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.RedashConfig.GetConfig(ctx)
+		_ = w
+		getConfigReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/redash-v2/config"
+
+		maps.Copy(rawQuery, getConfigReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,7 +97,7 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			}))
 			t.Cleanup(server.Close)
 
-			workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+			workspaceClient, err := sdkclients.New(t.Context(), &config.Config{
 				Host:  server.URL,
 				Token: "test-token",
 			})

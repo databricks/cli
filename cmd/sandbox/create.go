@@ -2,13 +2,12 @@ package sandbox
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -76,7 +75,7 @@ Examples:
 			currentDefault := getDefault(ctx, profile)
 			shouldSetDefault := currentDefault == ""
 			if !shouldSetDefault {
-				if _, err := api.get(ctx, currentDefault); errors.Is(err, apierr.ErrNotFound) {
+				if _, err := api.get(ctx, currentDefault); apierrs.Is(err, apierrs.ErrNotFound) {
 					shouldSetDefault = true
 				}
 			}

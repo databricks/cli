@@ -8,7 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // indexNamePart matches each catalog.schema.table component the real backend
@@ -45,7 +46,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if !isValidIndexName(createReq.Name) {
+	if !isValidIndexName(utils.Deref(createReq.Name)) {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -55,29 +56,29 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchIndexes[createReq.Name]; exists {
+	if _, exists := s.VectorSearchIndexes[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
-	if s.VectorSearchIndexesPendingDeletion[createReq.Name] > 0 {
-		s.VectorSearchIndexesPendingDeletion[createReq.Name]--
+	if s.VectorSearchIndexesPendingDeletion[utils.Deref(createReq.Name)] > 0 {
+		s.VectorSearchIndexesPendingDeletion[utils.Deref(createReq.Name)]--
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", createReq.Name),
+				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", utils.Deref(createReq.Name)),
 			},
 		}
 	}
-	endpoint, exists := s.VectorSearchEndpoints[createReq.EndpointName]
+	endpoint, exists := s.VectorSearchEndpoints[utils.Deref(createReq.EndpointName)]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
 			Body: map[string]string{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Vector search endpoint %s not found", createReq.EndpointName),
+				"message":    fmt.Sprintf("Vector search endpoint %s not found", utils.Deref(createReq.EndpointName)),
 			},
 		}
 	}
@@ -85,7 +86,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	// The backend assigns index_subtype when the request omits it (HYBRID by default)
 	indexSubtype := createReq.IndexSubtype
 	if indexSubtype == "" {
-		indexSubtype = vectorsearch.IndexSubtypeHybrid
+		indexSubtype = vectorsearch.IndexSubtype_Hybrid
 	}
 
 	// The backend rewrites schema_json on create: user-facing type names are
@@ -93,7 +94,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	// returned in sorted key order rather than the user's original order.
 	// Mirror that here so the create -> get round-trip matches the real API.
 	if createReq.DirectAccessIndexSpec != nil {
-		createReq.DirectAccessIndexSpec.SchemaJson = normalizeSchemaJSON(createReq.DirectAccessIndexSpec.SchemaJson)
+		createReq.DirectAccessIndexSpec.SchemaJson = utils.NonZero(normalizeSchemaJSON(utils.Deref(createReq.DirectAccessIndexSpec.SchemaJson)))
 	}
 
 	index := fakeVectorSearchIndex{
@@ -106,12 +107,12 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
 		DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
 		Status: &vectorsearch.VectorIndexStatus{
-			Ready: true,
+			Ready: utils.NonZero(true),
 		},
-		EndpointUuid: endpoint.Id,
+		EndpointUuid: utils.Deref(endpoint.Id),
 	}
 
-	s.VectorSearchIndexes[createReq.Name] = index
+	s.VectorSearchIndexes[utils.Deref(createReq.Name)] = index
 
 	return Response{
 		Body: index,
@@ -205,11 +206,11 @@ func normalizeColumnType(columnType string) string {
 }
 
 // remapDeltaSyncSpec converts a request spec to a response spec.
-func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vectorsearch.DeltaSyncVectorIndexSpecResponse {
+func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vectorsearch.DeltaSyncVectorIndexSpec {
 	if req == nil {
 		return nil
 	}
-	return &vectorsearch.DeltaSyncVectorIndexSpecResponse{
+	return &vectorsearch.DeltaSyncVectorIndexSpec{
 		ColumnsToIndex:          req.ColumnsToIndex,
 		ColumnsToSync:           req.ColumnsToSync,
 		EmbeddingSourceColumns:  req.EmbeddingSourceColumns,

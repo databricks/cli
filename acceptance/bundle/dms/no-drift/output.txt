@@ -139,6 +139,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
       }
     ],
     "name": "bar-[UNIQUE_NAME]",
+    "pipeline_id": "[UUID]",
     "schema": "default",
     "serverless": true
   }

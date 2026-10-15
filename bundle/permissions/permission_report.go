@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // ReportPossiblePermissionDenied generates a diagnostic message when a permission denied error is encountered.
@@ -18,9 +19,9 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 	log.Errorf(ctx, "Failed to update, encountered possible permission error: %v", path)
 
 	me := b.Config.Workspace.CurrentUser.User
-	userName := me.UserName
+	userName := utils.Deref(me.UserName)
 	if iamutil.IsServicePrincipal(me) {
-		userName = me.DisplayName
+		userName = utils.Deref(me.DisplayName)
 	}
 	canManageBundle, assistance := analyzeBundlePermissions(b)
 

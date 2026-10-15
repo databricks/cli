@@ -52,7 +52,8 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]",
   "body": {
-    "comment": ""
+    "comment": "",
+    "full_name_arg": "main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]"
   }
 }
 

@@ -3,12 +3,12 @@ package libraries
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,7 +25,7 @@ func TestValidateEnvironments(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
-									Spec: &compute.Environment{
+									Spec: &jobs.Environment{
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
@@ -57,7 +57,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
-									Spec: &compute.Environment{
+									Spec: &jobs.Environment{
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
@@ -89,14 +89,14 @@ func TestValidateTaskLibraries(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									Libraries: []compute.Library{
+									Libraries: []jobs.Library{
 										{
-											Whl: "./wheel.whl",
+											Whl: new("./wheel.whl"),
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
+											Whl: new("/Workspace/Users/foo@bar.test/artifacts/test.whl"),
 										},
 									},
 								},
@@ -122,14 +122,14 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									Libraries: []compute.Library{
+									Libraries: []jobs.Library{
 										{
-											Whl: "./wheel.whl",
+											Whl: new("./wheel.whl"),
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
+											Whl: new("/Workspace/Users/foo@bar.test/artifacts/test.whl"),
 										},
 									},
 								},

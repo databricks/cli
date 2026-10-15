@@ -4,11 +4,13 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
 // AppConfig represents the inline app.yaml configuration structure.
@@ -65,16 +67,8 @@ func (a *App) GetLifecycle() LifecycleConfig {
 	return *a.Lifecycle
 }
 
-func (a *App) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, a)
-}
-
-func (a App) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(a)
-}
-
-func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Apps.GetByName(ctx, name)
+func (a *App) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "app %s does not exist", name)
 		return false, err
@@ -103,5 +97,5 @@ func (a *App) GetName() string {
 	if a.ID != "" {
 		return a.ID
 	}
-	return a.Name
+	return utils.Deref(a.Name)
 }

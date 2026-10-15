@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	sdkmodelserving "github.com/databricks/sdk-go/modelserving/v1"
 )
 
 // Precalculated paths for HasChange checks
@@ -23,41 +24,48 @@ var (
 )
 
 type ResourceModelServingEndpoint struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceModelServingEndpoint) New(client *databricks.WorkspaceClient) *ResourceModelServingEndpoint {
+func (*ResourceModelServingEndpoint) New(client *sdkclients.Clients) *ResourceModelServingEndpoint {
 	return &ResourceModelServingEndpoint{
 		client: client,
 	}
 }
 
-func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingEndpoint) *serving.CreateServingEndpoint {
-	return &input.CreateServingEndpoint
+func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingEndpoint) *modelserving.CreateInferenceEndpointRequest {
+	return &input.CreateInferenceEndpointRequest
 }
 
 // AutoCaptureConfig is the legacy inference-table API; the recommended replacement
 // is AI Gateway inference tables. Bundles still expose it, so the conversion has to
 // keep working until users have migrated.
 //
-//nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
-func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *serving.AutoCaptureConfigInput {
+//nolint:staticcheck
+func autoCaptureConfigOutputToInput(output *modelserving.AutoCaptureConfig) *modelserving.AutoCaptureConfig {
 	if output == nil {
 		return nil
 	}
-	return &serving.AutoCaptureConfigInput{
+	// state is output-only.
+	return &modelserving.AutoCaptureConfig{
 		CatalogName:     output.CatalogName,
 		SchemaName:      output.SchemaName,
 		TableNamePrefix: output.TableNamePrefix,
 		Enabled:         output.Enabled,
-		ForceSendFields: utils.FilterFields[serving.AutoCaptureConfigInput](output.ForceSendFields),
+		State:           nil, // Not set by DABs
 	}
 }
 
-func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
-	entities := make([]serving.ServedEntityInput, len(output))
+// servedEntitiesOutputToInput keeps the fields a user can set on a served entity;
+// state, creator, creation_timestamp and foundation_model are output-only, and
+// model_name/model_version belong to the legacy served_models field.
+func servedEntitiesOutputToInput(output []modelserving.ServedModel) []modelserving.ServedModel {
+	if output == nil {
+		return nil
+	}
+	entities := make([]modelserving.ServedModel, len(output))
 	for i, entity := range output {
-		entities[i] = serving.ServedEntityInput{
+		entities[i] = modelserving.ServedModel{
 			EntityName:                entity.EntityName,
 			EntityVersion:             entity.EntityVersion,
 			EnvironmentVars:           entity.EnvironmentVars,
@@ -71,30 +79,33 @@ func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.
 			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
-			WorkloadType:              entity.WorkloadType,
 			BurstScalingEnabled:       entity.BurstScalingEnabled,
-			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
+			CreationTimestamp:         nil, // Not set by DABs
+			Creator:                   nil, // Not set by DABs
+			FoundationModel:           nil, // Not set by DABs
+			ModelName:                 nil, // Not set by DABs
+			ModelVersion:              nil, // Not set by DABs
+			State:                     nil, // Not set by DABs
 		}
 	}
 
 	return entities
 }
 
-func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.EndpointCoreConfigInput {
+func configOutputToInput(output *modelserving.EndpointCoreConfigOutput) *modelserving.EndpointCoreConfig {
 	if output == nil {
 		return nil
 	}
-	return &serving.EndpointCoreConfigInput{
+	return &modelserving.EndpointCoreConfig{
 		AutoCaptureConfig: autoCaptureConfigOutputToInput(output.AutoCaptureConfig),
 		ServedEntities:    servedEntitiesOutputToInput(output.ServedEntities),
 		ServedModels:      nil,
 		TrafficConfig:     output.TrafficConfig,
-		Name:              "",
 	}
 }
 
-func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
-	return &serving.CreateServingEndpoint{
+func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *modelserving.CreateInferenceEndpointRequest {
+	return &modelserving.CreateInferenceEndpointRequest{
 		AiGateway:          state.AiGateway,
 		BudgetPolicyId:     state.BudgetPolicyId,
 		Config:             state.Config,
@@ -104,7 +115,6 @@ func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemot
 		RouteOptimized:     state.RouteOptimized,
 		Tags:               state.Tags,
 		TelemetryConfig:    state.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.ForceSendFields),
 
 		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
 		// TODO(shreyas): Add a warning when users try setting top level rate limits.
@@ -113,40 +123,30 @@ func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemot
 }
 
 type ModelServingEndpointRemote struct {
-	EndpointDetails *serving.ServingEndpointDetailed `json:"endpoint_details"`
-	EndpointId      string                           `json:"endpoint_id"`
+	EndpointDetails *modelserving.InferenceEndpointDetailed `json:"endpoint_details"`
+	EndpointId      string                                  `json:"endpoint_id"`
 
 	// Fields mapped from EndpointDetails in DoRead so that RemapState is a direct copy
 	// and these fields participate in normal drift detection.
-	AiGateway          *serving.AiGatewayConfig         `json:"ai_gateway,omitempty"`
-	BudgetPolicyId     string                           `json:"budget_policy_id,omitempty"`
-	Config             *serving.EndpointCoreConfigInput `json:"config,omitempty"`
-	Description        string                           `json:"description,omitempty"`
-	EmailNotifications *serving.EmailNotifications      `json:"email_notifications,omitempty"`
-	Name               string                           `json:"name,omitempty"`
-	RouteOptimized     bool                             `json:"route_optimized,omitempty"`
-	Tags               []serving.EndpointTag            `json:"tags,omitempty"`
-	TelemetryConfig    *serving.TelemetryConfig         `json:"telemetry_config,omitempty"`
-
-	// ForceSendFields surfaces EndpointDetails.ForceSendFields at the root so RemapState is a
-	// plain field copy rather than reaching into the nested EndpointDetails struct.
-	ForceSendFields []string `json:"-"`
+	AiGateway          *modelserving.AiGatewayConfig    `json:"ai_gateway,omitempty"`
+	BudgetPolicyId     *string                          `json:"budget_policy_id,omitempty"`
+	Config             *modelserving.EndpointCoreConfig `json:"config,omitempty"`
+	Description        *string                          `json:"description,omitempty"`
+	EmailNotifications *modelserving.EmailNotifications `json:"email_notifications,omitempty"`
+	Name               *string                          `json:"name,omitempty"`
+	RouteOptimized     *bool                            `json:"route_optimized,omitempty"`
+	Tags               []modelserving.EndpointTag       `json:"tags,omitempty"`
+	TelemetryConfig    *modelserving.TelemetryConfig    `json:"telemetry_config,omitempty"`
 }
 
-// Custom marshalers so the SDK's ForceSendFields convention is honored on the wrapper and its
-// extra fields survive a JSON state round-trip (mirrors VectorSearchEndpointRemote).
-func (s *ModelServingEndpointRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s ModelServingEndpointRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *ModelServingEndpointRemote {
+func newModelServingEndpointRemote(resp *sdkmodelserving.InferenceEndpointDetailed) (*ModelServingEndpointRemote, error) {
+	details, err := modelserving.InferenceEndpointDetailedFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
 	return &ModelServingEndpointRemote{
 		EndpointDetails:    details,
-		EndpointId:         details.Id,
+		EndpointId:         utils.Deref(details.Id),
 		AiGateway:          details.AiGateway,
 		BudgetPolicyId:     details.BudgetPolicyId,
 		Config:             configOutputToInput(details.Config),
@@ -156,107 +156,133 @@ func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *Mo
 		RouteOptimized:     details.RouteOptimized,
 		Tags:               details.Tags,
 		TelemetryConfig:    details.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[ModelServingEndpointRemote](details.ForceSendFields),
-	}
+	}, nil
+}
+
+func (r *ResourceModelServingEndpoint) getEndpoint(ctx context.Context, name string) (*sdkmodelserving.InferenceEndpointDetailed, error) {
+	return r.client.ServingEndpoints.GetInferenceEndpoint(ctx, sdkmodelserving.GetInferenceEndpointRequest{Name: new(name)})
 }
 
 func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*ModelServingEndpointRemote, error) {
-	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
+	endpoint, err := r.getEndpoint(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return newModelServingEndpointRemote(endpoint), nil
+	return newModelServingEndpointRemote(endpoint)
 }
 
-func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
-	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
+func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *modelserving.CreateInferenceEndpointRequest) (string, *ModelServingEndpointRemote, error) {
+	request, err := modelserving.CreateInferenceEndpointRequestToSDK(config)
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.ServingEndpoints.CreateInferenceEndpoint(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil, nil
+	return waiter.GetName(), nil, nil
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
 func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*ModelServingEndpointRemote, error) {
-	details, err := r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, 35*time.Minute, nil)
+	details, err := retries.Poll(ctx, 35*time.Minute, func() (*sdkmodelserving.InferenceEndpointDetailed, *retries.Err) {
+		details, err := r.getEndpoint(ctx, name)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		var status sdkmodelserving.InferenceEndpointState_ConfigUpdateState
+		if details.State != nil {
+			status = details.State.ConfigUpdate
+		}
+		statusMessage := fmt.Sprintf("current status: %s", status)
+		switch status {
+		case sdkmodelserving.InferenceEndpointState_ConfigUpdateState_NotUpdating:
+			return details, nil
+		case sdkmodelserving.InferenceEndpointState_ConfigUpdateState_UpdateFailed, sdkmodelserving.InferenceEndpointState_ConfigUpdateState_UpdateCanceled:
+			return nil, retries.Halt(fmt.Errorf("failed to reach %s, got %s: %s",
+				sdkmodelserving.InferenceEndpointState_ConfigUpdateState_NotUpdating, status, statusMessage))
+		default:
+			return nil, retries.Continues(statusMessage)
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
-	return newModelServingEndpointRemote(details), nil
+	return newModelServingEndpointRemote(details)
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, config *modelserving.CreateInferenceEndpointRequest) (*ModelServingEndpointRemote, error) {
+	return r.waitForEndpointReady(ctx, utils.Deref(config.Name))
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *modelserving.CreateInferenceEndpointRequest) (*ModelServingEndpointRemote, error) {
+	return r.waitForEndpointReady(ctx, utils.Deref(config.Name))
 }
 
-func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {
-	if aiGateway == nil {
-		req := serving.PutAiGatewayRequest{
-			Name:                 id,
-			FallbackConfig:       nil,
-			Guardrails:           nil,
-			InferenceTableConfig: nil,
-			RateLimits:           nil,
-			UsageTrackingConfig:  nil,
-		}
-		_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
+func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *modelserving.AiGatewayConfig) error {
+	req := modelserving.PutInferenceEndpointAiGatewayRequest{
+		Name:                 new(id),
+		FallbackConfig:       nil, // Not set by DABs
+		Guardrails:           nil, // Not set by DABs
+		InferenceTableConfig: nil, // Not set by DABs
+		RateLimits:           nil, // Not set by DABs
+		UsageTrackingConfig:  nil, // Not set by DABs
+	}
+	if aiGateway != nil {
+		req.FallbackConfig = aiGateway.FallbackConfig
+		req.Guardrails = aiGateway.Guardrails
+		req.InferenceTableConfig = aiGateway.InferenceTableConfig
+		req.RateLimits = aiGateway.RateLimits
+		req.UsageTrackingConfig = aiGateway.UsageTrackingConfig
+	}
+	request, err := modelserving.PutInferenceEndpointAiGatewayRequestToSDK(&req)
+	if err != nil {
 		return err
 	}
-
-	req := serving.PutAiGatewayRequest{
-		Name:                 id,
-		FallbackConfig:       aiGateway.FallbackConfig,
-		Guardrails:           aiGateway.Guardrails,
-		InferenceTableConfig: aiGateway.InferenceTableConfig,
-		RateLimits:           aiGateway.RateLimits,
-		UsageTrackingConfig:  aiGateway.UsageTrackingConfig,
-	}
-	_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
-	if err != nil {
+	_, err = r.client.ServingEndpoints.PutInferenceEndpointAiGateway(ctx, *request)
+	if err != nil && aiGateway != nil {
 		return fmt.Errorf("failed to update AI gateway: %w", err)
 	}
-	return nil
+	return err
 }
 
 // TODO(shreyas): Add acceptance tests for update and for unsetting. Will be done once we add selective updates for these fields.
-func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *serving.EndpointCoreConfigInput) error {
-	if config == nil {
-		// Unset config in resource.
-		req := serving.EndpointCoreConfigInput{
-			Name:              id,
-			AutoCaptureConfig: nil,
-			ServedEntities:    nil,
-			TrafficConfig:     nil,
-			ServedModels:      nil,
-		}
-		_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
+func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *modelserving.EndpointCoreConfig) error {
+	// A nil config unsets the config in the resource.
+	req := modelserving.PutInferenceEndpointConfigRequest{
+		Name:              new(id),
+		AutoCaptureConfig: nil, // Not set by DABs
+		ServedEntities:    nil, // Not set by DABs
+		ServedModels:      nil, // Not set by DABs
+		TrafficConfig:     nil, // Not set by DABs
+	}
+	if config != nil {
+		req.AutoCaptureConfig = config.AutoCaptureConfig
+		req.ServedEntities = config.ServedEntities
+		req.TrafficConfig = config.TrafficConfig
+		req.ServedModels = config.ServedModels
+	}
+	request, err := modelserving.PutInferenceEndpointConfigRequestToSDK(&req)
+	if err != nil {
 		return err
 	}
-	req := serving.EndpointCoreConfigInput{
-		Name:              id,
-		AutoCaptureConfig: config.AutoCaptureConfig,
-		ServedEntities:    config.ServedEntities,
-		TrafficConfig:     config.TrafficConfig,
-		ServedModels:      config.ServedModels,
-	}
-	_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
-	if err != nil {
+	_, err = r.client.ServingEndpoints.PutInferenceEndpointConfig(ctx, *request)
+	if err != nil && config != nil {
 		return fmt.Errorf("failed to update config: %w", err)
 	}
-	return nil
+	return err
 }
 
-func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, id string, notifications *serving.EmailNotifications) error {
-	req := serving.UpdateInferenceEndpointNotifications{
-		Name:               id,
+func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, id string, notifications *modelserving.EmailNotifications) error {
+	request, err := modelserving.UpdateInferenceEndpointNotificationsRequestToSDK(&modelserving.UpdateInferenceEndpointNotificationsRequest{
+		Name:               new(id),
 		EmailNotifications: notifications,
+	})
+	if err != nil {
+		return err
 	}
-	_, err := r.client.ServingEndpoints.UpdateNotifications(ctx, req)
+	_, err = r.client.ServingEndpoints.UpdateInferenceEndpointNotifications(ctx, *request)
 	if err != nil {
 		return fmt.Errorf("failed to update notifications: %w", err)
 	}
@@ -264,47 +290,41 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 }
 
 // updateTelemetryConfig removes telemetry when telemetryConfig is nil.
-func (r *ResourceModelServingEndpoint) updateTelemetryConfig(ctx context.Context, id string, telemetryConfig *serving.TelemetryConfig) error {
-	req := serving.PatchTelemetryConfigRequest{
-		Name:            id,
+func (r *ResourceModelServingEndpoint) updateTelemetryConfig(ctx context.Context, id string, telemetryConfig *modelserving.TelemetryConfig) error {
+	request, err := modelserving.PatchInferenceEndpointTelemetryConfigRequestToSDK(&modelserving.PatchInferenceEndpointTelemetryConfigRequest{
+		Name:            new(id),
 		TelemetryConfig: telemetryConfig,
+	})
+	if err != nil {
+		return err
 	}
-	_, err := r.client.ServingEndpoints.PatchTelemetryConfig(ctx, req)
+	_, err = r.client.ServingEndpoints.PatchInferenceEndpointTelemetryConfig(ctx, *request)
 	if err != nil {
 		return fmt.Errorf("failed to update telemetry config: %w", err)
 	}
 	return nil
 }
 
-func diffTags(currentTags, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
-	addTags = make([]serving.EndpointTag, 0)
+func diffTags(currentTags, desiredTags []modelserving.EndpointTag) (addTags []modelserving.EndpointTag, deleteTags []string) {
+	addTags = make([]modelserving.EndpointTag, 0)
 
 	// build maps for easy lookup.
 	currentTagsMap := make(map[string]string)
 	desiredTagsMap := make(map[string]string)
 	for _, tag := range currentTags {
-		currentTagsMap[tag.Key] = tag.Value
+		currentTagsMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 	for _, tag := range desiredTags {
-		desiredTagsMap[tag.Key] = tag.Value
+		desiredTagsMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 
 	// Compute keys to be added.
 	for key, desiredValue := range desiredTagsMap {
 		v, ok := currentTagsMap[key]
-		if !ok {
-			addTags = append(addTags, serving.EndpointTag{
-				Key:             key,
-				Value:           desiredValue,
-				ForceSendFields: nil,
-			})
-			continue
-		}
-		if v != desiredValue {
-			addTags = append(addTags, serving.EndpointTag{
-				Key:             key,
-				Value:           desiredValue,
-				ForceSendFields: nil,
+		if !ok || v != desiredValue {
+			addTags = append(addTags, modelserving.EndpointTag{
+				Key:   new(key),
+				Value: nonEmpty(desiredValue),
 			})
 		}
 	}
@@ -319,27 +339,34 @@ func diffTags(currentTags, desiredTags []serving.EndpointTag) (addTags []serving
 	return addTags, deleteTags
 }
 
-func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string, tags []serving.EndpointTag) error {
-	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
+func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string, tags []modelserving.EndpointTag) error {
+	resp, err := r.getEndpoint(ctx, id)
+	if err != nil {
+		return err
+	}
+	endpoint, err := modelserving.InferenceEndpointDetailedFromSDK(resp)
 	if err != nil {
 		return err
 	}
 
 	addTags, deleteTags := diffTags(endpoint.Tags, tags)
 
-	req := serving.PatchServingEndpointTags{
-		Name:       id,
+	request, err := modelserving.PatchInferenceEndpointTagsRequestToSDK(&modelserving.PatchInferenceEndpointTagsRequest{
+		Name:       new(id),
 		AddTags:    addTags,
 		DeleteTags: deleteTags,
+	})
+	if err != nil {
+		return err
 	}
-	_, err = r.client.ServingEndpoints.Patch(ctx, req)
+	_, err = r.client.ServingEndpoints.PatchInferenceEndpointTags(ctx, *request)
 	if err != nil {
 		return fmt.Errorf("failed to update tags: %w", err)
 	}
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *modelserving.CreateInferenceEndpointRequest, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
@@ -389,6 +416,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string, _ *serving.CreateServingEndpoint) error {
-	return r.client.ServingEndpoints.DeleteByName(ctx, id)
+func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string, _ *modelserving.CreateInferenceEndpointRequest) error {
+	_, err := r.client.ServingEndpoints.DeleteInferenceEndpoint(ctx, sdkmodelserving.DeleteInferenceEndpointRequest{Name: new(id)})
+	return err
 }

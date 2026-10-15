@@ -29,6 +29,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "body": {
     "comment": "",
     "credential_name": "test_storage_credential",
+    "name_arg": "myloc",
     "url": "s3://test-bucket/path"
   }
 }

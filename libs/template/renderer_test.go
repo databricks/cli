@@ -19,11 +19,12 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/tags"
-	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,14 +35,14 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
 
-	w := &databricks.WorkspaceClient{
+	w := &sdkclients.Clients{
 		Config: &workspaceConfig.Config{Host: "https://myhost.test"},
 	}
 
 	// Prepare helpers
-	cachedUser = &iam.User{UserName: "user@domain.com"}
+	cachedUser = &scim.User{UserName: new("user@domain.com")}
 	if isServicePrincipal {
-		cachedUser.UserName = "1d410060-a513-496f-a197-23cc82e5f46d"
+		cachedUser.UserName = new("1d410060-a513-496f-a197-23cc82e5f46d")
 	}
 	cachedIsServicePrincipal = &isServicePrincipal
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
@@ -75,7 +76,10 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	// Apply initialize / validation mutators
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+		b.Config.Workspace.CurrentUser = &bundleConfig.User{
+			ShortName: iamutil.GetShortUserName(cachedUser),
+			User:      cachedUser,
+		}
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)

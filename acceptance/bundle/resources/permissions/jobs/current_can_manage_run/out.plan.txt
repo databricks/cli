@@ -7,8 +7,6 @@
     "resources.jobs.interim_gold_layer_job": {
       "action": "skip",
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/state/metadata.json"
@@ -16,15 +14,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [INTERIM_GOLD_LAYER_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Untitled",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [INTERIM_GOLD_LAYER_JOB_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "email_notifications": {

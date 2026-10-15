@@ -5,43 +5,36 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkvolumes "github.com/databricks/sdk-go/uc/volumes/v1"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type Volume struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	catalog.CreateVolumeRequestContent
+	CreateVolumeRequestContent
 
 	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.
 	VolumePath string `json:"volume_path,omitempty" bundle:"readonly"`
 
 	// List of grants to apply on this volume.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (v *Volume) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, v)
-}
-
-func (v Volume) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(v)
-}
-
-func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullyQualifiedName string) (bool, error) {
-	_, err := w.Volumes.Read(ctx, catalog.ReadVolumeRequest{
-		Name: fullyQualifiedName,
+func (v *Volume) Exists(ctx context.Context, w *sdkclients.Clients, fullyQualifiedName string) (bool, error) {
+	_, err := w.Volumes.GetVolume(ctx, sdkvolumes.GetVolumeRequest{
+		FullNameArg: new(fullyQualifiedName),
 	})
 	if err != nil {
 		log.Debugf(ctx, "volume with fully qualified name %s does not exist: %v", fullyQualifiedName, err)
 
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 
@@ -68,7 +61,7 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 }
 
 func (v *Volume) GetName() string {
-	return v.Name
+	return utils.Deref(v.Name)
 }
 
 // ComputeVolumePath returns the Unity Catalog volume path /Volumes/{catalog}/{schema}/{name}.
@@ -77,5 +70,5 @@ func (v *Volume) GetName() string {
 // or deploy. Missing required fields and malformed references are reported by validation and the
 // plan/deploy backends, so this function does not guard against them.
 func (v *Volume) ComputeVolumePath() string {
-	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
+	return fmt.Sprintf("/Volumes/%s/%s/%s", utils.Deref(v.CatalogName), utils.Deref(v.SchemaName), utils.Deref(v.Name))
 }

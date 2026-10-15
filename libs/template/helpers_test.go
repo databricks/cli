@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,7 +139,7 @@ func TestTemplateMapPairFunction(t *testing.T) {
 func TestWorkspaceHost(t *testing.T) {
 	ctx := t.Context()
 
-	w := &databricks.WorkspaceClient{
+	w := &sdkclients.Clients{
 		Config: &workspaceConfig.Config{
 			Host: "https://myhost.test",
 		},
@@ -164,7 +164,7 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
 	ctx = cmdio.InContext(ctx, cmd)
 
-	w := &databricks.WorkspaceClient{
+	w := &sdkclients.Clients{
 		Config: &workspaceConfig.Config{},
 	}
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)

@@ -3,15 +3,14 @@
 package data_classification
 
 import (
-	"strings"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/dataclassification"
 	"github.com/spf13/cobra"
+
+	dataclassification "github.com/databricks/cli/libs/sdktypes/dataclassification/v1"
+	sdkdataclassification "github.com/databricks/sdk-go/dataclassification/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -61,9 +60,9 @@ var createCatalogConfigOverrides []func(
 
 func newCreateCatalogConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createCatalogConfigReq dataclassification.CreateCatalogConfigRequest
-	createCatalogConfigReq.CatalogConfig = dataclassification.CatalogConfig{}
+	createCatalogConfigReq.CatalogConfig = &dataclassification.CatalogConfig{}
+
 	var createCatalogConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCatalogConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -71,7 +70,7 @@ func newCreateCatalogConfig() *cobra.Command {
 	// TODO: array: auto_tag_configs
 	// TODO: complex arg: excluded_schemas
 	// TODO: complex arg: included_schemas
-	cmd.Flags().StringVar(&createCatalogConfigReq.CatalogConfig.Name, "name", createCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
+	flags.StringPtrVar(cmd.Flags(), &createCatalogConfigReq.CatalogConfig.Name, "name", `Resource name in the format: catalogs/{catalog_name}/config.`)
 
 	cmd.Use = "create-catalog-config PARENT"
 	cmd.Short = `*Public Preview* Create config for a catalog.`
@@ -100,6 +99,7 @@ Create config for a catalog.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCatalogConfigJson.Unmarshal(&createCatalogConfigReq.CatalogConfig)
@@ -113,14 +113,22 @@ Create config for a catalog.
 				}
 			}
 		}
-		createCatalogConfigReq.Parent = args[0]
+		createCatalogConfigReq.Parent = new(args[0])
 
-		response, err := w.DataClassification.CreateCatalogConfig(ctx, createCatalogConfigReq)
+		sdkReq, err := dataclassification.CreateCatalogConfigRequestToSDK(&createCatalogConfigReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataClassification.CreateCatalogConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataclassification.CatalogConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -141,13 +149,12 @@ Create config for a catalog.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCatalogConfigOverrides []func(
 	*cobra.Command,
-	*dataclassification.DeleteCatalogConfigRequest,
+	*sdkdataclassification.DeleteCatalogConfigRequest,
 )
 
 func newDeleteCatalogConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteCatalogConfigReq dataclassification.DeleteCatalogConfigRequest
+	var deleteCatalogConfigReq sdkdataclassification.DeleteCatalogConfigRequest
 
 	cmd.Use = "delete-catalog-config NAME"
 	cmd.Short = `*Public Preview* Delete config for a catalog.`
@@ -173,10 +180,12 @@ Delete config for a catalog.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCatalogConfigReq.Name = args[0]
+		deleteCatalogConfigReq.Name = new(args[0])
 
-		err = w.DataClassification.DeleteCatalogConfig(ctx, deleteCatalogConfigReq)
+		sdkReq := &deleteCatalogConfigReq
+		err = w.DataClassification.DeleteCatalogConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -201,13 +210,12 @@ Delete config for a catalog.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCatalogConfigOverrides []func(
 	*cobra.Command,
-	*dataclassification.GetCatalogConfigRequest,
+	*sdkdataclassification.GetCatalogConfigRequest,
 )
 
 func newGetCatalogConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCatalogConfigReq dataclassification.GetCatalogConfigRequest
+	var getCatalogConfigReq sdkdataclassification.GetCatalogConfigRequest
 
 	cmd.Use = "get-catalog-config NAME"
 	cmd.Short = `*Public Preview* Get config for a catalog.`
@@ -233,15 +241,21 @@ Get config for a catalog.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCatalogConfigReq.Name = args[0]
+		getCatalogConfigReq.Name = new(args[0])
 
-		response, err := w.DataClassification.GetCatalogConfig(ctx, getCatalogConfigReq)
+		sdkReq := &getCatalogConfigReq
+		response, err := w.DataClassification.GetCatalogConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataclassification.CatalogConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -267,9 +281,9 @@ var updateCatalogConfigOverrides []func(
 
 func newUpdateCatalogConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateCatalogConfigReq dataclassification.UpdateCatalogConfigRequest
-	updateCatalogConfigReq.CatalogConfig = dataclassification.CatalogConfig{}
+	updateCatalogConfigReq.CatalogConfig = &dataclassification.CatalogConfig{}
+
 	var updateCatalogConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateCatalogConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -277,7 +291,7 @@ func newUpdateCatalogConfig() *cobra.Command {
 	// TODO: array: auto_tag_configs
 	// TODO: complex arg: excluded_schemas
 	// TODO: complex arg: included_schemas
-	cmd.Flags().StringVar(&updateCatalogConfigReq.CatalogConfig.Name, "name", updateCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
+	flags.StringPtrVar(cmd.Flags(), &updateCatalogConfigReq.CatalogConfig.Name, "name", `Resource name in the format: catalogs/{catalog_name}/config.`)
 
 	cmd.Use = "update-catalog-config NAME UPDATE_MASK"
 	cmd.Short = `*Public Preview* Update config for a catalog.`
@@ -306,6 +320,7 @@ Update config for a catalog.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCatalogConfigJson.Unmarshal(&updateCatalogConfigReq.CatalogConfig)
@@ -319,18 +334,25 @@ Update config for a catalog.
 				}
 			}
 		}
-		updateCatalogConfigReq.Name = args[0]
+		updateCatalogConfigReq.CatalogConfig.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateCatalogConfigReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateCatalogConfigReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.DataClassification.UpdateCatalogConfig(ctx, updateCatalogConfigReq)
+		sdkReq, err := dataclassification.UpdateCatalogConfigRequestToSDK(&updateCatalogConfigReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataClassification.UpdateCatalogConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataclassification.CatalogConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

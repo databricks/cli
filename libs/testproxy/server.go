@@ -2,15 +2,14 @@ package testproxy
 
 import (
 	"bytes"
-	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +19,8 @@ type ProxyServer struct {
 
 	t testutil.TestingT
 
-	apiClient        *httpclient.ApiClient
+	upstream         *config.Config
+	httpClient       *http.Client
 	RequestCallback  func(request *testserver.Request)
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
@@ -40,13 +40,12 @@ type ProxyServer struct {
 // An upstream with no fields set resolves a real workspace and its auth from the
 // environment; an explicit host and token point at a testserver instead.
 func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
+	require.NoError(t, upstream.EnsureResolved())
 	s := &ProxyServer{
-		t: t,
+		t:          t,
+		upstream:   upstream,
+		httpClient: apiclient.HTTPClient(upstream),
 	}
-
-	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
-	require.NoError(t, err)
-	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
 	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
@@ -56,20 +55,9 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	return s
 }
 
-func (s *ProxyServer) reqBody(r testserver.Request) any {
-	// The SDK expects the query parameters to be specified in the "request body"
-	// argument for GET, DELETE, and HEAD requests in the .Do method.
-	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodHead {
-		queryParams := make(map[string]any)
-		for k, v := range r.URL.Query() {
-			queryParams[k] = v[0]
-		}
-		return queryParams
-	}
-
-	// Otherwise, return the raw body.
-	return r.Body
-}
+// includeResponseHeaders lists the response headers passed through to the
+// client in addition to the status and body.
+var includeResponseHeaders = []string{"X-Databricks-Org-Id"}
 
 func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	request := testserver.NewRequest(s.t, r, nil)
@@ -77,111 +65,67 @@ func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 		s.RequestCallback(&request)
 	}
 
-	headers := make(map[string]string)
-	for k, v := range r.Header {
-		// Authorization headers will be set by the SDK. Do not pass them along here.
-		if k == "Authorization" {
-			continue
-		}
-		// The default HTTP client in Go sets the Accept-Encoding header to
-		// "gzip". Since it is originally meant to be read by the server and
-		// will be set again when the SDK makes the request to the workspace, do
-		// not pass it along here.
-		if k == "Accept-Encoding" {
-			continue
-		}
-		headers[k] = v[0]
-	}
+	encodedResponse, header := s.forward(r, request.Body)
 
-	queryParams := make(map[string]any)
-	for k, v := range r.URL.Query() {
-		queryParams[k] = v[0]
-	}
-
-	reqBody := s.reqBody(request)
-	respBody := bytes.Buffer{}
-
-	// List of response headers to pass through to the client.
-	// We can extend this code to pass all X-Databricks headers if we introduce a
-	// more powerful visitor like `WithRequestHeaders` to the SDK. That is left
-	// as a future exercise for now.
-	includeResponseHeaders := []string{"X-Databricks-Org-Id"}
-	responseHeaders := make(map[string]*string)
-
-	visitors := []httpclient.DoOption{
-		httpclient.WithRequestHeaders(headers),
-		httpclient.WithQueryParameters(queryParams),
-		httpclient.WithRequestData(reqBody),
-		httpclient.WithResponseUnmarshal(&respBody),
-	}
-
-	for _, header := range includeResponseHeaders {
-		responseHeaders[header] = new(string)
-		visitors = append(visitors, httpclient.WithResponseHeader(header, responseHeaders[header]))
-	}
-
-	err := s.apiClient.Do(s.t.Context(), r.Method, r.URL.Path,
-		visitors...,
-	)
-
-	var encodedResponse *testserver.EncodedResponse
-
-	// API errors from the SDK are of type [apierr.APIError]. Forward the raw
-	// response bytes verbatim — including any error details — so callers see
-	// exactly what the workspace returned. Re-marshalling from the parsed
-	// APIError would drop fields the SDK doesn't surface (e.g. metadata in
-	// details[]) and silently break callers that inspect them.
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		rw := apiErr.ResponseWrapper
-		if rw == nil {
-			// The SDK populates ResponseWrapper for every APIError produced
-			// from a real HTTP response. If this ever fires the SDK changed
-			// shape and we need to revisit how we forward error bodies.
-			panic("apierr.APIError has no ResponseWrapper")
-		}
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: rw.Response.StatusCode,
-			Body:       rw.DebugBytes,
-		}
-		// Visitors registered via WithResponseHeader are not invoked when
-		// the SDK returns an error, so populate the include list directly
-		// from the original response headers.
-		for _, header := range includeResponseHeaders {
-			if v := rw.Response.Header.Get(header); v != "" {
-				*responseHeaders[header] = v
-			}
+	for _, k := range includeResponseHeaders {
+		if v := header.Get(k); v != "" {
+			w.Header().Set(k, v)
 		}
 	}
-
-	// Something else went wrong.
-	if encodedResponse == nil && err != nil {
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: 500,
-			Body:       []byte(err.Error()),
-		}
-	}
-
-	// Successful response
-	if encodedResponse == nil {
-		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: 200,
-			Body:       respBody.Bytes(),
-		}
-	}
-
-	// Send response to client.
-	if len(responseHeaders) > 0 {
-		for k, v := range responseHeaders {
-			w.Header()[k] = []string{*v}
-		}
-	}
-
 	w.WriteHeader(encodedResponse.StatusCode)
 
-	_, err = w.Write(encodedResponse.Body)
+	_, err := w.Write(encodedResponse.Body)
 	assert.NoError(s.t, err)
 
 	if s.ResponseCallback != nil {
 		s.ResponseCallback(&request, encodedResponse)
+	}
+}
+
+// forward sends the request to the upstream with the upstream's credentials
+// and returns its response verbatim, error bodies included, so callers see
+// exactly what the workspace returned.
+func (s *ProxyServer) forward(r *http.Request, body []byte) (*testserver.EncodedResponse, http.Header) {
+	upstreamURL := s.upstream.CanonicalHostName() + r.URL.Path
+	if r.URL.RawQuery != "" {
+		upstreamURL += "?" + r.URL.RawQuery
+	}
+	var reqBody io.Reader
+	if len(body) > 0 {
+		reqBody = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(s.t.Context(), r.Method, upstreamURL, reqBody)
+	if err != nil {
+		return internalError(err), nil
+	}
+	for k, v := range r.Header {
+		// Authorization is set from the upstream config below. The default
+		// HTTP client in Go sets Accept-Encoding to "gzip"; it is meant for
+		// this proxy and will be set again for the upstream request.
+		if k == "Authorization" || k == "Accept-Encoding" {
+			continue
+		}
+		req.Header.Set(k, v[0])
+	}
+	if err := s.upstream.Authenticate(req); err != nil {
+		return internalError(err), nil
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return internalError(err), nil
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return internalError(err), nil
+	}
+	return &testserver.EncodedResponse{StatusCode: resp.StatusCode, Body: respBody}, resp.Header
+}
+
+func internalError(err error) *testserver.EncodedResponse {
+	return &testserver.EncodedResponse{
+		StatusCode: 500,
+		Body:       []byte(err.Error()),
 	}
 }

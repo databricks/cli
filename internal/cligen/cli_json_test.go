@@ -112,6 +112,18 @@ func TestCliJSONIsInterpretable(t *testing.T) {
 		}
 	}
 
+	idx, err := loadSdkIndex("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := loadLegacy("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := bindAll(cmds, idx, legacy); err != nil {
+		t.Fatal(err)
+	}
+
 	// --- interpretation proof: every file renders to valid Go ---
 	serviceTmpl := parseTemplate("service", "templates/service.go.tmpl")
 	rendered := 0

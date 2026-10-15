@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"time"
 
 	sshclient "github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 type SetupOptions struct {
@@ -68,17 +71,51 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 	return hostConfig, nil
 }
 
+// userClusterNamesToIDs maps the names of clusters created through the UI or
+// API to their IDs. It is a raw call because sdk-go models neither the
+// filter_by request parameter nor pagination of the full listing here.
+func userClusterNamesToIDs(ctx context.Context, client *sdkclients.Clients) (map[string]string, error) {
+	api, err := apiclient.New(client.Config)
+	if err != nil {
+		return nil, err
+	}
+	mapping := map[string]string{}
+	pageToken := ""
+	for {
+		query := url.Values{"filter_by.cluster_sources": {"API", "UI"}}
+		if pageToken != "" {
+			query.Set("page_token", pageToken)
+		}
+		var resp struct {
+			Clusters []struct {
+				ClusterID   string `json:"cluster_id"`
+				ClusterName string `json:"cluster_name"`
+			} `json:"clusters"`
+			NextPageToken string `json:"next_page_token"`
+		}
+		if err := api.Do(ctx, http.MethodGet, "/api/2.1/clusters/list?"+query.Encode(), auth.WorkspaceIDHeaders(client.Config), nil, nil, &resp); err != nil {
+			return nil, err
+		}
+		for _, c := range resp.Clusters {
+			if _, duplicate := mapping[c.ClusterName]; duplicate {
+				return nil, fmt.Errorf("duplicate .ClusterName: %s", c.ClusterName)
+			}
+			mapping[c.ClusterName] = c.ClusterID
+		}
+		if resp.NextPageToken == "" {
+			return mapping, nil
+		}
+		pageToken = resp.NextPageToken
+	}
+}
+
 // clusterSelectionPrompt is a package-level var so tests can replace it with a mock.
 var clusterSelectionPrompt = defaultClusterSelectionPrompt
 
-func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+func defaultClusterSelectionPrompt(ctx context.Context, client *sdkclients.Clients) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading clusters.")
-	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
-		FilterBy: &compute.ListClustersFilterBy{
-			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
-		},
-	})
+	clusters, err := userClusterNamesToIDs(ctx, client)
 	sp.Close()
 	if err != nil {
 		return "", fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify cluster argument. Original error: %w", err)
@@ -90,7 +127,7 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 	return id, nil
 }
 
-func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+func Setup(ctx context.Context, client *sdkclients.Clients, opts SetupOptions) error {
 	// Reject invalid server-lifecycle flag values before the cluster picker and
 	// cluster-access check: these values don't depend on cluster details.
 	if opts.MaxClients < 1 {

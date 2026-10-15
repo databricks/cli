@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/sdkclients"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -50,21 +50,22 @@ func validateServer(t *testing.T, status int, body string, gotReq *map[string]an
 	return srv
 }
 
-func validationTestWorkspaceClient(t *testing.T, host string) *databricks.WorkspaceClient {
+func validationTestWorkspaceClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
 	w := newTestWorkspaceClient(t, host)
 	w.Config.RetryTimeoutSeconds = 1
 	return w
 }
 
-func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *databricks.WorkspaceClient {
+func validationTestWorkspaceClientWithTransport(t *testing.T, transport validationRoundTripFunc) *sdkclients.Clients {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:          "https://example.test",
 		Token:         "token",
 		HTTPTransport: transport,
 	})
 	require.NoError(t, err)
+	authenticate(t, w)
 	return w
 }
 
@@ -207,7 +208,7 @@ func TestPreflightValidationBodyReadFailureOnCallerErrorBlocks(t *testing.T) {
 	require.Error(t, err)
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	require.True(t, ok)
-	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.HTTPStatusCode())
 }
 
 func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
@@ -223,7 +224,7 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 			Expiry:      time.Now().Add(-time.Hour),
 		}),
 	)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 		Host:        "https://example.test",
 		Credentials: validationOAuthCredentials{tokenSource: tokenSource},
 		HTTPTransport: validationRoundTripFunc(func(*http.Request) (*http.Response, error) {
@@ -252,12 +253,11 @@ func TestPreflightValidationOAuthRefreshUsesDeadline(t *testing.T) {
 
 func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 	tests := []struct {
-		status  int
-		wantErr error
+		status int
 	}{
-		{http.StatusBadRequest, apierr.ErrBadRequest},
-		{http.StatusUnauthorized, apierr.ErrUnauthenticated},
-		{http.StatusForbidden, apierr.ErrPermissionDenied},
+		{http.StatusBadRequest},
+		{http.StatusUnauthorized},
+		{http.StatusForbidden},
 	}
 
 	for _, tt := range tests {
@@ -273,7 +273,7 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 			}))
 			t.Cleanup(srv.Close)
 
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
 				Host:         srv.URL,
 				ClientID:     "client-id",
 				ClientSecret: "client-secret",
@@ -286,7 +286,9 @@ func TestPreflightValidationM2MOAuthRejectionBlocks(t *testing.T) {
 			require.NoError(t, err)
 
 			err = preflightValidate(t.Context(), w, baseRunConfig(), "/Workspace/Users/me/cmd.sh", nil, "token")
-			require.ErrorIs(t, err, tt.wantErr)
+			// The token endpoint's rejection blocks submission as an auth failure.
+			_, isAuthErr := errors.AsType[*validationAuthenticationError](err)
+			require.True(t, isAuthErr, "unexpected error: %v", err)
 		})
 	}
 }
@@ -384,15 +386,15 @@ func TestClassifyValidationFailure(t *testing.T) {
 		{"deadline", context.DeadlineExceeded, true, true},
 		{"transport", &url.Error{Op: "Post", URL: "https://example.test", Err: errors.New("connection failed")}, true, true},
 		{"unknown", errors.New("authentication visitor failed"), false, false},
-		{"bad request", &apierr.APIError{StatusCode: http.StatusBadRequest}, false, false},
-		{"disabled", &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "FEATURE_DISABLED"}, true, false},
-		{"unauthenticated", &apierr.APIError{StatusCode: http.StatusUnauthorized}, false, false},
-		{"forbidden", &apierr.APIError{StatusCode: http.StatusForbidden}, false, false},
-		{"not found", &apierr.APIError{StatusCode: http.StatusNotFound}, true, false},
-		{"not implemented", &apierr.APIError{StatusCode: http.StatusNotImplemented}, true, false},
-		{"request timeout", &apierr.APIError{StatusCode: http.StatusRequestTimeout}, true, true},
-		{"rate limited", &apierr.APIError{StatusCode: http.StatusTooManyRequests}, true, true},
-		{"server error", &apierr.APIError{StatusCode: http.StatusInternalServerError}, true, true},
+		{"bad request", newAPIError(http.StatusBadRequest, "", ""), false, false},
+		{"disabled", newAPIError(http.StatusBadRequest, "FEATURE_DISABLED", ""), true, false},
+		{"unauthenticated", newAPIError(http.StatusUnauthorized, "", ""), false, false},
+		{"forbidden", newAPIError(http.StatusForbidden, "", ""), false, false},
+		{"not found", newAPIError(http.StatusNotFound, "", ""), true, false},
+		{"not implemented", newAPIError(http.StatusNotImplemented, "", ""), true, false},
+		{"request timeout", newAPIError(http.StatusRequestTimeout, "", ""), true, true},
+		{"rate limited", newAPIError(http.StatusTooManyRequests, "", ""), true, true},
+		{"server error", newAPIError(http.StatusInternalServerError, "", ""), true, true},
 	}
 
 	for _, tt := range tests {

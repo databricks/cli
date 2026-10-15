@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucconnections "github.com/databricks/cli/libs/sdktypes/uc/connections/v1"
+	sdkucconnections "github.com/databricks/sdk-go/uc/connections/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -60,22 +63,22 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateConnection,
+	*ucconnections.CreateConnectionRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucconnections.CreateConnectionRequest
 
-	var createReq catalog.CreateConnection
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `User-provided free-form text description.`)
 	// TODO: complex arg: environment_settings
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Parent, "parent", `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.ReadOnly, "read-only", `If the connection is read only.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a connection.`
@@ -95,6 +98,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -111,12 +115,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Connections.Create(ctx, createReq)
+		sdkReq, err := ucconnections.CreateConnectionRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Connections.CreateConnection(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucconnections.ConnectionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -137,13 +149,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteConnectionRequest,
+	*sdkucconnections.DeleteConnectionRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteConnectionRequest
+	var deleteReq sdkucconnections.DeleteConnectionRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a connection.`
@@ -162,11 +173,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
-			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Connections.ListConnectionsIter(ctx, sdkucconnections.ListConnectionsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -180,12 +192,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the name of the connection to be deleted")
 		}
-		deleteReq.Name = args[0]
+		deleteReq.NameArg = new(args[0])
 
-		err = w.Connections.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Connections.DeleteConnection(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -207,13 +222,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetConnectionRequest,
+	*sdkucconnections.GetConnectionRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetConnectionRequest
+	var getReq sdkucconnections.GetConnectionRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a connection.`
@@ -232,11 +246,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
-			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Connections.ListConnectionsIter(ctx, sdkucconnections.ListConnectionsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -250,14 +265,19 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have name of the connection")
 		}
-		getReq.Name = args[0]
+		getReq.NameArg = new(args[0])
 
-		response, err := w.Connections.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Connections.GetConnection(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucconnections.ConnectionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -278,27 +298,27 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListConnectionsRequest,
+	*ucconnections.ListConnectionsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucconnections.ListConnectionsRequest
 
-	var listReq catalog.ListConnectionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.Parent, "parent", listReq.Parent, `Optional.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Parent, "parent", `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of connections to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
@@ -328,16 +348,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Connections.List(ctx, listReq)
+		sdkReq, err := ucconnections.ListConnectionsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Connections.ListConnectionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucconnections.ConnectionInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -358,20 +382,20 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateConnection,
+	*ucconnections.UpdateConnectionRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucconnections.UpdateConnectionRequest
 
-	var updateReq catalog.UpdateConnection
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: environment_settings
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the connection.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of current owner of the connection.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`
@@ -395,6 +419,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -410,14 +435,22 @@ func newUpdate() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Name = args[0]
+		updateReq.NameArg = new(args[0])
 
-		response, err := w.Connections.Update(ctx, updateReq)
+		sdkReq, err := ucconnections.UpdateConnectionRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Connections.UpdateConnection(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucconnections.ConnectionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

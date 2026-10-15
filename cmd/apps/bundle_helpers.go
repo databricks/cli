@@ -13,7 +13,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -159,32 +160,32 @@ func isIdempotencyError(err error, keywords ...string) bool {
 }
 
 // displayAppURL displays the app URL in a consistent format if available.
-func displayAppURL(ctx context.Context, appInfo *apps.App) {
-	if appInfo != nil && appInfo.Url != "" {
-		cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
+func displayAppURL(ctx context.Context, appInfo *sdkapps.App) {
+	if appInfo != nil && utils.Deref(appInfo.Url) != "" {
+		cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", *appInfo.Url))
 	}
 }
 
 // formatAppStatusMessage formats a user-friendly status message for an app.
-func formatAppStatusMessage(appInfo *apps.App, appName, verb string) string {
+func formatAppStatusMessage(appInfo *sdkapps.App, appName, verb string) string {
 	computeState := "unknown"
 	if appInfo != nil && appInfo.ComputeStatus != nil {
 		computeState = string(appInfo.ComputeStatus.State)
 	}
 
-	if appInfo != nil && appInfo.AppStatus != nil && appInfo.AppStatus.State == apps.ApplicationStateUnavailable {
+	if appInfo != nil && appInfo.AppStatus != nil && appInfo.AppStatus.State == sdkapps.ApplicationStatus_ApplicationState_Unavailable {
 		return fmt.Sprintf("⚠ App '%s' %s but is unavailable (compute: %s, app: %s)", appName, verb, computeState, appInfo.AppStatus.State)
 	}
 
 	if appInfo != nil && appInfo.ComputeStatus != nil {
 		state := appInfo.ComputeStatus.State
 		switch state {
-		case apps.ComputeStateActive:
+		case sdkapps.ComputeStatus_ComputeState_Active:
 			if verb == "is deployed" {
 				return fmt.Sprintf("✔ App '%s' is already running (status: %s)", appName, state)
 			}
 			return fmt.Sprintf("✔ App '%s' started successfully (status: %s)", appName, state)
-		case apps.ComputeStateStarting:
+		case sdkapps.ComputeStatus_ComputeState_Starting:
 			return fmt.Sprintf("⚠ App '%s' is already starting (status: %s)", appName, state)
 		default:
 			return fmt.Sprintf("✔ App '%s' status: %s", appName, state)
@@ -216,12 +217,12 @@ type spinnerInterface interface {
 }
 
 // createAppProgressCallback creates a progress callback for app operations.
-func createAppProgressCallback(spinner spinnerInterface) func(*apps.App) {
-	return func(i *apps.App) {
+func createAppProgressCallback(spinner spinnerInterface) func(*sdkapps.App) {
+	return func(i *sdkapps.App) {
 		if i.ComputeStatus == nil {
 			return
 		}
-		statusMessage := i.ComputeStatus.Message
+		statusMessage := utils.Deref(i.ComputeStatus.Message)
 		if statusMessage == "" {
 			statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
 		}
@@ -242,7 +243,7 @@ func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err erro
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	appInfo, getErr := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+	appInfo, getErr := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
 	if getErr != nil {
 		return true, wrapError(cmd, appName, getErr)
 	}
@@ -251,4 +252,13 @@ func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err erro
 	cmdio.LogString(ctx, message)
 	displayAppURL(ctx, appInfo)
 	return true, nil
+}
+
+// appNameArg returns the app name passed as the command's positional argument,
+// or "" when the app comes from the project configuration.
+func appNameArg(args []string) string {
+	if len(args) == 0 {
+		return ""
+	}
+	return args[0]
 }

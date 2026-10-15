@@ -9,9 +9,8 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
-
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,8 +31,8 @@ func setupWsfsFiler(t testutil.TestingT) (filer.Filer, string) {
 
 	// Check if we can use this API here, skip test if we cannot.
 	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
-	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusBadRequest {
-		t.Skip(aerr.Message)
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.HTTPStatusCode() == http.StatusBadRequest {
+		t.Skip(aerr.Message())
 	}
 
 	return f, tmpdir

@@ -2,11 +2,10 @@ package run
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/appdeploy"
@@ -16,31 +15,88 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type testAppRunner struct {
-	m   *mocks.MockWorkspaceClient
-	b   *bundle.Bundle
-	ctx context.Context
+// fakeApps serves the apps API calls made by appRunner and records them.
+type fakeApps struct {
+	t *testing.T
+
+	// app is returned by GET /api/2.0/apps/my_app.
+	app map[string]any
+	// startedApp replaces app after a start request.
+	startedApp map[string]any
+
+	// deployErrors is the number of deploy requests to reject before accepting one.
+	deployErrors int
+
+	starts      int
+	stops       int
+	deployments []map[string]any
+	waited      []string
 }
 
-func (ta *testAppRunner) run(t *testing.T) {
+func newFakeApps(t *testing.T, server *testserver.Server) *fakeApps {
+	f := &fakeApps{t: t}
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		assert.Equal(t, "my_app", req.Vars["name"])
+		return f.app
+	})
+	server.Handle("POST", "/api/2.0/apps/{name}/start", func(req testserver.Request) any {
+		f.starts++
+		f.app = f.startedApp
+		return f.app
+	})
+	server.Handle("POST", "/api/2.0/apps/{name}/stop", func(req testserver.Request) any {
+		f.stops++
+		f.app = appWithState("UNAVAILABLE", "STOPPED")
+		return f.app
+	})
+	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req testserver.Request) any {
+		if f.deployErrors > 0 {
+			f.deployErrors--
+			return testserver.Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_STATE", "message": "deployment in progress"},
+			}
+		}
+		var body map[string]any
+		assert.NoError(t, json.Unmarshal(req.Body, &body))
+		f.deployments = append(f.deployments, body)
+		return map[string]any{"deployment_id": "new_deployment_id", "status": map[string]any{"state": "IN_PROGRESS"}}
+	})
+	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{id}", func(req testserver.Request) any {
+		f.waited = append(f.waited, req.Vars["id"])
+		return map[string]any{"deployment_id": req.Vars["id"], "status": map[string]any{"state": "SUCCEEDED"}}
+	})
+	return f
+}
+
+func (f *fakeApps) run(ctx context.Context, b *bundle.Bundle) {
 	r := appRunner{
 		key:    "my_app",
-		bundle: ta.b,
-		app:    ta.b.Config.Resources.Apps["my_app"],
+		bundle: b,
+		app:    b.Config.Resources.Apps["my_app"],
 	}
 
-	_, err := r.Run(ta.ctx, &Options{})
-	require.NoError(t, err)
+	_, err := r.Run(ctx, &Options{})
+	require.NoError(f.t, err)
 }
 
-func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWorkspaceClient) {
+func (f *fakeApps) assertDeployedOnce() {
+	expected := []map[string]any{{
+		"mode":             "SNAPSHOT",
+		"source_code_path": "/Workspace/Users/foo@bar.test/files/my_app",
+	}}
+	assert.Equal(f.t, expected, f.deployments)
+}
+
+func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *testserver.Server) {
 	root := t.TempDir()
 	err := os.MkdirAll(filepath.Join(root, "my_app"), 0o700)
 	require.NoError(t, err)
@@ -57,8 +113,8 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 				Apps: map[string]*resources.App{
 					"my_app": {
 						App: apps.App{
-							Name:           "my_app",
-							SourceCodePath: "./my_app",
+							Name:           new("my_app"),
+							SourceCodePath: new("./my_app"),
 						},
 					},
 				},
@@ -66,8 +122,8 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 		},
 	}
 
-	mwc := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(mwc.WorkspaceClient)
+	w, server := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 	bundletest.SetLocation(b, "resources.apps.my_app", []diag.Location{{File: filepath.Join(root, "./databricks.yml")}})
 
 	ctx := cmdio.MockDiscard(t.Context())
@@ -79,188 +135,77 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 	)
 	require.Empty(t, diags)
 
-	return ctx, b, mwc
+	return ctx, b, server
 }
 
-func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialComputeState apps.ComputeState) *testAppRunner {
-	ctx, b, mwc := setupBundle(t)
-
-	appApi := mwc.GetMockAppsAPI()
-	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
-		Name: "my_app",
-	}).Return(&apps.App{
-		Name: "my_app",
-		AppStatus: &apps.ApplicationStatus{
-			State: initialAppState,
-		},
-		ComputeStatus: &apps.ComputeStatus{
-			State: initialComputeState,
-		},
-	}, nil)
-
-	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
-		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
-			return nil, nil
-		},
-	}
-	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
-		},
-	}).Return(wait, nil)
-
-	return &testAppRunner{
-		m:   mwc,
-		b:   b,
-		ctx: ctx,
+func appWithState(appState, computeState string) map[string]any {
+	return map[string]any{
+		"name":           "my_app",
+		"app_status":     map[string]any{"state": appState},
+		"compute_status": map[string]any{"state": computeState},
 	}
 }
 
 func TestAppRunStartedApp(t *testing.T) {
-	r := setupTestApp(t, apps.ApplicationStateRunning, apps.ComputeStateActive)
-	r.run(t)
+	ctx, b, server := setupBundle(t)
+	f := newFakeApps(t, server)
+	f.app = appWithState("RUNNING", "ACTIVE")
+
+	f.run(ctx, b)
+	assert.Equal(t, 0, f.starts)
+	f.assertDeployedOnce()
 }
 
 func TestAppRunStoppedApp(t *testing.T) {
-	r := setupTestApp(t, apps.ApplicationStateCrashed, apps.ComputeStateStopped)
+	ctx, b, server := setupBundle(t)
+	f := newFakeApps(t, server)
+	f.app = appWithState("CRASHED", "STOPPED")
+	f.startedApp = appWithState("RUNNING", "ACTIVE")
 
-	appsApi := r.m.GetMockAppsAPI()
-	appsApi.EXPECT().Start(mock.Anything, apps.StartAppRequest{
-		Name: "my_app",
-	}).Return(&apps.WaitGetAppActive[apps.App]{
-		Poll: func(_ time.Duration, _ func(*apps.App)) (*apps.App, error) {
-			return &apps.App{
-				Name: "my_app",
-				AppStatus: &apps.ApplicationStatus{
-					State: apps.ApplicationStateRunning,
-				},
-				ComputeStatus: &apps.ComputeStatus{
-					State: apps.ComputeStateActive,
-				},
-			}, nil
-		},
-	}, nil)
-
-	r.run(t)
+	f.run(ctx, b)
+	assert.Equal(t, 1, f.starts)
+	f.assertDeployedOnce()
 }
 
 func TestAppRunWithAnActiveDeploymentInProgress(t *testing.T) {
-	r := setupTestApp(t, apps.ApplicationStateCrashed, apps.ComputeStateStopped)
+	ctx, b, server := setupBundle(t)
+	f := newFakeApps(t, server)
+	f.app = appWithState("CRASHED", "STOPPED")
+	f.startedApp = appWithState("RUNNING", "ACTIVE")
+	f.startedApp["active_deployment"] = map[string]any{
+		"deployment_id": "active_deployment_id",
+		"status":        map[string]any{"state": "IN_PROGRESS"},
+	}
+	f.startedApp["pending_deployment"] = map[string]any{
+		"deployment_id": "pending_deployment_id",
+		"status":        map[string]any{"state": "CANCELLED"},
+	}
 
-	appsApi := r.m.GetMockAppsAPI()
-	appsApi.EXPECT().Start(mock.Anything, apps.StartAppRequest{
-		Name: "my_app",
-	}).Return(&apps.WaitGetAppActive[apps.App]{
-		Poll: func(_ time.Duration, _ func(*apps.App)) (*apps.App, error) {
-			return &apps.App{
-				Name: "my_app",
-				AppStatus: &apps.ApplicationStatus{
-					State: apps.ApplicationStateRunning,
-				},
-				ComputeStatus: &apps.ComputeStatus{
-					State: apps.ComputeStateActive,
-				},
-				ActiveDeployment: &apps.AppDeployment{
-					DeploymentId: "active_deployment_id",
-					Status: &apps.AppDeploymentStatus{
-						State: apps.AppDeploymentStateInProgress,
-					},
-				},
-				PendingDeployment: &apps.AppDeployment{
-					DeploymentId: "pending_deployment_id",
-					Status: &apps.AppDeploymentStatus{
-						State: apps.AppDeploymentStateCancelled,
-					},
-				},
-			}, nil
-		},
-	}, nil)
-
-	appsApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
-
-	r.run(t)
+	f.run(ctx, b)
+	assert.Equal(t, []string{"active_deployment_id", "new_deployment_id"}, f.waited)
+	f.assertDeployedOnce()
 }
 
 func TestAppDeployWithDeploymentInProgress(t *testing.T) {
-	ctx, b, mwc := setupBundle(t)
-
-	appApi := mwc.GetMockAppsAPI()
-	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
-		Name: "my_app",
-	}).Return(&apps.App{
-		Name: "my_app",
-		AppStatus: &apps.ApplicationStatus{
-			State: apps.ApplicationStateRunning,
-		},
-		ComputeStatus: &apps.ComputeStatus{
-			State: apps.ComputeStateActive,
-		},
-	}, nil).Once()
-
-	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
-		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
-			return nil, nil
-		},
+	ctx, b, server := setupBundle(t)
+	f := newFakeApps(t, server)
+	f.app = appWithState("RUNNING", "ACTIVE")
+	f.app["active_deployment"] = map[string]any{
+		"deployment_id": "active_deployment_id",
+		"status":        map[string]any{"state": "IN_PROGRESS"},
 	}
+	// The first deployment is rejected; the runner waits for the active
+	// deployment and retries.
+	f.deployErrors = 1
 
-	// First deployment fails
-	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
-		},
-	}).Return(nil, errors.New("deployment in progress")).Once()
-
-	// After first deployment fails, we should get the app and wait for the deployment to complete
-	appApi.EXPECT().Get(mock.Anything, apps.GetAppRequest{
-		Name: "my_app",
-	}).Return(&apps.App{
-		Name: "my_app",
-		ActiveDeployment: &apps.AppDeployment{
-			DeploymentId: "active_deployment_id",
-			Status: &apps.AppDeploymentStatus{
-				State: apps.AppDeploymentStateInProgress,
-			},
-		},
-	}, nil).Once()
-
-	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
-
-	// Second one should succeed
-	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
-		},
-	}).Return(wait, nil).Once()
-
-	r := &testAppRunner{
-		m:   mwc,
-		b:   b,
-		ctx: ctx,
-	}
-	r.run(t)
+	f.run(ctx, b)
+	assert.Equal(t, []string{"active_deployment_id", "new_deployment_id"}, f.waited)
+	f.assertDeployedOnce()
 }
 
 func TestStopApp(t *testing.T) {
-	ctx, b, mwc := setupBundle(t)
-	appsApi := mwc.GetMockAppsAPI()
-	appsApi.EXPECT().Stop(mock.Anything, apps.StopAppRequest{
-		Name: "my_app",
-	}).Return(&apps.WaitGetAppStopped[apps.App]{
-		Poll: func(_ time.Duration, _ func(*apps.App)) (*apps.App, error) {
-			return &apps.App{
-				Name: "my_app",
-				AppStatus: &apps.ApplicationStatus{
-					State: apps.ApplicationStateUnavailable,
-				},
-			}, nil
-		},
-	}, nil)
+	ctx, b, server := setupBundle(t)
+	f := newFakeApps(t, server)
 
 	r := appRunner{
 		key:    "my_app",
@@ -270,11 +215,12 @@ func TestStopApp(t *testing.T) {
 
 	err := r.Cancel(ctx)
 	require.NoError(t, err)
+	assert.Equal(t, 1, f.stops)
 }
 
 func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 	app := &resources.App{
-		SourceCodePath: "/path/to/app",
+		SourceCodePath: new("/path/to/app"),
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 			Env: []resources.AppEnvVar{
@@ -286,37 +232,35 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 					Name:      "SECRET_VAR",
 					ValueFrom: "secrets/my-secret",
 				},
-				{
-					Name:      "COMBINED_VAR",
-					Value:     "default_value",
-					ValueFrom: "secrets/override",
-				},
 			},
 		},
 	}
 
-	deployment := appdeploy.BuildDeployment(app.SourceCodePath, app.Config, app.GitSource)
+	sdkDeployment, err := appdeploy.BuildDeployment(utils.Deref(app.SourceCodePath), app.Config, app.GitSource)
+	require.NoError(t, err)
+	deployment, err := apps.AppDeploymentFromSDK(sdkDeployment)
+	require.NoError(t, err)
 
-	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
-	require.Equal(t, "/path/to/app", deployment.SourceCodePath)
-	require.Len(t, deployment.Command, 2)
-	require.Equal(t, "python", deployment.Command[0])
-	require.Equal(t, "app.py", deployment.Command[1])
+	require.Equal(t, apps.AppDeployment_Mode_Snapshot, deployment.Mode)
+	require.Equal(t, "/path/to/app", utils.Deref(deployment.SourceCodePath))
+	require.Equal(t, []string{"python", "app.py"}, deployment.Command)
 
-	require.Len(t, deployment.EnvVars, 3)
+	require.Equal(t, []apps.EnvVar{
+		{Name: new("REGULAR_VAR"), Value: new("regular_value")},
+		{Name: new("SECRET_VAR"), ValueFrom: new("secrets/my-secret")},
+	}, deployment.EnvVars)
+}
 
-	// Regular env var with value
-	require.Equal(t, "REGULAR_VAR", deployment.EnvVars[0].Name)
-	require.Equal(t, "regular_value", deployment.EnvVars[0].Value)
-	require.Empty(t, deployment.EnvVars[0].ValueFrom)
+// value and value_from are a oneof in the Apps API.
+func TestBuildAppDeploymentRejectsValueAndValueFrom(t *testing.T) {
+	config := &resources.AppConfig{
+		Env: []resources.AppEnvVar{{
+			Name:      "COMBINED_VAR",
+			Value:     "default_value",
+			ValueFrom: "secrets/override",
+		}},
+	}
 
-	// Env var with value_from
-	require.Equal(t, "SECRET_VAR", deployment.EnvVars[1].Name)
-	require.Empty(t, deployment.EnvVars[1].Value)
-	require.Equal(t, "secrets/my-secret", deployment.EnvVars[1].ValueFrom)
-
-	// Env var with both value and value_from
-	require.Equal(t, "COMBINED_VAR", deployment.EnvVars[2].Name)
-	require.Equal(t, "default_value", deployment.EnvVars[2].Value)
-	require.Equal(t, "secrets/override", deployment.EnvVars[2].ValueFrom)
+	_, err := appdeploy.BuildDeployment("/path/to/app", config, nil)
+	require.ErrorContains(t, err, "only one of value, value_from can be set")
 }

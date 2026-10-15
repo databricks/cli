@@ -11,9 +11,10 @@ import (
 	"slices"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
 	files "github.com/databricks/sdk-go/files/v2"
@@ -154,7 +155,7 @@ type FilesClient struct {
 	transferClient *http.Client
 }
 
-func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
+func NewFilesClient(ctx context.Context, w *sdkclients.Clients, root string) (Filer, error) {
 	c, err := newFilesAPIClient(ctx, w.Config)
 	if err != nil {
 		return nil, err
@@ -192,7 +193,7 @@ func newTransferClient(n int) *http.Client {
 func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
-		client.WithCredentials(configCredentials{cfg: cfg}),
+		client.WithCredentials(apiclient.NewCredentials(cfg)),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
 	}

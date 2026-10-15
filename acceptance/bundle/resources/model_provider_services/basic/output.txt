@@ -29,7 +29,7 @@
 
 === Verify it does not exist yet
 >>> musterr [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
-Error: Resource catalog.ModelProviderService not found: main.myschema.myservice
+Error: Resource aigateway.ModelProviderService not found: main.myschema.myservice
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -119,7 +119,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
           ]
         }
       ]
-    }
+    },
+    "name": "model-provider-services/main.myschema.myservice"
   }
 }
 

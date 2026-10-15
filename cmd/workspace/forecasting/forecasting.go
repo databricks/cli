@@ -8,11 +8,17 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	forecasting "github.com/databricks/cli/libs/sdktypes/forecasting/v1"
+	sdkforecasting "github.com/databricks/sdk-go/forecasting/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +60,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createExperimentOverrides []func(
 	*cobra.Command,
-	*ml.CreateForecastingExperimentRequest,
+	*forecasting.CreateForecastingExperimentRequest,
 )
 
 func newCreateExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createExperimentReq forecasting.CreateForecastingExperimentRequest
 
-	var createExperimentReq ml.CreateForecastingExperimentRequest
 	var createExperimentJson flags.JsonFlag
 
 	var createExperimentSkipWait bool
@@ -71,16 +77,16 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series.`)
-	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path in the workspace to store the created experiment.`)
-	cmd.Flags().StringVar(&createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", createExperimentReq.FutureFeatureDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.CustomWeightsColumn, "custom-weights-column", `The column in the training table used to customize weights for each time series.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.ExperimentPath, "experiment-path", `The path in the workspace to store the created experiment.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.`)
 	// TODO: array: holiday_regions
 	// TODO: array: include_features
-	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration for the experiment in minutes.`)
-	cmd.Flags().StringVar(&createExperimentReq.PredictionDataPath, "prediction-data-path", createExperimentReq.PredictionDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions.`)
-	cmd.Flags().StringVar(&createExperimentReq.PrimaryMetric, "primary-metric", createExperimentReq.PrimaryMetric, `The evaluation metric used to optimize the forecasting model.`)
-	cmd.Flags().StringVar(&createExperimentReq.RegisterTo, "register-to", createExperimentReq.RegisterTo, `The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model.`)
-	cmd.Flags().StringVar(&createExperimentReq.SplitColumn, "split-column", createExperimentReq.SplitColumn, `// The column in the training table used for custom data splits.`)
+	flags.Int64PtrVar(cmd.Flags(), &createExperimentReq.MaxRuntime, "max-runtime", `The maximum duration for the experiment in minutes.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.PredictionDataPath, "prediction-data-path", `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.PrimaryMetric, "primary-metric", `The evaluation metric used to optimize the forecasting model.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.RegisterTo, "register-to", `The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model.`)
+	flags.StringPtrVar(cmd.Flags(), &createExperimentReq.SplitColumn, "split-column", `// The column in the training table used for custom data splits.`)
 	// TODO: array: timeseries_identifier_columns
 	// TODO: array: training_frameworks
 
@@ -127,6 +133,7 @@ func newCreateExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExperimentJson.Unmarshal(&createExperimentReq)
@@ -141,43 +148,59 @@ func newCreateExperiment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.TrainDataPath = args[0]
+			createExperimentReq.TrainDataPath = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.TargetColumn = args[1]
+			createExperimentReq.TargetColumn = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.TimeColumn = args[2]
+			createExperimentReq.TimeColumn = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			createExperimentReq.ForecastGranularity = args[3]
+			createExperimentReq.ForecastGranularity = new(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &createExperimentReq.ForecastHorizon)
+			var createExperimentForecastHorizonArg int64
+			_, err = fmt.Sscan(args[4], &createExperimentForecastHorizonArg)
 			if err != nil {
 				return fmt.Errorf("invalid FORECAST_HORIZON: %s", args[4])
 			}
-
+			createExperimentReq.ForecastHorizon = &createExperimentForecastHorizonArg
 		}
 
-		wait, err := w.Forecasting.CreateExperiment(ctx, createExperimentReq)
+		sdkReq, err := forecasting.CreateForecastingExperimentRequestToSDK(&createExperimentReq)
 		if err != nil {
 			return err
 		}
 		if createExperimentSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current forecasting.CreateForecastingExperimentResponse
+			err = api.Do(ctx, "POST", "/api/2.0/automl/create-forecasting-experiment", auth.WorkspaceIDHeaders(w.Config), nil, &createExperimentReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *ml.ForecastingExperiment) {
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createExperimentTimeout)
-		sp.Close()
+		wait, err := w.Forecasting.CreateForecastingExperiment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for create-experiment to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createExperimentTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := forecasting.ForecastingExperimentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -198,13 +221,12 @@ func newCreateExperiment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExperimentOverrides []func(
 	*cobra.Command,
-	*ml.GetForecastingExperimentRequest,
+	*sdkforecasting.GetForecastingExperimentRequest,
 )
 
 func newGetExperiment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExperimentReq ml.GetForecastingExperimentRequest
+	var getExperimentReq sdkforecasting.GetForecastingExperimentRequest
 
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get a forecasting experiment.`
@@ -228,15 +250,21 @@ func newGetExperiment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExperimentReq.ExperimentId = args[0]
+		getExperimentReq.ExperimentId = new(args[0])
 
-		response, err := w.Forecasting.GetExperiment(ctx, getExperimentReq)
+		sdkReq := &getExperimentReq
+		response, err := w.Forecasting.GetForecastingExperiment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := forecasting.ForecastingExperimentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

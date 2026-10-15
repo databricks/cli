@@ -2,11 +2,11 @@ package tables
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	uctables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *catalog.ListTablesRequest) {
+func listOverride(listCmd *cobra.Command, listReq *uctables.ListTablesRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Full Name"}}	{{header "Table Type"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

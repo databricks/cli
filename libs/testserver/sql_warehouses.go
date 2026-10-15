@@ -5,26 +5,27 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/sqllegacy"
+	"github.com/databricks/cli/libs/utils"
 )
 
-func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
-	if warehouse.CreatorName == "" {
-		warehouse.CreatorName = userName
+func sqlWarehouseFixUps(warehouse *warehouses.GetWarehouseResponse, userName string) {
+	if utils.Deref(warehouse.CreatorName) == "" {
+		warehouse.CreatorName = utils.NonZero(userName)
 	}
 
-	if warehouse.MinNumClusters == 0 {
-		warehouse.MinNumClusters = 1
-		warehouse.ForceSendFields = append(warehouse.ForceSendFields, "MinNumClusters")
+	if utils.Deref(warehouse.MinNumClusters) == 0 {
+		warehouse.MinNumClusters = new(1)
 	}
 
 	if warehouse.WarehouseType == "" {
-		warehouse.WarehouseType = sql.GetWarehouseResponseWarehouseTypeClassic
+		warehouse.WarehouseType = warehouses.WarehouseType_Classic
 	}
 }
 
 func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Response {
-	var warehouse sql.GetWarehouseResponse
+	var warehouse warehouses.GetWarehouseResponse
 
 	if err := json.Unmarshal(req.Body, &warehouse); err != nil {
 		return Response{
@@ -45,12 +46,12 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	} else {
 		warehouseId = nextUUID()
 	}
-	warehouse.Id = warehouseId
-	if warehouse.Name == "" {
-		warehouse.Name = warehouseId
+	warehouse.Id = utils.NonZero(warehouseId)
+	if utils.Deref(warehouse.Name) == "" {
+		warehouse.Name = utils.NonZero(warehouseId)
 	}
-	warehouse.State = sql.StateRunning
-	sqlWarehouseFixUps(&warehouse, s.CurrentUser().UserName)
+	warehouse.State = warehouses.EndpointState_Running
+	sqlWarehouseFixUps(&warehouse, utils.Deref(s.CurrentUser().UserName))
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{
@@ -67,7 +68,7 @@ func (s *FakeWorkspace) SqlWarehousesStart(req Request, warehouseId string) Resp
 		return Response{StatusCode: 404}
 	}
 
-	warehouse.State = sql.StateRunning
+	warehouse.State = warehouses.EndpointState_Running
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
@@ -81,35 +82,35 @@ func (s *FakeWorkspace) SqlWarehousesStop(req Request, warehouseId string) Respo
 		return Response{StatusCode: 404}
 	}
 
-	warehouse.State = sql.StateStopped
+	warehouse.State = warehouses.EndpointState_Stopped
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
 }
 
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
-	var warehouses []sql.EndpointInfo
+	var list []warehouses.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {
-		warehouses = append(warehouses, sql.EndpointInfo{
+		list = append(list, warehouses.EndpointInfo{
 			Id:   warehouse.Id,
 			Name: warehouse.Name,
 		})
 	}
 	return Response{
 		StatusCode: 200,
-		Body: sql.ListWarehousesResponse{
-			Warehouses: warehouses,
+		Body: warehouses.ListWarehousesResponse{
+			Warehouses: list,
 		},
 	}
 }
 
 func (s *FakeWorkspace) SqlDataSourcesList(req Request) Response {
-	var dataSources []sql.DataSource
+	var dataSources []sqllegacy.DataSource
 	for key, warehouse := range s.SqlWarehouses {
-		dataSources = append(dataSources, sql.DataSource{
+		dataSources = append(dataSources, sqllegacy.DataSource{
 			Id:          key,
 			Name:        "test_data_source",
-			WarehouseId: warehouse.Id,
+			WarehouseId: utils.Deref(warehouse.Id),
 		})
 	}
 	return Response{

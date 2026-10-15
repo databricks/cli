@@ -4,24 +4,23 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/spf13/cobra"
 )
 
 const tailLinesSuggestedValue = 100
 
 // isDeploymentWaitError checks if the error is from the deployment wait phase.
-// These are errors wrapped by retries.Halt() during GetWithTimeout().
+// The generated commands mark errors of the wait as cmdgen.WaitError.
 // Excludes API client errors (4xx) which are validation errors before deployment starts.
 func isDeploymentWaitError(err error) bool {
-	retriesErr, ok := errors.AsType[*retries.Err](err)
-	if !ok || !retriesErr.Halt {
+	if _, ok := errors.AsType[*cmdgen.WaitError](err); !ok {
 		return false
 	}
 
 	// Exclude API client errors (4xx) (e.g. app not found)
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 {
+	if code := apierrs.StatusCode(err); code >= 400 && code < 500 {
 		return false
 	}
 

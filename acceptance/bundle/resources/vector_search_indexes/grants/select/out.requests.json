@@ -31,6 +31,8 @@
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.default.vs_index_[UNIQUE_NAME]",
+    "securable_type": "table"
   }
 }

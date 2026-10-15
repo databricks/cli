@@ -9,8 +9,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,13 +54,12 @@ These APIs manage access rules on resources in an account. Currently, only
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getAssignableRolesForResourceOverrides []func(
 	*cobra.Command,
-	*iam.GetAssignableRolesForResourceRequest,
+	*accessmanagement.ListAssignableRolesForResourceRequest,
 )
 
 func newGetAssignableRolesForResource() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
+	var getAssignableRolesForResourceReq accessmanagement.ListAssignableRolesForResourceRequest
 
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
 	cmd.Short = `*Public Preview* Get assignable roles for a resource.`
@@ -95,15 +95,24 @@ Get assignable roles for a resource.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getAssignableRolesForResourceReq.Resource = args[0]
+		getAssignableRolesForResourceReq.Resource = new(args[0])
 
-		response, err := a.AccessControl.GetAssignableRolesForResource(ctx, getAssignableRolesForResourceReq)
+		sdkReq, err := accessmanagement.ListAssignableRolesForResourceRequestToSDK(&getAssignableRolesForResourceReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.AccessManagement.ListAssignableRolesForResource(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListAssignableRolesForResourceResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -124,13 +133,12 @@ Get assignable roles for a resource.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getRuleSetOverrides []func(
 	*cobra.Command,
-	*iam.GetRuleSetRequest,
+	*accessmanagement.GetRuleSetRequest,
 )
 
 func newGetRuleSet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getRuleSetReq iam.GetRuleSetRequest
+	var getRuleSetReq accessmanagement.GetRuleSetRequest
 
 	cmd.Use = "get-rule-set NAME ETAG"
 	cmd.Short = `*Public Preview* Get a rule set.`
@@ -181,16 +189,25 @@ Get a rule set.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getRuleSetReq.Name = args[0]
-		getRuleSetReq.Etag = args[1]
+		getRuleSetReq.Name = new(args[0])
+		getRuleSetReq.Etag = new(args[1])
 
-		response, err := a.AccessControl.GetRuleSet(ctx, getRuleSetReq)
+		sdkReq, err := accessmanagement.GetRuleSetRequestToSDK(&getRuleSetReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.AccessManagement.GetRuleSet(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.RuleSetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -211,13 +228,13 @@ Get a rule set.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateRuleSetOverrides []func(
 	*cobra.Command,
-	*iam.UpdateRuleSetRequest,
+	*accessmanagement.UpdateRuleSetRequest,
 )
 
 func newUpdateRuleSet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateRuleSetReq accessmanagement.UpdateRuleSetRequest
 
-	var updateRuleSetReq iam.UpdateRuleSetRequest
 	var updateRuleSetJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -240,6 +257,7 @@ Update a rule set.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRuleSetJson.Unmarshal(&updateRuleSetReq)
@@ -256,12 +274,20 @@ Update a rule set.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.AccessControl.UpdateRuleSet(ctx, updateRuleSetReq)
+		sdkReq, err := accessmanagement.UpdateRuleSetRequestToSDK(&updateRuleSetReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.AccessManagement.UpdateRuleSet(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.RuleSetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

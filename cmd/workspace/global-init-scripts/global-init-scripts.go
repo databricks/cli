@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
+
+	globalinitscripts "github.com/databricks/cli/libs/sdktypes/globalinitscripts/v2"
+	sdkglobalinitscripts "github.com/databricks/sdk-go/globalinitscripts/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -60,19 +62,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*compute.GlobalInitScriptCreateRequest,
+	*globalinitscripts.CreateGlobalInitScriptRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq globalinitscripts.CreateGlobalInitScriptRequest
 
-	var createReq compute.GlobalInitScriptCreateRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
-	cmd.Flags().IntVar(&createReq.Position, "position", createReq.Position, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.Enabled, "enabled", `Specifies whether the script is enabled.`)
+	flags.IntPtrVar(cmd.Flags(), &createReq.Position, "position", `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
 	cmd.Use = "create NAME SCRIPT"
 	cmd.Short = `Create init script.`
@@ -104,6 +106,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -118,18 +121,26 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Script = args[1]
+			_ = args[1] // TODO: complex arg: script
 		}
 
-		response, err := w.GlobalInitScripts.Create(ctx, createReq)
+		sdkReq, err := globalinitscripts.CreateGlobalInitScriptRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.GlobalInitScripts.CreateGlobalInitScript(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := globalinitscripts.CreateGlobalInitScriptResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -150,13 +161,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*compute.DeleteGlobalInitScriptRequest,
+	*sdkglobalinitscripts.DeleteGlobalInitScriptRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq compute.DeleteGlobalInitScriptRequest
+	var deleteReq sdkglobalinitscripts.DeleteGlobalInitScriptRequest
 
 	cmd.Use = "delete SCRIPT_ID"
 	cmd.Short = `Delete init script.`
@@ -171,34 +181,26 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
-			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id of the global init script")
-		}
-		deleteReq.ScriptId = args[0]
+		deleteReq.ScriptId = new(args[0])
 
-		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.GlobalInitScripts.DeleteGlobalInitScript(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -220,13 +222,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*compute.GetGlobalInitScriptRequest,
+	*sdkglobalinitscripts.GetGlobalInitScriptRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq compute.GetGlobalInitScriptRequest
+	var getReq sdkglobalinitscripts.GetGlobalInitScriptRequest
 
 	cmd.Use = "get SCRIPT_ID"
 	cmd.Short = `Get an init script.`
@@ -241,36 +242,30 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
-			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id of the global init script")
-		}
-		getReq.ScriptId = args[0]
+		getReq.ScriptId = new(args[0])
 
-		response, err := w.GlobalInitScripts.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.GlobalInitScripts.GetGlobalInitScript(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := globalinitscripts.GlobalInitScriptDetailsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -322,7 +317,14 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.GlobalInitScripts.List(ctx)
+		_ = w
+
+		sdkReq := &sdkglobalinitscripts.ListGlobalInitScriptsRequest{}
+
+		response, err := w.GlobalInitScripts.ListGlobalInitScripts(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -330,7 +332,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := globalinitscripts.ListGlobalInitScriptsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Scripts)
 	}
 
 	// Disable completions since they are not applicable.
@@ -351,19 +357,19 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*compute.GlobalInitScriptUpdateRequest,
+	*globalinitscripts.UpdateGlobalInitScriptRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq globalinitscripts.UpdateGlobalInitScriptRequest
 
-	var updateReq compute.GlobalInitScriptUpdateRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
-	cmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Enabled, "enabled", `Specifies whether the script is enabled.`)
+	flags.IntPtrVar(cmd.Flags(), &updateReq.Position, "position", `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
 	cmd.Use = "update SCRIPT_ID NAME SCRIPT"
 	cmd.Short = `Update init script.`
@@ -397,6 +403,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -410,18 +417,24 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.ScriptId = args[0]
+		updateReq.ScriptId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			updateReq.Name = args[1]
+			updateReq.Name = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateReq.Script = args[2]
+			_ = args[2] // TODO: complex arg: script
 		}
 
-		err = w.GlobalInitScripts.Update(ctx, updateReq)
+		sdkReq, err := globalinitscripts.UpdateGlobalInitScriptRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.GlobalInitScripts.UpdateGlobalInitScript(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

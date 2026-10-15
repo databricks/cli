@@ -2,14 +2,16 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
+	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
 )
 
 var (
@@ -20,88 +22,107 @@ var (
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
 // fields for drift comparison and adds endpoint_uuid for permissions; deployment state id remains the endpoint name.
 type VectorSearchEndpointRemote struct {
-	vectorsearch.EndpointInfo
+	vectorsearch.Endpoint
 	EndpointUuid string `json:"endpoint_uuid"`
-	// TargetQps is mapped from EndpointInfo.ScalingInfo.RequestedTargetQps in DoRead
+	// TargetQps is mapped from Endpoint.ScalingInfo.RequestedTargetQps in DoRead
 	// so that drift detection can compare it directly against the config field.
-	TargetQps int64 `json:"target_qps,omitempty"`
+	TargetQps *int64 `json:"target_qps,omitempty"`
 }
 
-// Custom marshalers needed because embedded vectorsearch.EndpointInfo has its own
-// MarshalJSON which would otherwise take over and ignore endpoint_uuid.
-func (s *VectorSearchEndpointRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s VectorSearchEndpointRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
-	var targetQps int64
+func newVectorSearchEndpointRemote(endpoint *sdkvectorsearch.Endpoint) (*VectorSearchEndpointRemote, error) {
+	info, err := vectorsearch.EndpointFromSDK(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	var targetQps *int64
 	if info.ScalingInfo != nil {
 		targetQps = info.ScalingInfo.RequestedTargetQps
 	}
 	return &VectorSearchEndpointRemote{
-		EndpointInfo: *info,
-		EndpointUuid: info.Id,
+		Endpoint:     *info,
+		EndpointUuid: utils.Deref(info.Id),
 		TargetQps:    targetQps,
-	}
+	}, nil
 }
 
 type ResourceVectorSearchEndpoint struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceVectorSearchEndpoint) New(client *databricks.WorkspaceClient) *ResourceVectorSearchEndpoint {
+func (*ResourceVectorSearchEndpoint) New(client *sdkclients.Clients) *ResourceVectorSearchEndpoint {
 	return &ResourceVectorSearchEndpoint{client: client}
 }
 
-func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchEndpoint) *vectorsearch.CreateEndpoint {
-	return &input.CreateEndpoint
+func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchEndpoint) *vectorsearch.CreateEndpointRequest {
+	return &input.CreateEndpointRequest
 }
 
-func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	return &vectorsearch.CreateEndpoint{
-		Name:            remote.Name,
-		EndpointType:    remote.EndpointType,
-		BudgetPolicyId:  remote.BudgetPolicyId,
-		UsagePolicyId:   "", // Missing in remote
-		TargetQps:       remote.TargetQps,
-		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
+func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpointRequest {
+	return &vectorsearch.CreateEndpointRequest{
+		Name:           remote.Name,
+		EndpointType:   remote.EndpointType,
+		BudgetPolicyId: remote.BudgetPolicyId,
+		UsagePolicyId:  nil, // Missing in remote
+		TargetQps:      remote.TargetQps,
 	}
+}
+
+func (r *ResourceVectorSearchEndpoint) getEndpoint(ctx context.Context, name string) (*sdkvectorsearch.Endpoint, error) {
+	return r.client.VectorSearch.GetEndpoint(ctx, sdkvectorsearch.GetEndpointRequest{Name: new(name)})
 }
 
 func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchEndpointRemote, error) {
-	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, id)
+	endpoint, err := r.getEndpoint(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return newVectorSearchEndpointRemote(info), nil
+	return newVectorSearchEndpointRemote(endpoint)
 }
 
-func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
-	waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
+func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpointRequest) (string, *VectorSearchEndpointRemote, error) {
+	request, err := vectorsearch.CreateEndpointRequestToSDK(config)
 	if err != nil {
 		return "", nil, err
 	}
-	id := config.Name
-	return id, newVectorSearchEndpointRemote(waiter.Response), nil
+	if _, err := r.client.VectorSearch.CreateEndpoint(ctx, *request); err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(config.Name), nil, nil
 }
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
-	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
+func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpointRequest) (*VectorSearchEndpointRemote, error) {
+	name := utils.Deref(config.Name)
+	endpoint, err := retries.Poll(ctx, 60*time.Minute, func() (*sdkvectorsearch.Endpoint, *retries.Err) {
+		endpoint, err := r.getEndpoint(ctx, name)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		var status sdkvectorsearch.EndpointStatus_State
+		statusMessage := ""
+		if endpoint.EndpointStatus != nil {
+			status = endpoint.EndpointStatus.State
+			statusMessage = utils.Deref(endpoint.EndpointStatus.Message)
+		}
+		switch status {
+		case sdkvectorsearch.EndpointStatus_State_Online:
+			return endpoint, nil
+		case sdkvectorsearch.EndpointStatus_State_Offline:
+			return nil, retries.Halt(fmt.Errorf("failed to reach %s, got %s: %s", sdkvectorsearch.EndpointStatus_State_Online, status, statusMessage))
+		default:
+			return nil, retries.Continues(statusMessage)
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
-	return newVectorSearchEndpointRemote(info), nil
+	return newVectorSearchEndpointRemote(endpoint)
 }
 
-func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpointRequest, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
 	if entry.Changes.HasChange(pathBudgetPolicyId) {
-		_, err := r.client.VectorSearchEndpoints.UpdateEndpointBudgetPolicy(ctx, vectorsearch.PatchEndpointBudgetPolicyRequest{
-			EndpointName:   id,
-			BudgetPolicyId: config.BudgetPolicyId,
+		_, err := r.client.VectorSearch.PatchEndpointBudgetPolicy(ctx, sdkvectorsearch.PatchEndpointBudgetPolicyRequest{
+			Name:           new(id),
+			BudgetPolicyId: orZero(config.BudgetPolicyId),
 		})
 		if err != nil {
 			return nil, err
@@ -109,10 +130,9 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	}
 
 	if entry.Changes.HasChange(pathTargetQps) {
-		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
-			EndpointName:    id,
-			TargetQps:       config.TargetQps,
-			ForceSendFields: nil,
+		_, err := r.client.VectorSearch.PatchEndpoint(ctx, sdkvectorsearch.PatchEndpointRequest{
+			Name:      new(id),
+			TargetQps: config.TargetQps,
 		})
 		if err != nil {
 			return nil, err
@@ -122,6 +142,7 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) error {
-	return r.client.VectorSearchEndpoints.DeleteEndpointByEndpointName(ctx, id)
+func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string, _ *vectorsearch.CreateEndpointRequest) error {
+	_, err := r.client.VectorSearch.DeleteEndpoint(ctx, sdkvectorsearch.DeleteEndpointRequest{Name: new(id)})
+	return err
 }

@@ -7,16 +7,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,29 +90,29 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	config := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
-					UserName: "alice",
+				User: &scim.User{
+					UserName: new("alice"),
 				},
 			},
 		},
 		RunAs: &jobs.JobRunAs{
-			UserName: "bob",
+			UserName: new("bob"),
 		},
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"job_one": {
 					JobSettings: jobs.JobSettings{
-						Name: "foo",
+						Name: new("foo"),
 					},
 				},
 				"job_two": {
 					JobSettings: jobs.JobSettings{
-						Name: "bar",
+						Name: new("bar"),
 					},
 				},
 				"job_three": {
 					JobSettings: jobs.JobSettings{
-						Name: "baz",
+						Name: new("baz"),
 					},
 				},
 			},
@@ -128,8 +130,8 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			},
 			Alerts: map[string]*resources.Alert{
 				"alert_one": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "alert",
+					Alert: alerts.Alert{
+						DisplayName: new("alert"),
 					},
 				},
 			},
@@ -144,11 +146,11 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	assert.NoError(t, diags.Error())
 
 	for _, job := range b.Config.Resources.Jobs {
-		assert.Equal(t, "bob", job.RunAs.UserName)
+		assert.Equal(t, "bob", utils.Deref(job.RunAs.UserName))
 	}
 
 	for _, alert := range b.Config.Resources.Alerts {
-		assert.Equal(t, "bob", alert.RunAs.UserName)
+		assert.Equal(t, "bob", utils.Deref(alert.RunAs.UserName))
 	}
 }
 
@@ -271,9 +273,9 @@ func TestRunAsGroupSupportBehavior(t *testing.T) {
 				require.NoError(t, diags.Error())
 				switch resourceType {
 				case "jobs":
-					assert.Equal(t, "group", b.Config.Resources.Jobs["test"].RunAs.GroupName)
+					assert.Equal(t, "group", utils.Deref(b.Config.Resources.Jobs["test"].RunAs.GroupName))
 				case "pipelines":
-					assert.Equal(t, "group", b.Config.Resources.Pipelines["test"].RunAs.GroupName)
+					assert.Equal(t, "group", utils.Deref(b.Config.Resources.Pipelines["test"].RunAs.GroupName))
 				default:
 					t.Fatalf("add a group propagation assertion for %s", resourceType)
 				}
@@ -288,13 +290,13 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
-					UserName: "alice",
+				User: &scim.User{
+					UserName: new("alice"),
 				},
 			},
 		},
 		RunAs: &jobs.JobRunAs{
-			UserName: "bob",
+			UserName: new("bob"),
 		},
 	}
 
@@ -342,13 +344,13 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 	base := config.Root{
 		Workspace: config.Workspace{
 			CurrentUser: &config.User{
-				User: &iam.User{
-					UserName: "alice",
+				User: &scim.User{
+					UserName: new("alice"),
 				},
 			},
 		},
 		RunAs: &jobs.JobRunAs{
-			UserName: "bob",
+			UserName: new("bob"),
 		},
 	}
 
@@ -473,9 +475,9 @@ func TestRunAsGroupInheritance(t *testing.T) {
 		target string
 		want   jobs.JobRunAs
 	}{
-		{name: "root group", root: `{group_name: group}`, target: `{}`, want: jobs.JobRunAs{GroupName: "group"}},
-		{name: "target group replaces user", root: `{user_name: user}`, target: `{run_as: {group_name: group}}`, want: jobs.JobRunAs{GroupName: "group"}},
-		{name: "target user replaces group", root: `{group_name: group}`, target: `{run_as: {user_name: user}}`, want: jobs.JobRunAs{UserName: "user"}},
+		{name: "root group", root: `{group_name: group}`, target: `{}`, want: jobs.JobRunAs{GroupName: new("group")}},
+		{name: "target group replaces user", root: `{user_name: user}`, target: `{run_as: {group_name: group}}`, want: jobs.JobRunAs{GroupName: new("group")}},
+		{name: "target user replaces group", root: `{group_name: group}`, target: `{run_as: {user_name: user}}`, want: jobs.JobRunAs{UserName: new("user")}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			yaml := fmt.Sprintf(`
@@ -503,17 +505,17 @@ resources:
 			require.NoError(t, diags.Error())
 			assert.Equal(t, &tc.want, b.Config.RunAs)
 			assert.Equal(t, &tc.want, b.Config.Resources.Jobs["inherited"].RunAs)
-			assert.Equal(t, &jobs.JobRunAs{UserName: "other_user"}, b.Config.Resources.Jobs["user"].RunAs)
-			assert.Equal(t, &jobs.JobRunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Jobs["sp"].RunAs)
-			assert.Equal(t, &jobs.JobRunAs{GroupName: "other_group"}, b.Config.Resources.Jobs["group"].RunAs)
-			assert.Equal(t, &pipelines.RunAs{
+			assert.Equal(t, &jobs.JobRunAs{UserName: new("other_user")}, b.Config.Resources.Jobs["user"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{ServicePrincipalName: new("other_sp")}, b.Config.Resources.Jobs["sp"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{GroupName: new("other_group")}, b.Config.Resources.Jobs["group"].RunAs)
+			assert.Equal(t, &pipelines.PipelinesJobRunAs{
 				GroupName:            tc.want.GroupName,
 				ServicePrincipalName: tc.want.ServicePrincipalName,
 				UserName:             tc.want.UserName,
 			}, b.Config.Resources.Pipelines["inherited"].RunAs)
-			assert.Equal(t, &pipelines.RunAs{UserName: "other_user"}, b.Config.Resources.Pipelines["user"].RunAs)
-			assert.Equal(t, &pipelines.RunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Pipelines["sp"].RunAs)
-			assert.Equal(t, &pipelines.RunAs{GroupName: "other_group"}, b.Config.Resources.Pipelines["group"].RunAs)
+			assert.Equal(t, &pipelines.PipelinesJobRunAs{UserName: new("other_user")}, b.Config.Resources.Pipelines["user"].RunAs)
+			assert.Equal(t, &pipelines.PipelinesJobRunAs{ServicePrincipalName: new("other_sp")}, b.Config.Resources.Pipelines["sp"].RunAs)
+			assert.Equal(t, &pipelines.PipelinesJobRunAs{GroupName: new("other_group")}, b.Config.Resources.Pipelines["group"].RunAs)
 		})
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,8 +16,8 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "jane@doe.com",
+					User: &scim.User{
+						UserName: new("jane@doe.com"),
 					},
 				},
 				RootPath: "~/foo",
@@ -34,8 +34,8 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "jane@doe.com",
+					User: &scim.User{
+						UserName: new("jane@doe.com"),
 					},
 				},
 				RootPath: "/Users/charly@doe.com/foo",
@@ -52,8 +52,8 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "jane@doe.com",
+					User: &scim.User{
+						UserName: new("jane@doe.com"),
 					},
 				},
 			},

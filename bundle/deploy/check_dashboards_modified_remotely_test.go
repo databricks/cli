@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"encoding/json"
-	"errors"
 	"path/filepath"
 	"testing"
 
@@ -10,11 +9,10 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func mockDashboardBundle(t *testing.T) *bundle.Bundle {
@@ -68,17 +66,15 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, b)
 
-	// Mock the call to the API.
-	m := mocks.NewMockWorkspaceClient(t)
-	dashboardsAPI := m.GetMockLakeviewAPI()
-	dashboardsAPI.EXPECT().
-		GetByDashboardId(mock.Anything, "id1").
-		Return(&dashboards.Dashboard{
-			DisplayName: "My Special Dashboard",
-			Etag:        "1000",
-		}, nil).
-		Once()
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	// Serve the dashboard read by the check.
+	w, server := bundletest.NewClients(t)
+	calls := 0
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/id1", func(testserver.Request) any {
+		calls++
+		return map[string]string{"dashboard_id": "id1", "display_name": "My Special Dashboard", "etag": "1000"}
+	})
+	b.SetWorkpaceClient(w)
+	defer func() { assert.Equal(t, 1, calls) }()
 
 	// No changes, so no diags.
 	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
@@ -91,17 +87,15 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, b)
 
-	// Mock the call to the API.
-	m := mocks.NewMockWorkspaceClient(t)
-	dashboardsAPI := m.GetMockLakeviewAPI()
-	dashboardsAPI.EXPECT().
-		GetByDashboardId(mock.Anything, "id1").
-		Return(&dashboards.Dashboard{
-			DisplayName: "My Special Dashboard",
-			Etag:        "1234",
-		}, nil).
-		Once()
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	// Serve the dashboard read by the check.
+	w, server := bundletest.NewClients(t)
+	calls := 0
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/id1", func(testserver.Request) any {
+		calls++
+		return map[string]string{"dashboard_id": "id1", "display_name": "My Special Dashboard", "etag": "1234"}
+	})
+	b.SetWorkpaceClient(w)
+	defer func() { assert.Equal(t, 1, calls) }()
 
 	// The dashboard has changed, so expect an error.
 	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
@@ -117,14 +111,15 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, b)
 
-	// Mock the call to the API.
-	m := mocks.NewMockWorkspaceClient(t)
-	dashboardsAPI := m.GetMockLakeviewAPI()
-	dashboardsAPI.EXPECT().
-		GetByDashboardId(mock.Anything, "id1").
-		Return(nil, errors.New("failure")).
-		Once()
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	// Serve the dashboard read by the check.
+	w, server := bundletest.NewClients(t)
+	calls := 0
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/id1", func(testserver.Request) any {
+		calls++
+		return testserver.Response{StatusCode: 500, Body: map[string]string{"error_code": "INTERNAL_ERROR", "message": "failure"}}
+	})
+	b.SetWorkpaceClient(w)
+	defer func() { assert.Equal(t, 1, calls) }()
 
 	// Unable to get the dashboard, so expect an error.
 	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false))
@@ -140,17 +135,15 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, b)
 
-	// Mock the call to the API.
-	m := mocks.NewMockWorkspaceClient(t)
-	dashboardsAPI := m.GetMockLakeviewAPI()
-	dashboardsAPI.EXPECT().
-		GetByDashboardId(mock.Anything, "id1").
-		Return(&dashboards.Dashboard{
-			DisplayName: "My Special Dashboard",
-			Etag:        "1234",
-		}, nil).
-		Once()
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	// Serve the dashboard read by the check.
+	w, server := bundletest.NewClients(t)
+	calls := 0
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/id1", func(testserver.Request) any {
+		calls++
+		return map[string]string{"dashboard_id": "id1", "display_name": "My Special Dashboard", "etag": "1234"}
+	})
+	b.SetWorkpaceClient(w)
+	defer func() { assert.Equal(t, 1, calls) }()
 
 	// The dashboard has changed, but in plan mode expect a warning instead of an error.
 	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(true))

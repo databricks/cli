@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkcatalogs "github.com/databricks/sdk-go/uc/catalogs/v1"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -16,18 +17,18 @@ import (
 type Catalog struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	catalog.CreateCatalog
+	CreateCatalog
 
 	// List of grants to apply on this catalog.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Catalogs.GetByName(ctx, name)
+func (c *Catalog) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Catalogs.GetCatalog(ctx, sdkcatalogs.GetCatalogRequest{NameArg: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "catalog with name %s does not exist: %v", name, err)
 
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 
@@ -53,13 +54,5 @@ func (c *Catalog) InitializeURL(baseURL url.URL) {
 }
 
 func (c *Catalog) GetName() string {
-	return c.Name
-}
-
-func (c *Catalog) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c Catalog) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
+	return utils.Deref(c.Name)
 }

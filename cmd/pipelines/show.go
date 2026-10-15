@@ -12,8 +12,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -94,7 +95,7 @@ schema.table (legacy Hive metastore).`,
 
 // warehouse to query either --warehouse-id flag, DATABRICKS_WAREHOUSE_ID config,
 // or the workspace default warehouse.
-func resolveWarehouseID(ctx context.Context, w *databricks.WorkspaceClient, flag string) (string, error) {
+func resolveWarehouseID(ctx context.Context, w *sdkclients.Clients, flag string) (string, error) {
 	if flag != "" {
 		return flag, nil
 	}
@@ -108,7 +109,7 @@ func resolveWarehouseID(ctx context.Context, w *databricks.WorkspaceClient, flag
 	if err != nil {
 		return "", err
 	}
-	return warehouse.Id, nil
+	return utils.Deref(warehouse.Id), nil
 }
 
 // writes the result as JSON (--output json) or a terminal-width-aware table.

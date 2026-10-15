@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 const metadataFileName = "metadata.json"
@@ -29,15 +30,15 @@ type WorkspaceMetadata struct {
 	KeepDetachedProcesses bool `json:"keep_detached_processes,omitempty"`
 }
 
-func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+func getWorkspaceRootDir(ctx context.Context, client *sdkclients.Clients) (string, error) {
+	me, err := client.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", me.UserName), nil
+	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", utils.Deref(me.UserName)), nil
 }
 
-func GetWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceClient, version string) (string, error) {
+func GetWorkspaceVersionedDir(ctx context.Context, client *sdkclients.Clients, version string) (string, error) {
 	contentDir, err := getWorkspaceRootDir(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get workspace root directory: %w", err)
@@ -47,7 +48,7 @@ func GetWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceC
 
 // GetWorkspaceContentDir returns the directory for storing session content.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func GetWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string) (string, error) {
+func GetWorkspaceContentDir(ctx context.Context, client *sdkclients.Clients, version, sessionID string) (string, error) {
 	contentDir, err := GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
 		return "", fmt.Errorf("failed to get versioned workspace directory: %w", err)
@@ -57,7 +58,7 @@ func GetWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceCli
 
 // GetWorkspaceMetadata loads session metadata from the workspace.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func GetWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string) (*WorkspaceMetadata, error) {
+func GetWorkspaceMetadata(ctx context.Context, client *sdkclients.Clients, version, sessionID string) (*WorkspaceMetadata, error) {
 	contentDir, err := GetWorkspaceContentDir(ctx, client, version, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace content directory: %w", err)
@@ -87,7 +88,7 @@ func GetWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClien
 
 // SaveWorkspaceMetadata saves session metadata to the workspace.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func SaveWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string, metadata *WorkspaceMetadata) error {
+func SaveWorkspaceMetadata(ctx context.Context, client *sdkclients.Clients, version, sessionID string, metadata *WorkspaceMetadata) error {
 	metadataBytes, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)

@@ -10,7 +10,7 @@
 
 === Verify it does not exist yet
 >>> musterr [CLI] ai-gateway get-mcp-service mcp-services/main.myschema.myservice
-Error: Resource catalog.McpService not found: main.myschema.myservice
+Error: Resource aigateway.McpService not found: main.myschema.myservice
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -62,7 +62,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "update_mask": "*"
   },
   "body": {
-    "comment": "COMMENT2"
+    "comment": "COMMENT2",
+    "name": "mcp-services/main.myschema.myservice"
   }
 }
 

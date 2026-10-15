@@ -46,7 +46,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/start",
-  "body": {}
+  "body": {
+    "name": "[UNIQUE_NAME]"
+  }
 }
 {
   "method": "POST",

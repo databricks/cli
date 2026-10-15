@@ -3,12 +3,14 @@ package resourcemutator_test
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,18 +21,18 @@ func TestMergeJobParameters(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"foo": {
 						JobSettings: jobs.JobSettings{
-							Parameters: []jobs.JobParameterDefinition{
+							Parameters: []jobs.JobLevelParameter{
 								{
-									Name:    "foo",
-									Default: "v1",
+									Name:    new("foo"),
+									Default: new("v1"),
 								},
 								{
-									Name:    "bar",
-									Default: "v1",
+									Name:    new("bar"),
+									Default: new("v1"),
 								},
 								{
-									Name:    "foo",
-									Default: "v2",
+									Name:    new("foo"),
+									Default: new("v2"),
 								},
 							},
 						},
@@ -46,10 +48,10 @@ func TestMergeJobParameters(t *testing.T) {
 	j := b.Config.Resources.Jobs["foo"]
 
 	assert.Len(t, j.Parameters, 2)
-	assert.Equal(t, "foo", j.Parameters[0].Name)
-	assert.Equal(t, "v2", j.Parameters[0].Default)
-	assert.Equal(t, "bar", j.Parameters[1].Name)
-	assert.Equal(t, "v1", j.Parameters[1].Default)
+	assert.Equal(t, "foo", utils.Deref(j.Parameters[0].Name))
+	assert.Equal(t, "v2", utils.Deref(j.Parameters[0].Default))
+	assert.Equal(t, "bar", utils.Deref(j.Parameters[1].Name))
+	assert.Equal(t, "v1", utils.Deref(j.Parameters[1].Default))
 }
 
 func TestMergeJobParametersWithNilKey(t *testing.T) {
@@ -59,12 +61,12 @@ func TestMergeJobParametersWithNilKey(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"foo": {
 						JobSettings: jobs.JobSettings{
-							Parameters: []jobs.JobParameterDefinition{
+							Parameters: []jobs.JobLevelParameter{
 								{
-									Default: "v1",
+									Default: new("v1"),
 								},
 								{
-									Default: "v2",
+									Default: new("v2"),
 								},
 							},
 						},

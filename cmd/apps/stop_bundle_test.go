@@ -3,7 +3,7 @@ package apps
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +13,7 @@ func TestBundleStopOverrideWithWrapper(t *testing.T) {
 		return err
 	}
 
-	overrideFunc := BundleStopOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleStopOverrideWithWrapper[apps.StopAppRequest](mockWrapper)
 	assert.NotNil(t, overrideFunc)
 
 	cmd := &cobra.Command{}
@@ -32,7 +32,7 @@ func TestBundleStopOverrideHelpText(t *testing.T) {
 	cmd := &cobra.Command{}
 	stopReq := &apps.StopAppRequest{}
 
-	overrideFunc := BundleStopOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleStopOverrideWithWrapper[apps.StopAppRequest](mockWrapper)
 	overrideFunc(cmd, stopReq)
 
 	assert.NotEmpty(t, cmd.Long)

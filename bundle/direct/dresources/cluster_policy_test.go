@@ -3,6 +3,8 @@ package dresources
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,12 +38,12 @@ func TestClusterPolicyPrepareState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			input := &resources.ClusterPolicy{Definition: tt.definition}
-			input.Name = "my_policy"
+			input.Name = new("my_policy")
 
 			got := (*ResourceClusterPolicy)(nil).PrepareState(input)
 
-			assert.Equal(t, tt.want, got.Definition)
-			assert.Equal(t, "my_policy", got.Name)
+			assert.Equal(t, tt.want, utils.Deref(got.Definition))
+			assert.Equal(t, "my_policy", utils.Deref(got.Name))
 		})
 	}
 }

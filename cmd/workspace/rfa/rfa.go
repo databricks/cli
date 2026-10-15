@@ -4,14 +4,15 @@ package rfa
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucrfa "github.com/databricks/cli/libs/sdktypes/uc/rfa/v1"
+	sdkucrfa "github.com/databricks/sdk-go/uc/rfa/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,13 +57,13 @@ Request for Access enables users to request access for Unity Catalog
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var batchCreateAccessRequestsOverrides []func(
 	*cobra.Command,
-	*catalog.BatchCreateAccessRequestsRequest,
+	*ucrfa.BatchCreateAccessRequestsRequest,
 )
 
 func newBatchCreateAccessRequests() *cobra.Command {
 	cmd := &cobra.Command{}
+	var batchCreateAccessRequestsReq ucrfa.BatchCreateAccessRequestsRequest
 
-	var batchCreateAccessRequestsReq catalog.BatchCreateAccessRequestsRequest
 	var batchCreateAccessRequestsJson flags.JsonFlag
 
 	cmd.Flags().Var(&batchCreateAccessRequestsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -98,6 +99,7 @@ Create Access Requests.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := batchCreateAccessRequestsJson.Unmarshal(&batchCreateAccessRequestsReq)
@@ -112,12 +114,20 @@ Create Access Requests.
 			}
 		}
 
-		response, err := w.Rfa.BatchCreateAccessRequests(ctx, batchCreateAccessRequestsReq)
+		sdkReq, err := ucrfa.BatchCreateAccessRequestsRequestToSDK(&batchCreateAccessRequestsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Rfa.BatchCreateAccessRequests(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucrfa.BatchCreateAccessRequestsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -138,13 +148,12 @@ Create Access Requests.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getAccessRequestDestinationsOverrides []func(
 	*cobra.Command,
-	*catalog.GetAccessRequestDestinationsRequest,
+	*sdkucrfa.GetAccessRequestDestinationsRequest,
 )
 
 func newGetAccessRequestDestinations() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getAccessRequestDestinationsReq catalog.GetAccessRequestDestinationsRequest
+	var getAccessRequestDestinationsReq sdkucrfa.GetAccessRequestDestinationsRequest
 
 	cmd.Use = "get-access-request-destinations SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `*Public Preview* Get Access Request Destinations.`
@@ -178,16 +187,22 @@ Get Access Request Destinations.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getAccessRequestDestinationsReq.SecurableType = args[0]
-		getAccessRequestDestinationsReq.FullName = args[1]
+		getAccessRequestDestinationsReq.SecurableType = new(args[0])
+		getAccessRequestDestinationsReq.FullName = new(args[1])
 
-		response, err := w.Rfa.GetAccessRequestDestinations(ctx, getAccessRequestDestinationsReq)
+		sdkReq := &getAccessRequestDestinationsReq
+		response, err := w.Rfa.GetAccessRequestDestinations(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucrfa.AccessRequestDestinationsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -208,14 +223,14 @@ Get Access Request Destinations.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateAccessRequestDestinationsOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateAccessRequestDestinationsRequest,
+	*ucrfa.UpdateAccessRequestDestinationsRequest,
 )
 
 func newUpdateAccessRequestDestinations() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateAccessRequestDestinationsReq ucrfa.UpdateAccessRequestDestinationsRequest
+	updateAccessRequestDestinationsReq.AccessRequestDestinations = &ucrfa.AccessRequestDestinations{}
 
-	var updateAccessRequestDestinationsReq catalog.UpdateAccessRequestDestinationsRequest
-	updateAccessRequestDestinationsReq.AccessRequestDestinations = catalog.AccessRequestDestinations{}
 	var updateAccessRequestDestinationsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateAccessRequestDestinationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -276,6 +291,7 @@ Update Access Request Destinations.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateAccessRequestDestinationsJson.Unmarshal(&updateAccessRequestDestinationsReq.AccessRequestDestinations)
@@ -289,21 +305,25 @@ Update Access Request Destinations.
 				}
 			}
 		}
-		updateAccessRequestDestinationsReq.UpdateMask = args[0]
+		updateAccessRequestDestinationsReq.UpdateMask = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &updateAccessRequestDestinationsReq.AccessRequestDestinations.Securable)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: securable
 		}
 
-		response, err := w.Rfa.UpdateAccessRequestDestinations(ctx, updateAccessRequestDestinationsReq)
+		sdkReq, err := ucrfa.UpdateAccessRequestDestinationsRequestToSDK(&updateAccessRequestDestinationsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Rfa.UpdateAccessRequestDestinations(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucrfa.AccessRequestDestinationsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

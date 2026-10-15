@@ -12,8 +12,8 @@
   "method": "POST",
   "path": "/api/2.0/test/bigint",
   "body": {
-    "name": "a<b",
-    "job_id": [JOB_ID]
+    "job_id": [JOB_ID],
+    "name": "a<b"
   }
 }
 

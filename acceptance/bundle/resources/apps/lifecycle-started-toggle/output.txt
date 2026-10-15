@@ -33,7 +33,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_app_requests
 {
-  "body": {},
+  "body": {
+    "name": "[UNIQUE_NAME]"
+  },
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/start"
 }
@@ -60,7 +62,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_app_requests
 {
-  "body": {},
+  "body": {
+    "name": "[UNIQUE_NAME]"
+  },
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/stop"
 }

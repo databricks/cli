@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
+
+	queries "github.com/databricks/cli/libs/sdktypes/queries/v1"
+	sdkqueries "github.com/databricks/sdk-go/queries/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,18 +59,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateQueryRequest,
+	*queries.CreateQueryRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq queries.CreateQueryRequest
 
-	var createReq sql.CreateQueryRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.AutoResolveDisplayName, "auto-resolve-display-name", `If true, automatically resolve query display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "create"
@@ -89,6 +92,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -103,12 +107,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.Queries.Create(ctx, createReq)
+		sdkReq, err := queries.CreateQueryRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Queries.CreateQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := queries.QueryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -129,13 +141,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.TrashQueryRequest,
+	*sdkqueries.TrashQueryRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.TrashQueryRequest
+	var deleteReq sdkqueries.TrashQueryRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a query.`
@@ -154,11 +165,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
-			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Queries.ListQueriesIter(ctx, sdkqueries.ListQueriesRequest{}), []string{"DisplayName"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -172,12 +184,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.Queries.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Queries.TrashQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -199,13 +214,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sql.GetQueryRequest,
+	*sdkqueries.GetQueryRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sql.GetQueryRequest
+	var getReq sdkqueries.GetQueryRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get a query.`
@@ -221,11 +235,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
-			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Queries.ListQueriesIter(ctx, sdkqueries.ListQueriesRequest{}), []string{"DisplayName"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -239,14 +254,19 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.Queries.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Queries.GetQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := queries.QueryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -267,25 +287,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*sql.ListQueriesRequest,
+	*queries.ListQueriesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq queries.ListQueriesRequest
 
-	var listReq sql.ListQueriesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -309,16 +329,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Queries.List(ctx, listReq)
+		sdkReq, err := queries.ListQueriesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Queries.ListQueriesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, queries.ListQueryObjectsResponseQueryFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -339,25 +363,25 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listVisualizationsOverrides []func(
 	*cobra.Command,
-	*sql.ListVisualizationsForQueryRequest,
+	*queries.ListVisualizationsForQueryRequest,
 )
 
 func newListVisualizations() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listVisualizationsReq queries.ListVisualizationsForQueryRequest
 
-	var listVisualizationsReq sql.ListVisualizationsForQueryRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listVisualizationsLimit int
 
-	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listVisualizationsReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listVisualizationsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listVisualizationsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-visualizations ID"
@@ -377,11 +401,12 @@ func newListVisualizations() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
-			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Queries.ListQueriesIter(ctx, sdkqueries.ListQueriesRequest{}), []string{"DisplayName"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -395,17 +420,20 @@ func newListVisualizations() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		listVisualizationsReq.Id = args[0]
+		listVisualizationsReq.Id = new(args[0])
 
-		response := w.Queries.ListVisualizations(ctx, listVisualizationsReq)
+		sdkReq, err := queries.ListVisualizationsForQueryRequestToSDK(&listVisualizationsReq)
+		if err != nil {
+			return err
+		}
 		if listVisualizationsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listVisualizationsLimit)
 		}
 		if listVisualizationsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listVisualizationsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Queries.ListVisualizationsForQueryIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, queries.VisualizationFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -426,18 +454,18 @@ func newListVisualizations() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.UpdateQueryRequest,
+	*queries.UpdateQueryRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq queries.UpdateQueryRequest
 
-	var updateReq sql.UpdateQueryRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.AutoResolveDisplayName, "auto-resolve-display-name", `If true, automatically resolve alert display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "update ID UPDATE_MASK"
@@ -480,6 +508,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -493,17 +522,25 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			updateReq.UpdateMask = args[1]
+			updateReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.Queries.Update(ctx, updateReq)
+		sdkReq, err := queries.UpdateQueryRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Queries.UpdateQuery(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := queries.QueryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

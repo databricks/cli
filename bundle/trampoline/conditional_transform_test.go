@@ -4,11 +4,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,15 +30,15 @@ func TestNoTransformByDefault(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "key1",
+									TaskKey: new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "test_package",
-										EntryPoint:  "main",
+										PackageName: new("test_package"),
+										EntryPoint:  new("main"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/test@test.com/bundle/dist/test.whl")},
 									},
 								},
 							},
@@ -54,9 +55,9 @@ func TestNoTransformByDefault(t *testing.T) {
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.NotNil(t, task.PythonWheelTask)
-	require.Equal(t, "test_package", task.PythonWheelTask.PackageName)
-	require.Equal(t, "main", task.PythonWheelTask.EntryPoint)
-	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.whl", task.Libraries[0].Whl)
+	require.Equal(t, "test_package", utils.Deref(task.PythonWheelTask.PackageName))
+	require.Equal(t, "main", utils.Deref(task.PythonWheelTask.EntryPoint))
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.whl", utils.Deref(task.Libraries[0].Whl))
 
 	require.Nil(t, task.NotebookTask)
 }
@@ -78,16 +79,16 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "key1",
+									TaskKey: new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "test_package",
-										EntryPoint:  "main",
+										PackageName: new("test_package"),
+										EntryPoint:  new("main"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
-										{Jar: "/Workspace/Users/test@test.com/bundle/dist/test.jar"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/test@test.com/bundle/dist/test.whl")},
+										{Jar: new("/Workspace/Users/test@test.com/bundle/dist/test.jar")},
 									},
 								},
 							},
@@ -108,8 +109,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.Nil(t, task.PythonWheelTask)
 	require.NotNil(t, task.NotebookTask)
-	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_job1_key1", task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_job1_key1", utils.Deref(task.NotebookTask.NotebookPath))
 
 	require.Len(t, task.Libraries, 1)
-	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", task.Libraries[0].Jar)
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", utils.Deref(task.Libraries[0].Jar))
 }

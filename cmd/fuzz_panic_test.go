@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
@@ -64,7 +64,7 @@ type leafCommand struct {
 func newFuzzHarness(t *testing.T) *fuzzHarness {
 	t.Helper()
 
-	wc, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+	wc, err := sdkclients.New(t.Context(), (&config.Config{
 		Host:          "https://fuzz.invalid",
 		Token:         "fuzz",
 		AuthType:      "pat",
@@ -72,7 +72,7 @@ func newFuzzHarness(t *testing.T) *fuzzHarness {
 	}))
 	require.NoError(t, err)
 
-	ac, err := databricks.NewAccountClient((*databricks.Config)(&config.Config{
+	ac, err := sdkclients.New(t.Context(), (&config.Config{
 		Host:          "https://fuzz.invalid",
 		Token:         "fuzz",
 		AuthType:      "pat",

@@ -5,12 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,23 +17,20 @@ func TestIsOpaqueStruct(t *testing.T) {
 		typ  reflect.Type
 		want bool
 	}{
-		// Payload hidden in an unexported protobuf pointer.
-		{reflect.TypeFor[duration.Duration](), true},
-		{reflect.TypeFor[sdktime.Time](), true},
+		// Payload hidden in unexported fields.
+		{reflect.TypeFor[types.Duration](), true},
+		{reflect.TypeFor[types.Time](), true},
+		{reflect.TypeFor[types.FieldMask[A]](), true},
 
 		// Empty proto messages: no exported fields either, but nothing to hide
 		// and no marshaler of their own.
-		{reflect.TypeFor[catalog.MonitorSnapshot](), false},
 		{reflect.TypeFor[jobs.ModelTriggerState](), false},
 		{reflect.TypeFor[jobs.ScheduleTriggerState](), false},
 		{reflect.TypeFor[pipelines.ManualTrigger](), false},
 
-		// FieldMask marshals to a string but exposes Paths, so the walk sees it.
-		{reflect.TypeFor[fieldmask.FieldMask](), false},
-
 		{reflect.TypeFor[A](), false},
 		{reflect.TypeFor[string](), false},
-		{reflect.TypeFor[*duration.Duration](), false},
+		{reflect.TypeFor[*types.Duration](), false},
 	}
 
 	for _, tt := range tests {
@@ -52,8 +46,8 @@ func TestIsOpaqueStruct(t *testing.T) {
 // struct field. This is the shape the original bug was reported in: two
 // durations handed straight to GetStructDiff came back equal.
 func TestGetStructDiffOpaqueAtRoot(t *testing.T) {
-	a := duration.New(300 * time.Second)
-	b := duration.New(600 * time.Second)
+	a := types.NewFromDuration(300 * time.Second)
+	b := types.NewFromDuration(600 * time.Second)
 
 	for _, tt := range []struct {
 		name string

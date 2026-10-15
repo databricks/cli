@@ -9,12 +9,12 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -147,13 +147,13 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	// Validate credentials server-side before fetching (MustWorkspaceClient only
 	// attaches them), so a bad token fails clearly here.
-	if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+	if _, err := currentUserName(ctx, w); err != nil {
 		return authError(ctx, cmd, err)
 	}
 
 	status, err := resolveRunStatus(ctx, w, req.runID)
 	if err != nil {
-		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
 		}
@@ -191,7 +191,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	out := cmd.OutOrStdout()
 	success, err := fetchLogs(ctx, w, out, req, status)
 	if err != nil {
-		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 				fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", req.runID))
 		}
@@ -207,7 +207,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	return nil
 }
 
-func resolveLogAttempt(run *jobs.Run, requested int) (int, int64, error) {
+func resolveLogAttempt(run *jobs.GetRunResponse, requested int) (int, int64, error) {
 	if requested < -1 {
 		return 0, 0, fmt.Errorf("invalid retry %d: must be -1 or greater", requested)
 	}
@@ -223,16 +223,16 @@ func resolveLogAttempt(run *jobs.Run, requested int) (int, int64, error) {
 		return 0, 0, fmt.Errorf("invalid retry %d: available retries are 0 to %d", requested, latest)
 	}
 	for _, v := range slices.Backward(run.Tasks) {
-		if v.AttemptNumber == attempt {
-			return attempt, v.RunId, nil
+		if utils.Deref(v.AttemptNumber) == attempt {
+			return attempt, utils.Deref(v.RunId), nil
 		}
 	}
-	return 0, 0, fmt.Errorf("run %d has no task for retry %d", run.RunId, attempt)
+	return 0, 0, fmt.Errorf("run %d has no task for retry %d", utils.Deref(run.RunId), attempt)
 }
 
 // fetchLogs serves logs from Bricklens, falling back to MLflow when Bricklens
 // returns errBricklensFeatureDisabled.
-func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+func fetchLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
 		req.retryTracker = newRetryTracker(status)
 	}

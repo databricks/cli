@@ -4,23 +4,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sqllegacy"
 )
 
 type resolveDashboard struct {
 	name string
 }
 
-func (l resolveDashboard) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l resolveDashboard) Resolve(ctx context.Context, w *sdkclients.Clients) (string, error) {
 	// List dashboards and find the one with the given name
 	// If there are multiple dashboards with the same name, return an error
-	dashboards, err := w.Dashboards.ListAll(ctx, sql.ListDashboardsRequest{})
+	dashboards, err := w.SqlLegacy.ListDashboardsAll(ctx, sqllegacy.ListDashboardsRequest{})
 	if err != nil {
 		return "", err
 	}
 
-	dashboardMap := make(map[string][]sql.Dashboard)
+	dashboardMap := make(map[string][]sqllegacy.Dashboard)
 	for _, dashboard := range dashboards {
 		dashboardMap[dashboard.Name] = append(dashboardMap[dashboard.Name], dashboard)
 	}

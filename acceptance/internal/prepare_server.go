@@ -21,11 +21,11 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 	"github.com/databricks/cli/libs/testproxy"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,7 +92,7 @@ func lookupEnv(testEnv []string, key string) (string, bool) {
 	return "", false
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User, string) {
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, scim.User, string) {
 	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
@@ -101,7 +101,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
 
 	var token string
-	var testUser iam.User
+	var testUser scim.User
 	if isTruePtr(config.IsServicePrincipal) {
 		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
 		testUser = testserver.TestUserSP
@@ -116,7 +116,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient()
+		w, err := sdkclients.New(t.Context(), &sdkconfig.Config{})
 		require.NoError(t, err)
 
 		user, err := iamutil.GetCurrentUser(t.Context(), w)
@@ -333,8 +333,8 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 		}
 	}
 
-	if json.Valid(req.Body) {
-		result.Body = json.RawMessage(req.Body)
+	if body, ok := sortedJSON(req.Body); ok {
+		result.Body = body
 	} else if normalized, ok := normalizeMultipartBody(req); ok {
 		// Multipart bodies contain a randomly generated boundary string and binary
 		// content; record a normalized form (sorted form-field names with sizes for
@@ -345,6 +345,22 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 	}
 
 	return result
+}
+
+// sortedJSON decodes a JSON body so that it is recorded with sorted object
+// keys. Key order on the wire depends on the SDK's field declaration order,
+// which carries no meaning and would only add noise to recorded requests.
+func sortedJSON(data []byte) (any, bool) {
+	if !json.Valid(data) {
+		return nil, false
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, false
+	}
+	return v, true
 }
 
 // Multipart parts larger than this limit are summarized as a size placeholder

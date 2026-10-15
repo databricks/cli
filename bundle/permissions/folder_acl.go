@@ -2,15 +2,15 @@ package permissions
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
 )
 
 // adminsGroup is the workspace admins group. Its members can write to any
@@ -35,13 +35,13 @@ type FolderACL struct {
 // ResolveFolderACL reads the ACL that applies to folderPath. When folderPath does
 // not exist, it walks up to the closest existing ancestor, since a folder created
 // under it will inherit that ancestor's permissions.
-func ResolveFolderACL(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*FolderACL, error) {
+func ResolveFolderACL(ctx context.Context, w *workspaceapi.Client, folderPath string) (*FolderACL, error) {
 	obj, err := closestExistingObject(ctx, w, folderPath)
 	if err != nil {
 		return nil, err
 	}
 
-	objPermissions, err := w.GetPermissions(ctx, workspace.GetWorkspaceObjectPermissionsRequest{
+	objPermissions, err := w.GetPermissions(ctx, workspaceapi.GetWorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
 		WorkspaceObjectType: "directories",
 	})
@@ -87,10 +87,10 @@ const (
 // "does not have Manage permissions" otherwise), so a 403 means the user cannot
 // manage, and therefore cannot write to, the folder.
 // See https://docs.databricks.com/aws/en/security/auth/access-control/
-func CheckWritable(ctx context.Context, w workspace.WorkspaceInterface, folderPath string, user *iam.User) Writability {
+func CheckWritable(ctx context.Context, w *workspaceapi.Client, folderPath string, user *scim.User) Writability {
 	acl, err := ResolveFolderACL(ctx, w, folderPath)
 	if err != nil {
-		if errors.Is(err, apierr.ErrPermissionDenied) {
+		if apierrs.Is(err, apierrs.ErrPermissionDenied) {
 			return WritabilityNotWritable
 		}
 		return WritabilityUnknown
@@ -110,8 +110,9 @@ func CheckWritable(ctx context.Context, w workspace.WorkspaceInterface, folderPa
 // it assumes write access when the user is a workspace admin (admins bypass the
 // folder ACL) or when their group membership is not known here, because
 // concluding "cannot write" in those cases would be a false alarm.
-func (f *FolderACL) CanWrite(user *iam.User) bool {
+func (f *FolderACL) CanWrite(user *scim.User) bool {
 	groups := userGroupNames(user)
+	userName := utils.Deref(user.UserName)
 	if groups[adminsGroup] {
 		return true
 	}
@@ -121,9 +122,9 @@ func (f *FolderACL) CanWrite(user *iam.User) bool {
 			continue
 		}
 		switch {
-		case p.UserName != "" && p.UserName == user.UserName:
+		case p.UserName != "" && p.UserName == userName:
 			return true
-		case p.ServicePrincipalName != "" && p.ServicePrincipalName == user.UserName:
+		case p.ServicePrincipalName != "" && p.ServicePrincipalName == userName:
 			return true
 		case p.GroupName != "" && groups[p.GroupName]:
 			return true
@@ -140,11 +141,11 @@ func isWriteLevel(level string) bool {
 }
 
 // userGroupNames returns the set of group display names the user belongs to.
-func userGroupNames(user *iam.User) map[string]bool {
+func userGroupNames(user *scim.User) map[string]bool {
 	groups := make(map[string]bool, len(user.Groups))
 	for _, g := range user.Groups {
-		if g.Display != "" {
-			groups[g.Display] = true
+		if display := utils.Deref(g.Display); display != "" {
+			groups[display] = true
 		}
 	}
 	return groups
@@ -153,14 +154,14 @@ func userGroupNames(user *iam.User) map[string]bool {
 // closestExistingObject returns the object at folderPath, or the closest existing
 // ancestor when folderPath does not exist. A not-yet-created folder inherits the
 // permissions of its closest existing ancestor.
-func closestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
+func closestExistingObject(ctx context.Context, w *workspaceapi.Client, folderPath string) (*workspaceapi.ObjectInfo, error) {
 	for {
 		obj, err := w.GetStatusByPath(ctx, folderPath)
 		if err == nil {
 			return obj, nil
 		}
 
-		if !apierr.IsMissing(err) {
+		if !apierrs.IsMissing(err) {
 			return nil, err
 		}
 

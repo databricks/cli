@@ -2,18 +2,22 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkdatabase "github.com/databricks/sdk-go/database/v1"
 )
 
 type ResourceDatabaseInstance struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceDatabaseInstance) New(client *databricks.WorkspaceClient) *ResourceDatabaseInstance {
+func (*ResourceDatabaseInstance) New(client *sdkclients.Clients) *ResourceDatabaseInstance {
 	return &ResourceDatabaseInstance{client: client}
 }
 
@@ -22,49 +26,61 @@ func (*ResourceDatabaseInstance) PrepareState(input *resources.DatabaseInstance)
 }
 
 func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string) (*database.DatabaseInstance, error) {
-	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
+	instance, err := d.client.Database.GetDatabaseInstance(ctx, sdkdatabase.GetDatabaseInstanceRequest{Name: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	return database.DatabaseInstanceFromSDK(instance)
 }
 
 func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
-	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
-		DatabaseInstance: *config,
+	request, err := database.CreateDatabaseInstanceRequestToSDK(&database.CreateDatabaseInstanceRequest{
+		DatabaseInstance: config,
 	})
 	if err != nil {
 		return "", nil, err
 	}
-	return waiter.Response.Name, nil, nil
+	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	return waiter.GetName(), nil, nil
 }
 
 func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance, _ *PlanEntry) (*database.DatabaseInstance, error) {
-	request := database.UpdateDatabaseInstanceRequest{
-		DatabaseInstance: *config,
-		Name:             config.Name,
-		UpdateMask:       "*",
+	instance := *config
+	instance.Uid = new(id)
+	request, err := database.UpdateDatabaseInstanceRequestToSDK(&database.UpdateDatabaseInstanceRequest{
+		DatabaseInstance: &instance,
+		UpdateMask:       new("*"),
+	})
+	if err != nil {
+		return nil, err
 	}
-	request.DatabaseInstance.Uid = id
-	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
+	_, err = d.client.Database.UpdateDatabaseInstance(ctx, *request)
 	return nil, err
 }
 
 func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, id string, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
-	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
-		Response: config,
-		Name:     config.Name,
-		Poll: func(timeout time.Duration, callback func(*database.DatabaseInstance)) (*database.DatabaseInstance, error) {
-			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
-		},
-	}
-
+	name := utils.Deref(config.Name)
 	// _ is remoteState, should we return it here?
-	_, err := waiter.GetWithTimeout(20 * time.Minute)
+	_, err := retries.Poll(ctx, 20*time.Minute, func() (*sdkdatabase.DatabaseInstance, *retries.Err) {
+		instance, err := d.client.Database.GetDatabaseInstance(ctx, sdkdatabase.GetDatabaseInstanceRequest{Name: new(name)})
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		if instance.State == sdkdatabase.DatabaseInstance_State_Available {
+			return instance, nil
+		}
+		return nil, retries.Continues(fmt.Sprintf("current status: %s", instance.State))
+	})
 	return nil, err
 }
 
 func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string, _ *database.DatabaseInstance) error {
-	return d.client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
-		Name:            name,
-		Purge:           true,
-		Force:           false,
-		ForceSendFields: nil,
+	return d.client.Database.DeleteDatabaseInstance(ctx, sdkdatabase.DeleteDatabaseInstanceRequest{
+		Name:  new(name),
+		Purge: new(true),
+		Force: nil, // Not set by DABs
 	})
 }

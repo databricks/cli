@@ -7,16 +7,17 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // notImpliedByAllPrivileges are the privileges UC does not include in
 // ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
-var notImpliedByAllPrivileges = map[catalog.Privilege]bool{
-	catalog.PrivilegeManage:              true,
-	catalog.PrivilegeReadMetadata:        true,
-	catalog.PrivilegeExternalUseSchema:   true,
-	catalog.PrivilegeExternalUseLocation: true,
+var notImpliedByAllPrivileges = map[string]bool{
+	"MANAGE":                true,
+	"READ_METADATA":         true,
+	"EXTERNAL_USE_SCHEMA":   true,
+	"EXTERNAL_USE_LOCATION": true,
 }
 
 func grantsKey(securableType, fullName string) string {
@@ -24,7 +25,7 @@ func grantsKey(securableType, fullName string) string {
 }
 
 func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string) Response {
-	var request catalog.UpdatePermissions
+	var request grants.UpdatePermissionsRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			StatusCode: http.StatusBadRequest,
@@ -37,21 +38,21 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	defer s.LockUnlock()()
 
 	// Build a map of principals to privileges (using Privilege type directly)
-	principalPrivs := make(map[string]map[catalog.Privilege]bool)
+	principalPrivs := make(map[string]map[string]bool)
 
 	// Load current grants
 	for _, assignment := range s.Grants[key] {
-		if principalPrivs[assignment.Principal] == nil {
-			principalPrivs[assignment.Principal] = make(map[catalog.Privilege]bool)
+		if principalPrivs[utils.Deref(assignment.Principal)] == nil {
+			principalPrivs[utils.Deref(assignment.Principal)] = make(map[string]bool)
 		}
 		for _, privilege := range assignment.Privileges {
-			principalPrivs[assignment.Principal][privilege] = true
+			principalPrivs[utils.Deref(assignment.Principal)][privilege] = true
 		}
 	}
 
 	// Validate: reject duplicate privileges in Add and Remove for the same principal
 	for _, change := range request.Changes {
-		addSet := make(map[catalog.Privilege]bool, len(change.Add))
+		addSet := make(map[string]bool, len(change.Add))
 		for _, p := range change.Add {
 			addSet[p] = true
 		}
@@ -61,7 +62,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 					StatusCode: http.StatusBadRequest,
 					Body: map[string]string{
 						"error_code": "INVALID_PARAMETER_VALUE",
-						"message":    fmt.Sprintf("Duplicate privileges to add and delete for principal %s.", change.Principal),
+						"message":    fmt.Sprintf("Duplicate privileges to add and delete for principal %s.", utils.Deref(change.Principal)),
 					},
 				}
 			}
@@ -70,34 +71,34 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	// Apply changes
 	for _, change := range request.Changes {
-		if change.Principal == "" {
+		if utils.Deref(change.Principal) == "" {
 			continue
 		}
-		if principalPrivs[change.Principal] == nil {
-			principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
+		if principalPrivs[utils.Deref(change.Principal)] == nil {
+			principalPrivs[utils.Deref(change.Principal)] = make(map[string]bool)
 		}
 
 		// Remove privileges
 		for _, privilege := range change.Remove {
-			if privilege == catalog.PrivilegeAllPrivileges {
+			if privilege == "ALL_PRIVILEGES" {
 				// Removing ALL_PRIVILEGES clears every privilege it implies, but NOT
 				// the ones UC does not include in ALL_PRIVILEGES (MANAGE,
 				// READ_METADATA, EXTERNAL_USE_SCHEMA, EXTERNAL_USE_LOCATION). Those
 				// are granted independently and survive. See
 				// https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
-				for p := range principalPrivs[change.Principal] {
+				for p := range principalPrivs[utils.Deref(change.Principal)] {
 					if !notImpliedByAllPrivileges[p] {
-						delete(principalPrivs[change.Principal], p)
+						delete(principalPrivs[utils.Deref(change.Principal)], p)
 					}
 				}
 			} else {
-				delete(principalPrivs[change.Principal], privilege)
+				delete(principalPrivs[utils.Deref(change.Principal)], privilege)
 			}
 		}
 
 		// Add privileges
 		for _, privilege := range change.Add {
-			principalPrivs[change.Principal][privilege] = true
+			principalPrivs[utils.Deref(change.Principal)][privilege] = true
 		}
 	}
 
@@ -105,23 +106,23 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	// Note order of assignments is randomized due to map. This is intentional, azure backend behaves the same way
 	// (deco env run -i -n azure-prod-ucws -- go test ./acceptance -run ^TestAccept$/^bundle$/^resources$/^grants$/^schemas$/^out_of_band_principal$/direct -count=10 -failfast -timeout=1h)
 
-	var assignments []catalog.PrivilegeAssignment
+	var assignments []grants.PrivilegeAssignment
 	for principal, privs := range principalPrivs {
 		if len(privs) == 0 {
 			continue
 		}
 
 		// Collect and sort privileges directly
-		privileges := make([]catalog.Privilege, 0, len(privs))
+		privileges := make([]string, 0, len(privs))
 		for priv := range privs {
 			privileges = append(privileges, priv)
 		}
-		slices.SortFunc(privileges, func(a, b catalog.Privilege) int {
-			return strings.Compare(string(a), string(b))
+		slices.SortFunc(privileges, func(a, b string) int {
+			return strings.Compare(a, b)
 		})
 
-		assignments = append(assignments, catalog.PrivilegeAssignment{
-			Principal:  principal,
+		assignments = append(assignments, grants.PrivilegeAssignment{
+			Principal:  utils.NonZero(principal),
 			Privileges: privileges,
 		})
 	}
@@ -131,13 +132,13 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	if securableType == "schema" {
 		schema, ok := s.Schemas[fullName]
 		if ok {
-			schema.UpdatedAt = nowMilli()
+			schema.UpdatedAt = utils.NonZero(nowMilli())
 			schema.UpdatedBy = s.CurrentUser().UserName
 			s.Schemas[fullName] = schema
 		}
 	}
 
-	return Response{Body: catalog.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
+	return Response{Body: grants.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
 }
 
 func (s *FakeWorkspace) GrantsGet(_ Request, securableType, fullName string) Response {
@@ -146,5 +147,5 @@ func (s *FakeWorkspace) GrantsGet(_ Request, securableType, fullName string) Res
 	key := grantsKey(securableType, fullName)
 	assignments := s.Grants[key]
 
-	return Response{Body: catalog.GetPermissionsResponse{PrivilegeAssignments: assignments}}
+	return Response{Body: grants.GetPermissionsResponse{PrivilegeAssignments: assignments}}
 }

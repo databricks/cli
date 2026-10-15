@@ -8,9 +8,9 @@
   "action": "create",
   "new_state": {
     "value": {
-      "branch_id": "dev-branch",
       "is_protected": false,
       "no_expiry": true,
+      "branch_id": "dev-branch",
       "parent": "${resources.postgres_projects.my_project.id}"
     },
     "vars": {

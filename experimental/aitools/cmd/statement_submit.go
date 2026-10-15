@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ func newStatementSubmitCmd() *cobra.Command {
 	// work and the documented "validates input before WorkspaceClient" claim
 	// in the PR description is actually true.
 	var sqlStatement string
-	var params []sql.StatementParameterListItem
+	var params []sql.StatementParameter
 
 	cmd := &cobra.Command{
 		Use:   "submit [SQL | file.sql]",
@@ -85,7 +85,7 @@ bind values.`,
 }
 
 // submitStatement issues an asynchronous ExecuteStatement and returns the handle.
-func submitStatement(ctx context.Context, api sql.StatementExecutionInterface, statement, warehouseID string, params []sql.StatementParameterListItem) (statementInfo, error) {
+func submitStatement(ctx context.Context, api sqlexec.API, statement, warehouseID string, params []sql.StatementParameter) (statementInfo, error) {
 	client := sqlexec.New(api, warehouseID)
 	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {

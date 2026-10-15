@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
@@ -134,7 +136,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	// sql_warehouses.name is optional in the SDK (json:"name,omitempty") but required
 	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
 	for key, warehouse := range b.Config.Resources.SqlWarehouses {
-		if strings.TrimSpace(warehouse.Name) == "" {
+		if strings.TrimSpace(utils.Deref(warehouse.Name)) == "" {
 			path := structpath.NewPath(nil, "resources", "sql_warehouses", key)
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,

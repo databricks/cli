@@ -3,11 +3,13 @@ package mutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +50,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 				Resources: config.Resources{
 					Pipelines: map[string]*resources.Pipeline{
 						"pipeline1": {
-							CreatePipeline: pipelines.CreatePipeline{
+							CreatePipelineRequest: pipelines.CreatePipelineRequest{
 								Configuration: map[string]string{
 									"source": "${workspace.file_path}",
 								},
@@ -80,13 +82,13 @@ func TestResolveVolumePathReferencesOnlyResources(t *testing.T) {
 		},
 	}
 
-	b.Config.Resources.Volumes["volumePathRef"].Comment = "${resources.volumes.foo.volume_path}"
-	b.Config.Resources.Volumes["otherRef"].Comment = "${resources.volumes.foo.name}"
+	b.Config.Resources.Volumes["volumePathRef"].Comment = new("${resources.volumes.foo.volume_path}")
+	b.Config.Resources.Volumes["otherRef"].Comment = new("${resources.volumes.foo.name}")
 
 	diags := bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
 	require.NoError(t, diags.Error())
-	require.Equal(t, "/Volumes/main/myschema/myvolume", b.Config.Resources.Volumes["volumePathRef"].Comment)
-	require.Equal(t, "${resources.volumes.foo.name}", b.Config.Resources.Volumes["otherRef"].Comment)
+	require.Equal(t, "/Volumes/main/myschema/myvolume", utils.Deref(b.Config.Resources.Volumes["volumePathRef"].Comment))
+	require.Equal(t, "${resources.volumes.foo.name}", utils.Deref(b.Config.Resources.Volumes["otherRef"].Comment))
 }
 
 func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
@@ -99,7 +101,7 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 			},
 		},
 	}
-	b.Config.Resources.Volumes["foo"].Comment = "${resources.volumes.missing.volume_path}"
+	b.Config.Resources.Volumes["foo"].Comment = new("${resources.volumes.missing.volume_path}")
 
 	diags := bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
 	require.ErrorContains(t, diags.Error(), "reference does not exist: ${resources.volumes.missing.volume_path}")

@@ -8,15 +8,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"maps"
 	"strings"
 	"text/tabwriter"
 	"text/template"
 	"time"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/listing"
+
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -150,7 +153,7 @@ func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Te
 		if err != nil {
 			return err
 		}
-		buf = append(buf, n)
+		buf = append(buf, templateData(n))
 		if len(buf) == cap(buf) {
 			err = t.Execute(w, buf)
 			if err != nil {
@@ -194,7 +197,7 @@ func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
 }
 
 func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
-	return t.Execute(w, d.t)
+	return t.Execute(w, templateData(d.t))
 }
 
 // Returns something implementing one of the following interfaces:
@@ -279,7 +282,19 @@ func Render(ctx context.Context, v any) error {
 // pipeline (same colors, same alignment as the non-paged path; widths are
 // locked from the first batch so columns stay aligned across pages).
 // Piped output and JSON output keep the existing non-paged behavior.
-func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+func RenderIterator[T any](ctx context.Context, seq iter.Seq2[T, error]) error {
+	i := listing.FromSeq(seq)
+	defer i.Close()
+	return renderPullIterator(ctx, i)
+}
+
+// RenderListing is RenderIterator for the pull-style iterators returned by
+// the CLI's hand-written API clients (libs/listing).
+func RenderListing[T any](ctx context.Context, i listing.Iterator[T]) error {
+	return renderPullIterator[T](ctx, i)
+}
+
+func renderPullIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
@@ -479,6 +494,9 @@ func renderDiagnostics(ctx context.Context, out io.Writer, diags diag.Diagnostic
 		case diag.Recommendation:
 			t = recommendationT
 		}
+
+		d.Summary = apierrs.StripPrefix(d.Summary)
+		d.Detail = apierrs.StripPrefix(d.Detail)
 
 		// Render the diagnostic with the appropriate template.
 		err := t.Execute(out, d)

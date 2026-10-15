@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +31,7 @@ func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	return tasks
 }
 
-func (f *functions) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+func (f *functions) GetTemplateData(task *jobs.TaskSettings) (map[string]any, error) {
 	if task.PythonWheelTask == nil {
 		return nil, errors.New("PythonWheelTask cannot be nil")
 	}
@@ -39,7 +41,7 @@ func (f *functions) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	return data, nil
 }
 
-func (f *functions) CleanUp(task *jobs.Task) error {
+func (f *functions) CleanUp(task *jobs.TaskSettings) error {
 	task.PythonWheelTask = nil
 	return nil
 }
@@ -47,12 +49,12 @@ func (f *functions) CleanUp(task *jobs.Task) error {
 func TestGenerateTrampoline(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "to_trampoline",
+			TaskKey: new("to_trampoline"),
 			PythonWheelTask: &jobs.PythonWheelTask{
-				PackageName: "test",
-				EntryPoint:  "run",
+				PackageName: new("test"),
+				EntryPoint:  new("run"),
 			},
 		},
 	}
@@ -95,7 +97,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_test_to_trampoline", task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_test_to_trampoline", utils.Deref(task.NotebookTask.NotebookPath))
 	require.Nil(t, task.PythonWheelTask)
 }
 
@@ -104,12 +106,12 @@ func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
 
 	newJob := func(taskKey string) *resources.Job {
 		return &resources.Job{
-			Tasks: []jobs.Task{
+			Tasks: []jobs.TaskSettings{
 				{
-					TaskKey: taskKey,
+					TaskKey: new(taskKey),
 					PythonWheelTask: &jobs.PythonWheelTask{
-						PackageName: "test",
-						EntryPoint:  "run",
+						PackageName: new("test"),
+						EntryPoint:  new("run"),
 					},
 				},
 			},
@@ -151,8 +153,8 @@ func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
 
 	require.Equal(t,
 		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_3_a_b_c",
-		b.Config.Resources.Jobs["a_b"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["a_b"].Tasks[0].NotebookTask.NotebookPath))
 	require.Equal(t,
 		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_1_a_b_c",
-		b.Config.Resources.Jobs["a"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["a"].Tasks[0].NotebookTask.NotebookPath))
 }

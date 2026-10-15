@@ -1,11 +1,12 @@
 package testsql_test
 
 import (
+	"encoding/json"
 	"regexp"
 	"testing"
 
+	sql "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,11 +22,11 @@ func TestExactDispatch(t *testing.T) {
 	// Statement is trimmed before matching.
 	resp := e.Submit("  SELECT 1  ", "10s", nil)
 	require.NotNil(t, resp.Status)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	assert.Equal(t, sql.StatementStatus_State_Succeeded, resp.Status.State)
 	assert.Equal(t, "SELECT 1", seen.Statement)
 	assert.Equal(t, []string{"SELECT 1"}, seen.Match)
 	assert.Equal(t, []string{"a"}, columnNames(resp))
-	assert.Equal(t, [][]string{{"1"}}, resp.Result.DataArray)
+	assert.Equal(t, [][]string{{"1"}}, rowsOf(resp.Result.DataArray))
 }
 
 func TestPatternDispatchSubmatches(t *testing.T) {
@@ -38,7 +39,7 @@ func TestPatternDispatchSubmatches(t *testing.T) {
 	})
 
 	resp := e.Submit("CREATE TABLE foo", "10s", nil)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	assert.Equal(t, sql.StatementStatus_State_Succeeded, resp.Status.State)
 	assert.Equal(t, []string{"CREATE TABLE foo", "foo"}, seen.Match)
 }
 
@@ -59,21 +60,21 @@ func TestUnsupportedStatement(t *testing.T) {
 	e := testsql.New()
 	resp := e.Submit("SELECT 1", "10s", nil)
 	require.NotNil(t, resp.Status)
-	assert.Equal(t, sql.StatementStateFailed, resp.Status.State)
+	assert.Equal(t, sql.StatementStatus_State_Failed, resp.Status.State)
 	require.NotNil(t, resp.Status.Error)
-	assert.Equal(t, sql.ServiceErrorCodeBadRequest, resp.Status.Error.ErrorCode)
-	assert.Contains(t, resp.Status.Error.Message, "unsupported statement")
-	assert.Contains(t, resp.Status.Error.Message, "SELECT 1")
+	assert.Equal(t, sql.ServiceErrorCode_BadRequest, resp.Status.Error.ErrorCode)
+	assert.Contains(t, *resp.Status.Error.Message, "unsupported statement")
+	assert.Contains(t, *resp.Status.Error.Message, "SELECT 1")
 }
 
 func TestWaitTimeout(t *testing.T) {
 	tests := []struct {
 		name        string
 		waitTimeout string
-		want        sql.StatementState
+		want        sql.StatementStatus_State
 	}{
-		{"async stays pending even without polls", "0s", sql.StatementStatePending},
-		{"sync with no polls terminates", "10s", sql.StatementStateSucceeded},
+		{"async stays pending even without polls", "0s", sql.StatementStatus_State_Pending},
+		{"sync with no polls terminates", "10s", sql.StatementStatus_State_Succeeded},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -94,16 +95,16 @@ func TestPollCountdown(t *testing.T) {
 	})
 
 	resp := e.Submit("SELECT 1", "10s", nil)
-	require.Equal(t, sql.StatementStatePending, resp.Status.State)
+	require.Equal(t, sql.StatementStatus_State_Pending, resp.Status.State)
 
-	got := e.Get(resp.StatementId)
-	assert.Equal(t, sql.StatementStateRunning, got.Status.State)
-	got = e.Get(resp.StatementId)
-	assert.Equal(t, sql.StatementStateRunning, got.Status.State)
+	got := e.Get(*resp.StatementId)
+	assert.Equal(t, sql.StatementStatus_State_Running, got.Status.State)
+	got = e.Get(*resp.StatementId)
+	assert.Equal(t, sql.StatementStatus_State_Running, got.Status.State)
 
-	got = e.Get(resp.StatementId)
-	require.Equal(t, sql.StatementStateSucceeded, got.Status.State)
-	assert.Equal(t, [][]string{{"done"}}, got.Result.DataArray)
+	got = e.Get(*resp.StatementId)
+	require.Equal(t, sql.StatementStatus_State_Succeeded, got.Status.State)
+	assert.Equal(t, [][]string{{"done"}}, rowsOf(got.Result.DataArray))
 }
 
 func TestChunkSplitting(t *testing.T) {
@@ -114,21 +115,21 @@ func TestChunkSplitting(t *testing.T) {
 	})
 
 	resp := e.Submit("SELECT * FROM big", "10s", nil)
-	require.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	require.Equal(t, sql.StatementStatus_State_Succeeded, resp.Status.State)
 	require.NotNil(t, resp.Manifest)
-	assert.Equal(t, 3, resp.Manifest.TotalChunkCount)
+	assert.Equal(t, 3, *resp.Manifest.TotalChunkCount)
 
 	var all [][]string
-	all = append(all, resp.Result.DataArray...)
-	for i := 1; i < resp.Manifest.TotalChunkCount; i++ {
-		chunk := e.Chunk(resp.StatementId, i)
+	all = append(all, rowsOf(resp.Result.DataArray)...)
+	for i := 1; i < *resp.Manifest.TotalChunkCount; i++ {
+		chunk := e.Chunk(*resp.StatementId, i)
 		require.NotNil(t, chunk)
-		all = append(all, chunk.DataArray...)
+		all = append(all, rowsOf(chunk.DataArray)...)
 	}
 	assert.Equal(t, rows, all)
-	assert.Equal(t, [][]string{{"0"}}, resp.Result.DataArray)
-	assert.Equal(t, [][]string{{"1"}}, e.Chunk(resp.StatementId, 1).DataArray)
-	assert.Equal(t, [][]string{{"2"}}, e.Chunk(resp.StatementId, 2).DataArray)
+	assert.Equal(t, [][]string{{"0"}}, rowsOf(resp.Result.DataArray))
+	assert.Equal(t, [][]string{{"1"}}, rowsOf(e.Chunk(*resp.StatementId, 1).DataArray))
+	assert.Equal(t, [][]string{{"2"}}, rowsOf(e.Chunk(*resp.StatementId, 2).DataArray))
 }
 
 func TestNoRowsZeroChunks(t *testing.T) {
@@ -140,9 +141,9 @@ func TestNoRowsZeroChunks(t *testing.T) {
 	// A no-row statement reports zero chunks and an empty result, matching the
 	// real API (a 0-row SELECT or a no-result-set DDL returns total_chunk_count=0).
 	resp := e.Submit("CREATE TABLE foo", "10s", nil)
-	require.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	require.Equal(t, sql.StatementStatus_State_Succeeded, resp.Status.State)
 	require.NotNil(t, resp.Manifest)
-	assert.Equal(t, 0, resp.Manifest.TotalChunkCount)
+	assert.Nil(t, resp.Manifest.TotalChunkCount)
 	assert.Nil(t, resp.Manifest.Schema)
 	require.NotNil(t, resp.Result)
 	assert.Empty(t, resp.Result.DataArray)
@@ -152,18 +153,18 @@ func TestErrorResult(t *testing.T) {
 	e := testsql.New()
 	e.Handle("SELECT 1", func(testsql.Request) testsql.Result {
 		return testsql.Result{Error: &testsql.Error{
-			Code:     sql.ServiceErrorCodeBadRequest,
+			Code:     sql.ServiceErrorCode_BadRequest,
 			Message:  "no such table",
 			SQLState: "42P01",
 		}}
 	})
 
 	resp := e.Submit("SELECT 1", "10s", nil)
-	require.Equal(t, sql.StatementStateFailed, resp.Status.State)
-	assert.Equal(t, "42P01", resp.Status.SqlState)
+	require.Equal(t, sql.StatementStatus_State_Failed, resp.Status.State)
+	assert.Equal(t, "42P01", *resp.Status.SqlState)
 	require.NotNil(t, resp.Status.Error)
-	assert.Equal(t, sql.ServiceErrorCodeBadRequest, resp.Status.Error.ErrorCode)
-	assert.Equal(t, "no such table", resp.Status.Error.Message)
+	assert.Equal(t, sql.ServiceErrorCode_BadRequest, resp.Status.Error.ErrorCode)
+	assert.Equal(t, "no such table", *resp.Status.Error.Message)
 	assert.Nil(t, resp.Manifest)
 	assert.Nil(t, resp.Result)
 }
@@ -175,13 +176,13 @@ func TestCancelPrecedence(t *testing.T) {
 	})
 
 	resp := e.Submit("SELECT 1", "0s", nil)
-	require.Equal(t, sql.StatementStatePending, resp.Status.State)
+	require.Equal(t, sql.StatementStatus_State_Pending, resp.Status.State)
 
-	e.Cancel(resp.StatementId)
+	e.Cancel(*resp.StatementId)
 
 	// Cancel takes precedence over the remaining polls.
-	got := e.Get(resp.StatementId)
-	assert.Equal(t, sql.StatementStateCanceled, got.Status.State)
+	got := e.Get(*resp.StatementId)
+	assert.Equal(t, sql.StatementStatus_State_Canceled, got.Status.State)
 	assert.Nil(t, got.Manifest)
 	assert.Nil(t, got.Result)
 }
@@ -196,8 +197,8 @@ func TestUnknownStatement(t *testing.T) {
 func TestDeterministicIDs(t *testing.T) {
 	e := testsql.New()
 	e.Handle("SELECT 1", func(testsql.Request) testsql.Result { return testsql.Result{} })
-	assert.Equal(t, "statement-1", e.Submit("SELECT 1", "10s", nil).StatementId)
-	assert.Equal(t, "statement-2", e.Submit("SELECT 1", "10s", nil).StatementId)
+	assert.Equal(t, "statement-1", *e.Submit("SELECT 1", "10s", nil).StatementId)
+	assert.Equal(t, "statement-2", *e.Submit("SELECT 1", "10s", nil).StatementId)
 }
 
 // TestStatefulMatcher proves the matcher runs exactly once per Submit and that
@@ -218,12 +219,12 @@ func TestStatefulMatcher(t *testing.T) {
 	})
 
 	create := e.Submit("CREATE v AS body", "10s", nil)
-	require.Equal(t, sql.StatementStateSucceeded, create.Status.State)
+	require.Equal(t, sql.StatementStatus_State_Succeeded, create.Status.State)
 	assert.Equal(t, 1, calls, "matcher must run exactly once per Submit")
 
 	read := e.Submit("READ v", "10s", nil)
-	require.Equal(t, sql.StatementStateSucceeded, read.Status.State)
-	assert.Equal(t, [][]string{{"body"}}, read.Result.DataArray)
+	require.Equal(t, sql.StatementStatus_State_Succeeded, read.Status.State)
+	assert.Equal(t, [][]string{{"body"}}, rowsOf(read.Result.DataArray))
 	assert.Equal(t, 1, calls, "create matcher must not run again")
 }
 
@@ -234,7 +235,18 @@ func columnNames(resp *sql.StatementResponse) []string {
 	}
 	out := make([]string, len(resp.Manifest.Schema.Columns))
 	for i, c := range resp.Manifest.Schema.Columns {
-		out[i] = c.Name
+		out[i] = *c.Name
+	}
+	return out
+}
+
+func rowsOf(data [][]json.RawMessage) [][]string {
+	out := make([][]string, len(data))
+	for i, row := range data {
+		out[i] = make([]string, len(row))
+		for j, cell := range row {
+			_ = json.Unmarshal(cell, &out[i][j])
+		}
 	}
 	return out
 }

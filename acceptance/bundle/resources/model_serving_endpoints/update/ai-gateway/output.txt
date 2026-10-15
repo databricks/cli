@@ -56,7 +56,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "inference_table_config": {
       "catalog_name": "second-inference-catalog"
-    }
+    },
+    "name": "[ENDPOINT_ID]"
   }
 }
 

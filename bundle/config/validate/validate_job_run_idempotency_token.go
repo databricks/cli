@@ -5,6 +5,8 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -27,7 +29,7 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 	for _, name := range slices.Sorted(maps.Keys(b.Config.Resources.JobRuns)) {
 		jobRun := b.Config.Resources.JobRuns[name]
 		// An empty `job_runs.<name>:` entry loads as a present key with a nil value.
-		if jobRun == nil || jobRun.IdempotencyToken == "" {
+		if jobRun == nil || utils.Deref(jobRun.IdempotencyToken) == "" {
 			continue
 		}
 		// The CLI mints the token; a configured one would also remain reserved after

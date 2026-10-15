@@ -4,12 +4,16 @@ package alerts_legacy
 
 import (
 	"errors"
+	"fmt"
+
+	"maps"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -62,19 +66,24 @@ The alerts API can be used to perform CRUD operations on alerts. An alert is a
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateAlert,
+	*map[string]any,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq map[string]any
+	createReq = map[string]any{}
+	var createNameRaw string
+	var createParentRaw string
+	var createQueryIdRaw string
+	var createRearmRaw int
 
-	var createReq sql.CreateAlert
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
-	cmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	cmd.Flags().StringVar(&createParentRaw, "parent", createParentRaw, `The identifier of the workspace folder containing the object.`)
+	cmd.Flags().IntVar(&createRearmRaw, "rearm", createRearmRaw, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 	cmd.Use = "create"
 	cmd.Short = `*Public Preview* Create an alert.`
@@ -99,6 +108,7 @@ Create an alert.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -115,11 +125,30 @@ Create an alert.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.AlertsLegacy.Create(ctx, createReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("name") || createNameRaw != "" {
+			createReq["name"] = createNameRaw
+		}
+		if cmd.Flags().Changed("parent") || createParentRaw != "" {
+			createReq["parent"] = createParentRaw
+		}
+		if cmd.Flags().Changed("query-id") || createQueryIdRaw != "" {
+			createReq["query_id"] = createQueryIdRaw
+		}
+		if cmd.Flags().Changed("rearm") || createRearmRaw != 0 {
+			createReq["rearm"] = createRearmRaw
+		}
+		rawPath := "/api/2.0/preview/sql/alerts"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -141,13 +170,14 @@ Create an alert.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteAlertsLegacyRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.DeleteAlertsLegacyRequest
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteAlertIdRaw string
 
 	cmd.Use = "delete ALERT_ID"
 	cmd.Short = `*Public Preview* Delete an alert.`
@@ -177,10 +207,19 @@ Delete an alert.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.AlertId = args[0]
+		deleteAlertIdRaw = args[0]
 
-		err = w.AlertsLegacy.Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/alerts/%s", fmt.Sprint(deleteAlertIdRaw))
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -205,13 +244,14 @@ Delete an alert.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sql.GetAlertsLegacyRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sql.GetAlertsLegacyRequest
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getAlertIdRaw string
 
 	cmd.Use = "get ALERT_ID"
 	cmd.Short = `*Public Preview* Get an alert.`
@@ -239,14 +279,23 @@ Get an alert.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.AlertId = args[0]
+		getAlertIdRaw = args[0]
 
-		response, err := w.AlertsLegacy.Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/alerts/%s", fmt.Sprint(getAlertIdRaw))
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -294,11 +343,21 @@ Get alerts.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.AlertsLegacy.List(ctx)
+		_ = w
+		listReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/preview/sql/alerts"
+
+		maps.Copy(rawQuery, listReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -320,18 +379,23 @@ Get alerts.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.EditAlert,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateAlertIdRaw string
+	var updateNameRaw string
+	var updateQueryIdRaw string
+	var updateRearmRaw int
 
-	var updateReq sql.EditAlert
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	cmd.Flags().IntVar(&updateRearmRaw, "rearm", updateRearmRaw, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 	cmd.Use = "update ALERT_ID"
 	cmd.Short = `*Public Preview* Update an alert.`
@@ -359,6 +423,7 @@ Update an alert.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -374,9 +439,25 @@ Update an alert.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.AlertId = args[0]
+		updateAlertIdRaw = args[0]
 
-		err = w.AlertsLegacy.Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("name") || updateNameRaw != "" {
+			updateReq["name"] = updateNameRaw
+		}
+		if cmd.Flags().Changed("query-id") || updateQueryIdRaw != "" {
+			updateReq["query_id"] = updateQueryIdRaw
+		}
+		if cmd.Flags().Changed("rearm") || updateRearmRaw != 0 {
+			updateReq["rearm"] = updateRearmRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/alerts/%s", fmt.Sprint(updateAlertIdRaw))
+
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "PUT", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, nil)
 		if err != nil {
 			return err
 		}

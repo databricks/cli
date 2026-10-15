@@ -22,9 +22,9 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 //go:embed jupyter-init.py
@@ -65,7 +65,7 @@ type ServerOptions struct {
 	PortRange int
 }
 
-func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
+func Run(ctx context.Context, client *sdkclients.Clients, opts ServerOptions) error {
 	ctx, logBuf := captureWarnLogs(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

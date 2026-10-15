@@ -168,7 +168,7 @@ containers:
   - name: inference
     command: python infer.py
     ranks: [0]
-    unity_catalog_image: main.ml.inference:v1
+    unity_catalog_image: main.experiments.inference:v1
     environment_variables:
       variables:
         OVERRIDE: inference
@@ -176,7 +176,7 @@ containers:
   - name: dataproc
     command: python dataproc.py
     ranks: [1]
-    unity_catalog_image: main.ml.dataproc:v1
+    unity_catalog_image: main.experiments.dataproc:v1
 `))
 	require.NoError(t, err)
 

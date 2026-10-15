@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,13 +23,13 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
 		// Usage policy flows onto the run and into the base params the server reads.
-		assert.Equal(t, "pol-1", got.BudgetPolicyId)
+		assert.Equal(t, "pol-1", utils.Deref(got.BudgetPolicyId))
 		assert.Equal(t, "pol-1", got.Tasks[0].NotebookTask.BaseParameters["usagePolicyId"])
 		assert.Equal(t, "true", got.Tasks[0].NotebookTask.BaseParameters["serverless"])
 
 		// Serverless runs on an environment, not an existing cluster.
-		assert.Equal(t, serverlessEnvironmentKey, got.Tasks[0].EnvironmentKey)
-		assert.Empty(t, got.Tasks[0].ExistingClusterId)
+		assert.Equal(t, serverlessEnvironmentKey, utils.Deref(got.Tasks[0].EnvironmentKey))
+		assert.Empty(t, utils.Deref(got.Tasks[0].ExistingClusterId))
 		assert.Len(t, got.Environments, 1)
 		assert.Nil(t, got.Tasks[0].Compute)
 	})
@@ -41,7 +42,7 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		}
 		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
-		assert.Equal(t, compute.HardwareAcceleratorType("GPU_1xA10"), got.Tasks[0].Compute.HardwareAccelerator)
+		assert.Equal(t, jobs.HardwareAcceleratorType("GPU_1xA10"), got.Tasks[0].Compute.HardwareAccelerator)
 	})
 
 	t.Run("serverless with base environment", func(t *testing.T) {
@@ -55,8 +56,8 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 
 		// A resolved base environment carries its own version, so environment_version is not set.
 		require.Len(t, got.Environments, 1)
-		assert.Equal(t, "workspace-base-environments/dbe_123", got.Environments[0].Spec.BaseEnvironment)
-		assert.Empty(t, got.Environments[0].Spec.EnvironmentVersion)
+		assert.Equal(t, "workspace-base-environments/dbe_123", utils.Deref(got.Environments[0].Spec.BaseEnvironment))
+		assert.Empty(t, utils.Deref(got.Environments[0].Spec.EnvironmentVersion))
 	})
 
 	t.Run("dedicated cluster", func(t *testing.T) {
@@ -67,10 +68,10 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
 		// Usage policy is serverless-only; a dedicated run carries none and targets the cluster.
-		assert.Empty(t, got.BudgetPolicyId)
+		assert.Empty(t, utils.Deref(got.BudgetPolicyId))
 		assert.Empty(t, got.Tasks[0].NotebookTask.BaseParameters["usagePolicyId"])
-		assert.Equal(t, "abc-123", got.Tasks[0].ExistingClusterId)
-		assert.Empty(t, got.Tasks[0].EnvironmentKey)
+		assert.Equal(t, "abc-123", utils.Deref(got.Tasks[0].ExistingClusterId))
+		assert.Empty(t, utils.Deref(got.Tasks[0].EnvironmentKey))
 		assert.Empty(t, got.Environments)
 		// False is what tells the bootstrap to sweep detached work as it always has.
 		assert.Equal(t, "false", got.Tasks[0].NotebookTask.BaseParameters["keepDetachedProcesses"])
@@ -86,8 +87,8 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 
 		assert.Equal(t, "true", got.Tasks[0].NotebookTask.BaseParameters["keepDetachedProcesses"])
 		// The hold happens inside the run, so the run's own timeout is what bounds it.
-		assert.Equal(t, int(24*time.Hour.Seconds()), got.TimeoutSeconds)
-		assert.Equal(t, int(24*time.Hour.Seconds()), got.Tasks[0].TimeoutSeconds)
+		assert.Equal(t, int(24*time.Hour.Seconds()), utils.Deref(got.TimeoutSeconds))
+		assert.Equal(t, int(24*time.Hour.Seconds()), utils.Deref(got.Tasks[0].TimeoutSeconds))
 	})
 
 	t.Run("server lifecycle", func(t *testing.T) {
@@ -103,8 +104,8 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		// widget at startup, and the run's timeout caps the tunnel's lifetime.
 		assert.Equal(t, "25", got.Tasks[0].NotebookTask.BaseParameters["maxClients"])
 		assert.Equal(t, "15m0s", got.Tasks[0].NotebookTask.BaseParameters["shutdownDelay"])
-		assert.Equal(t, 48*60*60, got.TimeoutSeconds)
-		assert.Equal(t, 48*60*60, got.Tasks[0].TimeoutSeconds)
+		assert.Equal(t, 48*60*60, utils.Deref(got.TimeoutSeconds))
+		assert.Equal(t, 48*60*60, utils.Deref(got.Tasks[0].TimeoutSeconds))
 	})
 }
 
@@ -129,7 +130,7 @@ func TestServerTimeoutNeverSubmitsUnboundedRun(t *testing.T) {
 			continue
 		}
 		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
-		assert.NotZero(t, got.TimeoutSeconds, "--server-timeout=%s passed Validate but submits timeout_seconds: 0 (no timeout)", d)
-		assert.NotZero(t, got.Tasks[0].TimeoutSeconds, "--server-timeout=%s passed Validate but submits a task with timeout_seconds: 0", d)
+		assert.NotZero(t, utils.Deref(got.TimeoutSeconds), "--server-timeout=%s passed Validate but submits timeout_seconds: 0 (no timeout)", d)
+		assert.NotZero(t, utils.Deref(got.Tasks[0].TimeoutSeconds), "--server-timeout=%s passed Validate but submits a task with timeout_seconds: 0", d)
 	}
 }

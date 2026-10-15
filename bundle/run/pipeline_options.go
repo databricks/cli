@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	pipelines "github.com/databricks/sdk-go/pipelines/v2"
 	flag "github.com/spf13/pflag"
 )
 
@@ -58,22 +58,31 @@ func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
 	return nil
 }
 
-func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID string, development bool) (*pipelines.StartUpdate, error) {
+func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID string, development bool) (*pipelines.StartUpdateRequest, error) {
 	if err := o.Validate(pipeline); err != nil {
 		return nil, err
 	}
-	payload := &pipelines.StartUpdate{
-		PipelineId: pipelineID,
+	payload := &pipelines.StartUpdateRequest{
+		PipelineId: new(pipelineID),
 
 		// Note: `RefreshAll` is implied if the fields below are not set.
 		RefreshSelection:     o.Refresh,
-		FullRefresh:          o.FullRefreshAll,
+		FullRefresh:          trueOrNil(o.FullRefreshAll),
 		FullRefreshSelection: o.FullRefresh,
-		ValidateOnly:         o.ValidateOnly,
+		ValidateOnly:         trueOrNil(o.ValidateOnly),
 
 		// Only true is sent. When false the field is omitted, so the backend keeps
 		// using the pipeline-level development property while it is being deprecated.
-		Development: development,
+		Development: trueOrNil(development),
 	}
 	return payload, nil
+}
+
+// trueOrNil returns a pointer to true, or nil for false so that the field is
+// omitted from the request and the backend default applies.
+func trueOrNil(b bool) *bool {
+	if !b {
+		return nil
+	}
+	return new(true)
 }

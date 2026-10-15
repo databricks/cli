@@ -3,17 +3,18 @@ package pipelines
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func TestUpdatesBefore(t *testing.T) {
 	// Test data: updates sorted in descending order (newest first)
 	updates := []pipelines.UpdateInfo{
-		{CreationTime: 1000}, // newest
-		{CreationTime: 800},
-		{CreationTime: 600},
-		{CreationTime: 400},
-		{CreationTime: 200}, // oldest
+		{CreationTime: new(int64(1000))}, // newest
+		{CreationTime: new(int64(800))},
+		{CreationTime: new(int64(600))},
+		{CreationTime: new(int64(400))},
+		{CreationTime: new(int64(200))}, // oldest
 	}
 
 	tests := []struct {
@@ -54,8 +55,8 @@ func TestUpdatesBefore(t *testing.T) {
 			if len(result) != tt.expectedCount {
 				t.Errorf("updatesBefore(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
-			if tt.expectedCount > 0 && result[0].CreationTime != tt.expectedFirst {
-				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+			if tt.expectedCount > 0 && utils.Deref(result[0].CreationTime) != tt.expectedFirst {
+				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", *tt.timestamp, utils.Deref(result[0].CreationTime), tt.expectedFirst)
 			}
 		})
 	}
@@ -64,11 +65,11 @@ func TestUpdatesBefore(t *testing.T) {
 func TestUpdatesAfter(t *testing.T) {
 	// Test data: updates sorted in descending order (newest first)
 	updates := []pipelines.UpdateInfo{
-		{CreationTime: 1000}, // newest
-		{CreationTime: 800},
-		{CreationTime: 600},
-		{CreationTime: 400},
-		{CreationTime: 200}, // oldest
+		{CreationTime: new(int64(1000))}, // newest
+		{CreationTime: new(int64(800))},
+		{CreationTime: new(int64(600))},
+		{CreationTime: new(int64(400))},
+		{CreationTime: new(int64(200))}, // oldest
 	}
 
 	tests := []struct {
@@ -109,8 +110,8 @@ func TestUpdatesAfter(t *testing.T) {
 			if len(result) != tt.expectedCount {
 				t.Errorf("updatesAfter(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
-			if tt.expectedCount > 0 && result[0].CreationTime != tt.expectedFirst {
-				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+			if tt.expectedCount > 0 && utils.Deref(result[0].CreationTime) != tt.expectedFirst {
+				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", *tt.timestamp, utils.Deref(result[0].CreationTime), tt.expectedFirst)
 			}
 		})
 	}
@@ -146,17 +147,17 @@ func TestUpdatesEmptySlice(t *testing.T) {
 func TestFilterUpdates(t *testing.T) {
 	// Test data: updates sorted in descending order (newest first)
 	updates := []pipelines.UpdateInfo{
-		{CreationTime: 1000}, // newest
-		{CreationTime: 800},
-		{CreationTime: 600},
-		{CreationTime: 400},
-		{CreationTime: 200}, // oldest
+		{CreationTime: new(int64(1000))}, // newest
+		{CreationTime: new(int64(800))},
+		{CreationTime: new(int64(600))},
+		{CreationTime: new(int64(400))},
+		{CreationTime: new(int64(200))}, // oldest
 	}
 
 	var noUpdates []pipelines.UpdateInfo
 
 	oneUpdate := []pipelines.UpdateInfo{
-		{CreationTime: 500},
+		{CreationTime: new(int64(500))},
 	}
 
 	tests := []struct {
@@ -279,11 +280,11 @@ func TestFilterUpdates(t *testing.T) {
 				t.Errorf("filterUpdates() returned %d updates, want %d", len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 {
-				if result[0].CreationTime != tt.expectedFirst {
-					t.Errorf("filterUpdates() first update = %d, want %d", result[0].CreationTime, tt.expectedFirst)
+				if utils.Deref(result[0].CreationTime) != tt.expectedFirst {
+					t.Errorf("filterUpdates() first update = %d, want %d", utils.Deref(result[0].CreationTime), tt.expectedFirst)
 				}
-				if result[len(result)-1].CreationTime != tt.expectedLast {
-					t.Errorf("filterUpdates() last update = %d, want %d", result[len(result)-1].CreationTime, tt.expectedLast)
+				if utils.Deref(result[len(result)-1].CreationTime) != tt.expectedLast {
+					t.Errorf("filterUpdates() last update = %d, want %d", utils.Deref(result[len(result)-1].CreationTime), tt.expectedLast)
 				}
 			}
 		})

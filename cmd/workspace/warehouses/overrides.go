@@ -2,11 +2,11 @@ package warehouses
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *sql.ListWarehousesRequest) {
+func listOverride(listCmd *cobra.Command, listReq *warehouses.ListWarehousesRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "Size"}}	{{header "State"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

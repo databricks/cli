@@ -4,14 +4,15 @@ package artifact_allowlists
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucartifactallowlists "github.com/databricks/cli/libs/sdktypes/uc/artifactallowlists/v1"
+	sdkucartifactallowlists "github.com/databricks/sdk-go/uc/artifactallowlists/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -51,13 +52,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetArtifactAllowlistRequest,
+	*sdkucartifactallowlists.GetArtifactAllowlistRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetArtifactAllowlistRequest
+	var getReq sdkucartifactallowlists.GetArtifactAllowlistRequest
 
 	cmd.Use = "get ARTIFACT_TYPE"
 	cmd.Short = `Get an artifact allowlist.`
@@ -83,18 +83,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getReq.ArtifactType)
-		if err != nil {
-			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])
-		}
+		getReq.ArtifactType = sdkucartifactallowlists.ArtifactType(args[0])
 
-		response, err := w.ArtifactAllowlists.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.ArtifactAllowlists.GetArtifactAllowlist(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucartifactallowlists.ArtifactAllowlistInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -115,13 +118,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.SetArtifactAllowlist,
+	*ucartifactallowlists.SetArtifactAllowlistRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucartifactallowlists.SetArtifactAllowlistRequest
 
-	var updateReq catalog.SetArtifactAllowlist
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -151,6 +154,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -166,17 +170,22 @@ func newUpdate() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
-		if err != nil {
-			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])
-		}
+		updateReq.ArtifactType = ucartifactallowlists.ArtifactType(args[0])
 
-		response, err := w.ArtifactAllowlists.Update(ctx, updateReq)
+		sdkReq, err := ucartifactallowlists.SetArtifactAllowlistRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ArtifactAllowlists.SetArtifactAllowlist(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucartifactallowlists.ArtifactAllowlistInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

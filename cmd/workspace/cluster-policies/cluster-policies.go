@@ -10,8 +10,11 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -78,24 +81,24 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*compute.CreatePolicy,
+	*clusterpolicies.CreatePolicyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq clusterpolicies.CreatePolicyRequest
 
-	var createReq compute.CreatePolicy
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Additional human-readable description of the cluster policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Definition, "definition", `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Description, "description", `Additional human-readable description of the cluster policy.`)
 	// TODO: array: libraries
-	cmd.Flags().Int64Var(&createReq.MaxClustersPerUser, "max-clusters-per-user", createReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Cluster Policy name requested by the user.`)
-	cmd.Flags().StringVar(&createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", createReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
-	cmd.Flags().StringVar(&createReq.PolicyFamilyId, "policy-family-id", createReq.PolicyFamilyId, `ID of the policy family.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.MaxClustersPerUser, "max-clusters-per-user", `Max number of clusters per user that can be active using this policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Name, "name", `Cluster Policy name requested by the user.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.PolicyFamilyId, "policy-family-id", `ID of the policy family.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new policy.`
@@ -116,6 +119,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -130,12 +134,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.ClusterPolicies.Create(ctx, createReq)
+		sdkReq, err := clusterpolicies.CreatePolicyRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ClusterPolicies.CreatePolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := clusterpolicies.CreatePolicyResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -156,13 +168,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*compute.DeletePolicy,
+	*clusterpolicies.DeletePolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq clusterpolicies.DeletePolicyRequest
 
-	var deleteReq compute.DeletePolicy
 	var deleteJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -189,13 +201,15 @@ func newDelete() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -208,31 +222,21 @@ func newDelete() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have the id of the policy to delete")
-			}
-			deleteReq.PolicyId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			deleteReq.PolicyId = new(args[0])
 		}
 
-		err = w.ClusterPolicies.Delete(ctx, deleteReq)
+		sdkReq, err := clusterpolicies.DeletePolicyRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ClusterPolicies.DeletePolicy(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -254,24 +258,24 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var editOverrides []func(
 	*cobra.Command,
-	*compute.EditPolicy,
+	*clusterpolicies.EditPolicyRequest,
 )
 
 func newEdit() *cobra.Command {
 	cmd := &cobra.Command{}
+	var editReq clusterpolicies.EditPolicyRequest
 
-	var editReq compute.EditPolicy
 	var editJson flags.JsonFlag
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
-	cmd.Flags().StringVar(&editReq.Description, "description", editReq.Description, `Additional human-readable description of the cluster policy.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.Definition, "definition", `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.Description, "description", `Additional human-readable description of the cluster policy.`)
 	// TODO: array: libraries
-	cmd.Flags().Int64Var(&editReq.MaxClustersPerUser, "max-clusters-per-user", editReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
-	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Cluster Policy name requested by the user.`)
-	cmd.Flags().StringVar(&editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", editReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
-	cmd.Flags().StringVar(&editReq.PolicyFamilyId, "policy-family-id", editReq.PolicyFamilyId, `ID of the policy family.`)
+	flags.Int64PtrVar(cmd.Flags(), &editReq.MaxClustersPerUser, "max-clusters-per-user", `Max number of clusters per user that can be active using this policy.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.Name, "name", `Cluster Policy name requested by the user.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.PolicyFamilyId, "policy-family-id", `ID of the policy family.`)
 
 	cmd.Use = "edit POLICY_ID"
 	cmd.Short = `Update a cluster policy.`
@@ -295,13 +299,15 @@ func newEdit() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
@@ -314,32 +320,21 @@ func newEdit() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the policy to update")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have the id of the policy to update")
-			}
-			editReq.PolicyId = args[0]
-
+		}
+		if !cmd.Flags().Changed("json") {
+			editReq.PolicyId = new(args[0])
 		}
 
-		err = w.ClusterPolicies.Edit(ctx, editReq)
+		sdkReq, err := clusterpolicies.EditPolicyRequestToSDK(&editReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ClusterPolicies.EditPolicy(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -361,13 +356,12 @@ func newEdit() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*compute.GetClusterPolicyRequest,
+	*clusterpolicies.GetPolicyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq compute.GetClusterPolicyRequest
+	var getReq clusterpolicies.GetPolicyRequest
 
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get a cluster policy.`
@@ -382,36 +376,33 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the Cluster Policy")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have canonical unique identifier for the cluster policy")
-		}
-		getReq.PolicyId = args[0]
+		getReq.PolicyId = new(args[0])
 
-		response, err := w.ClusterPolicies.Get(ctx, getReq)
+		sdkReq, err := clusterpolicies.GetPolicyRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ClusterPolicies.GetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := clusterpolicies.PolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -432,13 +423,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*compute.GetClusterPolicyPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq compute.GetClusterPolicyPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permission levels.`
@@ -453,36 +443,32 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The cluster policy for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the cluster policy for which to get or manage permissions")
-		}
-		getPermissionLevelsReq.ClusterPolicyId = args[0]
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ClusterPolicies.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("cluster-policies")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -503,13 +489,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*compute.GetClusterPolicyPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq compute.GetClusterPolicyPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permissions.`
@@ -525,36 +510,32 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The cluster policy for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the cluster policy for which to get or manage permissions")
-		}
-		getPermissionsReq.ClusterPolicyId = args[0]
+		getPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ClusterPolicies.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("cluster-policies")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -575,20 +556,20 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*compute.ListClusterPoliciesRequest,
+	*clusterpolicies.ListPoliciesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq clusterpolicies.ListPoliciesRequest
 
-	var listReq compute.ListClusterPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`)
+	flags.EnumVar(cmd.Flags(), &listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`, "ListSortColumn", "POLICY_CREATION_TIME", "POLICY_NAME")
+	flags.EnumVar(cmd.Flags(), &listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`, "ListSortOrder", "ASC", "DESC")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -614,8 +595,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ClusterPolicies.List(ctx, listReq)
+		sdkReq, err := clusterpolicies.ListPoliciesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ClusterPolicies.ListPolicies(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -623,7 +612,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := clusterpolicies.ListPoliciesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Policies)
 	}
 
 	// Disable completions since they are not applicable.
@@ -644,13 +637,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*compute.ClusterPolicyPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq compute.ClusterPolicyPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -672,10 +665,16 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -689,31 +688,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The cluster policy for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the cluster policy for which to get or manage permissions")
-		}
-		setPermissionsReq.ClusterPolicyId = args[0]
+		setPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ClusterPolicies.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("cluster-policies")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -734,13 +726,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*compute.ClusterPolicyPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq compute.ClusterPolicyPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -761,10 +753,16 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -778,31 +776,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The cluster policy for which to get or manage permissions")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the cluster policy for which to get or manage permissions")
-		}
-		updatePermissionsReq.ClusterPolicyId = args[0]
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ClusterPolicies.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("cluster-policies")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

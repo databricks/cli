@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ func TestBundleDeleteOverrideWithWrapper(t *testing.T) {
 		return err
 	}
 
-	overrideFunc := BundleDeleteOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeleteOverrideWithWrapper[apps.DeleteAppRequest](mockWrapper)
 	assert.NotNil(t, overrideFunc)
 
 	cmd := &cobra.Command{}
@@ -36,7 +36,7 @@ func TestBundleDeleteOverrideFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	deleteReq := &apps.DeleteAppRequest{}
 
-	overrideFunc := BundleDeleteOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeleteOverrideWithWrapper[apps.DeleteAppRequest](mockWrapper)
 	overrideFunc(cmd, deleteReq)
 
 	t.Run("auto-approve flag defaults to false", func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestBundleDeleteOverrideHelpText(t *testing.T) {
 	cmd := &cobra.Command{}
 	deleteReq := &apps.DeleteAppRequest{}
 
-	overrideFunc := BundleDeleteOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeleteOverrideWithWrapper[apps.DeleteAppRequest](mockWrapper)
 	overrideFunc(cmd, deleteReq)
 
 	assert.NotEmpty(t, cmd.Long)
@@ -82,9 +82,9 @@ func TestBundleDeleteOverrideErrorWrapping(t *testing.T) {
 			return errors.New("api error")
 		},
 	}
-	deleteReq := &apps.DeleteAppRequest{Name: "test-app"}
+	deleteReq := &apps.DeleteAppRequest{Name: new("test-app")}
 
-	overrideFunc := BundleDeleteOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeleteOverrideWithWrapper[apps.DeleteAppRequest](mockWrapper)
 	overrideFunc(cmd, deleteReq)
 
 	err := cmd.RunE(cmd, []string{"test-app"})

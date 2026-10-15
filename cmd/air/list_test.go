@@ -9,8 +9,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,29 +19,29 @@ import (
 // returns it with expand_tasks.
 func airBaseRun(id int64, user, accelType string, count int, experiment string) jobs.BaseRun {
 	return jobs.BaseRun{
-		RunId:           id,
-		RunName:         "run-" + strconv.FormatInt(id, 10),
-		CreatorUserName: user,
-		State:           &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunId:           new(id),
+		RunName:         new("run-" + strconv.FormatInt(id, 10)),
+		CreatorUserName: new(user),
+		State:           &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running},
 		Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{
-			Experiment: experiment,
+			Experiment: new(experiment),
 			Deployments: []jobs.DeploymentSpec{{
-				Compute: jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType(accelType), AcceleratorCount: count},
+				Compute: &jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType(accelType), AcceleratorCount: new(count)},
 			}},
 		}}},
 	}
 }
 
 // airRun is the runs/get equivalent of airBaseRun, for the helpers that operate
-// on a *jobs.Run.
-func airRun(id int64, user, accelType string, count int, experiment string) jobs.Run {
+// on a *jobs.GetRunResponse.
+func airRun(id int64, user, accelType string, count int, experiment string) jobs.GetRunResponse {
 	return *baseRunToRun(airBaseRun(id, user, accelType, count, experiment))
 }
 
 // runsListBody marshals one runs/list response page.
 func runsListBody(t *testing.T, nextToken string, runs ...jobs.BaseRun) string {
 	t.Helper()
-	b, err := json.Marshal(jobs.ListRunsResponse{Runs: runs, NextPageToken: nextToken, HasMore: nextToken != ""})
+	b, err := json.Marshal(jobs.ListRunsResponse{Runs: runs, NextPageToken: utils.NonZero(nextToken), HasMore: utils.NonZero(nextToken != "")})
 	require.NoError(t, err)
 	return string(b)
 }
@@ -67,8 +67,8 @@ func runsServer(t *testing.T, bodies ...string) *httptest.Server {
 func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	runs := []jobs.BaseRun{
 		airBaseRun(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/exp-a"),
-		{RunId: 2, CreatorUserName: "me@example.com", Tasks: []jobs.RunTask{{}}}, // not an AIR run
-		airBaseRun(3, "other@example.com", "GPU_1xA10", 1, "/Users/other/exp-b"), // wrong user
+		{RunId: new(int64(2)), CreatorUserName: new("me@example.com"), Tasks: []jobs.RunTask{{}}}, // not an AIR run
+		airBaseRun(3, "other@example.com", "GPU_1xA10", 1, "/Users/other/exp-b"),                  // wrong user
 		airBaseRun(5, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/exp-c"),
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
@@ -157,9 +157,9 @@ func TestRunFetcherResumesAcrossCalls(t *testing.T) {
 
 func TestBuildListRowFromRun(t *testing.T) {
 	run := airRun(842552489592352, "me@example.com", "GPU_1xA10", 1, "my-first-air-run")
-	run.StartTime = 1700000000000
-	run.EndTime = 1700000012000
-	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}
+	run.StartTime = new(int64(1700000000000))
+	run.EndTime = new(int64(1700000012000))
+	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Success}
 
 	assert.True(t, isAirRun(&run))
 	assert.Equal(t, "my-first-air-run", jobExperiment(&run))
@@ -177,9 +177,9 @@ func TestBuildListRowFromRun(t *testing.T) {
 
 func TestBuildListRow(t *testing.T) {
 	run := airRun(123, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/exp")
-	run.StartTime = 1700000000000
-	run.EndTime = 1700000012000
-	run.State = &jobs.RunState{ResultState: jobs.RunResultStateSuccess}
+	run.StartTime = new(int64(1700000000000))
+	run.EndTime = new(int64(1700000012000))
+	run.State = &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success}
 
 	row := buildListRow(&run, "https://example.test", 0)
 	assert.Equal(t, "123", row.RunID)
@@ -195,8 +195,8 @@ func TestBuildListRow(t *testing.T) {
 
 func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	run := airRun(123, "me@example.com", "GPU_8xH100", 8, "exp")
-	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
-	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}
+	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}
+	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Pending}
 
 	row := buildListRow(&run, "https://example.test", 0)
 	body, err := json.Marshal(row)
@@ -212,7 +212,7 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 
 func TestBuildListRowDashFallbacks(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
-	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
+	row := buildListRow(&jobs.GetRunResponse{RunId: new(int64(7))}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
 	assert.Equal(t, "-", row.Duration)
 	assert.Equal(t, "-", row.Accelerators)
@@ -222,16 +222,15 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 }
 
 func TestBuildListRowSweep(t *testing.T) {
-	run := jobs.Run{RunId: 9, Tasks: []jobs.RunTask{{
-		ForEachTask: &jobs.RunForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "sweep"}}},
+	run := jobs.GetRunResponse{RunId: new(int64(9)), Tasks: []jobs.RunTask{{
+		ForEachTask: &jobs.ForEachTask{Task: &jobs.TaskSettings{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("sweep")}}},
 	}}}
 	assert.True(t, buildListRow(&run, "https://example.test", 0).IsSweep)
 	assert.Equal(t, "sweep", buildListRow(&run, "https://example.test", 0).Experiment)
 }
 
 func TestListInvalidLimit(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), fakeWorkspace(t, nil))
 	cmd := newListCommand()
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("limit", "0"))
@@ -242,8 +241,7 @@ func TestListInvalidLimit(t *testing.T) {
 }
 
 func TestListInvalidFilter(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), fakeWorkspace(t, nil))
 	cmd := newListCommand()
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("filter", "bogus=1"))

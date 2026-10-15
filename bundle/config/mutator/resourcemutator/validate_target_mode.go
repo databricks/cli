@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/iamutil"
 
 	"github.com/databricks/cli/bundle"
@@ -86,7 +88,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 // namePrefixContainsUserIdentifier checks if the name prefix contains any user identifier
 // (username, short name, or domain friendly name) to ensure uniqueness.
 func namePrefixContainsUserIdentifier(prefix string, u *config.User) bool {
-	if strings.Contains(prefix, u.UserName) {
+	if strings.Contains(prefix, utils.Deref(u.UserName)) {
 		return true
 	}
 	if strings.Contains(prefix, u.ShortName) {
@@ -108,7 +110,7 @@ func isNonUserPath(path string, u *config.User) bool {
 	if strings.HasPrefix(path, resources.SnapshotFullPathRef) {
 		return false
 	}
-	return !strings.Contains(path, u.UserName) && !strings.Contains(path, u.ShortName)
+	return !strings.Contains(path, utils.Deref(u.UserName)) && !strings.Contains(path, u.ShortName)
 }
 
 // findNonUserPath finds the first workspace path such as root_path that doesn't
@@ -137,7 +139,7 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-		if r.Pipelines[i].Development {
+		if utils.Deref(r.Pipelines[i].Development) {
 			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}
 	}
@@ -149,7 +151,7 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 		"A common practice is to use a username or principal name in this path, i.e. use\n"+
 			"\n"+
 			"  root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
-		b.Config.Workspace.CurrentUser.UserName,
+		utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 	)
 	if !isExplicitRootSet(b) {
 		if isRunAsSet(r) || isPrincipalUsed {

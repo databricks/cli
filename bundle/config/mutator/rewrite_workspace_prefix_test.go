@@ -3,12 +3,13 @@ package mutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,45 +28,45 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"test_job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "/Workspace/${workspace.root_path}/file1.py",
+										PythonFile: new("/Workspace/${workspace.root_path}/file1.py"),
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "/Workspace${workspace.file_path}/notebook1",
+										NotebookPath: new("/Workspace${workspace.file_path}/notebook1"),
 									},
-									Libraries: []compute.Library{
+									Libraries: []jobs.Library{
 										{
-											Jar: "/Workspace/${workspace.artifact_path}/jar1.jar",
+											Jar: new("/Workspace/${workspace.artifact_path}/jar1.jar"),
 										},
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "${workspace.file_path}/notebook2",
+										NotebookPath: new("${workspace.file_path}/notebook2"),
 									},
-									Libraries: []compute.Library{
+									Libraries: []jobs.Library{
 										{
-											Jar: "${workspace.artifact_path}/jar2.jar",
+											Jar: new("${workspace.artifact_path}/jar2.jar"),
 										},
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "/Workspace/${workspace.resource_path}/notebook3",
+										NotebookPath: new("/Workspace/${workspace.resource_path}/notebook3"),
 									},
-									Libraries: []compute.Library{
+									Libraries: []jobs.Library{
 										{
-											Jar: "/Workspace${workspace.resource_path}/jar3.jar",
+											Jar: new("/Workspace${workspace.resource_path}/jar3.jar"),
 										},
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "${workspace.file_path}/file2.py",
+										PythonFile: new("${workspace.file_path}/file2.py"),
 										Parameters: []string{
 											"--input=/Workspace/${workspace.file_path}/in.txt --output=/Workspace/${workspace.file_path}/out.txt",
 											"--cp=/Workspace/${workspace.root_path}/lib.jar:/Workspace${workspace.artifact_path}/dep.jar",
@@ -100,14 +101,14 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 		delete(expectedErrors, d.Summary)
 	}
 
-	require.Equal(t, "${workspace.root_path}/file1.py", b.Config.Resources.Jobs["test_job"].Tasks[0].SparkPythonTask.PythonFile)
-	require.Equal(t, "${workspace.file_path}/notebook1", b.Config.Resources.Jobs["test_job"].Tasks[1].NotebookTask.NotebookPath)
-	require.Equal(t, "${workspace.artifact_path}/jar1.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].Libraries[0].Jar)
-	require.Equal(t, "${workspace.file_path}/notebook2", b.Config.Resources.Jobs["test_job"].Tasks[2].NotebookTask.NotebookPath)
-	require.Equal(t, "${workspace.artifact_path}/jar2.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].Libraries[0].Jar)
-	require.Equal(t, "${workspace.resource_path}/notebook3", b.Config.Resources.Jobs["test_job"].Tasks[3].NotebookTask.NotebookPath)
-	require.Equal(t, "${workspace.resource_path}/jar3.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[3].Libraries[0].Jar)
-	require.Equal(t, "${workspace.file_path}/file2.py", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.PythonFile)
+	require.Equal(t, "${workspace.root_path}/file1.py", utils.Deref(b.Config.Resources.Jobs["test_job"].Tasks[0].SparkPythonTask.PythonFile))
+	require.Equal(t, "${workspace.file_path}/notebook1", utils.Deref(b.Config.Resources.Jobs["test_job"].Tasks[1].NotebookTask.NotebookPath))
+	require.Equal(t, "${workspace.artifact_path}/jar1.jar", utils.Deref(b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].Libraries[0].Jar))
+	require.Equal(t, "${workspace.file_path}/notebook2", utils.Deref(b.Config.Resources.Jobs["test_job"].Tasks[2].NotebookTask.NotebookPath))
+	require.Equal(t, "${workspace.artifact_path}/jar2.jar", utils.Deref(b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].Libraries[0].Jar))
+	require.Equal(t, "${workspace.resource_path}/notebook3", utils.Deref(b.Config.Resources.Jobs["test_job"].Tasks[3].NotebookTask.NotebookPath))
+	require.Equal(t, "${workspace.resource_path}/jar3.jar", utils.Deref(b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[3].Libraries[0].Jar))
+	require.Equal(t, "${workspace.file_path}/file2.py", utils.Deref(b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.PythonFile))
 	require.Equal(t, "--input=${workspace.file_path}/in.txt --output=${workspace.file_path}/out.txt", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.Parameters[0])
 	require.Equal(t, "--cp=${workspace.root_path}/lib.jar:${workspace.artifact_path}/dep.jar", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.Parameters[1])
 }

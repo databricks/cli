@@ -19,7 +19,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         ],
         "principal": "[USERNAME]"
       }
-    ]
+    ],
+    "securable_full_name": "main.schema_all_priv_manage_[UNIQUE_NAME]",
+    "securable_type": "schema"
   }
 }
 

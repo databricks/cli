@@ -69,9 +69,10 @@ func walkTypeValue(path *structpath.PatternNode, typ reflect.Type, field *reflec
 		typ = typ.Elem()
 	}
 
-	// Return early if we're at a leaf scalar.
+	// Return early if we're at a leaf scalar. Opaque structs (e.g. sdk-go
+	// types.Time) are scalars in JSON.
 	kind := typ.Kind()
-	if isScalar(kind) {
+	if isScalar(kind) || structaccess.IsOpaqueStruct(typ) {
 		return
 	}
 

@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
@@ -143,7 +145,7 @@ func BundleID(b *bundle.Bundle) string {
 // top-level permissions section of the bundle config.
 func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 	acl := []snapshot.ACLEntry{
-		{UserName: b.Config.Workspace.CurrentUser.UserName, PermissionLevel: "CAN_READ"},
+		{UserName: utils.Deref(b.Config.Workspace.CurrentUser.UserName), PermissionLevel: "CAN_READ"},
 	}
 	for _, p := range b.Config.Permissions {
 		acl = append(acl, snapshot.ACLEntry{

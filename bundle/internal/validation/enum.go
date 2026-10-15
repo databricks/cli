@@ -14,6 +14,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -110,12 +111,40 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 }
 
 // extractEnumFields walks through a struct type and extracts enum field patterns
-func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
+func extractEnumFields(typ reflect.Type, meta *sdkmeta.Meta) ([]EnumPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
+	// Types of the visited nodes, to find the struct declaring a field.
+	types := map[string]reflect.Type{}
+	// cli.json schema of the API type at each visited node, if any.
+	schemas := map[string]string{}
 
 	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, fieldType reflect.Type, field *reflect.StructField) bool {
 		if path == nil {
+			types[""] = typ
 			return true
+		}
+		// Embedded structs are visited with the path of the struct embedding
+		// them; keep the outermost type.
+		if _, ok := types[path.String()]; !ok {
+			types[path.String()] = fieldType
+		}
+		// Skip fields of API types that cli.json does not define, as the JSON
+		// schema does. Fields whose type sdk-go unified with another one are
+		// checked against the schema of the type they had before.
+		key, parentKey := path.String(), path.Parent().String()
+		schema, _ := meta.Name(fieldType)
+		if name, ok := path.StringKey(); ok {
+			if !meta.SchemaHasField(schemas[parentKey], name) {
+				return false
+			}
+			if ref, ok := sdkmeta.FieldRef(schemas[parentKey], name); ok {
+				schema = ref
+			}
+		} else {
+			schema = schemas[parentKey]
+		}
+		if _, ok := schemas[key]; !ok {
+			schemas[key] = schema
 		}
 
 		// Do not generate enum validation code for fields that are internal or readonly.
@@ -136,6 +165,8 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 			}
 
 			fieldsByPattern[path.String()] = enumValues
+		} else if enumValues, ok := apiEnumValues(meta, types, path, fieldType); ok {
+			fieldsByPattern[path.String()] = enumValues
 		}
 		return true
 	})
@@ -144,6 +175,41 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 }
 
 // buildEnumPatternInfos converts the field map to EnumPatternInfo slice
+// apiEnumValues returns the values of an API enum field from cli.json: either
+// the field's type is an sdk-go enum, or the field is a plain string where the
+// previous SDK had an enum (see sdkmeta.FieldRef).
+func apiEnumValues(meta *sdkmeta.Meta, types map[string]reflect.Type, path *structpath.PatternNode, fieldType reflect.Type) ([]string, bool) {
+	for fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
+	}
+	if fieldType.Kind() != reflect.String {
+		return nil, false
+	}
+	// The previous SDK listed enum values alphabetically.
+	if values, ok := meta.Enum(fieldType); ok {
+		return slices.Sorted(slices.Values(values)), true
+	}
+	// Elements of a list of enums are matched through the list field.
+	fieldPath := path
+	if _, ok := path.StringKey(); !ok {
+		fieldPath = path.Parent()
+	}
+	name, ok := fieldPath.StringKey()
+	if !ok {
+		return nil, false
+	}
+	parent, ok := meta.Name(types[fieldPath.Parent().String()])
+	if !ok {
+		return nil, false
+	}
+	ref, ok := sdkmeta.FieldRef(parent, name)
+	if !ok {
+		return nil, false
+	}
+	values, ok := meta.EnumOf(ref)
+	return slices.Sorted(slices.Values(values)), ok
+}
+
 func buildEnumPatternInfos(fieldsByPattern map[string][]string) []EnumPatternInfo {
 	patterns := make([]EnumPatternInfo, 0, len(fieldsByPattern))
 
@@ -202,8 +268,8 @@ func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]E
 }
 
 // enumFields returns grouped enum field patterns for validation
-func enumFields() ([][]EnumPatternInfo, error) {
-	patterns, err := extractEnumFields(reflect.TypeFor[config.Root]())
+func enumFields(meta *sdkmeta.Meta) ([][]EnumPatternInfo, error) {
+	patterns, err := extractEnumFields(reflect.TypeFor[config.Root](), meta)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +279,8 @@ func enumFields() ([][]EnumPatternInfo, error) {
 }
 
 // Generate creates a Go source file with enum field validation rules
-func generateEnumFields(outPath string) error {
-	enumFields, err := enumFields()
+func generateEnumFields(outPath string, meta *sdkmeta.Meta) error {
+	enumFields, err := enumFields(meta)
 	if err != nil {
 		return fmt.Errorf("failed to generate enum fields: %w", err)
 	}

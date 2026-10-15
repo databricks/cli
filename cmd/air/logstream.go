@@ -10,13 +10,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 const (
@@ -143,12 +145,12 @@ func newRetryTracker(status logRunStatus) *retryTracker {
 	return &retryTracker{
 		lastReportedRetry:           status.latestAttempt,
 		lastObservedAttempt:         status.latestAttempt,
-		lastObservedWaitingForRetry: status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry),
+		lastObservedWaitingForRetry: status.latestTaskLifeCycleState == string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	}
 }
 
 func (t *retryTracker) observe(status logRunStatus) (int, bool) {
-	waitingForRetry := status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry)
+	waitingForRetry := status.latestTaskLifeCycleState == string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry)
 	retry := 0
 	if status.latestAttempt > t.lastObservedAttempt {
 		t.lastObservedAttempt = status.latestAttempt
@@ -206,15 +208,15 @@ func (s logRunStatus) waitingForCompute() bool {
 	if s.resultState != "" {
 		return false
 	}
-	if s.lifeCycleState == string(jobs.RunLifeCycleStatePending) {
+	if s.lifeCycleState == string(jobs.RunLifeCycleState_RunLifeCycleState_Pending) {
 		return true
 	}
-	if s.lifeCycleState != string(jobs.RunLifeCycleStateRunning) {
+	if s.lifeCycleState != string(jobs.RunLifeCycleState_RunLifeCycleState_Running) {
 		return false
 	}
-	switch jobs.RunLifeCycleState(s.latestTaskLifeCycleState) {
-	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
-		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
+	switch jobs.RunLifeCycleState_RunLifeCycleState(s.latestTaskLifeCycleState) {
+	case jobs.RunLifeCycleState_RunLifeCycleState_Pending, jobs.RunLifeCycleState_RunLifeCycleState_Queued,
+		jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry, jobs.RunLifeCycleState_RunLifeCycleState_Blocked:
 		return true
 	default:
 		return false
@@ -229,9 +231,9 @@ func (s logRunStatus) downloadOutcome() bool {
 }
 
 // resolveRunStatus fetches a run's state and projects it onto logRunStatus. An
-// unknown run id surfaces as apierr.ErrResourceDoesNotExist.
-func resolveRunStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (logRunStatus, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+// unknown run id surfaces as apierrs.ErrResourceDoesNotExist.
+func resolveRunStatus(ctx context.Context, w *sdkclients.Clients, runID int64) (logRunStatus, error) {
+	run, err := getRun(ctx, w, runID)
 	if err != nil {
 		return logRunStatus{}, err
 	}
@@ -240,22 +242,22 @@ func resolveRunStatus(ctx context.Context, w *databricks.WorkspaceClient, runID 
 
 // projectRunStatus extracts logRunStatus from a run. Split out so it can be
 // tested without an API client.
-func projectRunStatus(run *jobs.Run) logRunStatus {
+func projectRunStatus(run *jobs.GetRunResponse) logRunStatus {
 	s := logRunStatus{
-		startTimeMs: run.StartTime,
-		endTimeMs:   run.EndTime,
+		startTimeMs: utils.Deref(run.StartTime),
+		endTimeMs:   utils.Deref(run.EndTime),
 	}
 	if run.State != nil {
 		s.lifeCycleState = string(run.State.LifeCycleState)
 		s.resultState = string(run.State.ResultState)
-		s.stateMessage = run.State.StateMessage
+		s.stateMessage = utils.Deref(run.State.StateMessage)
 	}
 	for i := range run.Tasks {
 		task := &run.Tasks[i]
-		if i > 0 && task.AttemptNumber <= s.latestAttempt {
+		if i > 0 && utils.Deref(task.AttemptNumber) <= s.latestAttempt {
 			continue
 		}
-		s.latestAttempt = task.AttemptNumber
+		s.latestAttempt = utils.Deref(task.AttemptNumber)
 		s.latestTaskLifeCycleState = ""
 		if task.State != nil {
 			s.latestTaskLifeCycleState = string(task.State.LifeCycleState)
@@ -271,15 +273,15 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 //   - nil: a transient failure the caller should retry.
 func classifyLogError(err error) error {
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		switch apiErr.ErrorCode {
+		switch apierrs.ErrorCode(apiErr) {
 		case "FEATURE_DISABLED", "ENDPOINT_NOT_FOUND":
 			return errBricklensFeatureDisabled
 		}
-		if apiErr.StatusCode == http.StatusNotFound {
+		if apiErr.HTTPStatusCode() == http.StatusNotFound {
 			return errBricklensFeatureDisabled
 		}
 	}
-	if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+	if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 		return err
 	}
 	return nil
@@ -312,9 +314,9 @@ func (req logRequest) toSeconds(status logRunStatus) int64 {
 // completed run, or a poll-and-drain loop that follows an active run to
 // completion. It returns whether the run finished with SUCCESS;
 // errBricklensFeatureDisabled means the caller should fall back to MLflow.
-func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+func streamBricklensLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	// Build the API client once and reuse it for every page fetch in the loop.
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return false, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -335,8 +337,8 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 // highest emitted timestamp, and the dedup set.
 type bricklensStreamer struct {
 	ctx       context.Context
-	w         *databricks.WorkspaceClient
-	apiClient *client.DatabricksClient
+	w         *sdkclients.Clients
+	apiClient *apiclient.Client
 	headers   map[string]string
 	out       io.Writer
 	req       logRequest
@@ -375,12 +377,12 @@ func (st *bricklensStreamer) waitingSpinnerText() string {
 // output, re-resolved each call so a retry's new task run is picked up.
 // Best-effort: any fetch failure logs at debug and returns "".
 func (st *bricklensStreamer) serverStatusMessage() string {
-	run, err := st.w.Jobs.GetRun(st.ctx, jobs.GetRunRequest{RunId: st.req.runID})
+	run, err := getRun(st.ctx, st.w, st.req.runID)
 	if err != nil || len(run.Tasks) == 0 {
 		return ""
 	}
 	taskRunID := run.Tasks[len(run.Tasks)-1].RunId
-	out, err := st.w.Jobs.GetRunOutputByRunId(st.ctx, taskRunID)
+	out, err := getRunOutput(st.ctx, st.w, utils.Deref(taskRunID))
 	if err != nil {
 		log.Debugf(st.ctx, "air logs: status_message fetch failed for run %d: %v", st.req.runID, err)
 		return ""
@@ -388,7 +390,7 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 	if out.AiRuntimeTaskOutput == nil {
 		return ""
 	}
-	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
+	return normalizeStatusMessage(utils.Deref(out.AiRuntimeTaskOutput.StatusMessage))
 }
 
 // reportStatusChange fires onStatusChange when the run's display state differs
@@ -440,7 +442,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		if !firstIteration {
 			status, err := resolveRunStatus(st.ctx, st.w, st.req.runID)
 			if err != nil {
-				if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+				if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) {
 					return false, err
 				}
 				// A cancelled context (Ctrl-C) is not a transient blip: stop

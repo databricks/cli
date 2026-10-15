@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	qualitymonitors "github.com/databricks/cli/libs/qualitymonitors"
 )
 
 func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, checkExists bool) Response {
-	var request catalog.CreateMonitor
-	var info catalog.MonitorInfo
+	var request qualitymonitors.CreateMonitor
+	var info qualitymonitors.MonitorInfo
 
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{

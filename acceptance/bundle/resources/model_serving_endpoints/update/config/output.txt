@@ -75,6 +75,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PUT",
   "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/config",
   "body": {
+    "name": "[ENDPOINT_ID]",
     "served_entities": [
       {
         "external_model": {

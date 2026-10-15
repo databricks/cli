@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema/test_types"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -521,27 +521,30 @@ func TestTypePath(t *testing.T) {
 	})
 }
 
-func TestFromTypeDuration(t *testing.T) {
+type fieldMaskTarget struct{}
+
+func TestFromTypeSDKNativeTypes(t *testing.T) {
 	type myStruct struct {
-		Timeout *duration.Duration `json:"timeout,omitempty"`
+		Timeout    *types.Duration                   `json:"timeout,omitempty"`
+		CreateTime *types.Time                       `json:"create_time,omitempty"`
+		UpdateMask *types.FieldMask[fieldMaskTarget] `json:"update_mask,omitempty"`
 	}
 
 	s, err := FromType(reflect.TypeFor[myStruct](), nil)
 	require.NoError(t, err)
 
-	// The schema should have a property for timeout with a $ref
-	assert.NotNil(t, s.Properties["timeout"])
-	assert.NotNil(t, s.Properties["timeout"].Reference)
-
-	// The $defs should contain a string type for duration.Duration
 	defs := s.Definitions
 	require.NotNil(t, defs)
+	typesDefs := defs["github.com"].(map[string]any)["databricks"].(map[string]any)["sdk-go"].(map[string]any)["core"].(map[string]any)
 
-	// Navigate to the duration definition
-	durDef := defs["github.com"].(map[string]any)["databricks"].(map[string]any)["databricks-sdk-go"].(map[string]any)["common"].(map[string]any)["types"].(map[string]any)["duration.Duration"]
-	require.NotNil(t, durDef)
-
-	// duration.Duration should be represented as a string type
-	durSchema := durDef.(Schema)
-	assert.Equal(t, StringType, durSchema.Type)
+	for field, def := range map[string]string{
+		"timeout":     "types.Duration",
+		"create_time": "types.Time",
+		"update_mask": "types.FieldMask",
+	} {
+		require.NotNil(t, s.Properties[field], field)
+		require.NotNil(t, s.Properties[field].Reference, field)
+		assert.Equal(t, "#/$defs/github.com/databricks/sdk-go/core/"+def, *s.Properties[field].Reference)
+		assert.Equal(t, StringType, typesDefs[def].(Schema).Type, def)
+	}
 }

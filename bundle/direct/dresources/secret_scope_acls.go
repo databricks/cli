@@ -2,27 +2,29 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/apierrs"
+
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	sdksecrets "github.com/databricks/sdk-go/secrets/v1"
 )
 
 type ResourceSecretScopeAcls struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type SecretScopeAclsState struct {
-	ScopeName string              `json:"scope_name"`
-	Acls      []workspace.AclItem `json:"acls,omitempty"`
+	ScopeName string            `json:"scope_name"`
+	Acls      []secrets.AclItem `json:"acls,omitempty"`
 }
 
-func (*ResourceSecretScopeAcls) New(client *databricks.WorkspaceClient) *ResourceSecretScopeAcls {
+func (*ResourceSecretScopeAcls) New(client *sdkclients.Clients) *ResourceSecretScopeAcls {
 	return &ResourceSecretScopeAcls{client: client}
 }
 
@@ -36,18 +38,18 @@ func (*ResourceSecretScopeAcls) PrepareInputConfig(inputConfig *[]resources.Secr
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", resourceKey)
 	}
 
-	acls := make([]workspace.AclItem, 0, len(*inputConfig))
+	acls := make([]secrets.AclItem, 0, len(*inputConfig))
 	for _, elem := range *inputConfig {
-		acl := workspace.AclItem{
-			Permission: workspace.AclPermission(elem.Level),
-			Principal:  "",
+		acl := secrets.AclItem{
+			Permission: secrets.AclPermission(elem.Level),
+			Principal:  nil,
 		}
 		if elem.UserName != "" {
-			acl.Principal = elem.UserName
+			acl.Principal = new(elem.UserName)
 		} else if elem.GroupName != "" {
-			acl.Principal = elem.GroupName
+			acl.Principal = new(elem.GroupName)
 		} else if elem.ServicePrincipalName != "" {
-			acl.Principal = elem.ServicePrincipalName
+			acl.Principal = new(elem.ServicePrincipalName)
 		}
 		acls = append(acls, acl)
 	}
@@ -63,8 +65,8 @@ func (*ResourceSecretScopeAcls) PrepareInputConfig(inputConfig *[]resources.Secr
 	}, nil
 }
 
-func aclItemKey(x workspace.AclItem) (string, string) {
-	return "principal", x.Principal
+func aclItemKey(x secrets.AclItem) (string, string) {
+	return "principal", utils.Deref(x.Principal)
 }
 
 func (*ResourceSecretScopeAcls) KeyedSlices() map[string]any {
@@ -75,9 +77,7 @@ func (*ResourceSecretScopeAcls) KeyedSlices() map[string]any {
 
 func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*SecretScopeAclsState, error) {
 	// id is the scope name
-	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
-		Scope: id,
-	})
+	currentAcls, err := r.listACLs(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -114,70 +114,75 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 // no-op, to match the behavior for permissions and grants. Deleting the resource is a
 // state-only cleanup (see PlanEntry.StateOnly).
 
+func (r *ResourceSecretScopeAcls) listACLs(ctx context.Context, scopeName string) ([]secrets.AclItem, error) {
+	resp, err := r.client.Secrets.ListAcls(ctx, sdksecrets.ListAclsRequest{Scope: new(scopeName)})
+	if err != nil {
+		return nil, err
+	}
+	acls, err := secrets.ListAclsResponseFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	return acls.Items, nil
+}
+
 // setACLs reconciles the desired ACLs with the current state
-func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []workspace.AclItem) error {
-	// Get current ACLs
-	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
-		Scope: scopeName,
-	})
+func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []secrets.AclItem) error {
+	currentAcls, err := r.listACLs(ctx, scopeName)
 	if err != nil {
 		return fmt.Errorf("failed to list current ACLs: %w", err)
 	}
 
-	// Build maps for reconciliation
-	desired := make(map[string]workspace.AclPermission)
+	desired := make(map[string]secrets.AclPermission)
 	for _, perm := range desiredAcls {
-		desired[perm.Principal] = perm.Permission
+		desired[utils.Deref(perm.Principal)] = perm.Permission
 	}
 
-	current := make(map[string]workspace.AclPermission)
+	current := make(map[string]secrets.AclPermission)
 	for _, acl := range currentAcls {
-		current[acl.Principal] = acl.Permission
+		current[utils.Deref(acl.Principal)] = acl.Permission
 	}
 
-	// Collect operations to perform in parallel
-	var toSet []workspace.PutAcl
-	var toDelete []workspace.DeleteAcl
+	type putACL struct {
+		principal  string
+		permission secrets.AclPermission
+	}
+	var toSet []putACL
+	var toDelete []string
 
-	// Find ACLs to set (new or changed)
 	for principal, permission := range desired {
 		if currentPerm, exists := current[principal]; !exists || currentPerm != permission {
-			toSet = append(toSet, workspace.PutAcl{
-				Scope:      scopeName,
-				Principal:  principal,
-				Permission: permission,
-			})
+			toSet = append(toSet, putACL{principal: principal, permission: permission})
 		}
 	}
 
-	// Find ACLs to delete
 	for principal := range current {
 		if _, exists := desired[principal]; !exists {
-			toDelete = append(toDelete, workspace.DeleteAcl{
-				Scope:     scopeName,
-				Principal: principal,
-			})
+			toDelete = append(toDelete, principal)
 		}
 	}
 
-	// Set ACLs. The service returns inconsistent results for parallel API calls. That's why we do them sequentially
-	// here to maintain correctness.
 	for _, acl := range toSet {
-		err := r.client.Secrets.PutAcl(ctx, acl)
+		_, err := r.client.Secrets.PutAcl(ctx, sdksecrets.PutAclRequest{
+			Scope:      new(scopeName),
+			Principal:  new(acl.principal),
+			Permission: acl.permission,
+		})
 		if err != nil {
-			return fmt.Errorf("failed to set ACL %v for principal %q: %w", acl, acl.Principal, err)
+			return fmt.Errorf("failed to set ACL {%s %s %s} for principal %q: %w", acl.permission, acl.principal, scopeName, acl.principal, err)
 		}
 	}
 
-	// Delete ACLs
-	for _, acl := range toDelete {
-		err := r.client.Secrets.DeleteAcl(ctx, acl)
-		// Ignore not found errors for ACLs.
-		if errors.Is(err, apierr.ErrNotFound) {
+	for _, principal := range toDelete {
+		_, err := r.client.Secrets.DeleteAcl(ctx, sdksecrets.DeleteAclRequest{
+			Scope:     new(scopeName),
+			Principal: new(principal),
+		})
+		if apierrs.Is(err, apierrs.ErrNotFound) {
 			continue
 		}
 		if err != nil {
-			return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
+			return fmt.Errorf("failed to delete ACL {%s %s} for principal %q: %w", principal, scopeName, principal, err)
 		}
 	}
 

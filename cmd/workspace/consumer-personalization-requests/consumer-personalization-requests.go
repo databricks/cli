@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,23 +56,23 @@ Personalization Requests allow customers to interact with the individualized
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreatePersonalizationRequest,
+	*marketplaces.CreatePersonalizationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq marketplaces.CreatePersonalizationRequest
 
-	var createReq marketplace.CreatePersonalizationRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, ``)
-	cmd.Flags().StringVar(&createReq.Company, "company", createReq.Company, ``)
-	cmd.Flags().StringVar(&createReq.FirstName, "first-name", createReq.FirstName, ``)
-	cmd.Flags().BoolVar(&createReq.IsFromLighthouse, "is-from-lighthouse", createReq.IsFromLighthouse, ``)
-	cmd.Flags().StringVar(&createReq.LastName, "last-name", createReq.LastName, ``)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Company, "company", ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.FirstName, "first-name", ``)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.IsFromLighthouse, "is-from-lighthouse", ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.LastName, "last-name", ``)
+	flags.EnumVar(cmd.Flags(), &createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`, "DeltaSharingRecipientType", "DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS", "DELTA_SHARING_RECIPIENT_TYPE_OPEN")
 
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `*Public Preview* Create a personalization request.`
@@ -92,6 +95,7 @@ Create a personalization request.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -107,14 +111,22 @@ Create a personalization request.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		createReq.ListingId = args[0]
+		createReq.ListingId = new(args[0])
 
-		response, err := w.ConsumerPersonalizationRequests.Create(ctx, createReq)
+		sdkReq, err := marketplaces.CreatePersonalizationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.CreatePersonalizationRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreatePersonalizationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -135,13 +147,12 @@ Create a personalization request.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetPersonalizationRequestRequest,
+	*sdkmarketplaces.GetPersonalizationRequestsForConsumerRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq marketplace.GetPersonalizationRequestRequest
+	var getReq sdkmarketplaces.GetPersonalizationRequestsForConsumerRequest
 
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `*Public Preview* Get the personalization request for a listing.`
@@ -165,15 +176,21 @@ Get the personalization request for a listing.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.ListingId = args[0]
+		getReq.ListingId = new(args[0])
 
-		response, err := w.ConsumerPersonalizationRequests.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Marketplaces.GetPersonalizationRequestsForConsumer(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetPersonalizationRequestsForConsumerResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -194,25 +211,25 @@ Get the personalization request for a listing.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListAllPersonalizationRequestsRequest,
+	*marketplaces.ListPersonalizationRequestsForConsumerRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListPersonalizationRequestsForConsumerRequest
 
-	var listReq marketplace.ListAllPersonalizationRequestsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -236,16 +253,20 @@ List all personalization requests.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ConsumerPersonalizationRequests.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListPersonalizationRequestsForConsumerRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListPersonalizationRequestsForConsumerIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.PersonalizationRequestFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

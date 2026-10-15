@@ -12,6 +12,8 @@
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.myschema_[UNIQUE_NAME].mymodel",
+    "securable_type": "function"
   }
 }

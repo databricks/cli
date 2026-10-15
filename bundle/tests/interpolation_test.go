@@ -3,6 +3,8 @@ package config_tests
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +27,7 @@ func TestInterpolation(t *testing.T) {
 	)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
-	assert.Equal(t, "foo bar | bar", b.Config.Resources.Jobs["my_job"].Name)
+	assert.Equal(t, "foo bar | bar", utils.Deref(b.Config.Resources.Jobs["my_job"].Name))
 }
 
 func TestInterpolationWithTarget_withoutResources(t *testing.T) {
@@ -36,7 +38,7 @@ func TestInterpolationWithTarget_withoutResources(t *testing.T) {
 	))
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "foo ${workspace.profile}", b.Config.Bundle.Name)
-	assert.Equal(t, "foo bar | bar | development | development", b.Config.Resources.Jobs["my_job"].Name)
+	assert.Equal(t, "foo bar | bar | development | development", utils.Deref(b.Config.Resources.Jobs["my_job"].Name))
 }
 
 func TestInterpolationWithTarget_onlyResources(t *testing.T) {
@@ -47,5 +49,5 @@ func TestInterpolationWithTarget_onlyResources(t *testing.T) {
 	))
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
-	assert.Equal(t, "${bundle.name} | ${workspace.profile} | ${bundle.environment} | ${bundle.target}", b.Config.Resources.Jobs["my_job"].Name)
+	assert.Equal(t, "${bundle.name} | ${workspace.profile} | ${bundle.environment} | ${bundle.target}", utils.Deref(b.Config.Resources.Jobs["my_job"].Name))
 }

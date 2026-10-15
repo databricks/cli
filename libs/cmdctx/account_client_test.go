@@ -3,14 +3,14 @@ package cmdctx
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandAccountClient(t *testing.T) {
 	ctx := t.Context()
-	client := &databricks.AccountClient{
+	client := &sdkclients.Clients{
 		Config: &config.Config{
 			AccountID: "test-account",
 		},

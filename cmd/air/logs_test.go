@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,8 +39,7 @@ func TestLogsCommandShape(t *testing.T) {
 // API call.
 func runLogsCmd(t *testing.T, args []string, flagsToSet map[string]string) error {
 	t.Helper()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), fakeWorkspace(t, nil))
 	cmd := withOutput(newLogsCommand(), flags.OutputText)
 	for k, v := range flagsToSet {
 		require.NoError(t, cmd.Flags().Set(k, v))

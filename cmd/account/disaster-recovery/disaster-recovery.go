@@ -5,15 +5,16 @@ package disaster_recovery
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/disasterrecovery"
 	"github.com/spf13/cobra"
+
+	disasterrecovery "github.com/databricks/cli/libs/sdktypes/disasterrecovery/v1"
+	sdkdisasterrecovery "github.com/databricks/sdk-go/disasterrecovery/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -64,15 +65,15 @@ var createFailoverGroupOverrides []func(
 
 func newCreateFailoverGroup() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createFailoverGroupReq disasterrecovery.CreateFailoverGroupRequest
-	createFailoverGroupReq.FailoverGroup = disasterrecovery.FailoverGroup{}
+	createFailoverGroupReq.FailoverGroup = &disasterrecovery.FailoverGroup{}
+
 	var createFailoverGroupJson flags.JsonFlag
 
 	cmd.Flags().Var(&createFailoverGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createFailoverGroupReq.ValidateOnly, "validate-only", createFailoverGroupReq.ValidateOnly, `When true, validates the request without creating the failover group.`)
-	cmd.Flags().StringVar(&createFailoverGroupReq.FailoverGroup.Name, "name", createFailoverGroupReq.FailoverGroup.Name, `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
+	flags.BoolPtrVar(cmd.Flags(), &createFailoverGroupReq.ValidateOnly, "validate-only", `When true, validates the request without creating the failover group.`)
+	flags.StringPtrVar(cmd.Flags(), &createFailoverGroupReq.FailoverGroup.Name, "name", `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
 	// TODO: complex arg: unity_catalog_assets
 
 	cmd.Use = "create-failover-group PARENT FAILOVER_GROUP_ID REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
@@ -110,6 +111,7 @@ func newCreateFailoverGroup() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createFailoverGroupJson.Unmarshal(&createFailoverGroupReq.FailoverGroup)
@@ -123,32 +125,32 @@ func newCreateFailoverGroup() *cobra.Command {
 				}
 			}
 		}
-		createFailoverGroupReq.Parent = args[0]
-		createFailoverGroupReq.FailoverGroupId = args[1]
+		createFailoverGroupReq.Parent = new(args[0])
+		createFailoverGroupReq.FailoverGroupId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createFailoverGroupReq.FailoverGroup.Regions)
-			if err != nil {
-				return fmt.Errorf("invalid REGIONS: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: regions
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createFailoverGroupReq.FailoverGroup.WorkspaceSets)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_SETS: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: workspace_sets
 		}
 		if !cmd.Flags().Changed("json") {
-			createFailoverGroupReq.FailoverGroup.InitialPrimaryRegion = args[4]
+			createFailoverGroupReq.FailoverGroup.InitialPrimaryRegion = new(args[4])
 		}
 
-		response, err := a.DisasterRecovery.CreateFailoverGroup(ctx, createFailoverGroupReq)
+		sdkReq, err := disasterrecovery.CreateFailoverGroupRequestToSDK(&createFailoverGroupReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.DisasterRecovery.CreateFailoverGroup(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.FailoverGroupFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -174,15 +176,15 @@ var createStableUrlOverrides []func(
 
 func newCreateStableUrl() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createStableUrlReq disasterrecovery.CreateStableUrlRequest
-	createStableUrlReq.StableUrl = disasterrecovery.StableUrl{}
+	createStableUrlReq.StableUrl = &disasterrecovery.StableUrl{}
+
 	var createStableUrlJson flags.JsonFlag
 
 	cmd.Flags().Var(&createStableUrlJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createStableUrlReq.ValidateOnly, "validate-only", createStableUrlReq.ValidateOnly, `When true, validates the request without creating the stable URL.`)
-	cmd.Flags().StringVar(&createStableUrlReq.StableUrl.Name, "name", createStableUrlReq.StableUrl.Name, `Fully qualified resource name.`)
+	flags.BoolPtrVar(cmd.Flags(), &createStableUrlReq.ValidateOnly, "validate-only", `When true, validates the request without creating the stable URL.`)
+	flags.StringPtrVar(cmd.Flags(), &createStableUrlReq.StableUrl.Name, "name", `Fully qualified resource name.`)
 
 	cmd.Use = "create-stable-url PARENT STABLE_URL_ID INITIAL_WORKSPACE_ID"
 	cmd.Short = `Create a Stable URL.`
@@ -218,6 +220,7 @@ func newCreateStableUrl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createStableUrlJson.Unmarshal(&createStableUrlReq.StableUrl)
@@ -231,18 +234,26 @@ func newCreateStableUrl() *cobra.Command {
 				}
 			}
 		}
-		createStableUrlReq.Parent = args[0]
-		createStableUrlReq.StableUrlId = args[1]
+		createStableUrlReq.Parent = new(args[0])
+		createStableUrlReq.StableUrlId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			createStableUrlReq.StableUrl.InitialWorkspaceId = args[2]
+			createStableUrlReq.StableUrl.InitialWorkspaceId = new(args[2])
 		}
 
-		response, err := a.DisasterRecovery.CreateStableUrl(ctx, createStableUrlReq)
+		sdkReq, err := disasterrecovery.CreateStableUrlRequestToSDK(&createStableUrlReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.DisasterRecovery.CreateStableUrl(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.StableUrlFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -268,10 +279,9 @@ var deleteFailoverGroupOverrides []func(
 
 func newDeleteFailoverGroup() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteFailoverGroupReq disasterrecovery.DeleteFailoverGroupRequest
 
-	cmd.Flags().StringVar(&deleteFailoverGroupReq.Etag, "etag", deleteFailoverGroupReq.Etag, `Opaque version string for optimistic locking.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteFailoverGroupReq.Etag, "etag", `Opaque version string for optimistic locking.`)
 
 	cmd.Use = "delete-failover-group NAME"
 	cmd.Short = `Delete a Failover Group.`
@@ -296,10 +306,15 @@ func newDeleteFailoverGroup() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteFailoverGroupReq.Name = args[0]
+		deleteFailoverGroupReq.Name = new(args[0])
 
-		err = a.DisasterRecovery.DeleteFailoverGroup(ctx, deleteFailoverGroupReq)
+		sdkReq, err := disasterrecovery.DeleteFailoverGroupRequestToSDK(&deleteFailoverGroupReq)
+		if err != nil {
+			return err
+		}
+		err = a.DisasterRecovery.DeleteFailoverGroup(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -324,13 +339,12 @@ func newDeleteFailoverGroup() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteStableUrlOverrides []func(
 	*cobra.Command,
-	*disasterrecovery.DeleteStableUrlRequest,
+	*sdkdisasterrecovery.DeleteStableUrlRequest,
 )
 
 func newDeleteStableUrl() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteStableUrlReq disasterrecovery.DeleteStableUrlRequest
+	var deleteStableUrlReq sdkdisasterrecovery.DeleteStableUrlRequest
 
 	cmd.Use = "delete-stable-url NAME"
 	cmd.Short = `Delete a Stable URL.`
@@ -355,10 +369,12 @@ func newDeleteStableUrl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteStableUrlReq.Name = args[0]
+		deleteStableUrlReq.Name = new(args[0])
 
-		err = a.DisasterRecovery.DeleteStableUrl(ctx, deleteStableUrlReq)
+		sdkReq := &deleteStableUrlReq
+		err = a.DisasterRecovery.DeleteStableUrl(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -388,13 +404,13 @@ var failoverFailoverGroupOverrides []func(
 
 func newFailoverFailoverGroup() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var failoverFailoverGroupReq disasterrecovery.FailoverFailoverGroupRequest
+
 	var failoverFailoverGroupJson flags.JsonFlag
 
 	cmd.Flags().Var(&failoverFailoverGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&failoverFailoverGroupReq.Etag, "etag", failoverFailoverGroupReq.Etag, `Opaque version string for optimistic locking.`)
+	flags.StringPtrVar(cmd.Flags(), &failoverFailoverGroupReq.Etag, "etag", `Opaque version string for optimistic locking.`)
 
 	cmd.Use = "failover-failover-group NAME TARGET_PRIMARY_REGION FAILOVER_TYPE"
 	cmd.Short = `Failover a Failover Group to a new primary region.`
@@ -431,6 +447,7 @@ func newFailoverFailoverGroup() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := failoverFailoverGroupJson.Unmarshal(&failoverFailoverGroupReq)
@@ -444,24 +461,28 @@ func newFailoverFailoverGroup() *cobra.Command {
 				}
 			}
 		}
-		failoverFailoverGroupReq.Name = args[0]
+		failoverFailoverGroupReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			failoverFailoverGroupReq.TargetPrimaryRegion = args[1]
+			failoverFailoverGroupReq.TargetPrimaryRegion = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &failoverFailoverGroupReq.FailoverType)
-			if err != nil {
-				return fmt.Errorf("invalid FAILOVER_TYPE: %s", args[2])
-			}
-
+			failoverFailoverGroupReq.FailoverType = disasterrecovery.FailoverFailoverGroupRequest_FailoverType(args[2])
 		}
 
-		response, err := a.DisasterRecovery.FailoverFailoverGroup(ctx, failoverFailoverGroupReq)
+		sdkReq, err := disasterrecovery.FailoverFailoverGroupRequestToSDK(&failoverFailoverGroupReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.DisasterRecovery.FailoverFailoverGroup(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.FailoverGroupFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -482,13 +503,12 @@ func newFailoverFailoverGroup() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getFailoverGroupOverrides []func(
 	*cobra.Command,
-	*disasterrecovery.GetFailoverGroupRequest,
+	*sdkdisasterrecovery.GetFailoverGroupRequest,
 )
 
 func newGetFailoverGroup() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getFailoverGroupReq disasterrecovery.GetFailoverGroupRequest
+	var getFailoverGroupReq sdkdisasterrecovery.GetFailoverGroupRequest
 
 	cmd.Use = "get-failover-group NAME"
 	cmd.Short = `Get a Failover Group.`
@@ -513,15 +533,21 @@ func newGetFailoverGroup() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getFailoverGroupReq.Name = args[0]
+		getFailoverGroupReq.Name = new(args[0])
 
-		response, err := a.DisasterRecovery.GetFailoverGroup(ctx, getFailoverGroupReq)
+		sdkReq := &getFailoverGroupReq
+		response, err := a.DisasterRecovery.GetFailoverGroup(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.FailoverGroupFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -542,13 +568,12 @@ func newGetFailoverGroup() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getStableUrlOverrides []func(
 	*cobra.Command,
-	*disasterrecovery.GetStableUrlRequest,
+	*sdkdisasterrecovery.GetStableUrlRequest,
 )
 
 func newGetStableUrl() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getStableUrlReq disasterrecovery.GetStableUrlRequest
+	var getStableUrlReq sdkdisasterrecovery.GetStableUrlRequest
 
 	cmd.Use = "get-stable-url NAME"
 	cmd.Short = `Get a Stable URL.`
@@ -573,15 +598,21 @@ func newGetStableUrl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getStableUrlReq.Name = args[0]
+		getStableUrlReq.Name = new(args[0])
 
-		response, err := a.DisasterRecovery.GetStableUrl(ctx, getStableUrlReq)
+		sdkReq := &getStableUrlReq
+		response, err := a.DisasterRecovery.GetStableUrl(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.StableUrlFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -607,20 +638,20 @@ var listFailoverGroupsOverrides []func(
 
 func newListFailoverGroups() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listFailoverGroupsReq disasterrecovery.ListFailoverGroupsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listFailoverGroupsLimit int
 
-	cmd.Flags().IntVar(&listFailoverGroupsReq.PageSize, "page-size", listFailoverGroupsReq.PageSize, `Maximum number of failover groups to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listFailoverGroupsReq.PageSize, "page-size", `Maximum number of failover groups to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listFailoverGroupsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listFailoverGroupsReq.PageToken, "page-token", listFailoverGroupsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listFailoverGroupsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-failover-groups PARENT"
@@ -648,18 +679,22 @@ func newListFailoverGroups() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listFailoverGroupsReq.Parent = args[0]
+		listFailoverGroupsReq.Parent = new(args[0])
 
-		response := a.DisasterRecovery.ListFailoverGroups(ctx, listFailoverGroupsReq)
+		sdkReq, err := disasterrecovery.ListFailoverGroupsRequestToSDK(&listFailoverGroupsReq)
+		if err != nil {
+			return err
+		}
 		if listFailoverGroupsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listFailoverGroupsLimit)
 		}
 		if listFailoverGroupsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listFailoverGroupsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.DisasterRecovery.ListFailoverGroupsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, disasterrecovery.FailoverGroupFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -685,20 +720,20 @@ var listStableUrlsOverrides []func(
 
 func newListStableUrls() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listStableUrlsReq disasterrecovery.ListStableUrlsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listStableUrlsLimit int
 
-	cmd.Flags().IntVar(&listStableUrlsReq.PageSize, "page-size", listStableUrlsReq.PageSize, `Maximum number of stable URLs to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listStableUrlsReq.PageSize, "page-size", `Maximum number of stable URLs to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listStableUrlsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listStableUrlsReq.PageToken, "page-token", listStableUrlsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listStableUrlsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-stable-urls PARENT"
@@ -723,18 +758,22 @@ func newListStableUrls() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listStableUrlsReq.Parent = args[0]
+		listStableUrlsReq.Parent = new(args[0])
 
-		response := a.DisasterRecovery.ListStableUrls(ctx, listStableUrlsReq)
+		sdkReq, err := disasterrecovery.ListStableUrlsRequestToSDK(&listStableUrlsReq)
+		if err != nil {
+			return err
+		}
 		if listStableUrlsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listStableUrlsLimit)
 		}
 		if listStableUrlsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listStableUrlsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.DisasterRecovery.ListStableUrlsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, disasterrecovery.StableUrlFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -760,15 +799,15 @@ var updateFailoverGroupOverrides []func(
 
 func newUpdateFailoverGroup() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateFailoverGroupReq disasterrecovery.UpdateFailoverGroupRequest
-	updateFailoverGroupReq.FailoverGroup = disasterrecovery.FailoverGroup{}
+	updateFailoverGroupReq.FailoverGroup = &disasterrecovery.FailoverGroup{}
+
 	var updateFailoverGroupJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateFailoverGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFailoverGroupReq.Etag, "etag", updateFailoverGroupReq.Etag, `Optional opaque version string for optimistic locking, obtained from a prior read of the failover group.`)
-	cmd.Flags().StringVar(&updateFailoverGroupReq.FailoverGroup.Name, "name", updateFailoverGroupReq.FailoverGroup.Name, `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateFailoverGroupReq.Etag, "etag", `Optional opaque version string for optimistic locking, obtained from a prior read of the failover group.`)
+	flags.StringPtrVar(cmd.Flags(), &updateFailoverGroupReq.FailoverGroup.Name, "name", `Fully qualified resource name in the format accounts/{account_id}/failover-groups/{failover_group_id}.`)
 	// TODO: complex arg: unity_catalog_assets
 
 	cmd.Use = "update-failover-group NAME UPDATE_MASK REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
@@ -806,6 +845,7 @@ func newUpdateFailoverGroup() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateFailoverGroupJson.Unmarshal(&updateFailoverGroupReq.FailoverGroup)
@@ -819,35 +859,34 @@ func newUpdateFailoverGroup() *cobra.Command {
 				}
 			}
 		}
-		updateFailoverGroupReq.Name = args[0]
+		updateFailoverGroupReq.FailoverGroup.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateFailoverGroupReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateFailoverGroupReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateFailoverGroupReq.FailoverGroup.Regions)
-			if err != nil {
-				return fmt.Errorf("invalid REGIONS: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: regions
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateFailoverGroupReq.FailoverGroup.WorkspaceSets)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_SETS: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: workspace_sets
 		}
 		if !cmd.Flags().Changed("json") {
-			updateFailoverGroupReq.FailoverGroup.InitialPrimaryRegion = args[4]
+			updateFailoverGroupReq.FailoverGroup.InitialPrimaryRegion = new(args[4])
 		}
 
-		response, err := a.DisasterRecovery.UpdateFailoverGroup(ctx, updateFailoverGroupReq)
+		sdkReq, err := disasterrecovery.UpdateFailoverGroupRequestToSDK(&updateFailoverGroupReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.DisasterRecovery.UpdateFailoverGroup(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := disasterrecovery.FailoverGroupFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -8,10 +8,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
+
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -62,18 +64,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var enforceComplianceOverrides []func(
 	*cobra.Command,
-	*jobs.EnforcePolicyComplianceRequest,
+	*jobs.EnforcePolicyComplianceForJob,
 )
 
 func newEnforceCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
+	var enforceComplianceReq jobs.EnforcePolicyComplianceForJob
 
-	var enforceComplianceReq jobs.EnforcePolicyComplianceRequest
 	var enforceComplianceJson flags.JsonFlag
 
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews changes made to the job to comply with its policy, but does not update the job.`)
+	flags.BoolPtrVar(cmd.Flags(), &enforceComplianceReq.ValidateOnly, "validate-only", `If set, previews changes made to the job to comply with its policy, but does not update the job.`)
 
 	cmd.Use = "enforce-compliance JOB_ID"
 	cmd.Short = `Enforce job policy compliance.`
@@ -107,6 +109,7 @@ func newEnforceCompliance() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := enforceComplianceJson.Unmarshal(&enforceComplianceReq)
@@ -121,19 +124,28 @@ func newEnforceCompliance() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &enforceComplianceReq.JobId)
+			var enforceComplianceJobIdArg int64
+			_, err = fmt.Sscan(args[0], &enforceComplianceJobIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
-
+			enforceComplianceReq.JobId = &enforceComplianceJobIdArg
 		}
 
-		response, err := w.PolicyComplianceForJobs.EnforceCompliance(ctx, enforceComplianceReq)
+		sdkReq, err := jobs.EnforcePolicyComplianceForJobToSDK(&enforceComplianceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.EnforcePolicyComplianceForJob(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.EnforcePolicyComplianceResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -154,13 +166,12 @@ func newEnforceCompliance() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getComplianceOverrides []func(
 	*cobra.Command,
-	*jobs.GetPolicyComplianceRequest,
+	*jobs.GetPolicyComplianceForJobRequest,
 )
 
 func newGetCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getComplianceReq jobs.GetPolicyComplianceRequest
+	var getComplianceReq jobs.GetPolicyComplianceForJobRequest
 
 	cmd.Use = "get-compliance JOB_ID"
 	cmd.Short = `Get job policy compliance.`
@@ -186,18 +197,29 @@ func newGetCompliance() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getComplianceReq.JobId)
+		var getComplianceJobIdArg int64
+		_, err = fmt.Sscan(args[0], &getComplianceJobIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
+		getComplianceReq.JobId = &getComplianceJobIdArg
 
-		response, err := w.PolicyComplianceForJobs.GetCompliance(ctx, getComplianceReq)
+		sdkReq, err := jobs.GetPolicyComplianceForJobRequestToSDK(&getComplianceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.GetPolicyComplianceForJob(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.GetPolicyComplianceForJobResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -218,25 +240,25 @@ func newGetCompliance() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listComplianceOverrides []func(
 	*cobra.Command,
-	*jobs.ListJobComplianceRequest,
+	*jobs.ListJobComplianceForPolicy,
 )
 
 func newListCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listComplianceReq jobs.ListJobComplianceForPolicy
 
-	var listComplianceReq jobs.ListJobComplianceRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listComplianceLimit int
 
-	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
+	flags.IntPtrVar(cmd.Flags(), &listComplianceReq.PageSize, "page-size", `Use this field to specify the maximum number of results to be returned by the server.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listComplianceLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listComplianceReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-compliance POLICY_ID"
@@ -264,18 +286,22 @@ func newListCompliance() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listComplianceReq.PolicyId = args[0]
+		listComplianceReq.PolicyId = new(args[0])
 
-		response := w.PolicyComplianceForJobs.ListCompliance(ctx, listComplianceReq)
+		sdkReq, err := jobs.ListJobComplianceForPolicyToSDK(&listComplianceReq)
+		if err != nil {
+			return err
+		}
 		if listComplianceLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listComplianceLimit)
 		}
 		if listComplianceLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listComplianceLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Jobs.ListJobComplianceForPolicyIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, jobs.ListJobComplianceForPolicy_JobComplianceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

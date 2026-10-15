@@ -4,34 +4,29 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkregisteredmodels "github.com/databricks/sdk-go/uc/registeredmodels/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type RegisteredModel struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
-	catalog.CreateRegisteredModelRequest
+	registeredmodels.CreateRegisteredModelRequest
 
 	// List of grants to apply on this registered model.
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
-func (s *RegisteredModel) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s RegisteredModel) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
-		FullName: id,
+func (s *RegisteredModel) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.RegisteredModels.GetRegisteredModel(ctx, sdkregisteredmodels.GetRegisteredModelRequest{
+		FullNameArg: new(id),
 	})
 	if err != nil {
 		log.Debugf(ctx, "registered model %s does not exist", id)
@@ -57,5 +52,5 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 }
 
 func (s *RegisteredModel) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }

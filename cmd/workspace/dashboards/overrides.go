@@ -2,11 +2,10 @@ package dashboards
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, _ *sql.ListDashboardsRequest) {
+func listOverride(listCmd *cobra.Command, _ *map[string]any) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

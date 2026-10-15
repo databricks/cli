@@ -4394,16 +4394,7 @@
                 "type": "string"
               },
               "time.Time": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
+                "type": "string"
               }
             }
           },
@@ -7069,7 +7060,7 @@
                     },
                     "version_num": {
                       "description": "Integer version number of the model version to which this alias points.",
-                      "$ref": "#/$defs/int",
+                      "$ref": "#/$defs/int64",
                       "x-databricks-launch-stage": "GA"
                     }
                   },
@@ -8633,7 +8624,7 @@
                   "properties": {
                     "branch_time": {
                       "description": "[Public Preview] Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
-                      "$ref": "#/$defs/string",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
                     "lsn": {
@@ -16986,11 +16977,6 @@
                       "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
-                    },
-                    "workload_type": {
-                      "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType",
-                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -17068,11 +17054,6 @@
                       "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
-                    },
-                    "workload_type": {
-                      "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is \"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkloadType",
-                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
@@ -17080,40 +17061,6 @@
                     "model_name",
                     "model_version",
                     "scale_to_zero_enabled"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "serving.ServedModelInputWorkloadType": {
-              "oneOf": [
-                {
-                  "type": "string",
-                  "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
-                  "enum": [
-                    "CPU",
-                    "GPU_MEDIUM",
-                    "GPU_SMALL",
-                    "GPU_LARGE",
-                    "MULTIGPU_MEDIUM",
-                    "CPU_LARGE",
-                    "GPU_XLARGE_8",
-                    "GPU_XLARGE",
-                    "CPU_MEDIUM"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -17131,40 +17078,6 @@
                     "CAN_MANAGE",
                     "CAN_QUERY",
                     "CAN_VIEW"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "serving.ServingModelWorkloadType": {
-              "oneOf": [
-                {
-                  "type": "string",
-                  "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
-                  "enum": [
-                    "CPU",
-                    "GPU_MEDIUM",
-                    "GPU_SMALL",
-                    "GPU_LARGE",
-                    "MULTIGPU_MEDIUM",
-                    "CPU_LARGE",
-                    "GPU_XLARGE_8",
-                    "GPU_XLARGE",
-                    "CPU_MEDIUM"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {

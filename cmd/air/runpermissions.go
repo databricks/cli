@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const (
@@ -25,36 +25,46 @@ const (
 	mlflowPermissionPollInterval = 100 * time.Millisecond
 )
 
+// permissionLevelCanManage is missing from the sdk-go PermissionLevel enum,
+// although the Permissions API accepts it.
+const permissionLevelCanManage accessmanagement.PermissionLevel = "CAN_MANAGE"
+
 // permissionAccessControl builds an ACL entry for a validated permission grant.
-func permissionAccessControl(p permission) iam.AccessControlRequest {
-	acl := iam.AccessControlRequest{PermissionLevel: iam.PermissionLevel(p.Level)}
-	switch {
-	case p.UserName != nil:
-		acl.UserName = *p.UserName
-	case p.GroupName != nil:
-		acl.GroupName = *p.GroupName
-	case p.ServicePrincipalName != nil:
-		acl.ServicePrincipalName = *p.ServicePrincipalName
+func permissionAccessControl(p permission) accessmanagement.AccessControlRequest {
+	return accessmanagement.AccessControlRequest{
+		PermissionLevel:      accessmanagement.PermissionLevel(p.Level),
+		UserName:             p.UserName,
+		GroupName:            p.GroupName,
+		ServicePrincipalName: p.ServicePrincipalName,
 	}
-	return acl
+}
+
+// updateObjectPermissions adds acl to the permissions of the given object.
+func updateObjectPermissions(ctx context.Context, w *sdkclients.Clients, objectType, objectID string, acl []accessmanagement.AccessControlRequest) error {
+	req, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&accessmanagement.UpdateObjectPermissionsRequest{
+		RequestObjectType: new(objectType),
+		RequestObjectId:   new(objectID),
+		AccessControlList: acl,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = w.AccessManagement.UpdateObjectPermissions(ctx, *req)
+	return err
 }
 
 // grantJobPermissions adds the configured ACLs to a job.
-func grantJobPermissions(ctx context.Context, w *databricks.WorkspaceClient, jobID string, permissions []permission) error {
+func grantJobPermissions(ctx context.Context, w *sdkclients.Clients, jobID string, permissions []permission) error {
 	if len(permissions) == 0 {
 		return nil
 	}
 
-	jobACL := make([]iam.AccessControlRequest, 0, len(permissions))
+	jobACL := make([]accessmanagement.AccessControlRequest, 0, len(permissions))
 	for _, p := range permissions {
 		jobACL = append(jobACL, permissionAccessControl(p))
 	}
 
-	_, err := w.Permissions.Update(ctx, iam.UpdateObjectPermissions{
-		RequestObjectType: "jobs",
-		RequestObjectId:   jobID,
-		AccessControlList: jobACL,
-	})
+	err := updateObjectPermissions(ctx, w, "jobs", jobID, jobACL)
 	if err != nil {
 		return fmt.Errorf("failed to grant job permissions: %w", err)
 	}
@@ -65,14 +75,14 @@ func grantJobPermissions(ctx context.Context, w *databricks.WorkspaceClient, job
 // experiment permission level. Experiments only support CAN_READ/CAN_EDIT/
 // CAN_MANAGE, so the job-oriented levels fold onto those. ok is false when the
 // level has no experiment equivalent and the grant should be skipped.
-func experimentPermissionLevel(level string) (ml.ExperimentPermissionLevel, bool) {
-	switch iam.PermissionLevel(level) {
-	case iam.PermissionLevelCanView:
-		return ml.ExperimentPermissionLevelCanRead, true
-	case iam.PermissionLevelCanManageRun:
-		return ml.ExperimentPermissionLevelCanEdit, true
-	case iam.PermissionLevelCanManage, iam.PermissionLevelIsOwner:
-		return ml.ExperimentPermissionLevelCanManage, true
+func experimentPermissionLevel(level string) (accessmanagement.PermissionLevel, bool) {
+	switch accessmanagement.PermissionLevel(level) {
+	case accessmanagement.PermissionLevel_CanView:
+		return accessmanagement.PermissionLevel_CanRead, true
+	case accessmanagement.PermissionLevel_CanManageRun:
+		return accessmanagement.PermissionLevel_CanEdit, true
+	case permissionLevelCanManage, accessmanagement.PermissionLevel_IsOwner:
+		return permissionLevelCanManage, true
 	default:
 		return "", false
 	}
@@ -80,20 +90,13 @@ func experimentPermissionLevel(level string) (ml.ExperimentPermissionLevel, bool
 
 // experimentAccessControl builds an experiment ACL entry from a validated grant.
 // ok is false when the grant's level has no experiment equivalent.
-func experimentAccessControl(p permission) (ml.ExperimentAccessControlRequest, bool) {
+func experimentAccessControl(p permission) (accessmanagement.AccessControlRequest, bool) {
 	level, ok := experimentPermissionLevel(p.Level)
 	if !ok {
-		return ml.ExperimentAccessControlRequest{}, false
+		return accessmanagement.AccessControlRequest{}, false
 	}
-	acl := ml.ExperimentAccessControlRequest{PermissionLevel: level}
-	switch {
-	case p.UserName != nil:
-		acl.UserName = *p.UserName
-	case p.GroupName != nil:
-		acl.GroupName = *p.GroupName
-	case p.ServicePrincipalName != nil:
-		acl.ServicePrincipalName = *p.ServicePrincipalName
-	}
+	acl := permissionAccessControl(p)
+	acl.PermissionLevel = level
 	return acl, true
 }
 
@@ -103,12 +106,12 @@ func experimentAccessControl(p permission) (ml.ExperimentAccessControlRequest, b
 // unlike resolving a bare experiment name, which would have to guess the owning
 // directory (and has no default for a service principal). Returns "" if the id
 // doesn't become available in time.
-func resolveSubmittedExperimentID(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) string {
+func resolveSubmittedExperimentID(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse) string {
 	ticker := time.NewTicker(mlflowPermissionPollInterval)
 	defer ticker.Stop()
 	for {
-		if out := aiRuntimeTaskOutput(ctx, w, run); out != nil && out.MlflowExperimentId != "" {
-			return out.MlflowExperimentId
+		if out := aiRuntimeTaskOutput(ctx, w, run); out != nil && utils.Deref(out.MlflowExperimentId) != "" {
+			return utils.Deref(out.MlflowExperimentId)
 		}
 
 		select {
@@ -123,8 +126,8 @@ func resolveSubmittedExperimentID(ctx context.Context, w *databricks.WorkspaceCl
 // configured ACLs to it. Unlike jobs, whose permissions are set remotely, the
 // experiment is created by the AI Runtime backend so its ACLs must be set here
 // from the client.
-func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, permissions []permission) error {
-	experimentACL := make([]ml.ExperimentAccessControlRequest, 0, len(permissions))
+func grantExperimentPermissions(ctx context.Context, w *sdkclients.Clients, run *jobs.GetRunResponse, permissions []permission) error {
+	experimentACL := make([]accessmanagement.AccessControlRequest, 0, len(permissions))
 	for _, p := range permissions {
 		if acl, ok := experimentAccessControl(p); ok {
 			experimentACL = append(experimentACL, acl)
@@ -144,10 +147,7 @@ func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClie
 		return errors.New("could not resolve the run's MLflow experiment")
 	}
 
-	_, err := w.Experiments.UpdatePermissions(ctx, ml.ExperimentPermissionsRequest{
-		ExperimentId:      experimentID,
-		AccessControlList: experimentACL,
-	})
+	err := updateObjectPermissions(ctx, w, "experiments", experimentID, experimentACL)
 	if err != nil {
 		return fmt.Errorf("failed to grant experiment permissions: %w", err)
 	}
@@ -158,7 +158,7 @@ func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClie
 // result has been shown, wrapping the bounded best-effort grant in a spinner so
 // it never silently delays the success line. showProgress gates the spinner
 // (text mode only).
-func grantSubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClient, runID int64, permissions []permission, showProgress bool) {
+func grantSubmittedPermissions(ctx context.Context, w *sdkclients.Clients, runID int64, permissions []permission, showProgress bool) {
 	if len(permissions) == 0 {
 		return
 	}
@@ -170,19 +170,19 @@ func grantSubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClien
 
 // applySubmittedPermissions resolves the submitted run and grants its configured
 // ACLs on both the job (remotely) and the MLflow experiment (client-side).
-func applySubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClient, runID int64, permissions []permission) {
+func applySubmittedPermissions(ctx context.Context, w *sdkclients.Clients, runID int64, permissions []permission) {
 	if len(permissions) == 0 {
 		return
 	}
 
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	run, err := getRun(ctx, w, runID)
 	if err != nil {
 		log.Warnf(ctx, "failed to grant permissions on workload: %v", err)
 		log.Warnf(ctx, "job was created successfully, but permissions could not be granted")
 		return
 	}
 
-	if err := grantJobPermissions(ctx, w, strconv.FormatInt(run.JobId, 10), permissions); err != nil {
+	if err := grantJobPermissions(ctx, w, strconv.FormatInt(utils.Deref(run.JobId), 10), permissions); err != nil {
 		log.Warnf(ctx, "failed to grant permissions on workload: %v", err)
 		log.Warnf(ctx, "job was created successfully, but permissions could not be granted")
 	}

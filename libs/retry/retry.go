@@ -11,9 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
 )
 
 // MaxRetries is the number of additional attempts made after the first one fails.
@@ -37,19 +39,20 @@ func interval(ctx context.Context) time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-// IsTransient returns true for 5xx and 408 errors that the SDK did not already retry.
-// The SDK retries 504s matching its allTransientErrors patterns (e.g. "deadline exceeded");
-// this covers the remaining 504s like TEMPORARILY_UNAVAILABLE.
+// IsTransient returns true for 5xx and 408 errors that the client transport did not already
+// retry. The transport (libs/apiclient) retries 429 and 503; this covers the remaining 5xx,
+// e.g. 504 TEMPORARILY_UNAVAILABLE.
 func IsTransient(ctx context.Context, err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	if !ok {
 		return false
 	}
-	if apiErr.IsRetriable(ctx) {
-		// Already handled by SDK
+	status := apiErr.HTTPStatusCode()
+	if status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests {
+		// Already handled by the transport
 		return false
 	}
-	return apiErr.StatusCode >= 500 || apiErr.StatusCode == http.StatusRequestTimeout
+	return status >= 500 || status == http.StatusRequestTimeout
 }
 
 // IsTransientRead returns true for errors worth retrying on an idempotent read: the transient
@@ -90,14 +93,14 @@ func retryMessage(err error) string {
 	msg := "retrying"
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
 		endpoint := ""
-		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-			req := rw.Response.Request
-			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		if method, u, ok := apiclient.RequestOf(err); ok {
+			endpoint = fmt.Sprintf(" from %s %s", method, u.Path)
 		}
-		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		status := apiErr.HTTPStatusCode()
+		msg = fmt.Sprintf("retrying after %d %s%s", status, http.StatusText(status), endpoint)
 		// Include the context the caller added to the error, e.g. the path of the file being written.
 		if err.Error() != apiErr.Error() {
-			msg += ": " + err.Error()
+			msg += ": " + apierrs.ErrorString(err)
 		}
 	}
 	return msg

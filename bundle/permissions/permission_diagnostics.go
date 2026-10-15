@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
@@ -54,9 +56,9 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 			"    - %s: %s\n"+
 			"      level: CAN_MANAGE\n\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.",
-			b.Config.Workspace.CurrentUser.UserName,
+			utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 			identityType,
-			b.Config.Workspace.CurrentUser.UserName,
+			utils.Deref(b.Config.Workspace.CurrentUser.UserName),
 		),
 		Locations: []diag.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
@@ -73,13 +75,15 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	canManageBundle := false
 	otherManagers := set.NewSet[string]()
-	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" && b.Config.RunAs.UserName != b.Config.Workspace.CurrentUser.UserName {
-		// The run_as user is another human that could be contacted
-		// about this bundle.
-		otherManagers.Add(b.Config.RunAs.UserName)
+	currentUser := utils.Deref(b.Config.Workspace.CurrentUser.UserName)
+	if b.Config.RunAs != nil {
+		if runAsUser := utils.Deref(b.Config.RunAs.UserName); runAsUser != "" && runAsUser != currentUser {
+			// The run_as user is another human that could be contacted
+			// about this bundle.
+			otherManagers.Add(runAsUser)
+		}
 	}
 
-	currentUser := b.Config.Workspace.CurrentUser.UserName
 	targetPermissions := b.Config.Permissions
 	for _, p := range targetPermissions {
 		if p.Level != CAN_MANAGE {
@@ -124,7 +128,7 @@ func isGroupOfCurrentUser(b *bundle.Bundle, groupName string) bool {
 	currentUserGroups := b.Config.Workspace.CurrentUser.Groups
 
 	for _, g := range currentUserGroups {
-		if g.Display == groupName {
+		if utils.Deref(g.Display) == groupName {
 			return true
 		}
 	}

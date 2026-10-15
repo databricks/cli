@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -72,12 +74,20 @@ Create provider analytics dashboard.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.ProviderProviderAnalyticsDashboards.Create(ctx)
+		_ = w
+
+		sdkReq := &sdkmarketplaces.CreateProviderAnalyticsDashboardRequest{}
+
+		response, err := w.Marketplaces.CreateProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreateProviderAnalyticsDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -117,12 +127,20 @@ Get provider analytics dashboard.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.ProviderProviderAnalyticsDashboards.Get(ctx)
+		_ = w
+
+		sdkReq := &sdkmarketplaces.ListProviderAnalyticsDashboardRequest{}
+
+		response, err := w.Marketplaces.ListProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.ListProviderAnalyticsDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -162,12 +180,20 @@ Get latest version of provider analytics dashboard.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.ProviderProviderAnalyticsDashboards.GetLatestVersion(ctx)
+		_ = w
+
+		sdkReq := &sdkmarketplaces.GetLatestVersionProviderAnalyticsDashboardRequest{}
+
+		response, err := w.Marketplaces.GetLatestVersionProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetLatestVersionProviderAnalyticsDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -188,18 +214,18 @@ Get latest version of provider analytics dashboard.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateProviderAnalyticsDashboardRequest,
+	*marketplaces.UpdateProviderAnalyticsDashboardRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq marketplaces.UpdateProviderAnalyticsDashboardRequest
 
-	var updateReq marketplace.UpdateProviderAnalyticsDashboardRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.Version, "version", `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `*Public Preview* Update provider analytics dashboard.`
@@ -223,6 +249,7 @@ Update provider analytics dashboard.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -236,14 +263,22 @@ Update provider analytics dashboard.
 				}
 			}
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		response, err := w.ProviderProviderAnalyticsDashboards.Update(ctx, updateReq)
+		sdkReq, err := marketplaces.UpdateProviderAnalyticsDashboardRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.UpdateProviderAnalyticsDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.UpdateProviderAnalyticsDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

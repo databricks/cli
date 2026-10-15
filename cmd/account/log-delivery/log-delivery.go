@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
+
+	logdelivery "github.com/databricks/cli/libs/sdktypes/logdelivery/v1"
+	sdklogdelivery "github.com/databricks/sdk-go/logdelivery/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -116,13 +119,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*billing.WrappedCreateLogDeliveryConfiguration,
+	*logdelivery.CreateLogDeliveryConfigurationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq logdelivery.CreateLogDeliveryConfigurationRequest
 
-	var createReq billing.WrappedCreateLogDeliveryConfiguration
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -165,6 +168,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -181,12 +185,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.LogDelivery.Create(ctx, createReq)
+		sdkReq, err := logdelivery.CreateLogDeliveryConfigurationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.LogDelivery.CreateLogDeliveryConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := logdelivery.CreateLogDeliveryConfigurationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -207,13 +219,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*billing.GetLogDeliveryRequest,
+	*sdklogdelivery.GetLogDeliveryConfigurationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq billing.GetLogDeliveryRequest
+	var getReq sdklogdelivery.GetLogDeliveryConfigurationRequest
 
 	cmd.Use = "get LOG_DELIVERY_CONFIGURATION_ID"
 	cmd.Short = `Get log delivery configuration.`
@@ -233,11 +244,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down.")
-			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, a.LogDelivery.ListLogDeliveryConfigurationIter(ctx, sdklogdelivery.ListLogDeliveryConfigurationRequest{}), []string{"ConfigName"}, []string{"ConfigId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -251,14 +263,19 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the log delivery configuration id of customer")
 		}
-		getReq.LogDeliveryConfigurationId = args[0]
+		getReq.ConfigId = new(args[0])
 
-		response, err := a.LogDelivery.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.LogDelivery.GetLogDeliveryConfiguration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := logdelivery.GetLogDeliveryConfigurationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -279,27 +296,27 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*billing.ListLogDeliveryRequest,
+	*logdelivery.ListLogDeliveryConfigurationRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq logdelivery.ListLogDeliveryConfigurationRequest
 
-	var listReq billing.ListLogDeliveryRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with.`)
-	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`)
-	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `The Storage Configuration id to filter the search results with.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.CredentialsId, "credentials-id", `The Credentials id to filter the search results with.`)
+	flags.EnumVar(cmd.Flags(), &listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`, "LogDeliveryConfigStatus", "DISABLED", "ENABLED")
+	flags.StringPtrVar(cmd.Flags(), &listReq.StorageConfigurationId, "storage-configuration-id", `The Storage Configuration id to filter the search results with.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -322,16 +339,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.LogDelivery.List(ctx, listReq)
+		sdkReq, err := logdelivery.ListLogDeliveryConfigurationRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.LogDelivery.ListLogDeliveryConfigurationIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, logdelivery.LogDeliveryConfigurationFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -352,13 +373,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchStatusOverrides []func(
 	*cobra.Command,
-	*billing.UpdateLogDeliveryConfigurationStatusRequest,
+	*logdelivery.UpdateLogDeliveryConfigurationRequest,
 )
 
 func newPatchStatus() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchStatusReq logdelivery.UpdateLogDeliveryConfigurationRequest
 
-	var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
 	var patchStatusJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -402,6 +423,7 @@ func newPatchStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := patchStatusJson.Unmarshal(&patchStatusReq)
@@ -415,19 +437,21 @@ func newPatchStatus() *cobra.Command {
 				}
 			}
 		}
-		patchStatusReq.LogDeliveryConfigurationId = args[0]
+		patchStatusReq.ConfigId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &patchStatusReq.Status)
-			if err != nil {
-				return fmt.Errorf("invalid STATUS: %s", args[1])
-			}
-
+			patchStatusReq.Status = logdelivery.LogDeliveryConfigStatus(args[1])
 		}
 
-		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
+		sdkReq, err := logdelivery.UpdateLogDeliveryConfigurationRequestToSDK(&patchStatusReq)
 		if err != nil {
 			return err
 		}
+		response, err := a.LogDelivery.UpdateLogDeliveryConfiguration(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

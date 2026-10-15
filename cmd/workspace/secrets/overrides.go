@@ -2,7 +2,7 @@ package secrets
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func listScopesOverride(listScopesCmd *cobra.Command) {
 	{{end}}`)
 }
 
-func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSecretsRequest) {
+func listSecretsOverride(listSecretsCommand *cobra.Command, _ *secrets.ListSecretsRequest) {
 	listSecretsCommand.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Key"}}	{{header "Last Updated Timestamp"}}`)
 	listSecretsCommand.Annotations["template"] = cmdio.Heredoc(`

@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
-	databricks "github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +38,7 @@ func historyCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var key, pipelineId string
-		var w *databricks.WorkspaceClient
+		var w *sdkclients.Clients
 		if len(args) == 1 {
 			id, err := uuid.Parse(args[0])
 			if err == nil {

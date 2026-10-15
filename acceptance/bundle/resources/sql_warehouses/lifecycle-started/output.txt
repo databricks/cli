@@ -43,12 +43,16 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
-  "body": {}
+  "body": {
+    "id": "[WAREHOUSE_ID]"
+  }
 }
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
-  "body": {}
+  "body": {
+    "id": "[WAREHOUSE_ID]"
+  }
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -69,7 +73,9 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
-  "body": {}
+  "body": {
+    "id": "[WAREHOUSE_ID]"
+  }
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -88,7 +94,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
-  "body": {}
+  "body": {
+    "id": "[WAREHOUSE_ID]"
+  }
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]

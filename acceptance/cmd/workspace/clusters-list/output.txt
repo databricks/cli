@@ -3,5 +3,5 @@
 
 >>> [CLI] clusters list
 ID    Name                State
-4321  some-test-cluster   
-9876  some-other-cluster  
+4321  some-test-cluster   RUNNING
+9876  some-other-cluster  RUNNING

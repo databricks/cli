@@ -8,9 +8,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,9 +25,7 @@ func mockBundleForConfigureWSFS(t *testing.T, syncRootPath string) *bundle.Bundl
 		SyncRoot: vfs.MustNew(syncRootPath),
 	}
 
-	w := mocks.NewMockWorkspaceClient(t)
-	w.WorkspaceClient.Config = &config.Config{}
-	b.SetWorkpaceClient(w.WorkspaceClient)
+	b.SetWorkpaceClient(&sdkclients.Clients{Config: &config.Config{}})
 
 	return b
 }

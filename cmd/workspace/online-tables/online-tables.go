@@ -3,15 +3,20 @@
 package online_tables
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	uconlinetables "github.com/databricks/cli/libs/sdktypes/uc/onlinetables/v1"
+	sdkuconlinetables "github.com/databricks/sdk-go/uc/onlinetables/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,14 +58,14 @@ Online tables provide lower latency and higher QPS access to data from Delta
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateOnlineTableRequest,
+	*uconlinetables.CreateOnlineTableRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq uconlinetables.CreateOnlineTableRequest
+	createReq.Table = &uconlinetables.OnlineTable{}
 
-	var createReq catalog.CreateOnlineTableRequest
-	createReq.Table = catalog.OnlineTable{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -71,7 +76,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Table.Name, "name", `Full three-part (catalog, schema, table) name of the table.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -96,6 +101,7 @@ Create an Online Table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Table)
@@ -110,24 +116,39 @@ Create an Online Table.
 			}
 		}
 
-		wait, err := w.OnlineTables.Create(ctx, createReq)
+		sdkReq, err := uconlinetables.CreateOnlineTableRequestToSDK(&createReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current uconlinetables.OnlineTable
+			err = api.Do(ctx, "POST", "/api/2.0/online-tables", auth.WorkspaceIDHeaders(w.Config), nil, createReq.Table, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *catalog.OnlineTable) {
-			status := i.UnityCatalogProvisioningState
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		wait, err := w.OnlineTables.CreateOnlineTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := uconlinetables.OnlineTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -148,13 +169,12 @@ Create an Online Table.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteOnlineTableRequest,
+	*sdkuconlinetables.DeleteOnlineTableRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteOnlineTableRequest
+	var deleteReq sdkuconlinetables.DeleteOnlineTableRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `*Public Preview* Delete an Online Table.`
@@ -182,10 +202,12 @@ Delete an Online Table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.Name = new(args[0])
 
-		err = w.OnlineTables.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.OnlineTables.DeleteOnlineTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -210,13 +232,12 @@ Delete an Online Table.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetOnlineTableRequest,
+	*sdkuconlinetables.GetOnlineTableRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetOnlineTableRequest
+	var getReq sdkuconlinetables.GetOnlineTableRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `*Public Preview* Get an Online Table.`
@@ -242,15 +263,21 @@ Get an Online Table.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.Name = new(args[0])
 
-		response, err := w.OnlineTables.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.OnlineTables.GetOnlineTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uconlinetables.OnlineTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

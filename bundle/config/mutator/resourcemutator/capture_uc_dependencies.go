@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type captureUCDependencies struct{}
@@ -47,7 +48,7 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 	}
 
 	for k, s := range b.Config.Resources.Schemas {
-		if s != nil && s.CatalogName == catalogName && s.Name == schemaName {
+		if s != nil && utils.Deref(s.CatalogName) == catalogName && utils.Deref(s.Name) == schemaName {
 			return k, s
 		}
 	}
@@ -60,7 +61,7 @@ func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catal
 	}
 
 	for k, c := range b.Config.Resources.Catalogs {
-		if c != nil && c.Name == catalogName {
+		if c != nil && utils.Deref(c.Name) == catalogName {
 			return k, c
 		}
 	}
@@ -85,6 +86,24 @@ func resolveCatalog(b *bundle.Bundle, catalogName string) string {
 	k, c := findCatalog(b, catalogName)
 	if c != nil {
 		return catalogNameRef(k)
+	}
+	return catalogName
+}
+
+// resolveSchemaPtr is resolveSchema for optional fields; an unset field stays unset.
+func resolveSchemaPtr(b *bundle.Bundle, catalogName, schemaName *string) *string {
+	k, s := findSchema(b, utils.Deref(catalogName), utils.Deref(schemaName))
+	if s != nil {
+		return new(schemaNameRef(k))
+	}
+	return schemaName
+}
+
+// resolveCatalogPtr is resolveCatalog for optional fields; an unset field stays unset.
+func resolveCatalogPtr(b *bundle.Bundle, catalogName *string) *string {
+	k, c := findCatalog(b, utils.Deref(catalogName))
+	if c != nil {
+		return new(catalogNameRef(k))
 	}
 	return catalogName
 }
@@ -126,22 +145,22 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if v == nil {
 			continue
 		}
-		v.SchemaName = resolveSchema(b, v.CatalogName, v.SchemaName)
-		v.CatalogName = resolveCatalog(b, v.CatalogName)
+		v.SchemaName = resolveSchemaPtr(b, v.CatalogName, v.SchemaName)
+		v.CatalogName = resolveCatalogPtr(b, v.CatalogName)
 	}
 	for _, s := range b.Config.Resources.Secrets {
 		if s == nil {
 			continue
 		}
-		s.SchemaName = resolveSchema(b, s.CatalogName, s.SchemaName)
-		s.CatalogName = resolveCatalog(b, s.CatalogName)
+		s.SchemaName = resolveSchemaPtr(b, s.CatalogName, s.SchemaName)
+		s.CatalogName = resolveCatalogPtr(b, s.CatalogName)
 	}
 	for _, rm := range b.Config.Resources.RegisteredModels {
 		if rm == nil {
 			continue
 		}
-		rm.SchemaName = resolveSchema(b, rm.CatalogName, rm.SchemaName)
-		rm.CatalogName = resolveCatalog(b, rm.CatalogName)
+		rm.SchemaName = resolveSchemaPtr(b, rm.CatalogName, rm.SchemaName)
+		rm.CatalogName = resolveCatalogPtr(b, rm.CatalogName)
 	}
 	for _, p := range b.Config.Resources.Pipelines {
 		if p == nil {
@@ -149,9 +168,9 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		// "schema" and "target" have the same semantics in the SDP API but are mutually
 		// exclusive i.e. only one can be set at a time.
-		p.Schema = resolveSchema(b, p.Catalog, p.Schema)
-		p.Target = resolveSchema(b, p.Catalog, p.Target)
-		p.Catalog = resolveCatalog(b, p.Catalog)
+		p.Schema = resolveSchemaPtr(b, p.Catalog, p.Schema)
+		p.Target = resolveSchemaPtr(b, p.Catalog, p.Target)
+		p.Catalog = resolveCatalogPtr(b, p.Catalog)
 	}
 	for _, qm := range b.Config.Resources.QualityMonitors {
 		if qm == nil || qm.OutputSchemaName == "" {
@@ -179,16 +198,16 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		// A name that already contains a reference is left as is; a mix of
 		// references and literals is not supported.
-		if dynvar.ContainsVariableReference(idx.Name) {
+		if dynvar.ContainsVariableReference(utils.Deref(idx.Name)) {
 			continue
 		}
 		// Name is a three-part "catalog.schema.index" UC identifier.
-		parts, ok := splitUCName(idx.Name, 3)
+		parts, ok := splitUCName(utils.Deref(idx.Name), 3)
 		if !ok {
 			continue
 		}
 		catalogName, schemaName := parts[0], parts[1]
-		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		idx.Name = new(resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2])
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {
@@ -196,14 +215,14 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		if mse.AiGateway != nil && mse.AiGateway.InferenceTableConfig != nil {
 			itc := mse.AiGateway.InferenceTableConfig
-			itc.SchemaName = resolveSchema(b, itc.CatalogName, itc.SchemaName)
-			itc.CatalogName = resolveCatalog(b, itc.CatalogName)
+			itc.SchemaName = resolveSchemaPtr(b, itc.CatalogName, itc.SchemaName)
+			itc.CatalogName = resolveCatalogPtr(b, itc.CatalogName)
 		}
 		// AutoCaptureConfig is deprecated but still in use.
 		if mse.Config != nil && mse.Config.AutoCaptureConfig != nil {
 			acc := mse.Config.AutoCaptureConfig
-			acc.SchemaName = resolveSchema(b, acc.CatalogName, acc.SchemaName)
-			acc.CatalogName = resolveCatalog(b, acc.CatalogName)
+			acc.SchemaName = resolveSchemaPtr(b, acc.CatalogName, acc.SchemaName)
+			acc.CatalogName = resolveCatalogPtr(b, acc.CatalogName)
 		}
 	}
 	for _, ms := range b.Config.Resources.ModelServices {
@@ -237,7 +256,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if s == nil {
 			continue
 		}
-		s.CatalogName = resolveCatalog(b, s.CatalogName)
+		s.CatalogName = resolveCatalogPtr(b, s.CatalogName)
 	}
 	return nil
 }

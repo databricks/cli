@@ -14,6 +14,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -46,11 +47,47 @@ func formatSliceToString(values []string) string {
 }
 
 // extractRequiredFields walks through a struct type and extracts required field patterns
-func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
+func extractRequiredFields(typ reflect.Type, meta *sdkmeta.Meta) ([]RequiredPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
+	// Required fields of the struct at each visited node.
+	required := map[string][]string{}
+	// cli.json schema of the API type at each visited node, if any.
+	schemas := map[string]string{}
+	types := map[string]reflect.Type{}
 
-	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, _ reflect.Type, field *reflect.StructField) bool {
-		if path == nil || field == nil {
+	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, fieldType reflect.Type, field *reflect.StructField) bool {
+		if path == nil {
+			required[""] = meta.Required(typ)
+			return true
+		}
+		key, parentKey := path.String(), path.Parent().String()
+		// Embedded structs are visited with the path of the struct embedding
+		// them; keep the outermost type.
+		if _, ok := types[key]; !ok {
+			types[key] = fieldType
+		}
+		// Skip fields of API types that cli.json does not define, as the JSON
+		// schema does.
+		if name, ok := path.StringKey(); ok && !meta.SchemaHasField(schemas[parentKey], name) {
+			return false
+		}
+		// Fields whose type sdk-go unified with another one keep the required
+		// fields of the type they had before (see sdkmeta.FieldRef).
+		schema, _ := meta.Name(fieldType)
+		if name, ok := path.StringKey(); ok {
+			if ref, ok := sdkmeta.FieldRef(schemas[parentKey], name); ok {
+				schema = ref
+			}
+		} else {
+			schema = schemas[parentKey]
+		}
+		schemas[key] = schema
+		if ref, _ := meta.Name(fieldType); schema != "" && schema != ref {
+			required[key] = sdkmeta.RequiredFields(schema)
+		} else {
+			required[key] = meta.Required(fieldType)
+		}
+		if field == nil {
 			return true
 		}
 
@@ -68,22 +105,64 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 		}
 
 		// The "omitempty" tag indicates the field is optional in bundle config.
-		jsonTag := structtag.JSONTag(rawTag)
-		if jsonTag.OmitEmpty() {
-			return true
-		}
-
 		fieldName, ok := path.StringKey()
 		if !ok {
 			return true
 		}
-
 		parentPath := path.Parent().String()
+
+		// API types mark every field omitempty; their required fields come
+		// from sdkmeta.
+		jsonTag := structtag.JSONTag(rawTag)
+		if jsonTag.OmitEmpty() && !slices.Contains(required[parentPath], fieldName) {
+			return true
+		}
+
 		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
 		return true
 	})
 
+	for parentPath, fields := range fieldsByPattern {
+		order := legacyFieldOrder(meta, types[parentPath])
+		if parentPath == "" {
+			order = legacyFieldOrder(meta, typ)
+		}
+		slices.SortStableFunc(fields, func(a, b string) int { return order[a] - order[b] })
+	}
 	return buildPatternInfos(fieldsByPattern), err
+}
+
+// legacyFieldOrder returns the position of each field of t in the order the
+// walk visited them with the previous SDK types: embedded structs are expanded
+// in place, and the fields of API types, which the previous SDK declared
+// alphabetically, are sorted by name.
+func legacyFieldOrder(meta *sdkmeta.Meta, t reflect.Type) map[string]int {
+	order := map[string]int{}
+	var visit func(t reflect.Type)
+	visit = func(t reflect.Type) {
+		for t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice || t.Kind() == reflect.Map {
+			t = t.Elem()
+		}
+		if t.Kind() != reflect.Struct {
+			return
+		}
+		fields := slices.Collect(t.Fields())
+		if _, ok := meta.Name(t); ok {
+			slices.SortStableFunc(fields, func(a, b reflect.StructField) int { return strings.Compare(a.Name, b.Name) })
+		}
+		for _, f := range fields {
+			if f.Anonymous {
+				visit(f.Type)
+				continue
+			}
+			name := structtag.JSONTag(f.Tag.Get("json")).Name()
+			if _, ok := order[name]; !ok {
+				order[name] = len(order)
+			}
+		}
+	}
+	visit(t)
+	return order
 }
 
 // buildPatternInfos converts the field map to PatternInfo slice
@@ -158,8 +237,8 @@ func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]R
 }
 
 // RequiredFields returns grouped required field patterns for validation
-func requiredFields() ([][]RequiredPatternInfo, error) {
-	patterns, err := extractRequiredFields(reflect.TypeFor[config.Root]())
+func requiredFields(meta *sdkmeta.Meta) ([][]RequiredPatternInfo, error) {
+	patterns, err := extractRequiredFields(reflect.TypeFor[config.Root](), meta)
 	if err != nil {
 		return nil, err
 	}
@@ -169,8 +248,8 @@ func requiredFields() ([][]RequiredPatternInfo, error) {
 }
 
 // Generate creates a Go source file with required field validation rules
-func generateRequiredFields(outPath string) error {
-	requiredFields, err := requiredFields()
+func generateRequiredFields(outPath string, meta *sdkmeta.Meta) error {
+	requiredFields, err := requiredFields(meta)
 	if err != nil {
 		return fmt.Errorf("failed to generate required fields: %w", err)
 	}

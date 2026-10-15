@@ -4,10 +4,12 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
+
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresProjectConfig struct {
@@ -21,21 +23,7 @@ type PostgresProjectConfig struct {
 	// DeleteProject). When false or unset, the backend performs a soft delete that
 	// can be undone within the project's retention window. Input-only: not
 	// returned by the GET API.
-	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
-
-	// ForceSendFields shadows the embedded ProjectSpec.ForceSendFields so the
-	// SDK's marshal package tracks zero-value top-level fields (project_id,
-	// purge_on_delete) here instead of polluting ProjectSpec.ForceSendFields
-	// with names that don't exist in that struct.
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresProjectConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
+	PurgeOnDelete *bool `json:"purge_on_delete,omitempty"`
 }
 
 type PostgresProject struct {
@@ -46,16 +34,8 @@ type PostgresProject struct {
 	Permissions []Permission `json:"permissions,omitempty"`
 }
 
-func (p *PostgresProject) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, p)
-}
-
-func (p PostgresProject) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(p)
-}
-
-func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
+func (p *PostgresProject) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetProject(ctx, sdkpostgres.GetProjectRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres project %s does not exist", name)
 		return false, err
@@ -73,7 +53,7 @@ func (p *PostgresProject) ResourceDescription() ResourceDescription {
 }
 
 func (p *PostgresProject) GetName() string {
-	return p.DisplayName
+	return utils.Deref(p.DisplayName)
 }
 
 func (p *PostgresProject) GetURL() (string, bool) {

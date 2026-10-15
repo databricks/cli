@@ -7,3 +7,5 @@ json[1].body.access_control_list[0].permission_level = "CAN_MANAGE";
 json[1].body.access_control_list[0].service_principal_name = "[USERNAME]";
 json[1].body.access_control_list[1].permission_level = "CAN_VIEW";
 json[1].body.access_control_list[1].user_name = "deco-test-user@databricks.com";
+json[1].body.request_object_id = "[ENDPOINT_ID_1]";
+json[1].body.request_object_type = "serving-endpoints";

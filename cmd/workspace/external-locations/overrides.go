@@ -2,11 +2,11 @@ package external_locations
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	ucexternallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *catalog.ListExternalLocationsRequest) {
+func listOverride(listCmd *cobra.Command, listReq *ucexternallocations.ListExternalLocationsRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Name"}}	{{header "Credential"}}	{{header "URL"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

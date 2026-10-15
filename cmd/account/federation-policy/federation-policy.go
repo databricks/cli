@@ -7,10 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
+
+	authentication "github.com/databricks/cli/libs/sdktypes/authentication/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -99,20 +101,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*oauth2.CreateAccountFederationPolicyRequest,
+	*authentication.CreateAccountFederationPolicyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq authentication.CreateAccountFederationPolicyRequest
+	createReq.Policy = &authentication.FederationPolicy{}
 
-	var createReq oauth2.CreateAccountFederationPolicyRequest
-	createReq.Policy = oauth2.FederationPolicy{}
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The identifier for the federation policy.`)
-	cmd.Flags().StringVar(&createReq.Policy.Description, "description", createReq.Policy.Description, `Description of the federation policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.PolicyId, "policy-id", `The identifier for the federation policy.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Policy.Description, "description", `Description of the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create"
@@ -132,6 +134,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Policy)
@@ -146,12 +149,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.FederationPolicy.Create(ctx, createReq)
+		sdkReq, err := authentication.CreateAccountFederationPolicyRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Authentication.CreateAccountFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := authentication.FederationPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -172,13 +183,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*oauth2.DeleteAccountFederationPolicyRequest,
+	*authentication.DeleteAccountFederationPolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq oauth2.DeleteAccountFederationPolicyRequest
+	var deleteReq authentication.DeleteAccountFederationPolicyRequest
 
 	cmd.Use = "delete POLICY_ID"
 	cmd.Short = `Delete account federation policy.`
@@ -200,10 +210,15 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.PolicyId = args[0]
+		deleteReq.PolicyId = new(args[0])
 
-		err = a.FederationPolicy.Delete(ctx, deleteReq)
+		sdkReq, err := authentication.DeleteAccountFederationPolicyRequestToSDK(&deleteReq)
+		if err != nil {
+			return err
+		}
+		err = a.Authentication.DeleteAccountFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -228,13 +243,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*oauth2.GetAccountFederationPolicyRequest,
+	*authentication.GetAccountFederationPolicyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq oauth2.GetAccountFederationPolicyRequest
+	var getReq authentication.GetAccountFederationPolicyRequest
 
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get account federation policy.`
@@ -256,15 +270,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.PolicyId = args[0]
+		getReq.PolicyId = new(args[0])
 
-		response, err := a.FederationPolicy.Get(ctx, getReq)
+		sdkReq, err := authentication.GetAccountFederationPolicyRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Authentication.GetAccountFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := authentication.FederationPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -285,25 +308,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*oauth2.ListAccountFederationPoliciesRequest,
+	*authentication.ListAccountFederationPoliciesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq authentication.ListAccountFederationPoliciesRequest
 
-	var listReq oauth2.ListAccountFederationPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -323,16 +346,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.FederationPolicy.List(ctx, listReq)
+		sdkReq, err := authentication.ListAccountFederationPoliciesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Authentication.ListAccountFederationPoliciesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, authentication.FederationPolicyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -353,20 +380,20 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*oauth2.UpdateAccountFederationPolicyRequest,
+	*authentication.UpdateAccountFederationPolicyRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq authentication.UpdateAccountFederationPolicyRequest
+	updateReq.Policy = &authentication.FederationPolicy{}
 
-	var updateReq oauth2.UpdateAccountFederationPolicyRequest
-	updateReq.Policy = oauth2.FederationPolicy{}
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UpdateMask, "update-mask", `The field mask specifies which fields of the policy to update.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Policy.Description, "description", `Description of the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "update POLICY_ID"
@@ -389,6 +416,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Policy)
@@ -402,14 +430,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.PolicyId = args[0]
+		updateReq.PolicyId = new(args[0])
 
-		response, err := a.FederationPolicy.Update(ctx, updateReq)
+		sdkReq, err := authentication.UpdateAccountFederationPolicyRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Authentication.UpdateAccountFederationPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := authentication.FederationPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

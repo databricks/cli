@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
+
+	budgetpolicy "github.com/databricks/cli/libs/sdktypes/budgetpolicy/v1"
+	sdkbudgetpolicy "github.com/databricks/sdk-go/budgetpolicy/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,19 +56,19 @@ A service serves REST API about Budget policies`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*billing.CreateBudgetPolicyRequest,
+	*budgetpolicy.CreateBudgetPolicyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq budgetpolicy.CreateBudgetPolicyRequest
 
-	var createReq billing.CreateBudgetPolicyRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: policy
-	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.RequestId, "request-id", `A unique identifier for this request.`)
 
 	cmd.Use = "create"
 	cmd.Short = `*Public Preview* Create a budget policy.`
@@ -88,6 +91,7 @@ Create a budget policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -102,12 +106,20 @@ Create a budget policy.
 			}
 		}
 
-		response, err := a.BudgetPolicy.Create(ctx, createReq)
+		sdkReq, err := budgetpolicy.CreateBudgetPolicyRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.BudgetPolicy.CreateBudgetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgetpolicy.BudgetPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -128,13 +140,12 @@ Create a budget policy.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*billing.DeleteBudgetPolicyRequest,
+	*sdkbudgetpolicy.DeleteBudgetPolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq billing.DeleteBudgetPolicyRequest
+	var deleteReq sdkbudgetpolicy.DeleteBudgetPolicyRequest
 
 	cmd.Use = "delete POLICY_ID"
 	cmd.Short = `*Public Preview* Delete a budget policy.`
@@ -160,10 +171,12 @@ Delete a budget policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.PolicyId = args[0]
+		deleteReq.PolicyId = new(args[0])
 
-		err = a.BudgetPolicy.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = a.BudgetPolicy.DeleteBudgetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -188,13 +201,12 @@ Delete a budget policy.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*billing.GetBudgetPolicyRequest,
+	*sdkbudgetpolicy.GetBudgetPolicyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq billing.GetBudgetPolicyRequest
+	var getReq sdkbudgetpolicy.GetBudgetPolicyRequest
 
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `*Public Preview* Get a budget policy.`
@@ -220,15 +232,21 @@ Get a budget policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.PolicyId = args[0]
+		getReq.PolicyId = new(args[0])
 
-		response, err := a.BudgetPolicy.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.BudgetPolicy.GetBudgetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgetpolicy.BudgetPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -249,27 +267,27 @@ Get a budget policy.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*billing.ListBudgetPoliciesRequest,
+	*budgetpolicy.ListBudgetPoliciesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq budgetpolicy.ListBudgetPoliciesRequest
 
-	var listReq billing.ListBudgetPoliciesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
 	// TODO: complex arg: filter_by
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of budget policies to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `The maximum number of budget policies to return.`)
 	// TODO: complex arg: sort_spec
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -294,16 +312,20 @@ List policies.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.BudgetPolicy.List(ctx, listReq)
+		sdkReq, err := budgetpolicy.ListBudgetPoliciesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.BudgetPolicy.ListBudgetPoliciesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, budgetpolicy.BudgetPolicyFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -324,14 +346,14 @@ List policies.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*billing.UpdateBudgetPolicyRequest,
+	*budgetpolicy.UpdateBudgetPolicyRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq budgetpolicy.UpdateBudgetPolicyRequest
+	updateReq.Policy = &budgetpolicy.BudgetPolicy{}
 
-	var updateReq billing.UpdateBudgetPolicyRequest
-	updateReq.Policy = billing.BudgetPolicy{}
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -339,7 +361,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: limit_config
 	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
-	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Policy.PolicyName, "policy-name", `The name of the policy.`)
 
 	cmd.Use = "update POLICY_ID"
 	cmd.Short = `*Public Preview* Update a budget policy.`
@@ -366,6 +388,7 @@ Update a budget policy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Policy)
@@ -379,14 +402,22 @@ Update a budget policy.
 				}
 			}
 		}
-		updateReq.PolicyId = args[0]
+		updateReq.Policy.PolicyId = new(args[0])
 
-		response, err := a.BudgetPolicy.Update(ctx, updateReq)
+		sdkReq, err := budgetpolicy.UpdateBudgetPolicyRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.BudgetPolicy.UpdateBudgetPolicy(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := budgetpolicy.BudgetPolicyFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

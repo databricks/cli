@@ -10,15 +10,15 @@
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test bundle-deploy-dashboard [UUID]",
-        "embed_credentials": true,
         "etag": "[ETAG]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-        "published": true,
-        "serialized_dashboard": "{}\n",
         "update_time": "[TIMESTAMP]",
-        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+        "serialized_dashboard": "{}\n",
+        "embed_credentials": true,
+        "published": true
       },
       "changes": {
         "create_time": {

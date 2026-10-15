@@ -7,9 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	cleanrooms "github.com/databricks/cli/libs/sdktypes/cleanrooms/v1"
+	sdkcleanrooms "github.com/databricks/sdk-go/cleanrooms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -50,13 +54,12 @@ Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*cleanrooms.GetCleanRoomAssetRevisionRequest,
+	*sdkcleanrooms.GetCleanRoomAssetRevisionRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq cleanrooms.GetCleanRoomAssetRevisionRequest
+	var getReq sdkcleanrooms.GetCleanRoomAssetRevisionRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME ETAG"
 	cmd.Short = `*Beta* Get an asset revision.`
@@ -94,22 +97,24 @@ Get an asset revision.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &getReq.AssetType)
-		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
-		}
+		getReq.CleanRoomName = new(args[0])
+		getReq.AssetType = sdkcleanrooms.CleanRoomAsset_AssetType(args[1])
+		getReq.Name = new(args[2])
+		getReq.Etag = new(args[3])
 
-		getReq.Name = args[2]
-		getReq.Etag = args[3]
-
-		response, err := w.CleanRoomAssetRevisions.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.CleanRooms.GetCleanRoomAssetRevision(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomAssetFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -135,20 +140,20 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq cleanrooms.ListCleanRoomAssetRevisionsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `Maximum number of asset revisions to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
@@ -185,24 +190,24 @@ List asset revisions.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CleanRoomName = args[0]
-		_, err = fmt.Sscan(args[1], &listReq.AssetType)
+		listReq.CleanRoomName = new(args[0])
+		listReq.AssetType = cleanrooms.CleanRoomAsset_AssetType(args[1])
+		listReq.Name = new(args[2])
+
+		sdkReq, err := cleanrooms.ListCleanRoomAssetRevisionsRequestToSDK(&listReq)
 		if err != nil {
-			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
+			return err
 		}
-
-		listReq.Name = args[2]
-
-		response := w.CleanRoomAssetRevisions.List(ctx, listReq)
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomAssetRevisionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomAssetFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

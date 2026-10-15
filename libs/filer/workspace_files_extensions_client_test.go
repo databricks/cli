@@ -5,22 +5,23 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-// Mocks client.DatabricksClient from the databricks-sdk-go package.
+// Mocks the apiClient interface (*apiclient.Client).
 type mockApiClient struct {
 	mock.Mock
 }
 
 func (m *mockApiClient) Do(ctx context.Context, method, path string,
 	headers map[string]string, queryString map[string]any, request, response any,
-	visitors ...func(*http.Request) error,
 ) error {
-	args := m.Called(ctx, method, path, headers, request, response, visitors)
+	args := m.Called(ctx, method, path, headers, request, response)
 
 	// Set the http response from a value provided in the mock call.
 	p := response.(*wsfsFileInfo)
@@ -139,25 +140,27 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
 			mockedApiClient := mockApiClient{}
 
-			// Mock the workspace API's ListAll method.
-			workspaceApi := mockedWorkspaceClient.GetMockWorkspaceAPI()
-			workspaceApi.EXPECT().ListAll(mock.Anything, workspace.ListWorkspaceRequest{
-				Path: "/dir",
-			}).Return([]workspace.ObjectInfo{
-				{
-					Path:       tc.filePath,
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeFile,
-				},
-				{
-					Path:       tc.notebookPath,
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeNotebook,
-				},
-			}, nil)
+			// Serve the workspace list call made by ReadDir.
+			cfg, _ := httpfixtures.Fixtures{{
+				Method:   "GET",
+				Resource: "/api/2.0/workspace/list?path=%2Fdir",
+				Response: workspace.ListResponse{Objects: []workspace.ObjectInfo{
+					{
+						Path:       tc.filePath,
+						Language:   tc.language,
+						ObjectType: workspace.ObjectTypeFile,
+					},
+					{
+						Path:       tc.notebookPath,
+						Language:   tc.language,
+						ObjectType: workspace.ObjectTypeNotebook,
+					},
+				}},
+			}}.Config(t)
+			workspaceClient, err := sdkclients.New(t.Context(), cfg)
+			require.NoError(t, err)
 
 			// Mock bespoke API calls to /api/2.0/workspace/get-status, that are
 			// used to figure out the right file extension for the notebook.
@@ -171,20 +174,20 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil), map[string]string{
 				"path":               tc.notebookPath,
 				"return_export_info": "true",
-			}, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil)).Return(nil, statNotebook)
+			}, mock.AnythingOfType("*filer.wsfsFileInfo")).Return(nil, statNotebook)
 
 			workspaceFilesClient := WorkspaceFilesClient{
-				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				workspaceClient: workspaceClient,
 				apiClient:       &mockedApiClient,
 				root:            NewWorkspaceRootPath("/dir"),
 			}
 
 			workspaceFilesExtensionsClient := WorkspaceFilesExtensionsClient{
-				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				workspaceClient: workspaceClient,
 				wsfs:            &workspaceFilesClient,
 			}
 
-			_, err := workspaceFilesExtensionsClient.ReadDir(t.Context(), "/")
+			_, err = workspaceFilesExtensionsClient.ReadDir(t.Context(), "/")
 
 			if tc.expectedError == "" {
 				assert.NoError(t, err)
@@ -194,7 +197,6 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			}
 
 			// assert the mocked methods were actually called, as a sanity check.
-			workspaceApi.AssertNumberOfCalls(t, "ListAll", 1)
 			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
 		})
 	}
@@ -227,23 +229,26 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
 			mockedApiClient := mockApiClient{}
 
-			workspaceApi := mockedWorkspaceClient.GetMockWorkspaceAPI()
-			workspaceApi.EXPECT().ListAll(mock.Anything, workspace.ListWorkspaceRequest{
-				Path: "/dir",
-			}).Return([]workspace.ObjectInfo{
-				{
-					Path:       "/dir/bar.py",
-					ObjectType: workspace.ObjectTypeFile,
-				},
-				{
-					Path:       "/dir/foo",
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeNotebook,
-				},
-			}, nil)
+			// Serve the workspace list call made by ReadDir.
+			cfg, _ := httpfixtures.Fixtures{{
+				Method:   "GET",
+				Resource: "/api/2.0/workspace/list?path=%2Fdir",
+				Response: workspace.ListResponse{Objects: []workspace.ObjectInfo{
+					{
+						Path:       "/dir/bar.py",
+						ObjectType: workspace.ObjectTypeFile,
+					},
+					{
+						Path:       "/dir/foo",
+						Language:   tc.language,
+						ObjectType: workspace.ObjectTypeNotebook,
+					},
+				}},
+			}}.Config(t)
+			workspaceClient, err := sdkclients.New(t.Context(), cfg)
+			require.NoError(t, err)
 
 			// Mock the get-status call used to figure out the notebook's file extension.
 			statNotebook := wsfsFileInfo{
@@ -256,16 +261,16 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil), map[string]string{
 				"path":               "/dir/foo",
 				"return_export_info": "true",
-			}, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil)).Return(nil, statNotebook)
+			}, mock.AnythingOfType("*filer.wsfsFileInfo")).Return(nil, statNotebook)
 
 			workspaceFilesClient := WorkspaceFilesClient{
-				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				workspaceClient: workspaceClient,
 				apiClient:       &mockedApiClient,
 				root:            NewWorkspaceRootPath("/dir"),
 			}
 
 			workspaceFilesExtensionsClient := WorkspaceFilesExtensionsClient{
-				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				workspaceClient: workspaceClient,
 				wsfs:            &workspaceFilesClient,
 			}
 
@@ -278,7 +283,6 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			}
 			assert.Equal(t, tc.expectedNames, names)
 
-			workspaceApi.AssertNumberOfCalls(t, "ListAll", 1)
 			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
 		})
 	}

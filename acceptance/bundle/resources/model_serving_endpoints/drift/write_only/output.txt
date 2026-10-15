@@ -17,22 +17,19 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "action": "skip",
     "reason": "spec:input_only",
     "old": true,
-    "new": true,
-    "remote": false
+    "new": true
   },
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
     "action": "skip",
     "reason": "spec:input_only",
     "old": "sk-test-plaintext-key",
-    "new": "sk-test-plaintext-key",
-    "remote": ""
+    "new": "sk-test-plaintext-key"
   },
   "config.served_entities[1].external_model.custom_provider_config.api_key_auth.value_plaintext": {
     "action": "skip",
     "reason": "spec:input_only",
     "old": "custom-plaintext-key",
-    "new": "custom-plaintext-key",
-    "remote": ""
+    "new": "custom-plaintext-key"
   },
   "description": {
     "action": "skip",

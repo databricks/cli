@@ -4,11 +4,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,7 +43,7 @@ var paramsTestCasesNamed []testCaseNamed = []testCaseNamed{
 func TestGenerateParameters(t *testing.T) {
 	trampoline := pythonTrampoline{}
 	for _, c := range paramsTestCases {
-		task := &jobs.PythonWheelTask{PackageName: "my_test_code", Parameters: c.Actual}
+		task := &jobs.PythonWheelTask{PackageName: new("my_test_code"), Parameters: c.Actual}
 		result, err := trampoline.generateParameters(task)
 		require.NoError(t, err)
 		require.Equal(t, c.Expected, result)
@@ -52,7 +53,7 @@ func TestGenerateParameters(t *testing.T) {
 func TestGenerateNamedParameters(t *testing.T) {
 	trampoline := pythonTrampoline{}
 	for _, c := range paramsTestCasesNamed {
-		task := &jobs.PythonWheelTask{PackageName: "my_test_code", NamedParameters: c.Actual}
+		task := &jobs.PythonWheelTask{PackageName: new("my_test_code"), NamedParameters: c.Actual}
 		result, err := trampoline.generateParameters(task)
 		require.NoError(t, err)
 
@@ -77,23 +78,23 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:         "key1",
+									TaskKey:         new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/test@test.com/bundle/dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:      "key2",
+									TaskKey:      new("key2"),
 									NotebookTask: &jobs.NotebookTask{},
 								},
 								{
-									TaskKey:         "key3",
+									TaskKey:         new("key3"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									Libraries: []compute.Library{
-										{Whl: "dbfs:/FileStore/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("dbfs:/FileStore/dist/test.whl")},
 									},
 								},
 							},
@@ -107,7 +108,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 	tasks := trampoline.GetTasks(b)
 	require.Len(t, tasks, 1)
 	require.Equal(t, "job1", tasks[0].JobKey)
-	require.Equal(t, "key1", tasks[0].Task.TaskKey)
+	require.Equal(t, "key1", utils.Deref(tasks[0].Task.TaskKey))
 	require.NotNil(t, tasks[0].Task.PythonWheelTask)
 }
 
@@ -123,9 +124,9 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"test": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:      "notebook_task",
+									TaskKey:      new("notebook_task"),
 									NotebookTask: &jobs.NotebookTask{},
 								},
 							},

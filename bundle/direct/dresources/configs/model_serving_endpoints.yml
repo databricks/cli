@@ -38,10 +38,6 @@ backend_defaults:
   # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
   - field: config.served_entities[*].name
 
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
-  # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
-  - field: config.served_entities[*].workload_type
-
   # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
   # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
   - field: config.auto_capture_config.enabled

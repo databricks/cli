@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/spf13/cobra"
+
+	dataquality "github.com/databricks/cli/libs/sdktypes/dataquality/v1"
+	sdkdataquality "github.com/databricks/sdk-go/dataquality/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -66,7 +69,6 @@ var cancelRefreshOverrides []func(
 
 func newCancelRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var cancelRefreshReq dataquality.CancelRefreshRequest
 
 	cmd.Use = "cancel-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
@@ -118,20 +120,31 @@ Cancel a refresh.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		cancelRefreshReq.ObjectType = args[0]
-		cancelRefreshReq.ObjectId = args[1]
-		_, err = fmt.Sscan(args[2], &cancelRefreshReq.RefreshId)
+		cancelRefreshReq.ObjectType = new(args[0])
+		cancelRefreshReq.ObjectId = new(args[1])
+		var cancelRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[2], &cancelRefreshRefreshIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
+		cancelRefreshReq.RefreshId = &cancelRefreshRefreshIdArg
 
-		response, err := w.DataQuality.CancelRefresh(ctx, cancelRefreshReq)
+		sdkReq, err := dataquality.CancelRefreshRequestToSDK(&cancelRefreshReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataQuality.CancelRefresh(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.CancelRefreshResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -157,9 +170,9 @@ var createMonitorOverrides []func(
 
 func newCreateMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createMonitorReq dataquality.CreateMonitorRequest
-	createMonitorReq.Monitor = dataquality.Monitor{}
+	createMonitorReq.Monitor = &dataquality.Monitor{}
+
 	var createMonitorJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -231,6 +244,7 @@ Create a monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMonitorJson.Unmarshal(&createMonitorReq.Monitor)
@@ -245,18 +259,26 @@ Create a monitor.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createMonitorReq.Monitor.ObjectType = args[0]
+			createMonitorReq.Monitor.ObjectType = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createMonitorReq.Monitor.ObjectId = args[1]
+			createMonitorReq.Monitor.ObjectId = new(args[1])
 		}
 
-		response, err := w.DataQuality.CreateMonitor(ctx, createMonitorReq)
+		sdkReq, err := dataquality.CreateMonitorRequestToSDK(&createMonitorReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataQuality.CreateMonitor(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.MonitorFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -282,9 +304,9 @@ var createRefreshOverrides []func(
 
 func newCreateRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createRefreshReq dataquality.CreateRefreshRequest
-	createRefreshReq.Refresh = dataquality.Refresh{}
+	createRefreshReq.Refresh = &dataquality.Refresh{}
+
 	var createRefreshJson flags.JsonFlag
 
 	cmd.Flags().Var(&createRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -336,6 +358,7 @@ Create a refresh.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createRefreshJson.Unmarshal(&createRefreshReq.Refresh)
@@ -349,15 +372,23 @@ Create a refresh.
 				}
 			}
 		}
-		createRefreshReq.ObjectType = args[0]
-		createRefreshReq.ObjectId = args[1]
+		createRefreshReq.Refresh.ObjectType = new(args[0])
+		createRefreshReq.Refresh.ObjectId = new(args[1])
 
-		response, err := w.DataQuality.CreateRefresh(ctx, createRefreshReq)
+		sdkReq, err := dataquality.CreateRefreshRequestToSDK(&createRefreshReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataQuality.CreateRefresh(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.RefreshFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -378,13 +409,12 @@ Create a refresh.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMonitorOverrides []func(
 	*cobra.Command,
-	*dataquality.DeleteMonitorRequest,
+	*sdkdataquality.DeleteMonitorRequest,
 )
 
 func newDeleteMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteMonitorReq dataquality.DeleteMonitorRequest
+	var deleteMonitorReq sdkdataquality.DeleteMonitorRequest
 
 	cmd.Use = "delete-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `*Public Preview* Delete a monitor.`
@@ -440,11 +470,13 @@ Delete a monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMonitorReq.ObjectType = args[0]
-		deleteMonitorReq.ObjectId = args[1]
+		deleteMonitorReq.ObjectType = new(args[0])
+		deleteMonitorReq.ObjectId = new(args[1])
 
-		err = w.DataQuality.DeleteMonitor(ctx, deleteMonitorReq)
+		sdkReq := &deleteMonitorReq
+		err = w.DataQuality.DeleteMonitor(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -469,13 +501,12 @@ Delete a monitor.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteRefreshOverrides []func(
 	*cobra.Command,
-	*dataquality.DeleteRefreshRequest,
+	*sdkdataquality.DeleteRefreshRequest,
 )
 
 func newDeleteRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteRefreshReq dataquality.DeleteRefreshRequest
+	var deleteRefreshReq sdkdataquality.DeleteRefreshRequest
 
 	cmd.Use = "delete-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
 	cmd.Short = `*Public Preview* Delete a refresh.`
@@ -517,15 +548,19 @@ Delete a refresh.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteRefreshReq.ObjectType = args[0]
-		deleteRefreshReq.ObjectId = args[1]
-		_, err = fmt.Sscan(args[2], &deleteRefreshReq.RefreshId)
+		deleteRefreshReq.ObjectType = new(args[0])
+		deleteRefreshReq.ObjectId = new(args[1])
+		var deleteRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[2], &deleteRefreshRefreshIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
+		deleteRefreshReq.RefreshId = &deleteRefreshRefreshIdArg
 
-		err = w.DataQuality.DeleteRefresh(ctx, deleteRefreshReq)
+		sdkReq := &deleteRefreshReq
+		err = w.DataQuality.DeleteRefresh(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -550,13 +585,12 @@ Delete a refresh.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMonitorOverrides []func(
 	*cobra.Command,
-	*dataquality.GetMonitorRequest,
+	*sdkdataquality.GetMonitorRequest,
 )
 
 func newGetMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMonitorReq dataquality.GetMonitorRequest
+	var getMonitorReq sdkdataquality.GetMonitorRequest
 
 	cmd.Use = "get-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `*Public Preview* Read a monitor.`
@@ -614,16 +648,22 @@ Read a monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMonitorReq.ObjectType = args[0]
-		getMonitorReq.ObjectId = args[1]
+		getMonitorReq.ObjectType = new(args[0])
+		getMonitorReq.ObjectId = new(args[1])
 
-		response, err := w.DataQuality.GetMonitor(ctx, getMonitorReq)
+		sdkReq := &getMonitorReq
+		response, err := w.DataQuality.GetMonitor(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.MonitorFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -644,13 +684,12 @@ Read a monitor.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getRefreshOverrides []func(
 	*cobra.Command,
-	*dataquality.GetRefreshRequest,
+	*sdkdataquality.GetRefreshRequest,
 )
 
 func newGetRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getRefreshReq dataquality.GetRefreshRequest
+	var getRefreshReq sdkdataquality.GetRefreshRequest
 
 	cmd.Use = "get-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
 	cmd.Short = `*Public Preview* Get a refresh.`
@@ -705,20 +744,28 @@ Get a refresh.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getRefreshReq.ObjectType = args[0]
-		getRefreshReq.ObjectId = args[1]
-		_, err = fmt.Sscan(args[2], &getRefreshReq.RefreshId)
+		getRefreshReq.ObjectType = new(args[0])
+		getRefreshReq.ObjectId = new(args[1])
+		var getRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[2], &getRefreshRefreshIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
+		getRefreshReq.RefreshId = &getRefreshRefreshIdArg
 
-		response, err := w.DataQuality.GetRefresh(ctx, getRefreshReq)
+		sdkReq := &getRefreshReq
+		response, err := w.DataQuality.GetRefresh(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.RefreshFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -744,20 +791,20 @@ var listMonitorOverrides []func(
 
 func newListMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listMonitorReq dataquality.ListMonitorRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listMonitorLimit int
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listMonitorReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMonitorLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listMonitorReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-monitor"
@@ -781,16 +828,20 @@ List monitors.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.DataQuality.ListMonitor(ctx, listMonitorReq)
+		sdkReq, err := dataquality.ListMonitorRequestToSDK(&listMonitorReq)
+		if err != nil {
+			return err
+		}
 		if listMonitorLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMonitorLimit)
 		}
 		if listMonitorLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listMonitorLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.DataQuality.ListMonitorIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, dataquality.MonitorFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -816,20 +867,20 @@ var listRefreshOverrides []func(
 
 func newListRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listRefreshReq dataquality.ListRefreshRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listRefreshLimit int
 
-	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listRefreshReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listRefreshLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listRefreshReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
@@ -884,19 +935,23 @@ List refreshes.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listRefreshReq.ObjectType = args[0]
-		listRefreshReq.ObjectId = args[1]
+		listRefreshReq.ObjectType = new(args[0])
+		listRefreshReq.ObjectId = new(args[1])
 
-		response := w.DataQuality.ListRefresh(ctx, listRefreshReq)
+		sdkReq, err := dataquality.ListRefreshRequestToSDK(&listRefreshReq)
+		if err != nil {
+			return err
+		}
 		if listRefreshLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRefreshLimit)
 		}
 		if listRefreshLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listRefreshLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.DataQuality.ListRefreshIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, dataquality.RefreshFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -922,9 +977,9 @@ var updateMonitorOverrides []func(
 
 func newUpdateMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateMonitorReq dataquality.UpdateMonitorRequest
-	updateMonitorReq.Monitor = dataquality.Monitor{}
+	updateMonitorReq.Monitor = &dataquality.Monitor{}
+
 	var updateMonitorJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1009,6 +1064,7 @@ Update a monitor.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateMonitorJson.Unmarshal(&updateMonitorReq.Monitor)
@@ -1022,22 +1078,30 @@ Update a monitor.
 				}
 			}
 		}
-		updateMonitorReq.ObjectType = args[0]
-		updateMonitorReq.ObjectId = args[1]
-		updateMonitorReq.UpdateMask = args[2]
+		updateMonitorReq.ObjectType = new(args[0])
+		updateMonitorReq.ObjectId = new(args[1])
+		updateMonitorReq.UpdateMask = new(args[2])
 		if !cmd.Flags().Changed("json") {
-			updateMonitorReq.Monitor.ObjectType = args[3]
+			updateMonitorReq.ObjectType = new(args[3])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateMonitorReq.Monitor.ObjectId = args[4]
+			updateMonitorReq.ObjectId = new(args[4])
 		}
 
-		response, err := w.DataQuality.UpdateMonitor(ctx, updateMonitorReq)
+		sdkReq, err := dataquality.UpdateMonitorRequestToSDK(&updateMonitorReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataQuality.UpdateMonitor(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.MonitorFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1063,9 +1127,9 @@ var updateRefreshOverrides []func(
 
 func newUpdateRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateRefreshReq dataquality.UpdateRefreshRequest
-	updateRefreshReq.Refresh = dataquality.Refresh{}
+	updateRefreshReq.Refresh = &dataquality.Refresh{}
+
 	var updateRefreshJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1134,6 +1198,7 @@ Update a refresh.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRefreshJson.Unmarshal(&updateRefreshReq.Refresh)
@@ -1147,27 +1212,36 @@ Update a refresh.
 				}
 			}
 		}
-		updateRefreshReq.ObjectType = args[0]
-		updateRefreshReq.ObjectId = args[1]
-		_, err = fmt.Sscan(args[2], &updateRefreshReq.RefreshId)
+		updateRefreshReq.ObjectType = new(args[0])
+		updateRefreshReq.ObjectId = new(args[1])
+		var updateRefreshRefreshIdArg int64
+		_, err = fmt.Sscan(args[2], &updateRefreshRefreshIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
-
-		updateRefreshReq.UpdateMask = args[3]
+		updateRefreshReq.RefreshId = &updateRefreshRefreshIdArg
+		updateRefreshReq.UpdateMask = new(args[3])
 		if !cmd.Flags().Changed("json") {
-			updateRefreshReq.Refresh.ObjectType = args[4]
+			updateRefreshReq.ObjectType = new(args[4])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateRefreshReq.Refresh.ObjectId = args[5]
+			updateRefreshReq.ObjectId = new(args[5])
 		}
 
-		response, err := w.DataQuality.UpdateRefresh(ctx, updateRefreshReq)
+		sdkReq, err := dataquality.UpdateRefreshRequestToSDK(&updateRefreshReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.DataQuality.UpdateRefresh(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := dataquality.RefreshFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

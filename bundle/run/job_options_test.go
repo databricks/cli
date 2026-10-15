@@ -3,8 +3,9 @@ package run
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -188,10 +189,10 @@ func TestJobOptionsSqlParamsMultiple(t *testing.T) {
 
 func TestJobOptionsValidateIfJobHasJobParameters(t *testing.T) {
 	job := &resources.Job{
-		Parameters: []jobs.JobParameterDefinition{
+		Parameters: []jobs.JobLevelParameter{
 			{
-				Name:    "param",
-				Default: "value",
+				Name:    new("param"),
+				Default: new("value"),
 			},
 		},
 	}
@@ -217,7 +218,7 @@ func TestJobOptionsValidateIfJobHasJobParameters(t *testing.T) {
 
 func TestJobOptionsValidateIfJobHasNoJobParameters(t *testing.T) {
 	job := &resources.Job{
-		Parameters: []jobs.JobParameterDefinition{},
+		Parameters: []jobs.JobLevelParameter{},
 	}
 
 	{

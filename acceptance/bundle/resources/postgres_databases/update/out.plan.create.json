@@ -12,10 +12,10 @@
   "action": "create",
   "new_state": {
     "value": {
-      "database_id": "my-database",
-      "parent": "${resources.postgres_branches.main.id}",
       "postgres_database": "initial_db_name",
-      "role": "${resources.postgres_roles.owner.id}"
+      "role": "${resources.postgres_roles.owner.id}",
+      "database_id": "my-database",
+      "parent": "${resources.postgres_branches.main.id}"
     },
     "vars": {
       "parent": "${resources.postgres_branches.main.id}",

@@ -16,6 +16,10 @@ import (
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
 var knownMissingInRemoteType = map[string][]string{
+	"clusters": {
+		// clone_from is part of the create request but not supported by DABs; it is never returned on GET.
+		"clone_from",
+	},
 	"external_locations": {
 		"skip_validation",
 	},

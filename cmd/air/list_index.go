@@ -6,7 +6,8 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/cache"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // indexStrategy serves the caller's own runs from the AiTrainingService index:
@@ -17,7 +18,7 @@ import (
 // whole id set first), but it still yields in batches so the table paints early.
 type indexStrategy struct {
 	ctx         context.Context
-	w           *databricks.WorkspaceClient
+	w           *sdkclients.Clients
 	activeOnly  bool
 	filters     listFilters
 	limit       int
@@ -30,7 +31,7 @@ type indexStrategy struct {
 	loaded bool
 }
 
-func newIndexStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery, limit int) *indexStrategy {
+func newIndexStrategy(ctx context.Context, w *sdkclients.Clients, q listQuery, limit int) *indexStrategy {
 	return &indexStrategy{
 		ctx:         ctx,
 		w:           w,
@@ -126,10 +127,10 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		}
 		row := buildListRow(run, s.host, s.workspaceID)
 		taskRunID := taskRunID(run)
-		rows = append(rows, listedRun{row: row, runID: run.RunId, taskRunID: taskRunID})
+		rows = append(rows, listedRun{row: row, runID: utils.Deref(run.RunId), taskRunID: taskRunID})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunId, taskRunID, start, row, fields)
+			putRow(s.ctx, s.cache, host, utils.Deref(run.RunId), taskRunID, start, row, fields)
 		}
 	}
 

@@ -8,11 +8,19 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 )
 
 // Slice with functions to override default command behavior.
@@ -85,19 +93,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cancelAllRunsOverrides []func(
 	*cobra.Command,
-	*jobs.CancelAllRuns,
+	*jobs.CancelAllRunsRequest,
 )
 
 func newCancelAllRuns() *cobra.Command {
 	cmd := &cobra.Command{}
+	var cancelAllRunsReq jobs.CancelAllRunsRequest
 
-	var cancelAllRunsReq jobs.CancelAllRuns
 	var cancelAllRunsJson flags.JsonFlag
 
 	cmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs.`)
-	cmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
+	flags.BoolPtrVar(cmd.Flags(), &cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", `Optional boolean parameter to cancel all queued runs.`)
+	flags.Int64PtrVar(cmd.Flags(), &cancelAllRunsReq.JobId, "job-id", `The canonical identifier of the job to cancel all runs of.`)
 
 	cmd.Use = "cancel-all-runs"
 	cmd.Short = `Cancel all runs of a job.`
@@ -119,6 +127,7 @@ func newCancelAllRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := cancelAllRunsJson.Unmarshal(&cancelAllRunsReq)
@@ -133,10 +142,16 @@ func newCancelAllRuns() *cobra.Command {
 			}
 		}
 
-		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
+		sdkReq, err := jobs.CancelAllRunsRequestToSDK(&cancelAllRunsReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Jobs.CancelAllRuns(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -158,13 +173,13 @@ func newCancelAllRuns() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cancelRunOverrides []func(
 	*cobra.Command,
-	*jobs.CancelRun,
+	*jobs.CancelRunRequest,
 )
 
 func newCancelRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var cancelRunReq jobs.CancelRunRequest
 
-	var cancelRunReq jobs.CancelRun
 	var cancelRunJson flags.JsonFlag
 
 	var cancelRunSkipWait bool
@@ -204,6 +219,7 @@ func newCancelRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := cancelRunJson.Unmarshal(&cancelRunReq)
@@ -220,7 +236,7 @@ func newCancelRun() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -234,37 +250,47 @@ func newCancelRun() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have this field is required")
 			}
-			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
+			var cancelRunRunIdArg int64
+			_, err = fmt.Sscan(args[0], &cancelRunRunIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
-
+			cancelRunReq.RunId = &cancelRunRunIdArg
 		}
 
-		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
+		sdkReq, err := jobs.CancelRunRequestToSDK(&cancelRunReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Jobs.CancelRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if cancelRunSkipWait {
-			return nil
+			// Render the current state, as of right after the call.
+			current, err := w.Jobs.GetRun(ctx, sdkjobs.GetRunRequest{RunId: new(wait.GetRunId())})
+			if err != nil {
+				return err
+			}
+			out, err := jobs.GetRunResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *jobs.Run) {
-			if i.State == nil {
-				return
-			}
-			status := i.State.LifeCycleState
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.State != nil {
-				statusMessage = i.State.StateMessage
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(cancelRunTimeout)
+		sp.Update("Waiting for cancel-run to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(cancelRunTimeout))
 		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := jobs.GetRunResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -285,13 +311,13 @@ func newCancelRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*jobs.CreateJob,
+	*jobs.CreateJobRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq jobs.CreateJobRequest
 
-	var createReq jobs.CreateJob
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -308,6 +334,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -324,12 +351,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Jobs.Create(ctx, createReq)
+		sdkReq, err := jobs.CreateJobRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.CreateJob(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.CreateJobResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -350,13 +385,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*jobs.DeleteJob,
+	*jobs.DeleteJobRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq jobs.DeleteJobRequest
 
-	var deleteReq jobs.DeleteJob
 	var deleteJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -389,6 +424,7 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -405,7 +441,7 @@ func newDelete() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -419,17 +455,24 @@ func newDelete() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have the canonical identifier of the job to delete")
 			}
-			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
+			var deleteJobIdArg int64
+			_, err = fmt.Sscan(args[0], &deleteJobIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
-
+			deleteReq.JobId = &deleteJobIdArg
 		}
 
-		err = w.Jobs.Delete(ctx, deleteReq)
+		sdkReq, err := jobs.DeleteJobRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Jobs.DeleteJob(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -451,13 +494,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteRunOverrides []func(
 	*cobra.Command,
-	*jobs.DeleteRun,
+	*jobs.DeleteRunRequest,
 )
 
 func newDeleteRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteRunReq jobs.DeleteRunRequest
 
-	var deleteRunReq jobs.DeleteRun
 	var deleteRunJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -490,6 +533,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunJson.Unmarshal(&deleteRunReq)
@@ -506,7 +550,7 @@ func newDeleteRun() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -520,17 +564,24 @@ func newDeleteRun() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have id of the run to delete")
 			}
-			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
+			var deleteRunRunIdArg int64
+			_, err = fmt.Sscan(args[0], &deleteRunRunIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
-
+			deleteRunReq.RunId = &deleteRunRunIdArg
 		}
 
-		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
+		sdkReq, err := jobs.DeleteRunRequestToSDK(&deleteRunReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Jobs.DeleteRun(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -557,10 +608,9 @@ var exportRunOverrides []func(
 
 func newExportRun() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var exportRunReq jobs.ExportRunRequest
 
-	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]`)
+	flags.EnumVar(cmd.Flags(), &exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]`, "ViewsToExport", "ALL", "CODE", "DASHBOARDS")
 
 	cmd.Use = "export-run RUN_ID"
 	cmd.Short = `Export and retrieve a job run.`
@@ -579,11 +629,12 @@ func newExportRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -597,17 +648,27 @@ func newExportRun() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the canonical identifier for the run")
 		}
-		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
+		var exportRunRunIdArg int64
+		_, err = fmt.Sscan(args[0], &exportRunRunIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
+		exportRunReq.RunId = &exportRunRunIdArg
 
-		response, err := w.Jobs.ExportRun(ctx, exportRunReq)
+		sdkReq, err := jobs.ExportRunRequestToSDK(&exportRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.ExportRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.ExportRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -633,11 +694,10 @@ var getOverrides []func(
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var getReq jobs.GetJobRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeTriggerState, "include-trigger-state", getReq.IncludeTriggerState, `Flag that indicates that trigger state should be included in the response.`)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeTriggerState, "include-trigger-state", `Flag that indicates that trigger state should be included in the response.`)
+	flags.StringPtrVar(cmd.Flags(), &getReq.PageToken, "page-token", `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
 	cmd.Use = "get JOB_ID"
 	cmd.Short = `Get a single job.`
@@ -666,11 +726,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -684,17 +745,27 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the canonical identifier of the job to retrieve information about")
 		}
-		_, err = fmt.Sscan(args[0], &getReq.JobId)
+		var getJobIdArg int64
+		_, err = fmt.Sscan(args[0], &getJobIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
+		getReq.JobId = &getJobIdArg
 
-		response, err := w.Jobs.Get(ctx, getReq)
+		sdkReq, err := jobs.GetJobRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.GetJob(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.GetJobResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -715,13 +786,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*jobs.GetJobPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq jobs.GetJobPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels JOB_ID"
 	cmd.Short = `Get job permission levels.`
@@ -740,11 +810,12 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -758,14 +829,21 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		getPermissionLevelsReq.JobId = args[0]
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Jobs.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("jobs")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -786,13 +864,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*jobs.GetJobPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq jobs.GetJobPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions JOB_ID"
 	cmd.Short = `Get job permissions.`
@@ -812,11 +889,12 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -830,14 +908,21 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		getPermissionsReq.JobId = args[0]
+		getPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Jobs.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("jobs")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -863,12 +948,11 @@ var getRunOverrides []func(
 
 func newGetRun() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var getRunReq jobs.GetRunRequest
 
-	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
-	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
-	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun response to request the next page of the run's array properties.`)
+	flags.BoolPtrVar(cmd.Flags(), &getRunReq.IncludeHistory, "include-history", `Whether to include the repair history in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getRunReq.IncludeResolvedValues, "include-resolved-values", `Whether to include resolved parameter values in the response.`)
+	flags.StringPtrVar(cmd.Flags(), &getRunReq.PageToken, "page-token", `Use next_page_token returned from the previous GetRun response to request the next page of the run's array properties.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
@@ -897,11 +981,12 @@ func newGetRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -915,17 +1000,27 @@ func newGetRun() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the canonical identifier of the run for which to retrieve the metadata")
 		}
-		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
+		var getRunRunIdArg int64
+		_, err = fmt.Sscan(args[0], &getRunRunIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
+		getRunReq.RunId = &getRunRunIdArg
 
-		response, err := w.Jobs.GetRun(ctx, getRunReq)
+		sdkReq, err := jobs.GetRunRequestToSDK(&getRunReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.GetRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.GetRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -951,7 +1046,6 @@ var getRunOutputOverrides []func(
 
 func newGetRunOutput() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var getRunOutputReq jobs.GetRunOutputRequest
 
 	cmd.Use = "get-run-output RUN_ID"
@@ -980,11 +1074,12 @@ func newGetRunOutput() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -998,17 +1093,27 @@ func newGetRunOutput() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the canonical identifier for the run")
 		}
-		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
+		var getRunOutputRunIdArg int64
+		_, err = fmt.Sscan(args[0], &getRunOutputRunIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
+		getRunOutputReq.RunId = &getRunOutputRunIdArg
 
-		response, err := w.Jobs.GetRunOutput(ctx, getRunOutputReq)
+		sdkReq, err := jobs.GetRunOutputRequestToSDK(&getRunOutputReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Jobs.GetRunOutput(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := jobs.GetRunOutputResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1034,24 +1139,24 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq jobs.ListJobsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
-	cmd.Flags().IntVar(&listReq.Limit, "page-size", listReq.Limit, `The number of jobs to return.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.ExpandTasks, "expand-tasks", `Whether to include task and cluster details in the response.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.Limit, "page-size", `The number of jobs to return.`)
 	cmd.Flags().Lookup("page-size").Hidden = true
-	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
-	cmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.Name, "name", `A filter on the list based on the exact (case insensitive) job name.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.Offset, "offset", `The offset of the first job to return, relative to the most recently created job.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -1073,16 +1178,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Jobs.List(ctx, listReq)
+		sdkReq, err := jobs.ListJobsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Jobs.ListJobsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, jobs.BaseJobFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1108,29 +1217,29 @@ var listRunsOverrides []func(
 
 func newListRuns() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listRunsReq jobs.ListRunsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listRunsLimit int
 
-	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
-	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
-	cmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
-	cmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
-	cmd.Flags().IntVar(&listRunsReq.Limit, "page-size", listRunsReq.Limit, `The number of runs to return.`)
+	flags.BoolPtrVar(cmd.Flags(), &listRunsReq.ActiveOnly, "active-only", `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
+	flags.BoolPtrVar(cmd.Flags(), &listRunsReq.CompletedOnly, "completed-only", `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
+	flags.BoolPtrVar(cmd.Flags(), &listRunsReq.ExpandTasks, "expand-tasks", `Whether to include task and cluster details in the response.`)
+	flags.Int64PtrVar(cmd.Flags(), &listRunsReq.JobId, "job-id", `The job for which to list runs.`)
+	flags.IntPtrVar(cmd.Flags(), &listRunsReq.Limit, "page-size", `The number of runs to return.`)
 	cmd.Flags().Lookup("page-size").Hidden = true
-	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
-	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
-	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
-	cmd.Flags().Int64Var(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
+	flags.IntPtrVar(cmd.Flags(), &listRunsReq.Offset, "offset", `The offset of the first run to return, relative to the most recent run.`)
+	flags.EnumVar(cmd.Flags(), &listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`, "RunType", "JOB_RUN", "SUBMIT_RUN", "WORKFLOW_RUN")
+	flags.Int64PtrVar(cmd.Flags(), &listRunsReq.StartTimeFrom, "start-time-from", `Show runs that started _at or after_ this value.`)
+	flags.Int64PtrVar(cmd.Flags(), &listRunsReq.StartTimeTo, "start-time-to", `Show runs that started _at or before_ this value.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listRunsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listRunsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-runs"
@@ -1153,16 +1262,20 @@ func newListRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Jobs.ListRuns(ctx, listRunsReq)
+		sdkReq, err := jobs.ListRunsRequestToSDK(&listRunsReq)
+		if err != nil {
+			return err
+		}
 		if listRunsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRunsLimit)
 		}
 		if listRunsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listRunsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Jobs.ListRunsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, jobs.BaseRunFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1183,13 +1296,13 @@ func newListRuns() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var repairRunOverrides []func(
 	*cobra.Command,
-	*jobs.RepairRun,
+	*jobs.RepairRunRequest,
 )
 
 func newRepairRun() *cobra.Command {
 	cmd := &cobra.Command{}
+	var repairRunReq jobs.RepairRunRequest
 
-	var repairRunReq jobs.RepairRun
 	var repairRunJson flags.JsonFlag
 
 	var repairRunSkipWait bool
@@ -1203,14 +1316,14 @@ func newRepairRun() *cobra.Command {
 	// TODO: array: dbt_commands
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
-	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
+	flags.Int64PtrVar(cmd.Flags(), &repairRunReq.LatestRepairId, "latest-repair-id", `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
-	cmd.Flags().Var(&repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	flags.EnumVar(cmd.Flags(), &repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`, "PerformanceTarget", "PERFORMANCE_OPTIMIZED", "STANDARD")
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
-	cmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks.`)
-	cmd.Flags().BoolVar(&repairRunReq.RerunDependentTasks, "rerun-dependent-tasks", repairRunReq.RerunDependentTasks, `If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful.`)
+	flags.BoolPtrVar(cmd.Flags(), &repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", `If true, repair all failed tasks.`)
+	flags.BoolPtrVar(cmd.Flags(), &repairRunReq.RerunDependentTasks, "rerun-dependent-tasks", `If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful.`)
 	// TODO: array: rerun_tasks
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
@@ -1245,6 +1358,7 @@ func newRepairRun() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := repairRunJson.Unmarshal(&repairRunReq)
@@ -1261,7 +1375,7 @@ func newRepairRun() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1275,37 +1389,48 @@ func newRepairRun() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have the job run id of the run to repair")
 			}
-			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
+			var repairRunRunIdArg int64
+			_, err = fmt.Sscan(args[0], &repairRunRunIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+			repairRunReq.RunId = &repairRunRunIdArg
 
 		}
 
-		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
+		sdkReq, err := jobs.RepairRunRequestToSDK(&repairRunReq)
 		if err != nil {
 			return err
 		}
 		if repairRunSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.RepairRunResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/runs/repair", auth.WorkspaceIDHeaders(w.Config), nil, &repairRunReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *jobs.Run) {
-			if i.State == nil {
-				return
-			}
-			status := i.State.LifeCycleState
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.State != nil {
-				statusMessage = i.State.StateMessage
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(repairRunTimeout)
-		sp.Close()
+		wait, err := w.Jobs.Repair(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for repair-run to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(repairRunTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := jobs.GetRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1326,13 +1451,13 @@ func newRepairRun() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var resetOverrides []func(
 	*cobra.Command,
-	*jobs.ResetJob,
+	*jobs.ResetJobRequest,
 )
 
 func newReset() *cobra.Command {
 	cmd := &cobra.Command{}
+	var resetReq jobs.ResetJobRequest
 
-	var resetReq jobs.ResetJob
 	var resetJson flags.JsonFlag
 
 	cmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1352,6 +1477,7 @@ func newReset() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := resetJson.Unmarshal(&resetReq)
@@ -1368,10 +1494,16 @@ func newReset() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.Jobs.Reset(ctx, resetReq)
+		sdkReq, err := jobs.ResetJobRequestToSDK(&resetReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Jobs.ResetJob(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1393,13 +1525,13 @@ func newReset() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var runNowOverrides []func(
 	*cobra.Command,
-	*jobs.RunNow,
+	*jobs.RunNowRequest,
 )
 
 func newRunNow() *cobra.Command {
 	cmd := &cobra.Command{}
+	var runNowReq jobs.RunNowRequest
 
-	var runNowReq jobs.RunNow
 	var runNowJson flags.JsonFlag
 
 	var runNowSkipWait bool
@@ -1411,12 +1543,12 @@ func newRunNow() *cobra.Command {
 	cmd.Flags().Var(&runNowJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
-	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
+	flags.StringPtrVar(cmd.Flags(), &runNowReq.IdempotencyToken, "idempotency-token", `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: array: only
-	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	flags.EnumVar(cmd.Flags(), &runNowReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`, "PerformanceTarget", "PERFORMANCE_OPTIMIZED", "STANDARD")
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
@@ -1452,6 +1584,7 @@ func newRunNow() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := runNowJson.Unmarshal(&runNowReq)
@@ -1468,7 +1601,7 @@ func newRunNow() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1482,37 +1615,48 @@ func newRunNow() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have the id of the job to be executed")
 			}
-			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
+			var runNowJobIdArg int64
+			_, err = fmt.Sscan(args[0], &runNowJobIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+			runNowReq.JobId = &runNowJobIdArg
 
 		}
 
-		wait, err := w.Jobs.RunNow(ctx, runNowReq)
+		sdkReq, err := jobs.RunNowRequestToSDK(&runNowReq)
 		if err != nil {
 			return err
 		}
 		if runNowSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.RunNowResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/run-now", auth.WorkspaceIDHeaders(w.Config), nil, &runNowReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *jobs.Run) {
-			if i.State == nil {
-				return
-			}
-			status := i.State.LifeCycleState
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.State != nil {
-				statusMessage = i.State.StateMessage
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(runNowTimeout)
-		sp.Close()
+		wait, err := w.Jobs.RunNow(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for run-now to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(runNowTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := jobs.GetRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1533,13 +1677,13 @@ func newRunNow() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*jobs.JobPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq jobs.JobPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1565,6 +1709,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1581,7 +1726,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1595,14 +1740,24 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		setPermissionsReq.JobId = args[0]
+		setPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Jobs.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("jobs")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1623,13 +1778,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var submitOverrides []func(
 	*cobra.Command,
-	*jobs.SubmitRun,
+	*jobs.SubmitRunRequest,
 )
 
 func newSubmit() *cobra.Command {
 	cmd := &cobra.Command{}
+	var submitReq jobs.SubmitRunRequest
 
-	var submitReq jobs.SubmitRun
 	var submitJson flags.JsonFlag
 
 	var submitSkipWait bool
@@ -1641,21 +1796,21 @@ func newSubmit() *cobra.Command {
 	cmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	cmd.Flags().StringVar(&submitReq.BudgetPolicyId, "budget-policy-id", submitReq.BudgetPolicyId, `The user specified id of the budget policy to use for this one-time run.`)
+	flags.StringPtrVar(cmd.Flags(), &submitReq.BudgetPolicyId, "budget-policy-id", `The user specified id of the budget policy to use for this one-time run.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: environment_variables
 	// TODO: array: environments
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
-	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
+	flags.StringPtrVar(cmd.Flags(), &submitReq.IdempotencyToken, "idempotency-token", `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
-	cmd.Flags().Var(&submitReq.PerformanceTarget, "performance-target", `The performance mode on a serverless one-time run. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	flags.EnumVar(cmd.Flags(), &submitReq.PerformanceTarget, "performance-target", `The performance mode on a serverless one-time run. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`, "PerformanceTarget", "PERFORMANCE_OPTIMIZED", "STANDARD")
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
+	flags.StringPtrVar(cmd.Flags(), &submitReq.RunName, "run-name", `An optional name for the run.`)
 	// TODO: array: tasks
-	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
-	cmd.Flags().StringVar(&submitReq.UsagePolicyId, "usage-policy-id", submitReq.UsagePolicyId, `The user specified id of the usage policy to use for this one-time run.`)
+	flags.IntPtrVar(cmd.Flags(), &submitReq.TimeoutSeconds, "timeout-seconds", `An optional timeout applied to each run of this job.`)
+	flags.StringPtrVar(cmd.Flags(), &submitReq.UsagePolicyId, "usage-policy-id", `The user specified id of the usage policy to use for this one-time run.`)
 	// TODO: complex arg: webhook_notifications
 
 	cmd.Use = "submit"
@@ -1687,6 +1842,7 @@ func newSubmit() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := submitJson.Unmarshal(&submitReq)
@@ -1701,30 +1857,39 @@ func newSubmit() *cobra.Command {
 			}
 		}
 
-		wait, err := w.Jobs.Submit(ctx, submitReq)
+		sdkReq, err := jobs.SubmitRunRequestToSDK(&submitReq)
 		if err != nil {
 			return err
 		}
 		if submitSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current jobs.SubmitRunResponse
+			err = api.Do(ctx, "POST", "/api/2.2/jobs/runs/submit", auth.WorkspaceIDHeaders(w.Config), nil, &submitReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *jobs.Run) {
-			if i.State == nil {
-				return
-			}
-			status := i.State.LifeCycleState
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.State != nil {
-				statusMessage = i.State.StateMessage
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(submitTimeout)
-		sp.Close()
+		wait, err := w.Jobs.SubmitRun(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for submit to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(submitTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := jobs.GetRunResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1745,13 +1910,13 @@ func newSubmit() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*jobs.UpdateJob,
+	*jobs.UpdateJobRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq jobs.UpdateJobRequest
 
-	var updateReq jobs.UpdateJob
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1788,6 +1953,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -1804,7 +1970,7 @@ func newUpdate() *cobra.Command {
 			if len(args) == 0 {
 				sp := cmdio.NewSpinner(ctx)
 				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1818,17 +1984,25 @@ func newUpdate() *cobra.Command {
 			if len(args) != 1 {
 				return errors.New("expected to have the canonical identifier of the job to update")
 			}
-			_, err = fmt.Sscan(args[0], &updateReq.JobId)
+			var updateJobIdArg int64
+			_, err = fmt.Sscan(args[0], &updateJobIdArg)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+			updateReq.JobId = &updateJobIdArg
 
 		}
 
-		err = w.Jobs.Update(ctx, updateReq)
+		sdkReq, err := jobs.UpdateJobRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Jobs.UpdateJob(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1850,13 +2024,13 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*jobs.JobPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq jobs.JobPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1881,6 +2055,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1897,7 +2072,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Jobs.ListJobsIter(ctx, sdkjobs.ListJobsRequest{}), []string{"Settings", "Name"}, []string{"JobId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1911,14 +2086,24 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the job for which to get or manage permissions")
 		}
-		updatePermissionsReq.JobId = args[0]
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Jobs.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("jobs")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

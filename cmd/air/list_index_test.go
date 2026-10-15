@@ -8,17 +8,17 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // indexRun is a terminal AIR run with a start time, for index-path hydration.
-func indexRun(id, startMillis int64) jobs.Run {
+func indexRun(id, startMillis int64) jobs.GetRunResponse {
 	r := airRun(id, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/exp")
-	r.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}
-	r.Tasks[0].StartTime = startMillis
-	r.Tasks[0].EndTime = startMillis + 1000
+	r.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated, ResultState: jobs.RunResultState_RunResultState_Success}
+	r.Tasks[0].StartTime = new(startMillis)
+	r.Tasks[0].EndTime = new(startMillis + 1000)
 	return r
 }
 
@@ -27,7 +27,7 @@ func indexRun(id, startMillis int64) jobs.Run {
 // runID in forbidden returns 403; in missing returns 404.
 type indexHits struct{ index, get int }
 
-func indexAndGetServer(t *testing.T, refs []workflowRef, runs map[int64]jobs.Run, forbidden, missing map[int64]bool) (*httptest.Server, *indexHits) {
+func indexAndGetServer(t *testing.T, refs []workflowRef, runs map[int64]jobs.GetRunResponse, forbidden, missing map[int64]bool) (*httptest.Server, *indexHits) {
 	t.Helper()
 	hits := &indexHits{}
 	wfs := make([]map[string]any, len(refs))
@@ -69,7 +69,7 @@ func TestIndexStrategyOrdersAndLimits(t *testing.T) {
 		{jobRunID: 2, submitTimeMs: 3000_000},
 		{jobRunID: 3, submitTimeMs: 2000_000},
 	}
-	runs := map[int64]jobs.Run{
+	runs := map[int64]jobs.GetRunResponse{
 		1: indexRun(1, 1000_000),
 		2: indexRun(2, 3000_000),
 		3: indexRun(3, 2000_000),
@@ -96,10 +96,10 @@ func TestIndexStrategyOverFetchesWithTaskFilter(t *testing.T) {
 		{jobRunID: 2, submitTimeMs: 2000_000},
 	}
 	run1 := indexRun(1, 3000_000)
-	run1.Tasks[0].AiRuntimeTask.Experiment = "/Users/me@example.com/llama"
+	run1.Tasks[0].AiRuntimeTask.Experiment = new("/Users/me@example.com/llama")
 	run2 := indexRun(2, 2000_000)
-	run2.Tasks[0].AiRuntimeTask.Experiment = "/Users/me@example.com/qwen"
-	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{1: run1, 2: run2}, nil, nil)
+	run2.Tasks[0].AiRuntimeTask.Experiment = new("/Users/me@example.com/qwen")
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.GetRunResponse{1: run1, 2: run2}, nil, nil)
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
@@ -118,7 +118,7 @@ func TestIndexStrategyDropsForbiddenAndMissing(t *testing.T) {
 		{jobRunID: 2, submitTimeMs: 2000_000},
 		{jobRunID: 3, submitTimeMs: 1000_000},
 	}
-	runs := map[int64]jobs.Run{1: indexRun(1, 3000_000), 3: indexRun(3, 1000_000)}
+	runs := map[int64]jobs.GetRunResponse{1: indexRun(1, 3000_000), 3: indexRun(3, 1000_000)}
 	srv, _ := indexAndGetServer(t, refs, runs, map[int64]bool{2: true}, nil)
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "false")
 

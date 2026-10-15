@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,8 +20,8 @@ func makeBundle(t *testing.T) *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"src": {JobSettings: jobs.JobSettings{Name: "source"}},
-					"dst": {JobSettings: jobs.JobSettings{Name: "placeholder"}},
+					"src": {JobSettings: jobs.JobSettings{Name: new("source")}},
+					"dst": {JobSettings: jobs.JobSettings{Name: new("placeholder")}},
 				},
 			},
 		},

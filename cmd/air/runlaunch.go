@@ -2,16 +2,14 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/google/uuid"
 )
 
@@ -20,16 +18,16 @@ import (
 const userWorkspaceDirEnv = "DATABRICKS_INTERNAL_USER_WORKSPACE_DIR"
 
 // currentUserEmail returns the authenticated user's email (works for any domain).
-func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+func currentUserEmail(ctx context.Context, w *sdkclients.Clients) (string, error) {
+	me, err := currentUserName(ctx, w)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve current user: %w", err)
 	}
-	return me.UserName, nil
+	return me, nil
 }
 
 // userWorkspaceDir returns the user's workspace home, honoring the env override.
-func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func userWorkspaceDir(ctx context.Context, w *sdkclients.Clients) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
 		return override, nil
 	}
@@ -59,7 +57,7 @@ func cliLaunchDir(base, experiment, run string) string {
 
 // prospectiveLaunchPaths returns the workspace paths a submission would use
 // without creating directories or uploading artifacts.
-func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig) (string, string, string, error) {
+func prospectiveLaunchPaths(ctx context.Context, w *sdkclients.Clients, cfg *runConfig) (string, string, string, error) {
 	base, err := userWorkspaceDir(ctx, w)
 	if err != nil {
 		return "", "", "", err
@@ -76,19 +74,19 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 // CLI's convention for its other artifact directories. Without this, a missing
 // parent surfaces only as a server-side INTERNAL_ERROR after the run is wasted.
 // An empty dir means the default (/Users/<user>/...), which always exists.
-func ensureExperimentDirectory(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) error {
+func ensureExperimentDirectory(ctx context.Context, w *sdkclients.Clients, experimentDir string) error {
 	if experimentDir == "" {
 		return nil
 	}
 
 	info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
-	if errors.Is(err, apierr.ErrNotFound) {
+	if apierrs.Is(err, apierrs.ErrNotFound) {
 		return w.Workspace.MkdirsByPath(ctx, experimentDir)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, err)
 	}
-	if info.ObjectType != workspace.ObjectTypeDirectory {
+	if info.ObjectType != workspaceapi.ObjectTypeDirectory {
 		return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, info.ObjectType)
 	}
 	return nil

@@ -3,24 +3,24 @@ package permissions
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func user(name string, groups ...string) *iam.User {
-	u := &iam.User{UserName: name}
+func user(name string, groups ...string) *scim.User {
+	u := &scim.User{UserName: new(name)}
 	for _, g := range groups {
-		u.Groups = append(u.Groups, iam.ComplexValue{Display: g})
+		u.Groups = append(u.Groups, scim.ComplexValue{Display: new(g)})
 	}
 	return u
 }
 
-func aclFor(t *testing.T, acl []workspace.WorkspaceObjectAccessControlResponse) *FolderACL {
+func aclFor(t *testing.T, acl []workspaceapi.WorkspaceObjectAccessControlResponse) *FolderACL {
 	t.Helper()
 	return &FolderACL{
 		RequestedPath: "/Workspace/f",
@@ -30,34 +30,34 @@ func aclFor(t *testing.T, acl []workspace.WorkspaceObjectAccessControlResponse) 
 }
 
 func TestFolderACLCanWrite(t *testing.T) {
-	editUser := []workspace.WorkspaceObjectAccessControlResponse{
+	editUser := []workspaceapi.WorkspaceObjectAccessControlResponse{
 		{
 			UserName: "me@example.com",
-			AllPermissions: []workspace.WorkspaceObjectPermission{
+			AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_EDIT"},
 			},
 		},
 	}
-	manageGroup := []workspace.WorkspaceObjectAccessControlResponse{
+	manageGroup := []workspaceapi.WorkspaceObjectAccessControlResponse{
 		{
 			GroupName: "devs",
-			AllPermissions: []workspace.WorkspaceObjectPermission{
+			AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_MANAGE"},
 			},
 		},
 	}
-	readOnlyUser := []workspace.WorkspaceObjectAccessControlResponse{
+	readOnlyUser := []workspaceapi.WorkspaceObjectAccessControlResponse{
 		{
 			UserName: "me@example.com",
-			AllPermissions: []workspace.WorkspaceObjectPermission{
+			AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_READ"},
 			},
 		},
 	}
-	sp := []workspace.WorkspaceObjectAccessControlResponse{
+	sp := []workspaceapi.WorkspaceObjectAccessControlResponse{
 		{
 			ServicePrincipalName: "sp-uuid",
-			AllPermissions: []workspace.WorkspaceObjectPermission{
+			AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_MANAGE"},
 			},
 		},
@@ -65,8 +65,8 @@ func TestFolderACLCanWrite(t *testing.T) {
 
 	tests := []struct {
 		name string
-		acl  []workspace.WorkspaceObjectAccessControlResponse
-		user *iam.User
+		acl  []workspaceapi.WorkspaceObjectAccessControlResponse
+		user *scim.User
 		want bool
 	}{
 		{"direct write", editUser, user("me@example.com"), true},
@@ -94,22 +94,22 @@ func TestFolderACLCanWrite(t *testing.T) {
 // directly.
 
 // homeDirACL: owner has direct CAN_MANAGE (writable).
-var homeDirACL = []workspace.WorkspaceObjectAccessControlResponse{
+var homeDirACL = []workspaceapi.WorkspaceObjectAccessControlResponse{
 	{
 		UserName: "owner@example.com",
-		AllPermissions: []workspace.WorkspaceObjectPermission{
+		AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 			{PermissionLevel: "CAN_MANAGE"},
 		},
 	},
 	{
 		ServicePrincipalName: "00000000-0000-0000-0000-000000000000",
-		AllPermissions: []workspace.WorkspaceObjectPermission{
+		AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 			{PermissionLevel: "CAN_MANAGE", Inherited: true},
 		},
 	},
 	{
 		GroupName: "admins",
-		AllPermissions: []workspace.WorkspaceObjectPermission{
+		AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 			{PermissionLevel: "CAN_MANAGE", Inherited: true},
 		},
 	},
@@ -117,16 +117,16 @@ var homeDirACL = []workspace.WorkspaceObjectAccessControlResponse{
 
 // sharedDirACL: CAN_MANAGE granted to the "users" group (write via group, not a
 // direct grant).
-var sharedDirACL = []workspace.WorkspaceObjectAccessControlResponse{
+var sharedDirACL = []workspaceapi.WorkspaceObjectAccessControlResponse{
 	{
 		GroupName: "users",
-		AllPermissions: []workspace.WorkspaceObjectPermission{
+		AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 			{PermissionLevel: "CAN_MANAGE"},
 		},
 	},
 	{
 		GroupName: "admins",
-		AllPermissions: []workspace.WorkspaceObjectPermission{
+		AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 			{PermissionLevel: "CAN_MANAGE", Inherited: true},
 		},
 	},
@@ -144,25 +144,47 @@ func TestFolderACLCanWriteRealisticACLs(t *testing.T) {
 	assert.False(t, aclFor(t, sharedDirACL).CanWrite(other))
 }
 
+// workspaceWithACL serves get-status for the given directories (path -> object id)
+// and returns getPerms for the permissions read of any of them.
+func workspaceWithACL(t *testing.T, ids map[string]int64, getPerms func() any) *workspaceapi.Client {
+	w, server := bundletest.NewClients(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		path := req.URL.Query().Get("path")
+		id, ok := ids[path]
+		if !ok {
+			return testserver.Response{StatusCode: 404, Body: map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": path}}
+		}
+		return workspaceapi.ObjectInfo{ObjectId: id, ObjectType: workspaceapi.ObjectTypeDirectory, Path: path}
+	})
+	server.Handle("GET", "/api/2.0/permissions/directories/{id}", func(req testserver.Request) any {
+		return getPerms()
+	})
+	return w.Workspace
+}
+
+func apiError(status int, code string) testserver.Response {
+	return testserver.Response{StatusCode: status, Body: map[string]string{"error_code": code, "message": code}}
+}
+
 func TestCheckWritable(t *testing.T) {
 	const folder = "/Workspace/f"
 	me := user("me@example.com")
 
-	writableACL := &workspace.WorkspaceObjectPermissions{
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+	writableACL := &workspaceapi.WorkspaceObjectPermissions{
+		AccessControlList: []workspaceapi.WorkspaceObjectAccessControlResponse{
 			{
 				UserName: "me@example.com",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
+				AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_MANAGE"},
 				},
 			},
 		},
 	}
-	readOnlyACL := &workspace.WorkspaceObjectPermissions{
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
+	readOnlyACL := &workspaceapi.WorkspaceObjectPermissions{
+		AccessControlList: []workspaceapi.WorkspaceObjectAccessControlResponse{
 			{
 				UserName: "me@example.com",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
+				AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_READ"},
 				},
 			},
@@ -171,72 +193,55 @@ func TestCheckWritable(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		getPerms func() (*workspace.WorkspaceObjectPermissions, error)
+		getPerms func() any
 		want     Writability
 	}{
 		{
 			"writable",
-			func() (*workspace.WorkspaceObjectPermissions, error) { return writableACL, nil },
+			func() any { return writableACL },
 			WritabilityWritable,
 		},
 		{
 			// Reading the ACL is denied because it requires manage access, so the
 			// user definitely cannot write. This is the common real-world case.
 			"permission denied on ACL read means not writable",
-			func() (*workspace.WorkspaceObjectPermissions, error) {
-				return nil, &apierr.APIError{StatusCode: 403, ErrorCode: "PERMISSION_DENIED"}
-			},
+			func() any { return apiError(403, "PERMISSION_DENIED") },
 			WritabilityNotWritable,
 		},
 		{
 			"readable ACL without a write grant means not writable",
-			func() (*workspace.WorkspaceObjectPermissions, error) { return readOnlyACL, nil },
+			func() any { return readOnlyACL },
 			WritabilityNotWritable,
 		},
 		{
 			"other errors are unknown",
-			func() (*workspace.WorkspaceObjectPermissions, error) {
-				return nil, &apierr.APIError{StatusCode: 500}
-			},
+			func() any { return apiError(500, "INTERNAL_ERROR") },
 			WritabilityUnknown,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := mocks.NewMockWorkspaceClient(t)
-			w := m.GetMockWorkspaceAPI()
-			w.EXPECT().GetStatusByPath(mock.Anything, folder).
-				Return(&workspace.ObjectInfo{ObjectId: 7, Path: folder}, nil)
-			w.EXPECT().GetPermissions(mock.Anything, mock.Anything).Return(tc.getPerms())
-
+			w := workspaceWithACL(t, map[string]int64{folder: 7}, tc.getPerms)
 			assert.Equal(t, tc.want, CheckWritable(t.Context(), w, folder, me))
 		})
 	}
 }
 
 func TestResolveFolderACLWalksUpToClosestExistingAncestor(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	w := m.GetMockWorkspaceAPI()
-
 	// The requested folder does not exist yet; its parent does.
-	w.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/root/files").
-		Return(nil, &apierr.APIError{StatusCode: 404})
-	w.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/root").
-		Return(&workspace.ObjectInfo{ObjectId: 42, Path: "/Workspace/root"}, nil)
-	w.EXPECT().GetPermissions(mock.Anything, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   "42",
-		WorkspaceObjectType: "directories",
-	}).Return(&workspace.WorkspaceObjectPermissions{
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "me@example.com",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
+	w := workspaceWithACL(t, map[string]int64{"/Workspace/root": 42}, func() any {
+		return &workspaceapi.WorkspaceObjectPermissions{
+			AccessControlList: []workspaceapi.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "me@example.com",
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
 				},
 			},
-		},
-	}, nil)
+		}
+	})
 
 	acl, err := ResolveFolderACL(t.Context(), w, "/Workspace/root/files")
 	require.NoError(t, err)

@@ -7,8 +7,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 )
 
 type TaskOutput struct {
@@ -53,10 +55,31 @@ func (out *JobOutput) String() (string, error) {
 	return result.String(), nil
 }
 
-func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
-	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
-		RunId: runId,
-	})
+// GetRun fetches a job run, following next_page_token so that the result
+// holds all tasks.
+func GetRun(ctx context.Context, w *sdkclients.Clients, runId int64) (*sdkjobs.GetRunResponse, error) {
+	req := sdkjobs.GetRunRequest{RunId: new(runId)}
+	run, err := w.Jobs.GetRun(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	for utils.Deref(run.NextPageToken) != "" {
+		req.PageToken = run.NextPageToken
+		next, err := w.Jobs.GetRun(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		run.Tasks = append(run.Tasks, next.Tasks...)
+		run.JobClusters = append(run.JobClusters, next.JobClusters...)
+		run.JobParameters = append(run.JobParameters, next.JobParameters...)
+		run.RepairHistory = append(run.RepairHistory, next.RepairHistory...)
+		run.NextPageToken = next.NextPageToken
+	}
+	return run, nil
+}
+
+func GetJobOutput(ctx context.Context, w *sdkclients.Clients, runId int64) (*JobOutput, error) {
+	jobRun, err := GetRun(ctx, w, runId)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +87,13 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		TaskOutputs: make([]TaskOutput, 0),
 	}
 	for _, task := range jobRun.Tasks {
-		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
+		sdkOutput, err := w.Jobs.GetRunOutput(ctx, sdkjobs.GetRunOutputRequest{
 			RunId: task.RunId,
 		})
+		if err != nil {
+			return nil, err
+		}
+		jobRunOutput, err := jobs.GetRunOutputResponseFromSDK(sdkOutput)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +101,7 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if out == nil {
 			continue
 		}
-		task := TaskOutput{TaskKey: task.TaskKey, Output: out, EndTime: task.EndTime}
+		task := TaskOutput{TaskKey: utils.Deref(task.TaskKey), Output: out, EndTime: utils.Deref(task.EndTime)}
 		result.TaskOutputs = append(result.TaskOutputs, task)
 	}
 	return result, nil

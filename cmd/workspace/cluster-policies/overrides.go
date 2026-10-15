@@ -2,17 +2,17 @@ package cluster_policies
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	clusterpolicies "github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, _ *compute.ListClusterPoliciesRequest) {
+func listOverride(listCmd *cobra.Command, _ *clusterpolicies.ListPoliciesRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.PolicyId | green}}	{{.Name}}
 	{{end}}`)
 }
 
-func getOverride(getCmd *cobra.Command, _ *compute.GetClusterPolicyRequest) {
+func getOverride(getCmd *cobra.Command, _ *clusterpolicies.GetPolicyRequest) {
 	getCmd.Annotations["template"] = cmdio.Heredoc(`{{.Definition | pretty_json}}`)
 }
 

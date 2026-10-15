@@ -4,6 +4,8 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +32,7 @@ func (a jobParameterArgs) ParseArgs(args []string, opts *Options) error {
 func (a jobParameterArgs) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	var completions []string
 	for _, param := range a.Parameters {
-		completions = append(completions, param.Name)
+		completions = append(completions, utils.Deref(param.Name))
 	}
 	return genericCompleteKeyValueArgs(args, toComplete, completions)
 }

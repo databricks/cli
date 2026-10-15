@@ -11,16 +11,17 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func captureAirTelemetry(t *testing.T, server *testserver.Server, w *databricks.WorkspaceClient) (context.Context, *[]protos.FrontendLog) {
+func captureAirTelemetry(t *testing.T, server *testserver.Server, w *sdkclients.Clients) (context.Context, *[]protos.FrontendLog) {
 	t.Helper()
 	var events []protos.FrontendLog
 	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
@@ -58,7 +59,7 @@ func TestAirRunTelemetry(t *testing.T) {
 						"error_code": "INVALID_PARAMETER_VALUE", "message": "submission rejected",
 					}}
 				}
-				return jobs.SubmitRunResponse{RunId: 555}
+				return jobs.SubmitRunResponse{RunId: new(int64(555))}
 			})
 			var uploadedSize int64
 			server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
@@ -76,7 +77,7 @@ func TestAirRunTelemetry(t *testing.T) {
 				return req.Workspace.WorkspaceFilesImportFile(form.Path, form.Content, form.Overwrite)
 			})
 			stubValidateConfig(server)
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 			require.NoError(t, err)
 			ctx, events := captureAirTelemetry(t, server, w)
 			testserver.AddDefaultHandlers(server)
@@ -141,7 +142,7 @@ func TestAirRunTelemetry(t *testing.T) {
 func TestAirRunTelemetryConfig(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	ctx, events := captureAirTelemetry(t, server, w)
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
@@ -176,7 +177,7 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	// The commit is no longer available when git archive attempts to package it.
 	result, err := uploadSnapshotTarball(t.Context(), w, newTestRepo(t), snapshotPlan{
@@ -194,7 +195,7 @@ func TestSnapshotPackagingFailureMeasurements(t *testing.T) {
 func TestAirRunTelemetryContainersHaveDockerImage(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	ctx, events := captureAirTelemetry(t, server, w)
 	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", minimalConfig))

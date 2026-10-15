@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
@@ -46,12 +46,12 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
-func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
-	environment := &compute.Environment{}
+func buildRunEnvironment(dlImage string, deps []string) *jobs.Environment {
+	environment := &jobs.Environment{}
 	if strings.HasPrefix(dlImage, databricksAIPrefix) {
-		environment.BaseEnvironment = "workspace-base-environments/" + dlImage
+		environment.BaseEnvironment = utils.NonZero("workspace-base-environments/" + dlImage)
 	} else {
-		environment.EnvironmentVersion = dlImage
+		environment.EnvironmentVersion = utils.NonZero(dlImage)
 	}
 	if len(deps) > 0 {
 		environment.Dependencies = deps
@@ -70,43 +70,42 @@ func buildRunEnvironment(dlImage string, deps []string) *compute.Environment {
 // omitempty so the wire form matches the Python CLI (which never emits a bare
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
-func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
+func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRunRequest {
 	deployment := jobs.DeploymentSpec{
-		Compute: jobs.ComputeSpec{
-			AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
-			AcceleratorCount: cfg.Compute.NumAccelerators,
+		Compute: &jobs.ComputeSpec{
+			AcceleratorType:  jobs.ComputeSpec_AcceleratorType(cfg.Compute.AcceleratorType),
+			AcceleratorCount: utils.NonZero(cfg.Compute.NumAccelerators),
 		},
 	}
 	if len(cfg.Containers) == 0 {
-		deployment.CommandPath = commandPath
+		deployment.CommandPath = utils.NonZero(commandPath)
 	}
 	task := jobs.AiRuntimeTask{
-		Experiment:     cfg.ExperimentName,
+		Experiment:     utils.NonZero(cfg.ExperimentName),
 		Deployments:    []jobs.DeploymentSpec{deployment},
-		CodeSourcePath: snap.CodeSourcePath,
+		CodeSourcePath: utils.NonZero(snap.CodeSourcePath),
 	}
 	if cfg.MLflowRunName != nil {
-		task.MlflowRun = *cfg.MLflowRunName
+		task.MlflowRun = utils.NonZero(*cfg.MLflowRunName)
 	}
 	if cfg.MLflowExperimentDirectory != nil {
-		task.MlflowExperimentDirectory = *cfg.MLflowExperimentDirectory
+		task.MlflowExperimentDirectory = utils.NonZero(*cfg.MLflowExperimentDirectory)
 	}
 	if cfg.MLflowArtifactLocation != nil {
-		task.MlflowArtifactLocation = *cfg.MLflowArtifactLocation
+		task.MlflowArtifactLocation = utils.NonZero(*cfg.MLflowArtifactLocation)
 	}
 
 	maxRetries := cfg.maxRetries()
-	st := jobs.SubmitTask{
-		TaskKey:        cfg.ExperimentName,
-		RunIf:          jobs.RunIfAllSuccess,
+	st := jobs.RunTaskSettings{
+		TaskKey:        utils.NonZero(cfg.ExperimentName),
+		RunIf:          jobs.TaskDependencyType_AllSuccess,
 		AiRuntimeTask:  &task,
-		EnvironmentKey: aiRuntimeEnvironmentKey,
-		MaxRetries:     maxRetries,
+		EnvironmentKey: utils.NonZero(aiRuntimeEnvironmentKey),
+		MaxRetries:     new(maxRetries),
 		// retry_on_timeout only makes sense when retries are allowed; otherwise
 		// omit it (matches Python's native path, which sets retry_on_timeout only
 		// under the same > 0 gate).
-		RetryOnTimeout:  maxRetries > 0,
-		ForceSendFields: []string{"MaxRetries"},
+		RetryOnTimeout: utils.NonZero(maxRetries > 0),
 	}
 
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
@@ -114,15 +113,15 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// slices, so a no-deps run omits the key.
 	envSpec := buildRunEnvironment(dlImage, deps)
 
-	return jobs.SubmitRun{
-		RunName: cfg.ExperimentName,
+	return jobs.SubmitRunRequest{
+		RunName: utils.NonZero(cfg.ExperimentName),
 		// budget_policy_id matches what the Python CLI and `ssh connect` send;
 		// usage_policy_id is the newer alias for the same thing on SubmitRun.
-		BudgetPolicyId: usagePolicyID,
-		TimeoutSeconds: cfg.timeoutSeconds(),
-		Tasks:          []jobs.SubmitTask{st},
+		BudgetPolicyId: utils.NonZero(usagePolicyID),
+		TimeoutSeconds: utils.NonZero(cfg.timeoutSeconds()),
+		Tasks:          []jobs.RunTaskSettings{st},
 		Environments: []jobs.JobEnvironment{{
-			EnvironmentKey: aiRuntimeEnvironmentKey,
+			EnvironmentKey: utils.NonZero(aiRuntimeEnvironmentKey),
 			Spec:           envSpec,
 		}},
 	}
@@ -135,17 +134,21 @@ type submittedContainer struct {
 	UnityCatalogImagePath string
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
+func submitRun(ctx context.Context, w *sdkclients.Clients, payload jobs.SubmitRunRequest, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
 	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
 	// sets any of them has to go through the raw /api/2.2 body. priority_class only
 	// ever appears alongside a pool (validation enforces it), but route on
 	// all of them so none can be silently dropped.
 	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" && len(containers) == 0 {
-		wait, err := w.Jobs.Submit(ctx, payload)
+		req, err := jobs.SubmitRunRequestToSDK(&payload)
 		if err != nil {
 			return 0, err
 		}
-		return wait.RunId, nil
+		wait, err := w.Jobs.SubmitRun(ctx, *req)
+		if err != nil {
+			return 0, err
+		}
+		return wait.GetRunId(), nil
 	}
 
 	raw, err := json.Marshal(payload)
@@ -174,7 +177,7 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		}
 	}
 
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -183,7 +186,7 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	if err != nil {
 		return 0, err
 	}
-	return response.RunId, nil
+	return utils.Deref(response.RunId), nil
 }
 
 func injectContainers(body map[string]any, containers []submittedContainer) error {
@@ -331,7 +334,7 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+func submitWorkload(ctx context.Context, w *sdkclients.Clients, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
 	start := time.Now()
 	var snap snapshotResult
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
@@ -414,7 +417,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
-	payload.IdempotencyToken = token
+	payload.IdempotencyToken = utils.NonZero(token)
 
 	// The pool id is sent on the wire as provisioned_capacity_id (the backend's
 	// name for a GPU pool); only the user-facing YAML field is pool_id.

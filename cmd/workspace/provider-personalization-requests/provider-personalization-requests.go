@@ -8,10 +8,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -52,25 +54,25 @@ Personalization requests are an alternate to instantly available listings.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListAllPersonalizationRequestsRequest,
+	*marketplaces.GetPersonalizationRequestsForProviderRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.GetPersonalizationRequestsForProviderRequest
 
-	var listReq marketplace.ListAllPersonalizationRequestsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -95,16 +97,20 @@ All personalization requests across all listings.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ProviderPersonalizationRequests.List(ctx, listReq)
+		sdkReq, err := marketplaces.GetPersonalizationRequestsForProviderRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.GetPersonalizationRequestsForProviderIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.PersonalizationRequestFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -125,18 +131,18 @@ All personalization requests across all listings.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdatePersonalizationRequestRequest,
+	*marketplaces.UpdatePersonalizationRequestStatusRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq marketplaces.UpdatePersonalizationRequestStatusRequest
 
-	var updateReq marketplace.UpdatePersonalizationRequestRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Reason, "reason", ``)
 	// TODO: complex arg: share
 
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"
@@ -168,6 +174,7 @@ Update personalization request status.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -181,22 +188,26 @@ Update personalization request status.
 				}
 			}
 		}
-		updateReq.ListingId = args[0]
-		updateReq.RequestId = args[1]
+		updateReq.ListingId = new(args[0])
+		updateReq.RequestId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateReq.Status)
-			if err != nil {
-				return fmt.Errorf("invalid STATUS: %s", args[2])
-			}
-
+			updateReq.Status = marketplaces.PersonalizationRequestStatus(args[2])
 		}
 
-		response, err := w.ProviderPersonalizationRequests.Update(ctx, updateReq)
+		sdkReq, err := marketplaces.UpdatePersonalizationRequestStatusRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.UpdatePersonalizationRequestStatus(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.UpdatePersonalizationRequestStatusResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,18 +57,18 @@ Marketplace offers a set of file APIs for various purposes such as preview
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateFileRequest,
+	*marketplaces.CreateFileRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq marketplaces.CreateFileRequest
 
-	var createReq marketplace.CreateFileRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DisplayName, "display-name", ``)
 
 	cmd.Use = "create"
 	cmd.Short = `*Public Preview* Create a file.`
@@ -84,6 +87,7 @@ Create a file.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -100,12 +104,20 @@ Create a file.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ProviderFiles.Create(ctx, createReq)
+		sdkReq, err := marketplaces.CreateFileRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.CreateFile(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreateFileResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -126,13 +138,12 @@ Create a file.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteFileRequest,
+	*sdkmarketplaces.DeleteFileRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq marketplace.DeleteFileRequest
+	var deleteReq sdkmarketplaces.DeleteFileRequest
 
 	cmd.Use = "delete FILE_ID"
 	cmd.Short = `*Public Preview* Delete a file.`
@@ -150,11 +161,12 @@ Delete a file.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
-			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListFilesIter(ctx, sdkmarketplaces.ListFilesRequest{}), []string{"DisplayName"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -168,12 +180,15 @@ Delete a file.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		deleteReq.FileId = args[0]
+		deleteReq.FileId = new(args[0])
 
-		err = w.ProviderFiles.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Marketplaces.DeleteFile(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -195,13 +210,12 @@ Delete a file.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetFileRequest,
+	*sdkmarketplaces.GetFileRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq marketplace.GetFileRequest
+	var getReq sdkmarketplaces.GetFileRequest
 
 	cmd.Use = "get FILE_ID"
 	cmd.Short = `*Public Preview* Get a file.`
@@ -219,11 +233,12 @@ Get a file.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
-			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListFilesIter(ctx, sdkmarketplaces.ListFilesRequest{}), []string{"DisplayName"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -237,14 +252,19 @@ Get a file.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		getReq.FileId = args[0]
+		getReq.FileId = new(args[0])
 
-		response, err := w.ProviderFiles.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Marketplaces.GetFile(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetFileResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -265,13 +285,13 @@ Get a file.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListFilesRequest,
+	*marketplaces.ListFilesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListFilesRequest
 
-	var listReq marketplace.ListFilesRequest
 	var listJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -280,13 +300,13 @@ func newList() *cobra.Command {
 
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -305,6 +325,7 @@ List files.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := listJson.Unmarshal(&listReq)
@@ -321,15 +342,18 @@ List files.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response := w.ProviderFiles.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListFilesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListFilesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.FileInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

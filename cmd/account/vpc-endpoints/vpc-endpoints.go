@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -48,21 +50,21 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateVpcEndpointRequest,
+	*networking.CreateVpcEndpointRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq networking.CreateVpcEndpointRequest
 
-	var createReq provisioning.CreateVpcEndpointRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", createReq.AwsVpcEndpointId, `The ID of the VPC endpoint object in AWS.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", `The ID of the VPC endpoint object in AWS.`)
 	// TODO: complex arg: gcp_vpc_endpoint_info
-	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The region in which this VPC endpoint object exists.`)
-	cmd.Flags().StringVar(&createReq.VpcEndpointName, "vpc-endpoint-name", createReq.VpcEndpointName, `The human-readable name of the storage configuration.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Region, "region", `The region in which this VPC endpoint object exists.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.VpcEndpointName, "vpc-endpoint-name", `The human-readable name of the storage configuration.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a VPC endpoint configuration.`
@@ -95,6 +97,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -109,12 +112,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.VpcEndpoints.Create(ctx, createReq)
+		sdkReq, err := networking.CreateVpcEndpointRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateVpcEndpointPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.VpcEndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -135,13 +146,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteVpcEndpointRequest,
+	*sdknetworking.DeleteVpcEndpointRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeleteVpcEndpointRequest
+	var deleteReq sdknetworking.DeleteVpcEndpointRequest
 
 	cmd.Use = "delete VPC_ENDPOINT_ID"
 	cmd.Short = `Delete a VPC endpoint configuration.`
@@ -163,15 +173,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.VpcEndpointId = args[0]
+		deleteReq.VpcEndpointId = new(args[0])
 
-		response, err := a.VpcEndpoints.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Networking.DeleteVpcEndpointPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.VpcEndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -192,13 +208,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetVpcEndpointRequest,
+	*sdknetworking.GetVpcEndpointRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetVpcEndpointRequest
+	var getReq sdknetworking.GetVpcEndpointRequest
 
 	cmd.Use = "get VPC_ENDPOINT_ID"
 	cmd.Short = `Get a VPC endpoint configuration.`
@@ -226,15 +241,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.VpcEndpointId = args[0]
+		getReq.VpcEndpointId = new(args[0])
 
-		response, err := a.VpcEndpoints.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Networking.GetVpcEndpointPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.VpcEndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -274,12 +295,17 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.VpcEndpoints.List(ctx)
+		_ = a
+
+		sdkReq := &sdknetworking.ListVpcEndpointRequest{}
+
+		response, err := a.Networking.ListVpcEndpointPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // This readahead cache is designed to optimize file system operations by caching the results of

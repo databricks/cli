@@ -4,30 +4,24 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkinstancepools "github.com/databricks/sdk-go/instancepools/v2"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type InstancePool struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	compute.CreateInstancePool
+	instancepools.CreateInstancePoolRequest
 	Permissions []InstancePoolPermission `json:"permissions,omitempty"`
 }
 
-func (s *InstancePool) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s InstancePool) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *InstancePool) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.InstancePools.GetByInstancePoolId(ctx, id)
+func (s *InstancePool) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.InstancePools.GetInstancePool(ctx, sdkinstancepools.GetInstancePoolRequest{InstancePoolId: new(id)})
 	if err != nil {
 		log.Debugf(ctx, "instance pool %s does not exist", id)
 		return false, err
@@ -52,5 +46,5 @@ func (s *InstancePool) InitializeURL(baseURL url.URL) {
 }
 
 func (s *InstancePool) GetName() string {
-	return s.InstancePoolName
+	return utils.Deref(s.InstancePoolName)
 }

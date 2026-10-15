@@ -16,7 +16,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "group_name": "users",
         "permission_level": "CAN_USE"
       }
-    ]
+    ],
+    "request_object_id": "[TEST_CLUSTER_POLICY_ID]",
+    "request_object_type": "cluster-policies"
   }
 }
 

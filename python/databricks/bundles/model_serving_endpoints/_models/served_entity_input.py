@@ -10,10 +10,6 @@ from databricks.bundles.model_serving_endpoints._models.external_model import (
     ExternalModel,
     ExternalModelParam,
 )
-from databricks.bundles.model_serving_endpoints._models.serving_model_workload_type import (
-    ServingModelWorkloadType,
-    ServingModelWorkloadTypeParam,
-)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -90,11 +86,6 @@ class ServedEntityInput:
     workload_size: VariableOrOptional[str] = None
     """
     The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.
-    """
-
-    workload_type: VariableOrOptional[ServingModelWorkloadType] = None
-    """
-    The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
     """
 
     @classmethod
@@ -175,11 +166,6 @@ class ServedEntityInputDict(TypedDict, total=False):
     workload_size: VariableOrOptional[str]
     """
     The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between. A single unit of provisioned concurrency can process one request at a time. Valid workload sizes are "Small" (4 - 4 provisioned concurrency), "Medium" (8 - 16 provisioned concurrency), and "Large" (16 - 64 provisioned concurrency). Additional custom workload sizes can also be used when available in the workspace. If scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0. Do not use if min_provisioned_concurrency and max_provisioned_concurrency are specified.
-    """
-
-    workload_type: VariableOrOptional[ServingModelWorkloadTypeParam]
-    """
-    The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
     """
 
 

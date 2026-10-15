@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +20,7 @@ func jobBundle(d *jobs.JobDeployment) *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"my_job": {JobSettings: jobs.JobSettings{Name: "my_job", Deployment: d}},
+					"my_job": {JobSettings: jobs.JobSettings{Name: new("my_job"), Deployment: d}},
 				},
 			},
 		},
@@ -32,7 +32,7 @@ func pipelineBundle(d *pipelines.PipelineDeployment) *bundle.Bundle {
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
-					"my_pipeline": {CreatePipeline: pipelines.CreatePipeline{Name: "my_pipeline", Deployment: d}},
+					"my_pipeline": {CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("my_pipeline"), Deployment: d}},
 				},
 			},
 		},
@@ -45,10 +45,10 @@ func TestValidateDeploymentFieldsRejectsReservedFields(t *testing.T) {
 		b    *bundle.Bundle
 		want string
 	}{
-		{"job deployment_id", jobBundle(&jobs.JobDeployment{DeploymentId: "x"}), "deployment_id" + reservedFieldMsg},
-		{"job version_id", jobBundle(&jobs.JobDeployment{VersionId: "x"}), "version_id" + reservedFieldMsg},
-		{"pipeline deployment_id", pipelineBundle(&pipelines.PipelineDeployment{DeploymentId: "x"}), "deployment_id" + reservedFieldMsg},
-		{"pipeline version_id", pipelineBundle(&pipelines.PipelineDeployment{VersionId: "x"}), "version_id" + reservedFieldMsg},
+		{"job deployment_id", jobBundle(&jobs.JobDeployment{DeploymentId: new("x")}), "deployment_id" + reservedFieldMsg},
+		{"job version_id", jobBundle(&jobs.JobDeployment{VersionId: new("x")}), "version_id" + reservedFieldMsg},
+		{"pipeline deployment_id", pipelineBundle(&pipelines.PipelineDeployment{DeploymentId: new("x")}), "deployment_id" + reservedFieldMsg},
+		{"pipeline version_id", pipelineBundle(&pipelines.PipelineDeployment{VersionId: new("x")}), "version_id" + reservedFieldMsg},
 	}
 
 	for _, tt := range tests {
@@ -66,10 +66,10 @@ func TestValidateDeploymentFieldsReportsAllOffenders(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"my_job": {JobSettings: jobs.JobSettings{Deployment: &jobs.JobDeployment{DeploymentId: "a"}}},
+					"my_job": {JobSettings: jobs.JobSettings{Deployment: &jobs.JobDeployment{DeploymentId: new("a")}}},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"my_pipeline": {CreatePipeline: pipelines.CreatePipeline{Deployment: &pipelines.PipelineDeployment{VersionId: "b"}}},
+					"my_pipeline": {CreatePipelineRequest: pipelines.CreatePipelineRequest{Deployment: &pipelines.PipelineDeployment{VersionId: new("b")}}},
 				},
 			},
 		},

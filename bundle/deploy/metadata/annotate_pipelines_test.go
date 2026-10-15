@@ -3,10 +3,11 @@ package metadata
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,13 +21,13 @@ func TestAnnotatePipelinesMutator(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "My Pipeline One",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Name: new("My Pipeline One"),
 						},
 					},
 					"my-pipeline-2": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "My Pipeline Two",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Name: new("My Pipeline Two"),
 						},
 					},
 				},
@@ -39,15 +40,15 @@ func TestAnnotatePipelinesMutator(t *testing.T) {
 
 	assert.Equal(t,
 		&pipelines.PipelineDeployment{
-			Kind:             pipelines.DeploymentKindBundle,
-			MetadataFilePath: "/a/b/c/metadata.json",
+			Kind:             pipelines.DeploymentKind_Bundle,
+			MetadataFilePath: new("/a/b/c/metadata.json"),
 		},
 		b.Config.Resources.Pipelines["my-pipeline-1"].Deployment)
 
 	assert.Equal(t,
 		&pipelines.PipelineDeployment{
-			Kind:             pipelines.DeploymentKindBundle,
-			MetadataFilePath: "/a/b/c/metadata.json",
+			Kind:             pipelines.DeploymentKind_Bundle,
+			MetadataFilePath: new("/a/b/c/metadata.json"),
 		},
 		b.Config.Resources.Pipelines["my-pipeline-2"].Deployment)
 }

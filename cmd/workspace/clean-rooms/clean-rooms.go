@@ -7,11 +7,17 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	cleanrooms "github.com/databricks/cli/libs/sdktypes/cleanrooms/v1"
+	sdkcleanrooms "github.com/databricks/sdk-go/cleanrooms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -60,9 +66,9 @@ var createOverrides []func(
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createReq cleanrooms.CreateCleanRoomRequest
-	createReq.CleanRoom = cleanrooms.CleanRoom{}
+	createReq.CleanRoom = &cleanrooms.CleanRoom{}
+
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -73,11 +79,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
-	cmd.Flags().BoolVar(&createReq.CleanRoom.EnableSharedOutput, "enable-shared-output", createReq.CleanRoom.EnableSharedOutput, `Whether allow task to write to shared output schema.`)
-	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CleanRoom.Comment, "comment", ``)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.CleanRoom.EnableSharedOutput, "enable-shared-output", `Whether allow task to write to shared output schema.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CleanRoom.Name, "name", `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
-	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CleanRoom.Owner, "owner", `This is the Databricks username of the owner of the local clean room securable for permission management.`)
 	// TODO: complex arg: remote_detailed_info
 
 	cmd.Use = "create"
@@ -109,6 +115,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.CleanRoom)
@@ -123,24 +130,39 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		wait, err := w.CleanRooms.Create(ctx, createReq)
+		sdkReq, err := cleanrooms.CreateCleanRoomRequestToSDK(&createReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current cleanrooms.CleanRoom
+			err = api.Do(ctx, "POST", "/api/2.0/clean-rooms", auth.WorkspaceIDHeaders(w.Config), nil, createReq.CleanRoom, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *cleanrooms.CleanRoom) {
-			status := i.Status
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		wait, err := w.CleanRooms.CreateCleanRoom(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := cleanrooms.CleanRoomFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -166,14 +188,14 @@ var createOutputCatalogOverrides []func(
 
 func newCreateOutputCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createOutputCatalogReq cleanrooms.CreateCleanRoomOutputCatalogRequest
-	createOutputCatalogReq.OutputCatalog = cleanrooms.CleanRoomOutputCatalog{}
+	createOutputCatalogReq.OutputCatalog = &cleanrooms.CleanRoomOutputCatalog{}
+
 	var createOutputCatalogJson flags.JsonFlag
 
 	cmd.Flags().Var(&createOutputCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC.`)
+	flags.StringPtrVar(cmd.Flags(), &createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", `The name of the output catalog in UC.`)
 
 	cmd.Use = "create-output-catalog CLEAN_ROOM_NAME"
 	cmd.Short = `Create an output catalog.`
@@ -197,6 +219,7 @@ func newCreateOutputCatalog() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createOutputCatalogJson.Unmarshal(&createOutputCatalogReq.OutputCatalog)
@@ -210,14 +233,22 @@ func newCreateOutputCatalog() *cobra.Command {
 				}
 			}
 		}
-		createOutputCatalogReq.CleanRoomName = args[0]
+		createOutputCatalogReq.CleanRoomName = new(args[0])
 
-		response, err := w.CleanRooms.CreateOutputCatalog(ctx, createOutputCatalogReq)
+		sdkReq, err := cleanrooms.CreateCleanRoomOutputCatalogRequestToSDK(&createOutputCatalogReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CleanRooms.CreateCleanRoomOutputCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CreateCleanRoomOutputCatalogResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -238,13 +269,12 @@ func newCreateOutputCatalog() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*cleanrooms.DeleteCleanRoomRequest,
+	*sdkcleanrooms.DeleteCleanRoomRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq cleanrooms.DeleteCleanRoomRequest
+	var deleteReq sdkcleanrooms.DeleteCleanRoomRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
@@ -271,10 +301,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.Name = new(args[0])
 
-		err = w.CleanRooms.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.CleanRooms.DeleteCleanRoom(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -299,13 +331,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*cleanrooms.GetCleanRoomRequest,
+	*sdkcleanrooms.GetCleanRoomRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq cleanrooms.GetCleanRoomRequest
+	var getReq sdkcleanrooms.GetCleanRoomRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
@@ -326,15 +357,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.Name = new(args[0])
 
-		response, err := w.CleanRooms.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.CleanRooms.GetCleanRoom(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -360,20 +397,20 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq cleanrooms.ListCleanRoomsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length).`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `Maximum number of clean rooms to return (i.e., the page length).`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -396,16 +433,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.CleanRooms.List(ctx, listReq)
+		sdkReq, err := cleanrooms.ListCleanRoomsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -431,8 +472,8 @@ var updateOverrides []func(
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateReq cleanrooms.UpdateCleanRoomRequest
+
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -464,6 +505,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -477,14 +519,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		updateReq.Name = new(args[0])
 
-		response, err := w.CleanRooms.Update(ctx, updateReq)
+		sdkReq, err := cleanrooms.UpdateCleanRoomRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.CleanRooms.UpdateCleanRoom(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := cleanrooms.CleanRoomFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

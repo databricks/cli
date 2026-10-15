@@ -3,7 +3,7 @@ package libraries
 import (
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 )
 
 // IsWorkspacePath returns true if the specified path indicates that
@@ -28,7 +28,7 @@ func IsWorkspacePath(path string) bool {
 }
 
 // IsWorkspaceLibrary returns true if the specified library refers to a workspace path.
-func IsWorkspaceLibrary(library *compute.Library) bool {
+func IsWorkspaceLibrary(library *jobs.Library) bool {
 	path, err := libraryPath(library)
 	if err != nil {
 		return false

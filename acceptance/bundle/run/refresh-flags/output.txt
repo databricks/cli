@@ -16,6 +16,7 @@ Update ID: [UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "pipeline_id": "[UUID]",
     "refresh_selection": [
       "table1",
       "table2"
@@ -34,7 +35,8 @@ Update ID: [UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
-    "full_refresh": true
+    "full_refresh": true,
+    "pipeline_id": "[UUID]"
   }
 }
 
@@ -52,7 +54,8 @@ Update ID: [UUID]
     "full_refresh_selection": [
       "table1",
       "table2"
-    ]
+    ],
+    "pipeline_id": "[UUID]"
   }
 }
 
@@ -71,6 +74,7 @@ Update ID: [UUID]
       "table1",
       "table2"
     ],
+    "pipeline_id": "[UUID]",
     "refresh_selection": [
       "table3",
       "table4"

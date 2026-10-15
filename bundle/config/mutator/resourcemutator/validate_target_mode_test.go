@@ -3,14 +3,16 @@ package resourcemutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,8 +22,8 @@ func TestValidateProductionPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Development: true, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Development: new(true), //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 						},
 					},
 				},
@@ -85,10 +87,10 @@ func TestProcessTargetModeProduction(t *testing.T) {
 		},
 	}
 	b.Config.Resources.Jobs["job1"].Permissions = jobPermissions
-	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	b.Config.Resources.Jobs["job4"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: new("user@company.com")}
+	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: new("user@company.com")}
+	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: new("user@company.com")}
+	b.Config.Resources.Jobs["job4"].RunAs = &jobs.JobRunAs{UserName: new("user@company.com")}
 	b.Config.Resources.Pipelines["pipeline1"].Permissions = pipelinePermissions
 	b.Config.Resources.Experiments["experiment1"].Permissions = experimentPermissions
 	b.Config.Resources.Experiments["experiment2"].Permissions = experimentPermissions
@@ -99,15 +101,15 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	diags = validateProductionMode(b, false)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "job1", utils.Deref(b.Config.Resources.Jobs["job1"].Name))
+	assert.Equal(t, "pipeline1", utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Name))
+	assert.False(t, utils.Deref(b.Config.Resources.Pipelines["pipeline1"].Development)) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+	assert.Equal(t, "servingendpoint1", utils.Deref(b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name))
+	assert.Equal(t, "registeredmodel1", utils.Deref(b.Config.Resources.RegisteredModels["registeredmodel1"].Name))
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
-	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
-	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
-	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "schema1", utils.Deref(b.Config.Resources.Schemas["schema1"].Name))
+	assert.Equal(t, "volume1", utils.Deref(b.Config.Resources.Volumes["volume1"].Name))
+	assert.Equal(t, "cluster1", utils.Deref(b.Config.Resources.Clusters["cluster1"].ClusterName))
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {

@@ -15,25 +15,19 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/environments"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
+	compute "github.com/databricks/sdk-go/clusters/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidateClusterAccessSingleUser(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := newFakeClients(t, map[string]any{"GET /api/2.1/clusters/get": `{"data_security_mode":"SINGLE_USER","single_user_name":"me@example.com"}`})
 
-	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	err := ValidateClusterAccess(ctx, m, "cluster-123")
 	assert.NoError(t, err)
 }
 
@@ -41,24 +35,17 @@ func TestValidateClusterAccessSingleUser(t *testing.T) {
 // legacy SINGLE_USER alias) must still pass validation.
 func TestValidateClusterAccessDedicatedEnum(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
-		SingleUserName:   "me@example.com",
-	}, nil)
+	m := newFakeClients(t, map[string]any{"GET /api/2.1/clusters/get": `{"data_security_mode":"DATA_SECURITY_MODE_DEDICATED","single_user_name":"me@example.com"}`})
 
-	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	err := ValidateClusterAccess(ctx, m, "cluster-123")
 	assert.NoError(t, err)
 }
 
 func TestValidateClusterAccessInvalidAccessMode(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeUserIsolation,
-	}, nil)
+	m := newFakeClients(t, map[string]any{"GET /api/2.1/clusters/get": `{"data_security_mode":"USER_ISOLATION"}`})
 
-	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	err := ValidateClusterAccess(ctx, m, "cluster-123")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
 	// The error surfaces the UI label ("Standard"), not the raw API enum (USER_ISOLATION).
@@ -70,12 +57,9 @@ func TestValidateClusterAccessInvalidAccessMode(t *testing.T) {
 // reports the mode specifically as "Dedicated (group)".
 func TestValidateClusterAccessDedicatedGroup(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
-	}, nil)
+	m := newFakeClients(t, map[string]any{"GET /api/2.1/clusters/get": `{"data_security_mode":"DATA_SECURITY_MODE_DEDICATED"}`})
 
-	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	err := ValidateClusterAccess(ctx, m, "cluster-123")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
 	assert.Contains(t, err.Error(), "Current access mode: Dedicated (group)")
@@ -87,14 +71,14 @@ func TestAccessModeUILabel(t *testing.T) {
 		singleUserName string
 		want           string
 	}{
-		{compute.DataSecurityModeSingleUser, "me@example.com", "Dedicated (single user)"},
-		{compute.DataSecurityModeDataSecurityModeDedicated, "me@example.com", "Dedicated (single user)"},
-		{compute.DataSecurityModeDataSecurityModeDedicated, "", "Dedicated (group)"},
-		{compute.DataSecurityModeUserIsolation, "", "Standard"},
-		{compute.DataSecurityModeDataSecurityModeStandard, "", "Standard"},
-		{compute.DataSecurityModeNone, "", "No isolation"},
+		{compute.DataSecurityMode_SingleUser, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityMode_DataSecurityModeDedicated, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityMode_DataSecurityModeDedicated, "", "Dedicated (group)"},
+		{compute.DataSecurityMode_UserIsolation, "", "Standard"},
+		{compute.DataSecurityMode_DataSecurityModeStandard, "", "Standard"},
+		{compute.DataSecurityMode_None, "", "No isolation"},
 		// Legacy/unknown modes fall back to the raw API value.
-		{compute.DataSecurityModeLegacyTableAcl, "", "LEGACY_TABLE_ACL"},
+		{compute.DataSecurityMode_LegacyTableAcl, "", "LEGACY_TABLE_ACL"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, accessModeUILabel(tt.mode, tt.singleUserName), "mode=%s", tt.mode)
@@ -103,25 +87,24 @@ func TestAccessModeUILabel(t *testing.T) {
 
 func TestValidateClusterAccessClusterNotFound(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
+	m := newFakeClients(t, map[string]any{"GET /api/2.1/clusters/get": apiError{404, "cluster not found"}})
 
-	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
+	err := ValidateClusterAccess(ctx, m, "nonexistent")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
 }
 
 // terminatedRun builds a job run whose SSH server task has terminated, for the failure-surfacing tests.
-func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.Run {
-	return &jobs.Run{
-		RunId:      runID,
-		RunPageUrl: pageURL,
+func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.GetRunResponse {
+	return &jobs.GetRunResponse{
+		RunId:      new(runID),
+		RunPageUrl: new(pageURL),
 		Tasks: []jobs.RunTask{{
-			TaskKey: sshServerTaskKey,
-			RunId:   taskRunID,
+			TaskKey: new(sshServerTaskKey),
+			RunId:   new(taskRunID),
 			Status: &jobs.RunStatus{
-				State:              jobs.RunLifecycleStateV2StateTerminated,
-				TerminationDetails: &jobs.TerminationDetails{Message: message},
+				State:              jobs.RunLifecycleStateV2_State_Terminated,
+				TerminationDetails: &jobs.TerminationDetails{Message: utils.NonZero(message)},
 			},
 		}},
 	}
@@ -132,56 +115,39 @@ func TestResolveBaseEnvironment(t *testing.T) {
 
 	// Paths and resource IDs are passed through without hitting the API.
 	t.Run("env.yaml path passthrough", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "/Workspace/path/to/env.yaml")
+		m := newFakeClients(t, nil)
+		got, err := resolveBaseEnvironment(ctx, m, "/Workspace/path/to/env.yaml")
 		require.NoError(t, err)
 		assert.Equal(t, "/Workspace/path/to/env.yaml", got)
 	})
 
 	t.Run("resource ID passthrough", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "workspace-base-environments/dbe_123")
+		m := newFakeClients(t, nil)
+		got, err := resolveBaseEnvironment(ctx, m, "workspace-base-environments/dbe_123")
 		require.NoError(t, err)
 		assert.Equal(t, "workspace-base-environments/dbe_123", got)
 	})
 
 	t.Run("display name resolves to resource ID", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockEnvironmentsAPI().EXPECT().
-			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
-			Return([]environments.WorkspaceBaseEnvironment{
-				{DisplayName: "other", Name: "workspace-base-environments/dbe_other"},
-				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_mine"},
-			}, nil)
+		m := newFakeClients(t, map[string]any{"GET /api/environments/v1/workspace-base-environments": `{"workspace_base_environments":[{"display_name":"other","name":"workspace-base-environments/dbe_other"},{"display_name":"my-env","name":"workspace-base-environments/dbe_mine"}]}`})
 
-		got, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		got, err := resolveBaseEnvironment(ctx, m, "my-env")
 		require.NoError(t, err)
 		assert.Equal(t, "workspace-base-environments/dbe_mine", got)
 	})
 
 	t.Run("display name not found", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockEnvironmentsAPI().EXPECT().
-			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
-			Return([]environments.WorkspaceBaseEnvironment{
-				{DisplayName: "other", Name: "workspace-base-environments/dbe_other"},
-			}, nil)
+		m := newFakeClients(t, map[string]any{"GET /api/environments/v1/workspace-base-environments": `{"workspace_base_environments":[{"display_name":"other","name":"workspace-base-environments/dbe_other"}]}`})
 
-		_, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		_, err := resolveBaseEnvironment(ctx, m, "my-env")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `no workspace base environment found with display name "my-env"`)
 	})
 
 	t.Run("display name ambiguous", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockEnvironmentsAPI().EXPECT().
-			ListWorkspaceBaseEnvironmentsAll(mock.Anything, environments.ListWorkspaceBaseEnvironmentsRequest{}).
-			Return([]environments.WorkspaceBaseEnvironment{
-				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_1"},
-				{DisplayName: "my-env", Name: "workspace-base-environments/dbe_2"},
-			}, nil)
+		m := newFakeClients(t, map[string]any{"GET /api/environments/v1/workspace-base-environments": `{"workspace_base_environments":[{"display_name":"my-env","name":"workspace-base-environments/dbe_1"},{"display_name":"my-env","name":"workspace-base-environments/dbe_2"}]}`})
 
-		_, err := resolveBaseEnvironment(ctx, m.WorkspaceClient, "my-env")
+		_, err := resolveBaseEnvironment(ctx, m, "my-env")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `multiple workspace base environments found with display name "my-env"`)
 	})
@@ -189,14 +155,12 @@ func TestResolveBaseEnvironment(t *testing.T) {
 
 func TestDescribeRunFailureIncludesMessageTraceAndURL(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockJobsAPI()
-	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-		terminatedRun(1, 99, "Could not reach driver of cluster 0605-x.", "https://example.test/run/1"), nil)
-	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-		&jobs.RunOutput{Error: "Run failed with error message", ErrorTrace: "Traceback (most recent call last): boom"}, nil)
+	m := newFakeClients(t, map[string]any{
+		"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "Could not reach driver of cluster 0605-x.", "https://example.test/run/1"),
+		"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{Error: new("Run failed with error message"), ErrorTrace: new("Traceback (most recent call last): boom")},
+	})
 
-	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	out := describeRunFailure(ctx, m, 1)
 	assert.Contains(t, out, "Could not reach driver of cluster 0605-x.")
 	assert.Contains(t, out, "Run failed with error message")
 	assert.Contains(t, out, "Traceback (most recent call last): boom")
@@ -205,15 +169,13 @@ func TestDescribeRunFailureIncludesMessageTraceAndURL(t *testing.T) {
 
 func TestDescribeRunFailureTruncatesLongTrace(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockJobsAPI()
 	longTrace := strings.Repeat("x", maxRunFailureTraceBytes+500) + "TAIL_MARKER"
-	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-		terminatedRun(1, 99, "", "https://example.test/run/1"), nil)
-	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-		&jobs.RunOutput{ErrorTrace: longTrace}, nil)
+	m := newFakeClients(t, map[string]any{
+		"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "", "https://example.test/run/1"),
+		"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{ErrorTrace: new(longTrace)},
+	})
 
-	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	out := describeRunFailure(ctx, m, 1)
 	assert.Contains(t, out, "...")
 	assert.Contains(t, out, "TAIL_MARKER")
 	// The leading run of 'x' is dropped by truncation.
@@ -222,30 +184,26 @@ func TestDescribeRunFailureTruncatesLongTrace(t *testing.T) {
 
 func TestDescribeRunFailureDeduplicatesErrorInTrace(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockJobsAPI()
 	errMsg := "SSH server exited with code 1. Last server logs:\nLOG_MARKER"
-	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-		terminatedRun(1, 99, "", "https://example.test/run/1"), nil)
-	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-		&jobs.RunOutput{Error: errMsg, ErrorTrace: "Traceback (most recent call last):\n  boom\nRuntimeError: " + errMsg}, nil)
+	m := newFakeClients(t, map[string]any{
+		"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "", "https://example.test/run/1"),
+		"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{Error: new(errMsg), ErrorTrace: new("Traceback (most recent call last):\n  boom\nRuntimeError: " + errMsg)},
+	})
 
-	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	out := describeRunFailure(ctx, m, 1)
 	assert.Contains(t, out, "Traceback (most recent call last):")
 	assert.Equal(t, 1, strings.Count(out, "LOG_MARKER"))
 }
 
 func TestDescribeRunFailureTruncatesLongError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockJobsAPI()
 	longError := strings.Repeat("x", maxRunFailureTraceBytes+500) + "TAIL_MARKER"
-	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-		terminatedRun(1, 99, "", "https://example.test/run/1"), nil)
-	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-		&jobs.RunOutput{Error: longError}, nil)
+	m := newFakeClients(t, map[string]any{
+		"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "", "https://example.test/run/1"),
+		"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{Error: new(longError)},
+	})
 
-	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	out := describeRunFailure(ctx, m, 1)
 	assert.Contains(t, out, "...")
 	assert.Contains(t, out, "TAIL_MARKER")
 	assert.NotContains(t, out, strings.Repeat("x", maxRunFailureTraceBytes+1))
@@ -253,8 +211,8 @@ func TestDescribeRunFailureTruncatesLongError(t *testing.T) {
 
 func TestDescribeRunFailureNoRunID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	out := describeRunFailure(ctx, m.WorkspaceClient, 0)
+	m := newFakeClients(t, nil)
+	out := describeRunFailure(ctx, m, 0)
 	assert.Contains(t, out, "no job run ID")
 }
 
@@ -262,44 +220,40 @@ func TestRunFailureIfTerminated(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 
 	t.Run("terminated", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		api := m.GetMockJobsAPI()
-		api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-			terminatedRun(1, 99, "boom", "https://example.test/run/1"), nil)
-		api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-			&jobs.RunOutput{}, nil)
+		m := newFakeClients(t, map[string]any{
+			"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "boom", "https://example.test/run/1"),
+			"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{},
+		})
 
-		desc, terminated := runFailureIfTerminated(ctx, m.WorkspaceClient, 1)
+		desc, terminated := runFailureIfTerminated(ctx, m, 1)
 		assert.True(t, terminated)
 		assert.Contains(t, desc, "boom")
 	})
 
 	t.Run("still running", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		api := m.GetMockJobsAPI()
-		api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(&jobs.Run{
-			RunId: 1,
-			Tasks: []jobs.RunTask{{
-				TaskKey: sshServerTaskKey,
-				Status:  &jobs.RunStatus{State: jobs.RunLifecycleStateV2StateRunning},
-			}},
-		}, nil)
+		m := newFakeClients(t, map[string]any{
+			"GET /api/2.2/jobs/runs/get?run_id=1": &jobs.GetRunResponse{
+				RunId: new(int64(1)),
+				Tasks: []jobs.RunTask{{
+					TaskKey: new(sshServerTaskKey),
+					Status:  &jobs.RunStatus{State: jobs.RunLifecycleStateV2_State_Running},
+				}},
+			},
+		})
 
-		_, terminated := runFailureIfTerminated(ctx, m.WorkspaceClient, 1)
+		_, terminated := runFailureIfTerminated(ctx, m, 1)
 		assert.False(t, terminated)
 	})
 }
 
 func TestWaitForJobToStartSurfacesFailure(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockJobsAPI()
-	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
-		terminatedRun(1, 99, "Could not reach driver of cluster 0605-x.", "https://example.test/run/1"), nil)
-	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
-		&jobs.RunOutput{}, nil)
+	m := newFakeClients(t, map[string]any{
+		"GET /api/2.2/jobs/runs/get?run_id=1":         terminatedRun(1, 99, "Could not reach driver of cluster 0605-x.", "https://example.test/run/1"),
+		"GET /api/2.2/jobs/runs/get-output?run_id=99": &jobs.GetRunOutputResponse{},
+	})
 
-	err := waitForJobToStart(ctx, m.WorkspaceClient, 1, ClientOptions{TaskStartupTimeout: 30 * time.Second})
+	err := waitForJobToStart(ctx, m, 1, ClientOptions{TaskStartupTimeout: 30 * time.Second})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "ssh server bootstrap job failed")
 	assert.Contains(t, err.Error(), "Could not reach driver of cluster 0605-x.")

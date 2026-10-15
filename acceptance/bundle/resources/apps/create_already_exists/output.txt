@@ -41,5 +41,29 @@ Files: 2 uploaded, 0 deleted
 
 >>> [CLI] apps delete test-app-already-exists
 {
-  "name": ""
+  "active_deployment": {
+    "deployment_id": "[APP_DEPLOYMENT_ID]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
+    "status": {
+      "message": "Deployment succeeded",
+      "state": "SUCCEEDED"
+    }
+  },
+  "app_status": {
+    "message": "App status is unavailable.",
+    "state": "UNAVAILABLE"
+  },
+  "compute_size": "MEDIUM",
+  "compute_status": {
+    "message": "App is being deleted.",
+    "state": "DELETING"
+  },
+  "default_source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
+  "forward_user_access_token": true,
+  "id": "1000",
+  "name": "test-app-already-exists",
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [SERVICE_PRINCIPAL_ID],
+  "service_principal_name": "app-test-app-already-exists",
+  "url": "test-app-already-exists-123.cloud.databricksapps.com"
 }

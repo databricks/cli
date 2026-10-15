@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
@@ -74,7 +77,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 		path := structpath.NewPath(nil, "resources", "dashboards", dashboard.Name)
 		loc := b.Config.GetLocationOf(path)
-		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
+		actual, err := b.WorkspaceClient(ctx).Lakeview.GetDashboard(ctx, sdklakeview.GetDashboardRequest{DashboardId: new(dashboard.ID)})
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
@@ -87,7 +90,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		}
 
 		// If the ETag is the same, the dashboard has not been modified.
-		if actual.Etag == dashboard.ETag {
+		if utils.Deref(actual.Etag) == dashboard.ETag {
 			continue
 		}
 

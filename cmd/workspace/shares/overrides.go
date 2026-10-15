@@ -3,8 +3,10 @@ package shares
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sharing"
+	"github.com/databricks/cli/libs/flags"
+	sharing "github.com/databricks/cli/libs/sdktypes/sharing/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -13,8 +15,8 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListSharesRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of shares to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List shares (Deprecated).`
@@ -36,9 +38,12 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		//nolint:staticcheck // this API is deprecated but we still need to expose this in the CLI.
-		response := w.Shares.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		sdkReq, err := sharing.ListSharesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
+		response := w.Sharing.ListSharesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sharing.ShareInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

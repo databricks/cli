@@ -5,11 +5,13 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type Job struct {
@@ -20,21 +22,13 @@ type Job struct {
 	Permissions []JobPermission `json:"permissions,omitempty"`
 }
 
-func (j *Job) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, j)
-}
-
-func (j Job) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(j)
-}
-
-func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (j *Job) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	jobId, err := strconv.Atoi(id)
 	if err != nil {
 		return false, err
 	}
-	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
-		JobId: int64(jobId),
+	_, err = w.Jobs.GetJob(ctx, sdkjobs.GetJobRequest{
+		JobId: new(int64(jobId)),
 	})
 	if err != nil {
 		log.Debugf(ctx, "job %s does not exist", id)
@@ -60,5 +54,5 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 }
 
 func (j *Job) GetName() string {
-	return j.Name
+	return utils.Deref(j.Name)
 }

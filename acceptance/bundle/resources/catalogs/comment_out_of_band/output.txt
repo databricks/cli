@@ -47,7 +47,8 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "path": "/api/2.1/unity-catalog/catalogs/test-catalog-[UNIQUE_NAME]",
   "body": {
     "comment": "",
-    "custom_max_retention_hours": 0
+    "custom_max_retention_hours": 0,
+    "name_arg": "test-catalog-[UNIQUE_NAME]"
   }
 }
 

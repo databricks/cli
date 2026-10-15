@@ -11,6 +11,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/convert"
 
@@ -109,15 +111,15 @@ workspace: { current_user: { userName: test }}`)
 	assert.ElementsMatch(t, []string{"job0", "job1"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 
 	if job0, ok := b.Config.Resources.Jobs["job0"]; ok {
-		assert.Equal(t, "job_0", job0.Name)
+		assert.Equal(t, "job_0", utils.Deref(job0.Name))
 	}
 
 	if job1, ok := b.Config.Resources.Jobs["job1"]; ok {
-		assert.Equal(t, "job_1", job1.Name)
+		assert.Equal(t, "job_1", utils.Deref(job1.Name))
 	}
 
 	if pipeline0, ok := b.Config.Resources.Jobs["pipeline0"]; ok {
-		assert.Equal(t, "pipeline_0", pipeline0.Name)
+		assert.Equal(t, "pipeline_0", utils.Deref(pipeline0.Name))
 	}
 
 	// output of locations.json should be applied to underlying dyn.Value
@@ -216,8 +218,8 @@ resources:
 	assert.NoError(t, diag.Error())
 
 	assert.ElementsMatch(t, []string{"job0"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
-	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
-	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
+	assert.Equal(t, "job_0", utils.Deref(b.Config.Resources.Jobs["job0"].Name))
+	assert.Equal(t, "my job", utils.Deref(b.Config.Resources.Jobs["job0"].Description))
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		// 'name' wasn't changed, so it keeps its location

@@ -5,11 +5,14 @@ package enable_notebook_table_clipboard
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -71,11 +74,21 @@ Get the Results Table Clipboard features setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Settings.EnableNotebookTableClipboard().GetEnableNotebookTableClipboard(ctx)
+		_ = w
+		getEnableNotebookTableClipboardReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/settings/types/enable-notebook-table-clipboard/names/default"
+
+		maps.Copy(rawQuery, getEnableNotebookTableClipboardReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -97,13 +110,16 @@ Get the Results Table Clipboard features setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchEnableNotebookTableClipboardOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEnableNotebookTableClipboardRequest,
+	*map[string]any,
 )
 
 func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchEnableNotebookTableClipboardReq map[string]any
+	patchEnableNotebookTableClipboardReq = map[string]any{}
+	var patchEnableNotebookTableClipboardAllowMissingRaw bool
+	var patchEnableNotebookTableClipboardFieldMaskRaw string
 
-	var patchEnableNotebookTableClipboardReq settings.UpdateEnableNotebookTableClipboardRequest
 	var patchEnableNotebookTableClipboardJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -126,6 +142,7 @@ Update the Results Table Clipboard features setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchEnableNotebookTableClipboardJson.Unmarshal(&patchEnableNotebookTableClipboardReq)
@@ -142,11 +159,24 @@ Update the Results Table Clipboard features setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EnableNotebookTableClipboard().PatchEnableNotebookTableClipboard(ctx, patchEnableNotebookTableClipboardReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || patchEnableNotebookTableClipboardAllowMissingRaw != false {
+			patchEnableNotebookTableClipboardReq["allow_missing"] = patchEnableNotebookTableClipboardAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || patchEnableNotebookTableClipboardFieldMaskRaw != "" {
+			patchEnableNotebookTableClipboardReq["field_mask"] = patchEnableNotebookTableClipboardFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/enable-notebook-table-clipboard/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, patchEnableNotebookTableClipboardReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

@@ -4,12 +4,16 @@ package dashboard_widgets
 
 import (
 	"errors"
+	"fmt"
+
+	"maps"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -54,19 +58,24 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateWidget,
+	*map[string]any,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq map[string]any
+	createReq = map[string]any{}
+	var createDashboardIdRaw string
+	var createTextRaw string
+	var createVisualizationIdRaw string
+	var createWidthRaw int
 
-	var createReq sql.CreateWidget
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Visualization ID returned by :method:queryvisualizations/create.`)
+	cmd.Flags().StringVar(&createTextRaw, "text", createTextRaw, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&createVisualizationIdRaw, "visualization-id", createVisualizationIdRaw, `Query Visualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
@@ -82,6 +91,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -98,11 +108,30 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.DashboardWidgets.Create(ctx, createReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("dashboard-id") || createDashboardIdRaw != "" {
+			createReq["dashboard_id"] = createDashboardIdRaw
+		}
+		if cmd.Flags().Changed("text") || createTextRaw != "" {
+			createReq["text"] = createTextRaw
+		}
+		if cmd.Flags().Changed("visualization-id") || createVisualizationIdRaw != "" {
+			createReq["visualization_id"] = createVisualizationIdRaw
+		}
+		if cmd.Flags().Changed("width") || createWidthRaw != 0 {
+			createReq["width"] = createWidthRaw
+		}
+		rawPath := "/api/2.0/preview/sql/widgets"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -124,13 +153,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteDashboardWidgetRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.DeleteDashboardWidgetRequest
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteIdRaw string
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
@@ -154,10 +184,19 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Id = args[0]
+		deleteIdRaw = args[0]
 
-		err = w.DashboardWidgets.Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/widgets/%s", fmt.Sprint(deleteIdRaw))
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -182,19 +221,25 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.UpdateWidgetRequest,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateDashboardIdRaw string
+	var updateIdRaw string
+	var updateTextRaw string
+	var updateVisualizationIdRaw string
+	var updateWidthRaw int
 
-	var updateReq sql.UpdateWidgetRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Visualization ID returned by :method:queryvisualizations/create.`)
+	cmd.Flags().StringVar(&updateTextRaw, "text", updateTextRaw, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&updateVisualizationIdRaw, "visualization-id", updateVisualizationIdRaw, `Query Visualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
@@ -218,6 +263,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -233,13 +279,32 @@ func newUpdate() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Id = args[0]
+		updateIdRaw = args[0]
 
-		response, err := w.DashboardWidgets.Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("dashboard-id") || updateDashboardIdRaw != "" {
+			updateReq["dashboard_id"] = updateDashboardIdRaw
+		}
+		if cmd.Flags().Changed("text") || updateTextRaw != "" {
+			updateReq["text"] = updateTextRaw
+		}
+		if cmd.Flags().Changed("visualization-id") || updateVisualizationIdRaw != "" {
+			updateReq["visualization_id"] = updateVisualizationIdRaw
+		}
+		if cmd.Flags().Changed("width") || updateWidthRaw != 0 {
+			updateReq["width"] = updateWidthRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/widgets/%s", fmt.Sprint(updateIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

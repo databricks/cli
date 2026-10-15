@@ -2,46 +2,44 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
+	secrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	sdksecrets "github.com/databricks/sdk-go/uc/secrets/v1"
 )
 
 // Terraform provider implementation:
 // https://github.com/databricks/terraform-provider-databricks/blob/main/catalog/resource_secret.go
 type ResourceSecret struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
+func (*ResourceSecret) New(client *sdkclients.Clients) *ResourceSecret {
 	return &ResourceSecret{client: client}
 }
 
-func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
-	return &catalog.Secret{
-		CatalogName:     input.CatalogName,
-		SchemaName:      input.SchemaName,
-		Name:            input.Name,
-		Value:           input.Value,
-		Comment:         input.Comment,
-		ExpireTime:      input.ExpireTime,
-		Owner:           "",
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		EffectiveValue:  "",
-		FullName:        "",
-		MetastoreId:     "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
+func (*ResourceSecret) PrepareState(input *resources.Secret) *secrets.Secret {
+	return &secrets.Secret{
+		CatalogName:    input.CatalogName,
+		SchemaName:     input.SchemaName,
+		Name:           input.Name,
+		Value:          input.Value,
+		Comment:        input.Comment,
+		ExpireTime:     input.ExpireTime,
+		Owner:          nil,
+		CreateTime:     nil,
+		CreatedBy:      nil,
+		EffectiveOwner: nil,
+		EffectiveValue: nil,
+		FullName:       nil,
+		MetastoreId:    nil,
+		UpdateTime:     nil,
+		UpdatedBy:      nil,
 	}
 }
 
@@ -51,63 +49,73 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 // The rest of the secret, including the output-only metadata, is left intact and handled
 // by ignore_remote_changes, so no information is discarded. It runs wherever remote state
 // is produced (DoRead/DoCreate/DoUpdate), so no RemapState hook is needed.
-func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
+func remapSecretRemote(resp *sdksecrets.Secret) (*secrets.Secret, error) {
+	remote, err := secrets.SecretFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
 	remote.Value = remote.EffectiveValue
 	remote.Owner = remote.EffectiveOwner
-	return remote
+	return remote, nil
 }
 
 // DoRead fetches the secret by full name. IncludeValue is set so remapSecretRemote can
 // recover the stored value from EffectiveValue.
-func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
-		FullName:        id,
-		IncludeValue:    true,
-		ForceSendFields: nil,
+func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*secrets.Secret, error) {
+	remote, err := r.client.SecretsUc.GetSecret(ctx, sdksecrets.GetSecretRequest{
+		FullName:     new(id),
+		IncludeValue: new(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return remapSecretRemote(remote), nil
+	return remapSecretRemote(remote)
 }
 
 // DoCreate creates a new UC secret.
-func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (string, *catalog.Secret, error) {
-	response, err := r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
-		Secret: *state,
-	})
+func (r *ResourceSecret) DoCreate(ctx context.Context, state *secrets.Secret) (string, *secrets.Secret, error) {
+	request, err := secrets.CreateSecretRequestToSDK(&secrets.CreateSecretRequest{Secret: state})
+	if err != nil {
+		return "", nil, err
+	}
+	response, err := r.client.SecretsUc.CreateSecret(ctx, *request)
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	return response.FullName, remapSecretRemote(response), nil
+	remote, err := remapSecretRemote(response)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(remote.FullName), remote, nil
 }
 
-// comment is force-sent on update so that clearing it in config clears it on the secret. The
-// update_mask is "*" and the backend merges, so an omitempty comment would be dropped from the
-// body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
-var secretForceSend = []string{"Comment"}
-
 // DoUpdate updates the secret in place and returns remote state.
-func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
+//
+// comment is always sent on update so that clearing it in config clears it on the secret. The
+// update_mask is "*" and the backend merges, so an omitted comment would be dropped from the
+// body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
+func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *secrets.Secret, _ *PlanEntry) (*secrets.Secret, error) {
 	secret := *state
-	secret.ForceSendFields = utils.FilterFields[catalog.Secret](append(slices.Clone(secretForceSend), state.ForceSendFields...))
-	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
-		FullName: id,
-		Secret:   secret,
-		UpdateMask: fieldmask.FieldMask{
-			Paths: []string{"*"},
-		},
+	secret.Comment = orZero(state.Comment)
+	request, err := secrets.UpdateSecretRequestToSDK(&secrets.UpdateSecretRequest{
+		FullName:   new(id),
+		Secret:     &secret,
+		UpdateMask: new("*"),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return remapSecretRemote(response), nil
+	response, err := r.client.SecretsUc.UpdateSecret(ctx, *request)
+	if err != nil {
+		return nil, err
+	}
+	return remapSecretRemote(response)
 }
 
 // DoDelete deletes the secret.
-func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Secret) error {
-	return r.client.SecretsUc.DeleteSecret(ctx, catalog.DeleteSecretRequest{
-		FullName: id,
+func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *secrets.Secret) error {
+	return r.client.SecretsUc.DeleteSecret(ctx, sdksecrets.DeleteSecretRequest{
+		FullName: new(id),
 	})
 }
 
@@ -117,7 +125,7 @@ func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Sec
 // the actual stored value. We compare new vs remote (via effective_value from DoRead)
 // to decide whether the secret actually changed: if they are equal, the user's config
 // already matches what is stored remotely and no update is needed.
-func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *catalog.Secret) error {
+func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *secrets.Secret) error {
 	if path.String() != "value" {
 		return nil
 	}

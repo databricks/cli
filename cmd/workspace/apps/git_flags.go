@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -62,15 +63,14 @@ func gitRepositoryFlags(cmd *cobra.Command, target **apps.GitRepository, withCal
 		if (autoDeploySet || credSet) && !urlSet {
 			return errors.New(modifiers + " require --git-url and --git-provider")
 		}
-		repo := &apps.GitRepository{Url: url, Provider: provider}
+		repo := &apps.GitRepository{Url: &url, Provider: &provider}
 		if autoDeploySet {
-			repo.AutoDeploy = autoDeploy
-			// auto_deploy is omitempty; force-send so --git-auto-deploy=false is
-			// transmitted (e.g. to turn auto-deploy off on update).
-			repo.ForceSendFields = append(repo.ForceSendFields, "AutoDeploy")
+			// Set even when false so --git-auto-deploy=false is transmitted
+			// (e.g. to turn auto-deploy off on update).
+			repo.AutoDeploy = &autoDeploy
 		}
 		if credSet {
-			repo.CallerCredentialId = callerCredentialID
+			repo.CallerCredentialId = &callerCredentialID
 		}
 		*target = repo
 		return nil
@@ -113,12 +113,22 @@ func gitSourceFlags(cmd *cobra.Command, target **apps.GitSource) func(*cobra.Com
 		if pathSet && !refSet {
 			return errors.New("--git-source-code-path requires one of --git-branch, --git-tag, or --git-commit")
 		}
-		*target = &apps.GitSource{
-			Branch:         branch,
-			Tag:            tag,
-			Commit:         commit,
-			SourceCodePath: sourceCodePath,
+		src := &apps.GitSource{}
+		for _, f := range []struct {
+			flag  string
+			value string
+			dst   **string
+		}{
+			{"git-branch", branch, &src.Branch},
+			{"git-tag", tag, &src.Tag},
+			{"git-commit", commit, &src.Commit},
+			{"git-source-code-path", sourceCodePath, &src.SourceCodePath},
+		} {
+			if cmd.Flags().Changed(f.flag) {
+				*f.dst = new(f.value)
+			}
 		}
+		*target = src
 		return nil
 	}
 }
@@ -185,14 +195,13 @@ func gitCreateOverride(createCmd *cobra.Command, createReq *apps.CreateAppReques
 }
 
 // applyPreservedAutoDeploy carries a currently-enabled auto_deploy forward onto
-// the update request's git_repository. auto_deploy=true survives the omitempty
-// tag, so no ForceSendFields entry is needed; a currently-disabled auto_deploy
-// stays omitted (the server keeps it off).
+// the update request's git_repository; a currently-disabled auto_deploy stays
+// omitted (the server keeps it off).
 func applyPreservedAutoDeploy(repo *apps.GitRepository, currentAutoDeploy bool) {
 	if repo == nil || !currentAutoDeploy {
 		return
 	}
-	repo.AutoDeploy = true
+	repo.AutoDeploy = new(true)
 }
 
 // preserveAutoDeployOnUpdate keeps auto-deploy from being silently torn down
@@ -210,12 +219,12 @@ func preserveAutoDeployOnUpdate(req *apps.UpdateAppRequest) func(*cobra.Command,
 			return nil
 		}
 		ctx := cmd.Context()
-		current, err := cmdctx.WorkspaceClient(ctx).Apps.GetByName(ctx, args[0])
+		current, err := cmdctx.WorkspaceClient(ctx).Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(args[0])})
 		if err != nil {
 			return fmt.Errorf("read current app to preserve auto-deploy: %w", err)
 		}
-		if current.GitRepository != nil {
-			applyPreservedAutoDeploy(req.App.GitRepository, current.GitRepository.AutoDeploy)
+		if current.GitRepository != nil && current.GitRepository.AutoDeploy != nil {
+			applyPreservedAutoDeploy(req.App.GitRepository, *current.GitRepository.AutoDeploy)
 		}
 		return nil
 	}

@@ -3,15 +3,16 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkjobs "github.com/databricks/sdk-go/jobs/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -134,11 +135,11 @@ Filters:
 		userFilter := f.User
 		var currentUser string
 		if userFilter == "" && !allUsers {
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+			me, err := currentUserName(ctx, w)
 			if err != nil {
 				return fmt.Errorf("failed to resolve current user: %w", err)
 			}
-			currentUser = me.UserName
+			currentUser = me
 			userFilter = currentUser
 		}
 
@@ -196,7 +197,7 @@ type listStrategy interface {
 // shared tail: MLflow enrichment (text only) and row projection.
 type runFetcher struct {
 	ctx         context.Context
-	w           *databricks.WorkspaceClient
+	w           *sdkclients.Clients
 	fetchMLflow bool
 	strategy    listStrategy
 	workspaceID int64
@@ -204,7 +205,7 @@ type runFetcher struct {
 	exhausted bool
 }
 
-func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
+func newRunFetcher(ctx context.Context, w *sdkclients.Clients, q listQuery) *runFetcher {
 	return &runFetcher{
 		ctx:         ctx,
 		w:           w,
@@ -219,7 +220,7 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 // index load fails (e.g. endpoint unavailable in this workspace), we fall back to
 // the Jobs scan so the command still returns. Everything else — the default
 // active list, --all-users, and --all-status for another user — uses the scan.
-func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
+func newListStrategy(ctx context.Context, w *sdkclients.Clients, q listQuery) listStrategy {
 	useIndex := !q.activeOnly && !q.allUsers && (q.userFilter == "" || q.userFilter == q.currentUser)
 	if !useIndex {
 		return newJobsScanStrategy(ctx, w, q)
@@ -262,9 +263,17 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 // and filters. It buffers a page's leftover runs so successive next() calls
 // resume where the last stopped.
 type jobsScanStrategy struct {
-	ctx         context.Context
-	w           *databricks.WorkspaceClient
-	iter        listing.Iterator[jobs.BaseRun]
+	ctx  context.Context
+	w    *sdkclients.Clients
+	pull func() (*jobs.BaseRun, error, bool)
+	stop func()
+
+	// One run of lookahead, so done() knows whether the listing is exhausted
+	// without consuming a run.
+	peeked      *jobs.BaseRun
+	peekedErr   error
+	hasPeeked   bool
+	exhausted   bool
 	userFilter  string
 	filters     listFilters
 	host        string
@@ -273,17 +282,21 @@ type jobsScanStrategy struct {
 	scanned int
 }
 
-func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
-	req := jobs.ListRunsRequest{
-		RunType:     jobs.RunTypeSubmitRun,
-		ExpandTasks: true,
-		Limit:       jobsPageLimit,
-		ActiveOnly:  q.activeOnly,
+func newJobsScanStrategy(ctx context.Context, w *sdkclients.Clients, q listQuery) *jobsScanStrategy {
+	req := sdkjobs.ListRunsRequest{
+		RunType:     sdkjobs.RunType_SubmitRun,
+		ExpandTasks: new(true),
+		Limit:       new(int(jobsPageLimit)),
 	}
+	if q.activeOnly {
+		req.StateConstraint = &sdkjobs.ListRunsRequest_StateConstraint_ActiveOnly{ActiveOnly: true}
+	}
+	pull, stop := iter.Pull2(listRuns(ctx, w, req))
 	return &jobsScanStrategy{
 		ctx:         ctx,
 		w:           w,
-		iter:        w.Jobs.ListRuns(ctx, req),
+		pull:        pull,
+		stop:        stop,
 		userFilter:  q.userFilter,
 		filters:     q.filters,
 		host:        w.Config.Host,
@@ -293,30 +306,42 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 
 func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 	var entries []listedRun
-	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
-		base, err := s.iter.Next(s.ctx)
+	for len(entries) < want && s.scanned < maxListScan && s.hasNext() {
+		base, err := s.peeked, s.peekedErr
+		s.hasPeeked = false
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
 		}
 		s.scanned++
 
-		run := baseRunToRun(base)
+		run := baseRunToRun(*base)
 		if !isAirRun(run) {
 			continue
 		}
-		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
+		if s.userFilter != "" && utils.Deref(run.CreatorUserName) != s.userFilter {
 			continue
 		}
 		if !s.filters.matches(run) {
 			continue
 		}
-		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, taskRunID: taskRunID(run)})
+		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: utils.Deref(run.RunId), taskRunID: taskRunID(run)})
 	}
 	return entries, nil
 }
 
 func (s *jobsScanStrategy) done() bool {
-	return s.scanned >= maxListScan || !s.iter.HasNext(s.ctx)
+	return s.scanned >= maxListScan || !s.hasNext()
+}
+
+func (s *jobsScanStrategy) hasNext() bool {
+	if !s.hasPeeked && !s.exhausted {
+		s.peeked, s.peekedErr, s.hasPeeked = s.pull()
+		if !s.hasPeeked {
+			s.exhausted = true
+			s.stop()
+		}
+	}
+	return s.hasPeeked
 }
 
 func (s *jobsScanStrategy) truncated() bool {
@@ -335,7 +360,7 @@ func warnIfTruncated(ctx context.Context, f *runFetcher) {
 // and, for a running run, its ETA - in parallel, best-effort: a row whose IDs
 // can't be resolved keeps its "-" placeholder, and a run we can't estimate has
 // no ETA.
-func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host string, entries []listedRun) {
+func setMLflowLinks(ctx context.Context, w *sdkclients.Clients, host string, entries []listedRun) {
 	var g errgroup.Group
 	g.SetLimit(enrichConcurrency)
 	for i := range entries {
@@ -353,7 +378,7 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).
-			if entries[i].row.Status == string(jobs.RunLifeCycleStateRunning) {
+			if entries[i].row.Status == string(jobs.RunLifeCycleState_RunLifeCycleState_Running) {
 				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
 					entries[i].row.Progress = eta.compact()
 				}

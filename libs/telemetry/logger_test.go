@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,9 +64,8 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 		if count == 1 {
 			return testserver.Response{
 				StatusCode: statusCode,
-				Body: apierr.APIError{
-					StatusCode: statusCode,
-					Message:    "Some error",
+				Body: map[string]string{
+					"message": "Some error",
 				},
 			}
 		}

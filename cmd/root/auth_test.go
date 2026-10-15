@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -645,7 +644,7 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 
 	a, err := accountClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, a)
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorIs(t, err, errNotAccountClient)
 }
 
 func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
@@ -920,7 +919,7 @@ func TestAccountClientOrPromptReturnsErrorForMissingAccountID(t *testing.T) {
 
 	a, err := accountClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, a)
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorIs(t, err, errNotAccountClient)
 }
 
 func TestMustWorkspaceClientWithoutConfiguredDefaultFallsBackToDefaultSection(t *testing.T) {

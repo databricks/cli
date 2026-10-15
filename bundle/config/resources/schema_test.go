@@ -3,22 +3,18 @@ package resources
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSchemaNotFound(t *testing.T) {
 	ctx := t.Context()
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockSchemasAPI().On("GetByFullName", mock.Anything, "non-existent-schema").Return(nil, &apierr.APIError{
-		StatusCode: 404,
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/schemas/non-existent-schema": notFound(),
 	})
 
 	s := &Schema{}
-	exists, err := s.Exists(ctx, m.WorkspaceClient, "non-existent-schema")
+	exists, err := s.Exists(ctx, w, "non-existent-schema")
 
 	require.Falsef(t, exists, "Exists should return false when getting a 404 response from Workspace")
 	require.NoErrorf(t, err, "Exists should not return an error when getting a 404 response from Workspace")

@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/config"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +31,7 @@ func newServer(t *testing.T) *testserver.Server {
 
 func httpClient(t *testing.T, server *testserver.Server) *sqlexec.Client {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	// Tiny poll interval so the polling tests don't sleep.
 	return sqlexec.New(w.StatementExecution, "wh-1", sqlexec.WithPollInterval(time.Millisecond, time.Millisecond))
@@ -75,14 +76,14 @@ func TestHTTPExecuteFailedReturns200(t *testing.T) {
 	// A failed statement comes back as HTTP 200 with state=FAILED, not an HTTP
 	// error; the engine must inspect the body and surface a *StatementError.
 	server.HandleSQL("SELECT * FROM nope", func(testsql.Request) testsql.Result {
-		return testsql.Result{Error: &testsql.Error{Code: sql.ServiceErrorCodeBadRequest, Message: "no such table", SQLState: "42P01"}}
+		return testsql.Result{Error: &testsql.Error{Code: sql.ServiceErrorCode_BadRequest, Message: "no such table", SQLState: "42P01"}}
 	})
 
 	_, err := httpClient(t, server).Execute(t.Context(), "SELECT * FROM nope")
 	var se *sqlexec.StatementError
 	require.ErrorAs(t, err, &se)
-	assert.Equal(t, sql.StatementStateFailed, se.State)
-	assert.Equal(t, sql.ServiceErrorCodeBadRequest, se.Code)
+	assert.Equal(t, sql.StatementStatus_State_Failed, se.State)
+	assert.Equal(t, sql.ServiceErrorCode_BadRequest, se.Code)
 	assert.Equal(t, "no such table", se.Message)
 	assert.Equal(t, "42P01", se.SQLState)
 }
@@ -104,6 +105,6 @@ func TestHTTPSubmitAndCancel(t *testing.T) {
 
 	stmt, err = c.Poll(ctx, stmt)
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateCanceled, stmt.State)
+	assert.Equal(t, sql.StatementStatus_State_Canceled, stmt.State)
 	require.Error(t, stmt.Err())
 }

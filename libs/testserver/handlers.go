@@ -13,21 +13,26 @@ import (
 	"strconv"
 	"strings"
 
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	clusters "github.com/databricks/cli/libs/sdktypes/clusters/v2"
+	instancepools "github.com/databricks/cli/libs/sdktypes/instancepools/v2"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
+	metastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
+	tables "github.com/databricks/cli/libs/sdktypes/uc/tables/v1"
+	"github.com/databricks/cli/libs/utils"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
+
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // TestWorkspaceID is the id of the fake workspace.
 const TestWorkspaceID = 900800700600
 
-var TestMetastore = catalog.MetastoreAssignment{
-	DefaultCatalogName: "hive_metastore",
-	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        TestWorkspaceID,
+var TestMetastore = metastores.MetastoreAssignment{
+	DefaultCatalogName: utils.NonZero("hive_metastore"),
+	MetastoreId:        utils.NonZero("120efa64-9b68-46ba-be38-f319458430d2"),
+	WorkspaceId:        utils.NonZero[int64](TestWorkspaceID),
 }
 
 // Extensions that format=AUTO maps to workspace asset types /workspace/import
@@ -71,15 +76,15 @@ func autoImportUnsupported(filePath string) (Response, bool) {
 func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 	var resp Response
 	switch form.Format {
-	case string(workspace.ImportFormatRaw):
+	case string(workspaceapi.ImportFormatRaw):
 		resp = w.WorkspaceImportRawFile(form.Path, form.Content, form.Overwrite)
-	case string(workspace.ImportFormatSource):
-		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
-	case string(workspace.ImportFormatJupyter):
+	case string(workspaceapi.ImportFormatSource):
+		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspaceapi.Language(form.Language), form.Overwrite)
+	case string(workspaceapi.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
 		_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
-	case string(workspace.ImportFormatAuto):
+	case string(workspaceapi.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
 			return w.WorkspaceImportZipFolder(form.Path, form.Content, form.Overwrite)
 		}
@@ -172,15 +177,15 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {
-		return compute.ListInstancePools{
-			InstancePools: []compute.InstancePoolAndStats{
+		return instancepools.ListInstancePoolsResponse{
+			InstancePools: []instancepools.InstancePoolAndStats{
 				{
-					InstancePoolName: "DEFAULT Test Instance Pool",
-					InstancePoolId:   TestDefaultInstancePoolId,
+					InstancePoolName: utils.NonZero("DEFAULT Test Instance Pool"),
+					InstancePoolId:   utils.NonZero(TestDefaultInstancePoolId),
 				},
 				{
-					InstancePoolName: "some-test-instance-pool",
-					InstancePoolId:   "1234",
+					InstancePoolName: utils.NonZero("some-test-instance-pool"),
+					InstancePoolId:   utils.NonZero("1234"),
 				},
 			},
 		}
@@ -200,15 +205,17 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
-		return compute.ListClustersResponse{
-			Clusters: []compute.ClusterDetails{
+		return clusters.ListClustersResponse{
+			Clusters: []clusters.ClusterInfo{
 				{
-					ClusterName: "some-test-cluster",
-					ClusterId:   "4321",
+					ClusterName: utils.NonZero("some-test-cluster"),
+					ClusterId:   utils.NonZero("4321"),
+					State:       clusters.ClusterState_ClusterState_Running,
 				},
 				{
-					ClusterName: "some-other-cluster",
-					ClusterId:   "9876",
+					ClusterName: utils.NonZero("some-other-cluster"),
+					ClusterId:   utils.NonZero("9876"),
+					State:       clusters.ClusterState_ClusterState_Running,
 				},
 			},
 		}
@@ -233,7 +240,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req Request) any {
-		var request workspace.Mkdirs
+		var request workspaceapi.Mkdirs
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
 				Body:       fmt.Sprintf("internal error: %s", err),
@@ -266,14 +273,14 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		return Response{
-			Body: workspace.ExportResponse{
+			Body: workspaceapi.ExportResponse{
 				Content: base64.StdEncoding.EncodeToString(data),
 			},
 		}
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/delete", func(req Request) any {
-		var request workspace.Delete
+		var request workspaceapi.Delete
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
 				Body:       fmt.Sprintf("internal error: %s", err),
@@ -290,8 +297,8 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/import", func(req Request) any {
-		// /workspace/import accepts both a JSON body (matching workspace.Import) and a
-		// multipart form body. The multipart variant is what databricks-sdk-go's
+		// /workspace/import accepts both a JSON body (matching workspaceapi.Import) and a
+		// multipart form body. The multipart variant is what libs/workspaceapi's
 		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
 		// that still hits Workspace.Import directly.
 		mediaType, _, _ := mime.ParseMediaType(req.Headers.Get("Content-Type"))
@@ -316,7 +323,7 @@ func AddDefaultHandlers(server *Server) {
 			return workspaceImport(req.Workspace, form)
 		}
 
-		var request workspace.Import
+		var request workspaceapi.Import
 		err := json.Unmarshal(req.Body, &request)
 		if err != nil {
 			return Response{
@@ -339,7 +346,7 @@ func AddDefaultHandlers(server *Server) {
 		// and treats empty as SOURCE (see cmd/workspace/workspace/overrides.go).
 		format := string(request.Format)
 		if format == "" {
-			format = string(workspace.ImportFormatSource)
+			format = string(workspaceapi.ImportFormatSource)
 		}
 		return workspaceImport(req.Workspace, ImportForm{
 			Path:      request.Path,
@@ -402,7 +409,7 @@ func AddDefaultHandlers(server *Server) {
 		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {
-				req.Workspace.directories[dir] = workspace.ObjectInfo{
+				req.Workspace.directories[dir] = workspaceapi.ObjectInfo{
 					ObjectType: "DIRECTORY",
 					Path:       dir,
 					ObjectId:   nextTreenodeID(),
@@ -441,9 +448,9 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
-		return catalog.GetMetastoreSummaryResponse{
+		return metastores.GetMetastoreSummaryResponse{
 			MetastoreId: TestMetastore.MetastoreId,
-			Region:      "us-west-2",
+			Region:      utils.NonZero("us-west-2"),
 		}
 	})
 
@@ -484,14 +491,14 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
-		var request jobs.DeleteJob
+		var request jobs.DeleteJobRequest
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
 				StatusCode: 400,
 				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
-		return req.Workspace.JobsDelete(req, request.JobId)
+		return req.Workspace.JobsDelete(req, utils.Deref(request.JobId))
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
@@ -639,11 +646,11 @@ func AddDefaultHandlers(server *Server) {
 			return Response{StatusCode: 400, Body: "Invalid table name"}
 		}
 		return Response{
-			Body: catalog.TableInfo{
-				CatalogName: parts[0],
-				SchemaName:  parts[1],
-				Name:        parts[2],
-				FullName:    req.Vars["full_name"],
+			Body: tables.TableInfo{
+				CatalogName: utils.NonZero(parts[0]),
+				SchemaName:  utils.NonZero(parts[1]),
+				Name:        utils.NonZero(parts[2]),
+				FullName:    utils.NonZero(req.Vars["full_name"]),
 			},
 		}
 	})
@@ -773,12 +780,12 @@ func AddDefaultHandlers(server *Server) {
 	// Storage Credentials:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/storage-credentials", func(req Request) any {
-		return catalog.ListStorageCredentialsResponse{
-			StorageCredentials: []catalog.StorageCredentialInfo{
+		return uccredentials.ListStorageCredentialsResponse{
+			StorageCredentials: []uccredentials.StorageCredentialInfo{
 				{
-					Name:        "some-test-credential",
-					Id:          "1234",
-					MetastoreId: "abcd",
+					Name:        utils.NonZero("some-test-credential"),
+					Id:          utils.NonZero("1234"),
+					MetastoreId: utils.NonZero("abcd"),
 				},
 			},
 		}
@@ -892,7 +899,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
 		return map[string]any{
-			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+			"path": "/Workspace/Users/" + utils.Deref(TestUserSP.UserName) + "/.snapshots/",
 		}
 	})
 
@@ -927,8 +934,8 @@ func AddDefaultHandlers(server *Server) {
 
 		// The real API uses the workspace user UUID (not email) in the snapshot path,
 		// matching service-principal identities used in cloud acceptance tests.
-		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
-		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
+		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", utils.Deref(TestUserSP.UserName), bundleID, snapshotID)
+		req.Workspace.WorkspaceMkdirs(workspaceapi.Mkdirs{Path: snapshotPath})
 		return map[string]any{
 			"snapshot": map[string]any{
 				"path": snapshotPath,
@@ -988,7 +995,7 @@ func AddDefaultHandlers(server *Server) {
 		id := req.Vars["id"]
 
 		value, ok := req.Workspace.Alerts[id]
-		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
+		if !ok || value.LifecycleState == alerts.AlertLifecycleState_Deleted {
 			return Response{
 				StatusCode: 404,
 				Body:       map[string]string{"message": "Alert with ID '" + id + "' does not exist."},

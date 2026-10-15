@@ -3,13 +3,13 @@ package trampoline
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,25 +20,25 @@ func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:         "key1",
+									TaskKey:         new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key2",
+									TaskKey:         new("key2"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "13.1.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("13.1.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 							},
@@ -62,33 +62,33 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									JobClusterKey: "cluster1",
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									JobClusterKey: new("cluster1"),
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
 								},
 								{
-									JobClusterKey: "cluster2",
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "13.1.x-scala2.12",
+									JobClusterKey: new("cluster2"),
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("13.1.x-scala2.12"),
 									},
 								},
 							},
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:         "key1",
+									TaskKey:         new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									JobClusterKey:   "cluster1",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									JobClusterKey:   new("cluster1"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key2",
+									TaskKey:         new("key2"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									JobClusterKey:   "cluster2",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									JobClusterKey:   new("cluster2"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 							},
@@ -113,21 +113,21 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:           "key1",
+									TaskKey:           new("key1"),
 									PythonWheelTask:   &jobs.PythonWheelTask{},
-									ExistingClusterId: "test-key-1",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									ExistingClusterId: new("test-key-1"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:           "key2",
+									TaskKey:           new("key2"),
 									PythonWheelTask:   &jobs.PythonWheelTask{},
-									ExistingClusterId: "test-key-2",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									ExistingClusterId: new("test-key-2"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 							},
@@ -138,15 +138,10 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clustersApi := m.GetMockClustersAPI()
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-1").Return(&compute.ClusterDetails{
-		SparkVersion: "12.2.x-scala2.12",
-	}, nil)
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
-		SparkVersion: "12.2.x-scala2.12",
-	}, nil)
+	setClusters(t, b, map[string]string{
+		"test-key-1": "12.2.x-scala2.12",
+		"test-key-2": "12.2.x-scala2.12",
+	})
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.NotEmpty(t, diags)
@@ -162,81 +157,81 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									JobClusterKey: "cluster1",
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									JobClusterKey: new("cluster1"),
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
 								},
 								{
-									JobClusterKey: "cluster2",
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "13.1.x-scala2.12",
+									JobClusterKey: new("cluster2"),
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("13.1.x-scala2.12"),
 									},
 								},
 							},
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:         "key1",
+									TaskKey:         new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/me@me.com/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/me@me.com/dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key2",
+									TaskKey:         new("key2"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "13.3.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("13.3.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key3",
+									TaskKey:         new("key3"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "dbfs:/dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("dbfs:/dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key4",
+									TaskKey:         new("key4"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									JobClusterKey:   "cluster1",
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/Users/me@me.com/dist/test.whl"},
+									JobClusterKey:   new("cluster1"),
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/Users/me@me.com/dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key5",
+									TaskKey:         new("key5"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									JobClusterKey:   "cluster2",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									JobClusterKey:   new("cluster2"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:           "key6",
+									TaskKey:           new("key6"),
 									PythonWheelTask:   &jobs.PythonWheelTask{},
-									ExistingClusterId: "test-key-2",
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									ExistingClusterId: new("test-key-2"),
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:           "key7",
+									TaskKey:           new("key7"),
 									PythonWheelTask:   &jobs.PythonWheelTask{},
-									ExistingClusterId: "test-key-2",
-									Libraries: []compute.Library{
-										{Whl: "signol_lib-0.4.4-20240822+prod-py3-none-any.whl"},
-										{Pypi: &compute.PythonPyPiLibrary{
-											Package: "requests==2.25.1",
+									ExistingClusterId: new("test-key-2"),
+									Libraries: []jobs.Library{
+										{Whl: new("signol_lib-0.4.4-20240822+prod-py3-none-any.whl")},
+										{Pypi: &jobs.PythonPyPiLibrary{
+											Package: new("requests==2.25.1"),
 										}},
 									},
 								},
@@ -248,12 +243,9 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clustersApi := m.GetMockClustersAPI()
-	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
-		SparkVersion: "13.2.x-scala2.12",
-	}, nil)
+	setClusters(t, b, map[string]string{
+		"test-key-2": "13.2.x-scala2.12",
+	})
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
@@ -268,20 +260,20 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									JobClusterKey: "cluster1",
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									JobClusterKey: new("cluster1"),
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
 								},
 							},
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:           "key1",
+									TaskKey:           new("key1"),
 									PythonWheelTask:   &jobs.PythonWheelTask{},
-									ExistingClusterId: "test-key-2",
-									Libraries: []compute.Library{
-										{Pypi: &compute.PythonPyPiLibrary{
-											Package: "requests==2.25.1",
+									ExistingClusterId: new("test-key-2"),
+									Libraries: []jobs.Library{
+										{Pypi: &jobs.PythonPyPiLibrary{
+											Package: new("requests==2.25.1"),
 										}},
 									},
 								},
@@ -293,8 +285,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	setClusters(t, b, nil)
 
 	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
@@ -310,25 +301,25 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:         "key1",
+									TaskKey:         new("key1"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "12.2.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("12.2.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 								{
-									TaskKey:         "key2",
+									TaskKey:         new("key2"),
 									PythonWheelTask: &jobs.PythonWheelTask{},
-									NewCluster: &compute.ClusterSpec{
-										SparkVersion: "13.1.x-scala2.12",
+									NewCluster: &jobs.ClusterSpec_NewCluster{
+										SparkVersion: new("13.1.x-scala2.12"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/test.whl")},
 									},
 								},
 							},
@@ -365,4 +356,18 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		result := lowerThanExpectedVersion(k)
 		require.Equal(t, v, result, k)
 	}
+}
+
+// setClusters serves clusters/get for the given clusters (id -> spark version).
+func setClusters(t *testing.T, b *bundle.Bundle, sparkVersions map[string]string) {
+	w, server := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
+	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
+		id := req.URL.Query().Get("cluster_id")
+		version, ok := sparkVersions[id]
+		if !ok {
+			t.Errorf("unexpected cluster id %q", id)
+		}
+		return map[string]string{"cluster_id": id, "spark_version": version}
+	})
 }

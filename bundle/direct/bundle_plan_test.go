@@ -10,12 +10,11 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -216,7 +215,7 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
-	runAs := &pipelines.RunAs{UserName: "someone@example.test"}
+	runAs := &pipelines.PipelinesJobRunAs{UserName: new("someone@example.test")}
 
 	tests := []struct {
 		name           string
@@ -489,17 +488,17 @@ const jobRunKey = "resources.job_runs.my_run"
 func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
 	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
 		RunId:       123,
-		ResultState: jobs.RunResultStateSuccess,
+		ResultState: jobs.RunResultState_RunResultState_Success,
 		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Success,
 		},
 	})
 
 	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
 
 	require.NoError(t, err)
-	assert.Equal(t, jobs.RunResultStateSuccess, value)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, value)
 }
 
 // jobRunResultStateAction classifies the result_state drift of a run in the given
@@ -512,8 +511,8 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 
 	remote := &dresources.JobRunRemote{RunId: 123, ResultState: state.ResultState, State: state}
 	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
-		Old:    jobs.RunResultStateSuccess,
-		New:    jobs.RunResultStateSuccess,
+		Old:    jobs.RunResultState_RunResultState_Success,
+		New:    jobs.RunResultState_RunResultState_Success,
 		Remote: state.ResultState,
 	}}
 
@@ -526,20 +525,20 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 	for name, state := range map[string]*jobs.RunState{
 		"FAILED": {
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateFailed,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Failed,
 		},
 		"CANCELED": {
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateCanceled,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Canceled,
 		},
 		"TIMEDOUT": {
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateTimedout,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Timedout,
 		},
 		// A skipped run never ran, so it reports no result_state at all — the same
 		// as a run still going. Only the lifecycle state tells the two apart.
-		"SKIPPED": {LifeCycleState: jobs.RunLifeCycleStateSkipped},
+		"SKIPPED": {LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Skipped},
 	} {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, deployplan.Recreate, jobRunResultStateAction(t, state).Action)
@@ -550,10 +549,10 @@ func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 // A run that has not stopped yet may still succeed, so the plan leaves it
 // alone rather than recreating it. Skip does not resume an abandoned wait.
 func TestJobRunInProgressIsSkip(t *testing.T) {
-	for _, lifeCycleState := range []jobs.RunLifeCycleState{
-		jobs.RunLifeCycleStatePending,
-		jobs.RunLifeCycleStateRunning,
-		jobs.RunLifeCycleStateTerminating,
+	for _, lifeCycleState := range []jobs.RunLifeCycleState_RunLifeCycleState{
+		jobs.RunLifeCycleState_RunLifeCycleState_Pending,
+		jobs.RunLifeCycleState_RunLifeCycleState_Running,
+		jobs.RunLifeCycleState_RunLifeCycleState_Terminating,
 	} {
 		t.Run(string(lifeCycleState), func(t *testing.T) {
 			change := jobRunResultStateAction(t, &jobs.RunState{LifeCycleState: lifeCycleState})
@@ -567,8 +566,8 @@ func TestJobRunInProgressIsSkip(t *testing.T) {
 // The run reached the required outcome, so the plan can skip it.
 func TestJobRunSucceededOutcomeIsNotDrift(t *testing.T) {
 	change := jobRunResultStateAction(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+		ResultState:    jobs.RunResultState_RunResultState_Success,
 	})
 
 	assert.Equal(t, deployplan.Skip, change.Action)
@@ -609,18 +608,18 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 	}
 
 	withPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
-		JobClusterKey: "small",
-		NewCluster:    &compute.ClusterSpec{PolicyId: "p1"},
+		JobClusterKey: new("small"),
+		NewCluster:    &jobs.ClusterSpec_NewCluster{PolicyId: new("p1")},
 	}}}
 	withoutPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
-		JobClusterKey: "small",
-		NewCluster:    &compute.ClusterSpec{},
+		JobClusterKey: new("small"),
+		NewCluster:    &jobs.ClusterSpec_NewCluster{},
 	}}}
 	// when_set resolves against the concrete object the rule matched, so two clusters in one
 	// job are gated independently.
 	mixed := &jobs.JobSettings{JobClusters: []jobs.JobCluster{
-		{JobClusterKey: "gated", NewCluster: &compute.ClusterSpec{PolicyId: "p1"}},
-		{JobClusterKey: "plain", NewCluster: &compute.ClusterSpec{}},
+		{JobClusterKey: new("gated"), NewCluster: &jobs.ClusterSpec_NewCluster{PolicyId: new("p1")}},
+		{JobClusterKey: new("plain"), NewCluster: &jobs.ClusterSpec_NewCluster{}},
 	}}
 
 	const tagPath = "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']"
@@ -786,7 +785,7 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
 	require.NoError(t, err)
 
-	newState := &dresources.ClusterState{PolicyId: "p1"}
+	newState := &dresources.ClusterState{PolicyId: new("p1")}
 	changes := deployplan.Changes{
 		// config-absent (Old==New==nil), present in remote: matches both rules.
 		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},

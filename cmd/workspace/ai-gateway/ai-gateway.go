@@ -4,15 +4,16 @@ package ai_gateway
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -76,21 +77,21 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMcpServiceOverrides []func(
 	*cobra.Command,
-	*catalog.CreateMcpServiceRequest,
+	*aigateway.CreateMcpServiceRequest,
 )
 
 func newCreateMcpService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createMcpServiceReq aigateway.CreateMcpServiceRequest
+	createMcpServiceReq.McpService = &aigateway.McpService{}
 
-	var createMcpServiceReq catalog.CreateMcpServiceRequest
-	createMcpServiceReq.McpService = catalog.McpService{}
 	var createMcpServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Comment, "comment", createMcpServiceReq.McpService.Comment, `User-provided description.`)
+	flags.StringPtrVar(cmd.Flags(), &createMcpServiceReq.McpService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Name, "name", createMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
+	flags.StringPtrVar(cmd.Flags(), &createMcpServiceReq.McpService.Name, "name", `Resource name of the MCP service.`)
 
 	cmd.Use = "create-mcp-service PARENT MCP_SERVICE_ID"
 	cmd.Short = `Create an MCP service.`
@@ -124,6 +125,7 @@ func newCreateMcpService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMcpServiceJson.Unmarshal(&createMcpServiceReq.McpService)
@@ -137,15 +139,23 @@ func newCreateMcpService() *cobra.Command {
 				}
 			}
 		}
-		createMcpServiceReq.Parent = args[0]
-		createMcpServiceReq.McpServiceId = args[1]
+		createMcpServiceReq.Parent = new(args[0])
+		createMcpServiceReq.McpServiceId = new(args[1])
 
-		response, err := w.AiGateway.CreateMcpService(ctx, createMcpServiceReq)
+		sdkReq, err := aigateway.CreateMcpServiceRequestToSDK(&createMcpServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.CreateMcpService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.McpServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -166,14 +176,14 @@ func newCreateMcpService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMcpServiceUserMappedCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.CreateMcpServiceUserMappedCredentialRequest,
+	*aigateway.CreateMcpServiceUserMappedCredentialRequest,
 )
 
 func newCreateMcpServiceUserMappedCredential() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createMcpServiceUserMappedCredentialReq aigateway.CreateMcpServiceUserMappedCredentialRequest
+	createMcpServiceUserMappedCredentialReq.Login = &aigateway.McpServiceUserMappedCredentialLogin{}
 
-	var createMcpServiceUserMappedCredentialReq catalog.CreateMcpServiceUserMappedCredentialRequest
-	createMcpServiceUserMappedCredentialReq.Login = catalog.McpServiceUserMappedCredentialLogin{}
 	var createMcpServiceUserMappedCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMcpServiceUserMappedCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -210,6 +220,7 @@ Create an MCP service user credential.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMcpServiceUserMappedCredentialJson.Unmarshal(&createMcpServiceUserMappedCredentialReq.Login)
@@ -223,14 +234,22 @@ Create an MCP service user credential.
 				}
 			}
 		}
-		createMcpServiceUserMappedCredentialReq.Name = args[0]
+		createMcpServiceUserMappedCredentialReq.Name = new(args[0])
 
-		response, err := w.AiGateway.CreateMcpServiceUserMappedCredential(ctx, createMcpServiceUserMappedCredentialReq)
+		sdkReq, err := aigateway.CreateMcpServiceUserMappedCredentialRequestToSDK(&createMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.CreateMcpServiceUserMappedCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.McpServiceUserMappedCredentialFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -251,21 +270,21 @@ Create an MCP service user credential.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createModelProviderServiceOverrides []func(
 	*cobra.Command,
-	*catalog.CreateModelProviderServiceRequest,
+	*aigateway.CreateModelProviderServiceRequest,
 )
 
 func newCreateModelProviderService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createModelProviderServiceReq aigateway.CreateModelProviderServiceRequest
+	createModelProviderServiceReq.ModelProviderService = &aigateway.ModelProviderService{}
 
-	var createModelProviderServiceReq catalog.CreateModelProviderServiceRequest
-	createModelProviderServiceReq.ModelProviderService = catalog.ModelProviderService{}
 	var createModelProviderServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&createModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Comment, "comment", createModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelProviderServiceReq.ModelProviderService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Name, "name", createModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelProviderServiceReq.ModelProviderService.Name, "name", `Resource name of the provider service.`)
 
 	cmd.Use = "create-model-provider-service PARENT MODEL_PROVIDER_SERVICE_ID"
 	cmd.Short = `Create a model provider service.`
@@ -301,6 +320,7 @@ func newCreateModelProviderService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelProviderServiceJson.Unmarshal(&createModelProviderServiceReq.ModelProviderService)
@@ -314,15 +334,23 @@ func newCreateModelProviderService() *cobra.Command {
 				}
 			}
 		}
-		createModelProviderServiceReq.Parent = args[0]
-		createModelProviderServiceReq.ModelProviderServiceId = args[1]
+		createModelProviderServiceReq.Parent = new(args[0])
+		createModelProviderServiceReq.ModelProviderServiceId = new(args[1])
 
-		response, err := w.AiGateway.CreateModelProviderService(ctx, createModelProviderServiceReq)
+		sdkReq, err := aigateway.CreateModelProviderServiceRequestToSDK(&createModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.CreateModelProviderService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelProviderServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -343,21 +371,21 @@ func newCreateModelProviderService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createModelServiceOverrides []func(
 	*cobra.Command,
-	*catalog.CreateModelServiceRequest,
+	*aigateway.CreateModelServiceRequest,
 )
 
 func newCreateModelService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createModelServiceReq aigateway.CreateModelServiceRequest
+	createModelServiceReq.ModelService = &aigateway.ModelService{}
 
-	var createModelServiceReq catalog.CreateModelServiceRequest
-	createModelServiceReq.ModelService = catalog.ModelService{}
 	var createModelServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&createModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Comment, "comment", createModelServiceReq.ModelService.Comment, `User-provided description.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelServiceReq.ModelService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Name, "name", createModelServiceReq.ModelService.Name, `Resource name of the model service.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelServiceReq.ModelService.Name, "name", `Resource name of the model service.`)
 	// TODO: array: supported_api_types
 
 	cmd.Use = "create-model-service PARENT MODEL_SERVICE_ID"
@@ -394,6 +422,7 @@ func newCreateModelService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelServiceJson.Unmarshal(&createModelServiceReq.ModelService)
@@ -407,15 +436,23 @@ func newCreateModelService() *cobra.Command {
 				}
 			}
 		}
-		createModelServiceReq.Parent = args[0]
-		createModelServiceReq.ModelServiceId = args[1]
+		createModelServiceReq.Parent = new(args[0])
+		createModelServiceReq.ModelServiceId = new(args[1])
 
-		response, err := w.AiGateway.CreateModelService(ctx, createModelServiceReq)
+		sdkReq, err := aigateway.CreateModelServiceRequestToSDK(&createModelServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.CreateModelService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -436,20 +473,20 @@ func newCreateModelService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSkillOverrides []func(
 	*cobra.Command,
-	*catalog.CreateSkillRequest,
+	*aigateway.CreateSkillRequest,
 )
 
 func newCreateSkill() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createSkillReq aigateway.CreateSkillRequest
+	createSkillReq.Skill = &aigateway.Skill{}
 
-	var createSkillReq catalog.CreateSkillRequest
-	createSkillReq.Skill = catalog.Skill{}
 	var createSkillJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSkillReq.Skill.Comment, "comment", createSkillReq.Skill.Comment, `User-provided comment for the skill.`)
-	cmd.Flags().StringVar(&createSkillReq.Skill.Name, "name", createSkillReq.Skill.Name, `Resource name of the skill.`)
+	flags.StringPtrVar(cmd.Flags(), &createSkillReq.Skill.Comment, "comment", `User-provided comment for the skill.`)
+	flags.StringPtrVar(cmd.Flags(), &createSkillReq.Skill.Name, "name", `Resource name of the skill.`)
 
 	cmd.Use = "create-skill PARENT SKILL_ID"
 	cmd.Short = `*Beta* Create a skill.`
@@ -485,6 +522,7 @@ Create a skill.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSkillJson.Unmarshal(&createSkillReq.Skill)
@@ -498,15 +536,23 @@ Create a skill.
 				}
 			}
 		}
-		createSkillReq.Parent = args[0]
-		createSkillReq.SkillId = args[1]
+		createSkillReq.Parent = new(args[0])
+		createSkillReq.SkillId = new(args[1])
 
-		response, err := w.AiGateway.CreateSkill(ctx, createSkillReq)
+		sdkReq, err := aigateway.CreateSkillRequestToSDK(&createSkillReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.CreateSkill(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.SkillFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -527,15 +573,14 @@ Create a skill.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMcpServiceOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteMcpServiceRequest,
+	*aigateway.DeleteMcpServiceRequest,
 )
 
 func newDeleteMcpService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteMcpServiceReq aigateway.DeleteMcpServiceRequest
 
-	var deleteMcpServiceReq catalog.DeleteMcpServiceRequest
-
-	cmd.Flags().StringVar(&deleteMcpServiceReq.Etag, "etag", deleteMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	flags.Base64Var(cmd.Flags(), &deleteMcpServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-mcp-service NAME"
 	cmd.Short = `Delete an MCP service.`
@@ -566,10 +611,15 @@ func newDeleteMcpService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMcpServiceReq.Name = args[0]
+		deleteMcpServiceReq.Name = new(args[0])
 
-		err = w.AiGateway.DeleteMcpService(ctx, deleteMcpServiceReq)
+		sdkReq, err := aigateway.DeleteMcpServiceRequestToSDK(&deleteMcpServiceReq)
+		if err != nil {
+			return err
+		}
+		err = w.AiGateway.DeleteMcpService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -594,13 +644,12 @@ func newDeleteMcpService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMcpServiceUserMappedCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteMcpServiceUserMappedCredentialRequest,
+	*sdkaigateway.DeleteMcpServiceUserMappedCredentialRequest,
 )
 
 func newDeleteMcpServiceUserMappedCredential() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteMcpServiceUserMappedCredentialReq catalog.DeleteMcpServiceUserMappedCredentialRequest
+	var deleteMcpServiceUserMappedCredentialReq sdkaigateway.DeleteMcpServiceUserMappedCredentialRequest
 
 	cmd.Use = "delete-mcp-service-user-mapped-credential NAME"
 	cmd.Short = `*Beta* Delete an MCP service user credential.`
@@ -631,15 +680,18 @@ Delete an MCP service user credential.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMcpServiceUserMappedCredentialReq.Name = args[0]
+		deleteMcpServiceUserMappedCredentialReq.Name = new(args[0])
 
-		response, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, deleteMcpServiceUserMappedCredentialReq)
+		sdkReq := &deleteMcpServiceUserMappedCredentialReq
+		response, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -660,15 +712,14 @@ Delete an MCP service user credential.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelProviderServiceOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteModelProviderServiceRequest,
+	*aigateway.DeleteModelProviderServiceRequest,
 )
 
 func newDeleteModelProviderService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteModelProviderServiceReq aigateway.DeleteModelProviderServiceRequest
 
-	var deleteModelProviderServiceReq catalog.DeleteModelProviderServiceRequest
-
-	cmd.Flags().StringVar(&deleteModelProviderServiceReq.Etag, "etag", deleteModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	flags.Base64Var(cmd.Flags(), &deleteModelProviderServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-provider-service NAME"
 	cmd.Short = `Delete a model provider service.`
@@ -700,10 +751,15 @@ func newDeleteModelProviderService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelProviderServiceReq.Name = args[0]
+		deleteModelProviderServiceReq.Name = new(args[0])
 
-		err = w.AiGateway.DeleteModelProviderService(ctx, deleteModelProviderServiceReq)
+		sdkReq, err := aigateway.DeleteModelProviderServiceRequestToSDK(&deleteModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+		err = w.AiGateway.DeleteModelProviderService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -728,15 +784,14 @@ func newDeleteModelProviderService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelServiceOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteModelServiceRequest,
+	*aigateway.DeleteModelServiceRequest,
 )
 
 func newDeleteModelService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteModelServiceReq aigateway.DeleteModelServiceRequest
 
-	var deleteModelServiceReq catalog.DeleteModelServiceRequest
-
-	cmd.Flags().StringVar(&deleteModelServiceReq.Etag, "etag", deleteModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	flags.Base64Var(cmd.Flags(), &deleteModelServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-service NAME"
 	cmd.Short = `Delete a model service.`
@@ -767,10 +822,15 @@ func newDeleteModelService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelServiceReq.Name = args[0]
+		deleteModelServiceReq.Name = new(args[0])
 
-		err = w.AiGateway.DeleteModelService(ctx, deleteModelServiceReq)
+		sdkReq, err := aigateway.DeleteModelServiceRequestToSDK(&deleteModelServiceReq)
+		if err != nil {
+			return err
+		}
+		err = w.AiGateway.DeleteModelService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -795,15 +855,14 @@ func newDeleteModelService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSkillOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteSkillRequest,
+	*aigateway.DeleteSkillRequest,
 )
 
 func newDeleteSkill() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteSkillReq aigateway.DeleteSkillRequest
 
-	var deleteSkillReq catalog.DeleteSkillRequest
-
-	cmd.Flags().StringVar(&deleteSkillReq.Etag, "etag", deleteSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
+	flags.Base64Var(cmd.Flags(), &deleteSkillReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-skill NAME"
 	cmd.Short = `*Beta* Delete a skill.`
@@ -837,10 +896,15 @@ Delete a skill.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSkillReq.Name = args[0]
+		deleteSkillReq.Name = new(args[0])
 
-		err = w.AiGateway.DeleteSkill(ctx, deleteSkillReq)
+		sdkReq, err := aigateway.DeleteSkillRequestToSDK(&deleteSkillReq)
+		if err != nil {
+			return err
+		}
+		err = w.AiGateway.DeleteSkill(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -865,13 +929,12 @@ Delete a skill.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var finalizeSkillOverrides []func(
 	*cobra.Command,
-	*catalog.FinalizeSkillRequest,
+	*sdkaigateway.FinalizeSkillRequest,
 )
 
 func newFinalizeSkill() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var finalizeSkillReq catalog.FinalizeSkillRequest
+	var finalizeSkillReq sdkaigateway.FinalizeSkillRequest
 
 	cmd.Use = "finalize-skill NAME"
 	cmd.Short = `*Beta* Finalize a skill.`
@@ -909,15 +972,21 @@ Finalize a skill.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		finalizeSkillReq.Name = args[0]
+		finalizeSkillReq.Name = new(args[0])
 
-		response, err := w.AiGateway.FinalizeSkill(ctx, finalizeSkillReq)
+		sdkReq := &finalizeSkillReq
+		response, err := w.AiGateway.FinalizeSkill(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.SkillFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -938,13 +1007,12 @@ Finalize a skill.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMcpServiceOverrides []func(
 	*cobra.Command,
-	*catalog.GetMcpServiceRequest,
+	*sdkaigateway.GetMcpServiceRequest,
 )
 
 func newGetMcpService() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMcpServiceReq catalog.GetMcpServiceRequest
+	var getMcpServiceReq sdkaigateway.GetMcpServiceRequest
 
 	cmd.Use = "get-mcp-service NAME"
 	cmd.Short = `Get an MCP service.`
@@ -974,15 +1042,21 @@ func newGetMcpService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMcpServiceReq.Name = args[0]
+		getMcpServiceReq.Name = new(args[0])
 
-		response, err := w.AiGateway.GetMcpService(ctx, getMcpServiceReq)
+		sdkReq := &getMcpServiceReq
+		response, err := w.AiGateway.GetMcpService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.McpServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1003,13 +1077,12 @@ func newGetMcpService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMcpServiceUserMappedCredentialOverrides []func(
 	*cobra.Command,
-	*catalog.GetMcpServiceUserMappedCredentialRequest,
+	*sdkaigateway.GetMcpServiceUserMappedCredentialRequest,
 )
 
 func newGetMcpServiceUserMappedCredential() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMcpServiceUserMappedCredentialReq catalog.GetMcpServiceUserMappedCredentialRequest
+	var getMcpServiceUserMappedCredentialReq sdkaigateway.GetMcpServiceUserMappedCredentialRequest
 
 	cmd.Use = "get-mcp-service-user-mapped-credential NAME"
 	cmd.Short = `*Beta* Get MCP service user credential status.`
@@ -1044,15 +1117,21 @@ Get MCP service user credential status.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMcpServiceUserMappedCredentialReq.Name = args[0]
+		getMcpServiceUserMappedCredentialReq.Name = new(args[0])
 
-		response, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, getMcpServiceUserMappedCredentialReq)
+		sdkReq := &getMcpServiceUserMappedCredentialReq
+		response, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.McpServiceUserMappedCredentialFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1073,13 +1152,12 @@ Get MCP service user credential status.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getModelProviderServiceOverrides []func(
 	*cobra.Command,
-	*catalog.GetModelProviderServiceRequest,
+	*sdkaigateway.GetModelProviderServiceRequest,
 )
 
 func newGetModelProviderService() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getModelProviderServiceReq catalog.GetModelProviderServiceRequest
+	var getModelProviderServiceReq sdkaigateway.GetModelProviderServiceRequest
 
 	cmd.Use = "get-model-provider-service NAME"
 	cmd.Short = `Get a model provider service.`
@@ -1109,15 +1187,21 @@ func newGetModelProviderService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getModelProviderServiceReq.Name = args[0]
+		getModelProviderServiceReq.Name = new(args[0])
 
-		response, err := w.AiGateway.GetModelProviderService(ctx, getModelProviderServiceReq)
+		sdkReq := &getModelProviderServiceReq
+		response, err := w.AiGateway.GetModelProviderService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelProviderServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1138,13 +1222,12 @@ func newGetModelProviderService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getModelServiceOverrides []func(
 	*cobra.Command,
-	*catalog.GetModelServiceRequest,
+	*sdkaigateway.GetModelServiceRequest,
 )
 
 func newGetModelService() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getModelServiceReq catalog.GetModelServiceRequest
+	var getModelServiceReq sdkaigateway.GetModelServiceRequest
 
 	cmd.Use = "get-model-service NAME"
 	cmd.Short = `Get a model service.`
@@ -1174,15 +1257,21 @@ func newGetModelService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getModelServiceReq.Name = args[0]
+		getModelServiceReq.Name = new(args[0])
 
-		response, err := w.AiGateway.GetModelService(ctx, getModelServiceReq)
+		sdkReq := &getModelServiceReq
+		response, err := w.AiGateway.GetModelService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1203,13 +1292,12 @@ func newGetModelService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSkillOverrides []func(
 	*cobra.Command,
-	*catalog.GetSkillRequest,
+	*sdkaigateway.GetSkillRequest,
 )
 
 func newGetSkill() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSkillReq catalog.GetSkillRequest
+	var getSkillReq sdkaigateway.GetSkillRequest
 
 	cmd.Use = "get-skill NAME"
 	cmd.Short = `*Beta* Get a skill.`
@@ -1241,15 +1329,21 @@ Get a skill.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSkillReq.Name = args[0]
+		getSkillReq.Name = new(args[0])
 
-		response, err := w.AiGateway.GetSkill(ctx, getSkillReq)
+		sdkReq := &getSkillReq
+		response, err := w.AiGateway.GetSkill(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.SkillFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1270,27 +1364,27 @@ Get a skill.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listMcpServicesOverrides []func(
 	*cobra.Command,
-	*catalog.ListMcpServicesRequest,
+	*aigateway.ListMcpServicesRequest,
 )
 
 func newListMcpServices() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listMcpServicesReq aigateway.ListMcpServicesRequest
 
-	var listMcpServicesReq catalog.ListMcpServicesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listMcpServicesLimit int
 
-	cmd.Flags().IntVar(&listMcpServicesReq.PageSize, "page-size", listMcpServicesReq.PageSize, `Maximum number of MCP services to return.`)
-	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listMcpServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+	flags.IntPtrVar(cmd.Flags(), &listMcpServicesReq.PageSize, "page-size", `Maximum number of MCP services to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listMcpServicesReq.Parent, "parent", `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	flags.EnumVar(cmd.Flags(), &listMcpServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`, "ListMcpServicesRequestView", "BASIC", "FULL")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMcpServicesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listMcpServicesReq.PageToken, "page-token", listMcpServicesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listMcpServicesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-mcp-services"
@@ -1318,16 +1412,20 @@ func newListMcpServices() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AiGateway.ListMcpServices(ctx, listMcpServicesReq)
+		sdkReq, err := aigateway.ListMcpServicesRequestToSDK(&listMcpServicesReq)
+		if err != nil {
+			return err
+		}
 		if listMcpServicesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMcpServicesLimit)
 		}
 		if listMcpServicesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listMcpServicesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiGateway.ListMcpServicesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aigateway.McpServiceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1348,27 +1446,27 @@ func newListMcpServices() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listModelProviderServicesOverrides []func(
 	*cobra.Command,
-	*catalog.ListModelProviderServicesRequest,
+	*aigateway.ListModelProviderServicesRequest,
 )
 
 func newListModelProviderServices() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listModelProviderServicesReq aigateway.ListModelProviderServicesRequest
 
-	var listModelProviderServicesReq catalog.ListModelProviderServicesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listModelProviderServicesLimit int
 
-	cmd.Flags().IntVar(&listModelProviderServicesReq.PageSize, "page-size", listModelProviderServicesReq.PageSize, `Maximum number of provider services to return.`)
-	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listModelProviderServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+	flags.IntPtrVar(cmd.Flags(), &listModelProviderServicesReq.PageSize, "page-size", `Maximum number of provider services to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listModelProviderServicesReq.Parent, "parent", `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	flags.EnumVar(cmd.Flags(), &listModelProviderServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`, "ListModelProviderServicesRequestView", "BASIC", "FULL")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listModelProviderServicesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listModelProviderServicesReq.PageToken, "page-token", listModelProviderServicesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listModelProviderServicesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-model-provider-services"
@@ -1396,16 +1494,20 @@ func newListModelProviderServices() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AiGateway.ListModelProviderServices(ctx, listModelProviderServicesReq)
+		sdkReq, err := aigateway.ListModelProviderServicesRequestToSDK(&listModelProviderServicesReq)
+		if err != nil {
+			return err
+		}
 		if listModelProviderServicesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelProviderServicesLimit)
 		}
 		if listModelProviderServicesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listModelProviderServicesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiGateway.ListModelProviderServicesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aigateway.ModelProviderServiceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1426,27 +1528,27 @@ func newListModelProviderServices() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listModelServicesOverrides []func(
 	*cobra.Command,
-	*catalog.ListModelServicesRequest,
+	*aigateway.ListModelServicesRequest,
 )
 
 func newListModelServices() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listModelServicesReq aigateway.ListModelServicesRequest
 
-	var listModelServicesReq catalog.ListModelServicesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listModelServicesLimit int
 
-	cmd.Flags().IntVar(&listModelServicesReq.PageSize, "page-size", listModelServicesReq.PageSize, `Maximum number of model services to return.`)
-	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listModelServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
+	flags.IntPtrVar(cmd.Flags(), &listModelServicesReq.PageSize, "page-size", `Maximum number of model services to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listModelServicesReq.Parent, "parent", `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	flags.EnumVar(cmd.Flags(), &listModelServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`, "ListModelServicesRequestView", "BASIC", "FULL")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listModelServicesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listModelServicesReq.PageToken, "page-token", listModelServicesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listModelServicesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-model-services"
@@ -1474,16 +1576,20 @@ func newListModelServices() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AiGateway.ListModelServices(ctx, listModelServicesReq)
+		sdkReq, err := aigateway.ListModelServicesRequestToSDK(&listModelServicesReq)
+		if err != nil {
+			return err
+		}
 		if listModelServicesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelServicesLimit)
 		}
 		if listModelServicesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listModelServicesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiGateway.ListModelServicesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aigateway.ModelServiceFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1504,25 +1610,25 @@ func newListModelServices() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSkillsOverrides []func(
 	*cobra.Command,
-	*catalog.ListSkillsRequest,
+	*aigateway.ListSkillsRequest,
 )
 
 func newListSkills() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSkillsReq aigateway.ListSkillsRequest
 
-	var listSkillsReq catalog.ListSkillsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSkillsLimit int
 
-	cmd.Flags().IntVar(&listSkillsReq.PageSize, "page-size", listSkillsReq.PageSize, `Maximum number of skills to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listSkillsReq.PageSize, "page-size", `Maximum number of skills to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSkillsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSkillsReq.PageToken, "page-token", listSkillsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSkillsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-skills PARENT"
@@ -1559,18 +1665,22 @@ List skills.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSkillsReq.Parent = args[0]
+		listSkillsReq.Parent = new(args[0])
 
-		response := w.AiGateway.ListSkills(ctx, listSkillsReq)
+		sdkReq, err := aigateway.ListSkillsRequestToSDK(&listSkillsReq)
+		if err != nil {
+			return err
+		}
 		if listSkillsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSkillsLimit)
 		}
 		if listSkillsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSkillsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiGateway.ListSkillsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aigateway.SkillFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1591,22 +1701,22 @@ List skills.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateMcpServiceOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateMcpServiceRequest,
+	*aigateway.UpdateMcpServiceRequest,
 )
 
 func newUpdateMcpService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateMcpServiceReq aigateway.UpdateMcpServiceRequest
+	updateMcpServiceReq.McpService = &aigateway.McpService{}
 
-	var updateMcpServiceReq catalog.UpdateMcpServiceRequest
-	updateMcpServiceReq.McpService = catalog.McpService{}
 	var updateMcpServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMcpServiceReq.Etag, "etag", updateMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
-	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Comment, "comment", updateMcpServiceReq.McpService.Comment, `User-provided description.`)
+	flags.Base64Var(cmd.Flags(), &updateMcpServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMcpServiceReq.McpService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Name, "name", updateMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMcpServiceReq.McpService.Name, "name", `Resource name of the MCP service.`)
 
 	cmd.Use = "update-mcp-service NAME UPDATE_MASK"
 	cmd.Short = `Update an MCP service.`
@@ -1645,6 +1755,7 @@ func newUpdateMcpService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateMcpServiceJson.Unmarshal(&updateMcpServiceReq.McpService)
@@ -1658,18 +1769,25 @@ func newUpdateMcpService() *cobra.Command {
 				}
 			}
 		}
-		updateMcpServiceReq.Name = args[0]
+		updateMcpServiceReq.McpService.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateMcpServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateMcpServiceReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AiGateway.UpdateMcpService(ctx, updateMcpServiceReq)
+		sdkReq, err := aigateway.UpdateMcpServiceRequestToSDK(&updateMcpServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.UpdateMcpService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.McpServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1690,22 +1808,22 @@ func newUpdateMcpService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateModelProviderServiceOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateModelProviderServiceRequest,
+	*aigateway.UpdateModelProviderServiceRequest,
 )
 
 func newUpdateModelProviderService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateModelProviderServiceReq aigateway.UpdateModelProviderServiceRequest
+	updateModelProviderServiceReq.ModelProviderService = &aigateway.ModelProviderService{}
 
-	var updateModelProviderServiceReq catalog.UpdateModelProviderServiceRequest
-	updateModelProviderServiceReq.ModelProviderService = catalog.ModelProviderService{}
 	var updateModelProviderServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.Etag, "etag", updateModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Comment, "comment", updateModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
+	flags.Base64Var(cmd.Flags(), &updateModelProviderServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelProviderServiceReq.ModelProviderService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Name, "name", updateModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelProviderServiceReq.ModelProviderService.Name, "name", `Resource name of the provider service.`)
 
 	cmd.Use = "update-model-provider-service NAME UPDATE_MASK"
 	cmd.Short = `Update a model provider service.`
@@ -1759,6 +1877,7 @@ func newUpdateModelProviderService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelProviderServiceJson.Unmarshal(&updateModelProviderServiceReq.ModelProviderService)
@@ -1772,18 +1891,25 @@ func newUpdateModelProviderService() *cobra.Command {
 				}
 			}
 		}
-		updateModelProviderServiceReq.Name = args[0]
+		updateModelProviderServiceReq.ModelProviderService.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateModelProviderServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateModelProviderServiceReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AiGateway.UpdateModelProviderService(ctx, updateModelProviderServiceReq)
+		sdkReq, err := aigateway.UpdateModelProviderServiceRequestToSDK(&updateModelProviderServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.UpdateModelProviderService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelProviderServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1804,22 +1930,22 @@ func newUpdateModelProviderService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateModelServiceOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateModelServiceRequest,
+	*aigateway.UpdateModelServiceRequest,
 )
 
 func newUpdateModelService() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateModelServiceReq aigateway.UpdateModelServiceRequest
+	updateModelServiceReq.ModelService = &aigateway.ModelService{}
 
-	var updateModelServiceReq catalog.UpdateModelServiceRequest
-	updateModelServiceReq.ModelService = catalog.ModelService{}
 	var updateModelServiceJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelServiceReq.Etag, "etag", updateModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
-	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Comment, "comment", updateModelServiceReq.ModelService.Comment, `User-provided description.`)
+	flags.Base64Var(cmd.Flags(), &updateModelServiceReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelServiceReq.ModelService.Comment, "comment", `User-provided description.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Name, "name", updateModelServiceReq.ModelService.Name, `Resource name of the model service.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelServiceReq.ModelService.Name, "name", `Resource name of the model service.`)
 	// TODO: array: supported_api_types
 
 	cmd.Use = "update-model-service NAME UPDATE_MASK"
@@ -1866,6 +1992,7 @@ func newUpdateModelService() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelServiceJson.Unmarshal(&updateModelServiceReq.ModelService)
@@ -1879,18 +2006,25 @@ func newUpdateModelService() *cobra.Command {
 				}
 			}
 		}
-		updateModelServiceReq.Name = args[0]
+		updateModelServiceReq.ModelService.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateModelServiceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateModelServiceReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AiGateway.UpdateModelService(ctx, updateModelServiceReq)
+		sdkReq, err := aigateway.UpdateModelServiceRequestToSDK(&updateModelServiceReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.UpdateModelService(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.ModelServiceFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1911,21 +2045,21 @@ func newUpdateModelService() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateSkillOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateSkillRequest,
+	*aigateway.UpdateSkillRequest,
 )
 
 func newUpdateSkill() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateSkillReq aigateway.UpdateSkillRequest
+	updateSkillReq.Skill = &aigateway.Skill{}
 
-	var updateSkillReq catalog.UpdateSkillRequest
-	updateSkillReq.Skill = catalog.Skill{}
 	var updateSkillJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSkillReq.Etag, "etag", updateSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
-	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill.`)
-	cmd.Flags().StringVar(&updateSkillReq.Skill.Name, "name", updateSkillReq.Skill.Name, `Resource name of the skill.`)
+	flags.Base64Var(cmd.Flags(), &updateSkillReq.Etag, "etag", `Optimistic concurrency token from the most recent read.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSkillReq.Skill.Comment, "comment", `User-provided comment for the skill.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSkillReq.Skill.Name, "name", `Resource name of the skill.`)
 
 	cmd.Use = "update-skill NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update a skill.`
@@ -1962,6 +2096,7 @@ Update a skill.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSkillJson.Unmarshal(&updateSkillReq.Skill)
@@ -1975,18 +2110,25 @@ Update a skill.
 				}
 			}
 		}
-		updateSkillReq.Name = args[0]
+		updateSkillReq.Skill.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSkillReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSkillReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AiGateway.UpdateSkill(ctx, updateSkillReq)
+		sdkReq, err := aigateway.UpdateSkillRequestToSDK(&updateSkillReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiGateway.UpdateSkill(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aigateway.SkillFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

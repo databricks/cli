@@ -30,8 +30,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][0],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
@@ -39,13 +37,11 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [TEST_JOB_ID],
         "max_concurrent_runs": 1,
         "name": "Test Migration Job",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
             "email_notifications": {},
@@ -59,7 +55,11 @@
           }
         ],
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [TEST_JOB_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "email_notifications": {
@@ -164,15 +164,12 @@
       },
       "remote_state": {
         "channel": "CURRENT",
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
         },
         "edition": "ADVANCED",
-        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
-        "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [
           {
             "notebook": {
@@ -181,9 +178,6 @@
           }
         ],
         "name": "Test Migration Pipeline",
-        "pipeline_id": "[UUID]",
-        "run_as_user_name": "[USERNAME]",
-        "state": "IDLE",
         "storage": "dbfs:/pipelines/[UUID]",
         "tags": {
           "myjob_id": "[TEST_JOB_ID]",
@@ -192,7 +186,13 @@
           "myvolume_id": "mycat.myschema.myvol",
           "volume_catalog_name": "mycat",
           "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
-        }
+        },
+        "creator_user_name": "[USERNAME]",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE"
       },
       "changes": {
         "name": {

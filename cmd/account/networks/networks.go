@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -49,23 +51,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateNetworkRequest,
+	*networking.CreateNetworkRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq networking.CreateNetworkRequest
 
-	var createReq provisioning.CreateNetworkRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: gcp_network_info
-	cmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.NetworkName, "network-name", `The human-readable name of the network configuration.`)
 	// TODO: array: security_group_ids
 	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
-	cmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network configuration.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.VpcId, "vpc-id", `The ID of the VPC associated with this network configuration.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create network configuration.`
@@ -88,6 +90,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -102,12 +105,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.Networks.Create(ctx, createReq)
+		sdkReq, err := networking.CreateNetworkRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateNetworkPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NetworkFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -128,13 +139,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteNetworkRequest,
+	*sdknetworking.DeleteNetworkRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeleteNetworkRequest
+	var deleteReq sdknetworking.DeleteNetworkRequest
 
 	cmd.Use = "delete NETWORK_ID"
 	cmd.Short = `Delete a network configuration.`
@@ -163,15 +173,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.NetworkId = args[0]
+		deleteReq.NetworkId = new(args[0])
 
-		response, err := a.Networks.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Networking.DeleteNetworkPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NetworkFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -192,13 +208,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetNetworkRequest,
+	*sdknetworking.GetNetworkRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetNetworkRequest
+	var getReq sdknetworking.GetNetworkRequest
 
 	cmd.Use = "get NETWORK_ID"
 	cmd.Short = `Get a network configuration.`
@@ -223,15 +238,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.NetworkId = args[0]
+		getReq.NetworkId = new(args[0])
 
-		response, err := a.Networks.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Networking.GetNetworkPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NetworkFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -271,12 +292,17 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.Networks.List(ctx)
+		_ = a
+
+		sdkReq := &sdknetworking.ListNetworkRequest{}
+
+		response, err := a.Networking.ListNetworkPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

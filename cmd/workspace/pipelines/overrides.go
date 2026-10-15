@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	pipelinesCli "github.com/databricks/cli/cmd/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +43,7 @@ func init() {
 	})
 
 	// 'stop' command is different in context of bundle vs. management command
-	stopOverrides = append(stopOverrides, func(cmd *cobra.Command, req *pipelines.StopRequest) {
+	stopOverrides = append(stopOverrides, func(cmd *cobra.Command, req *pipelines.StopPipelineRequest) {
 		originalRunE := cmd.RunE
 		cmd.RunE = func(cmd *cobra.Command, args []string) error {
 			// For compatibility, if argument looks like pipeline ID, use API

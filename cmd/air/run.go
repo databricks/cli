@@ -16,8 +16,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/shellquote"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -362,7 +362,7 @@ func printLogsDivider(ctx context.Context, out io.Writer) {
 // watchTerminalStatus resolves a watched run's final display state for the
 // closing --watch envelope. The run is terminal once streaming returns; if the
 // status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
-func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+func watchTerminalStatus(ctx context.Context, w *sdkclients.Clients, runID int64) string {
 	status, err := resolveRunStatus(ctx, w, runID)
 	if err != nil {
 		return "UNKNOWN"

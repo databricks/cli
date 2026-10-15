@@ -17,11 +17,23 @@ package sqlexec
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/options/call"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 )
+
+// API is the subset of the Statement Execution client the executor uses;
+// *statementexecution.Client implements it.
+type API interface {
+	ExecuteStatement(ctx context.Context, req sql.ExecuteStatementRequest, opts ...call.Option) (*sql.StatementResponse, error)
+	GetStatementResult(ctx context.Context, req sql.GetStatementResultRequest, opts ...call.Option) (*sql.StatementResponse, error)
+	GetResultData(ctx context.Context, req sql.GetResultDataRequest, opts ...call.Option) (*sql.ResultData, error)
+	CancelStatement(ctx context.Context, req sql.CancelStatementRequest, opts ...call.Option) (*sql.CancelStatementResponse, error)
+}
 
 const (
 	// asyncWaitTimeout is the wait applied to Submit. "0s" makes ExecuteStatement
@@ -47,7 +59,7 @@ const (
 
 // Client executes SQL statements against a single SQL warehouse.
 type Client struct {
-	api         sql.StatementExecutionInterface
+	api         API
 	warehouseID string
 
 	waitTimeout  string
@@ -76,7 +88,7 @@ func WithPollInterval(initial, max time.Duration) Option {
 }
 
 // New returns a Client that runs statements on warehouseID via api.
-func New(api sql.StatementExecutionInterface, warehouseID string, opts ...Option) *Client {
+func New(api API, warehouseID string, opts ...Option) *Client {
 	c := &Client{
 		api:          api,
 		warehouseID:  warehouseID,
@@ -96,14 +108,14 @@ type RequestOption func(*sql.ExecuteStatementRequest)
 // WithParameters binds named parameters (`:name` markers) on the statement.
 // Parameter binding is server-side, so values need no manual quoting or
 // escaping; prefer it over string interpolation.
-func WithParameters(params []sql.StatementParameterListItem) RequestOption {
+func WithParameters(params []sql.StatementParameter) RequestOption {
 	return func(req *sql.ExecuteStatementRequest) { req.Parameters = params }
 }
 
 // Statement is a handle to a submitted statement and its latest known state.
 type Statement struct {
 	ID    string
-	State sql.StatementState
+	State sql.StatementStatus_State
 
 	// resp is the most recent response observed for the statement. It carries the
 	// manifest and first result chunk needed by Results.
@@ -112,7 +124,7 @@ type Statement struct {
 
 // newStatement wraps a response into a Statement handle.
 func newStatement(resp *sql.StatementResponse) *Statement {
-	s := &Statement{ID: resp.StatementId, resp: resp}
+	s := &Statement{ID: utils.Deref(resp.StatementId), resp: resp}
 	if resp.Status != nil {
 		s.State = resp.Status.State
 	}
@@ -130,7 +142,7 @@ func (s *Statement) Err() error {
 		return &StatementError{Message: "statement response had no status"}
 	}
 	switch status.State {
-	case sql.StatementStateFailed, sql.StatementStateCanceled, sql.StatementStateClosed:
+	case sql.StatementStatus_State_Failed, sql.StatementStatus_State_Canceled, sql.StatementStatus_State_Closed:
 		return newStatementError(status)
 	default:
 		// SUCCEEDED, PENDING, RUNNING: no error.
@@ -150,7 +162,7 @@ func (s *Statement) Columns() []string {
 // FAILED case, an SQLSTATE); CANCELED and CLOSED carry no error object, so the
 // message is synthesized from the state.
 type StatementError struct {
-	State    sql.StatementState
+	State    sql.StatementStatus_State
 	Code     sql.ServiceErrorCode
 	Message  string
 	SQLState string
@@ -158,10 +170,10 @@ type StatementError struct {
 
 // newStatementError builds a StatementError from a terminal non-success status.
 func newStatementError(status *sql.StatementStatus) *StatementError {
-	e := &StatementError{State: status.State, SQLState: status.SqlState}
+	e := &StatementError{State: status.State, SQLState: utils.Deref(status.SqlState)}
 	if status.Error != nil {
 		e.Code = status.Error.ErrorCode
-		e.Message = status.Error.Message
+		e.Message = utils.Deref(status.Error.Message)
 	} else {
 		e.Message = fmt.Sprintf("statement reached terminal state %s", status.State)
 	}
@@ -182,10 +194,8 @@ type Result struct {
 	Columns []string
 	// Rows holds every result row with each cell as a string. A SQL NULL and an
 	// empty string are indistinguishable here: the API wire format encodes NULL
-	// as JSON null (distinct from ""), but the SDK models cells as [][]string, so
-	// JSON null is decoded as "". The distinction is recoverable only with a
-	// null-aware cell type (e.g. [][]*string) or the ARROW_STREAM format; no
-	// caller needs it today, so we keep the simpler string rows.
+	// as JSON null (distinct from ""), and decodeRows maps it to "". No caller
+	// needs the distinction today, so we keep the simpler string rows.
 	Rows [][]string
 }
 
@@ -206,12 +216,12 @@ func (c *Client) Submit(ctx context.Context, statement string, opts ...RequestOp
 // submit issues ExecuteStatement with the given synchronous wait timeout.
 func (c *Client) submit(ctx context.Context, statement, waitTimeout string, opts []RequestOption) (*Statement, error) {
 	req := sql.ExecuteStatementRequest{
-		WarehouseId:   c.warehouseID,
-		Statement:     statement,
-		WaitTimeout:   waitTimeout,
-		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
-		Disposition:   sql.DispositionInline,
-		Format:        sql.FormatJsonArray,
+		WarehouseId:   new(c.warehouseID),
+		Statement:     new(statement),
+		WaitTimeout:   new(waitTimeout),
+		OnWaitTimeout: sql.TimeoutAction_Continue,
+		Disposition:   sql.Disposition_Inline,
+		Format:        sql.Format_JsonArray,
 	}
 	for _, opt := range opts {
 		opt(&req)
@@ -240,7 +250,7 @@ func (c *Client) Poll(ctx context.Context, s *Statement) (*Statement, error) {
 		case <-time.After(interval):
 		}
 
-		resp, err := c.api.GetStatementByStatementId(ctx, s.ID)
+		resp, err := c.api.GetStatementResult(ctx, sql.GetStatementResultRequest{StatementId: new(s.ID)})
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
@@ -255,7 +265,7 @@ func (c *Client) Poll(ctx context.Context, s *Statement) (*Statement, error) {
 
 // Get returns the current state of a statement with a single GET, no polling.
 func (c *Client) Get(ctx context.Context, statementID string) (*Statement, error) {
-	resp, err := c.api.GetStatementByStatementId(ctx, statementID)
+	resp, err := c.api.GetStatementResult(ctx, sql.GetStatementResultRequest{StatementId: new(statementID)})
 	if err != nil {
 		return nil, fmt.Errorf("get statement %s: %w", statementID, err)
 	}
@@ -266,7 +276,7 @@ func (c *Client) Get(ctx context.Context, statementID string) (*Statement, error
 // only means the request was accepted; the statement may have already finished.
 // Poll or Get to observe the resulting state.
 func (c *Client) Cancel(ctx context.Context, statementID string) error {
-	if err := c.api.CancelExecution(ctx, sql.CancelExecutionRequest{StatementId: statementID}); err != nil {
+	if _, err := c.api.CancelStatement(ctx, sql.CancelStatementRequest{StatementId: new(statementID)}); err != nil {
 		return fmt.Errorf("cancel statement %s: %w", statementID, err)
 	}
 	return nil
@@ -280,19 +290,27 @@ func (c *Client) Results(ctx context.Context, s *Statement) (*Result, error) {
 	if s.resp.Result == nil {
 		return r, nil
 	}
-	r.Rows = append(r.Rows, s.resp.Result.DataArray...)
+	rows, err := decodeRows(s.resp.Result.DataArray)
+	if err != nil {
+		return nil, fmt.Errorf("decode result of statement %s: %w", s.ID, err)
+	}
+	r.Rows = append(r.Rows, rows...)
 
 	total := 0
 	if s.resp.Manifest != nil {
-		total = s.resp.Manifest.TotalChunkCount
+		total = utils.Deref(s.resp.Manifest.TotalChunkCount)
 	}
 	// Chunk 0 is already in resp.Result; fetch the rest in order.
 	for chunk := 1; chunk < total; chunk++ {
-		data, err := c.api.GetStatementResultChunkNByStatementIdAndChunkIndex(ctx, s.ID, chunk)
+		data, err := c.api.GetResultData(ctx, sql.GetResultDataRequest{StatementId: new(s.ID), ChunkIndex: new(chunk)})
 		if err != nil {
 			return nil, fmt.Errorf("fetch result chunk %d of statement %s: %w", chunk, s.ID, err)
 		}
-		r.Rows = append(r.Rows, data.DataArray...)
+		rows, err := decodeRows(data.DataArray)
+		if err != nil {
+			return nil, fmt.Errorf("decode result chunk %d of statement %s: %w", chunk, s.ID, err)
+		}
+		r.Rows = append(r.Rows, rows...)
 	}
 	return r, nil
 }
@@ -334,7 +352,7 @@ func isPending(status *sql.StatementStatus) bool {
 		return false
 	}
 	switch status.State {
-	case sql.StatementStatePending, sql.StatementStateRunning:
+	case sql.StatementStatus_State_Pending, sql.StatementStatus_State_Running:
 		return true
 	default:
 		return false
@@ -349,7 +367,27 @@ func columns(manifest *sql.ResultManifest) []string {
 	}
 	out := make([]string, len(manifest.Schema.Columns))
 	for i, col := range manifest.Schema.Columns {
-		out[i] = col.Name
+		out[i] = utils.Deref(col.Name)
 	}
 	return out
+}
+
+// decodeRows converts JSON_ARRAY cells to strings. Every cell is a JSON string
+// or null; null becomes "".
+func decodeRows(data [][]json.RawMessage) ([][]string, error) {
+	if data == nil {
+		return nil, nil
+	}
+	rows := make([][]string, len(data))
+	for i, row := range data {
+		rows[i] = make([]string, len(row))
+		for j, cell := range row {
+			var v *string
+			if err := json.Unmarshal(cell, &v); err != nil {
+				return nil, fmt.Errorf("row %d, column %d: %w", i, j, err)
+			}
+			rows[i][j] = utils.Deref(v)
+		}
+	}
+	return rows, nil
 }

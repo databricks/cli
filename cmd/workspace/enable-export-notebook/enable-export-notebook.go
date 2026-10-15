@@ -5,11 +5,14 @@ package enable_export_notebook
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -71,11 +74,21 @@ Get the Notebook and File exporting setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Settings.EnableExportNotebook().GetEnableExportNotebook(ctx)
+		_ = w
+		getEnableExportNotebookReq := map[string]any{}
+		rawQuery := map[string]any{}
+		rawPath := "/api/2.0/settings/types/enable-export-notebook/names/default"
+
+		maps.Copy(rawQuery, getEnableExportNotebookReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -97,13 +110,16 @@ Get the Notebook and File exporting setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var patchEnableExportNotebookOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEnableExportNotebookRequest,
+	*map[string]any,
 )
 
 func newPatchEnableExportNotebook() *cobra.Command {
 	cmd := &cobra.Command{}
+	var patchEnableExportNotebookReq map[string]any
+	patchEnableExportNotebookReq = map[string]any{}
+	var patchEnableExportNotebookAllowMissingRaw bool
+	var patchEnableExportNotebookFieldMaskRaw string
 
-	var patchEnableExportNotebookReq settings.UpdateEnableExportNotebookRequest
 	var patchEnableExportNotebookJson flags.JsonFlag
 
 	cmd.Flags().Var(&patchEnableExportNotebookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -126,6 +142,7 @@ Update the Notebook and File exporting setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := patchEnableExportNotebookJson.Unmarshal(&patchEnableExportNotebookReq)
@@ -142,11 +159,24 @@ Update the Notebook and File exporting setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EnableExportNotebook().PatchEnableExportNotebook(ctx, patchEnableExportNotebookReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || patchEnableExportNotebookAllowMissingRaw != false {
+			patchEnableExportNotebookReq["allow_missing"] = patchEnableExportNotebookAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || patchEnableExportNotebookFieldMaskRaw != "" {
+			patchEnableExportNotebookReq["field_mask"] = patchEnableExportNotebookFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/enable-export-notebook/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, patchEnableExportNotebookReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,7 +84,7 @@ func TestReconcileBranchExpiration(t *testing.T) {
 			check: func(t *testing.T, spec *postgres.BranchSpec) {
 				require.NotNil(t, spec.Ttl)
 				assert.Equal(t, sevenDays, spec.Ttl.AsDuration())
-				assert.False(t, spec.NoExpiry)
+				assert.Nil(t, spec.NoExpiry)
 			},
 		},
 		{
@@ -101,12 +101,12 @@ func TestReconcileBranchExpiration(t *testing.T) {
 			noExpiryChanged: true,
 			noExpiry:        true,
 			check: func(t *testing.T, spec *postgres.BranchSpec) {
-				assert.True(t, spec.NoExpiry)
+				assert.True(t, utils.Deref(spec.NoExpiry))
 			},
 		},
 		{
 			name:    "non-expiration spec field is not an expiration source",
-			spec:    &postgres.BranchSpec{SourceBranch: "projects/p/branches/main"},
+			spec:    &postgres.BranchSpec{SourceBranch: new("projects/p/branches/main")},
 			wantErr: "a branch expiration is required",
 		},
 		{
@@ -211,12 +211,12 @@ func TestSpecHasExpiration(t *testing.T) {
 	}{
 		{"nil spec", nil, false},
 		{"empty spec", &postgres.BranchSpec{}, false},
-		{"ttl set", &postgres.BranchSpec{Ttl: duration.New(sevenDays)}, true},
-		{"expire_time set", &postgres.BranchSpec{ExpireTime: sdktime.New(time.Now())}, true},
-		{"no_expiry true", &postgres.BranchSpec{NoExpiry: true}, true},
-		{"no_expiry false, unset", &postgres.BranchSpec{NoExpiry: false}, false},
-		{"no_expiry false, explicitly set", &postgres.BranchSpec{NoExpiry: false, ForceSendFields: []string{"NoExpiry"}}, true},
-		{"non-expiration field only", &postgres.BranchSpec{SourceBranch: "projects/p/branches/main"}, false},
+		{"ttl set", &postgres.BranchSpec{Ttl: types.NewFromDuration(sevenDays)}, true},
+		{"expire_time set", &postgres.BranchSpec{ExpireTime: types.NewFromTime(time.Now())}, true},
+		{"no_expiry true", &postgres.BranchSpec{NoExpiry: new(true)}, true},
+		{"no_expiry unset", &postgres.BranchSpec{}, false},
+		{"no_expiry false, explicitly set", &postgres.BranchSpec{NoExpiry: new(false)}, true},
+		{"non-expiration field only", &postgres.BranchSpec{SourceBranch: new("projects/p/branches/main")}, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

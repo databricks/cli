@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucmetastores "github.com/databricks/cli/libs/sdktypes/uc/metastores/v1"
+	sdkucmetastores "github.com/databricks/sdk-go/uc/metastores/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -51,13 +53,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.AccountsCreateMetastoreAssignment,
+	*ucmetastores.AccountsCreateMetastoreAssignmentRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucmetastores.AccountsCreateMetastoreAssignmentRequest
 
-	var createReq catalog.AccountsCreateMetastoreAssignment
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -87,6 +89,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -100,19 +103,25 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createReq.WorkspaceId)
+		var createWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &createWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		createReq.WorkspaceId = &createWorkspaceIdArg
+		createReq.MetastoreId = new(args[1])
 
-		createReq.MetastoreId = args[1]
-
-		response, err := a.MetastoreAssignments.Create(ctx, createReq)
+		sdkReq, err := ucmetastores.AccountsCreateMetastoreAssignmentRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Metastores.CreateAccountsMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -133,13 +142,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteAccountMetastoreAssignmentRequest,
+	*sdkucmetastores.AccountsDeleteMetastoreAssignmentRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteAccountMetastoreAssignmentRequest
+	var deleteReq sdkucmetastores.AccountsDeleteMetastoreAssignmentRequest
 
 	cmd.Use = "delete WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete a metastore assignment.`
@@ -165,20 +173,24 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		var deleteWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &deleteWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		deleteReq.WorkspaceId = &deleteWorkspaceIdArg
+		deleteReq.MetastoreId = new(args[1])
 
-		deleteReq.MetastoreId = args[1]
-
-		response, err := a.MetastoreAssignments.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Metastores.DeleteAccountsMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -199,13 +211,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetAccountMetastoreAssignmentRequest,
+	*sdkucmetastores.AccountsGetMetastoreAssignmentRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetAccountMetastoreAssignmentRequest
+	var getReq sdkucmetastores.AccountsGetMetastoreAssignmentRequest
 
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Gets the metastore assignment for a workspace.`
@@ -232,18 +243,26 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		var getWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &getWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		getReq.WorkspaceId = &getWorkspaceIdArg
 
-		response, err := a.MetastoreAssignments.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Metastores.GetMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucmetastores.AccountsGetMetastoreAssignmentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -264,13 +283,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListAccountMetastoreAssignmentsRequest,
+	*sdkucmetastores.AccountsListWorkspaceIdsForMetastoreRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq sdkucmetastores.AccountsListWorkspaceIdsForMetastoreRequest
 
-	var listReq catalog.ListAccountMetastoreAssignmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -304,10 +323,15 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listReq.MetastoreId = args[0]
+		listReq.MetastoreId = new(args[0])
 
-		response := a.MetastoreAssignments.List(ctx, listReq)
+		sdkReq := &listReq
+		response, err := a.Metastores.ListMetastoreAssignments(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -315,7 +339,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := ucmetastores.AccountsListWorkspaceIdsForMetastoreResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.WorkspaceIds)
 	}
 
 	// Disable completions since they are not applicable.
@@ -336,13 +364,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.AccountsUpdateMetastoreAssignment,
+	*ucmetastores.AccountsUpdateMetastoreAssignmentRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucmetastores.AccountsUpdateMetastoreAssignmentRequest
 
-	var updateReq catalog.AccountsUpdateMetastoreAssignment
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -373,6 +401,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -386,19 +415,25 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		var updateWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &updateWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		updateReq.WorkspaceId = &updateWorkspaceIdArg
+		updateReq.MetastoreId = new(args[1])
 
-		updateReq.MetastoreId = args[1]
-
-		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
+		sdkReq, err := ucmetastores.AccountsUpdateMetastoreAssignmentRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Metastores.UpdateAccountsMetastoreAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

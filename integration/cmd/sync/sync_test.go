@@ -18,13 +18,15 @@ import (
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/sdk-go/repos/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,20 +38,20 @@ var (
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
-func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+func setupRepo(t *testing.T, wsc *sdkclients.Clients, ctx context.Context) (localRoot, remoteRoot string) {
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
-	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
+	repoPath := fmt.Sprintf("/Repos/%s/%s", utils.Deref(me.UserName), testutil.RandomName("empty-repo-sync-integration-"))
 
-	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
-		Path:     repoPath,
-		Url:      repoUrl,
-		Provider: "gitHub",
+	repoInfo, err := wsc.Repos.CreateRepo(ctx, repos.CreateRepoRequest{
+		Path:     new(repoPath),
+		Url:      new(repoUrl),
+		Provider: new("gitHub"),
 	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := wsc.Repos.DeleteByRepoId(context.WithoutCancel(ctx), repoInfo.Id)
+		_, err := wsc.Repos.DeleteRepo(context.WithoutCancel(ctx), repos.DeleteRepoRequest{Id: repoInfo.Id})
 		assert.NoError(t, err)
 	})
 
@@ -67,7 +69,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 type syncTest struct {
 	t          *testing.T
 	c          *testcli.Runner
-	w          *databricks.WorkspaceClient
+	w          *sdkclients.Clients
 	f          filer.Filer
 	localRoot  string
 	remoteRoot string
@@ -126,13 +128,13 @@ func (a *syncTest) waitForCompletionMarker() {
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
-		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		objects, err := a.w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{
 			Path: remoteDir,
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
 	}, 30*time.Second, 5*time.Second)
-	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := a.w.Workspace.ListAll(ctx, workspaceapi.ListWorkspaceRequest{
 		Path: remoteDir,
 	})
 	require.NoError(a.t, err)
@@ -154,7 +156,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expected
 	// Remove leading "/" so we can use it in the URL.
 	urlPath := "/api/2.0/workspace-files/" + strings.TrimLeft(filePath, "/")
 
-	apiClient, err := client.New(a.w.Config)
+	apiClient, err := apiclient.New(a.w.Config)
 	require.NoError(a.t, err)
 
 	var res []byte
@@ -488,11 +490,11 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
-	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("doesnt-exist-"))
+	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", utils.Deref(me.UserName), testutil.RandomName("doesnt-exist-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 
@@ -520,23 +522,23 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	// Verify that the directory has been created.
 	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath)
 	require.NoError(t, err)
-	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+	require.Equal(t, workspaceapi.ObjectTypeDirectory, info.ObjectType)
 }
 
 func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, wsc)
 	require.NoError(t, err)
 
-	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
+	remotePath := fmt.Sprintf("/Users/%s/%s", utils.Deref(me.UserName), testutil.RandomName("ensure-path-exists-test-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me, false)
 	assert.NoError(t, err)
 
 	// Clean up directory after test.
 	defer func() {
-		err := wsc.Workspace.Delete(ctx, workspace.Delete{
+		err := wsc.Workspace.Delete(ctx, workspaceapi.Delete{
 			Path: remotePath,
 		})
 		assert.NoError(t, err)
@@ -545,5 +547,5 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	// Verify that the directory has been created.
 	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
 	require.NoError(t, err)
-	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+	require.Equal(t, workspaceapi.ObjectTypeDirectory, info.ObjectType)
 }

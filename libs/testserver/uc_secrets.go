@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
+
+	"github.com/databricks/sdk-go/core/types"
 )
 
 // SecretsUcCreateSecret handles POST /api/2.1/unity-catalog/secrets
@@ -15,7 +17,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	defer s.LockUnlock()()
 
 	// The API accepts flat fields, not wrapped in a "secret" object
-	var inputSecret catalog.Secret
+	var inputSecret ucsecrets.Secret
 	if err := json.Unmarshal(req.Body, &inputSecret); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -24,13 +26,13 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	}
 
 	if s.UCSecrets == nil {
-		s.UCSecrets = make(map[string]catalog.Secret)
+		s.UCSecrets = make(map[string]ucsecrets.Secret)
 	}
 
 	fullName := fmt.Sprintf("%s.%s.%s",
-		inputSecret.CatalogName,
-		inputSecret.SchemaName,
-		inputSecret.Name)
+		utils.Deref(inputSecret.CatalogName),
+		utils.Deref(inputSecret.SchemaName),
+		utils.Deref(inputSecret.Name))
 
 	// Check if secret already exists
 	if _, exists := s.UCSecrets[fullName]; exists {
@@ -43,12 +45,12 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		}
 	}
 
-	now := sdktime.New(time.Now())
-	secret := catalog.Secret{
+	now := types.NewFromTime(time.Now())
+	secret := ucsecrets.Secret{
 		CatalogName:    inputSecret.CatalogName,
 		SchemaName:     inputSecret.SchemaName,
 		Name:           inputSecret.Name,
-		FullName:       fullName,
+		FullName:       utils.NonZero(fullName),
 		Value:          inputSecret.Value,
 		EffectiveValue: inputSecret.Value,
 		Comment:        inputSecret.Comment,
@@ -59,10 +61,10 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		CreatedBy:      s.CurrentUser().UserName,
 		UpdatedBy:      s.CurrentUser().UserName,
 		EffectiveOwner: inputSecret.Owner,
-		MetastoreId:    "test-metastore-id",
+		MetastoreId:    utils.NonZero("test-metastore-id"),
 	}
 
-	if secret.Owner == "" {
+	if utils.Deref(secret.Owner) == "" {
 		secret.Owner = s.CurrentUser().UserName
 		secret.EffectiveOwner = s.CurrentUser().UserName
 	}
@@ -103,7 +105,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 	// The real API doesn't return the value unless specifically requested
 	returnSecret := secret
 	returnSecret.EffectiveValue = secret.Value
-	returnSecret.Value = ""
+	returnSecret.Value = nil
 
 	return Response{
 		Body: returnSecret,
@@ -125,7 +127,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	}
 
 	// The API accepts flat fields
-	var updateSecret catalog.Secret
+	var updateSecret ucsecrets.Secret
 	if err := json.Unmarshal(req.Body, &updateSecret); err != nil {
 		return Response{
 			StatusCode: 400,
@@ -149,13 +151,13 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	}
 
 	// Update fields based on update mask
-	if updateSecret.Value != "" {
+	if utils.Deref(updateSecret.Value) != "" {
 		secret.Value = updateSecret.Value
 	}
 	if _, ok := fields["comment"]; ok {
 		secret.Comment = updateSecret.Comment
 	}
-	if updateSecret.Owner != "" {
+	if utils.Deref(updateSecret.Owner) != "" {
 		secret.Owner = updateSecret.Owner
 		secret.EffectiveOwner = updateSecret.Owner
 	}
@@ -166,7 +168,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 		secret.ExpireTime = updateSecret.ExpireTime
 	}
 
-	secret.UpdateTime = sdktime.New(time.Now())
+	secret.UpdateTime = types.NewFromTime(time.Now())
 	secret.UpdatedBy = s.CurrentUser().UserName
 
 	s.UCSecrets[fullName] = secret

@@ -2,8 +2,8 @@
 === Workspace command
 >>> [CLI] clusters list
 ID    Name                State
-4321  some-test-cluster   
-9876  some-other-cluster  
+4321  some-test-cluster   RUNNING
+9876  some-other-cluster  RUNNING
 
 >>> print_requests.py --get //clusters/list
 {
@@ -57,8 +57,8 @@ Validation OK!
 === No header when unset
 >>> [CLI] clusters list
 ID    Name                State
-4321  some-test-cluster   
-9876  some-other-cluster  
+4321  some-test-cluster   RUNNING
+9876  some-other-cluster  RUNNING
 
 >>> print_requests.py --get //clusters/list
 {

@@ -11,12 +11,11 @@ import (
 
 func TestConvertToMap(t *testing.T) {
 	type test struct {
-		Name            string            `json:"name"`
-		Map             map[string]string `json:"map"`
-		List            []string          `json:"list"`
-		LongNameField   string            `json:"long_name_field"`
-		ForceSendFields []string          `json:"-"`
-		Format          string            `json:"format"`
+		Name          string            `json:"name"`
+		Map           map[string]string `json:"map"`
+		List          []string          `json:"list"`
+		LongNameField string            `json:"long_name_field"`
+		Format        string            `json:"format"`
 	}
 
 	v := &test{
@@ -25,10 +24,7 @@ func TestConvertToMap(t *testing.T) {
 			"key2": "value2",
 			"key1": "value1",
 		},
-		List: []string{"a", "b", "c"},
-		ForceSendFields: []string{
-			"Name",
-		},
+		List:          []string{"a", "b", "c"},
 		LongNameField: "long name goes here",
 	}
 	result, err := ConvertToMapValue(v, nil, []string{"format"}, map[string]dyn.Value{})
@@ -56,12 +52,11 @@ func TestConvertToMap(t *testing.T) {
 
 func TestConvertToMapValueWithOrder(t *testing.T) {
 	type test struct {
-		Name            string            `json:"name"`
-		Map             map[string]string `json:"map"`
-		List            []string          `json:"list"`
-		LongNameField   string            `json:"long_name_field"`
-		ForceSendFields []string          `json:"-"`
-		Format          string            `json:"format"`
+		Name          string            `json:"name"`
+		Map           map[string]string `json:"map"`
+		List          []string          `json:"list"`
+		LongNameField string            `json:"long_name_field"`
+		Format        string            `json:"format"`
 	}
 
 	v := &test{
@@ -70,10 +65,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 			"key1": "value1",
 			"key2": "value2",
 		},
-		List: []string{"a", "b", "c"},
-		ForceSendFields: []string{
-			"Name",
-		},
+		List:          []string{"a", "b", "c"},
 		LongNameField: "long name goes here",
 	}
 	result, err := ConvertToMapValue(v, NewOrder([]string{"list", "name", "map"}), []string{"format"}, map[string]dyn.Value{})

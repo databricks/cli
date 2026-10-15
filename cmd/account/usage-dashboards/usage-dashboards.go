@@ -7,8 +7,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
+
+	usagedashboards "github.com/databricks/cli/libs/sdktypes/usagedashboards/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -48,20 +49,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*billing.CreateBillingUsageDashboardRequest,
+	*usagedashboards.CreateBillingUsageDashboardRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq usagedashboards.CreateBillingUsageDashboardRequest
 
-	var createReq billing.CreateBillingUsageDashboardRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
-	cmd.Flags().Var(&createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to use. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`)
-	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
+	flags.EnumVar(cmd.Flags(), &createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`, "UsageDashboardType", "USAGE_DASHBOARD_TYPE_GLOBAL", "USAGE_DASHBOARD_TYPE_WORKSPACE")
+	flags.EnumVar(cmd.Flags(), &createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to use. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`, "UsageDashboardMajorVersion", "USAGE_DASHBOARD_MAJOR_VERSION_1", "USAGE_DASHBOARD_MAJOR_VERSION_2")
+	flags.Int64PtrVar(cmd.Flags(), &createReq.WorkspaceId, "workspace-id", `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create new usage dashboard.`
@@ -83,6 +84,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -97,12 +99,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.UsageDashboards.Create(ctx, createReq)
+		sdkReq, err := usagedashboards.CreateBillingUsageDashboardRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.UsageDashboards.CreateBillingUsageDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := usagedashboards.CreateBillingUsageDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -123,16 +133,15 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*billing.GetBillingUsageDashboardRequest,
+	*usagedashboards.GetBillingUsageDashboardRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq usagedashboards.GetBillingUsageDashboardRequest
 
-	var getReq billing.GetBillingUsageDashboardRequest
-
-	cmd.Flags().Var(&getReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
-	cmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
+	flags.EnumVar(cmd.Flags(), &getReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`, "UsageDashboardType", "USAGE_DASHBOARD_TYPE_GLOBAL", "USAGE_DASHBOARD_TYPE_WORKSPACE")
+	flags.Int64PtrVar(cmd.Flags(), &getReq.WorkspaceId, "workspace-id", `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get usage dashboard.`
@@ -153,13 +162,22 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response, err := a.UsageDashboards.Get(ctx, getReq)
+		sdkReq, err := usagedashboards.GetBillingUsageDashboardRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.UsageDashboards.GetBillingUsageDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := usagedashboards.GetBillingUsageDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

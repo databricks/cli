@@ -19,12 +19,16 @@ Update ID: [UUID]
 >>> print_requests.py //pipelines
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/stop"
+  "path": "/api/2.0/pipelines/[UUID]/stop",
+  "body": {
+    "pipeline_id": "[UUID]"
+  }
 }
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "pipeline_id": "[UUID]",
     "validate_only": true
   }
 }

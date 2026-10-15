@@ -6,15 +6,16 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	serving "github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
-func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.ServedEntityOutput {
-	entities := make([]serving.ServedEntityOutput, len(input))
+func servedEntitiesInputToOutput(input []serving.ServedModel) []serving.ServedModel {
+	entities := make([]serving.ServedModel, len(input))
 	for i, entity := range input {
 		// Mirror the backend: burst_scaling_enabled is not echoed on GET (not
 		// copied here) and external_model secrets are never returned in plaintext.
-		entities[i] = serving.ServedEntityOutput{
+		entities[i] = serving.ServedModel{
 			EntityName:                entity.EntityName,
 			EntityVersion:             entity.EntityVersion,
 			EnvironmentVars:           entity.EnvironmentVars,
@@ -28,8 +29,6 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
-			WorkloadType:              entity.WorkloadType,
-			ForceSendFields:           entity.ForceSendFields,
 		}
 	}
 	return entities
@@ -40,20 +39,20 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 	if config == nil {
 		return nil
 	}
-	if config.TableNames == nil && config.TelemetryProfileId == "" {
+	if config.TableNames == nil && utils.Deref(config.TelemetryProfileId) == "" {
 		return previous
 	}
 
 	applied := serving.TelemetryConfig{TelemetryProfileId: config.TelemetryProfileId}
-	if applied.TelemetryProfileId == "" {
+	if utils.Deref(applied.TelemetryProfileId) == "" {
 		// Do not reuse previous: table_names provisions a new profile.
-		applied.TelemetryProfileId = nextUUID()
+		applied.TelemetryProfileId = utils.NonZero(nextUUID())
 	}
 	if config.InferenceTableConfig != nil {
 		inferenceTable := *config.InferenceTableConfig
 		// The backend names the payload table after the logs table it was given.
 		if config.TableNames != nil {
-			inferenceTable.Name = config.TableNames.LogsTable + "_payload"
+			inferenceTable.Name = utils.NonZero(utils.Deref(config.TableNames.LogsTable) + "_payload")
 		}
 		applied.InferenceTableConfig = &inferenceTable
 	}
@@ -62,12 +61,12 @@ func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.Te
 }
 
 // telemetrySupported returns the unsupported endpoint type when telemetry cannot be applied.
-func telemetrySupported(endpoint serving.ServingEndpointDetailed) (string, bool) {
+func telemetrySupported(endpoint serving.InferenceEndpointDetailed) (string, bool) {
 	if endpoint.Config == nil || len(endpoint.Config.ServedEntities) == 0 {
 		return "NO_CONFIG", false
 	}
 	for _, entity := range endpoint.Config.ServedEntities {
-		if entity.ExternalModel == nil && entity.EntityName != "" {
+		if entity.ExternalModel == nil && utils.Deref(entity.EntityName) != "" {
 			return "", true
 		}
 	}
@@ -83,67 +82,67 @@ func clearExternalModelSecrets(em *serving.ExternalModel) *serving.ExternalModel
 	out := *em
 	if c := out.Ai21labsConfig; c != nil {
 		cc := *c
-		cc.Ai21labsApiKeyPlaintext = ""
+		cc.Ai21labsApiKeyPlaintext = nil
 		out.Ai21labsConfig = &cc
 	}
 	if c := out.AmazonBedrockConfig; c != nil {
 		cc := *c
-		cc.AwsAccessKeyIdPlaintext = ""
-		cc.AwsSecretAccessKeyPlaintext = ""
+		cc.AwsAccessKeyIdPlaintext = nil
+		cc.AwsSecretAccessKeyPlaintext = nil
 		out.AmazonBedrockConfig = &cc
 	}
 	if c := out.AnthropicConfig; c != nil {
 		cc := *c
-		cc.AnthropicApiKeyPlaintext = ""
+		cc.AnthropicApiKeyPlaintext = nil
 		out.AnthropicConfig = &cc
 	}
 	if c := out.CohereConfig; c != nil {
 		cc := *c
-		cc.CohereApiKeyPlaintext = ""
+		cc.CohereApiKeyPlaintext = nil
 		out.CohereConfig = &cc
 	}
 	if c := out.CustomProviderConfig; c != nil {
 		cc := *c
 		if a := cc.ApiKeyAuth; a != nil {
 			aa := *a
-			aa.ValuePlaintext = ""
+			aa.ValuePlaintext = nil
 			cc.ApiKeyAuth = &aa
 		}
 		if b := cc.BearerTokenAuth; b != nil {
 			bb := *b
-			bb.TokenPlaintext = ""
+			bb.TokenPlaintext = nil
 			cc.BearerTokenAuth = &bb
 		}
 		out.CustomProviderConfig = &cc
 	}
 	if c := out.DatabricksModelServingConfig; c != nil {
 		cc := *c
-		cc.DatabricksApiTokenPlaintext = ""
+		cc.DatabricksApiTokenPlaintext = nil
 		out.DatabricksModelServingConfig = &cc
 	}
 	if c := out.GoogleCloudVertexAiConfig; c != nil {
 		cc := *c
-		cc.PrivateKeyPlaintext = ""
+		cc.PrivateKeyPlaintext = nil
 		out.GoogleCloudVertexAiConfig = &cc
 	}
 	if c := out.OpenaiConfig; c != nil {
 		cc := *c
-		cc.OpenaiApiKeyPlaintext = ""
-		cc.MicrosoftEntraClientSecretPlaintext = ""
+		cc.OpenaiApiKeyPlaintext = nil
+		cc.MicrosoftEntraClientSecretPlaintext = nil
 		out.OpenaiConfig = &cc
 	}
 	if c := out.PalmConfig; c != nil {
 		cc := *c
-		cc.PalmApiKeyPlaintext = ""
+		cc.PalmApiKeyPlaintext = nil
 		out.PalmConfig = &cc
 	}
 	return &out
 }
 
-func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.ServedModelOutput {
-	models := make([]serving.ServedModelOutput, len(input))
+func servedModelsInputToOutput(input []serving.ServedModel) []serving.ServedModel {
+	models := make([]serving.ServedModel, len(input))
 	for i, model := range input {
-		models[i] = serving.ServedModelOutput{
+		models[i] = serving.ServedModel{
 			ModelName:                 model.ModelName,
 			ModelVersion:              model.ModelVersion,
 			EnvironmentVars:           model.EnvironmentVars,
@@ -153,8 +152,6 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 			ProvisionedModelUnits:     model.ProvisionedModelUnits,
 			ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
 			WorkloadSize:              model.WorkloadSize,
-			WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
-			ForceSendFields:           model.ForceSendFields,
 		}
 	}
 	return models
@@ -171,10 +168,10 @@ func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
 	}
 	var names []string
 	for _, e := range config.ServedEntities {
-		names = append(names, e.Name)
+		names = append(names, utils.Deref(e.Name))
 	}
 	for _, m := range config.ServedModels {
-		names = append(names, m.Name)
+		names = append(names, utils.Deref(m.Name))
 	}
 	// The backend requires an explicit traffic_config when there is more than one
 	// served entity, so only the single-entity default is well-defined here.
@@ -183,9 +180,9 @@ func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
 	}
 	config.TrafficConfig = &serving.TrafficConfig{
 		Routes: []serving.Route{{
-			ServedEntityName:  names[0],
-			ServedModelName:   names[0],
-			TrafficPercentage: 100,
+			ServedEntityName:  utils.NonZero(names[0]),
+			ServedModelName:   utils.NonZero(names[0]),
+			TrafficPercentage: utils.NonZero(100),
 		}},
 	}
 }
@@ -194,20 +191,19 @@ func defaultTrafficConfig(config *serving.EndpointCoreConfigOutput) {
 // the production conversion until callers migrate to AI Gateway inference tables.
 //
 //nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
-func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
-	return &serving.AutoCaptureConfigOutput{
+func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfig) *serving.AutoCaptureConfig {
+	return &serving.AutoCaptureConfig{
 		CatalogName:     input.CatalogName,
 		SchemaName:      input.SchemaName,
 		TableNamePrefix: input.TableNamePrefix,
 		Enabled:         input.Enabled,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
 func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createReq serving.CreateServingEndpoint
+	var createReq serving.CreateInferenceEndpointRequest
 	err := json.Unmarshal(req.Body, &createReq)
 	if err != nil {
 		return Response{
@@ -217,10 +213,10 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 
 	// Check if endpoint with this name already exists
-	if _, exists := s.ServingEndpoints[createReq.Name]; exists {
+	if _, exists := s.ServingEndpoints[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: 409,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
 
@@ -250,28 +246,27 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 
 	now := nowMilli()
-	endpoint := serving.ServingEndpointDetailed{
-		AiGateway:            createReq.AiGateway,
-		BudgetPolicyId:       createReq.BudgetPolicyId,
-		Config:               config,
-		CreationTimestamp:    now,
-		Creator:              s.CurrentUser().UserName,
-		Description:          createReq.Description,
+	endpoint := serving.InferenceEndpointDetailed{
+		AiGateway:         createReq.AiGateway,
+		BudgetPolicyId:    createReq.BudgetPolicyId,
+		Config:            config,
+		CreationTimestamp: utils.NonZero(now),
+		Creator:           s.CurrentUser().UserName,
+		// The real backend always echoes description (as "" when unset) and
+		// route_optimized back on GET.
+		Description:          new(utils.Deref(createReq.Description)),
 		EmailNotifications:   createReq.EmailNotifications,
-		Id:                   nextUUID(),
-		LastUpdatedTimestamp: now,
+		Id:                   utils.NonZero(nextUUID()),
+		LastUpdatedTimestamp: utils.NonZero(now),
 		Name:                 createReq.Name,
-		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
-		RouteOptimized:       createReq.RouteOptimized,
+		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevel_CanManage,
+		RouteOptimized:       new(utils.Deref(createReq.RouteOptimized)),
 		Tags:                 createReq.Tags,
 		TelemetryConfig:      applyTelemetryConfig(nil, createReq.TelemetryConfig),
-		State: &serving.EndpointState{
-			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
-			Ready:        serving.EndpointStateReadyNotReady,
+		State: &serving.InferenceEndpointState{
+			ConfigUpdate: serving.InferenceEndpointState_ConfigUpdateState_NotUpdating,
+			Ready:        serving.InferenceEndpointState_ReadyState_NotReady,
 		},
-		// Force-send Description so an empty value serializes as "", matching the
-		// real backend which always echoes the field back on GET.
-		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
 	// Create drops unsupported telemetry, while the telemetry API rejects it.
@@ -279,7 +274,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		endpoint.TelemetryConfig = nil
 	}
 
-	s.ServingEndpoints[createReq.Name] = endpoint
+	s.ServingEndpoints[utils.Deref(createReq.Name)] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -301,8 +296,8 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	if endpointUpdating(endpoint) {
 		// This response stays IN_PROGRESS; settle the stored copy for the next read.
 		settled := endpoint
-		settled.State = &serving.EndpointState{
-			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
+		settled.State = &serving.InferenceEndpointState{
+			ConfigUpdate: serving.InferenceEndpointState_ConfigUpdateState_NotUpdating,
 			Ready:        endpoint.State.Ready,
 		}
 		s.ServingEndpoints[name] = settled
@@ -312,14 +307,14 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 }
 
 // endpointUpdating reports whether a config update is in progress.
-func endpointUpdating(endpoint serving.ServingEndpointDetailed) bool {
-	return endpoint.State != nil && endpoint.State.ConfigUpdate == serving.EndpointStateConfigUpdateInProgress
+func endpointUpdating(endpoint serving.InferenceEndpointDetailed) bool {
+	return endpoint.State != nil && endpoint.State.ConfigUpdate == serving.InferenceEndpointState_ConfigUpdateState_InProgress
 }
 
 func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	var updateReq serving.EndpointCoreConfigInput
+	var updateReq serving.EndpointCoreConfig
 	err := json.Unmarshal(req.Body, &updateReq)
 	if err != nil {
 		return Response{
@@ -362,11 +357,11 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 	}
 
 	endpoint.Config = config
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	// Keep the update in progress until GET observes it.
-	endpoint.State = &serving.EndpointState{
-		ConfigUpdate: serving.EndpointStateConfigUpdateInProgress,
-		Ready:        serving.EndpointStateReadyNotReady,
+	endpoint.State = &serving.InferenceEndpointState{
+		ConfigUpdate: serving.InferenceEndpointState_ConfigUpdateState_InProgress,
+		Ready:        serving.InferenceEndpointState_ReadyState_NotReady,
 	}
 
 	s.ServingEndpoints[name] = endpoint
@@ -379,7 +374,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 func (s *FakeWorkspace) ServingEndpointPutAiGateway(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	var putReq serving.PutAiGatewayRequest
+	var putReq serving.PutInferenceEndpointAiGatewayRequest
 	err := json.Unmarshal(req.Body, &putReq)
 	if err != nil {
 		return Response{
@@ -420,7 +415,7 @@ func (s *FakeWorkspace) ServingEndpointPutAiGateway(req Request, name string) Re
 func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	var updateReq serving.UpdateInferenceEndpointNotifications
+	var updateReq serving.UpdateInferenceEndpointNotificationsRequest
 	err := json.Unmarshal(req.Body, &updateReq)
 	if err != nil {
 		return Response{
@@ -449,7 +444,7 @@ func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name str
 func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	var patchReq serving.PatchTelemetryConfigRequest
+	var patchReq serving.PatchInferenceEndpointTelemetryConfigRequest
 	err := json.Unmarshal(req.Body, &patchReq)
 	if err != nil {
 		return Response{
@@ -489,7 +484,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 
 	// An omitted telemetry_config removes the configuration from the endpoint.
 	endpoint.TelemetryConfig = applyTelemetryConfig(endpoint.TelemetryConfig, patchReq.TelemetryConfig)
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	s.ServingEndpoints[name] = endpoint
 
 	return Response{
@@ -500,7 +495,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	var patchReq serving.PatchServingEndpointTags
+	var patchReq serving.PatchInferenceEndpointTagsRequest
 	err := json.Unmarshal(req.Body, &patchReq)
 	if err != nil {
 		return Response{
@@ -520,12 +515,12 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 	// Build map of current tags
 	tagMap := make(map[string]string)
 	for _, tag := range endpoint.Tags {
-		tagMap[tag.Key] = tag.Value
+		tagMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 
 	// Add or update tags
 	for _, tag := range patchReq.AddTags {
-		tagMap[tag.Key] = tag.Value
+		tagMap[utils.Deref(tag.Key)] = utils.Deref(tag.Value)
 	}
 
 	// Delete tags
@@ -537,7 +532,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 	tags := make([]serving.EndpointTag, 0, len(tagMap))
 	keys := slices.Sorted(maps.Keys(tagMap))
 	for _, key := range keys {
-		tags = append(tags, serving.EndpointTag{Key: key, Value: tagMap[key]})
+		tags = append(tags, serving.EndpointTag{Key: utils.NonZero(key), Value: utils.NonZero(tagMap[key])})
 	}
 
 	endpoint.Tags = tags
@@ -545,7 +540,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 
 	// Return the tags as EndpointTags struct, not as array
 	return Response{
-		Body: serving.EndpointTags{
+		Body: serving.PatchInferenceEndpointTagsResponse{
 			Tags: tags,
 		},
 	}

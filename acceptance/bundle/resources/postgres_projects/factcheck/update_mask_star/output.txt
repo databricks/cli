@@ -37,6 +37,7 @@ Exit code: 1
     "update_mask": "*"
   },
   "body": {
+    "name": "projects/factcheck-star-[UNIQUE_NAME]",
     "spec": {
       "display_name": "changed",
       "pg_version": 16
@@ -100,6 +101,7 @@ Exit code: 1
     "update_mask": "*"
   },
   "body": {
+    "name": "projects/factcheck-star-[UNIQUE_NAME]",
     "spec": {
       "display_name": "changed2",
       "history_retention_duration": "604800s",

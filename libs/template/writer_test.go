@@ -8,8 +8,8 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +33,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 	}
 
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
-	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{
 		Config: &workspaceConfig.Config{Host: "https://myhost.test"},
 	})
 	w := &defaultWriter{}

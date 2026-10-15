@@ -131,13 +131,12 @@ func TestFromTypedStructSetFieldsIntoExistingFields(t *testing.T) {
 
 func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
 	type Tmp struct {
-		Foo             string   `json:"foo"`
-		Bar             string   `json:"bar,omitempty"`
-		BazBugz         string   `json:"baz_bugs,omitempty"`
-		ForceSendFields []string `json:"-"`
+		Foo     string  `json:"foo"`
+		Bar     string  `json:"bar,omitempty"`
+		BazBugz *string `json:"baz_bugs,omitempty"`
 	}
 
-	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+	src := Tmp{BazBugz: new("")}
 
 	ref := dyn.V(map[string]dyn.Value{
 		"foo":      dyn.V("foo_old"),
@@ -155,13 +154,12 @@ func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
 
 func TestFromTypedStructZeroFieldsIntoExistingFieldsFloat64(t *testing.T) {
 	type Tmp struct {
-		Foo             float64  `json:"foo"`
-		Bar             float64  `json:"bar,omitempty"`
-		BazBugz         float64  `json:"baz_bugs,omitempty"`
-		ForceSendFields []string `json:"-"`
+		Foo     float64  `json:"foo"`
+		Bar     float64  `json:"bar,omitempty"`
+		BazBugz *float64 `json:"baz_bugs,omitempty"`
 	}
 
-	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+	src := Tmp{BazBugz: new(0.0)}
 
 	ref := dyn.V(map[string]dyn.Value{
 		"foo":      dyn.V(1.2),
@@ -838,90 +836,4 @@ func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(nil, []diag.Location{{File: "foobar"}}), nv)
-}
-
-func TestFromTypedForceSendFieldsComplexTypes(t *testing.T) {
-	type Inner struct {
-		Value string `json:"value"`
-	}
-
-	tests := []struct {
-		name string
-		src  any
-	}{
-		{
-			name: "struct_pointer",
-			src: struct {
-				Field           *Inner   `json:"field"`
-				ForceSendFields []string `json:"-"`
-			}{Field: nil, ForceSendFields: []string{"Field"}},
-		},
-		{
-			name: "struct_value",
-			src: struct {
-				Field           Inner    `json:"field"`
-				ForceSendFields []string `json:"-"`
-			}{Field: Inner{}, ForceSendFields: []string{"Field"}},
-		},
-		{
-			name: "slice",
-			src: struct {
-				Field           []string `json:"field"`
-				ForceSendFields []string `json:"-"`
-			}{Field: nil, ForceSendFields: []string{"Field"}},
-		},
-		{
-			name: "map",
-			src: struct {
-				Field           map[string]string `json:"field"`
-				ForceSendFields []string          `json:"-"`
-			}{Field: nil, ForceSendFields: []string{"Field"}},
-		},
-		{
-			name: "interface",
-			src: struct {
-				Field           any      `json:"field"`
-				ForceSendFields []string `json:"-"`
-			}{Field: (*string)(nil), ForceSendFields: []string{"Field"}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			nv, err := FromTyped(tt.src, dyn.NilValue)
-			require.NoError(t, err)
-
-			// All should include the field because it's in ForceSendFields
-			field := nv.Get("field")
-			assert.True(t, field.IsValid(), "field should be present due to ForceSendFields")
-		})
-	}
-}
-
-// Test embedded structs with ForceSendFields (separate test due to different structure)
-func TestFromTypedForceSendFieldsEmbedded(t *testing.T) {
-	type Inner struct {
-		Field           *string  `json:"field"`
-		ForceSendFields []string `json:"-"`
-	}
-	type Outer struct {
-		Inner
-		Other string `json:"other"`
-	}
-
-	src := Outer{
-		Field:           nil,
-		ForceSendFields: []string{"Field"},
-		Other:           "value",
-	}
-
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	// Both fields should be present
-	field := nv.Get("field")
-	other := nv.Get("other")
-	assert.True(t, field.IsValid(), "embedded field should be present due to ForceSendFields")
-	assert.Equal(t, dyn.KindNil, field.Kind(), "embedded field should be present due to ForceSendFields")
-	assert.Equal(t, dyn.V("value"), other)
 }

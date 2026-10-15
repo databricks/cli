@@ -10,8 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+
+	gitcredentials "github.com/databricks/cli/libs/sdktypes/gitcredentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -57,23 +58,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*workspace.CreateCredentialsRequest,
+	*gitcredentials.CreateCredentialsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq gitcredentials.CreateCredentialsRequest
 
-	var createReq workspace.CreateCredentialsRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.GitEmail, "git-email", createReq.GitEmail, `The authenticating email associated with your Git provider user account.`)
-	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `The username provided with your Git provider account and associated with the credential.`)
-	cmd.Flags().BoolVar(&createReq.IsDefaultForProvider, "is-default-for-provider", createReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
-	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
-	cmd.Flags().Int64Var(&createReq.PrincipalId, "principal-id", createReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.GitEmail, "git-email", `The authenticating email associated with your Git provider user account.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.GitUsername, "git-username", `The username provided with your Git provider account and associated with the credential.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.IsDefaultForProvider, "is-default-for-provider", `if the credential is the default for the given provider.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Name, "name", `the name of the git credential, used for identification and ease of lookup.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.PersonalAccessToken, "personal-access-token", `The personal access token used to authenticate to the corresponding Git provider.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.PrincipalId, "principal-id", `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "create GIT_PROVIDER"
 	cmd.Short = `Create a credential entry.`
@@ -109,6 +110,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -123,15 +125,23 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.GitProvider = args[0]
+			createReq.GitProvider = new(args[0])
 		}
 
-		response, err := w.GitCredentials.Create(ctx, createReq)
+		sdkReq, err := gitcredentials.CreateCredentialsRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.GitCredentials.CreateCredentials(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := gitcredentials.CreateCredentialsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -152,15 +162,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteCredentialsRequest,
+	*gitcredentials.DeleteCredentialsRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq gitcredentials.DeleteCredentialsRequest
 
-	var deleteReq workspace.DeleteCredentialsRequest
-
-	cmd.Flags().Int64Var(&deleteReq.PrincipalId, "principal-id", deleteReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	flags.Int64PtrVar(cmd.Flags(), &deleteReq.PrincipalId, "principal-id", `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "delete CREDENTIAL_ID"
 	cmd.Short = `Delete a credential.`
@@ -175,37 +184,34 @@ func newDelete() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
-			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding credential to access")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
+		var deleteCredentialIdArg int64
+		_, err = fmt.Sscan(args[0], &deleteCredentialIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
+		deleteReq.Id = &deleteCredentialIdArg
 
-		err = w.GitCredentials.Delete(ctx, deleteReq)
+		sdkReq, err := gitcredentials.DeleteCredentialsRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.GitCredentials.DeleteCredentials(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -227,15 +233,14 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*workspace.GetCredentialsRequest,
+	*gitcredentials.GetCredentialsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq gitcredentials.GetCredentialsRequest
 
-	var getReq workspace.GetCredentialsRequest
-
-	cmd.Flags().Int64Var(&getReq.PrincipalId, "principal-id", getReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	flags.Int64PtrVar(cmd.Flags(), &getReq.PrincipalId, "principal-id", `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "get CREDENTIAL_ID"
 	cmd.Short = `Get a credential entry.`
@@ -250,39 +255,38 @@ func newGet() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
-			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding credential to access")
-		}
-		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
+		var getCredentialIdArg int64
+		_, err = fmt.Sscan(args[0], &getCredentialIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
+		getReq.Id = &getCredentialIdArg
 
-		response, err := w.GitCredentials.Get(ctx, getReq)
+		sdkReq, err := gitcredentials.GetCredentialsRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.GitCredentials.GetCredentials(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := gitcredentials.GetCredentialsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -303,19 +307,19 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*workspace.ListCredentialsRequest,
+	*gitcredentials.ListCredentialsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq gitcredentials.ListCredentialsRequest
 
-	var listReq workspace.ListCredentialsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.PrincipalId, "principal-id", `The ID of the service principal whose credentials will be listed.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -341,8 +345,16 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.GitCredentials.List(ctx, listReq)
+		sdkReq, err := gitcredentials.ListCredentialsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.GitCredentials.ListCredentials(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -350,7 +362,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := gitcredentials.ListCredentialsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Credentials)
 	}
 
 	// Disable completions since they are not applicable.
@@ -371,23 +387,23 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*workspace.UpdateCredentialsRequest,
+	*gitcredentials.UpdateCredentialsRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq gitcredentials.UpdateCredentialsRequest
 
-	var updateReq workspace.UpdateCredentialsRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.GitEmail, "git-email", updateReq.GitEmail, `The authenticating email associated with your Git provider user account.`)
-	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username provided with your Git provider account and associated with the credential.`)
-	cmd.Flags().BoolVar(&updateReq.IsDefaultForProvider, "is-default-for-provider", updateReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
-	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
-	cmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", updateReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.GitEmail, "git-email", `The authenticating email associated with your Git provider user account.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.GitUsername, "git-username", `The username provided with your Git provider account and associated with the credential.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.IsDefaultForProvider, "is-default-for-provider", `if the credential is the default for the given provider.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Name, "name", `the name of the git credential, used for identification and ease of lookup.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.PersonalAccessToken, "personal-access-token", `The personal access token used to authenticate to the corresponding Git provider.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.PrincipalId, "principal-id", `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "update CREDENTIAL_ID GIT_PROVIDER"
 	cmd.Short = `Update a credential.`
@@ -423,6 +439,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -436,19 +453,26 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
+		var updateCredentialIdArg int64
+		_, err = fmt.Sscan(args[0], &updateCredentialIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
-
+		updateReq.Id = &updateCredentialIdArg
 		if !cmd.Flags().Changed("json") {
-			updateReq.GitProvider = args[1]
+			updateReq.GitProvider = new(args[1])
 		}
 
-		err = w.GitCredentials.Update(ctx, updateReq)
+		sdkReq, err := gitcredentials.UpdateCredentialsRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.GitCredentials.UpdateCredentials(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

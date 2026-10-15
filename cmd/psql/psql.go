@@ -11,10 +11,12 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/listing"
 	libpsql "github.com/databricks/cli/libs/psql"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	database "github.com/databricks/sdk-go/database/v1"
+	postgres "github.com/databricks/sdk-go/postgres/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -188,10 +190,10 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 
 		var names []string
 		for _, inst := range instances {
-			names = append(names, inst.Name)
+			names = append(names, utils.Deref(inst.Name))
 		}
 		for _, proj := range projects {
-			names = append(names, proj.Name)
+			names = append(names, utils.Deref(proj.Name))
 		}
 
 		return names, cobra.ShellCompDirectiveNoFileComp
@@ -243,7 +245,7 @@ func parseResourcePath(input string) (project, branch, endpoint string, err erro
 // A single failing call is tolerated because a workspace may have only one of
 // the two products enabled; an error is returned only when both calls fail,
 // so that e.g. an auth failure is not reported as an empty workspace.
-func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project, error) {
+func listAllDatabases(ctx context.Context, w *sdkclients.Clients) ([]database.DatabaseInstance, []postgres.Project, error) {
 	type result[T any] struct {
 		value []T
 		err   error
@@ -253,12 +255,12 @@ func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]dat
 	projectsCh := make(chan result[postgres.Project], 1)
 
 	go func() {
-		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
+		instances, err := listing.Collect(w.Database.ListDatabaseInstancesIter(ctx, database.ListDatabaseInstancesRequest{}))
 		instancesCh <- result[database.DatabaseInstance]{instances, err}
 	}()
 
 	go func() {
-		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
+		projects, err := listing.Collect(w.Postgres.ListProjectsIter(ctx, postgres.ListProjectsRequest{}))
 		projectsCh <- result[postgres.Project]{projects, err}
 	}()
 
@@ -301,18 +303,18 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 	var items []cmdio.Tuple
 	for _, inst := range instances {
 		items = append(items, cmdio.Tuple{
-			Name: inst.Name + " (provisioned)",
-			Id:   "provisioned:" + inst.Name,
+			Name: utils.Deref(inst.Name) + " (provisioned)",
+			Id:   "provisioned:" + utils.Deref(inst.Name),
 		})
 	}
 	for _, proj := range projects {
-		displayName := extractIDFromName(proj.Name, "projects")
-		if proj.Status != nil && proj.Status.DisplayName != "" {
-			displayName = proj.Status.DisplayName
+		displayName := extractIDFromName(utils.Deref(proj.Name), "projects")
+		if proj.Status != nil && utils.Deref(proj.Status.DisplayName) != "" {
+			displayName = utils.Deref(proj.Status.DisplayName)
 		}
 		items = append(items, cmdio.Tuple{
 			Name: displayName + " (autoscaling)",
-			Id:   "autoscaling:" + proj.Name,
+			Id:   "autoscaling:" + utils.Deref(proj.Name),
 		})
 	}
 

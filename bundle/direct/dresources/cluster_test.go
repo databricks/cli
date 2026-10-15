@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdktypes/clusterlibraries/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestClusterOverrideChangeDescLibraries(t *testing.T) {
-	jobLib := []compute.Library{{Whl: "/Workspace/job.whl"}}
+	jobLib := []clusterlibraries.Library{{Whl: new("/Workspace/job.whl")}}
 
 	tests := []struct {
 		name   string
@@ -37,7 +37,7 @@ func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 		{
 			name:   "empty list stays managed",
 			path:   "libraries",
-			change: ChangeDesc{Action: deployplan.Update, Old: nil, New: []compute.Library{}, Remote: jobLib},
+			change: ChangeDesc{Action: deployplan.Update, Old: nil, New: []clusterlibraries.Library{}, Remote: jobLib},
 			action: deployplan.Update,
 		},
 		{

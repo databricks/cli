@@ -1297,8 +1297,6 @@ resources:
                 "entity_version":
                   "description": |-
                     PLACEHOLDER
-            "served_models":
-              "$fields":
                 "model_name":
                   "description": |-
                     PLACEHOLDER

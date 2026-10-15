@@ -6,8 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 )
 
 type WorkspacePathPermissions struct {
@@ -15,7 +14,7 @@ type WorkspacePathPermissions struct {
 	Permissions []resources.Permission
 }
 
-func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
+func ObjectAclToResourcePermissions(path string, acl []workspaceapi.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
 	var permissions []resources.Permission
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
@@ -24,9 +23,9 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 		}
 
 		// Find the highest permission level for this principal (handles inherited + explicit permissions)
-		var highestLevel iam.PermissionLevel
+		var highestLevel resources.PermissionLevel
 		for _, pl := range a.AllPermissions {
-			level := iam.PermissionLevel(convertWorkspaceObjectPermissionLevel(pl.PermissionLevel))
+			level := resources.PermissionLevel(convertWorkspaceObjectPermissionLevel(pl.PermissionLevel))
 			if resources.GetLevelScore(string(level)) > resources.GetLevelScore(string(highestLevel)) {
 				highestLevel = level
 			}
@@ -111,9 +110,9 @@ func containsAll(permA, permB []resources.Permission) (bool, []resources.Permiss
 
 // convertWorkspaceObjectPermissionLevel converts matching object permission levels to bundle ones.
 // If there is no matching permission level, it returns permission level as is, for example, CAN_EDIT.
-func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermissionLevel) string {
+func convertWorkspaceObjectPermissionLevel(level workspaceapi.WorkspaceObjectPermissionLevel) string {
 	switch level {
-	case workspace.WorkspaceObjectPermissionLevelCanRead:
+	case workspaceapi.WorkspaceObjectPermissionLevelCanRead:
 		return CAN_VIEW
 	default:
 		return string(level)

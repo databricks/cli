@@ -2,6 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "test dashboard",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",

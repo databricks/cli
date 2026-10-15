@@ -4,14 +4,14 @@ package temporary_path_credentials
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -72,18 +72,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var generateTemporaryPathCredentialsOverrides []func(
 	*cobra.Command,
-	*catalog.GenerateTemporaryPathCredentialRequest,
+	*uccredentials.GenerateTemporaryPathCredentialRequest,
 )
 
 func newGenerateTemporaryPathCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
+	var generateTemporaryPathCredentialsReq uccredentials.GenerateTemporaryPathCredentialRequest
 
-	var generateTemporaryPathCredentialsReq catalog.GenerateTemporaryPathCredentialRequest
 	var generateTemporaryPathCredentialsJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateTemporaryPathCredentialsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&generateTemporaryPathCredentialsReq.DryRun, "dry-run", generateTemporaryPathCredentialsReq.DryRun, `Optional.`)
+	flags.BoolPtrVar(cmd.Flags(), &generateTemporaryPathCredentialsReq.DryRun, "dry-run", `Optional.`)
 
 	cmd.Use = "generate-temporary-path-credentials URL OPERATION"
 	cmd.Short = `Generate a temporary path credential.`
@@ -125,6 +125,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateTemporaryPathCredentialsJson.Unmarshal(&generateTemporaryPathCredentialsReq)
@@ -139,22 +140,26 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			generateTemporaryPathCredentialsReq.Url = args[0]
+			generateTemporaryPathCredentialsReq.Url = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &generateTemporaryPathCredentialsReq.Operation)
-			if err != nil {
-				return fmt.Errorf("invalid OPERATION: %s", args[1])
-			}
-
+			generateTemporaryPathCredentialsReq.Operation = uccredentials.PathOperation(args[1])
 		}
 
-		response, err := w.TemporaryPathCredentials.GenerateTemporaryPathCredentials(ctx, generateTemporaryPathCredentialsReq)
+		sdkReq, err := uccredentials.GenerateTemporaryPathCredentialRequestToSDK(&generateTemporaryPathCredentialsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.GenerateTemporaryPathCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.GenerateTemporaryPathCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

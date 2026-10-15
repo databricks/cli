@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // JobTaskClusterSpec validates that job tasks have cluster spec defined
@@ -42,25 +44,25 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+func validateJobTask(b *bundle.Bundle, task jobs.TaskSettings, taskPath dyn.Path) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	var specified []string
 	var unspecified []string
 
-	if task.JobClusterKey != "" {
+	if utils.Deref(task.JobClusterKey) != "" {
 		specified = append(specified, "job_cluster_key")
 	} else {
 		unspecified = append(unspecified, "job_cluster_key")
 	}
 
-	if task.EnvironmentKey != "" {
+	if utils.Deref(task.EnvironmentKey) != "" {
 		specified = append(specified, "environment_key")
 	} else {
 		unspecified = append(unspecified, "environment_key")
 	}
 
-	if task.ExistingClusterId != "" {
+	if utils.Deref(task.ExistingClusterId) != "" {
 		specified = append(specified, "existing_cluster_id")
 	} else {
 		unspecified = append(unspecified, "existing_cluster_id")
@@ -75,7 +77,9 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
+		if task.ForEachTask.Task != nil {
+			diags = diags.Extend(validateJobTask(b, *task.ForEachTask.Task, forEachTaskPath))
+		}
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -85,7 +89,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 			// path might be not very helpful, adding user-specified task key clarifies the context
 			detail := fmt.Sprintf(
 				"Task %q requires a cluster or an environment to run.\nSpecify one of the following fields: %s.",
-				task.TaskKey,
+				utils.Deref(task.TaskKey),
 				strings.Join(unspecified, ", "),
 			)
 
@@ -104,10 +108,10 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 }
 
 // isComputeTask returns true if the task runs on a cluster or serverless GC
-func isComputeTask(task jobs.Task) bool {
+func isComputeTask(task jobs.TaskSettings) bool {
 	if task.NotebookTask != nil {
 		// if warehouse_id is set, it's SQL notebook that doesn't need cluster or serverless GC
-		if task.NotebookTask.WarehouseId != "" {
+		if utils.Deref(task.NotebookTask.WarehouseId) != "" {
 			return false
 		} else {
 			// task settings don't require specifying a cluster/serverless GC, but task itself can run on one

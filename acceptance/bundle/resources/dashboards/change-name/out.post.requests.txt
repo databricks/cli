@@ -19,6 +19,7 @@
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -34,6 +35,7 @@
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
+    "dashboard_id": "[DASHBOARD_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestGrantJobPermissions(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	err = grantJobPermissions(t.Context(), w, "123", []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
@@ -33,6 +34,8 @@ func TestGrantJobPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, `{
+		"request_object_type": "jobs",
+		"request_object_id": "123",
 		"access_control_list": [
 			{"user_name": "alice@example.com", "permission_level": "CAN_MANAGE"},
 			{"group_name": "data-team", "permission_level": "CAN_VIEW"},
@@ -44,13 +47,13 @@ func TestGrantJobPermissions(t *testing.T) {
 func TestExperimentPermissionLevel(t *testing.T) {
 	cases := []struct {
 		job  string
-		want ml.ExperimentPermissionLevel
+		want accessmanagement.PermissionLevel
 		ok   bool
 	}{
-		{"CAN_VIEW", ml.ExperimentPermissionLevelCanRead, true},
-		{"CAN_MANAGE_RUN", ml.ExperimentPermissionLevelCanEdit, true},
-		{"CAN_MANAGE", ml.ExperimentPermissionLevelCanManage, true},
-		{"IS_OWNER", ml.ExperimentPermissionLevelCanManage, true},
+		{"CAN_VIEW", accessmanagement.PermissionLevel_CanRead, true},
+		{"CAN_MANAGE_RUN", accessmanagement.PermissionLevel_CanEdit, true},
+		{"CAN_MANAGE", permissionLevelCanManage, true},
+		{"IS_OWNER", permissionLevelCanManage, true},
 		{"CAN_ATTACH_TO", "", false},
 	}
 	for _, tc := range cases {
@@ -76,9 +79,9 @@ func TestGrantExperimentPermissions(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 456, AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "submit-smoke"}}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(456)), AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: new("submit-smoke")}}}}
 	err = grantExperimentPermissions(t.Context(), w, run, []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
 		{GroupName: new("data-team"), Level: "CAN_VIEW"},
@@ -88,6 +91,8 @@ func TestGrantExperimentPermissions(t *testing.T) {
 
 	// Job levels are mapped onto their nearest experiment equivalents.
 	assert.JSONEq(t, `{
+		"request_object_type": "experiments",
+		"request_object_id": "42",
 		"access_control_list": [
 			{"user_name": "alice@example.com", "permission_level": "CAN_MANAGE"},
 			{"group_name": "data-team", "permission_level": "CAN_READ"},
@@ -105,13 +110,13 @@ func TestResolveSubmittedExperimentIDTimesOut(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
 	// An already-expired context gives up on the first miss without polling.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Nanosecond)
 	defer cancel()
-	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 456}}}
+	run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{RunId: new(int64(456))}}}
 	assert.Empty(t, resolveSubmittedExperimentID(ctx, w, run))
 }
 
@@ -145,12 +150,12 @@ func TestApplySubmittedPermissionsAiRuntimeTask(t *testing.T) {
 		return map[string]any{}
 	})
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	applySubmittedPermissions(t.Context(), w, 555, []permission{
 		{UserName: new("alice@example.com"), Level: "CAN_MANAGE"},
 	})
 
-	assert.JSONEq(t, `{"access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, jobBody)
-	assert.JSONEq(t, `{"access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, experimentBody)
+	assert.JSONEq(t, `{"request_object_type":"jobs","request_object_id":"123","access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, jobBody)
+	assert.JSONEq(t, `{"request_object_type":"experiments","request_object_id":"42","access_control_list":[{"user_name":"alice@example.com","permission_level":"CAN_MANAGE"}]}`, experimentBody)
 }

@@ -37,12 +37,12 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           "state": "ONLINE"
         },
         "endpoint_type": "STANDARD",
-        "endpoint_uuid": "[UUID]",
         "id": "[UUID]",
         "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
         "last_updated_user": "[USERNAME]",
         "name": "vs-endpoint-[UNIQUE_NAME]",
-        "scaling_info": {}
+        "scaling_info": {},
+        "endpoint_uuid": "[UUID]"
       },
       "changes": {
         "endpoint_type": {
@@ -74,14 +74,14 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           "schema_json": "{\"id\":\"int\",\"vector\":\"array<float>\"}"
         },
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-        "endpoint_uuid": "[UUID]",
         "index_subtype": "HYBRID",
         "index_type": "DIRECT_ACCESS",
         "name": "main.default.vs_index_[UNIQUE_NAME]",
         "primary_key": "id",
         "status": {
           "ready": true
-        }
+        },
+        "endpoint_uuid": "[UUID]"
       },
       "changes": {
         "direct_access_index_spec.schema_json": {

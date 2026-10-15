@@ -9,26 +9,24 @@
       "new_state": {
         "value": {
           "display_name": "Inline Dash",
-          "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
-          "published": true,
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
-          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+          "published": true
         }
       },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "Inline Dash",
-        "embed_credentials": false,
         "etag": "80611980",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
         "path": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources/Inline Dash.lvdash.json",
-        "published": true,
-        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
         "update_time": "[TIMESTAMP]",
-        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+        "published": true
       },
       "changes": {
         "create_time": {

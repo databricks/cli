@@ -43,7 +43,9 @@ Stream logs after submission using:
         "permission_level": "CAN_EDIT",
         "service_principal_name": "training-sp"
       }
-    ]
+    ],
+    "request_object_id": "42",
+    "request_object_type": "experiments"
   }
 }
 {
@@ -63,7 +65,9 @@ Stream logs after submission using:
         "permission_level": "CAN_MANAGE_RUN",
         "service_principal_name": "training-sp"
       }
-    ]
+    ],
+    "request_object_id": "123",
+    "request_object_type": "jobs"
   }
 }
 {

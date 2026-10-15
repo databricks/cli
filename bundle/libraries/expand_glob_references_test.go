@@ -4,6 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -11,9 +14,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,27 +32,27 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "task",
-									Libraries: []compute.Library{
+									TaskKey: new("task"),
+									Libraries: []jobs.Library{
 										{
-											Whl: "whl/*.whl",
+											Whl: new("whl/*.whl"),
 										},
 										{
-											Whl: "/Workspace/path/to/whl/my.whl",
+											Whl: new("/Workspace/path/to/whl/my.whl"),
 										},
 										{
-											Jar: "./jar/*.jar",
+											Jar: new("./jar/*.jar"),
 										},
 										{
-											Egg: "egg/*.egg",
+											Egg: new("egg/*.egg"),
 										},
 										{
-											Jar: "/Workspace/path/to/jar/*.jar",
+											Jar: new("/Workspace/path/to/jar/*.jar"),
 										},
 										{
-											Whl: "/some/full/path/to/whl/*.whl",
+											Whl: new("/some/full/path/to/whl/*.whl"),
 										},
 									},
 								},
@@ -71,30 +71,30 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 
 	job := b.Config.Resources.Jobs["job"]
 	task := job.Tasks[0]
-	require.Equal(t, []compute.Library{
+	require.Equal(t, []jobs.Library{
 		{
-			Whl: filepath.Join("whl", "my1.whl"),
+			Whl: new(filepath.Join("whl", "my1.whl")),
 		},
 		{
-			Whl: filepath.Join("whl", "my2.whl"),
+			Whl: new(filepath.Join("whl", "my2.whl")),
 		},
 		{
-			Whl: "/Workspace/path/to/whl/my.whl",
+			Whl: new("/Workspace/path/to/whl/my.whl"),
 		},
 		{
-			Jar: filepath.Join("jar", "my1.jar"),
+			Jar: new(filepath.Join("jar", "my1.jar")),
 		},
 		{
-			Jar: filepath.Join("jar", "my2.jar"),
+			Jar: new(filepath.Join("jar", "my2.jar")),
 		},
 		{
-			Egg: "egg/*.egg",
+			Egg: new("egg/*.egg"),
 		},
 		{
-			Jar: "/Workspace/path/to/jar/*.jar",
+			Jar: new("/Workspace/path/to/jar/*.jar"),
 		},
 		{
-			Whl: "/some/full/path/to/whl/*.whl",
+			Whl: new("/some/full/path/to/whl/*.whl"),
 		},
 	}, task.Libraries)
 }
@@ -113,29 +113,29 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "task",
+									TaskKey: new("task"),
 									ForEachTask: &jobs.ForEachTask{
-										Task: jobs.Task{
-											Libraries: []compute.Library{
+										Task: &jobs.TaskSettings{
+											Libraries: []jobs.Library{
 												{
-													Whl: "whl/*.whl",
+													Whl: new("whl/*.whl"),
 												},
 												{
-													Whl: "/Workspace/path/to/whl/my.whl",
+													Whl: new("/Workspace/path/to/whl/my.whl"),
 												},
 												{
-													Jar: "./jar/*.jar",
+													Jar: new("./jar/*.jar"),
 												},
 												{
-													Egg: "egg/*.egg",
+													Egg: new("egg/*.egg"),
 												},
 												{
-													Jar: "/Workspace/path/to/jar/*.jar",
+													Jar: new("/Workspace/path/to/jar/*.jar"),
 												},
 												{
-													Whl: "/some/full/path/to/whl/*.whl",
+													Whl: new("/some/full/path/to/whl/*.whl"),
 												},
 											},
 										},
@@ -156,30 +156,30 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 
 	job := b.Config.Resources.Jobs["job"]
 	task := job.Tasks[0].ForEachTask.Task
-	require.Equal(t, []compute.Library{
+	require.Equal(t, []jobs.Library{
 		{
-			Whl: filepath.Join("whl", "my1.whl"),
+			Whl: new(filepath.Join("whl", "my1.whl")),
 		},
 		{
-			Whl: filepath.Join("whl", "my2.whl"),
+			Whl: new(filepath.Join("whl", "my2.whl")),
 		},
 		{
-			Whl: "/Workspace/path/to/whl/my.whl",
+			Whl: new("/Workspace/path/to/whl/my.whl"),
 		},
 		{
-			Jar: filepath.Join("jar", "my1.jar"),
+			Jar: new(filepath.Join("jar", "my1.jar")),
 		},
 		{
-			Jar: filepath.Join("jar", "my2.jar"),
+			Jar: new(filepath.Join("jar", "my2.jar")),
 		},
 		{
-			Egg: "egg/*.egg",
+			Egg: new("egg/*.egg"),
 		},
 		{
-			Jar: "/Workspace/path/to/jar/*.jar",
+			Jar: new("/Workspace/path/to/jar/*.jar"),
 		},
 		{
-			Whl: "/some/full/path/to/whl/*.whl",
+			Whl: new("/some/full/path/to/whl/*.whl"),
 		},
 	}, task.Libraries)
 }
@@ -198,16 +198,16 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey:        "task",
-									EnvironmentKey: "env",
+									TaskKey:        new("task"),
+									EnvironmentKey: new("env"),
 								},
 							},
 							Environments: []jobs.JobEnvironment{
 								{
-									EnvironmentKey: "env",
-									Spec: &compute.Environment{
+									EnvironmentKey: new("env"),
+									Spec: &jobs.Environment{
 										Dependencies: []string{
 											"./whl/*.whl",
 											"/Workspace/path/to/whl/my.whl",
@@ -251,11 +251,11 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "task",
-									Libraries: []compute.Library{
-										{Whl: "/Workspace/remote.whl"},
+									TaskKey: new("task"),
+									Libraries: []jobs.Library{
+										{Whl: new("/Workspace/remote.whl")},
 									},
 								},
 							},
@@ -264,7 +264,7 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Environment: &pipelines.PipelinesEnvironment{
 								Dependencies: []string{
 									"--editable /Workspace/foo",

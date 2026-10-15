@@ -4,17 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/common"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFormatAPIError(t *testing.T) {
-	u, _ := url.Parse("https://example.com/api/2.0/foo")
-	request := &http.Request{Method: http.MethodPost, URL: u}
+	body := []byte(`{"error_code":"TEST_ERROR","message":"api error message"}`)
+	withRequest := http.Header{}
+	withRequest.Set("X-Databricks-Cli-Request", "POST https://example.test/api/2.0/foo")
 
 	cases := []struct {
 		name            string
@@ -29,50 +28,22 @@ func TestFormatAPIError(t *testing.T) {
 			expectedDetails: "",
 		},
 		{
-			name: "apierr no wrapper",
-			err: &apierr.APIError{
-				Message:    "api error message",
-				ErrorCode:  "TEST_ERROR",
-				StatusCode: 400,
-			},
-			expectedSummary: "api error message (400 TEST_ERROR)",
-			expectedDetails: "Endpoint: n/a\nHTTP Status: 400\nAPI error_code: TEST_ERROR\nAPI message: api error message",
-		},
-		{
-			name: "apierr with Response only",
-			err: &apierr.APIError{
-				Message:    "api error message",
-				ErrorCode:  "TEST_ERROR",
-				StatusCode: 400,
-				ResponseWrapper: &common.ResponseWrapper{
-					Response: &http.Response{Status: "400 Bad Request"},
-				},
-			},
+			name:            "apierr without request",
+			err:             apierr.FromHTTPError(400, nil, body),
 			expectedSummary: "api error message (400 TEST_ERROR)",
 			expectedDetails: "Endpoint: n/a\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 		{
-			name: "apierr with full Response+Request",
-			err: &apierr.APIError{
-				Message:    "api error message",
-				ErrorCode:  "TEST_ERROR",
-				StatusCode: 400,
-				ResponseWrapper: &common.ResponseWrapper{
-					Response: &http.Response{Status: "400 Bad Request", Request: request},
-				},
-			},
+			name:            "apierr with request",
+			err:             apierr.FromHTTPError(400, withRequest, body),
 			expectedSummary: "api error message (400 TEST_ERROR)",
-			expectedDetails: "Endpoint: POST https://example.com/api/2.0/foo\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
+			expectedDetails: "Endpoint: POST https://example.test/api/2.0/foo\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 		{
-			name: "wrapped apierr",
-			err: fmt.Errorf("wrapped: %w", &apierr.APIError{
-				Message:    "api error message",
-				ErrorCode:  "TEST_ERROR",
-				StatusCode: 500,
-			}),
+			name:            "wrapped apierr",
+			err:             fmt.Errorf("wrapped: %w", apierr.FromHTTPError(500, nil, body)),
 			expectedSummary: "wrapped: api error message (500 TEST_ERROR)",
-			expectedDetails: "Endpoint: n/a\nHTTP Status: 500\nAPI error_code: TEST_ERROR\nAPI message: api error message",
+			expectedDetails: "Endpoint: n/a\nHTTP Status: 500 Internal Server Error\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 	}
 

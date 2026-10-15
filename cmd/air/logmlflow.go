@@ -3,7 +3,6 @@ package aircmd
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,26 +16,26 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkexperiments "github.com/databricks/sdk-go/experiments/v1"
 )
 
 var mlflowArtifactRoots sync.Map
 
-func mlflowArtifactRoot(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) (string, error) {
+func mlflowArtifactRoot(ctx context.Context, w *sdkclients.Clients, mlflowRunID string) (string, error) {
 	key := strings.TrimRight(w.Config.Host, "/") + "\x00" + mlflowRunID
 	if cached, ok := mlflowArtifactRoots.Load(key); ok {
 		return cached.(string), nil
 	}
-	response, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
+	response, err := w.Experiments.GetRun(ctx, sdkexperiments.GetRunRequest{RunId: new(mlflowRunID)})
 	if err != nil {
 		log.Debugf(ctx, "air logs: could not resolve MLflow artifact URI for %s: %v", mlflowRunID, err)
 		return "", nil
@@ -44,7 +43,7 @@ func mlflowArtifactRoot(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 	if response.Run == nil || response.Run.Info == nil {
 		return "", nil
 	}
-	root := strings.TrimRight(response.Run.Info.ArtifactUri, "/")
+	root := strings.TrimRight(utils.Deref(response.Run.Info.ArtifactUri), "/")
 	mlflowArtifactRoots.Store(key, root)
 	return root, nil
 }
@@ -82,7 +81,7 @@ var artifactDownloadClient = &http.Client{
 //
 // The tail length is --tail, else the default cap. MLflow chunks are not
 // time-indexed, so --minutes cannot restrict the window here.
-func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+func mlflowLogFallback(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	if req.windowMinutes > 0 {
 		cmdio.LogString(ctx, "Warning: --minutes is ignored when logs are served from MLflow artifacts.")
 	}
@@ -93,7 +92,7 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	return fetchMLflowLogTail(ctx, w, out, req, status)
 }
 
-func fetchMLflowLogTail(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+func fetchMLflowLogTail(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
 	if err != nil {
 		return false, err
@@ -135,7 +134,7 @@ func fetchMLflowLogTail(ctx context.Context, w *databricks.WorkspaceClient, out 
 	return status.downloadOutcome(), nil
 }
 
-func mlflowLogsExist(ctx context.Context, w *databricks.WorkspaceClient, req logRequest) bool {
+func mlflowLogsExist(ctx context.Context, w *sdkclients.Clients, req logRequest) bool {
 	mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
 	if err != nil || mlflowRunID == "" || logDir == "" {
 		if err != nil {
@@ -151,7 +150,7 @@ func mlflowLogsExist(ctx context.Context, w *databricks.WorkspaceClient, req log
 	return len(chunks) > 0
 }
 
-func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+func streamMLflowLogs(ctx context.Context, w *sdkclients.Clients, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	lineOffsets := make(map[string]int)
 	currentRunID := ""
 	printed := false
@@ -222,7 +221,7 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 		}
 		refreshed, err := resolveRunStatus(ctx, w, req.runID)
 		if err != nil {
-			if errors.Is(err, apierr.ErrResourceDoesNotExist) || ctx.Err() != nil {
+			if apierrs.Is(err, apierrs.ErrResourceDoesNotExist) || ctx.Err() != nil {
 				return false, err
 			}
 			log.Debugf(ctx, "air logs: failed to refresh run status on MLflow fallback: %v", err)
@@ -233,8 +232,8 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 }
 
 // resolveMLflowLogPath returns the run's MLflow run id and per-node log directory.
-func resolveMLflowLogPath(ctx context.Context, w *databricks.WorkspaceClient, req logRequest) (string, string, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
+func resolveMLflowLogPath(ctx context.Context, w *sdkclients.Clients, req logRequest) (string, string, error) {
+	run, err := getRun(ctx, w, req.runID)
 	if err != nil {
 		return "", "", err
 	}
@@ -258,7 +257,7 @@ func resolveMLflowLogPath(ctx context.Context, w *databricks.WorkspaceClient, re
 // attempt-prefixed (logs/attempt_X/node_Y) or old (logs/node_Y). A bare
 // logs/node_<n> means old; a logs/attempt_<attempt> entry means prefixed.
 // Defaults to old when nothing is listed.
-func discoverAttemptPrefix(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, attempt int) (bool, error) {
+func discoverAttemptPrefix(ctx context.Context, w *sdkclients.Clients, mlflowRunID string, attempt int) (bool, error) {
 	files, err := listArtifacts(ctx, w, mlflowRunID, "logs")
 	if err != nil {
 		// Not fatal: default to the old layout; the chunk listing finds it empty if wrong.
@@ -268,10 +267,10 @@ func discoverAttemptPrefix(ctx context.Context, w *databricks.WorkspaceClient, m
 
 	attemptDir := fmt.Sprintf("logs/attempt_%d", attempt)
 	for _, f := range files {
-		if oldFormatNodeDir.MatchString(f.Path) {
+		if oldFormatNodeDir.MatchString(utils.Deref(f.Path)) {
 			return false, nil
 		}
-		if f.Path == attemptDir {
+		if utils.Deref(f.Path) == attemptDir {
 			return true, nil
 		}
 	}
@@ -298,7 +297,7 @@ type logChunk struct {
 }
 
 // listLogChunks lists the chunk files under a log dir, sorted ascending by index.
-func listLogChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, logDir string) ([]logChunk, error) {
+func listLogChunks(ctx context.Context, w *sdkclients.Clients, mlflowRunID, logDir string) ([]logChunk, error) {
 	files, err := listArtifacts(ctx, w, mlflowRunID, logDir)
 	if err != nil {
 		return nil, err
@@ -306,7 +305,7 @@ func listLogChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 
 	var chunks []logChunk
 	for _, f := range files {
-		base := path.Base(f.Path)
+		base := path.Base(utils.Deref(f.Path))
 		m := chunkFilePattern.FindStringSubmatch(base)
 		if m == nil {
 			continue
@@ -315,7 +314,7 @@ func listLogChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 		if err != nil {
 			continue
 		}
-		chunks = append(chunks, logChunk{index: idx, path: f.Path})
+		chunks = append(chunks, logChunk{index: idx, path: utils.Deref(f.Path)})
 	}
 	slices.SortFunc(chunks, func(a, b logChunk) int { return a.index - b.index })
 	return chunks, nil
@@ -324,7 +323,7 @@ func listLogChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 // tailChunks walks chunks newest-first, prepending each chunk's lines, until it
 // has `target` lines or runs out. A mid-walk download failure stops the walk
 // rather than splice non-adjacent chunks.
-func tailChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string, chunks []logChunk, target int) ([]string, error) {
+func tailChunks(ctx context.Context, w *sdkclients.Clients, mlflowRunID string, chunks []logChunk, target int) ([]string, error) {
 	var accumulated []string
 	for _, chunk := range slices.Backward(chunks) {
 		lines, err := downloadChunkLines(ctx, w, mlflowRunID, chunk.path)
@@ -346,12 +345,12 @@ type downloadedChunk struct {
 }
 
 // downloadChunkLines fetches one chunk artifact and returns its lines.
-func downloadChunkLines(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) ([]string, error) {
+func downloadChunkLines(ctx context.Context, w *sdkclients.Clients, mlflowRunID, artifactPath string) ([]string, error) {
 	content, err := downloadChunk(ctx, w, mlflowRunID, artifactPath)
 	return content.lines, err
 }
 
-func downloadChunk(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) (downloadedChunk, error) {
+func downloadChunk(ctx context.Context, w *sdkclients.Clients, mlflowRunID, artifactPath string) (downloadedChunk, error) {
 	f, err := downloadArtifact(ctx, w, mlflowRunID, artifactPath)
 	if err != nil {
 		return downloadedChunk{}, err
@@ -379,7 +378,7 @@ func downloadChunk(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 }
 
 // listArtifacts lists a run's artifacts under a path.
-func listArtifacts(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) ([]ml.FileInfo, error) {
+func listArtifacts(ctx context.Context, w *sdkclients.Clients, mlflowRunID, artifactPath string) ([]experiments.FileInfo, error) {
 	root, err := mlflowArtifactRoot(ctx, w, mlflowRunID)
 	if err != nil {
 		return nil, err
@@ -393,22 +392,32 @@ func listArtifacts(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 		if err != nil {
 			return nil, err
 		}
-		files := make([]ml.FileInfo, 0, len(entries))
+		files := make([]experiments.FileInfo, 0, len(entries))
 		for _, entry := range entries {
-			info := ml.FileInfo{Path: path.Join(artifactPath, entry.Name()), IsDir: entry.IsDir()}
+			info := experiments.FileInfo{Path: new(path.Join(artifactPath, entry.Name())), IsDir: new(entry.IsDir())}
 			if !entry.IsDir() {
 				stat, err := entry.Info()
 				if err != nil {
 					return nil, err
 				}
-				info.FileSize = stat.Size()
+				info.FileSize = new(stat.Size())
 			}
 			files = append(files, info)
 		}
 		return files, nil
 	}
-	it := w.Experiments.ListArtifacts(ctx, ml.ListArtifactsRequest{RunId: mlflowRunID, Path: artifactPath})
-	return listing.ToSlice(ctx, it)
+	var files []experiments.FileInfo
+	for f, err := range w.Experiments.ListArtifactsIter(ctx, sdkexperiments.ListArtifactsRequest{RunId: new(mlflowRunID), Path: new(artifactPath)}) {
+		if err != nil {
+			return nil, err
+		}
+		info, err := experiments.FileInfoFromSDK(f)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, *info)
+	}
+	return files, nil
 }
 
 // credentialInfo is one credentials-for-read entry: a pre-signed URL plus any
@@ -428,7 +437,7 @@ type credentialsForReadResponse struct {
 // downloadArtifact downloads one run artifact to a temp file and returns its
 // path. credentials-for-read returns a pre-signed URL, which we stream to disk;
 // that endpoint is not modeled by the SDK, so it is called via a raw client.Do.
-func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) (string, error) {
+func downloadArtifact(ctx context.Context, w *sdkclients.Clients, mlflowRunID, artifactPath string) (string, error) {
 	root, err := mlflowArtifactRoot(ctx, w, mlflowRunID)
 	if err != nil {
 		return "", err
@@ -458,7 +467,7 @@ func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflow
 		}
 		return tmp.Name(), nil
 	}
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create API client: %w", err)
 	}

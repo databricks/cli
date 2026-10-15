@@ -17,13 +17,16 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/genie/v1"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/cli/libs/utils"
+	sdkgenie "github.com/databricks/sdk-go/genie/v1"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -59,11 +62,9 @@ type genieSpace struct {
 
 func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient(ctx)
-	obj, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-		SpaceId: g.existingID,
-	})
+	obj, err := getGenieSpace(ctx, w, g.existingID, false)
 	if err != nil {
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("genie space with ID %s not found", g.existingID))
 			return ""
 		}
@@ -71,17 +72,17 @@ func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string
 		return ""
 	}
 
-	return obj.SpaceId
+	return utils.Deref(obj.SpaceId)
 }
 
-func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bundle, genieSpace *dashboards.GenieSpace, filename string) error {
-	if genieSpace.SerializedSpace == "" {
+func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bundle, genieSpace *genie.GenieSpace, filename string) error {
+	if utils.Deref(genieSpace.SerializedSpace) == "" {
 		return fmt.Errorf("genie space response did not include serialized_space; refusing to write %s", filepath.ToSlash(filename))
 	}
 
 	// Unmarshal and remarshal the serialized genie space to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
-	data, err := remarshalJSON([]byte(genieSpace.SerializedSpace))
+	data, err := remarshalJSON([]byte(utils.Deref(genieSpace.SerializedSpace)))
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bun
 	return os.WriteFile(filename, data, 0o644)
 }
 
-func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, genieSpace *dashboards.GenieSpace, key string) error {
+func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, genieSpace *genie.GenieSpace, key string) error {
 	// Save serialized genie space definition to the genie space directory.
 	genieSpaceBasename := key + ".geniespace.json"
 	genieSpacePath := filepath.Join(g.genieSpaceDir, genieSpaceBasename)
@@ -185,10 +186,7 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 
 	first := true
 	for {
-		genieSpace, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-			SpaceId:                genieSpaceID,
-			IncludeSerializedSpace: true,
-		})
+		genieSpace, err := getGenieSpace(ctx, w, genieSpaceID, true)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -200,7 +198,7 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 		// match the prior behavior of an unconditional initial sync.
 		shouldSave := first
 		if !first {
-			differs, err := genieSpaceBodyDiffersFromDisk(genieSpace.SerializedSpace, genieSpacePath)
+			differs, err := genieSpaceBodyDiffersFromDisk(utils.Deref(genieSpace.SerializedSpace), genieSpacePath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return
@@ -250,10 +248,7 @@ func genieSpaceBodyDiffersFromDisk(remoteSerialized, filename string) (bool, err
 
 func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, genieSpaceID string) {
 	w := b.WorkspaceClient(ctx)
-	genieSpace, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-		SpaceId:                genieSpaceID,
-		IncludeSerializedSpace: true,
-	})
+	genieSpace, err := getGenieSpace(ctx, w, genieSpaceID, true)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -261,7 +256,7 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 
 	key := g.cmd.Flag("key").Value.String()
 	if key == "" {
-		key = textutil.NormalizeString(genieSpace.Title)
+		key = textutil.NormalizeString(utils.Deref(genieSpace.Title))
 	}
 	err = g.saveConfiguration(ctx, b, genieSpace, key)
 	if err != nil {
@@ -433,4 +428,16 @@ bundle files automatically, useful during active Genie space development.`,
 	cmd.RunE = g.RunE
 	g.cmd = cmd
 	return cmd
+}
+
+// getGenieSpace fetches a Genie space as its JSON-capable mirror.
+func getGenieSpace(ctx context.Context, w *sdkclients.Clients, spaceID string, includeSerializedSpace bool) (*genie.GenieSpace, error) {
+	space, err := w.Genie.GenieGetSpace(ctx, sdkgenie.GenieGetSpaceRequest{
+		SpaceId:                new(spaceID),
+		IncludeSerializedSpace: utils.NonZero(includeSerializedSpace),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return genie.GenieSpaceFromSDK(space)
 }

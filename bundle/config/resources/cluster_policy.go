@@ -4,17 +4,19 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/clusterpolicies/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkclusterpolicies "github.com/databricks/sdk-go/clusterpolicies/v2"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type ClusterPolicy struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	compute.CreatePolicy
+	clusterpolicies.CreatePolicyRequest
 
 	// Shadows the embedded compute.CreatePolicy.Definition (a string). `any` lets the
 	// definition be authored as inline YAML; ConfigureClusterPolicyDefinition normalizes
@@ -28,16 +30,8 @@ type ClusterPolicy struct {
 	Permissions []ClusterPolicyPermission `json:"permissions,omitempty"`
 }
 
-func (s *ClusterPolicy) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s ClusterPolicy) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *ClusterPolicy) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.ClusterPolicies.GetByPolicyId(ctx, id)
+func (s *ClusterPolicy) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.ClusterPolicies.GetPolicy(ctx, sdkclusterpolicies.GetPolicyRequest{PolicyId: new(id)})
 	if err != nil {
 		log.Debugf(ctx, "cluster policy %s does not exist", id)
 		return false, err
@@ -62,5 +56,5 @@ func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 }
 
 func (s *ClusterPolicy) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }

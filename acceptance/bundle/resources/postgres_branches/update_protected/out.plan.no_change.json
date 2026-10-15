@@ -8,9 +8,8 @@
   "action": "skip",
   "remote_state": {
     "branch_id": "dev-branch",
-    "create_time": "[TIMESTAMP]",
-    "name": "[DEV_BRANCH_ID]",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "name": "[DEV_BRANCH_ID]",
     "status": {
       "branch_id": "dev-branch",
       "current_state": "READY",
@@ -22,6 +21,7 @@
       "state_change_time": "[TIMESTAMP]"
     },
     "uid": "[BRANCH_UID]",
+    "create_time": "[TIMESTAMP]",
     "update_time": "[TIMESTAMP]"
   },
   "changes": {

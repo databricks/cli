@@ -2,6 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]",
   "body": {
+    "name": "vs-endpoint-[UNIQUE_NAME]",
     "target_qps": 2
   }
 }
@@ -18,6 +19,8 @@
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[UUID]",
+    "request_object_type": "vector-search-endpoints"
   }
 }

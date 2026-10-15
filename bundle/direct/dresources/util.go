@@ -1,12 +1,17 @@
 package dresources
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
 	"slices"
 	"strings"
 
+	"github.com/databricks/sdk-go/core/apierr"
+
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 )
 
 type StateLifecycle struct {
@@ -78,4 +83,52 @@ func maskPath(path string) string {
 		return before
 	}
 	return path
+}
+
+// toSDK converts a JSON mirror value (or pointer to one) into an sdk-go request value.
+func toSDK[S any](v any) (S, error) {
+	p, err := sdkconv.ToSDK[S](v)
+	if err != nil || p == nil {
+		var zero S
+		return zero, err
+	}
+	return *p, nil
+}
+
+// orZero returns p, or a pointer to the zero value if p is nil. It is used for
+// fields that must always be sent on update so that unsetting them in config
+// clears them remotely.
+func orZero[T any](p *T) *T {
+	if p == nil {
+		return new(T)
+	}
+	return p
+}
+
+// nonEmpty returns a pointer to s, or nil if s is empty. It maps CLI string
+// fields where "" means unset onto optional sdk-go fields.
+func nonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// errResourceDoesNotExist builds the error a GET of a missing resource returns,
+// for resources whose existence is determined client-side (e.g. by listing).
+func errResourceDoesNotExist(message string) error {
+	body, _ := json.Marshal(map[string]string{
+		"error_code": "RESOURCE_DOES_NOT_EXIST",
+		"message":    message,
+	})
+	return apierr.FromHTTPError(http.StatusNotFound, nil, body)
+}
+
+// trueOrNil returns a pointer to true if b is set and nil otherwise, for optional
+// flags that are only sent when enabled.
+func trueOrNil(b bool) *bool {
+	if !b {
+		return nil
+	}
+	return new(true)
 }

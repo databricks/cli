@@ -16,5 +16,7 @@
   "q": {
     "update_mask": "schedule"
   },
-  "body": {}
+  "body": {
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule"
+  }
 }

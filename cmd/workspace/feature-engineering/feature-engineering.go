@@ -5,17 +5,22 @@ package feature_engineering
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	features "github.com/databricks/cli/libs/sdktypes/features/v1"
+	sdkfeatures "github.com/databricks/sdk-go/features/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -78,13 +83,13 @@ Feature Engineering provides APIs for managing features and materialized
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var backfillFeaturesOverrides []func(
 	*cobra.Command,
-	*ml.BackfillFeaturesRequest,
+	*features.BackfillFeaturesRequest,
 )
 
 func newBackfillFeatures() *cobra.Command {
 	cmd := &cobra.Command{}
+	var backfillFeaturesReq features.BackfillFeaturesRequest
 
-	var backfillFeaturesReq ml.BackfillFeaturesRequest
 	var backfillFeaturesJson flags.JsonFlag
 
 	var backfillFeaturesSkipWait bool
@@ -95,8 +100,8 @@ func newBackfillFeatures() *cobra.Command {
 
 	cmd.Flags().Var(&backfillFeaturesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&backfillFeaturesReq.BudgetPolicyId, "budget-policy-id", backfillFeaturesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this backfill.`)
-	cmd.Flags().StringVar(&backfillFeaturesReq.RequestId, "request-id", backfillFeaturesReq.RequestId, `Idempotency token for the request.`)
+	flags.StringPtrVar(cmd.Flags(), &backfillFeaturesReq.BudgetPolicyId, "budget-policy-id", `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this backfill.`)
+	flags.StringPtrVar(cmd.Flags(), &backfillFeaturesReq.RequestId, "request-id", `Idempotency token for the request.`)
 	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "backfill-features"
@@ -119,6 +124,7 @@ func newBackfillFeatures() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := backfillFeaturesJson.Unmarshal(&backfillFeaturesReq)
@@ -135,25 +141,23 @@ func newBackfillFeatures() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
+		sdkReq, err := features.BackfillFeaturesRequestToSDK(&backfillFeaturesReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case backfillFeaturesSkipWait:
-			wait, err := w.FeatureEngineering.BackfillFeatures(ctx, backfillFeaturesReq)
+			wait, err := w.Features.BackfillFeatures(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.FeatureEngineering.BackfillFeatures(ctx, backfillFeaturesReq)
+			wait, err := w.Features.BackfillFeatures(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -163,13 +167,17 @@ func newBackfillFeatures() *cobra.Command {
 			sp.Update("Waiting for backfill-features to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(backfillFeaturesTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(backfillFeaturesTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := features.BackfillFeaturesResponseFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -191,13 +199,14 @@ func newBackfillFeatures() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cancelOperationOverrides []func(
 	*cobra.Command,
-	*ml.CancelOperationRequest,
+	*map[string]any,
 )
 
 func newCancelOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var cancelOperationReq ml.CancelOperationRequest
+	var cancelOperationReq map[string]any
+	cancelOperationReq = map[string]any{}
+	var cancelOperationNameRaw string
 
 	cmd.Use = "cancel-operation NAME"
 	cmd.Short = `Cancel an operation.`
@@ -222,10 +231,18 @@ func newCancelOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		cancelOperationReq.Name = args[0]
+		cancelOperationNameRaw = args[0]
 
-		err = w.FeatureEngineering.CancelOperation(ctx, cancelOperationReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/feature-engineering/%s:cancel", fmt.Sprint(cancelOperationNameRaw))
+
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, cancelOperationReq, nil)
 		if err != nil {
 			return err
 		}
@@ -250,21 +267,21 @@ func newCancelOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createFeatureOverrides []func(
 	*cobra.Command,
-	*ml.CreateFeatureRequest,
+	*features.CreateFeatureRequest,
 )
 
 func newCreateFeature() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createFeatureReq features.CreateFeatureRequest
+	createFeatureReq.Feature = &features.Feature{}
 
-	var createFeatureReq ml.CreateFeatureRequest
-	createFeatureReq.Feature = ml.Feature{}
 	var createFeatureJson flags.JsonFlag
 
 	cmd.Flags().Var(&createFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
+	flags.StringPtrVar(cmd.Flags(), &createFeatureReq.Feature.Description, "description", `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, ``)
+	flags.StringPtrVar(cmd.Flags(), &createFeatureReq.Feature.FilterCondition, "filter-condition", ``)
 	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
@@ -303,6 +320,7 @@ Create a feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createFeatureJson.Unmarshal(&createFeatureReq.Feature)
@@ -317,29 +335,29 @@ Create a feature.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createFeatureReq.Feature.FullName = args[0]
+			createFeatureReq.Feature.FullName = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createFeatureReq.Feature.Source)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: source
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createFeatureReq.Feature.Function)
-			if err != nil {
-				return fmt.Errorf("invalid FUNCTION: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: function
 		}
 
-		response, err := w.FeatureEngineering.CreateFeature(ctx, createFeatureReq)
+		sdkReq, err := features.CreateFeatureRequestToSDK(&createFeatureReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.CreateFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.FeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -360,14 +378,14 @@ Create a feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createKafkaConfigOverrides []func(
 	*cobra.Command,
-	*ml.CreateKafkaConfigRequest,
+	*features.CreateKafkaConfigRequest,
 )
 
 func newCreateKafkaConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createKafkaConfigReq features.CreateKafkaConfigRequest
+	createKafkaConfigReq.KafkaConfig = &features.KafkaConfig{}
 
-	var createKafkaConfigReq ml.CreateKafkaConfigRequest
-	createKafkaConfigReq.KafkaConfig = ml.KafkaConfig{}
 	var createKafkaConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&createKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -417,6 +435,7 @@ func newCreateKafkaConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createKafkaConfigJson.Unmarshal(&createKafkaConfigReq.KafkaConfig)
@@ -431,32 +450,32 @@ func newCreateKafkaConfig() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createKafkaConfigReq.KafkaConfig.Name = args[0]
+			createKafkaConfigReq.KafkaConfig.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createKafkaConfigReq.KafkaConfig.BootstrapServers = args[1]
+			createKafkaConfigReq.KafkaConfig.BootstrapServers = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createKafkaConfigReq.KafkaConfig.SubscriptionMode)
-			if err != nil {
-				return fmt.Errorf("invalid SUBSCRIPTION_MODE: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: subscription_mode
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createKafkaConfigReq.KafkaConfig.AuthConfig)
-			if err != nil {
-				return fmt.Errorf("invalid AUTH_CONFIG: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: auth_config
 		}
 
-		response, err := w.FeatureEngineering.CreateKafkaConfig(ctx, createKafkaConfigReq)
+		sdkReq, err := features.CreateKafkaConfigRequestToSDK(&createKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.CreateKafkaConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.KafkaConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -477,26 +496,26 @@ func newCreateKafkaConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createMaterializedFeatureOverrides []func(
 	*cobra.Command,
-	*ml.CreateMaterializedFeatureRequest,
+	*features.CreateMaterializedFeatureRequest,
 )
 
 func newCreateMaterializedFeature() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createMaterializedFeatureReq features.CreateMaterializedFeatureRequest
+	createMaterializedFeatureReq.MaterializedFeature = &features.MaterializedFeature{}
 
-	var createMaterializedFeatureReq ml.CreateMaterializedFeatureRequest
-	createMaterializedFeatureReq.MaterializedFeature = ml.MaterializedFeature{}
 	var createMaterializedFeatureJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
+	flags.StringPtrVar(cmd.Flags(), &createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
+	flags.StringPtrVar(cmd.Flags(), &createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", ``)
 	// TODO: complex arg: cron_schedule_trigger
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
+	flags.StringPtrVar(cmd.Flags(), &createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	flags.EnumVar(cmd.Flags(), &createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`, "MaterializedFeaturePipelineScheduleState", "ACTIVE", "PAUSED", "SNAPSHOT")
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
 	// TODO: map via StringToStringVar: tags
@@ -530,6 +549,7 @@ Create a materialized feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMaterializedFeatureJson.Unmarshal(&createMaterializedFeatureReq.MaterializedFeature)
@@ -544,15 +564,23 @@ Create a materialized feature.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createMaterializedFeatureReq.MaterializedFeature.FeatureName = args[0]
+			createMaterializedFeatureReq.MaterializedFeature.FeatureName = new(args[0])
 		}
 
-		response, err := w.FeatureEngineering.CreateMaterializedFeature(ctx, createMaterializedFeatureReq)
+		sdkReq, err := features.CreateMaterializedFeatureRequestToSDK(&createMaterializedFeatureReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.CreateMaterializedFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.MaterializedFeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -573,21 +601,21 @@ Create a materialized feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createStreamOverrides []func(
 	*cobra.Command,
-	*ml.CreateStreamRequest,
+	*features.CreateStreamRequest,
 )
 
 func newCreateStream() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createStreamReq features.CreateStreamRequest
+	createStreamReq.Stream = &features.Stream{}
 
-	var createStreamReq ml.CreateStreamRequest
-	createStreamReq.Stream = ml.Stream{}
 	var createStreamJson flags.JsonFlag
 
 	cmd.Flags().Var(&createStreamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createStreamReq.Stream.Description, "description", createStreamReq.Stream.Description, `User-provided description.`)
+	flags.StringPtrVar(cmd.Flags(), &createStreamReq.Stream.Description, "description", `User-provided description.`)
 	// TODO: array: excluded_columns
-	cmd.Flags().StringVar(&createStreamReq.Stream.RecordTypeFilter, "record-type-filter", createStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
+	flags.StringPtrVar(cmd.Flags(), &createStreamReq.Stream.RecordTypeFilter, "record-type-filter", `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "create-stream NAME SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
 	cmd.Short = `*Public Preview* Create a Stream.`
@@ -627,6 +655,7 @@ Create a Stream.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createStreamJson.Unmarshal(&createStreamReq.Stream)
@@ -641,43 +670,35 @@ Create a Stream.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createStreamReq.Stream.Name = args[0]
+			createStreamReq.Stream.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createStreamReq.Stream.SourceConfig)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE_CONFIG: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: source_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createStreamReq.Stream.ConnectionConfig)
-			if err != nil {
-				return fmt.Errorf("invalid CONNECTION_CONFIG: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: connection_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createStreamReq.Stream.SchemaConfig)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEMA_CONFIG: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: schema_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &createStreamReq.Stream.IngestionConfig)
-			if err != nil {
-				return fmt.Errorf("invalid INGESTION_CONFIG: %s", args[4])
-			}
-
+			_ = args[4] // TODO: complex arg: ingestion_config
 		}
 
-		response, err := w.FeatureEngineering.CreateStream(ctx, createStreamReq)
+		sdkReq, err := features.CreateStreamRequestToSDK(&createStreamReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.CreateStream(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.StreamFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -698,13 +719,12 @@ Create a Stream.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteFeatureOverrides []func(
 	*cobra.Command,
-	*ml.DeleteFeatureRequest,
+	*sdkfeatures.DeleteFeatureRequest,
 )
 
 func newDeleteFeature() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteFeatureReq ml.DeleteFeatureRequest
+	var deleteFeatureReq sdkfeatures.DeleteFeatureRequest
 
 	cmd.Use = "delete-feature FULL_NAME"
 	cmd.Short = `*Public Preview* Delete a feature.`
@@ -730,10 +750,12 @@ Delete a feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteFeatureReq.FullName = args[0]
+		deleteFeatureReq.FullName = new(args[0])
 
-		err = w.FeatureEngineering.DeleteFeature(ctx, deleteFeatureReq)
+		sdkReq := &deleteFeatureReq
+		err = w.Features.DeleteFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -758,13 +780,12 @@ Delete a feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteKafkaConfigOverrides []func(
 	*cobra.Command,
-	*ml.DeleteKafkaConfigRequest,
+	*sdkfeatures.DeleteKafkaConfigRequest,
 )
 
 func newDeleteKafkaConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteKafkaConfigReq ml.DeleteKafkaConfigRequest
+	var deleteKafkaConfigReq sdkfeatures.DeleteKafkaConfigRequest
 
 	cmd.Use = "delete-kafka-config NAME"
 	cmd.Short = `Delete a Kafka config.`
@@ -793,10 +814,12 @@ func newDeleteKafkaConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteKafkaConfigReq.Name = args[0]
+		deleteKafkaConfigReq.Name = new(args[0])
 
-		err = w.FeatureEngineering.DeleteKafkaConfig(ctx, deleteKafkaConfigReq)
+		sdkReq := &deleteKafkaConfigReq
+		err = w.Features.DeleteKafkaConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -821,13 +844,12 @@ func newDeleteKafkaConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMaterializedFeatureOverrides []func(
 	*cobra.Command,
-	*ml.DeleteMaterializedFeatureRequest,
+	*sdkfeatures.DeleteMaterializedFeatureRequest,
 )
 
 func newDeleteMaterializedFeature() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteMaterializedFeatureReq ml.DeleteMaterializedFeatureRequest
+	var deleteMaterializedFeatureReq sdkfeatures.DeleteMaterializedFeatureRequest
 
 	cmd.Use = "delete-materialized-feature MATERIALIZED_FEATURE_ID"
 	cmd.Short = `*Public Preview* Delete a materialized feature.`
@@ -851,10 +873,12 @@ Delete a materialized feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMaterializedFeatureReq.MaterializedFeatureId = args[0]
+		deleteMaterializedFeatureReq.MaterializedFeatureId = new(args[0])
 
-		err = w.FeatureEngineering.DeleteMaterializedFeature(ctx, deleteMaterializedFeatureReq)
+		sdkReq := &deleteMaterializedFeatureReq
+		err = w.Features.DeleteMaterializedFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -879,13 +903,12 @@ Delete a materialized feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteStreamOverrides []func(
 	*cobra.Command,
-	*ml.DeleteStreamRequest,
+	*sdkfeatures.DeleteStreamRequest,
 )
 
 func newDeleteStream() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteStreamReq ml.DeleteStreamRequest
+	var deleteStreamReq sdkfeatures.DeleteStreamRequest
 
 	cmd.Use = "delete-stream NAME"
 	cmd.Short = `*Public Preview* Delete a Stream.`
@@ -911,10 +934,12 @@ Delete a Stream.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteStreamReq.Name = args[0]
+		deleteStreamReq.Name = new(args[0])
 
-		err = w.FeatureEngineering.DeleteStream(ctx, deleteStreamReq)
+		sdkReq := &deleteStreamReq
+		err = w.Features.DeleteStream(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -939,13 +964,12 @@ Delete a Stream.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getFeatureOverrides []func(
 	*cobra.Command,
-	*ml.GetFeatureRequest,
+	*sdkfeatures.GetFeatureRequest,
 )
 
 func newGetFeature() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getFeatureReq ml.GetFeatureRequest
+	var getFeatureReq sdkfeatures.GetFeatureRequest
 
 	cmd.Use = "get-feature FULL_NAME"
 	cmd.Short = `*Public Preview* Get a feature.`
@@ -971,15 +995,21 @@ Get a feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getFeatureReq.FullName = args[0]
+		getFeatureReq.FullName = new(args[0])
 
-		response, err := w.FeatureEngineering.GetFeature(ctx, getFeatureReq)
+		sdkReq := &getFeatureReq
+		response, err := w.Features.GetFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.FeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1000,13 +1030,12 @@ Get a feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getKafkaConfigOverrides []func(
 	*cobra.Command,
-	*ml.GetKafkaConfigRequest,
+	*sdkfeatures.GetKafkaConfigRequest,
 )
 
 func newGetKafkaConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getKafkaConfigReq ml.GetKafkaConfigRequest
+	var getKafkaConfigReq sdkfeatures.GetKafkaConfigRequest
 
 	cmd.Use = "get-kafka-config NAME"
 	cmd.Short = `Get a Kafka config.`
@@ -1035,15 +1064,21 @@ func newGetKafkaConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getKafkaConfigReq.Name = args[0]
+		getKafkaConfigReq.Name = new(args[0])
 
-		response, err := w.FeatureEngineering.GetKafkaConfig(ctx, getKafkaConfigReq)
+		sdkReq := &getKafkaConfigReq
+		response, err := w.Features.GetKafkaConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.KafkaConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1064,13 +1099,12 @@ func newGetKafkaConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMaterializedFeatureOverrides []func(
 	*cobra.Command,
-	*ml.GetMaterializedFeatureRequest,
+	*sdkfeatures.GetMaterializedFeatureRequest,
 )
 
 func newGetMaterializedFeature() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMaterializedFeatureReq ml.GetMaterializedFeatureRequest
+	var getMaterializedFeatureReq sdkfeatures.GetMaterializedFeatureRequest
 
 	cmd.Use = "get-materialized-feature MATERIALIZED_FEATURE_ID"
 	cmd.Short = `*Public Preview* Get a materialized feature.`
@@ -1094,15 +1128,21 @@ Get a materialized feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMaterializedFeatureReq.MaterializedFeatureId = args[0]
+		getMaterializedFeatureReq.MaterializedFeatureId = new(args[0])
 
-		response, err := w.FeatureEngineering.GetMaterializedFeature(ctx, getMaterializedFeatureReq)
+		sdkReq := &getMaterializedFeatureReq
+		response, err := w.Features.GetMaterializedFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.MaterializedFeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1123,13 +1163,14 @@ Get a materialized feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOperationOverrides []func(
 	*cobra.Command,
-	*ml.GetOperationRequest,
+	*map[string]any,
 )
 
 func newGetOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getOperationReq ml.GetOperationRequest
+	var getOperationReq map[string]any
+	getOperationReq = map[string]any{}
+	var getOperationNameRaw string
 
 	cmd.Use = "get-operation NAME"
 	cmd.Short = `Get an operation.`
@@ -1154,14 +1195,23 @@ func newGetOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getOperationReq.Name = args[0]
+		getOperationNameRaw = args[0]
 
-		response, err := w.FeatureEngineering.GetOperation(ctx, getOperationReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/feature-engineering/%s", fmt.Sprint(getOperationNameRaw))
+
+		maps.Copy(rawQuery, getOperationReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1183,13 +1233,12 @@ func newGetOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getStreamOverrides []func(
 	*cobra.Command,
-	*ml.GetStreamRequest,
+	*sdkfeatures.GetStreamRequest,
 )
 
 func newGetStream() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getStreamReq ml.GetStreamRequest
+	var getStreamReq sdkfeatures.GetStreamRequest
 
 	cmd.Use = "get-stream NAME"
 	cmd.Short = `*Public Preview* Get a Stream.`
@@ -1215,15 +1264,21 @@ Get a Stream.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getStreamReq.Name = args[0]
+		getStreamReq.Name = new(args[0])
 
-		response, err := w.FeatureEngineering.GetStream(ctx, getStreamReq)
+		sdkReq := &getStreamReq
+		response, err := w.Features.GetStream(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.StreamFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1244,25 +1299,25 @@ Get a Stream.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listFeaturesOverrides []func(
 	*cobra.Command,
-	*ml.ListFeaturesRequest,
+	*features.ListFeaturesRequest,
 )
 
 func newListFeatures() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listFeaturesReq features.ListFeaturesRequest
 
-	var listFeaturesReq ml.ListFeaturesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listFeaturesLimit int
 
-	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listFeaturesReq.PageSize, "page-size", `The maximum number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listFeaturesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listFeaturesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-features CATALOG_NAME SCHEMA_NAME"
@@ -1290,19 +1345,23 @@ List features.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listFeaturesReq.CatalogName = args[0]
-		listFeaturesReq.SchemaName = args[1]
+		listFeaturesReq.CatalogName = new(args[0])
+		listFeaturesReq.SchemaName = new(args[1])
 
-		response := w.FeatureEngineering.ListFeatures(ctx, listFeaturesReq)
+		sdkReq, err := features.ListFeaturesRequestToSDK(&listFeaturesReq)
+		if err != nil {
+			return err
+		}
 		if listFeaturesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listFeaturesLimit)
 		}
 		if listFeaturesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listFeaturesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Features.ListFeaturesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, features.FeatureFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1323,25 +1382,25 @@ List features.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listKafkaConfigsOverrides []func(
 	*cobra.Command,
-	*ml.ListKafkaConfigsRequest,
+	*features.ListKafkaConfigsRequest,
 )
 
 func newListKafkaConfigs() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listKafkaConfigsReq features.ListKafkaConfigsRequest
 
-	var listKafkaConfigsReq ml.ListKafkaConfigsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listKafkaConfigsLimit int
 
-	cmd.Flags().IntVar(&listKafkaConfigsReq.PageSize, "page-size", listKafkaConfigsReq.PageSize, `The maximum number of results to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listKafkaConfigsReq.PageSize, "page-size", `The maximum number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listKafkaConfigsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listKafkaConfigsReq.PageToken, "page-token", listKafkaConfigsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listKafkaConfigsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-kafka-configs"
@@ -1368,16 +1427,20 @@ func newListKafkaConfigs() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.FeatureEngineering.ListKafkaConfigs(ctx, listKafkaConfigsReq)
+		sdkReq, err := features.ListKafkaConfigsRequestToSDK(&listKafkaConfigsReq)
+		if err != nil {
+			return err
+		}
 		if listKafkaConfigsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKafkaConfigsLimit)
 		}
 		if listKafkaConfigsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listKafkaConfigsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Features.ListKafkaConfigsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, features.KafkaConfigFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1398,26 +1461,26 @@ func newListKafkaConfigs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listMaterializedFeaturesOverrides []func(
 	*cobra.Command,
-	*ml.ListMaterializedFeaturesRequest,
+	*features.ListMaterializedFeaturesRequest,
 )
 
 func newListMaterializedFeatures() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listMaterializedFeaturesReq features.ListMaterializedFeaturesRequest
 
-	var listMaterializedFeaturesReq ml.ListMaterializedFeaturesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listMaterializedFeaturesLimit int
 
-	cmd.Flags().StringVar(&listMaterializedFeaturesReq.FeatureName, "feature-name", listMaterializedFeaturesReq.FeatureName, `Filter by feature name.`)
-	cmd.Flags().IntVar(&listMaterializedFeaturesReq.PageSize, "page-size", listMaterializedFeaturesReq.PageSize, `The maximum number of results to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listMaterializedFeaturesReq.FeatureName, "feature-name", `Filter by feature name.`)
+	flags.IntPtrVar(cmd.Flags(), &listMaterializedFeaturesReq.PageSize, "page-size", `The maximum number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMaterializedFeaturesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listMaterializedFeaturesReq.PageToken, "page-token", listMaterializedFeaturesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listMaterializedFeaturesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-materialized-features"
@@ -1439,16 +1502,20 @@ List materialized features.`
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.FeatureEngineering.ListMaterializedFeatures(ctx, listMaterializedFeaturesReq)
+		sdkReq, err := features.ListMaterializedFeaturesRequestToSDK(&listMaterializedFeaturesReq)
+		if err != nil {
+			return err
+		}
 		if listMaterializedFeaturesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMaterializedFeaturesLimit)
 		}
 		if listMaterializedFeaturesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listMaterializedFeaturesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Features.ListMaterializedFeaturesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, features.MaterializedFeatureFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1469,26 +1536,26 @@ List materialized features.`
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listStreamsOverrides []func(
 	*cobra.Command,
-	*ml.ListStreamsRequest,
+	*features.ListStreamsRequest,
 )
 
 func newListStreams() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listStreamsReq features.ListStreamsRequest
 
-	var listStreamsReq ml.ListStreamsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listStreamsLimit int
 
-	cmd.Flags().IntVar(&listStreamsReq.PageSize, "page-size", listStreamsReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listStreamsReq.Parent, "parent", listStreamsReq.Parent, `Two-part name (catalog.schema) of the parent under which to list Streams.`)
+	flags.IntPtrVar(cmd.Flags(), &listStreamsReq.PageSize, "page-size", `The maximum number of results to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listStreamsReq.Parent, "parent", `Two-part name (catalog.schema) of the parent under which to list Streams.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listStreamsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listStreamsReq.PageToken, "page-token", listStreamsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listStreamsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-streams"
@@ -1512,16 +1579,20 @@ List Streams.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.FeatureEngineering.ListStreams(ctx, listStreamsReq)
+		sdkReq, err := features.ListStreamsRequestToSDK(&listStreamsReq)
+		if err != nil {
+			return err
+		}
 		if listStreamsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listStreamsLimit)
 		}
 		if listStreamsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listStreamsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Features.ListStreamsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, features.StreamFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1542,13 +1613,13 @@ List Streams.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var purgeFeatureEntitiesOverrides []func(
 	*cobra.Command,
-	*ml.PurgeFeatureEntitiesRequest,
+	*features.PurgeFeatureEntitiesRequest,
 )
 
 func newPurgeFeatureEntities() *cobra.Command {
 	cmd := &cobra.Command{}
+	var purgeFeatureEntitiesReq features.PurgeFeatureEntitiesRequest
 
-	var purgeFeatureEntitiesReq ml.PurgeFeatureEntitiesRequest
 	var purgeFeatureEntitiesJson flags.JsonFlag
 
 	var purgeFeatureEntitiesSkipWait bool
@@ -1559,8 +1630,8 @@ func newPurgeFeatureEntities() *cobra.Command {
 
 	cmd.Flags().Var(&purgeFeatureEntitiesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.BudgetPolicyId, "budget-policy-id", purgeFeatureEntitiesReq.BudgetPolicyId, `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this purge.`)
-	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.RequestId, "request-id", purgeFeatureEntitiesReq.RequestId, `Optional UUID4 idempotency token for the request.`)
+	flags.StringPtrVar(cmd.Flags(), &purgeFeatureEntitiesReq.BudgetPolicyId, "budget-policy-id", `The budget policy ID, in UUID format, used to attribute the serverless compute cost of this purge.`)
+	flags.StringPtrVar(cmd.Flags(), &purgeFeatureEntitiesReq.RequestId, "request-id", `Optional UUID4 idempotency token for the request.`)
 	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "purge-feature-entities"
@@ -1585,6 +1656,7 @@ func newPurgeFeatureEntities() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := purgeFeatureEntitiesJson.Unmarshal(&purgeFeatureEntitiesReq)
@@ -1601,25 +1673,23 @@ func newPurgeFeatureEntities() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
+		sdkReq, err := features.PurgeFeatureEntitiesRequestToSDK(&purgeFeatureEntitiesReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case purgeFeatureEntitiesSkipWait:
-			wait, err := w.FeatureEngineering.PurgeFeatureEntities(ctx, purgeFeatureEntitiesReq)
+			wait, err := w.Features.PurgeFeatureEntities(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.FeatureEngineering.PurgeFeatureEntities(ctx, purgeFeatureEntitiesReq)
+			wait, err := w.Features.PurgeFeatureEntities(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1629,13 +1699,17 @@ func newPurgeFeatureEntities() *cobra.Command {
 			sp.Update("Waiting for purge-feature-entities to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(purgeFeatureEntitiesTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(purgeFeatureEntitiesTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := features.PurgeFeatureEntitiesResponseFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -1657,21 +1731,21 @@ func newPurgeFeatureEntities() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateFeatureOverrides []func(
 	*cobra.Command,
-	*ml.UpdateFeatureRequest,
+	*features.UpdateFeatureRequest,
 )
 
 func newUpdateFeature() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateFeatureReq features.UpdateFeatureRequest
+	updateFeatureReq.Feature = &features.Feature{}
 
-	var updateFeatureReq ml.UpdateFeatureRequest
-	updateFeatureReq.Feature = ml.Feature{}
 	var updateFeatureJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
+	flags.StringPtrVar(cmd.Flags(), &updateFeatureReq.Feature.Description, "description", `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateFeatureReq.Feature.FilterCondition, "filter-condition", ``)
 	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
@@ -1711,6 +1785,7 @@ Update a feature's description (all other fields are immutable).
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateFeatureJson.Unmarshal(&updateFeatureReq.Feature)
@@ -1724,29 +1799,29 @@ Update a feature's description (all other fields are immutable).
 				}
 			}
 		}
-		updateFeatureReq.FullName = args[0]
-		updateFeatureReq.UpdateMask = args[1]
+		updateFeatureReq.Feature.FullName = new(args[0])
+		updateFeatureReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateFeatureReq.Feature.Source)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: source
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateFeatureReq.Feature.Function)
-			if err != nil {
-				return fmt.Errorf("invalid FUNCTION: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: function
 		}
 
-		response, err := w.FeatureEngineering.UpdateFeature(ctx, updateFeatureReq)
+		sdkReq, err := features.UpdateFeatureRequestToSDK(&updateFeatureReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.UpdateFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.FeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1767,14 +1842,14 @@ Update a feature's description (all other fields are immutable).
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateKafkaConfigOverrides []func(
 	*cobra.Command,
-	*ml.UpdateKafkaConfigRequest,
+	*features.UpdateKafkaConfigRequest,
 )
 
 func newUpdateKafkaConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateKafkaConfigReq features.UpdateKafkaConfigRequest
+	updateKafkaConfigReq.KafkaConfig = &features.KafkaConfig{}
 
-	var updateKafkaConfigReq ml.UpdateKafkaConfigRequest
-	updateKafkaConfigReq.KafkaConfig = ml.KafkaConfig{}
 	var updateKafkaConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1825,6 +1900,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateKafkaConfigJson.Unmarshal(&updateKafkaConfigReq.KafkaConfig)
@@ -1838,35 +1914,34 @@ func newUpdateKafkaConfig() *cobra.Command {
 				}
 			}
 		}
-		updateKafkaConfigReq.Name = args[0]
+		updateKafkaConfigReq.KafkaConfig.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateKafkaConfigReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateKafkaConfigReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateKafkaConfigReq.KafkaConfig.BootstrapServers = args[2]
+			updateKafkaConfigReq.KafkaConfig.BootstrapServers = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateKafkaConfigReq.KafkaConfig.SubscriptionMode)
-			if err != nil {
-				return fmt.Errorf("invalid SUBSCRIPTION_MODE: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: subscription_mode
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &updateKafkaConfigReq.KafkaConfig.AuthConfig)
-			if err != nil {
-				return fmt.Errorf("invalid AUTH_CONFIG: %s", args[4])
-			}
-
+			_ = args[4] // TODO: complex arg: auth_config
 		}
 
-		response, err := w.FeatureEngineering.UpdateKafkaConfig(ctx, updateKafkaConfigReq)
+		sdkReq, err := features.UpdateKafkaConfigRequestToSDK(&updateKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.UpdateKafkaConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.KafkaConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1887,26 +1962,26 @@ func newUpdateKafkaConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateMaterializedFeatureOverrides []func(
 	*cobra.Command,
-	*ml.UpdateMaterializedFeatureRequest,
+	*features.UpdateMaterializedFeatureRequest,
 )
 
 func newUpdateMaterializedFeature() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateMaterializedFeatureReq features.UpdateMaterializedFeatureRequest
+	updateMaterializedFeatureReq.MaterializedFeature = &features.MaterializedFeature{}
 
-	var updateMaterializedFeatureReq ml.UpdateMaterializedFeatureRequest
-	updateMaterializedFeatureReq.MaterializedFeature = ml.MaterializedFeature{}
 	var updateMaterializedFeatureJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
+	flags.StringPtrVar(cmd.Flags(), &updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", ``)
 	// TODO: complex arg: cron_schedule_trigger
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	flags.EnumVar(cmd.Flags(), &updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`, "MaterializedFeaturePipelineScheduleState", "ACTIVE", "PAUSED", "SNAPSHOT")
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
 	// TODO: map via StringToStringVar: tags
@@ -1945,6 +2020,7 @@ Update a materialized feature.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateMaterializedFeatureJson.Unmarshal(&updateMaterializedFeatureReq.MaterializedFeature)
@@ -1958,18 +2034,26 @@ Update a materialized feature.
 				}
 			}
 		}
-		updateMaterializedFeatureReq.MaterializedFeatureId = args[0]
-		updateMaterializedFeatureReq.UpdateMask = args[1]
+		updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId = new(args[0])
+		updateMaterializedFeatureReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			updateMaterializedFeatureReq.MaterializedFeature.FeatureName = args[2]
+			updateMaterializedFeatureReq.MaterializedFeature.FeatureName = new(args[2])
 		}
 
-		response, err := w.FeatureEngineering.UpdateMaterializedFeature(ctx, updateMaterializedFeatureReq)
+		sdkReq, err := features.UpdateMaterializedFeatureRequestToSDK(&updateMaterializedFeatureReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.UpdateMaterializedFeature(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.MaterializedFeatureFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1990,21 +2074,21 @@ Update a materialized feature.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateStreamOverrides []func(
 	*cobra.Command,
-	*ml.UpdateStreamRequest,
+	*features.UpdateStreamRequest,
 )
 
 func newUpdateStream() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateStreamReq features.UpdateStreamRequest
+	updateStreamReq.Stream = &features.Stream{}
 
-	var updateStreamReq ml.UpdateStreamRequest
-	updateStreamReq.Stream = ml.Stream{}
 	var updateStreamJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateStreamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateStreamReq.Stream.Description, "description", updateStreamReq.Stream.Description, `User-provided description.`)
+	flags.StringPtrVar(cmd.Flags(), &updateStreamReq.Stream.Description, "description", `User-provided description.`)
 	// TODO: array: excluded_columns
-	cmd.Flags().StringVar(&updateStreamReq.Stream.RecordTypeFilter, "record-type-filter", updateStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
+	flags.StringPtrVar(cmd.Flags(), &updateStreamReq.Stream.RecordTypeFilter, "record-type-filter", `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "update-stream NAME UPDATE_MASK SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
 	cmd.Short = `*Public Preview* Update a Stream.`
@@ -2044,6 +2128,7 @@ Update a Stream.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateStreamJson.Unmarshal(&updateStreamReq.Stream)
@@ -2057,46 +2142,37 @@ Update a Stream.
 				}
 			}
 		}
-		updateStreamReq.Name = args[0]
+		updateStreamReq.Stream.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateStreamReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateStreamReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateStreamReq.Stream.SourceConfig)
-			if err != nil {
-				return fmt.Errorf("invalid SOURCE_CONFIG: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: source_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateStreamReq.Stream.ConnectionConfig)
-			if err != nil {
-				return fmt.Errorf("invalid CONNECTION_CONFIG: %s", args[3])
-			}
-
+			_ = args[3] // TODO: complex arg: connection_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &updateStreamReq.Stream.SchemaConfig)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEMA_CONFIG: %s", args[4])
-			}
-
+			_ = args[4] // TODO: complex arg: schema_config
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[5], &updateStreamReq.Stream.IngestionConfig)
-			if err != nil {
-				return fmt.Errorf("invalid INGESTION_CONFIG: %s", args[5])
-			}
-
+			_ = args[5] // TODO: complex arg: ingestion_config
 		}
 
-		response, err := w.FeatureEngineering.UpdateStream(ctx, updateStreamReq)
+		sdkReq, err := features.UpdateStreamRequestToSDK(&updateStreamReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Features.UpdateStream(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := features.StreamFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

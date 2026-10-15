@@ -8,12 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func submitRun(t *testing.T, workspace *FakeWorkspace, request jobs.SubmitRun) jobs.SubmitRunResponse {
+func submitRun(t *testing.T, workspace *FakeWorkspace, request jobs.SubmitRunRequest) jobs.SubmitRunResponse {
 	t.Helper()
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -41,76 +42,76 @@ func getRun(t *testing.T, workspace *FakeWorkspace, runID int64) jobs.Run {
 func TestJobsSubmit_RecordsRunAndReportsRunningTasks(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	submitResponse := submitRun(t, workspace, jobs.SubmitRun{
-		RunName: "ssh-tunnel",
-		Tasks: []jobs.SubmitTask{
-			{TaskKey: "main", EnvironmentKey: "default"},
+	submitResponse := submitRun(t, workspace, jobs.SubmitRunRequest{
+		RunName: utils.NonZero("ssh-tunnel"),
+		Tasks: []jobs.RunTaskSettings{
+			{TaskKey: utils.NonZero("main"), EnvironmentKey: utils.NonZero("default")},
 		},
 	})
 	require.NotZero(t, submitResponse.RunId)
 
-	run := getRun(t, workspace, submitResponse.RunId)
-	assert.Equal(t, "ssh-tunnel", run.RunName)
-	assert.Equal(t, jobs.RunTypeSubmitRun, run.RunType)
+	run := getRun(t, workspace, utils.Deref(submitResponse.RunId))
+	assert.Equal(t, "ssh-tunnel", utils.Deref(run.RunName))
+	assert.Equal(t, jobs.RunType_SubmitRun, run.RunType)
 
 	require.Len(t, run.Tasks, 1)
 	task := run.Tasks[0]
-	assert.Equal(t, "main", task.TaskKey)
+	assert.Equal(t, "main", utils.Deref(task.TaskKey))
 	// ssh connect's waitForJobToStart polls the V2 per-task status.
 	require.NotNil(t, task.Status)
-	assert.Equal(t, jobs.RunLifecycleStateV2StateRunning, task.Status.State)
+	assert.Equal(t, jobs.RunLifecycleStateV2_State_Running, task.Status.State)
 }
 
 func TestJobsSubmit_DefaultsRunNameToUntitled(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	submitResponse := submitRun(t, workspace, jobs.SubmitRun{
-		Tasks: []jobs.SubmitTask{{TaskKey: "main"}},
+	submitResponse := submitRun(t, workspace, jobs.SubmitRunRequest{
+		Tasks: []jobs.RunTaskSettings{{TaskKey: utils.NonZero("main")}},
 	})
 
-	run := getRun(t, workspace, submitResponse.RunId)
-	assert.Equal(t, "Untitled", run.RunName)
+	run := getRun(t, workspace, utils.Deref(submitResponse.RunId))
+	assert.Equal(t, "Untitled", utils.Deref(run.RunName))
 }
 
 func TestJobsSubmit_RunReachesTerminalStateOnPoll(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	submitResponse := submitRun(t, workspace, jobs.SubmitRun{
-		Tasks: []jobs.SubmitTask{{TaskKey: "main"}},
+	submitResponse := submitRun(t, workspace, jobs.SubmitRunRequest{
+		Tasks: []jobs.RunTaskSettings{{TaskKey: utils.NonZero("main")}},
 	})
 
 	// The generic `jobs submit` waiter polls the V1 run-level state: RUNNING first,
 	// then TERMINATED/SUCCESS.
-	first := getRun(t, workspace, submitResponse.RunId)
-	assert.Equal(t, jobs.RunLifeCycleStateRunning, first.State.LifeCycleState)
+	first := getRun(t, workspace, utils.Deref(submitResponse.RunId))
+	assert.Equal(t, jobs.RunLifeCycleState_RunLifeCycleState_Running, first.State.LifeCycleState)
 
-	second := getRun(t, workspace, submitResponse.RunId)
-	assert.Equal(t, jobs.RunLifeCycleStateTerminated, second.State.LifeCycleState)
-	assert.Equal(t, jobs.RunResultStateSuccess, second.State.ResultState)
+	second := getRun(t, workspace, utils.Deref(submitResponse.RunId))
+	assert.Equal(t, jobs.RunLifeCycleState_RunLifeCycleState_Terminated, second.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, second.State.ResultState)
 }
 
-func createJob(t *testing.T, workspace *FakeWorkspace, tasks ...jobs.Task) int64 {
+func createJob(t *testing.T, workspace *FakeWorkspace, tasks ...jobs.TaskSettings) int64 {
 	t.Helper()
-	body, err := json.Marshal(jobs.CreateJob{Name: "my-job", Tasks: tasks})
+	body, err := json.Marshal(jobs.CreateJobRequest{Name: utils.NonZero("my-job"), Tasks: tasks})
 	require.NoError(t, err)
 
 	response := workspace.JobsCreate(Request{Body: body})
 	require.Equal(t, 0, response.StatusCode)
-	return response.Body.(jobs.CreateResponse).JobId
+	return utils.Deref(response.Body.(jobs.CreateJobResponse).JobId)
 }
 
-func runNow(t *testing.T, workspace *FakeWorkspace, request jobs.RunNow) Response {
+func runNow(t *testing.T, workspace *FakeWorkspace, request jobs.RunNowRequest) Response {
 	t.Helper()
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
 	return workspace.JobsRunNow(Request{Body: body})
 }
 
-func terminatedTask(taskKey string, result jobs.RunResultState) jobs.RunTask {
+func terminatedTask(taskKey string, result jobs.RunResultState_RunResultState) jobs.RunTask {
 	return jobs.RunTask{
-		TaskKey: taskKey,
+		TaskKey: utils.NonZero(taskKey),
 		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
 			ResultState:    result,
 		},
 	}
@@ -118,16 +119,16 @@ func terminatedTask(taskKey string, result jobs.RunResultState) jobs.RunTask {
 
 func TestTerminateRun_FailedTaskFailsTheRun(t *testing.T) {
 	run := jobs.Run{Tasks: []jobs.RunTask{
-		terminatedTask("first", jobs.RunResultStateSuccess),
-		terminatedTask("second", jobs.RunResultStateFailed),
+		terminatedTask("first", jobs.RunResultState_RunResultState_Success),
+		terminatedTask("second", jobs.RunResultState_RunResultState_Failed),
 	}}
 
 	terminateRun(&run)
 
 	// A failed run reports INTERNAL_ERROR, not TERMINATED, in life_cycle_state.
-	assert.Equal(t, jobs.RunLifeCycleStateInternalError, run.State.LifeCycleState)
-	assert.Equal(t, jobs.RunResultStateFailed, run.State.ResultState)
-	assert.Equal(t, "Task second failed with message: Workload failed, see run output for details.", run.State.StateMessage)
+	assert.Equal(t, jobs.RunLifeCycleState_RunLifeCycleState_InternalError, run.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Failed, run.State.ResultState)
+	assert.Equal(t, "Task second failed with message: Workload failed, see run output for details.", utils.Deref(run.State.StateMessage))
 }
 
 func TestNewTaskFailure_ReportsTheExceptionAndTheTraceback(t *testing.T) {
@@ -155,38 +156,38 @@ func TestNewTaskFailure_SilentFailureIsReportedAsTheExitError(t *testing.T) {
 func TestTerminateRun_CompletesTasksThatAreStillRunning(t *testing.T) {
 	// jobs/runs/submit records its tasks as running: they are never executed.
 	run := jobs.Run{Tasks: []jobs.RunTask{
-		{TaskKey: "main", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}},
+		{TaskKey: utils.NonZero("main"), State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running}},
 	}}
 
 	terminateRun(&run)
 
-	assert.Equal(t, jobs.RunResultStateSuccess, run.State.ResultState)
-	assert.Empty(t, run.State.StateMessage)
-	assert.Equal(t, jobs.RunResultStateSuccess, run.Tasks[0].State.ResultState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, run.State.ResultState)
+	assert.Empty(t, utils.Deref(run.State.StateMessage))
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, run.Tasks[0].State.ResultState)
 }
 
 // See errNoCodeInWorkspace: a missing notebook is this server's gap, not a
 // failure of the job.
 func TestJobsGetRun_TaskWithoutCodeDoesNotFailTheRun(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	jobID := createJob(t, workspace, jobs.Task{
-		TaskKey:      "main",
-		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	jobID := createJob(t, workspace, jobs.TaskSettings{
+		TaskKey:      utils.NonZero("main"),
+		NotebookTask: &jobs.NotebookTask{NotebookPath: utils.NonZero("/missing-notebook")},
 	})
 
-	response := runNow(t, workspace, jobs.RunNow{JobId: jobID})
+	response := runNow(t, workspace, jobs.RunNowRequest{JobId: utils.NonZero(jobID)})
 	require.Equal(t, 0, response.StatusCode)
 	runID := response.Body.(jobs.RunNowResponse).RunId
 
 	// The first poll reports RUNNING, the second the terminal state.
-	require.Equal(t, jobs.RunLifeCycleStateRunning, getRun(t, workspace, runID).State.LifeCycleState)
-	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+	require.Equal(t, jobs.RunLifeCycleState_RunLifeCycleState_Running, getRun(t, workspace, utils.Deref(runID)).State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, getRun(t, workspace, utils.Deref(runID)).State.ResultState)
 }
 
 func TestJobsRunNow_RepeatedTokenReturnsTheSameRun(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	jobID := createJob(t, workspace, jobs.Task{TaskKey: "main"})
-	request := jobs.RunNow{JobId: jobID, IdempotencyToken: "token"}
+	jobID := createJob(t, workspace, jobs.TaskSettings{TaskKey: utils.NonZero("main")})
+	request := jobs.RunNowRequest{JobId: utils.NonZero(jobID), IdempotencyToken: utils.NonZero("token")}
 
 	first := runNow(t, workspace, request).Body.(jobs.RunNowResponse).RunId
 	second := runNow(t, workspace, request).Body.(jobs.RunNowResponse).RunId
@@ -198,10 +199,10 @@ func TestJobsRunNow_RepeatedTokenReturnsTheSameRun(t *testing.T) {
 // Requests without a token are never deduped (`bundle run`, `jobs run-now`).
 func TestJobsRunNow_WithoutATokenIsNeverDeduped(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	jobID := createJob(t, workspace, jobs.Task{TaskKey: "main"})
+	jobID := createJob(t, workspace, jobs.TaskSettings{TaskKey: utils.NonZero("main")})
 
-	first := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
-	second := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+	first := runNow(t, workspace, jobs.RunNowRequest{JobId: utils.NonZero(jobID)}).Body.(jobs.RunNowResponse).RunId
+	second := runNow(t, workspace, jobs.RunNowRequest{JobId: utils.NonZero(jobID)}).Body.(jobs.RunNowResponse).RunId
 
 	assert.NotEqual(t, first, second)
 	assert.Len(t, workspace.JobRuns, 2)
@@ -211,46 +212,46 @@ func TestJobsRunNow_WithoutATokenIsNeverDeduped(t *testing.T) {
 // deleting it, since jobs/runs/delete rejects an active run.
 func TestJobsCancelRun_SettlesAnActiveRun(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	jobID := createJob(t, workspace, jobs.Task{
-		TaskKey:      "main",
-		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	jobID := createJob(t, workspace, jobs.TaskSettings{
+		TaskKey:      utils.NonZero("main"),
+		NotebookTask: &jobs.NotebookTask{NotebookPath: utils.NonZero("/missing-notebook")},
 	})
-	runID := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+	runID := runNow(t, workspace, jobs.RunNowRequest{JobId: utils.NonZero(jobID)}).Body.(jobs.RunNowResponse).RunId
 
-	body, err := json.Marshal(jobs.CancelRun{RunId: runID})
+	body, err := json.Marshal(jobs.CancelRunRequest{RunId: runID})
 	require.NoError(t, err)
 	require.Equal(t, 0, workspace.JobsCancelRun(Request{Body: body}).StatusCode)
 
-	run := getRun(t, workspace, runID)
-	assert.Equal(t, jobs.RunLifeCycleStateTerminated, run.State.LifeCycleState)
-	assert.Equal(t, jobs.RunResultStateCanceled, run.State.ResultState)
+	run := getRun(t, workspace, utils.Deref(runID))
+	assert.Equal(t, jobs.RunLifeCycleState_RunLifeCycleState_Terminated, run.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Canceled, run.State.ResultState)
 }
 
 func TestJobsCancelRun_LeavesAFinishedRunAlone(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
-	jobID := createJob(t, workspace, jobs.Task{
-		TaskKey:      "main",
-		NotebookTask: &jobs.NotebookTask{NotebookPath: "/missing-notebook"},
+	jobID := createJob(t, workspace, jobs.TaskSettings{
+		TaskKey:      utils.NonZero("main"),
+		NotebookTask: &jobs.NotebookTask{NotebookPath: utils.NonZero("/missing-notebook")},
 	})
-	runID := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+	runID := runNow(t, workspace, jobs.RunNowRequest{JobId: utils.NonZero(jobID)}).Body.(jobs.RunNowResponse).RunId
 
 	// The first poll settles the run, the way a completed deploy leaves it.
-	getRun(t, workspace, runID)
-	require.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+	getRun(t, workspace, utils.Deref(runID))
+	require.Equal(t, jobs.RunResultState_RunResultState_Success, getRun(t, workspace, utils.Deref(runID)).State.ResultState)
 
-	body, err := json.Marshal(jobs.CancelRun{RunId: runID})
+	body, err := json.Marshal(jobs.CancelRunRequest{RunId: runID})
 	require.NoError(t, err)
 	require.Equal(t, 0, workspace.JobsCancelRun(Request{Body: body}).StatusCode)
 
-	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, getRun(t, workspace, utils.Deref(runID)).State.ResultState)
 }
 
 func TestJobsSubmit_RejectsInvalidGitProvider(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	body, err := json.Marshal(jobs.SubmitRun{
-		GitSource: &jobs.GitSource{GitUrl: "https://example.com/repo"},
-		Tasks:     []jobs.SubmitTask{{TaskKey: "main"}},
+	body, err := json.Marshal(jobs.SubmitRunRequest{
+		GitSource: &jobs.GitSource{GitUrl: utils.NonZero("https://example.com/repo")},
+		Tasks:     []jobs.RunTaskSettings{{TaskKey: utils.NonZero("main")}},
 	})
 	require.NoError(t, err)
 

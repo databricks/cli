@@ -12,7 +12,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const summaryHeaderTemplate = `{{- if .Name -}}
@@ -98,7 +99,7 @@ func renderSummaryHeaderTemplate(ctx context.Context, out io.Writer, b *bundle.B
 		return nil
 	}
 
-	currentUser := &iam.User{}
+	currentUser := &scim.User{}
 
 	if b.Config.Workspace.CurrentUser != nil {
 		if b.Config.Workspace.CurrentUser.User != nil {
@@ -110,7 +111,7 @@ func renderSummaryHeaderTemplate(ctx context.Context, out io.Writer, b *bundle.B
 	err := t.Execute(out, map[string]any{
 		"Name":   b.Config.Bundle.Name,
 		"Target": b.Config.Bundle.Target,
-		"User":   currentUser.UserName,
+		"User":   utils.Deref(currentUser.UserName),
 		"Path":   b.Config.Workspace.RootPath,
 		"Host":   b.Config.Workspace.Host,
 	})

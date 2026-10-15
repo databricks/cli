@@ -3,10 +3,11 @@ package mutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,27 +17,27 @@ func TestInitializeVolumePaths(t *testing.T) {
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
 					"my": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "main",
-							Name:        "myschema",
+						CreateSchema: resources.CreateSchema{
+							CatalogName: new("main"),
+							Name:        new("myschema"),
 						},
 					},
 				},
 				Volumes: map[string]*resources.Volume{
 					"bar": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "myschema",
-							Name:        "volbar",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("myschema"),
+							Name:        new("volbar"),
 						},
 					},
 					// foo references the schema's name; InitializeVolumePaths resolves
 					// it locally to compute the path without rewriting schema_name.
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "${resources.schemas.my.name}",
-							Name:        "volfoo",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("${resources.schemas.my.name}"),
+							Name:        new("volfoo"),
 						},
 					},
 				},
@@ -52,7 +53,7 @@ func TestInitializeVolumePaths(t *testing.T) {
 	foo := b.Config.Resources.Volumes["foo"]
 	require.Equal(t, "/Volumes/main/myschema/volfoo", foo.VolumePath)
 	// The schema_name reference must be preserved, not replaced with the resolved value.
-	require.Equal(t, "${resources.schemas.my.name}", foo.SchemaName)
+	require.Equal(t, "${resources.schemas.my.name}", utils.Deref(foo.SchemaName))
 }
 
 func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
@@ -63,10 +64,10 @@ func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
 					// The reference cannot be resolved locally, so it is embedded into
 					// the path verbatim to be resolved later during plan or deploy.
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "${resources.schemas.missing.name}",
-							Name:        "volfoo",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("${resources.schemas.missing.name}"),
+							Name:        new("volfoo"),
 						},
 					},
 				},
@@ -78,7 +79,7 @@ func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.Equal(t, "/Volumes/main/${resources.schemas.missing.name}/volfoo", b.Config.Resources.Volumes["foo"].VolumePath)
 	// The schema_name reference itself must be preserved, not rewritten.
-	require.Equal(t, "${resources.schemas.missing.name}", b.Config.Resources.Volumes["foo"].SchemaName)
+	require.Equal(t, "${resources.schemas.missing.name}", utils.Deref(b.Config.Resources.Volumes["foo"].SchemaName))
 }
 
 func TestInitializeVolumePaths_RejectsUserProvidedPath(t *testing.T) {
@@ -87,10 +88,10 @@ func TestInitializeVolumePaths_RejectsUserProvidedPath(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "myschema",
-							Name:        "volfoo",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("myschema"),
+							Name:        new("volfoo"),
 						},
 						VolumePath: "/Volumes/bogus/path/set-by-user",
 					},
@@ -109,18 +110,18 @@ func TestVolumePathPipeline_ResolvesCrossVolumeReference(t *testing.T) {
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
 					"bar": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "myschema",
-							Name:        "volbar",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("myschema"),
+							Name:        new("volbar"),
 						},
 					},
 					"foo": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "main",
-							SchemaName:  "myschema",
-							Name:        "volfoo",
-							Comment:     "${resources.volumes.bar.volume_path}",
+						CreateVolumeRequestContent: resources.CreateVolumeRequestContent{
+							CatalogName: new("main"),
+							SchemaName:  new("myschema"),
+							Name:        new("volfoo"),
+							Comment:     new("${resources.volumes.bar.volume_path}"),
 						},
 					},
 				},
@@ -136,5 +137,5 @@ func TestVolumePathPipeline_ResolvesCrossVolumeReference(t *testing.T) {
 	)
 	require.NoError(t, diags.Error())
 	require.Equal(t, "/Volumes/main/myschema/volbar", b.Config.Resources.Volumes["bar"].VolumePath)
-	require.Equal(t, "/Volumes/main/myschema/volbar", b.Config.Resources.Volumes["foo"].Comment)
+	require.Equal(t, "/Volumes/main/myschema/volbar", utils.Deref(b.Config.Resources.Volumes["foo"].Comment))
 }

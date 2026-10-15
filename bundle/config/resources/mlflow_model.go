@@ -4,32 +4,26 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkmodelregistry "github.com/databricks/sdk-go/modelregistry/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type MlflowModel struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	ml.CreateModelRequest
+	modelregistry.CreateRegisteredModelRequest
 
 	Permissions []MlflowModelPermission `json:"permissions,omitempty"`
 }
 
-func (s *MlflowModel) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s MlflowModel) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
-		Name: id,
+func (s *MlflowModel) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.ModelRegistry.GetRegisteredModelDatabricks(ctx, sdkmodelregistry.GetRegisteredModelDatabricksRequest{
+		Name: new(id),
 	})
 	if err != nil {
 		log.Debugf(ctx, "model %s does not exist", id)
@@ -55,5 +49,5 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 }
 
 func (s *MlflowModel) GetName() string {
-	return s.Name
+	return utils.Deref(s.Name)
 }

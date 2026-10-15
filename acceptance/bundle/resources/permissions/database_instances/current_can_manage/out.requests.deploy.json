@@ -19,6 +19,8 @@
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[FOO_ID]",
+    "request_object_type": "database-instances"
   }
 }

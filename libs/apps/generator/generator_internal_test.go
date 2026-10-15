@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

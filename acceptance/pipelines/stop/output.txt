@@ -26,7 +26,10 @@ Stopping my_pipeline...
 my_pipeline has been stopped.
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/stop"
+  "path": "/api/2.0/pipelines/[UUID]/stop",
+  "body": {
+    "pipeline_id": "[UUID]"
+  }
 }
 
 === Stopping pipeline with KEY, expect same output as without KEY
@@ -35,5 +38,8 @@ Stopping my_pipeline...
 my_pipeline has been stopped.
 {
   "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/stop"
+  "path": "/api/2.0/pipelines/[UUID]/stop",
+  "body": {
+    "pipeline_id": "[UUID]"
+  }
 }

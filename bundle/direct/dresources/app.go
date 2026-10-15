@@ -2,21 +2,21 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/apierrs"
 
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/internal/retries"
+	"github.com/databricks/cli/libs/sdkclients"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/retries"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 )
 
 // AppState is the state type for App resources. source_code_path and git_source come from
@@ -35,29 +35,11 @@ type AppRemote struct {
 	Lifecycle *StateLifecycle      `json:"lifecycle,omitempty"`
 }
 
-// Custom marshalers needed because embedded apps.App has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *AppState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s AppState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (r *AppRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
-}
-
-func (r AppRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
-}
-
 type ResourceApp struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
+func (*ResourceApp) New(client *sdkclients.Clients) *ResourceApp {
 	return &ResourceApp{client: client}
 }
 
@@ -85,8 +67,20 @@ func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	}
 }
 
+func (r *ResourceApp) getApp(ctx context.Context, name string) (*sdkapps.App, error) {
+	return r.client.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(name)})
+}
+
 func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error) {
-	app, err := r.client.Apps.GetByName(ctx, id)
+	app, err := r.getApp(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return makeAppRemote(app)
+}
+
+func makeAppRemote(resp *sdkapps.App) (*AppRemote, error) {
+	app, err := apps.AppFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -107,46 +101,43 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 }
 
 // appRequestBody returns config.App with the deploy-only fields cleared. source_code_path
-// and git_source became part of apps.App in SDK v0.175, but DABs applies them through the
-// Deploy API (see manageLifecycle), so they must not ride along in create/update bodies.
-// ForceSendFields is cloned and stripped of SourceCodePath because the SDK's JSON
-// unmarshal (used when loading the plan) adds every present basic-type field to
-// ForceSendFields, which would otherwise force "source_code_path": "" into the body.
-func appRequestBody(config *AppState) apps.App {
+// and git_source are part of apps.App, but DABs applies them through the Deploy API (see
+// manageLifecycle), so they must not ride along in create/update bodies.
+func appRequestBody(config *AppState) *apps.App {
 	app := config.App
-	app.SourceCodePath = ""
+	app.SourceCodePath = nil
 	app.GitSource = nil
-	app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
-		return s == "SourceCodePath"
-	})
-	return app
+	return &app
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
-	request := apps.CreateAppRequest{
-		App:             appRequestBody(config),
-		NoCompute:       noCompute,
-		ForceSendFields: nil,
+	request, err := apps.CreateAppRequestToSDK(&apps.CreateAppRequest{
+		App:       appRequestBody(config),
+		NoCompute: new(noCompute),
+	})
+	if err != nil {
+		return "", nil, err
 	}
 
-	retrier := retries.New[apps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))
-	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
-		waiter, err := r.client.Apps.Create(ctx, request)
+	name := utils.Deref(config.Name)
+	retrier := retries.New[sdkapps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))
+	_, err = retrier.Run(ctx, func(ctx context.Context) (*sdkapps.App, error) {
+		_, err := r.client.Apps.CreateApp(ctx, *request)
 		if err != nil {
-			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+			if apierrs.Is(err, apierrs.ErrResourceAlreadyExists) {
 				// Check if the app is in DELETING state - only then should we retry
-				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
+				existingApp, getErr := r.getApp(ctx, name)
 				if getErr != nil {
 					// If we can't get the app (e.g., it was just deleted), retry the create
-					if apierr.IsMissing(getErr) {
+					if apierrs.IsMissing(getErr) {
 						return nil, retries.Continues("app was deleted, retrying create")
 					}
 					return nil, retries.Halt(err)
 				}
-				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
+				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == sdkapps.ComputeStatus_ComputeState_Deleting {
 					return nil, retries.Continues("app is deleting, retrying create")
 				}
 				// App exists and is not being deleted - this is a hard error
@@ -154,13 +145,13 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 			}
 			return nil, retries.Halt(err)
 		}
-		return waiter.Response, nil
+		return nil, nil
 	})
 	if err != nil {
 		return "", nil, err
 	}
 
-	return app.Name, nil, nil
+	return name, nil, nil
 }
 
 var UpdateMaskFields = []string{
@@ -182,24 +173,32 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
-		app := appRequestBody(config)
-		request := apps.AsyncUpdateAppRequest{
-			App:        &app,
-			AppName:    id,
-			UpdateMask: updateMask,
+		request, err := apps.AsyncUpdateAppRequestToSDK(&apps.AsyncUpdateAppRequest{
+			App:        appRequestBody(config),
+			AppName:    new(id),
+			UpdateMask: new(updateMask),
+		})
+		if err != nil {
+			return nil, err
 		}
-		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
+		updateWaiter, err := r.client.Apps.AsyncUpdateApp(ctx, *request)
 		if err != nil {
 			return nil, err
 		}
 
-		response, err := updateWaiter.Get()
+		response, err := updateWaiter.Wait(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
-			return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+		var state sdkapps.AppUpdate_UpdateStatus_UpdateState
+		var message string
+		if response.Status != nil {
+			state = response.Status.State
+			message = utils.Deref(response.Status.Message)
+		}
+		if state != sdkapps.AppUpdate_UpdateStatus_UpdateState_Succeeded {
+			return nil, fmt.Errorf("update status: %s: %s", state, message)
 		}
 	}
 
@@ -215,11 +214,11 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if !alreadyStarted {
-			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
+			startWaiter, err := r.client.Apps.StartApp(ctx, sdkapps.StartAppRequest{Name: new(id)})
 			if err != nil {
 				return err
 			}
-			startedApp, err := startWaiter.Get()
+			startedApp, err := startWaiter.Wait(ctx)
 			if err != nil {
 				return err
 			}
@@ -227,18 +226,21 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 				return err
 			}
 		}
-		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
+		deployment, err := appdeploy.BuildDeployment(utils.Deref(config.SourceCodePath), config.Config, config.GitSource)
+		if err != nil {
+			return err
+		}
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
 			return err
 		}
 	} else {
 		// lifecycle.started=false: ensure the app compute is stopped.
 		if alreadyStarted {
-			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
+			stopWaiter, err := r.client.Apps.StopApp(ctx, sdkapps.StopAppRequest{Name: new(id)})
 			if err != nil {
 				return err
 			}
-			if _, err = stopWaiter.Get(); err != nil {
+			if _, err = stopWaiter.Wait(ctx); err != nil {
 				return err
 			}
 		}
@@ -271,8 +273,8 @@ func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathN
 
 func isComputeStopped(app *apps.App) bool {
 	return app.ComputeStatus == nil ||
-		app.ComputeStatus.State == apps.ComputeStateStopped ||
-		app.ComputeStatus.State == apps.ComputeStateError
+		app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Stopped ||
+		app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Error
 }
 
 // remoteIsStarted reads the compute started state from the plan entry's remote state.
@@ -301,9 +303,9 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
 		for i, ev := range d.EnvVars {
 			config.Env[i] = resources.AppEnvVar{
-				Name:      ev.Name,
-				Value:     ev.Value,
-				ValueFrom: ev.ValueFrom,
+				Name:      utils.Deref(ev.Name),
+				Value:     utils.Deref(ev.Value),
+				ValueFrom: utils.Deref(ev.ValueFrom),
 			}
 		}
 	}
@@ -311,7 +313,7 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
-	_, err := r.client.Apps.DeleteByName(ctx, id)
+	_, err := r.client.Apps.DeleteApp(ctx, sdkapps.DeleteAppRequest{Name: new(id)})
 	return err
 }
 
@@ -327,16 +329,17 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) erro
 // Still uncovered: a DELETING app hit during a normal deploy/update (not a
 // delete) produces a spurious update/skip because plan/apply do not special-case it there.
 func (*ResourceApp) IsGone(remote *AppRemote) bool {
-	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStateDeleting
+	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStatus_ComputeState_Deleting
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
-	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	name := utils.Deref(config.Name)
+	remote, err := r.waitForApp(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
-	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+	if err := r.manageLifecycle(ctx, name, config, alreadyStarted); err != nil {
 		return nil, err
 	}
 	return remote, nil
@@ -347,21 +350,25 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *Ap
 // We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
 // Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
 // so this would need to be addressed by Apps service team first in their proto.
-func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*AppRemote, error) {
-	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
-	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
-		app, err := w.Apps.GetByName(ctx, name)
+func (r *ResourceApp) waitForApp(ctx context.Context, name string) (*AppRemote, error) {
+	retrier := retries.New[sdkapps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*sdkapps.App, error) {
+		app, err := r.getApp(ctx, name)
 		if err != nil {
 			return nil, retries.Halt(err)
 		}
-		status := app.ComputeStatus.State
-		statusMessage := app.ComputeStatus.Message
+		var status sdkapps.ComputeStatus_ComputeState
+		var statusMessage string
+		if app.ComputeStatus != nil {
+			status = app.ComputeStatus.State
+			statusMessage = utils.Deref(app.ComputeStatus.Message)
+		}
 		switch status {
-		case apps.ComputeStateActive, apps.ComputeStateStopped:
+		case sdkapps.ComputeStatus_ComputeState_Active, sdkapps.ComputeStatus_ComputeState_Stopped:
 			return app, nil
-		case apps.ComputeStateError:
+		case sdkapps.ComputeStatus_ComputeState_Error:
 			err := fmt.Errorf("failed to reach %s or %s, got %s: %s",
-				apps.ComputeStateActive, apps.ComputeStateStopped, status, statusMessage)
+				sdkapps.ComputeStatus_ComputeState_Active, sdkapps.ComputeStatus_ComputeState_Stopped, status, statusMessage)
 			return nil, retries.Halt(err)
 		default:
 			return nil, retries.Continues(statusMessage)
@@ -370,16 +377,5 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 	if err != nil {
 		return nil, err
 	}
-	started := !isComputeStopped(app)
-	remote := &AppRemote{
-		App:       *app,
-		Config:    nil,
-		Lifecycle: &StateLifecycle{Started: &started},
-	}
-	if app.ActiveDeployment != nil {
-		remote.SourceCodePath = app.DefaultSourceCodePath
-		remote.GitSource = app.ActiveDeployment.GitSource
-		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
-	}
-	return remote, nil
+	return makeAppRemote(app)
 }

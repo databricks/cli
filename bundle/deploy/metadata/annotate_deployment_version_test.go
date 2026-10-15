@@ -3,11 +3,13 @@ package metadata
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,14 +21,14 @@ func TestAnnotateDeploymentVersion(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job": {
 						JobSettings: jobs.JobSettings{
-							Deployment: &jobs.JobDeployment{Kind: jobs.JobDeploymentKindBundle},
+							Deployment: &jobs.JobDeployment{Kind: jobs.JobDeployment_DeploymentKind_Bundle},
 						},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Deployment: &pipelines.PipelineDeployment{Kind: pipelines.DeploymentKindBundle},
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							Deployment: &pipelines.PipelineDeployment{Kind: pipelines.DeploymentKind_Bundle},
 						},
 					},
 				},
@@ -38,13 +40,13 @@ func TestAnnotateDeploymentVersion(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	job := b.Config.Resources.Jobs["my-job"].Deployment
-	assert.Equal(t, "dep-123", job.DeploymentId)
-	assert.Equal(t, "7", job.VersionId)
+	assert.Equal(t, "dep-123", utils.Deref(job.DeploymentId))
+	assert.Equal(t, "7", utils.Deref(job.VersionId))
 	// The kind set by AnnotateJobs is preserved.
-	assert.Equal(t, jobs.JobDeploymentKindBundle, job.Kind)
+	assert.Equal(t, jobs.JobDeployment_DeploymentKind_Bundle, job.Kind)
 
 	pipeline := b.Config.Resources.Pipelines["my-pipeline"].Deployment
-	assert.Equal(t, "dep-123", pipeline.DeploymentId)
-	assert.Equal(t, "7", pipeline.VersionId)
-	assert.Equal(t, pipelines.DeploymentKindBundle, pipeline.Kind)
+	assert.Equal(t, "dep-123", utils.Deref(pipeline.DeploymentId))
+	assert.Equal(t, "7", utils.Deref(pipeline.VersionId))
+	assert.Equal(t, pipelines.DeploymentKind_Bundle, pipeline.Kind)
 }

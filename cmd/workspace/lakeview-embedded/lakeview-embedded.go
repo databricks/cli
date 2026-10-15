@@ -6,8 +6,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -44,16 +46,15 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPublishedDashboardTokenInfoOverrides []func(
 	*cobra.Command,
-	*dashboards.GetPublishedDashboardTokenInfoRequest,
+	*lakeview.GetPublishedDashboardTokenInfoRequest,
 )
 
 func newGetPublishedDashboardTokenInfo() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getPublishedDashboardTokenInfoReq lakeview.GetPublishedDashboardTokenInfoRequest
 
-	var getPublishedDashboardTokenInfoReq dashboards.GetPublishedDashboardTokenInfoRequest
-
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim.`)
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
+	flags.StringPtrVar(cmd.Flags(), &getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", `Provided external value to be included in the custom claim.`)
+	flags.StringPtrVar(cmd.Flags(), &getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", `Provided external viewer id to be included in the custom claim.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `*Public Preview* Read information of a published dashboard to mint an OAuth token.`
@@ -86,15 +87,24 @@ Read information of a published dashboard to mint an OAuth token.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPublishedDashboardTokenInfoReq.DashboardId = args[0]
+		getPublishedDashboardTokenInfoReq.DashboardId = new(args[0])
 
-		response, err := w.LakeviewEmbedded.GetPublishedDashboardTokenInfo(ctx, getPublishedDashboardTokenInfoReq)
+		sdkReq, err := lakeview.GetPublishedDashboardTokenInfoRequestToSDK(&getPublishedDashboardTokenInfoReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.GetPublishedDashboardTokenInfo(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.GetPublishedDashboardTokenInfoResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

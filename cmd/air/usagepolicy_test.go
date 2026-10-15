@@ -5,15 +5,16 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // policyServer serves /api/2.0/serverless-policies from the given pages,
 // returning one page per request and recording each request's query.
-func policyServer(t *testing.T, pages ...usagePoliciesResponse) (*databricks.WorkspaceClient, *[]url.Values) {
+func policyServer(t *testing.T, pages ...usagePoliciesResponse) (*sdkclients.Clients, *[]url.Values) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -26,7 +27,7 @@ func policyServer(t *testing.T, pages ...usagePoliciesResponse) (*databricks.Wor
 		return page
 	})
 	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	return w, &queries
 }
@@ -202,7 +203,7 @@ func TestResolveUsagePolicyIDByName(t *testing.T) {
 			return testserver.Response{StatusCode: 403, Body: `{"error_code":"PERMISSION_DENIED","message":"nope"}`}
 		})
 		testserver.AddDefaultHandlers(server)
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+		w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
 
 		_, err = resolveUsagePolicyIDByName(t.Context(), w, "team-a")

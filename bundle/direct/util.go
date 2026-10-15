@@ -1,9 +1,7 @@
 package direct
 
 import (
-	"errors"
-
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/apierrs"
 )
 
 // isManagedByParent reports whether err is an API error carrying the
@@ -14,10 +12,10 @@ import (
 // the parent's Delete will cascade-clean. Mirrors the TF provider's
 // declarative.IsDeleteError suppression.
 func isManagedByParent(err error) bool {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	apiErr, ok := apierrs.Get(err)
 	if !ok || apiErr == nil {
 		return false
 	}
-	info := apiErr.ErrorDetails().ErrorInfo
+	info := apiErr.Details().ErrorInfo
 	return info != nil && info.Metadata["declarative_context"] == "MANAGED_BY_PARENT"
 }

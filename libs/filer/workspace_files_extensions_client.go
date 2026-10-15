@@ -12,12 +12,12 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 )
 
 type WorkspaceFilesExtensionsClient struct {
-	workspaceClient *databricks.WorkspaceClient
+	workspaceClient *sdkclients.Clients
 
 	wsfs     Filer
 	root     string
@@ -172,7 +172,7 @@ func (e ReadOnlyError) Error() string {
 // The underlying import API we use to upload notebooks and files returns opaque internal
 // errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
 // Thus users of these methods should be careful to avoid such clashes.
-func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+func NewWorkspaceFilesExtensionsClient(w *sdkclients.Clients, root string) (Filer, error) {
 	filer, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 	}, nil
 }
 
-func NewReadOnlyWorkspaceFilesExtensionsClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
+func NewReadOnlyWorkspaceFilesExtensionsClient(ctx context.Context, w *sdkclients.Clients, root string) (Filer, error) {
 	filer, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err

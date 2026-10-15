@@ -1,119 +1,105 @@
 package statemgmt
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func notFound(testserver.Request) any {
+	return testserver.Response{
+		StatusCode: 404,
+		Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "not found"},
+	}
+}
+
 func TestIsAnyResourceRunningWithEmptyState(t *testing.T) {
-	mock := mocks.NewMockWorkspaceClient(t)
-	err := checkAnyResourceRunning(t.Context(), mock.WorkspaceClient, nil)
+	w, _ := bundletest.NewClients(t)
+	err := checkAnyResourceRunning(t.Context(), w, nil)
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithJob(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
+	w, server := bundletest.NewClients(t)
 	resources := ExportedResourcesMap{
 		"resources.jobs.job1": {ID: "123"},
 	}
 
-	jobsApi := m.GetMockJobsAPI()
-	jobsApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		JobId:      123,
-		ActiveOnly: true,
-	}).Return([]jobs.BaseRun{
-		{RunId: 1234},
-	}, nil).Once()
+	runs := []map[string]any{{"run_id": 1234}}
+	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req testserver.Request) any {
+		assert.Equal(t, "123", req.URL.Query().Get("job_id"))
+		assert.Equal(t, "true", req.URL.Query().Get("active_only"))
+		return map[string]any{"runs": runs}
+	})
 
-	err := checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	err := checkAnyResourceRunning(t.Context(), w, resources)
 	require.ErrorContains(t, err, "job 123 is running")
 
-	jobsApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		JobId:      123,
-		ActiveOnly: true,
-	}).Return([]jobs.BaseRun{}, nil).Once()
-
-	err = checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	runs = nil
+	err = checkAnyResourceRunning(t.Context(), w, resources)
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
+	w, server := bundletest.NewClients(t)
 	resources := ExportedResourcesMap{
 		"resources.pipelines.pipeline1": {ID: "123"},
 	}
 
-	pipelineApi := m.GetMockPipelinesAPI()
-	pipelineApi.EXPECT().Get(mock.Anything, pipelines.GetPipelineRequest{
-		PipelineId: "123",
-	}).Return(&pipelines.GetPipelineResponse{
-		PipelineId: "123",
-		State:      pipelines.PipelineStateRunning,
-	}, nil).Once()
+	state := "RUNNING"
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
+		assert.Equal(t, "123", req.Vars["pipeline_id"])
+		return map[string]any{"pipeline_id": "123", "state": state}
+	})
 
-	err := checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	err := checkAnyResourceRunning(t.Context(), w, resources)
 	require.ErrorContains(t, err, "pipeline 123 is running")
 
-	pipelineApi.EXPECT().Get(mock.Anything, pipelines.GetPipelineRequest{
-		PipelineId: "123",
-	}).Return(&pipelines.GetPipelineResponse{
-		PipelineId: "123",
-		State:      pipelines.PipelineStateIdle,
-	}, nil).Once()
-	err = checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	state = "IDLE"
+	err = checkAnyResourceRunning(t.Context(), w, resources)
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithAPIFailure(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
+	w, server := bundletest.NewClients(t)
 	resources := ExportedResourcesMap{
 		"resources.pipelines.pipeline1": {ID: "123"},
 	}
 
-	pipelineApi := m.GetMockPipelinesAPI()
-	pipelineApi.EXPECT().Get(mock.Anything, pipelines.GetPipelineRequest{
-		PipelineId: "123",
-	}).Return(nil, errors.New("API failure")).Once()
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(testserver.Request) any {
+		return testserver.Response{
+			StatusCode: 400,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "API failure"},
+		}
+	})
 
-	err := checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	err := checkAnyResourceRunning(t.Context(), w, resources)
 	require.ErrorContains(t, err, "API failure")
 }
 
 func TestIsAnyResourceRunningWithDeletedJob(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
+	w, server := bundletest.NewClients(t)
 	resources := ExportedResourcesMap{
 		"resources.jobs.job1": {ID: "123"},
 	}
 
-	jobsApi := m.GetMockJobsAPI()
-	jobsApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		JobId:      123,
-		ActiveOnly: true,
-	}).Return(nil, &apierr.APIError{StatusCode: 404}).Once()
+	server.Handle("GET", "/api/2.2/jobs/runs/list", notFound)
 
-	err := checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	err := checkAnyResourceRunning(t.Context(), w, resources)
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithDeletedPipeline(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
+	w, server := bundletest.NewClients(t)
 	resources := ExportedResourcesMap{
 		"resources.pipelines.pipeline1": {ID: "123"},
 	}
 
-	pipelineApi := m.GetMockPipelinesAPI()
-	pipelineApi.EXPECT().Get(mock.Anything, pipelines.GetPipelineRequest{
-		PipelineId: "123",
-	}).Return(nil, &apierr.APIError{StatusCode: 404}).Once()
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", notFound)
 
-	err := checkAnyResourceRunning(t.Context(), m.WorkspaceClient, resources)
+	err := checkAnyResourceRunning(t.Context(), w, resources)
 	require.NoError(t, err)
 }

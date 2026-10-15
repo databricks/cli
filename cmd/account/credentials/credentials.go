@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
+	sdkuccredentials "github.com/databricks/sdk-go/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +56,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateCredentialRequest,
+	*uccredentials.CreateCredentialsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq uccredentials.CreateCredentialsRequest
 
-	var createReq provisioning.CreateCredentialRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -92,6 +94,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -108,12 +111,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.Credentials.Create(ctx, createReq)
+		sdkReq, err := uccredentials.CreateCredentialsRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Credentials.CreateCredentialsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.CredentialsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -134,13 +145,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteCredentialRequest,
+	*sdkuccredentials.DeleteCredentialsRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq provisioning.DeleteCredentialRequest
+	var deleteReq sdkuccredentials.DeleteCredentialsRequest
 
 	cmd.Use = "delete CREDENTIALS_ID"
 	cmd.Short = `Delete credential configuration.`
@@ -166,15 +176,21 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.CredentialsId = args[0]
+		deleteReq.CredentialsId = new(args[0])
 
-		response, err := a.Credentials.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.Credentials.DeleteCredentialsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.CredentialsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -195,13 +211,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetCredentialRequest,
+	*sdkuccredentials.GetCredentialsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq provisioning.GetCredentialRequest
+	var getReq sdkuccredentials.GetCredentialsRequest
 
 	cmd.Use = "get CREDENTIALS_ID"
 	cmd.Short = `Get credential configuration.`
@@ -226,15 +241,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.CredentialsId = args[0]
+		getReq.CredentialsId = new(args[0])
 
-		response, err := a.Credentials.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Credentials.GetCredentialsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.CredentialsFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,12 +296,17 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.Credentials.List(ctx)
+		_ = a
+
+		sdkReq := &sdkuccredentials.ListCredentialsPublicRequest{}
+
+		response, err := a.Credentials.ListCredentialsPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

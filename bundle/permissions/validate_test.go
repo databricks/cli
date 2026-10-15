@@ -3,12 +3,13 @@ package permissions
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,15 +24,15 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: new("job_1")}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: new("job_2")}},
 				},
 			},
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Empty(t, diags)
@@ -48,15 +49,15 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: jobs.JobSettings{Name: "job_2"}},
+					"job_1": {JobSettings: jobs.JobSettings{Name: new("job_1")}},
+					"job_2": {JobSettings: jobs.JobSettings{Name: new("job_2")}},
 				},
 			},
 		},
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	w, _ := bundletest.NewClients(t)
+	b.SetWorkpaceClient(w)
 
 	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Len(t, diags, 1)

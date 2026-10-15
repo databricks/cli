@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ import (
 func setupCompleter(t *testing.T, onlyDirs bool) *completer {
 	ctx := t.Context()
 	// Needed to make type context.valueCtx for mockFilerForPath
-	ctx = cmdctx.SetWorkspaceClient(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient)
+	ctx = cmdctx.SetWorkspaceClient(ctx, &sdkclients.Clients{})
 
 	fakeFiler := filer.NewFakeFiler(map[string]fakefs.FileInfo{
 		"dir":       {FakeName: "root", FakeDir: true},

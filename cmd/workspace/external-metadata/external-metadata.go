@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucexternalmetadata "github.com/databricks/cli/libs/sdktypes/uc/externalmetadata/v1"
+	sdkucexternalmetadata "github.com/databricks/sdk-go/uc/externalmetadata/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -60,23 +63,23 @@ External Metadata objects enable customers to register and manage metadata
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createExternalMetadataOverrides []func(
 	*cobra.Command,
-	*catalog.CreateExternalMetadataRequest,
+	*ucexternalmetadata.CreateExternalMetadataRequest,
 )
 
 func newCreateExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createExternalMetadataReq ucexternalmetadata.CreateExternalMetadataRequest
+	createExternalMetadataReq.ExternalMetadata = &ucexternalmetadata.ExternalMetadata{}
 
-	var createExternalMetadataReq catalog.CreateExternalMetadataRequest
-	createExternalMetadataReq.ExternalMetadata = catalog.ExternalMetadata{}
 	var createExternalMetadataJson flags.JsonFlag
 
 	cmd.Flags().Var(&createExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Description, "description", createExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Owner, "owner", createExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
+	flags.StringPtrVar(cmd.Flags(), &createExternalMetadataReq.ExternalMetadata.Description, "description", `User-provided free-form text description.`)
+	flags.StringPtrVar(cmd.Flags(), &createExternalMetadataReq.ExternalMetadata.Owner, "owner", `Owner of the external metadata object.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	flags.StringPtrVar(cmd.Flags(), &createExternalMetadataReq.ExternalMetadata.Url, "url", `URL associated with the external metadata object.`)
 
 	cmd.Use = "create-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `*Public Preview* Create an external metadata object.`
@@ -138,6 +141,7 @@ Create an external metadata object.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createExternalMetadataJson.Unmarshal(&createExternalMetadataReq.ExternalMetadata)
@@ -152,25 +156,29 @@ Create an external metadata object.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createExternalMetadataReq.ExternalMetadata.Name = args[0]
+			createExternalMetadataReq.ExternalMetadata.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createExternalMetadataReq.ExternalMetadata.SystemType)
-			if err != nil {
-				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[1])
-			}
-
+			createExternalMetadataReq.ExternalMetadata.SystemType = ucexternalmetadata.SystemType(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createExternalMetadataReq.ExternalMetadata.EntityType = args[2]
+			createExternalMetadataReq.ExternalMetadata.EntityType = new(args[2])
 		}
 
-		response, err := w.ExternalMetadata.CreateExternalMetadata(ctx, createExternalMetadataReq)
+		sdkReq, err := ucexternalmetadata.CreateExternalMetadataRequestToSDK(&createExternalMetadataReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalMetadata.CreateExternalMetadataV2(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternalmetadata.ExternalMetadataFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -191,13 +199,12 @@ Create an external metadata object.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteExternalMetadataOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteExternalMetadataRequest,
+	*sdkucexternalmetadata.DeleteExternalMetadataRequest,
 )
 
 func newDeleteExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteExternalMetadataReq catalog.DeleteExternalMetadataRequest
+	var deleteExternalMetadataReq sdkucexternalmetadata.DeleteExternalMetadataRequest
 
 	cmd.Use = "delete-external-metadata NAME"
 	cmd.Short = `*Public Preview* Delete an external metadata object.`
@@ -222,10 +229,12 @@ Delete an external metadata object.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteExternalMetadataReq.Name = args[0]
+		deleteExternalMetadataReq.Name = new(args[0])
 
-		err = w.ExternalMetadata.DeleteExternalMetadata(ctx, deleteExternalMetadataReq)
+		sdkReq := &deleteExternalMetadataReq
+		err = w.ExternalMetadata.DeleteExternalMetadataV2(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -250,13 +259,12 @@ Delete an external metadata object.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExternalMetadataOverrides []func(
 	*cobra.Command,
-	*catalog.GetExternalMetadataRequest,
+	*sdkucexternalmetadata.GetExternalMetadataRequest,
 )
 
 func newGetExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExternalMetadataReq catalog.GetExternalMetadataRequest
+	var getExternalMetadataReq sdkucexternalmetadata.GetExternalMetadataRequest
 
 	cmd.Use = "get-external-metadata NAME"
 	cmd.Short = `*Public Preview* Get an external metadata object.`
@@ -281,15 +289,21 @@ Get an external metadata object.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExternalMetadataReq.Name = args[0]
+		getExternalMetadataReq.Name = new(args[0])
 
-		response, err := w.ExternalMetadata.GetExternalMetadata(ctx, getExternalMetadataReq)
+		sdkReq := &getExternalMetadataReq
+		response, err := w.ExternalMetadata.GetExternalMetadataV2(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternalmetadata.ExternalMetadataFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -310,25 +324,25 @@ Get an external metadata object.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listExternalMetadataOverrides []func(
 	*cobra.Command,
-	*catalog.ListExternalMetadataRequest,
+	*ucexternalmetadata.ListExternalMetadataRequest,
 )
 
 func newListExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listExternalMetadataReq ucexternalmetadata.ListExternalMetadataRequest
 
-	var listExternalMetadataReq catalog.ListExternalMetadataRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listExternalMetadataLimit int
 
-	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
+	flags.IntPtrVar(cmd.Flags(), &listExternalMetadataReq.PageSize, "page-size", `Specifies the maximum number of external metadata objects to return in a single response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listExternalMetadataLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listExternalMetadataReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-metadata"
@@ -356,16 +370,20 @@ List external metadata objects.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ExternalMetadata.ListExternalMetadata(ctx, listExternalMetadataReq)
+		sdkReq, err := ucexternalmetadata.ListExternalMetadataRequestToSDK(&listExternalMetadataReq)
+		if err != nil {
+			return err
+		}
 		if listExternalMetadataLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExternalMetadataLimit)
 		}
 		if listExternalMetadataLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listExternalMetadataLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ExternalMetadata.ListExternalMetadataV2Iter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucexternalmetadata.ExternalMetadataFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -386,23 +404,23 @@ List external metadata objects.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateExternalMetadataOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateExternalMetadataRequest,
+	*ucexternalmetadata.UpdateExternalMetadataRequest,
 )
 
 func newUpdateExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateExternalMetadataReq ucexternalmetadata.UpdateExternalMetadataRequest
+	updateExternalMetadataReq.ExternalMetadata = &ucexternalmetadata.ExternalMetadata{}
 
-	var updateExternalMetadataReq catalog.UpdateExternalMetadataRequest
-	updateExternalMetadataReq.ExternalMetadata = catalog.ExternalMetadata{}
 	var updateExternalMetadataJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Description, "description", updateExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Owner, "owner", updateExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExternalMetadataReq.ExternalMetadata.Description, "description", `User-provided free-form text description.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExternalMetadataReq.ExternalMetadata.Owner, "owner", `Owner of the external metadata object.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	flags.StringPtrVar(cmd.Flags(), &updateExternalMetadataReq.ExternalMetadata.Url, "url", `URL associated with the external metadata object.`)
 
 	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `*Public Preview* Update an external metadata object.`
@@ -477,6 +495,7 @@ Update an external metadata object.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExternalMetadataJson.Unmarshal(&updateExternalMetadataReq.ExternalMetadata)
@@ -490,25 +509,29 @@ Update an external metadata object.
 				}
 			}
 		}
-		updateExternalMetadataReq.Name = args[0]
-		updateExternalMetadataReq.UpdateMask = args[1]
+		updateExternalMetadataReq.ExternalMetadata.Name = new(args[0])
+		updateExternalMetadataReq.UpdateMask = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateExternalMetadataReq.ExternalMetadata.SystemType)
-			if err != nil {
-				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[2])
-			}
-
+			updateExternalMetadataReq.ExternalMetadata.SystemType = ucexternalmetadata.SystemType(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExternalMetadataReq.ExternalMetadata.EntityType = args[3]
+			updateExternalMetadataReq.ExternalMetadata.EntityType = new(args[3])
 		}
 
-		response, err := w.ExternalMetadata.UpdateExternalMetadata(ctx, updateExternalMetadataReq)
+		sdkReq, err := ucexternalmetadata.UpdateExternalMetadataRequestToSDK(&updateExternalMetadataReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalMetadata.UpdateExternalMetadataV2(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternalmetadata.ExternalMetadataFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

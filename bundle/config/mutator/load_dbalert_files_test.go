@@ -5,13 +5,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,9 +58,9 @@ func TestLoadDBAlertFiles(t *testing.T) {
 				Alerts: map[string]*resources.Alert{
 					"my_alert": {
 						FilePath: filepath.Join(dir, "alert.dbalert.json"),
-						AlertV2: sql.AlertV2{
-							DisplayName: "Test Alert",
-							WarehouseId: "abc123",
+						Alert: alerts.Alert{
+							DisplayName: new("Test Alert"),
+							WarehouseId: new("abc123"),
 						},
 					},
 				},
@@ -75,9 +77,9 @@ func TestLoadDBAlertFiles(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, mutator.LoadDBAlertFiles())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "Test Alert", b.Config.Resources.Alerts["my_alert"].DisplayName)
-	assert.Equal(t, "abc123", b.Config.Resources.Alerts["my_alert"].WarehouseId)
-	assert.Equal(t, "SELECT * FROM table\nWHERE value > 100\n", b.Config.Resources.Alerts["my_alert"].QueryText)
+	assert.Equal(t, "Test Alert", utils.Deref(b.Config.Resources.Alerts["my_alert"].DisplayName))
+	assert.Equal(t, "abc123", utils.Deref(b.Config.Resources.Alerts["my_alert"].WarehouseId))
+	assert.Equal(t, "SELECT * FROM table\nWHERE value > 100\n", utils.Deref(b.Config.Resources.Alerts["my_alert"].QueryText))
 }
 
 func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
@@ -99,9 +101,9 @@ func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
 				Alerts: map[string]*resources.Alert{
 					"my_alert": {
 						FilePath: "alert.dbalert.json",
-						AlertV2: sql.AlertV2{
-							DisplayName: "Test Alert",
-							WarehouseId: "abc123",
+						Alert: alerts.Alert{
+							DisplayName: new("Test Alert"),
+							WarehouseId: new("abc123"),
 						},
 					},
 				},
@@ -116,5 +118,5 @@ func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, mutator.LoadDBAlertFiles())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "SELECT 1\n", b.Config.Resources.Alerts["my_alert"].QueryText)
+	assert.Equal(t, "SELECT 1\n", utils.Deref(b.Config.Resources.Alerts["my_alert"].QueryText))
 }

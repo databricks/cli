@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/apierrs"
+
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -20,18 +22,18 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/sdkclients"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
+func (b *DeploymentBundle) init(client *sdkclients.Clients) error {
 	if b.Adapters != nil {
 		return nil
 	}
@@ -69,7 +71,7 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
 // StateDB must already be open for write before calling this function.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *sdkclients.Clients, plan *deployplan.Plan) error {
 	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
@@ -139,13 +141,13 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 		var stamped bool
 		switch v := sv.Value.(type) {
 		case *jobs.JobSettings:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
+			if utils.Deref(v.Deployment.DeploymentId) == "" {
+				v.Deployment.DeploymentId = new(deploymentID)
 				stamped = true
 			}
 		case *dresources.PipelineState:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
+			if utils.Deref(v.Deployment.DeploymentId) == "" {
+				v.Deployment.DeploymentId = new(deploymentID)
 				stamped = true
 			}
 		}
@@ -160,7 +162,7 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *sdkclients.Clients, configRoot *config.Root) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
@@ -241,7 +243,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if apierr.IsMissing(err) {
+				if apierrs.IsMissing(err) {
 					// The resource is already deleted remotely. Keep the Delete entry so
 					// that applying it removes the stale state entry, but mark it Gone so
 					// apply skips the delete call and prompts don't list it as a deletion.
@@ -319,7 +321,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if apierr.IsMissing(err) {
+			if apierrs.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))

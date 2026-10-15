@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
+	sdkuccredentials "github.com/databricks/sdk-go/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -51,19 +53,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.AccountsCreateStorageCredential,
+	*uccredentials.AccountsCreateStorageCredentialRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq uccredentials.AccountsCreateStorageCredentialRequest
 
-	var createReq catalog.AccountsCreateStorageCredential
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
-	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional, default false.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.SkipValidation, "skip-validation", `Optional, default false.`)
 
 	cmd.Use = "create METASTORE_ID"
 	cmd.Short = `Create a storage credential.`
@@ -92,6 +94,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -105,14 +108,22 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		createReq.MetastoreId = args[0]
+		createReq.MetastoreId = new(args[0])
 
-		response, err := a.StorageCredentials.Create(ctx, createReq)
+		sdkReq, err := uccredentials.AccountsCreateStorageCredentialRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Credentials.CreateAccountsStorageCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.AccountsCreateStorageCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -133,15 +144,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteAccountStorageCredentialRequest,
+	*uccredentials.AccountsDeleteStorageCredentialRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq uccredentials.AccountsDeleteStorageCredentialRequest
 
-	var deleteReq catalog.DeleteAccountStorageCredentialRequest
-
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Force, "force", `Force deletion even if the Storage Credential is not empty.`)
 
 	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
@@ -167,16 +177,22 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.MetastoreId = args[0]
-		deleteReq.StorageCredentialName = args[1]
+		deleteReq.MetastoreId = new(args[0])
+		deleteReq.NameArg = new(args[1])
 
-		response, err := a.StorageCredentials.Delete(ctx, deleteReq)
+		sdkReq, err := uccredentials.AccountsDeleteStorageCredentialRequestToSDK(&deleteReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Credentials.DeleteAccountsStorageCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -197,13 +213,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetAccountStorageCredentialRequest,
+	*sdkuccredentials.AccountsGetStorageCredentialRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetAccountStorageCredentialRequest
+	var getReq sdkuccredentials.AccountsGetStorageCredentialRequest
 
 	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
@@ -230,16 +245,22 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.MetastoreId = args[0]
-		getReq.StorageCredentialName = args[1]
+		getReq.MetastoreId = new(args[0])
+		getReq.NameArg = new(args[1])
 
-		response, err := a.StorageCredentials.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.Credentials.GetAccountsStorageCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.AccountsGetStorageCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -260,13 +281,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListAccountStorageCredentialsRequest,
+	*sdkuccredentials.AccountsListStorageCredentialsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq sdkuccredentials.AccountsListStorageCredentialsRequest
 
-	var listReq catalog.ListAccountStorageCredentialsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -300,10 +321,15 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listReq.MetastoreId = args[0]
+		listReq.MetastoreId = new(args[0])
 
-		response := a.StorageCredentials.List(ctx, listReq)
+		sdkReq := &listReq
+		response, err := a.Credentials.ListAccountsStorageCredentials(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -311,7 +337,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := uccredentials.AccountsListStorageCredentialsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.StorageCredentials)
 	}
 
 	// Disable completions since they are not applicable.
@@ -332,19 +362,19 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.AccountsUpdateStorageCredential,
+	*uccredentials.AccountsUpdateStorageCredentialRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq uccredentials.AccountsUpdateStorageCredentialRequest
 
-	var updateReq catalog.AccountsUpdateStorageCredential
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
-	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.SkipValidation, "skip-validation", `Optional.`)
 
 	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`
@@ -371,6 +401,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -384,15 +415,23 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.MetastoreId = args[0]
-		updateReq.StorageCredentialName = args[1]
+		updateReq.MetastoreId = new(args[0])
+		updateReq.NameArg = new(args[1])
 
-		response, err := a.StorageCredentials.Update(ctx, updateReq)
+		sdkReq, err := uccredentials.AccountsUpdateStorageCredentialRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Credentials.UpdateAccountsStorageCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.AccountsUpdateStorageCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

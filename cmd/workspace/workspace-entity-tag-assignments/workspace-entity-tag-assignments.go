@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/tags"
 	"github.com/spf13/cobra"
+
+	tagassignments "github.com/databricks/cli/libs/sdktypes/tagassignments/v1"
+	sdktagassignments "github.com/databricks/sdk-go/tagassignments/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -52,19 +55,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createTagAssignmentOverrides []func(
 	*cobra.Command,
-	*tags.CreateTagAssignmentRequest,
+	*tagassignments.CreateTagAssignmentRequest,
 )
 
 func newCreateTagAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createTagAssignmentReq tagassignments.CreateTagAssignmentRequest
+	createTagAssignmentReq.TagAssignment = &tagassignments.TagAssignment{}
 
-	var createTagAssignmentReq tags.CreateTagAssignmentRequest
-	createTagAssignmentReq.TagAssignment = tags.TagAssignment{}
 	var createTagAssignmentJson flags.JsonFlag
 
 	cmd.Flags().Var(&createTagAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTagAssignmentReq.TagAssignment.TagValue, "tag-value", createTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &createTagAssignmentReq.TagAssignment.TagValue, "tag-value", `The value of the tag.`)
 
 	cmd.Use = "create-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
 	cmd.Short = `Create a tag assignment for an entity.`
@@ -100,6 +103,7 @@ func newCreateTagAssignment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createTagAssignmentJson.Unmarshal(&createTagAssignmentReq.TagAssignment)
@@ -114,21 +118,29 @@ func newCreateTagAssignment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createTagAssignmentReq.TagAssignment.EntityType = args[0]
+			createTagAssignmentReq.TagAssignment.EntityType = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createTagAssignmentReq.TagAssignment.EntityId = args[1]
+			createTagAssignmentReq.TagAssignment.EntityId = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createTagAssignmentReq.TagAssignment.TagKey = args[2]
+			createTagAssignmentReq.TagAssignment.TagKey = new(args[2])
 		}
 
-		response, err := w.WorkspaceEntityTagAssignments.CreateTagAssignment(ctx, createTagAssignmentReq)
+		sdkReq, err := tagassignments.CreateTagAssignmentRequestToSDK(&createTagAssignmentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TagAssignments.CreateTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagassignments.TagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -149,13 +161,12 @@ func newCreateTagAssignment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteTagAssignmentOverrides []func(
 	*cobra.Command,
-	*tags.DeleteTagAssignmentRequest,
+	*sdktagassignments.DeleteTagAssignmentRequest,
 )
 
 func newDeleteTagAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteTagAssignmentReq tags.DeleteTagAssignmentRequest
+	var deleteTagAssignmentReq sdktagassignments.DeleteTagAssignmentRequest
 
 	cmd.Use = "delete-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
 	cmd.Short = `Delete a tag assignment for an entity.`
@@ -184,12 +195,14 @@ func newDeleteTagAssignment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteTagAssignmentReq.EntityType = args[0]
-		deleteTagAssignmentReq.EntityId = args[1]
-		deleteTagAssignmentReq.TagKey = args[2]
+		deleteTagAssignmentReq.EntityType = new(args[0])
+		deleteTagAssignmentReq.EntityId = new(args[1])
+		deleteTagAssignmentReq.TagKey = new(args[2])
 
-		err = w.WorkspaceEntityTagAssignments.DeleteTagAssignment(ctx, deleteTagAssignmentReq)
+		sdkReq := &deleteTagAssignmentReq
+		err = w.TagAssignments.DeleteTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -214,13 +227,12 @@ func newDeleteTagAssignment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getTagAssignmentOverrides []func(
 	*cobra.Command,
-	*tags.GetTagAssignmentRequest,
+	*sdktagassignments.GetTagAssignmentRequest,
 )
 
 func newGetTagAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getTagAssignmentReq tags.GetTagAssignmentRequest
+	var getTagAssignmentReq sdktagassignments.GetTagAssignmentRequest
 
 	cmd.Use = "get-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
 	cmd.Short = `Get a tag assignment for an entity.`
@@ -249,17 +261,23 @@ func newGetTagAssignment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getTagAssignmentReq.EntityType = args[0]
-		getTagAssignmentReq.EntityId = args[1]
-		getTagAssignmentReq.TagKey = args[2]
+		getTagAssignmentReq.EntityType = new(args[0])
+		getTagAssignmentReq.EntityId = new(args[1])
+		getTagAssignmentReq.TagKey = new(args[2])
 
-		response, err := w.WorkspaceEntityTagAssignments.GetTagAssignment(ctx, getTagAssignmentReq)
+		sdkReq := &getTagAssignmentReq
+		response, err := w.TagAssignments.GetTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagassignments.TagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -280,25 +298,25 @@ func newGetTagAssignment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listTagAssignmentsOverrides []func(
 	*cobra.Command,
-	*tags.ListTagAssignmentsRequest,
+	*tagassignments.ListTagAssignmentsRequest,
 )
 
 func newListTagAssignments() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listTagAssignmentsReq tagassignments.ListTagAssignmentsRequest
 
-	var listTagAssignmentsReq tags.ListTagAssignmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listTagAssignmentsLimit int
 
-	cmd.Flags().IntVar(&listTagAssignmentsReq.PageSize, "page-size", listTagAssignmentsReq.PageSize, `Optional.`)
+	flags.IntPtrVar(cmd.Flags(), &listTagAssignmentsReq.PageSize, "page-size", `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listTagAssignmentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listTagAssignmentsReq.PageToken, "page-token", listTagAssignmentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listTagAssignmentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-assignments ENTITY_TYPE ENTITY_ID"
@@ -326,19 +344,23 @@ func newListTagAssignments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listTagAssignmentsReq.EntityType = args[0]
-		listTagAssignmentsReq.EntityId = args[1]
+		listTagAssignmentsReq.EntityType = new(args[0])
+		listTagAssignmentsReq.EntityId = new(args[1])
 
-		response := w.WorkspaceEntityTagAssignments.ListTagAssignments(ctx, listTagAssignmentsReq)
+		sdkReq, err := tagassignments.ListTagAssignmentsRequestToSDK(&listTagAssignmentsReq)
+		if err != nil {
+			return err
+		}
 		if listTagAssignmentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTagAssignmentsLimit)
 		}
 		if listTagAssignmentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listTagAssignmentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.TagAssignments.ListTagAssignmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, tagassignments.TagAssignmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -359,19 +381,19 @@ func newListTagAssignments() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateTagAssignmentOverrides []func(
 	*cobra.Command,
-	*tags.UpdateTagAssignmentRequest,
+	*tagassignments.UpdateTagAssignmentRequest,
 )
 
 func newUpdateTagAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateTagAssignmentReq tagassignments.UpdateTagAssignmentRequest
+	updateTagAssignmentReq.TagAssignment = &tagassignments.TagAssignment{}
 
-	var updateTagAssignmentReq tags.UpdateTagAssignmentRequest
-	updateTagAssignmentReq.TagAssignment = tags.TagAssignment{}
 	var updateTagAssignmentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateTagAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateTagAssignmentReq.TagAssignment.TagValue, "tag-value", updateTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &updateTagAssignmentReq.TagAssignment.TagValue, "tag-value", `The value of the tag.`)
 
 	cmd.Use = "update-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY UPDATE_MASK"
 	cmd.Short = `Update a tag assignment for an entity.`
@@ -411,6 +433,7 @@ func newUpdateTagAssignment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateTagAssignmentJson.Unmarshal(&updateTagAssignmentReq.TagAssignment)
@@ -424,17 +447,25 @@ func newUpdateTagAssignment() *cobra.Command {
 				}
 			}
 		}
-		updateTagAssignmentReq.EntityType = args[0]
-		updateTagAssignmentReq.EntityId = args[1]
-		updateTagAssignmentReq.TagKey = args[2]
-		updateTagAssignmentReq.UpdateMask = args[3]
+		updateTagAssignmentReq.TagAssignment.EntityType = new(args[0])
+		updateTagAssignmentReq.TagAssignment.EntityId = new(args[1])
+		updateTagAssignmentReq.TagAssignment.TagKey = new(args[2])
+		updateTagAssignmentReq.UpdateMask = new(args[3])
 
-		response, err := w.WorkspaceEntityTagAssignments.UpdateTagAssignment(ctx, updateTagAssignmentReq)
+		sdkReq, err := tagassignments.UpdateTagAssignmentRequestToSDK(&updateTagAssignmentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.TagAssignments.UpdateTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := tagassignments.TagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

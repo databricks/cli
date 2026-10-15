@@ -9,44 +9,39 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/iotest"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
+	f1 := "/a/b/c"
+	f2 := "/a/b/c/d"
+	w := newTestWorkspaceClient(t, objectsHandler(t, []string{f1, f2}, nil))
 
 	dir := "base/dir/doesnt/matter"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
+	downloader := NewDownloader(w, sourceDir, configDir)
 
 	var err error
 
 	// Test that the path is normalized to be relative to the config directory.
-	f1 := "/a/b/c"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f1).Return(&workspace.ObjectInfo{
-		Path: f1,
-	}, nil)
 	err = downloader.markFileForDownload(ctx, &f1)
 	require.NoError(t, err)
 	assert.Equal(t, "../source/c", f1)
 
 	// Test that the previous path doesn't influence the next path.
-	f2 := "/a/b/c/d"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, f2).Return(&workspace.ObjectInfo{
-		Path: f2,
-	}, nil)
 	err = downloader.markFileForDownload(ctx, &f2)
 	require.NoError(t, err)
 	assert.Equal(t, "../source/d", f2)
@@ -54,47 +49,28 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 
 func TestDownloader_DoesNotRecurseIntoNodeModules(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
+	rootPath := "/workspace/app"
+
+	// Root directory contains: app.py, src/, node_modules/; src/ contains index.js.
+	// node_modules is not listed: listing it fails the test.
+	w := newTestWorkspaceClient(t, objectsHandler(t,
+		[]string{rootPath, "/workspace/app/app.py", "/workspace/app/src/index.js"},
+		map[string][]workspace.ObjectInfo{
+			rootPath: {
+				{Path: "/workspace/app/app.py", ObjectType: workspace.ObjectTypeFile},
+				{Path: "/workspace/app/src", ObjectType: workspace.ObjectTypeDirectory},
+				{Path: "/workspace/app/node_modules", ObjectType: workspace.ObjectTypeDirectory},
+			},
+			"/workspace/app/src": {
+				{Path: "/workspace/app/src/index.js", ObjectType: workspace.ObjectTypeFile},
+			},
+		},
+	))
 
 	dir := "base/dir"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
-
-	rootPath := "/workspace/app"
-
-	// Mock the root directory listing
-	m.GetMockWorkspaceAPI().EXPECT().
-		GetStatusByPath(ctx, rootPath).
-		Return(&workspace.ObjectInfo{Path: rootPath}, nil)
-
-	// Root directory contains: app.py, src/, node_modules/
-	m.GetMockWorkspaceAPI().EXPECT().
-		ListAll(ctx, workspace.ListWorkspaceRequest{Path: rootPath}).
-		Return([]workspace.ObjectInfo{
-			{Path: "/workspace/app/app.py", ObjectType: workspace.ObjectTypeFile},
-			{Path: "/workspace/app/src", ObjectType: workspace.ObjectTypeDirectory},
-			{Path: "/workspace/app/node_modules", ObjectType: workspace.ObjectTypeDirectory},
-		}, nil)
-
-	// src/ directory contains: index.js
-	m.GetMockWorkspaceAPI().EXPECT().
-		ListAll(ctx, workspace.ListWorkspaceRequest{Path: "/workspace/app/src"}).
-		Return([]workspace.ObjectInfo{
-			{Path: "/workspace/app/src/index.js", ObjectType: workspace.ObjectTypeFile},
-		}, nil)
-
-	// We should NOT list node_modules directory - this is the key assertion
-	// If this expectation is not met, the test will fail
-
-	// Mock file downloads to make markFileForDownload work
-	m.GetMockWorkspaceAPI().EXPECT().
-		GetStatusByPath(ctx, "/workspace/app/app.py").
-		Return(&workspace.ObjectInfo{Path: "/workspace/app/app.py"}, nil)
-
-	m.GetMockWorkspaceAPI().EXPECT().
-		GetStatusByPath(ctx, "/workspace/app/src/index.js").
-		Return(&workspace.ObjectInfo{Path: "/workspace/app/src/index.js"}, nil)
+	downloader := NewDownloader(w, sourceDir, configDir)
 
 	// Execute
 	err := downloader.MarkDirectoryForDownload(ctx, &rootPath)
@@ -155,7 +131,36 @@ func TestCommonDirPrefix(t *testing.T) {
 	}
 }
 
-func newTestWorkspaceClient(t *testing.T, handler http.HandlerFunc) *databricks.WorkspaceClient {
+// objectsHandler serves get-status for the given objects and list for the
+// given directory contents; any other request fails the test.
+func objectsHandler(t *testing.T, objects []string, dirs map[string][]workspace.ObjectInfo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		path := r.URL.Query().Get("path")
+		switch r.URL.Path {
+		case "/api/2.0/workspace/get-status":
+			if !slices.Contains(objects, path) {
+				t.Errorf("unexpected get-status path: %s", path)
+				http.NotFound(w, r)
+				return
+			}
+			assert.NoError(t, json.NewEncoder(w).Encode(workspace.ObjectInfo{Path: path}))
+		case "/api/2.0/workspace/list":
+			children, ok := dirs[path]
+			if !ok {
+				t.Errorf("unexpected list path: %s", path)
+				http.NotFound(w, r)
+				return
+			}
+			assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{"objects": children}))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}
+}
+
+func newTestWorkspaceClient(t *testing.T, handler http.HandlerFunc) *sdkclients.Clients {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/databricks-config" {
 			http.NotFound(w, r)
@@ -166,9 +171,10 @@ func newTestWorkspaceClient(t *testing.T, handler http.HandlerFunc) *databricks.
 	}))
 	t.Cleanup(server.Close)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "test-token",
+	w, err := sdkclients.New(t.Context(), &config.Config{
+		Host:    server.URL,
+		Token:   "test-token",
+		Loaders: []config.Loader{config.ConfigAttributes},
 	})
 	require.NoError(t, err)
 	return w
@@ -216,11 +222,11 @@ func TestDownloader_MarkTasksForDownload_DesignerNotebook(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "designer_task",
+			TaskKey: new("designer_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/My Pipeline.designer.ipynb",
+				NotebookPath: new("/Users/user/project/My Pipeline.designer.ipynb"),
 			},
 		},
 	}
@@ -229,7 +235,7 @@ func TestDownloader_MarkTasksForDownload_DesignerNotebook(t *testing.T) {
 	require.NoError(t, err)
 
 	// The ".designer.ipynb" suffix must be preserved, not stripped to ".designer".
-	assert.Equal(t, "../source/My Pipeline.designer.ipynb", tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "../source/My Pipeline.designer.ipynb", *tasks[0].NotebookTask.NotebookPath)
 	require.Len(t, downloader.files, 1)
 	f := downloader.files[filepath.Join(sourceDir, "My Pipeline.designer.ipynb")]
 	assert.Equal(t, "/Users/user/project/My Pipeline.designer.ipynb", f.path)
@@ -246,17 +252,17 @@ func TestDownloader_MarkTasksForDownload_PreservesStructure(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "extract_task",
+			TaskKey: new("extract_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/etl/extract",
+				NotebookPath: new("/Users/user/project/etl/extract"),
 			},
 		},
 		{
-			TaskKey: "dashboard_task",
+			TaskKey: new("dashboard_task"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/reporting/dashboard",
+				NotebookPath: new("/Users/user/project/reporting/dashboard"),
 			},
 		},
 	}
@@ -264,8 +270,8 @@ func TestDownloader_MarkTasksForDownload_PreservesStructure(t *testing.T) {
 	err := downloader.MarkTasksForDownload(t.Context(), tasks)
 	require.NoError(t, err)
 
-	assert.Equal(t, "../source/etl/extract.py", tasks[0].NotebookTask.NotebookPath)
-	assert.Equal(t, "../source/reporting/dashboard.py", tasks[1].NotebookTask.NotebookPath)
+	assert.Equal(t, "../source/etl/extract.py", *tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "../source/reporting/dashboard.py", *tasks[1].NotebookTask.NotebookPath)
 	assert.Len(t, downloader.files, 2)
 }
 
@@ -278,11 +284,11 @@ func TestDownloader_MarkTasksForDownload_SingleNotebook(t *testing.T) {
 	configDir := filepath.Join(dir, "config")
 	downloader := NewDownloader(w, sourceDir, configDir)
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "task1",
+			TaskKey: new("task1"),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: "/Users/user/project/notebook",
+				NotebookPath: new("/Users/user/project/notebook"),
 			},
 		},
 	}
@@ -291,29 +297,25 @@ func TestDownloader_MarkTasksForDownload_SingleNotebook(t *testing.T) {
 	require.NoError(t, err)
 
 	// Single notebook: basePath = path.Dir => same as old behavior.
-	assert.Equal(t, "../source/notebook.py", tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "../source/notebook.py", *tasks[0].NotebookTask.NotebookPath)
 	assert.Len(t, downloader.files, 1)
 }
 
 func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
+	pythonFile := "/Users/user/project/etl/job.py"
+	w := newTestWorkspaceClient(t, objectsHandler(t, []string{pythonFile}, nil))
 
 	dir := "base/dir"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir, WithSparkPythonFiles())
+	downloader := NewDownloader(w, sourceDir, configDir, WithSparkPythonFiles())
 
-	pythonFile := "/Users/user/project/etl/job.py"
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspace.ObjectInfo{
-		Path: pythonFile,
-	}, nil)
-
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "spark_python_task",
+			TaskKey: new("spark_python_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: pythonFile,
+				PythonFile: new(pythonFile),
 			},
 		},
 	}
@@ -321,7 +323,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
 	err := downloader.MarkTasksForDownload(ctx, tasks)
 	require.NoError(t, err)
 
-	assert.Equal(t, "../source/job.py", tasks[0].SparkPythonTask.PythonFile)
+	assert.Equal(t, "../source/job.py", *tasks[0].SparkPythonTask.PythonFile)
 	require.Len(t, downloader.files, 1)
 	f := downloader.files[filepath.Join(sourceDir, "job.py")]
 	assert.Equal(t, pythonFile, f.path)
@@ -338,18 +340,18 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 
 	downloader := NewDownloader(w, "source", "config", WithSparkPythonFiles())
 
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "cloud_uri_task",
+			TaskKey: new("cloud_uri_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: "dbfs:/FileStore/job.py",
+				PythonFile: new("dbfs:/FileStore/job.py"),
 			},
 		},
 		{
-			TaskKey: "git_task",
+			TaskKey: new("git_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: "etl/job.py",
-				Source:     jobs.SourceGit,
+				PythonFile: new("etl/job.py"),
+				Source:     jobs.Source_Git,
 			},
 		},
 	}
@@ -357,8 +359,8 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 	err := downloader.MarkTasksForDownload(ctx, tasks)
 	require.NoError(t, err)
 	assert.Empty(t, downloader.files)
-	assert.Equal(t, "dbfs:/FileStore/job.py", tasks[0].SparkPythonTask.PythonFile)
-	assert.Equal(t, "etl/job.py", tasks[1].SparkPythonTask.PythonFile)
+	assert.Equal(t, "dbfs:/FileStore/job.py", *tasks[0].SparkPythonTask.PythonFile)
+	assert.Equal(t, "etl/job.py", *tasks[1].SparkPythonTask.PythonFile)
 }
 
 func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *testing.T) {
@@ -372,11 +374,11 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *tes
 	downloader := NewDownloader(w, "source", "config")
 
 	pythonFile := "/Users/user/project/etl/job.py"
-	tasks := []jobs.Task{
+	tasks := []jobs.TaskSettings{
 		{
-			TaskKey: "spark_python_task",
+			TaskKey: new("spark_python_task"),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: pythonFile,
+				PythonFile: new(pythonFile),
 			},
 		},
 	}
@@ -384,7 +386,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *tes
 	err := downloader.MarkTasksForDownload(ctx, tasks)
 	require.NoError(t, err)
 	assert.Empty(t, downloader.files)
-	assert.Equal(t, pythonFile, tasks[0].SparkPythonTask.PythonFile)
+	assert.Equal(t, pythonFile, *tasks[0].SparkPythonTask.PythonFile)
 }
 
 func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
@@ -395,9 +397,9 @@ func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
 
 	downloader := NewDownloader(w, "source", "config")
 
-	tasks := []jobs.Task{
-		{TaskKey: "spark_task"},
-		{TaskKey: "python_wheel_task"},
+	tasks := []jobs.TaskSettings{
+		{TaskKey: new("spark_task")},
+		{TaskKey: new("python_wheel_task")},
 	}
 
 	err := downloader.MarkTasksForDownload(ctx, tasks)

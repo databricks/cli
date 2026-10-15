@@ -7,8 +7,9 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/libs/listing"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

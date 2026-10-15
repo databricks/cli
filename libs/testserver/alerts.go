@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	alerts "github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/utils"
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // alertFile mirrors the schema of a .dbalert.json file. It is the inverse of
@@ -20,27 +20,27 @@ import (
 type alertFile struct {
 	CustomSummary          string                  `json:"custom_summary,omitempty"`
 	Evaluation             *materializedEvaluation `json:"evaluation,omitempty"`
-	Schedule               *sql.CronSchedule       `json:"schedule,omitempty"`
+	Schedule               *alerts.CronSchedule    `json:"schedule,omitempty"`
 	QueryLines             []string                `json:"query_lines,omitempty"`
 	CustomDescriptionLines []string                `json:"custom_description_lines,omitempty"`
 }
 
 // materializedEvaluation mirrors the field order the alerts backend uses when it
-// writes the .dbalert.json file, which differs from sql.AlertV2Evaluation: the
+// writes the .dbalert.json file, which differs from alerts.AlertEvaluation: the
 // backend emits source before comparison_operator and always writes a
 // notification object (an empty {} when none is configured).
 type materializedEvaluation struct {
-	Source             sql.AlertV2OperandColumn `json:"source"`
-	ComparisonOperator sql.ComparisonOperator   `json:"comparison_operator"`
-	Threshold          *materializedOperand     `json:"threshold,omitempty"`
-	Notification       *sql.AlertV2Notification `json:"notification"`
+	Source             alerts.AlertOperandColumn `json:"source"`
+	ComparisonOperator alerts.ComparisonOperator `json:"comparison_operator"`
+	Threshold          *materializedOperand      `json:"threshold,omitempty"`
+	Notification       *alerts.AlertNotification `json:"notification"`
 }
 
-// materializedOperand and materializedOperandValue mirror sql.AlertV2Operand but
+// materializedOperand and materializedOperandValue mirror alerts.AlertOperand but
 // format double_value via jsonFloat so it keeps its decimal point in the file.
 type materializedOperand struct {
-	Column *sql.AlertV2OperandColumn `json:"column,omitempty"`
-	Value  *materializedOperandValue `json:"value,omitempty"`
+	Column *alerts.AlertOperandColumn `json:"column,omitempty"`
+	Value  *materializedOperandValue  `json:"value,omitempty"`
 }
 
 type materializedOperandValue struct {
@@ -63,20 +63,20 @@ func (f jsonFloat) MarshalJSON() ([]byte, error) {
 }
 
 // materializeThreshold converts the SDK threshold into the file representation.
-// double_value is emitted whenever the source request set it explicitly (tracked
-// via ForceSendFields), even when it is the zero value.
-func materializeThreshold(t *sql.AlertV2Operand) *materializedOperand {
+// double_value is emitted whenever the source request set it, even when it is
+// the zero value.
+func materializeThreshold(t *alerts.AlertOperand) *materializedOperand {
 	if t == nil {
 		return nil
 	}
 	out := &materializedOperand{Column: t.Column}
 	if v := t.Value; v != nil {
 		out.Value = &materializedOperandValue{
-			BoolValue:   v.BoolValue,
-			StringValue: v.StringValue,
+			BoolValue:   utils.Deref(v.BoolValue),
+			StringValue: utils.Deref(v.StringValue),
 		}
-		if v.DoubleValue != 0 || slices.Contains(v.ForceSendFields, "DoubleValue") {
-			d := jsonFloat(v.DoubleValue)
+		if v.DoubleValue != nil {
+			d := jsonFloat(*v.DoubleValue)
 			out.Value.DoubleValue = &d
 		}
 	}
@@ -85,8 +85,8 @@ func materializeThreshold(t *sql.AlertV2Operand) *materializedOperand {
 
 // alertFilePath returns the workspace path of the .dbalert.json file the backend
 // materializes for an alert: <parent_path>/<display_name>.dbalert.json.
-func alertFilePath(alert sql.AlertV2) string {
-	return path.Join(alert.ParentPath, alert.DisplayName+".dbalert.json")
+func alertFilePath(alert alerts.Alert) string {
+	return path.Join(utils.Deref(alert.ParentPath), utils.Deref(alert.DisplayName)+".dbalert.json")
 }
 
 // splitLines reverses the line-joining done in load_dbalert_files.go: each line
@@ -101,35 +101,38 @@ func splitLines(s string) []string {
 // writeAlertFile materializes the .dbalert.json file for an alert. On real cloud
 // the backend writes this file as a side effect of alert creation/update, which
 // the `workspace export` round-trip and `bundle generate alert` rely on.
-func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
-	if alert.ParentPath == "" || alert.DisplayName == "" {
+func (s *FakeWorkspace) writeAlertFile(alert alerts.Alert) error {
+	if utils.Deref(alert.ParentPath) == "" || utils.Deref(alert.DisplayName) == "" {
 		return nil
 	}
 
-	notification := alert.Evaluation.Notification
+	evaluation := alert.Evaluation
+	if evaluation == nil {
+		evaluation = &alerts.AlertEvaluation{}
+	}
+	notification := evaluation.Notification
 	if notification != nil {
-		// The backend always serializes notify_on_ok in the file, even when
-		// false; the SDK marshaler would otherwise drop the zero value.
+		// The backend always serializes notify_on_ok in the file, even when false.
 		n := *notification
-		n.ForceSendFields = append(n.ForceSendFields, "NotifyOnOk")
+		n.NotifyOnOk = new(utils.Deref(n.NotifyOnOk))
 		notification = &n
 	} else {
 		// The backend always writes a notification object, materializing an
 		// empty {} when the alert has no notification configured.
-		notification = &sql.AlertV2Notification{}
+		notification = &alerts.AlertNotification{}
 	}
 
 	af := alertFile{
-		CustomSummary: alert.CustomSummary,
+		CustomSummary: utils.Deref(alert.CustomSummary),
 		Evaluation: &materializedEvaluation{
-			Source:             alert.Evaluation.Source,
-			ComparisonOperator: alert.Evaluation.ComparisonOperator,
-			Threshold:          materializeThreshold(alert.Evaluation.Threshold),
+			Source:             utils.Deref(evaluation.Source),
+			ComparisonOperator: evaluation.ComparisonOperator,
+			Threshold:          materializeThreshold(evaluation.Threshold),
 			Notification:       notification,
 		},
-		Schedule:               &alert.Schedule,
-		QueryLines:             splitLines(alert.QueryText),
-		CustomDescriptionLines: splitLines(alert.CustomDescription),
+		Schedule:               alert.Schedule,
+		QueryLines:             splitLines(utils.Deref(alert.QueryText)),
+		CustomDescriptionLines: splitLines(utils.Deref(alert.CustomDescription)),
 	}
 
 	data, err := json.MarshalIndent(af, "", "  ")
@@ -140,7 +143,7 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 
 	filePath := alertFilePath(alert)
 	s.files[filePath] = FileEntry{
-		Info: workspace.ObjectInfo{
+		Info: workspaceapi.ObjectInfo{
 			ObjectType: "FILE",
 			Path:       filePath,
 			ObjectId:   nextTreenodeID(),
@@ -151,7 +154,7 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 }
 
 func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
-	var alert sql.AlertV2
+	var alert alerts.Alert
 
 	if err := json.Unmarshal(req.Body, &alert); err != nil {
 		return Response{
@@ -173,8 +176,8 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		alertId = nextUUID()
 	}
 
-	alert.Id = alertId
-	alert.LifecycleState = sql.AlertLifecycleStateActive
+	alert.Id = utils.NonZero(alertId)
+	alert.LifecycleState = alerts.AlertLifecycleState_Active
 	s.Alerts[alertId] = alert
 
 	if err := s.writeAlertFile(alert); err != nil {
@@ -205,7 +208,7 @@ func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	if purge {
 		delete(s.Alerts, alertId)
 	} else {
-		alert.LifecycleState = sql.AlertLifecycleStateDeleted
+		alert.LifecycleState = alerts.AlertLifecycleState_Deleted
 		s.Alerts[alertId] = alert
 	}
 

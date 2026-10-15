@@ -30,7 +30,9 @@ You can access the app at my-immutable-app-123.cloud.databricksapps.com
 {
   "method": "POST",
   "path": "/api/2.0/apps/my-immutable-app/start",
-  "body": {}
+  "body": {
+    "name": "my-immutable-app"
+  }
 }
 {
   "method": "POST",

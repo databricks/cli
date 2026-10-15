@@ -4,12 +4,12 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 )
 
-func findAllTasks(b *bundle.Bundle) map[string]([]jobs.Task) {
+func findAllTasks(b *bundle.Bundle) map[string]([]jobs.TaskSettings) {
 	r := b.Config.Resources
-	result := make(map[string]([]jobs.Task), 0)
+	result := make(map[string]([]jobs.TaskSettings), 0)
 	for k := range b.Config.Resources.Jobs {
 		result[k] = append(result[k], r.Jobs[k].Tasks...)
 	}
@@ -44,11 +44,11 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 	return false
 }
 
-func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
+func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.TaskSettings {
 	tasks := findAllTasks(b)
 	envs := FindAllEnvironments(b)
 
-	var allTasks []jobs.Task
+	var allTasks []jobs.TaskSettings
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
 			task := jobTasks[i]
@@ -65,7 +65,7 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	return allTasks
 }
 
-func isTaskWithLocalLibraries(task jobs.Task) bool {
+func isTaskWithLocalLibraries(task jobs.TaskSettings) bool {
 	for _, l := range task.Libraries {
 		p, err := libraryPath(&l)
 		// If there's an error, skip the library because it's not of supported type
@@ -80,7 +80,7 @@ func isTaskWithLocalLibraries(task jobs.Task) bool {
 	return false
 }
 
-func IsTaskWithWorkspaceLibraries(task jobs.Task) bool {
+func IsTaskWithWorkspaceLibraries(task jobs.TaskSettings) bool {
 	for _, l := range task.Libraries {
 		if IsWorkspaceLibrary(&l) {
 			return true

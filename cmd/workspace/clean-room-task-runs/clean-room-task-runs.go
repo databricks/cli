@@ -7,9 +7,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	cleanrooms "github.com/databricks/cli/libs/sdktypes/cleanrooms/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,21 +56,21 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq cleanrooms.ListCleanRoomNotebookTaskRunsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.NotebookName, "notebook-name", listReq.NotebookName, `Notebook name.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of task runs to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.NotebookName, "notebook-name", `Notebook name.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `The maximum number of task runs to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
@@ -92,18 +95,22 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CleanRoomName = args[0]
+		listReq.CleanRoomName = new(args[0])
 
-		response := w.CleanRoomTaskRuns.List(ctx, listReq)
+		sdkReq, err := cleanrooms.ListCleanRoomNotebookTaskRunsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomNotebookTaskRunsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomNotebookTaskRunFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -129,22 +136,22 @@ var listCleanRoomTaskRunsHandlerOverrides []func(
 
 func newListCleanRoomTaskRunsHandler() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listCleanRoomTaskRunsHandlerReq cleanrooms.ListCleanRoomTaskRunsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listCleanRoomTaskRunsHandlerLimit int
 
-	cmd.Flags().StringVar(&listCleanRoomTaskRunsHandlerReq.Name, "name", listCleanRoomTaskRunsHandlerReq.Name, `Executable name.`)
-	cmd.Flags().IntVar(&listCleanRoomTaskRunsHandlerReq.PageSize, "page-size", listCleanRoomTaskRunsHandlerReq.PageSize, `The maximum number of task runs to return.`)
-	cmd.Flags().Var(&listCleanRoomTaskRunsHandlerReq.TaskType, "task-type", `Filter by the type of Clean Room task. Supported values: [JAR, NOTEBOOK]`)
+	flags.StringPtrVar(cmd.Flags(), &listCleanRoomTaskRunsHandlerReq.Name, "name", `Executable name.`)
+	flags.IntPtrVar(cmd.Flags(), &listCleanRoomTaskRunsHandlerReq.PageSize, "page-size", `The maximum number of task runs to return.`)
+	flags.EnumVar(cmd.Flags(), &listCleanRoomTaskRunsHandlerReq.TaskType, "task-type", `Filter by the type of Clean Room task. Supported values: [JAR, NOTEBOOK]`, "CleanRoomTaskType", "JAR", "NOTEBOOK")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listCleanRoomTaskRunsHandlerLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listCleanRoomTaskRunsHandlerReq.PageToken, "page-token", listCleanRoomTaskRunsHandlerReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listCleanRoomTaskRunsHandlerReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-clean-room-task-runs-handler CLEAN_ROOM_NAME"
@@ -169,18 +176,22 @@ func newListCleanRoomTaskRunsHandler() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listCleanRoomTaskRunsHandlerReq.CleanRoomName = args[0]
+		listCleanRoomTaskRunsHandlerReq.CleanRoomName = new(args[0])
 
-		response := w.CleanRoomTaskRuns.ListCleanRoomTaskRunsHandler(ctx, listCleanRoomTaskRunsHandlerReq)
+		sdkReq, err := cleanrooms.ListCleanRoomTaskRunsRequestToSDK(&listCleanRoomTaskRunsHandlerReq)
+		if err != nil {
+			return err
+		}
 		if listCleanRoomTaskRunsHandlerLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCleanRoomTaskRunsHandlerLimit)
 		}
 		if listCleanRoomTaskRunsHandlerLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listCleanRoomTaskRunsHandlerLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.CleanRooms.ListCleanRoomTaskRunsHandlerIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, cleanrooms.CleanRoomTaskRunFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

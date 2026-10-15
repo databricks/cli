@@ -8,10 +8,12 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucexternallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -64,25 +66,25 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateExternalLocation,
+	*ucexternallocations.CreateExternalLocationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucexternallocations.CreateExternalLocationRequest
 
-	var createReq catalog.CreateExternalLocation
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `User-provided free-form text description.`)
 	// TODO: complex arg: effective_file_event_queue
-	cmd.Flags().BoolVar(&createReq.EnableFileEvents, "enable-file-events", createReq.EnableFileEvents, `Whether to enable file events on this external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.EnableFileEvents, "enable-file-events", `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
-	cmd.Flags().BoolVar(&createReq.Fallback, "fallback", createReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.Fallback, "fallback", `Indicates whether fallback mode is enabled for this external location.`)
 	// TODO: complex arg: file_event_queue
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Indicates whether the external location is read-only.`)
-	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.ReadOnly, "read-only", `Indicates whether the external location is read-only.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.SkipValidation, "skip-validation", `Skips validation of the storage credential associated with the external location.`)
 
 	cmd.Use = "create NAME URL CREDENTIAL_NAME"
 	cmd.Short = `Create an external location.`
@@ -117,6 +119,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -131,21 +134,29 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Url = args[1]
+			createReq.Url = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.CredentialName = args[2]
+			createReq.CredentialName = new(args[2])
 		}
 
-		response, err := w.ExternalLocations.Create(ctx, createReq)
+		sdkReq, err := ucexternallocations.CreateExternalLocationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalLocations.CreateExternalLocation(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternallocations.ExternalLocationInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -166,15 +177,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteExternalLocationRequest,
+	*ucexternallocations.DeleteExternalLocationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq ucexternallocations.DeleteExternalLocationRequest
 
-	var deleteReq catalog.DeleteExternalLocationRequest
-
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external tables or mounts.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Force, "force", `Force deletion even if there are dependent external tables or mounts.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an external location.`
@@ -199,13 +209,20 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.NameArg = new(args[0])
 
-		err = w.ExternalLocations.Delete(ctx, deleteReq)
+		sdkReq, err := ucexternallocations.DeleteExternalLocationRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ExternalLocations.DeleteExternalLocation(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -227,15 +244,14 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetExternalLocationRequest,
+	*ucexternallocations.GetExternalLocationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq ucexternallocations.GetExternalLocationRequest
 
-	var getReq catalog.GetExternalLocationRequest
-
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeBrowse, "include-browse", `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an external location.`
@@ -261,15 +277,24 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.NameArg = new(args[0])
 
-		response, err := w.ExternalLocations.Get(ctx, getReq)
+		sdkReq, err := ucexternallocations.GetExternalLocationRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalLocations.GetExternalLocation(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternallocations.ExternalLocationInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -290,28 +315,28 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListExternalLocationsRequest,
+	*ucexternallocations.ListExternalLocationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucexternallocations.ListExternalLocationsRequest
 
-	var listReq catalog.ListExternalLocationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include external locations not bound to the workspace.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeUnbound, "include-unbound", `Whether to include external locations not bound to the workspace.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of external locations to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
@@ -344,16 +369,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ExternalLocations.List(ctx, listReq)
+		sdkReq, err := ucexternallocations.ListExternalLocationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ExternalLocations.ListExternalLocationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucexternallocations.ExternalLocationInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -374,31 +403,31 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateExternalLocation,
+	*ucexternallocations.UpdateExternalLocationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucexternallocations.UpdateExternalLocationRequest
 
-	var updateReq catalog.UpdateExternalLocation
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `User-provided free-form text description.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CredentialName, "credential-name", `Name of the storage credential used with this location.`)
 	// TODO: complex arg: effective_file_event_queue
-	cmd.Flags().BoolVar(&updateReq.EnableFileEvents, "enable-file-events", updateReq.EnableFileEvents, `Whether to enable file events on this external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.EnableFileEvents, "enable-file-events", `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
-	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Fallback, "fallback", `Indicates whether fallback mode is enabled for this external location.`)
 	// TODO: complex arg: file_event_queue
-	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the external location.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
-	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)
-	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
-	cmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `Path URL of the external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.Force, "force", `Force update even if changing url invalidates dependent external tables or mounts.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.IsolationMode, "isolation-mode", `Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`, "IsolationMode", "ISOLATION_MODE_ISOLATED", "ISOLATION_MODE_OPEN")
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the external location.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `The owner of the external location.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.ReadOnly, "read-only", `Indicates whether the external location is read-only.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateReq.SkipValidation, "skip-validation", `Skips validation of the storage credential associated with the external location.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Url, "url", `Path URL of the external location.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an external location.`
@@ -424,6 +453,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -437,14 +467,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		updateReq.NameArg = new(args[0])
 
-		response, err := w.ExternalLocations.Update(ctx, updateReq)
+		sdkReq, err := ucexternallocations.UpdateExternalLocationRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ExternalLocations.UpdateExternalLocation(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucexternallocations.ExternalLocationInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

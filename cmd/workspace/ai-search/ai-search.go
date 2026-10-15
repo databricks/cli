@@ -5,15 +5,16 @@ package ai_search
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/aisearch"
 	"github.com/spf13/cobra"
+
+	aisearch "github.com/databricks/cli/libs/sdktypes/aisearch/v1"
+	sdkaisearch "github.com/databricks/sdk-go/aisearch/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -72,23 +73,23 @@ var createEndpointOverrides []func(
 
 func newCreateEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createEndpointReq aisearch.CreateEndpointRequest
-	createEndpointReq.Endpoint = aisearch.Endpoint{}
+	createEndpointReq.Endpoint = &aisearch.Endpoint{}
+
 	var createEndpointJson flags.JsonFlag
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `The user-supplied short name for the Endpoint, per AIP-133.`)
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &createEndpointReq.EndpointId, "endpoint-id", `The user-supplied short name for the Endpoint, per AIP-133.`)
+	flags.StringPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", `The user-selected budget policy id for the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
-	cmd.Flags().IntVar(&createEndpointReq.Endpoint.ReplicaCount, "replica-count", createEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
+	flags.StringPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.Name, "name", `Name of the AI Search endpoint.`)
+	flags.IntPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.ReplicaCount, "replica-count", `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
-	cmd.Flags().IntVar(&createEndpointReq.Endpoint.TargetQps, "target-qps", createEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
+	flags.IntPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.TargetQps, "target-qps", `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", `The usage policy id applied to the endpoint.`)
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Create an AI Search endpoint.`
@@ -124,6 +125,7 @@ Create an AI Search endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createEndpointJson.Unmarshal(&createEndpointReq.Endpoint)
@@ -137,21 +139,25 @@ Create an AI Search endpoint.
 				}
 			}
 		}
-		createEndpointReq.Parent = args[0]
+		createEndpointReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createEndpointReq.Endpoint.EndpointType)
-			if err != nil {
-				return fmt.Errorf("invalid ENDPOINT_TYPE: %s", args[1])
-			}
-
+			createEndpointReq.Endpoint.EndpointType = aisearch.EndpointType(args[1])
 		}
 
-		response, err := w.AiSearch.CreateEndpoint(ctx, createEndpointReq)
+		sdkReq, err := aisearch.CreateEndpointRequestToSDK(&createEndpointReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.CreateEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -177,18 +183,18 @@ var createIndexOverrides []func(
 
 func newCreateIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createIndexReq aisearch.CreateIndexRequest
-	createIndexReq.Index = aisearch.Index{}
+	createIndexReq.Index = &aisearch.Index{}
+
 	var createIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createIndexReq.IndexId, "index-id", createIndexReq.IndexId, `The user-supplied Unity Catalog table name for the Index, per AIP-133.`)
+	flags.StringPtrVar(cmd.Flags(), &createIndexReq.IndexId, "index-id", `The user-supplied Unity Catalog table name for the Index, per AIP-133.`)
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
-	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
-	cmd.Flags().StringVar(&createIndexReq.Index.Name, "name", createIndexReq.Index.Name, `Name of the AI Search index.`)
+	flags.EnumVar(cmd.Flags(), &createIndexReq.Index.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`, "IndexSubtype", "FULL_TEXT", "HYBRID", "VECTOR")
+	flags.StringPtrVar(cmd.Flags(), &createIndexReq.Index.Name, "name", `Name of the AI Search index.`)
 	// TODO: complex arg: status
 
 	cmd.Use = "create-index PARENT PRIMARY_KEY INDEX_TYPE"
@@ -226,6 +232,7 @@ Create an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createIndexJson.Unmarshal(&createIndexReq.Index)
@@ -239,24 +246,28 @@ Create an AI Search index.
 				}
 			}
 		}
-		createIndexReq.Parent = args[0]
+		createIndexReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createIndexReq.Index.PrimaryKey = args[1]
+			createIndexReq.Index.PrimaryKey = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createIndexReq.Index.IndexType)
-			if err != nil {
-				return fmt.Errorf("invalid INDEX_TYPE: %s", args[2])
-			}
-
+			createIndexReq.Index.IndexType = aisearch.IndexType(args[2])
 		}
 
-		response, err := w.AiSearch.CreateIndex(ctx, createIndexReq)
+		sdkReq, err := aisearch.CreateIndexRequestToSDK(&createIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.CreateIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.IndexFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -277,13 +288,12 @@ Create an AI Search index.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteEndpointOverrides []func(
 	*cobra.Command,
-	*aisearch.DeleteEndpointRequest,
+	*sdkaisearch.DeleteEndpointRequest,
 )
 
 func newDeleteEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteEndpointReq aisearch.DeleteEndpointRequest
+	var deleteEndpointReq sdkaisearch.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
 	cmd.Short = `*Public Preview* Delete an AI Search endpoint.`
@@ -308,10 +318,12 @@ Delete an AI Search endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteEndpointReq.Name = args[0]
+		deleteEndpointReq.Name = new(args[0])
 
-		err = w.AiSearch.DeleteEndpoint(ctx, deleteEndpointReq)
+		sdkReq := &deleteEndpointReq
+		err = w.AiSearch.DeleteEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -336,13 +348,12 @@ Delete an AI Search endpoint.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteIndexOverrides []func(
 	*cobra.Command,
-	*aisearch.DeleteIndexRequest,
+	*sdkaisearch.DeleteIndexRequest,
 )
 
 func newDeleteIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteIndexReq aisearch.DeleteIndexRequest
+	var deleteIndexReq sdkaisearch.DeleteIndexRequest
 
 	cmd.Use = "delete-index NAME"
 	cmd.Short = `*Public Preview* Delete an AI Search index.`
@@ -367,10 +378,12 @@ Delete an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteIndexReq.Name = args[0]
+		deleteIndexReq.Name = new(args[0])
 
-		err = w.AiSearch.DeleteIndex(ctx, deleteIndexReq)
+		sdkReq := &deleteIndexReq
+		err = w.AiSearch.DeleteIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -395,13 +408,12 @@ Delete an AI Search index.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getEndpointOverrides []func(
 	*cobra.Command,
-	*aisearch.GetEndpointRequest,
+	*sdkaisearch.GetEndpointRequest,
 )
 
 func newGetEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getEndpointReq aisearch.GetEndpointRequest
+	var getEndpointReq sdkaisearch.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
 	cmd.Short = `*Public Preview* Get an AI Search endpoint.`
@@ -428,15 +440,21 @@ Get an AI Search endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getEndpointReq.Name = args[0]
+		getEndpointReq.Name = new(args[0])
 
-		response, err := w.AiSearch.GetEndpoint(ctx, getEndpointReq)
+		sdkReq := &getEndpointReq
+		response, err := w.AiSearch.GetEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -457,13 +475,12 @@ Get an AI Search endpoint.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getIndexOverrides []func(
 	*cobra.Command,
-	*aisearch.GetIndexRequest,
+	*sdkaisearch.GetIndexRequest,
 )
 
 func newGetIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getIndexReq aisearch.GetIndexRequest
+	var getIndexReq sdkaisearch.GetIndexRequest
 
 	cmd.Use = "get-index NAME"
 	cmd.Short = `*Public Preview* Get an AI Search index.`
@@ -490,15 +507,21 @@ Get an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getIndexReq.Name = args[0]
+		getIndexReq.Name = new(args[0])
 
-		response, err := w.AiSearch.GetIndex(ctx, getIndexReq)
+		sdkReq := &getIndexReq
+		response, err := w.AiSearch.GetIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.IndexFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -524,20 +547,20 @@ var listEndpointsOverrides []func(
 
 func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listEndpointsReq aisearch.ListEndpointsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listEndpointsReq.PageSize, "page-size", `Best-effort upper bound on the number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listEndpointsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
@@ -565,18 +588,22 @@ List AI Search endpoints.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listEndpointsReq.Parent = args[0]
+		listEndpointsReq.Parent = new(args[0])
 
-		response := w.AiSearch.ListEndpoints(ctx, listEndpointsReq)
+		sdkReq, err := aisearch.ListEndpointsRequestToSDK(&listEndpointsReq)
+		if err != nil {
+			return err
+		}
 		if listEndpointsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
 		}
 		if listEndpointsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiSearch.ListEndpointsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aisearch.EndpointFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -602,20 +629,20 @@ var listIndexesOverrides []func(
 
 func newListIndexes() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listIndexesReq aisearch.ListIndexesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listIndexesLimit int
 
-	cmd.Flags().IntVar(&listIndexesReq.PageSize, "page-size", listIndexesReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listIndexesReq.PageSize, "page-size", `Best-effort upper bound on the number of results to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listIndexesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listIndexesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-indexes PARENT"
@@ -643,18 +670,22 @@ List AI Search indexes.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listIndexesReq.Parent = args[0]
+		listIndexesReq.Parent = new(args[0])
 
-		response := w.AiSearch.ListIndexes(ctx, listIndexesReq)
+		sdkReq, err := aisearch.ListIndexesRequestToSDK(&listIndexesReq)
+		if err != nil {
+			return err
+		}
 		if listIndexesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listIndexesLimit)
 		}
 		if listIndexesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listIndexesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AiSearch.ListIndexesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, aisearch.IndexFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -680,22 +711,22 @@ var queryIndexOverrides []func(
 
 func newQueryIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var queryIndexReq aisearch.QueryIndexRequest
+
 	var queryIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
 	// TODO: array: facets
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string describing query filters (e.g.`)
-	cmd.Flags().IntVar(&queryIndexReq.MaxResults, "max-results", queryIndexReq.MaxResults, `Maximum number of results to return (the legacy num_results).`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.FiltersJson, "filters-json", `JSON string describing query filters (e.g.`)
+	flags.IntPtrVar(cmd.Flags(), &queryIndexReq.MaxResults, "max-results", `Maximum number of results to return (the legacy num_results).`)
 	// TODO: array: query_columns
-	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `Query type: ANN, HYBRID, or FULL_TEXT.`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.QueryText, "query-text", `Query text.`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.QueryType, "query-type", `Query type: ANN, HYBRID, or FULL_TEXT.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Score threshold for the approximate nearest-neighbor search.`)
+	flags.Float32PtrVar(cmd.Flags(), &queryIndexReq.ScoreThreshold, "score-threshold", `Score threshold for the approximate nearest-neighbor search.`)
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index NAME"
@@ -724,6 +755,7 @@ Query an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := queryIndexJson.Unmarshal(&queryIndexReq)
@@ -739,14 +771,22 @@ Query an AI Search index.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		queryIndexReq.Name = args[0]
+		queryIndexReq.Name = new(args[0])
 
-		response, err := w.AiSearch.QueryIndex(ctx, queryIndexReq)
+		sdkReq, err := aisearch.QueryIndexRequestToSDK(&queryIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.QueryIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.QueryIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -772,8 +812,8 @@ var removeDataOverrides []func(
 
 func newRemoveData() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var removeDataReq aisearch.RemoveDataRequest
+
 	var removeDataJson flags.JsonFlag
 
 	cmd.Flags().Var(&removeDataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -803,6 +843,7 @@ Remove data from an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := removeDataJson.Unmarshal(&removeDataReq)
@@ -818,14 +859,22 @@ Remove data from an AI Search index.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		removeDataReq.Name = args[0]
+		removeDataReq.Name = new(args[0])
 
-		response, err := w.AiSearch.RemoveData(ctx, removeDataReq)
+		sdkReq, err := aisearch.RemoveDataRequestToSDK(&removeDataReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.RemoveData(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.RemoveDataResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -851,14 +900,14 @@ var scanIndexOverrides []func(
 
 func newScanIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var scanIndexReq aisearch.ScanIndexRequest
+
 	var scanIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&scanIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&scanIndexReq.PageSize, "page-size", scanIndexReq.PageSize, `Maximum number of rows to return in this page.`)
-	cmd.Flags().StringVar(&scanIndexReq.PageToken, "page-token", scanIndexReq.PageToken, `Page token from a previous response; if unset, scanning starts from the beginning.`)
+	flags.IntPtrVar(cmd.Flags(), &scanIndexReq.PageSize, "page-size", `Maximum number of rows to return in this page.`)
+	flags.StringPtrVar(cmd.Flags(), &scanIndexReq.PageToken, "page-token", `Page token from a previous response; if unset, scanning starts from the beginning.`)
 
 	cmd.Use = "scan-index NAME"
 	cmd.Short = `*Public Preview* Scan an AI Search index.`
@@ -885,6 +934,7 @@ Scan an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := scanIndexJson.Unmarshal(&scanIndexReq)
@@ -898,14 +948,22 @@ Scan an AI Search index.
 				}
 			}
 		}
-		scanIndexReq.Name = args[0]
+		scanIndexReq.Name = new(args[0])
 
-		response, err := w.AiSearch.ScanIndex(ctx, scanIndexReq)
+		sdkReq, err := aisearch.ScanIndexRequestToSDK(&scanIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.ScanIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.ScanIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -931,7 +989,6 @@ var syncIndexOverrides []func(
 
 func newSyncIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var syncIndexReq aisearch.SyncIndexRequest
 
 	cmd.Use = "sync-index NAME"
@@ -962,15 +1019,21 @@ Synchronize an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		syncIndexReq.Name = args[0]
+		syncIndexReq.Name = new(args[0])
 
-		response, err := w.AiSearch.SyncIndex(ctx, syncIndexReq)
+		sdkReq, err := aisearch.SyncIndexRequestToSDK(&syncIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.SyncIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -996,22 +1059,22 @@ var updateEndpointOverrides []func(
 
 func newUpdateEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateEndpointReq aisearch.UpdateEndpointRequest
-	updateEndpointReq.Endpoint = aisearch.Endpoint{}
+	updateEndpointReq.Endpoint = &aisearch.Endpoint{}
+
 	var updateEndpointJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", `The user-selected budget policy id for the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
-	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.ReplicaCount, "replica-count", updateEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
+	flags.StringPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.Name, "name", `Name of the AI Search endpoint.`)
+	flags.IntPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.ReplicaCount, "replica-count", `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
-	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.TargetQps, "target-qps", updateEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
+	flags.IntPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.TargetQps, "target-qps", `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", `The usage policy id applied to the endpoint.`)
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Update an AI Search endpoint.`
@@ -1055,6 +1118,7 @@ Update an AI Search endpoint.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateEndpointJson.Unmarshal(&updateEndpointReq.Endpoint)
@@ -1068,25 +1132,28 @@ Update an AI Search endpoint.
 				}
 			}
 		}
-		updateEndpointReq.Name = args[0]
+		updateEndpointReq.Endpoint.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateEndpointReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateEndpointReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateEndpointReq.Endpoint.EndpointType)
-			if err != nil {
-				return fmt.Errorf("invalid ENDPOINT_TYPE: %s", args[2])
-			}
-
+			updateEndpointReq.Endpoint.EndpointType = aisearch.EndpointType(args[2])
 		}
 
-		response, err := w.AiSearch.UpdateEndpoint(ctx, updateEndpointReq)
+		sdkReq, err := aisearch.UpdateEndpointRequestToSDK(&updateEndpointReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.UpdateEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1112,8 +1179,8 @@ var upsertDataOverrides []func(
 
 func newUpsertData() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var upsertDataReq aisearch.UpsertDataRequest
+
 	var upsertDataJson flags.JsonFlag
 
 	cmd.Flags().Var(&upsertDataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1151,6 +1218,7 @@ Upsert data into an AI Search index.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := upsertDataJson.Unmarshal(&upsertDataReq)
@@ -1164,17 +1232,25 @@ Upsert data into an AI Search index.
 				}
 			}
 		}
-		upsertDataReq.Name = args[0]
+		upsertDataReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			upsertDataReq.InputsJson = args[1]
+			upsertDataReq.InputsJson = new(args[1])
 		}
 
-		response, err := w.AiSearch.UpsertData(ctx, upsertDataReq)
+		sdkReq, err := aisearch.UpsertDataRequestToSDK(&upsertDataReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AiSearch.UpsertData(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := aisearch.UpsertDataResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

@@ -2,11 +2,10 @@ package deploy
 
 import (
 	"context"
-	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func ResourcePathMkdir() bundle.Mutator {
@@ -29,7 +28,7 @@ func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 	// Optimisitcally create the resource path. If it already exists ignore the error.
 	err := w.Workspace.MkdirsByPath(ctx, b.Config.Workspace.ResourcePath)
-	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+	if apierrs.ErrorCode(err) == "RESOURCE_ALREADY_EXISTS" {
 		return nil
 	}
 	return diag.FromErr(err)

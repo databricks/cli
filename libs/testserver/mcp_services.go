@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // McpServicesCreate fakes POST /api/2.1/unity-catalog/mcp-services. See
@@ -16,7 +17,7 @@ import (
 func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var ms catalog.McpService
+	var ms aigateway.McpService
 	if err := json.Unmarshal(req.Body, &ms); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -27,11 +28,11 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("mcp_service_id")
 
-	ms.Name = "mcp-services/" + key
+	ms.Name = utils.NonZero("mcp-services/" + key)
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
-	ms.MetastoreId = nextUUID()
+	ms.MetastoreId = utils.NonZero(nextUUID())
 
 	s.McpServices[key] = ms
 	return Response{
@@ -50,7 +51,7 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 		}
 	}
 
-	var incoming catalog.McpService
+	var incoming aigateway.McpService
 	if err := json.Unmarshal(req.Body, &incoming); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

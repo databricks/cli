@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // modelNameBrowseOnly scopes the computed browse_only flag to the browse_only
@@ -15,7 +16,7 @@ const modelNameBrowseOnly = "model_browse_only"
 func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createRequest catalog.CreateRegisteredModelRequest
+	var createRequest registeredmodels.CreateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &createRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -24,25 +25,25 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	}
 
 	// Build full name from catalog.schema.name
-	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
+	fullName := utils.Deref(createRequest.CatalogName) + "." + utils.Deref(createRequest.SchemaName) + "." + utils.Deref(createRequest.Name)
 
-	registeredModel := catalog.RegisteredModelInfo{
+	registeredModel := registeredmodels.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
 		Comment:         createRequest.Comment,
 		Name:            createRequest.Name,
 		SchemaName:      createRequest.SchemaName,
 		StorageLocation: createRequest.StorageLocation,
-		FullName:        fullName,
-		CreatedAt:       nowMilli(),
+		FullName:        utils.NonZero(fullName),
+		CreatedAt:       utils.NonZero(nowMilli()),
 		CreatedBy:       s.CurrentUser().UserName,
 		UpdatedBy:       s.CurrentUser().UserName,
-		MetastoreId:     nextUUID(),
+		MetastoreId:     utils.NonZero(nextUUID()),
 		Owner:           s.CurrentUser().UserName,
 	}
 	registeredModel.UpdatedAt = registeredModel.CreatedAt
-	if createRequest.Name == modelNameBrowseOnly {
+	if utils.Deref(createRequest.Name) == modelNameBrowseOnly {
 		// Mirror UC, which computes browse_only and echoes it on GET.
-		registeredModel.BrowseOnly = true
+		registeredModel.BrowseOnly = utils.NonZero(true)
 	}
 
 	s.RegisteredModels[fullName] = registeredModel
@@ -67,7 +68,7 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		return *errResponse
 	}
 
-	var updateRequest catalog.UpdateRegisteredModelRequest
+	var updateRequest registeredmodels.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -77,15 +78,15 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 
 	applyUpdatedFields(&existing, updateRequest, fields)
 
-	if updateRequest.NewName != "" {
+	if utils.Deref(updateRequest.NewName) != "" {
 		existing.Name = updateRequest.NewName
 
 		// Delete the old entry and set full name to the new name
 		delete(s.RegisteredModels, fullName)
-		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
+		fullName = utils.Deref(existing.CatalogName) + "." + utils.Deref(existing.SchemaName) + "." + utils.Deref(updateRequest.NewName)
 	}
 
-	existing.UpdatedAt = nowMilli()
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	s.RegisteredModels[fullName] = existing
 	return Response{
 		Body: existing,

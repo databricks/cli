@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -21,7 +21,7 @@ func TestRenderBatchJSON(t *testing.T) {
 		{
 			SQL:         "SELECT 1",
 			StatementID: "stmt-1",
-			State:       sql.StatementStateSucceeded,
+			State:       sql.StatementStatus_State_Succeeded,
 			ElapsedMs:   42,
 			Columns:     []string{"n"},
 			Rows:        [][]string{{"1"}},
@@ -29,7 +29,7 @@ func TestRenderBatchJSON(t *testing.T) {
 		{
 			SQL:         "SELECT bad_syntax",
 			StatementID: "stmt-2",
-			State:       sql.StatementStateFailed,
+			State:       sql.StatementStatus_State_Failed,
 			ElapsedMs:   12,
 			Error: &batchResultError{
 				Message:   "near 'bad_syntax': syntax error",
@@ -58,18 +58,18 @@ func TestRenderBatchJSON(t *testing.T) {
 
 func TestExecuteBatchAllSucceed(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	sqls := []string{"SELECT 1", "SELECT 2", "SELECT 3"}
 	for i, sqlStr := range sqls {
 		sid := fmt.Sprintf("stmt-%d", i+1)
 		mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-			return req.Statement == sqlStr
+			return utils.Deref(req.Statement) == sqlStr
 		})).Return(&sql.StatementResponse{
-			StatementId: sid,
-			Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-			Manifest:    &sql.ResultManifest{Schema: &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "n"}}}},
-			Result:      &sql.ResultData{DataArray: [][]string{{strconv.Itoa(i + 1)}}},
+			StatementId: new(sid),
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
+			Manifest:    &sql.ResultManifest{Schema: &sql.Schema{Columns: []sql.ColumnInfo{{Name: new("n")}}}},
+			Result:      &sql.ResultData{DataArray: rows([][]string{{strconv.Itoa(i + 1)}})},
 		}, nil).Once()
 	}
 
@@ -78,7 +78,7 @@ func TestExecuteBatchAllSucceed(t *testing.T) {
 	require.Len(t, results, 3)
 	for i, r := range results {
 		assert.Equal(t, sqls[i], r.SQL, "result %d sql", i)
-		assert.Equal(t, sql.StatementStateSucceeded, r.State, "result %d state", i)
+		assert.Equal(t, sql.StatementStatus_State_Succeeded, r.State, "result %d state", i)
 		assert.Nil(t, r.Error, "result %d error", i)
 		assert.Equal(t, []string{"n"}, r.Columns, "result %d columns", i)
 		assert.Equal(t, [][]string{{strconv.Itoa(i + 1)}}, r.Rows, "result %d rows", i)
@@ -88,17 +88,17 @@ func TestExecuteBatchAllSucceed(t *testing.T) {
 
 func TestExecuteBatchPassesParametersToAllStatements(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
-	params := []sql.StatementParameterListItem{
-		{Name: "since", Type: "DATE", Value: "2026-01-01"},
+	params := []sql.StatementParameter{
+		{Name: new("since"), Type: new("DATE"), Value: new("2026-01-01")},
 	}
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
 		return assert.ObjectsAreEqual(params, req.Parameters)
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		StatementId: new("stmt"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 	}, nil).Times(2)
 
 	results := executeBatch(ctx, mockAPI, "wh-1", []string{"SELECT 1 WHERE 1=1 AND :since IS NOT NULL", "SELECT 2 WHERE :since IS NOT NULL"}, params, 8)
@@ -107,26 +107,26 @@ func TestExecuteBatchPassesParametersToAllStatements(t *testing.T) {
 
 func TestExecuteBatchPartialFailure(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT 1"
+		return utils.Deref(req.Statement) == "SELECT 1"
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-good",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Manifest:    &sql.ResultManifest{Schema: &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "n"}}}},
-		Result:      &sql.ResultData{DataArray: [][]string{{"1"}}},
+		StatementId: new("stmt-good"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
+		Manifest:    &sql.ResultManifest{Schema: &sql.Schema{Columns: []sql.ColumnInfo{{Name: new("n")}}}},
+		Result:      &sql.ResultData{DataArray: rows([][]string{{"1"}})},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT bad"
+		return utils.Deref(req.Statement) == "SELECT bad"
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-bad",
+		StatementId: new("stmt-bad"),
 		Status: &sql.StatementStatus{
-			State: sql.StatementStateFailed,
+			State: sql.StatementStatus_State_Failed,
 			Error: &sql.ServiceError{
 				ErrorCode: "SYNTAX_ERROR",
-				Message:   "near 'bad': syntax error",
+				Message:   new("near 'bad': syntax error"),
 			},
 		},
 	}, nil).Once()
@@ -135,10 +135,10 @@ func TestExecuteBatchPartialFailure(t *testing.T) {
 
 	require.Len(t, results, 2)
 	assert.Nil(t, results[0].Error)
-	assert.Equal(t, sql.StatementStateSucceeded, results[0].State)
+	assert.Equal(t, sql.StatementStatus_State_Succeeded, results[0].State)
 
 	require.NotNil(t, results[1].Error)
-	assert.Equal(t, sql.StatementStateFailed, results[1].State)
+	assert.Equal(t, sql.StatementStatus_State_Failed, results[1].State)
 	assert.Equal(t, "SYNTAX_ERROR", results[1].Error.ErrorCode)
 	assert.Contains(t, results[1].Error.Message, "syntax error")
 }
@@ -147,17 +147,17 @@ func TestExecuteBatchSubmissionFailure(t *testing.T) {
 	// ExecuteStatement transport error is encoded into the per-result error,
 	// not propagated up to abort siblings.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT good"
+		return utils.Deref(req.Statement) == "SELECT good"
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-good",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		StatementId: new("stmt-good"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 	}, nil).Once()
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT broken"
+		return utils.Deref(req.Statement) == "SELECT broken"
 	})).Return(nil, errors.New("network unreachable")).Once()
 
 	results := executeBatch(ctx, mockAPI, "wh-123", []string{"SELECT good", "SELECT broken"}, nil, 8)
@@ -173,13 +173,13 @@ func TestExecuteBatchSubmissionFailure(t *testing.T) {
 func TestExecuteBatchSetsOnWaitTimeoutContinue(t *testing.T) {
 	// Guards against a silent SDK default flip from CONTINUE to CANCEL.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.WaitTimeout == "0s" && req.OnWaitTimeout == sql.ExecuteStatementRequestOnWaitTimeoutContinue
+		return utils.Deref(req.WaitTimeout) == "0s" && req.OnWaitTimeout == sql.TimeoutAction_Continue
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-x",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		StatementId: new("stmt-x"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 	}, nil).Times(2)
 
 	results := executeBatch(ctx, mockAPI, "wh-123", []string{"q1", "q2"}, nil, 8)
@@ -190,27 +190,27 @@ func TestExecuteBatchPreservesInputOrder(t *testing.T) {
 	// Index 0 is slow (PENDING then SUCCEEDED on first poll); 1 and 2 are
 	// immediate. Despite the staggered completion, results stay in input order.
 	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.Statement == "SELECT 'slow'"
+		return utils.Deref(req.Statement) == "SELECT 'slow'"
 	})).Return(&sql.StatementResponse{
-		StatementId: "stmt-slow",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+		StatementId: new("stmt-slow"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 	}, nil).Once()
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-slow").Return(&sql.StatementResponse{
-		StatementId: "stmt-slow",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	mockAPI.EXPECT().GetStatementResult(mock.Anything, "stmt-slow").Return(&sql.StatementResponse{
+		StatementId: new("stmt-slow"),
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 	}, nil).Once()
 
 	for i, sqlStr := range []string{"SELECT 'fast1'", "SELECT 'fast2'"} {
 		sid := fmt.Sprintf("stmt-fast-%d", i+1)
 		mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-			return req.Statement == sqlStr
+			return utils.Deref(req.Statement) == sqlStr
 		})).Return(&sql.StatementResponse{
-			StatementId: sid,
-			Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+			StatementId: new(sid),
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 		}, nil).Once()
 	}
 
@@ -220,7 +220,7 @@ func TestExecuteBatchPreservesInputOrder(t *testing.T) {
 	require.Len(t, results, 3)
 	for i, r := range results {
 		assert.Equal(t, sqls[i], r.SQL, "result %d", i)
-		assert.Equal(t, sql.StatementStateSucceeded, r.State, "result %d", i)
+		assert.Equal(t, sql.StatementStatus_State_Succeeded, r.State, "result %d", i)
 	}
 }
 
@@ -230,7 +230,7 @@ func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 	// carry a NON-cancelled context, otherwise the SDK short-circuits on
 	// ctx.Err() and never reaches the warehouse.
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	mockAPI := newMockStatementAPI(t)
 
 	aliveCtx := mock.MatchedBy(func(c context.Context) bool {
 		return c.Err() == nil
@@ -239,15 +239,13 @@ func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 	for i, sqlStr := range []string{"q1", "q2", "q3"} {
 		sid := fmt.Sprintf("stmt-%d", i+1)
 		mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-			return req.Statement == sqlStr
+			return utils.Deref(req.Statement) == sqlStr
 		})).Return(&sql.StatementResponse{
-			StatementId: sid,
-			Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+			StatementId: new(sid),
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 		}, nil).Once()
 
-		mockAPI.EXPECT().CancelExecution(aliveCtx, sql.CancelExecutionRequest{
-			StatementId: sid,
-		}).Return(nil).Once()
+		mockAPI.EXPECT().CancelStatement(aliveCtx, sid).Return(nil).Once()
 	}
 
 	cancel()
@@ -256,7 +254,7 @@ func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 
 	require.Len(t, results, 3)
 	for i, r := range results {
-		assert.Equal(t, sql.StatementStateCanceled, r.State, "result %d state", i)
+		assert.Equal(t, sql.StatementStatus_State_Canceled, r.State, "result %d state", i)
 		require.NotNil(t, r.Error, "result %d error", i)
 	}
 }

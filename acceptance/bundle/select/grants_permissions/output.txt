@@ -45,7 +45,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
         ],
         "principal": "deco-test-user@databricks.com"
       }
-    ]
+    ],
+    "securable_full_name": "[MY_SCHEMA_ID]",
+    "securable_type": "schema"
   }
 }
 {
@@ -61,7 +63,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[MY_JOB_ID]",
+    "request_object_type": "jobs"
   }
 }
 

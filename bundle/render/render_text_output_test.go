@@ -6,6 +6,11 @@ import (
 	"io"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -13,11 +18,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -92,7 +92,7 @@ func TestRenderDiagnosticsSummary(t *testing.T) {
 						Host:     "https://test.databricks.com",
 						RootPath: "/Users/test@test.com/.bundle/test-bundle/test-target",
 						CurrentUser: &config.User{
-							User: &iam.User{UserName: "test@test.com"},
+							User: &scim.User{UserName: new("test@test.com")},
 						},
 					},
 				},
@@ -302,13 +302,13 @@ func TestRenderSummary(t *testing.T) {
 						ID:           "1",
 						BaseResource: resources.BaseResource{URL: "https://url1"},
 
-						JobSettings: jobs.JobSettings{Name: "job1-name"},
+						JobSettings: jobs.JobSettings{Name: new("job1-name")},
 					},
 					"job2": {
 						ID:           "2",
 						BaseResource: resources.BaseResource{URL: "https://url2"},
 
-						JobSettings: jobs.JobSettings{Name: "job2-name"},
+						JobSettings: jobs.JobSettings{Name: new("job2-name")},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
@@ -316,20 +316,20 @@ func TestRenderSummary(t *testing.T) {
 						ID: "4",
 
 						// no URL
-						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("pipeline2-name")},
 					},
 					"pipeline1": {
 						ID:           "3",
 						BaseResource: resources.BaseResource{URL: "https://url3"},
 
-						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{Name: new("pipeline1-name")},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						ID: "catalog.schema",
-						CreateSchema: catalog.CreateSchema{
-							Name: "schema",
+						CreateSchema: resources.CreateSchema{
+							Name: new("schema"),
 						},
 						// no URL
 					},
@@ -339,8 +339,8 @@ func TestRenderSummary(t *testing.T) {
 						ID:           "7",
 						BaseResource: resources.BaseResource{URL: "https://url4"},
 
-						CreateServingEndpoint: serving.CreateServingEndpoint{
-							Name: "my_serving_endpoint",
+						CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{
+							Name: new("my_serving_endpoint"),
 						},
 					},
 				},

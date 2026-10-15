@@ -12,14 +12,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var runDoesNotExist = newAPIError(400, "RESOURCE_DOES_NOT_EXIST", "Run 7 does not exist.")
 
 func TestClassifyLogError(t *testing.T) {
 	tests := []struct {
@@ -29,27 +30,27 @@ func TestClassifyLogError(t *testing.T) {
 	}{
 		{
 			name: "feature disabled falls back",
-			err:  &apierr.APIError{ErrorCode: "FEATURE_DISABLED", StatusCode: http.StatusForbidden},
+			err:  newAPIError(http.StatusForbidden, "FEATURE_DISABLED", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
 			name: "endpoint not found falls back",
-			err:  &apierr.APIError{ErrorCode: "ENDPOINT_NOT_FOUND", StatusCode: http.StatusNotFound},
+			err:  newAPIError(http.StatusNotFound, "ENDPOINT_NOT_FOUND", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
 			name: "bare 404 falls back",
-			err:  &apierr.APIError{ErrorCode: "SOMETHING", StatusCode: http.StatusNotFound},
+			err:  newAPIError(http.StatusNotFound, "SOMETHING", ""),
 			want: errBricklensFeatureDisabled,
 		},
 		{
 			name: "genuine resource-does-not-exist surfaces",
-			err:  apierr.ErrResourceDoesNotExist,
-			want: apierr.ErrResourceDoesNotExist,
+			err:  runDoesNotExist,
+			want: runDoesNotExist,
 		},
 		{
 			name: "transient 500 is retried",
-			err:  &apierr.APIError{ErrorCode: "INTERNAL", StatusCode: http.StatusInternalServerError},
+			err:  newAPIError(http.StatusInternalServerError, "INTERNAL", ""),
 			want: nil,
 		},
 		{
@@ -75,18 +76,18 @@ func TestClassifyLogError(t *testing.T) {
 }
 
 func TestProjectRunStatus(t *testing.T) {
-	run := &jobs.Run{
-		StartTime: 1000,
-		EndTime:   2000,
+	run := &jobs.GetRunResponse{
+		StartTime: new(int64(1000)),
+		EndTime:   new(int64(2000)),
 		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-			StateMessage:   "done",
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Success,
+			StateMessage:   new("done"),
 		},
 		Tasks: []jobs.RunTask{
-			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
-			{AttemptNumber: 2, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateWaitingForRetry}},
-			{AttemptNumber: 1},
+			{AttemptNumber: new(0), State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Queued}},
+			{AttemptNumber: new(2), State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry}},
+			{AttemptNumber: new(1)},
 		},
 	}
 
@@ -108,14 +109,14 @@ func TestRetryTrackerDeduplicatesWaitingAndAttemptIncrease(t *testing.T) {
 
 	retry, ok := tracker.observe(logRunStatus{
 		latestAttempt:            0,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	})
 	assert.True(t, ok)
 	assert.Equal(t, 1, retry)
 
 	_, ok = tracker.observe(logRunStatus{
 		latestAttempt:            1,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	})
 	assert.False(t, ok)
 }
@@ -124,7 +125,7 @@ func TestRetryTrackerDetectsAttemptCreatedInWaitingState(t *testing.T) {
 	tracker := newRetryTracker(logRunStatus{latestAttempt: 0})
 	waiting := logRunStatus{
 		latestAttempt:            1,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	}
 
 	retry, ok := tracker.observe(waiting)
@@ -152,7 +153,7 @@ func TestReportRetryText(t *testing.T) {
 
 	req.reportRetry(ctx, &stdout, logRunStatus{
 		latestAttempt:            0,
-		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry),
 	}, func() { stopped = true })
 
 	assert.True(t, stopped)
@@ -240,7 +241,7 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 
 	var buf bytes.Buffer
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),
@@ -288,7 +289,7 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 
 	var buf bytes.Buffer
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:            t.Context(),
@@ -581,7 +582,7 @@ func TestRequestPageRetriesThenFallsBack(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	w := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(w.Config)
+	apiClient, err := apiclient.New(w.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),
@@ -618,7 +619,7 @@ func TestRequestPageRetriesThenSucceeds(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	wc := newTestWorkspaceClient(t, srv.URL)
-	apiClient, err := client.New(wc.Config)
+	apiClient, err := apiclient.New(wc.Config)
 	require.NoError(t, err)
 	st := &bricklensStreamer{
 		ctx:       t.Context(),

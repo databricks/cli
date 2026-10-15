@@ -36,7 +36,9 @@
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[UUID]",
+    "request_object_type": "pipelines"
   },
   "method": "PUT",
   "path": "/api/2.0/permissions/pipelines/[UUID]"

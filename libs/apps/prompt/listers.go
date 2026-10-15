@@ -4,28 +4,34 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/listing"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/database/v1"
+	"github.com/databricks/sdk-go/experiments/v1"
+	"github.com/databricks/sdk-go/genie/v1"
+	"github.com/databricks/sdk-go/jobs/v2"
+	"github.com/databricks/sdk-go/modelserving/v1"
+	"github.com/databricks/sdk-go/postgres/v1"
+	"github.com/databricks/sdk-go/secrets/v1"
+	"github.com/databricks/sdk-go/uc/catalogs/v1"
+	"github.com/databricks/sdk-go/uc/connections/v1"
+	"github.com/databricks/sdk-go/uc/functions/v1"
+	"github.com/databricks/sdk-go/uc/schemas/v1"
+	"github.com/databricks/sdk-go/uc/volumes/v1"
+	"github.com/databricks/sdk-go/vectorsearch/v1"
+	"github.com/databricks/sdk-go/warehouses/v1"
 )
 
 // maxListResults caps the number of items returned by listers to avoid
@@ -46,7 +52,7 @@ func capResults(items []ListItem) []ListItem {
 	return items
 }
 
-func workspaceClient(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func workspaceClient(ctx context.Context) (*sdkclients.Clients, error) {
 	w := cmdctx.WorkspaceClient(ctx)
 	if w == nil {
 		return nil, errors.New("no workspace client available")
@@ -60,14 +66,13 @@ func ListSecretScopes(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Secrets.ListScopes(ctx)
-	scopes, err := listing.ToSlice(ctx, iter)
+	resp, err := w.Secrets.ListScopes(ctx, secrets.ListScopesRequest{})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(scopes))
-	for _, s := range scopes {
-		out = append(out, ListItem{ID: s.Name, Label: s.Name})
+	out := make([]ListItem, 0, len(resp.Scopes))
+	for _, s := range resp.Scopes {
+		out = append(out, ListItem{ID: utils.Deref(s.Name), Label: utils.Deref(s.Name)})
 	}
 	return out, nil
 }
@@ -78,14 +83,13 @@ func ListSecretKeys(ctx context.Context, scope string) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Secrets.ListSecrets(ctx, workspace.ListSecretsRequest{Scope: scope})
-	keys, err := listing.ToSlice(ctx, iter)
+	resp, err := w.Secrets.ListSecrets(ctx, secrets.ListSecretsRequest{Scope: new(scope)})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(keys))
-	for _, k := range keys {
-		out = append(out, ListItem{ID: k.Key, Label: k.Key})
+	out := make([]ListItem, 0, len(resp.Secrets))
+	for _, k := range resp.Secrets {
+		out = append(out, ListItem{ID: utils.Deref(k.Key), Label: utils.Deref(k.Key)})
 	}
 	return out, nil
 }
@@ -96,14 +100,13 @@ func ListSchemas(ctx context.Context, catalogName string) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: catalogName})
-	schemas, err := listing.ToSlice(ctx, schemaIter)
+	schemas, err := collectAll(w.Schemas.ListSchemasIter(ctx, schemas.ListSchemasRequest{CatalogName: new(catalogName)}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, min(len(schemas), maxListResults))
 	for _, s := range schemas {
-		out = append(out, ListItem{ID: s.Name, Label: s.Name})
+		out = append(out, ListItem{ID: utils.Deref(s.Name), Label: utils.Deref(s.Name)})
 	}
 	return capResults(out), nil
 }
@@ -114,18 +117,17 @@ func ListVolumesInSchema(ctx context.Context, catalogName, schemaName string) ([
 	if err != nil {
 		return nil, err
 	}
-	volIter := w.Volumes.List(ctx, catalog.ListVolumesRequest{
-		CatalogName: catalogName,
-		SchemaName:  schemaName,
-	})
-	vols, err := listing.ToSlice(ctx, volIter)
+	vols, err := collectAll(w.Volumes.ListVolumesIter(ctx, volumes.ListVolumesRequest{
+		CatalogName: new(catalogName),
+		SchemaName:  new(schemaName),
+	}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, min(len(vols), maxListResults))
 	for _, v := range vols {
-		volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, v.Name)
-		out = append(out, ListItem{ID: volumePath, Label: v.Name})
+		volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, utils.Deref(v.Name))
+		out = append(out, ListItem{ID: volumePath, Label: utils.Deref(v.Name)})
 	}
 	return capResults(out), nil
 }
@@ -136,21 +138,20 @@ func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) 
 	if err != nil {
 		return nil, err
 	}
-	fnIter := w.Functions.List(ctx, catalog.ListFunctionsRequest{
-		CatalogName: catalogName,
-		SchemaName:  schemaName,
-	})
-	fns, err := listing.ToSlice(ctx, fnIter)
+	fns, err := collectAll(w.Functions.ListFunctionsIter(ctx, functions.ListFunctionsRequest{
+		CatalogName: new(catalogName),
+		SchemaName:  new(schemaName),
+	}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, min(len(fns), maxListResults))
 	for _, f := range fns {
-		fullName := f.FullName
+		fullName := utils.Deref(f.FullName)
 		if fullName == "" {
-			fullName = fmt.Sprintf("%s.%s.%s", catalogName, schemaName, f.Name)
+			fullName = fmt.Sprintf("%s.%s.%s", catalogName, schemaName, utils.Deref(f.Name))
 		}
-		out = append(out, ListItem{ID: fullName, Label: f.Name})
+		out = append(out, ListItem{ID: fullName, Label: utils.Deref(f.Name)})
 	}
 	return capResults(out), nil
 }
@@ -169,7 +170,7 @@ func ListDatabases(ctx context.Context, instanceName string) ([]ListItem, error)
 	if err != nil {
 		return nil, err
 	}
-	api, err := client.New(w.Config)
+	api, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -210,26 +211,25 @@ func ListPostgresBranches(ctx context.Context, projectName string) ([]ListItem, 
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Postgres.ListBranches(ctx, postgres.ListBranchesRequest{Parent: projectName})
-	branches, err := listing.ToSlice(ctx, iter)
+	branches, err := collectAll(w.Postgres.ListBranchesIter(ctx, postgres.ListBranchesRequest{Parent: new(projectName)}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, len(branches))
 	for _, b := range branches {
-		label := extractIDFromName(b.Name, "branches")
+		label := extractIDFromName(utils.Deref(b.Name), "branches")
 		if b.Status != nil {
-			if b.Status.Default {
+			if utils.Deref(b.Status.Default) {
 				label += " (default)"
 			}
-			if b.Status.IsProtected {
+			if utils.Deref(b.Status.IsProtected) {
 				label += " (protected)"
 			}
-			if b.Status.CurrentState == postgres.BranchStatusStateArchived {
+			if b.Status.CurrentState == postgres.BranchStatus_State_Archived {
 				label += " (archived)"
 			}
 		}
-		out = append(out, ListItem{ID: b.Name, Label: label})
+		out = append(out, ListItem{ID: utils.Deref(b.Name), Label: label})
 	}
 	return out, nil
 }
@@ -240,31 +240,29 @@ func ListPostgresDatabases(ctx context.Context, branchName string) ([]ListItem, 
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Postgres.ListDatabases(ctx, postgres.ListDatabasesRequest{Parent: branchName})
-	databases, err := listing.ToSlice(ctx, iter)
+	databases, err := collectAll(w.Postgres.ListDatabasesIter(ctx, postgres.ListDatabasesRequest{Parent: new(branchName)}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, len(databases))
 	for _, db := range databases {
-		label := extractIDFromName(db.Name, "databases")
-		if db.Status != nil && db.Status.PostgresDatabase != "" {
-			label = db.Status.PostgresDatabase
+		label := extractIDFromName(utils.Deref(db.Name), "databases")
+		if db.Status != nil && utils.Deref(db.Status.PostgresDatabase) != "" {
+			label = *db.Status.PostgresDatabase
 		}
-		out = append(out, ListItem{ID: db.Name, Label: label})
+		out = append(out, ListItem{ID: utils.Deref(db.Name), Label: label})
 	}
 	return out, nil
 }
 
 // ListPostgresEndpoints returns endpoints for a branch as raw Endpoint objects.
 // Returns raw objects (not ListItem) since we need multiple fields (Name, Status.Hosts.Host).
-func ListPostgresEndpoints(ctx context.Context, branchName string) ([]postgres.Endpoint, error) {
+func ListPostgresEndpoints(ctx context.Context, branchName string) ([]*postgres.Endpoint, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Postgres.ListEndpoints(ctx, postgres.ListEndpointsRequest{Parent: branchName})
-	return listing.ToSlice(ctx, iter)
+	return collectAll(w.Postgres.ListEndpointsIter(ctx, postgres.ListEndpointsRequest{Parent: new(branchName)}))
 }
 
 // ---------------------------------------------------------------------------
@@ -278,13 +276,13 @@ func ListSQLWarehouses(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Warehouses.List(ctx, sql.ListWarehousesRequest{PageSize: pageSize})
-	mapFn := func(wh sql.EndpointInfo) ListItem {
-		label := wh.Name
+	iter := listing.FromSeq(w.Warehouses.ListWarehousesIter(ctx, warehouses.ListWarehousesRequest{PageSize: new(pageSize)}))
+	mapFn := func(wh *warehouses.EndpointInfo) ListItem {
+		label := utils.Deref(wh.Name)
 		if wh.State != "" {
-			label = fmt.Sprintf("%s (%s)", wh.Name, wh.State)
+			label = fmt.Sprintf("%s (%s)", utils.Deref(wh.Name), wh.State)
 		}
-		return ListItem{ID: wh.Id, Label: label}
+		return ListItem{ID: utils.Deref(wh.Id), Label: label}
 	}
 	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
 	if err != nil {
@@ -306,10 +304,10 @@ func ListJobs(ctx context.Context) (*PagedFetcher, error) {
 		return nil, err
 	}
 	apiLimit := min(pageSize, 100)
-	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Limit: apiLimit})
-	mapFn := func(j jobs.BaseJob) ListItem {
-		label := j.Settings.Name
-		id := strconv.FormatInt(j.JobId, 10)
+	iter := listing.FromSeq(w.Jobs.ListJobsIter(ctx, jobs.ListJobsRequest{Limit: new(apiLimit)}))
+	mapFn := func(j *jobs.BaseJob) ListItem {
+		label := jobName(j)
+		id := strconv.FormatInt(utils.Deref(j.JobId), 10)
 		if label == "" {
 			label = id
 		}
@@ -334,15 +332,14 @@ func SearchJobs(ctx context.Context, name string) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Name: name})
-	jobList, err := listing.ToSlice(ctx, iter)
+	jobList, err := collectAll(w.Jobs.ListJobsIter(ctx, jobs.ListJobsRequest{Name: new(name)}))
 	if err != nil {
 		return nil, err
 	}
 	out := make([]ListItem, 0, len(jobList))
 	for _, j := range jobList {
-		label := j.Settings.Name
-		id := strconv.FormatInt(j.JobId, 10)
+		label := jobName(j)
+		id := strconv.FormatInt(utils.Deref(j.JobId), 10)
 		if label == "" {
 			label = id
 		}
@@ -357,15 +354,19 @@ func ListServingEndpoints(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.ServingEndpoints.List(ctx)
-	mapFn := func(e serving.ServingEndpoint) ListItem {
-		name := e.Name
-		if name == "" {
-			name = e.Id
-		}
-		return ListItem{ID: e.Name, Label: name}
+	resp, err := w.ServingEndpoints.ListInferenceEndpoints(ctx, modelserving.ListInferenceEndpointsRequest{})
+	if err != nil {
+		return nil, err
 	}
-	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	iter := listing.SliceIterator[modelserving.InferenceEndpoint](resp.Endpoints)
+	mapFn := func(e modelserving.InferenceEndpoint) ListItem {
+		name := utils.Deref(e.Name)
+		if name == "" {
+			name = utils.Deref(e.Id)
+		}
+		return ListItem{ID: utils.Deref(e.Name), Label: name}
+	}
+	items, hasMore, err := collectN(ctx, &iter, pageSize, mapFn)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +374,7 @@ func ListServingEndpoints(ctx context.Context) (*PagedFetcher, error) {
 		Items:   items,
 		HasMore: hasMore,
 		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
-			return collectN(ctx, iter, pageSize, mapFn)
+			return collectN(ctx, &iter, pageSize, mapFn)
 		},
 	}, nil
 }
@@ -384,13 +385,13 @@ func ListExperiments(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Experiments.ListExperiments(ctx, ml.ListExperimentsRequest{MaxResults: int64(pageSize)})
-	mapFn := func(e ml.Experiment) ListItem {
-		label := e.Name
+	iter := listing.FromSeq(w.Experiments.ListExperimentsIter(ctx, experiments.ListExperimentsRequest{MaxResults: new(int64(pageSize))}))
+	mapFn := func(e *experiments.Experiment) ListItem {
+		label := utils.Deref(e.Name)
 		if label == "" {
-			label = e.ExperimentId
+			label = utils.Deref(e.ExperimentId)
 		}
-		return ListItem{ID: e.ExperimentId, Label: label}
+		return ListItem{ID: utils.Deref(e.ExperimentId), Label: label}
 	}
 	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
 	if err != nil {
@@ -413,24 +414,24 @@ func ListGenieSpaces(ctx context.Context) (*PagedFetcher, error) {
 	}
 	var nextToken string
 	fetchPage := func(ctx context.Context) ([]ListItem, bool, error) {
-		req := dashboards.GenieListSpacesRequest{PageToken: nextToken, PageSize: pageSize}
-		resp, err := w.Genie.ListSpaces(ctx, req)
+		req := genie.GenieListSpacesRequest{PageToken: new(nextToken), PageSize: new(pageSize)}
+		resp, err := w.Genie.GenieListSpaces(ctx, req)
 		if err != nil {
 			return nil, false, err
 		}
 		items := make([]ListItem, 0, len(resp.Spaces))
 		for _, s := range resp.Spaces {
-			id := s.SpaceId
-			label := s.Title
+			id := utils.Deref(s.SpaceId)
+			label := utils.Deref(s.Title)
 			if label == "" {
-				label = s.Description
+				label = utils.Deref(s.Description)
 			}
 			if label == "" {
 				label = id
 			}
 			items = append(items, ListItem{ID: id, Label: label})
 		}
-		nextToken = resp.NextPageToken
+		nextToken = utils.Deref(resp.NextPageToken)
 		return items, nextToken != "", nil
 	}
 	items, hasMore, err := fetchPage(ctx)
@@ -450,13 +451,13 @@ func ListConnections(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Connections.List(ctx, catalog.ListConnectionsRequest{MaxResults: pageSize})
-	mapFn := func(c catalog.ConnectionInfo) ListItem {
-		name := c.Name
+	iter := listing.FromSeq(w.Connections.ListConnectionsIter(ctx, connections.ListConnectionsRequest{MaxResults: new(pageSize)}))
+	mapFn := func(c *connections.ConnectionInfo) ListItem {
+		name := utils.Deref(c.Name)
 		if name == "" {
-			name = c.FullName
+			name = utils.Deref(c.FullName)
 		}
-		return ListItem{ID: c.FullName, Label: name}
+		return ListItem{ID: utils.Deref(c.FullName), Label: name}
 	}
 	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
 	if err != nil {
@@ -482,26 +483,25 @@ func ListVectorSearchIndexes(ctx context.Context) (*PagedFetcher, error) {
 		return nil, err
 	}
 	var out []ListItem
-	epIter := w.VectorSearchEndpoints.ListEndpoints(ctx, vectorsearch.ListEndpointsRequest{})
-	endpoints, err := listing.ToSlice(ctx, epIter)
+	endpoints, err := collectAll(w.VectorSearch.ListEndpointsIter(ctx, vectorsearch.ListEndpointsRequest{}))
 	if err != nil {
 		return nil, err
 	}
 	capped := false
 	for _, ep := range endpoints {
-		indexIter := w.VectorSearchIndexes.ListIndexes(ctx, vectorsearch.ListIndexesRequest{EndpointName: ep.Name})
-		indexes, err := listing.ToSlice(ctx, indexIter)
+		epName := utils.Deref(ep.Name)
+		indexes, err := collectAll(w.VectorSearch.ListVectorIndexIter(ctx, vectorsearch.ListVectorIndexRequest{EndpointName: ep.Name}))
 		if err != nil {
-			log.Warnf(ctx, "Failed to list indexes for endpoint %q: %v", ep.Name, err)
+			log.Warnf(ctx, "Failed to list indexes for endpoint %q: %v", epName, err)
 			continue
 		}
 		for _, idx := range indexes {
-			label := idx.Name
+			label := utils.Deref(idx.Name)
 			if label == "" {
-				label = ep.Name + "/ (unnamed)"
+				label = epName + "/ (unnamed)"
 			}
-			id := ep.Name + "/" + idx.Name
-			out = append(out, ListItem{ID: id, Label: fmt.Sprintf("%s / %s", ep.Name, label)})
+			id := epName + "/" + utils.Deref(idx.Name)
+			out = append(out, ListItem{ID: id, Label: fmt.Sprintf("%s / %s", epName, label)})
 			if len(out) >= maxTotalResults {
 				capped = true
 				break
@@ -525,9 +525,9 @@ func ListCatalogs(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Catalogs.List(ctx, catalog.ListCatalogsRequest{MaxResults: pageSize})
-	mapFn := func(c catalog.CatalogInfo) ListItem {
-		return ListItem{ID: c.Name, Label: c.Name}
+	iter := listing.FromSeq(w.Catalogs.ListCatalogsIter(ctx, catalogs.ListCatalogsRequest{MaxResults: new(pageSize)}))
+	mapFn := func(c *catalogs.CatalogInfo) ListItem {
+		return ListItem{ID: utils.Deref(c.Name), Label: utils.Deref(c.Name)}
 	}
 	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
 	if err != nil {
@@ -549,9 +549,9 @@ func ListDatabaseInstances(ctx context.Context) (*PagedFetcher, error) {
 		return nil, err
 	}
 	apiLimit := min(pageSize, 100)
-	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{PageSize: apiLimit})
-	mapFn := func(inst database.DatabaseInstance) ListItem {
-		return ListItem{ID: inst.Name, Label: inst.Name}
+	iter := listing.FromSeq(w.Database.ListDatabaseInstancesIter(ctx, database.ListDatabaseInstancesRequest{PageSize: new(apiLimit)}))
+	mapFn := func(inst *database.DatabaseInstance) ListItem {
+		return ListItem{ID: utils.Deref(inst.Name), Label: utils.Deref(inst.Name)}
 	}
 	items, hasMore, err := collectN(ctx, iter, apiLimit, mapFn)
 	if err != nil {
@@ -573,13 +573,13 @@ func ListPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
 		return nil, err
 	}
 	apiLimit := min(pageSize, 100)
-	iter := w.Postgres.ListProjects(ctx, postgres.ListProjectsRequest{PageSize: apiLimit})
-	mapFn := func(p postgres.Project) ListItem {
-		label := p.Name
-		if p.Status != nil && p.Status.DisplayName != "" {
-			label = p.Status.DisplayName
+	iter := listing.FromSeq(w.Postgres.ListProjectsIter(ctx, postgres.ListProjectsRequest{PageSize: new(apiLimit)}))
+	mapFn := func(p *postgres.Project) ListItem {
+		label := utils.Deref(p.Name)
+		if p.Status != nil && utils.Deref(p.Status.DisplayName) != "" {
+			label = *p.Status.DisplayName
 		}
-		return ListItem{ID: p.Name, Label: label}
+		return ListItem{ID: utils.Deref(p.Name), Label: label}
 	}
 	items, hasMore, err := collectN(ctx, iter, apiLimit, mapFn)
 	if err != nil {
@@ -592,4 +592,24 @@ func ListPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
 			return collectN(ctx, iter, apiLimit, mapFn)
 		},
 	}, nil
+}
+
+// jobName returns the job's configured name, or "" when it has none.
+func jobName(j *jobs.BaseJob) string {
+	if j.Settings == nil {
+		return ""
+	}
+	return utils.Deref(j.Settings.Name)
+}
+
+// collectAll drains an sdk-go list sequence.
+func collectAll[T any](seq iter.Seq2[*T, error]) ([]*T, error) {
+	var out []*T
+	for v, err := range seq {
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }

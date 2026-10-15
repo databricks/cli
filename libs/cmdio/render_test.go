@@ -2,16 +2,13 @@ package cmdio
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"iter"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,36 +23,25 @@ type testCase struct {
 	errMessage     string
 }
 
-var dummyWorkspace1 = provisioning.Workspace{
+// workspace stands in for an API list item.
+type workspace struct {
+	WorkspaceId   int64  `json:"workspace_id,omitempty"`
+	WorkspaceName string `json:"workspace_name,omitempty"`
+}
+
+var dummyWorkspace1 = workspace{
 	WorkspaceId:   123,
 	WorkspaceName: "abc",
 }
 
-var dummyWorkspace2 = provisioning.Workspace{
+var dummyWorkspace2 = workspace{
 	WorkspaceId:   456,
 	WorkspaceName: "def",
 }
 
-type dummyIterator struct {
-	items []*provisioning.Workspace
-}
-
-func (d *dummyIterator) HasNext(_ context.Context) bool {
-	return len(d.items) > 0
-}
-
-func (d *dummyIterator) Next(ctx context.Context) (*provisioning.Workspace, error) {
-	if !d.HasNext(ctx) {
-		return nil, errors.New("no more items")
-	}
-	item := d.items[0]
-	d.items = d.items[1:]
-	return item, nil
-}
-
-func makeWorkspaces(count int) []*provisioning.Workspace {
-	res := make([]*provisioning.Workspace, 0, count)
-	next := []*provisioning.Workspace{&dummyWorkspace1, &dummyWorkspace2}
+func makeWorkspaces(count int) []*workspace {
+	res := make([]*workspace, 0, count)
+	next := []*workspace{&dummyWorkspace1, &dummyWorkspace2}
 	for range count {
 		n := next[0]
 		next = append(next[1:], n)
@@ -64,11 +50,14 @@ func makeWorkspaces(count int) []*provisioning.Workspace {
 	return res
 }
 
-func makeIterator(count int) listing.Iterator[*provisioning.Workspace] {
-	items := make([]*provisioning.Workspace, 0, count)
-	items = append(items, makeWorkspaces(count)...)
-	return &dummyIterator{
-		items: items,
+func makeIterator(count int) iter.Seq2[*workspace, error] {
+	items := makeWorkspaces(count)
+	return func(yield func(*workspace, error) bool) {
+		for _, item := range items {
+			if !yield(item, nil) {
+				return
+			}
+		}
 	}
 }
 
@@ -268,7 +257,7 @@ func TestRender(t *testing.T) {
 			cmdIO := NewIO(ctx, c.outputFormat, nil, output, output, c.headerTemplate, c.template)
 			ctx = InContext(ctx, cmdIO)
 			var err error
-			if vv, ok := c.v.(listing.Iterator[*provisioning.Workspace]); ok {
+			if vv, ok := c.v.(iter.Seq2[*workspace, error]); ok {
 				err = RenderIterator(ctx, vv)
 			} else {
 				err = Render(ctx, c.v)

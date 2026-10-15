@@ -41,6 +41,7 @@ Exit code: 1
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
   "body": {
+    "dashboard_id": "[DASHBOARD1_ID]",
     "display_name": "my dashboard renamed",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
@@ -51,6 +52,7 @@ Exit code: 1
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
   "body": {
+    "dashboard_id": "[DASHBOARD1_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -134,6 +136,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
   "body": {
+    "dashboard_id": "[DASHBOARD1_ID]",
     "display_name": "my dashboard renamed",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
@@ -144,6 +147,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
   "body": {
+    "dashboard_id": "[DASHBOARD1_ID]",
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

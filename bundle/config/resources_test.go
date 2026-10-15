@@ -7,27 +7,30 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
 
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	ucsecrets "github.com/databricks/cli/libs/sdktypes/uc/secrets/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
-	"github.com/stretchr/testify/mock"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -170,37 +173,37 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		JobRuns: map[string]*resources.JobRun{
 			"my_job_run": {
-				RunNow: jobs.RunNow{},
+				RunNowRequest: jobs.RunNowRequest{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{
 			"my_pipeline": {
-				CreatePipeline: pipelines.CreatePipeline{},
+				CreatePipelineRequest: pipelines.CreatePipelineRequest{},
 			},
 		},
 		Experiments: map[string]*resources.MlflowExperiment{
 			"my_experiment": {
-				CreateExperiment: ml.CreateExperiment{},
+				CreateExperimentRequest: experiments.CreateExperimentRequest{},
 			},
 		},
 		RegisteredModels: map[string]*resources.RegisteredModel{
 			"my_registered_model": {
-				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
+				CreateRegisteredModelRequest: registeredmodels.CreateRegisteredModelRequest{},
 			},
 		},
 		Catalogs: map[string]*resources.Catalog{
 			"my_catalog": {
-				CreateCatalog: catalog.CreateCatalog{},
+				CreateCatalog: resources.CreateCatalog{},
 			},
 		},
 		ExternalLocations: map[string]*resources.ExternalLocation{
 			"my_external_location": {
-				CreateExternalLocation: catalog.CreateExternalLocation{},
+				CreateExternalLocation: resources.CreateExternalLocation{},
 			},
 		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
-				CreateSchema: catalog.CreateSchema{},
+				CreateSchema: resources.CreateSchema{},
 			},
 		},
 		Clusters: map[string]*resources.Cluster{
@@ -220,7 +223,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
-				CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{},
+				CreateVolumeRequestContent: resources.CreateVolumeRequestContent{},
 			},
 		},
 		Apps: map[string]*resources.App{
@@ -230,17 +233,17 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Alerts: map[string]*resources.Alert{
 			"my_alert": {
-				AlertV2: sql.AlertV2{},
+				Alert: alerts.Alert{},
 			},
 		},
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
-				CreateMonitor: catalog.CreateMonitor{},
+				CreateMonitor: qualitymonitors.CreateMonitor{},
 			},
 		},
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 			"my_model_serving_endpoint": {
-				CreateServingEndpoint: serving.CreateServingEndpoint{},
+				CreateInferenceEndpointRequest: modelserving.CreateInferenceEndpointRequest{},
 			},
 		},
 		ModelServices: map[string]*resources.ModelService{
@@ -265,16 +268,16 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Secrets: map[string]*resources.Secret{
 			"my_secret": {
-				Secret: catalog.Secret{
-					CatalogName: "main",
-					SchemaName:  "default",
-					Name:        "my_secret",
+				Secret: ucsecrets.Secret{
+					CatalogName: new("main"),
+					SchemaName:  new("default"),
+					Name:        new("my_secret"),
 				},
 			},
 		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{
 			"my_sql_warehouse": {
-				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
+				CreateWarehouseRequest: warehouses.CreateWarehouseRequest{},
 			},
 		},
 		DatabaseInstances: map[string]*resources.DatabaseInstance{
@@ -297,7 +300,7 @@ func TestResourcesBindSupport(t *testing.T) {
 				PostgresProjectConfig: resources.PostgresProjectConfig{
 					ProjectId: "my-postgres-project",
 					ProjectSpec: postgres.ProjectSpec{
-						DisplayName: "my_postgres_project",
+						DisplayName: new("my_postgres_project"),
 					},
 				},
 			},
@@ -316,7 +319,7 @@ func TestResourcesBindSupport(t *testing.T) {
 					EndpointId: "my-postgres-endpoint",
 					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
 					EndpointSpec: postgres.EndpointSpec{
-						EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+						EndpointType: postgres.EndpointType_EndpointTypeReadWrite,
 					},
 				},
 			},
@@ -341,8 +344,8 @@ func TestResourcesBindSupport(t *testing.T) {
 				PostgresRoleConfig: resources.PostgresRoleConfig{
 					RoleId: "my-postgres-role",
 					Parent: "projects/my-postgres-project/branches/my-postgres-branch",
-					RoleRoleSpec: postgres.RoleRoleSpec{
-						PostgresRole: "my_postgres_role",
+					Role_RoleSpec: postgres.Role_RoleSpec{
+						PostgresRole: new("my_postgres_role"),
 					},
 				},
 			},
@@ -363,19 +366,19 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
-				CreateEndpoint: vectorsearch.CreateEndpoint{
-					Name:         "my_vector_search_endpoint",
-					EndpointType: vectorsearch.EndpointTypeStandard,
+				CreateEndpointRequest: vectorsearch.CreateEndpointRequest{
+					Name:         new("my_vector_search_endpoint"),
+					EndpointType: vectorsearch.EndpointType_Standard,
 				},
 			},
 		},
 		VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 			"my_vector_search_index": {
 				CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-					Name:         "my_vector_search_index",
-					EndpointName: "my_vector_search_endpoint",
-					PrimaryKey:   "id",
-					IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+					Name:         new("my_vector_search_index"),
+					EndpointName: new("my_vector_search_endpoint"),
+					PrimaryKey:   new("id"),
+					IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
 				},
 			},
 		},
@@ -386,47 +389,22 @@ func TestResourcesBindSupport(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockInstancePoolsAPI().EXPECT().GetByInstancePoolId(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockAiGatewayAPI().EXPECT().GetModelProviderService(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
-		{Name: "0"},
-	}, nil)
-	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetSnapshotSchedule(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
-	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
+	// Every Exists implementation issues a GET; answer each with an empty
+	// object so all resources are reported as existing. Secret scopes are
+	// looked up by listing, so that listing must contain the scope.
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/secrets/scopes/list", func(testserver.Request) any {
+		return map[string]any{"scopes": []map[string]any{{"name": "0"}}}
+	})
+	server.Handle("GET", "/{path...}", func(testserver.Request) any {
+		return map[string]any{}
+	})
+	w, err := sdkclients.New(ctx, &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
+	})
+	require.NoError(t, err)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
@@ -439,7 +417,7 @@ func TestResourcesBindSupport(t *testing.T) {
 			assert.NoError(t, err)
 
 			// bind operation requires Exists to return true
-			exists, err := r.Exists(ctx, m.WorkspaceClient, "0")
+			exists, err := r.Exists(ctx, w, "0")
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}

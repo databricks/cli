@@ -81,7 +81,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
   "body": {
-    "comment": "COMMENT2"
+    "comment": "COMMENT2",
+    "full_name_arg": "main.myschema.myvolume"
   }
 }
 

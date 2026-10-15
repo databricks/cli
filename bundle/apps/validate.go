@@ -9,8 +9,9 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // resourceReferencePattern matches ${resources.<type>.<key>.<field>} variable references.
@@ -23,7 +24,8 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	usedSourceCodePaths := make(map[string]string)
 
 	for key, app := range b.Config.Resources.Apps {
-		if app.SourceCodePath == "" && app.GitSource == nil {
+		sourceCodePath := utils.Deref(app.SourceCodePath)
+		if sourceCodePath == "" && app.GitSource == nil {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing app source code path or git source",
@@ -33,7 +35,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			continue
 		}
 
-		if app.SourceCodePath != "" && app.GitSource != nil {
+		if sourceCodePath != "" && app.GitSource != nil {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Both source_code_path and git_source fields are set",
@@ -43,15 +45,15 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			continue
 		}
 
-		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
+		if _, ok := usedSourceCodePaths[sourceCodePath]; ok {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Duplicate app source code path",
-				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
+				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[sourceCodePath]),
 				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
 			})
 		}
-		usedSourceCodePaths[app.SourceCodePath] = key
+		usedSourceCodePaths[sourceCodePath] = key
 
 		diags = diags.Extend(warnForAppResourcePermissions(b, key, app))
 	}
@@ -65,22 +67,22 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 func appResourceRef(r apps.AppResource) (appResourceReference, bool) {
 	switch {
 	case r.Job != nil:
-		return appResourceReference{"jobs", r.Job.Id, string(r.Job.Permission)}, true
+		return appResourceReference{"jobs", utils.Deref(r.Job.Id), string(r.Job.Permission)}, true
 	case r.SqlWarehouse != nil:
-		return appResourceReference{"sql_warehouses", r.SqlWarehouse.Id, string(r.SqlWarehouse.Permission)}, true
+		return appResourceReference{"sql_warehouses", utils.Deref(r.SqlWarehouse.Id), string(r.SqlWarehouse.Permission)}, true
 	case r.ServingEndpoint != nil:
-		return appResourceReference{"model_serving_endpoints", r.ServingEndpoint.Name, string(r.ServingEndpoint.Permission)}, true
+		return appResourceReference{"model_serving_endpoints", utils.Deref(r.ServingEndpoint.Name), string(r.ServingEndpoint.Permission)}, true
 	case r.Experiment != nil:
-		return appResourceReference{"experiments", r.Experiment.ExperimentId, string(r.Experiment.Permission)}, true
+		return appResourceReference{"experiments", utils.Deref(r.Experiment.ExperimentId), string(r.Experiment.Permission)}, true
 	case r.Postgres != nil:
-		if r.Postgres.Branch != "" {
-			return appResourceReference{"postgres_projects", r.Postgres.Branch, string(r.Postgres.Permission)}, true
+		if branch := utils.Deref(r.Postgres.Branch); branch != "" {
+			return appResourceReference{"postgres_projects", branch, string(r.Postgres.Permission)}, true
 		}
 		return appResourceReference{
-			"database_instances", r.Postgres.Database, string(r.Postgres.Permission),
+			"database_instances", utils.Deref(r.Postgres.Database), string(r.Postgres.Permission),
 		}, true
 	case r.UcSecurable != nil:
-		return appResourceReference{string(r.UcSecurable.SecurableType), r.UcSecurable.SecurableFullName, string(r.UcSecurable.Permission)}, true
+		return appResourceReference{string(r.UcSecurable.SecurableType), utils.Deref(r.UcSecurable.SecurableFullName), string(r.UcSecurable.Permission)}, true
 	default:
 		return appResourceReference{}, false
 	}

@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucregisteredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	sdkucregisteredmodels "github.com/databricks/sdk-go/uc/registeredmodels/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -57,13 +60,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteModelVersionRequest,
+	*sdkucregisteredmodels.DeleteModelVersionRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteModelVersionRequest
+	var deleteReq sdkucregisteredmodels.DeleteModelVersionRequest
 
 	cmd.Use = "delete FULL_NAME VERSION"
 	cmd.Short = `Delete a Model Version.`
@@ -94,17 +96,23 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.FullName = args[0]
-		_, err = fmt.Sscan(args[1], &deleteReq.Version)
+		deleteReq.FullNameArg = new(args[0])
+		var deleteVersionArg int64
+		_, err = fmt.Sscan(args[1], &deleteVersionArg)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
 		}
+		deleteReq.VersionArg = &deleteVersionArg
 
-		err = w.ModelVersions.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.RegisteredModels.DeleteModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -126,16 +134,15 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetModelVersionRequest,
+	*ucregisteredmodels.GetModelVersionRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq ucregisteredmodels.GetModelVersionRequest
 
-	var getReq catalog.GetModelVersionRequest
-
-	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeAliases, "include-aliases", `Whether to include aliases associated with the model version in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeBrowse, "include-browse", `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME VERSION"
 	cmd.Short = `Get a Model Version.`
@@ -165,19 +172,30 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.FullName = args[0]
-		_, err = fmt.Sscan(args[1], &getReq.Version)
+		getReq.FullNameArg = new(args[0])
+		var getVersionArg int64
+		_, err = fmt.Sscan(args[1], &getVersionArg)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
 		}
+		getReq.VersionArg = &getVersionArg
 
-		response, err := w.ModelVersions.Get(ctx, getReq)
+		sdkReq, err := ucregisteredmodels.GetModelVersionRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.GetModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.ModelVersionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -198,15 +216,14 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getByAliasOverrides []func(
 	*cobra.Command,
-	*catalog.GetByAliasRequest,
+	*ucregisteredmodels.GetModelVersionByAliasRequest,
 )
 
 func newGetByAlias() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getByAliasReq ucregisteredmodels.GetModelVersionByAliasRequest
 
-	var getByAliasReq catalog.GetByAliasRequest
-
-	cmd.Flags().BoolVar(&getByAliasReq.IncludeAliases, "include-aliases", getByAliasReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getByAliasReq.IncludeAliases, "include-aliases", `Whether to include aliases associated with the model version in the response.`)
 
 	cmd.Use = "get-by-alias FULL_NAME ALIAS"
 	cmd.Short = `Get Model Version By Alias.`
@@ -236,16 +253,25 @@ func newGetByAlias() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getByAliasReq.FullName = args[0]
-		getByAliasReq.Alias = args[1]
+		getByAliasReq.FullNameArg = new(args[0])
+		getByAliasReq.AliasArg = new(args[1])
 
-		response, err := w.ModelVersions.GetByAlias(ctx, getByAliasReq)
+		sdkReq, err := ucregisteredmodels.GetModelVersionByAliasRequestToSDK(&getByAliasReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.GetModelVersionByAlias(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.ModelVersionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -266,26 +292,26 @@ func newGetByAlias() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListModelVersionsRequest,
+	*ucregisteredmodels.ListModelVersionsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucregisteredmodels.ListModelVersionsRequest
 
-	var listReq catalog.ListModelVersionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of model versions to return.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of model versions to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list FULL_NAME"
@@ -328,18 +354,22 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.FullName = args[0]
+		listReq.FullNameArg = new(args[0])
 
-		response := w.ModelVersions.List(ctx, listReq)
+		sdkReq, err := ucregisteredmodels.ListModelVersionsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.RegisteredModels.ListModelVersionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucregisteredmodels.ModelVersionInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -360,34 +390,34 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateModelVersionRequest,
+	*ucregisteredmodels.UpdateModelVersionRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucregisteredmodels.UpdateModelVersionRequest
 
-	var updateReq catalog.UpdateModelVersionRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog containing the model version.`)
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version.`)
-	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
-	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the model version.`)
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The unique identifier of the model version.`)
-	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore containing the model version.`)
-	cmd.Flags().StringVar(&updateReq.ModelName, "model-name", updateReq.ModelName, `The name of the parent registered model of the model version, relative to parent schema.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CatalogName, "catalog-name", `The name of the catalog containing the model version.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `The comment attached to the model version.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.CreatedAt, "created-at", ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CreatedBy, "created-by", `The identifier of the user who created the model version.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Id, "id", `The unique identifier of the model version.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.MetastoreId, "metastore-id", `The unique identifier of the metastore containing the model version.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.ModelName, "model-name", `The name of the parent registered model of the model version, relative to parent schema.`)
 	// TODO: complex arg: model_version_dependencies
-	cmd.Flags().StringVar(&updateReq.RunId, "run-id", updateReq.RunId, `MLflow run ID used when creating the model version, if source was generated by an experiment run stored in an MLflow tracking server.`)
-	cmd.Flags().IntVar(&updateReq.RunWorkspaceId, "run-workspace-id", updateReq.RunWorkspaceId, `ID of the Databricks workspace containing the MLflow run that generated this model version, if applicable.`)
-	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema containing the model version, relative to parent catalog.`)
-	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version.`)
-	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY]`)
-	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
-	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
-	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.RunId, "run-id", `MLflow run ID used when creating the model version, if source was generated by an experiment run stored in an MLflow tracking server.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.RunWorkspaceId, "run-workspace-id", `ID of the Databricks workspace containing the MLflow run that generated this model version, if applicable.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.SchemaName, "schema-name", `The name of the schema containing the model version, relative to parent catalog.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Source, "source", `URI indicating the location of the source artifacts (files) for the model version.`)
+	flags.EnumVar(cmd.Flags(), &updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY]`, "ModelVersionInfoStatus", "FAILED_REGISTRATION", "MODEL_VERSION_STATUS_UNKNOWN", "PENDING_REGISTRATION", "READY")
+	flags.StringPtrVar(cmd.Flags(), &updateReq.StorageLocation, "storage-location", `The storage location on the cloud under which model version data files are stored.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.UpdatedAt, "updated-at", ``)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UpdatedBy, "updated-by", `The identifier of the user who updated the model version last time.`)
 
 	cmd.Use = "update FULL_NAME VERSION"
 	cmd.Short = `Update a Model Version.`
@@ -419,6 +449,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -432,18 +463,28 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.FullName = args[0]
-		_, err = fmt.Sscan(args[1], &updateReq.Version)
+		updateReq.FullNameArg = new(args[0])
+		var updateVersionArg int64
+		_, err = fmt.Sscan(args[1], &updateVersionArg)
 		if err != nil {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
 		}
+		updateReq.VersionArg = &updateVersionArg
 
-		response, err := w.ModelVersions.Update(ctx, updateReq)
+		sdkReq, err := ucregisteredmodels.UpdateModelVersionRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.UpdateModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.ModelVersionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

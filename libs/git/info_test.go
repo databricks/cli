@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/qa"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,12 +39,13 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(malformed, ".git"), "invalid gitfile")
 
 	for _, tc := range []struct {
-		name    string
-		path    string
-		body    string
-		status  int
-		want    RepositoryInfo
-		wantErr error
+		name       string
+		path       string
+		body       string
+		status     int
+		want       RepositoryInfo
+		wantErr    error
+		wantAPIErr error
 	}{
 		{name: "worktree", path: worktree, want: want},
 		{name: "subdirectory", path: filepath.Dir(file), want: want},
@@ -61,7 +62,7 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 		{name: "malformed gitfile", path: malformed, want: RepositoryInfo{WorktreeRoot: malformed}},
 		{
 			name: "permission denied", path: worktree, status: http.StatusForbidden,
-			body: `{"error_code":"PERMISSION_DENIED","message":"denied"}`, wantErr: apierr.ErrPermissionDenied,
+			body: `{"error_code":"PERMISSION_DENIED","message":"denied"}`, wantAPIErr: apierrs.ErrPermissionDenied,
 		},
 		{
 			name: "workspace path missing", path: worktree, status: http.StatusNotFound,
@@ -73,17 +74,21 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 			if body == "" {
 				body = `{}`
 			}
-			cfg, server := qa.HTTPFixtures{{
+			cfg, _ := httpfixtures.Fixtures{{
 				Method:   "GET",
 				Resource: "/api/2.0/workspace/get-status?path=" + url.QueryEscape(tc.path) + "&return_git_info=true",
 				Response: body,
 				Status:   tc.status,
 			}}.Config(t)
-			t.Cleanup(server.Close)
-			w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
+			w, err := sdkclients.New(t.Context(), cfg)
+			require.NoError(t, err)
 
 			got, err := fetchRepositoryInfoFromWorkspace(t.Context(), tc.path, w)
-			require.ErrorIs(t, err, tc.wantErr)
+			if tc.wantAPIErr != nil {
+				assert.True(t, apierrs.Is(err, tc.wantAPIErr), "got %v", err)
+			} else {
+				require.ErrorIs(t, err, tc.wantErr)
+			}
 			assert.Equal(t, tc.want, got)
 		})
 	}

@@ -5,11 +5,14 @@ package queries_legacy
 import (
 	"fmt"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -60,24 +63,31 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.QueryPostContent,
+	*map[string]any,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq map[string]any
+	createReq = map[string]any{}
+	var createDataSourceIdRaw string
+	var createDescriptionRaw string
+	var createNameRaw string
+	var createParentRaw string
+	var createQueryRaw string
+	var createRunAsRoleRaw string
 
-	var createReq sql.QueryPostContent
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that conveys additional information about this query such as usage notes.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
+	cmd.Flags().StringVar(&createDataSourceIdRaw, "data-source-id", createDataSourceIdRaw, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
+	cmd.Flags().StringVar(&createDescriptionRaw, "description", createDescriptionRaw, `General description that conveys additional information about this query such as usage notes.`)
+	cmd.Flags().StringVar(&createNameRaw, "name", createNameRaw, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
-	cmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().StringVar(&createParentRaw, "parent", createParentRaw, `The identifier of the workspace folder containing the object.`)
+	cmd.Flags().StringVar(&createQueryRaw, "query", createQueryRaw, `The text of the query to be run.`)
+	flags.EnumVar(cmd.Flags(), &createRunAsRoleRaw, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`, "RunAsRole", "owner", "viewer")
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -112,6 +122,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -126,11 +137,36 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.QueriesLegacy.Create(ctx, createReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("data-source-id") || createDataSourceIdRaw != "" {
+			createReq["data_source_id"] = createDataSourceIdRaw
+		}
+		if cmd.Flags().Changed("description") || createDescriptionRaw != "" {
+			createReq["description"] = createDescriptionRaw
+		}
+		if cmd.Flags().Changed("name") || createNameRaw != "" {
+			createReq["name"] = createNameRaw
+		}
+		if cmd.Flags().Changed("parent") || createParentRaw != "" {
+			createReq["parent"] = createParentRaw
+		}
+		if cmd.Flags().Changed("query") || createQueryRaw != "" {
+			createReq["query"] = createQueryRaw
+		}
+		if cmd.Flags().Changed("run-as-role") || createRunAsRoleRaw != "" {
+			createReq["run_as_role"] = createRunAsRoleRaw
+		}
+		rawPath := "/api/2.0/preview/sql/queries"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -152,13 +188,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteQueriesLegacyRequest,
+	*map[string]any,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.DeleteQueriesLegacyRequest
+	var deleteReq map[string]any
+	deleteReq = map[string]any{}
+	var deleteQueryIdRaw string
 
 	cmd.Use = "delete QUERY_ID"
 	cmd.Short = `Delete a query.`
@@ -186,10 +223,19 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.QueryId = args[0]
+		deleteQueryIdRaw = args[0]
 
-		err = w.QueriesLegacy.Delete(ctx, deleteReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/queries/%s", fmt.Sprint(deleteQueryIdRaw))
+
+		maps.Copy(rawQuery, deleteReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -214,13 +260,14 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sql.GetQueriesLegacyRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sql.GetQueriesLegacyRequest
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getQueryIdRaw string
 
 	cmd.Use = "get QUERY_ID"
 	cmd.Short = `Get a query definition.`
@@ -247,14 +294,23 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.QueryId = args[0]
+		getQueryIdRaw = args[0]
 
-		response, err := w.QueriesLegacy.Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/queries/%s", fmt.Sprint(getQueryIdRaw))
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -276,28 +332,33 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*sql.ListQueriesLegacyRequest,
+	*map[string]any,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq map[string]any
+	listReq = map[string]any{}
+	var listOrderRaw string
+	var listPageRaw int
+	var listPageSizeRaw int
+	var listQRaw string
 
-	var listReq sql.ListQueriesLegacyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
-	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
+	cmd.Flags().StringVar(&listOrderRaw, "order", listOrderRaw, `Name of query attribute to order by.`)
+	cmd.Flags().StringVar(&listQRaw, "q", listQRaw, `Full text search term.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
+	cmd.Flags().IntVar(&listPageRaw, "page", listPageRaw, `Page number to retrieve.`)
 	cmd.Flags().Lookup("page").Hidden = true
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of results per API page.`)
+	cmd.Flags().IntVar(&listPageSizeRaw, "page-size", listPageSizeRaw, `Number of results per API page.`)
 	cmd.Flags().Lookup("page-size").Hidden = true
 
 	cmd.Use = "list"
@@ -328,16 +389,37 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.QueriesLegacy.List(ctx, listReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("order") || listOrderRaw != "" {
+			rawQuery["order"] = listOrderRaw
+		}
+		if cmd.Flags().Changed("page") || listPageRaw != 0 {
+			rawQuery["page"] = listPageRaw
+		}
+		if cmd.Flags().Changed("page-size") || listPageSizeRaw != 0 {
+			rawQuery["page_size"] = listPageSizeRaw
+		}
+		if cmd.Flags().Changed("q") || listQRaw != "" {
+			rawQuery["q"] = listQRaw
+		}
+		rawPath := "/api/2.0/preview/sql/queries"
+
+		maps.Copy(rawQuery, listReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
-		if listLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -358,13 +440,14 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var restoreOverrides []func(
 	*cobra.Command,
-	*sql.RestoreQueriesLegacyRequest,
+	*map[string]any,
 )
 
 func newRestore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var restoreReq sql.RestoreQueriesLegacyRequest
+	var restoreReq map[string]any
+	restoreReq = map[string]any{}
+	var restoreQueryIdRaw string
 
 	cmd.Use = "restore QUERY_ID"
 	cmd.Short = `Restore a query.`
@@ -391,10 +474,18 @@ func newRestore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		restoreReq.QueryId = args[0]
+		restoreQueryIdRaw = args[0]
 
-		err = w.QueriesLegacy.Restore(ctx, restoreReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/queries/trash/%s", fmt.Sprint(restoreQueryIdRaw))
+
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, restoreReq, nil)
 		if err != nil {
 			return err
 		}
@@ -419,23 +510,30 @@ func newRestore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.QueryEditContent,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateDataSourceIdRaw string
+	var updateDescriptionRaw string
+	var updateNameRaw string
+	var updateQueryRaw string
+	var updateQueryIdRaw string
+	var updateRunAsRoleRaw string
 
-	var updateReq sql.QueryEditContent
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that conveys additional information about this query such as usage notes.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
+	cmd.Flags().StringVar(&updateDataSourceIdRaw, "data-source-id", updateDataSourceIdRaw, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
+	cmd.Flags().StringVar(&updateDescriptionRaw, "description", updateDescriptionRaw, `General description that conveys additional information about this query such as usage notes.`)
+	cmd.Flags().StringVar(&updateNameRaw, "name", updateNameRaw, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
-	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().StringVar(&updateQueryRaw, "query", updateQueryRaw, `The text of the query to be run.`)
+	flags.EnumVar(cmd.Flags(), &updateRunAsRoleRaw, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`, "RunAsRole", "owner", "viewer")
 	// TODO: array: tags
 
 	cmd.Use = "update QUERY_ID"
@@ -464,6 +562,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -477,13 +576,35 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.QueryId = args[0]
+		updateQueryIdRaw = args[0]
 
-		response, err := w.QueriesLegacy.Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("data-source-id") || updateDataSourceIdRaw != "" {
+			updateReq["data_source_id"] = updateDataSourceIdRaw
+		}
+		if cmd.Flags().Changed("description") || updateDescriptionRaw != "" {
+			updateReq["description"] = updateDescriptionRaw
+		}
+		if cmd.Flags().Changed("name") || updateNameRaw != "" {
+			updateReq["name"] = updateNameRaw
+		}
+		if cmd.Flags().Changed("query") || updateQueryRaw != "" {
+			updateReq["query"] = updateQueryRaw
+		}
+		if cmd.Flags().Changed("run-as-role") || updateRunAsRoleRaw != "" {
+			updateReq["run_as_role"] = updateRunAsRoleRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/preview/sql/queries/%s", fmt.Sprint(updateQueryIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

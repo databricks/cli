@@ -4,46 +4,33 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	sdksecrets "github.com/databricks/sdk-go/secrets/v1"
 )
 
 type ResourceSecretScope struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type SecretScopeConfig struct {
-	workspace.CreateScope
+	secrets.CreateScopeRequest
 }
 
 // SecretScopeRemote is remote state for a secret scope. The Secrets API returns scopes as
-// workspace.SecretScope (name/backend_type/keyvault_metadata); DoRead maps those onto the field
+// secrets.SecretScope (name/backend_type/keyvault_metadata); DoRead maps those onto the field
 // names the state uses (scope/scope_backend_type/backend_azure_keyvault) so RemapState is a plain
 // field copy. name is retained because `${resources.secret_scopes.<key>.name}` references resolve
 // against the remote type.
 type SecretScopeRemote struct {
-	Name                 string                                      `json:"name"`
-	Scope                string                                      `json:"scope"`
-	ScopeBackendType     workspace.ScopeBackendType                  `json:"scope_backend_type,omitempty"`
-	BackendAzureKeyvault *workspace.AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
-	ForceSendFields      []string                                    `json:"-"`
+	Name                 string                                    `json:"name"`
+	Scope                string                                    `json:"scope"`
+	ScopeBackendType     secrets.ScopeBackendType                  `json:"scope_backend_type,omitempty"`
+	BackendAzureKeyvault *secrets.AzureKeyVaultSecretScopeMetadata `json:"backend_azure_keyvault,omitempty"`
 }
 
-// Custom marshalers so the root ForceSendFields is honored: a force-sent zero-valued
-// scalar (e.g. scope_backend_type) survives serialization instead of being dropped by
-// omitempty, which plain encoding/json would do since it does not know the convention.
-func (s *SecretScopeRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s SecretScopeRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSecretScope {
+func (*ResourceSecretScope) New(client *sdkclients.Clients) *ResourceSecretScope {
 	return &ResourceSecretScope{
 		client: client,
 	}
@@ -51,21 +38,19 @@ func (*ResourceSecretScope) New(client *databricks.WorkspaceClient) *ResourceSec
 
 func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		Scope:                  input.Name,
+		Scope:                  new(input.Name),
 		ScopeBackendType:       input.BackendType,
 		BackendAzureKeyvault:   input.KeyvaultMetadata,
-		InitialManagePrincipal: "",
-		ForceSendFields:        nil,
+		InitialManagePrincipal: nil,
 	}
 }
 
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
 	return &SecretScopeConfig{
-		Scope:                  remote.Scope,
+		Scope:                  new(remote.Scope),
 		ScopeBackendType:       remote.ScopeBackendType,
 		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-		InitialManagePrincipal: "",
-		ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
+		InitialManagePrincipal: nil,
 	}
 }
 
@@ -73,38 +58,45 @@ func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeCo
 // a "get by name" endpoint (see https://docs.databricks.com/api/workspace/secrets),
 // we must list all scopes and filter by name to check if the scope still exists.
 func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretScopeRemote, error) {
-	scopes, err := r.client.Secrets.ListScopesAll(ctx)
+	resp, err := r.client.Secrets.ListScopes(ctx, sdksecrets.ListScopesRequest{})
+	if err != nil {
+		return nil, err
+	}
+	scopes, err := secrets.ListScopesResponseFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, scope := range scopes {
-		if scope.Name == id {
+	for _, scope := range scopes.Scopes {
+		if name := utils.Deref(scope.Name); name == id {
 			return &SecretScopeRemote{
-				Name:                 scope.Name,
-				Scope:                scope.Name,
+				Name:                 name,
+				Scope:                name,
 				ScopeBackendType:     scope.BackendType,
 				BackendAzureKeyvault: scope.KeyvaultMetadata,
-				ForceSendFields:      nil,
 			}, nil
 		}
 	}
 
-	return nil, apierr.ErrNotFound
+	return nil, errResourceDoesNotExist("secret scope " + id + " does not exist")
 }
 
 func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *SecretScopeRemote, error) {
-	err := r.client.Secrets.CreateScope(ctx, state.CreateScope)
+	request, err := secrets.CreateScopeRequestToSDK(&state.CreateScopeRequest)
 	if err != nil {
 		return "", nil, err
 	}
+	if _, err := r.client.Secrets.CreateScope(ctx, *request); err != nil {
+		return "", nil, err
+	}
 
-	return state.Scope, nil, nil
+	return utils.Deref(state.Scope), nil, nil
 }
 
 // DoUpdate is not intentionally implemented here because scopes do not support a update API. All fields are marked to
 // return a recreate trigger.
 
 func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string, _ *SecretScopeConfig) error {
-	return r.client.Secrets.DeleteScopeByScope(ctx, id)
+	_, err := r.client.Secrets.DeleteScope(ctx, sdksecrets.DeleteScopeRequest{Scope: new(id)})
+	return err
 }

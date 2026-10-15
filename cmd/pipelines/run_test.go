@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,31 +20,31 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 		{
 			name: "comprehensive pipeline update with all fields",
 			update: pipelines.UpdateInfo{
-				UpdateId:     "update-123",
-				FullRefresh:  true,
+				UpdateId:     new("update-123"),
+				FullRefresh:  new(true),
 				Cause:        "Manual trigger",
-				CreationTime: 1640995200000, // 2022-01-01T00:00:00Z
-				ClusterId:    "cluster-456",
+				CreationTime: new(int64(1640995200000)), // 2022-01-01T00:00:00Z
+				ClusterId:    new("cluster-456"),
 				Config: &pipelines.PipelineSpec{
-					Name:        "test-pipeline",
-					Id:          "pipeline-789",
-					Serverless:  true,
-					Channel:     "CURRENT",
-					Continuous:  true, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-					Development: true, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-					Catalog:     "test_catalog",
-					Schema:      "test_schema",
+					Name:        new("test-pipeline"),
+					Id:          new("pipeline-789"),
+					Serverless:  new(true),
+					Channel:     new("CURRENT"),
+					Continuous:  new(true), //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+					Development: new(true), //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+					Catalog:     new("test_catalog"),
+					Schema:      new("test_schema"),
 				},
 			},
 			pipelineID: "pipeline-456",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T00:00:00Z",
-					EventType: "update_progress",
+					Timestamp: new("2022-01-01T00:00:00Z"),
+					EventType: new("update_progress"),
 				},
 				{
-					Timestamp: "2022-01-01T01:00:00Z",
-					EventType: "update_progress",
+					Timestamp: new("2022-01-01T01:00:00Z"),
+					EventType: new("update_progress"),
 				},
 			},
 			expected: `
@@ -68,7 +68,7 @@ Pipeline configurations for this update:
 		{
 			name: "minimal pipeline update with default refresh",
 			update: pipelines.UpdateInfo{
-				UpdateId: "update-456",
+				UpdateId: new("update-456"),
 			},
 			pipelineID: "pipeline-789",
 			events:     []pipelines.PipelineEvent{},
@@ -82,15 +82,15 @@ Pipeline configurations for this update:
 		{
 			name: "pipeline update with mixed refresh selections",
 			update: pipelines.UpdateInfo{
-				UpdateId:             "update-789",
+				UpdateId:             new("update-789"),
 				RefreshSelection:     []string{"table1", "table2"},
 				FullRefreshSelection: []string{"table3"},
 			},
 			pipelineID: "pipeline-101",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T02:00:00Z",
-					EventType: "update_progress",
+					Timestamp: new("2022-01-01T02:00:00Z"),
+					EventType: new("update_progress"),
 				},
 			},
 			expected: `
@@ -104,11 +104,11 @@ Pipeline configurations for this update:
 		{
 			name: "pipeline update with storage instead of catalog/schema",
 			update: pipelines.UpdateInfo{
-				UpdateId: "update-storage",
+				UpdateId: new("update-storage"),
 				Config: &pipelines.PipelineSpec{
-					Name:    "test-pipeline",
-					Id:      "pipeline-789",
-					Storage: "test_storage",
+					Name:    new("test-pipeline"),
+					Id:      new("pipeline-789"),
+					Storage: new("test_storage"),
 				},
 			},
 			pipelineID: "pipeline-456",
@@ -126,8 +126,8 @@ Pipeline configurations for this update:
 		{
 			name: "pipeline update with classic compute and no config",
 			update: pipelines.UpdateInfo{
-				UpdateId:  "update-classic",
-				ClusterId: "cluster-123",
+				UpdateId:  new("update-classic"),
+				ClusterId: new("cluster-123"),
 			},
 			pipelineID: "pipeline-456",
 			events:     []pipelines.PipelineEvent{},
@@ -163,10 +163,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "normal time difference - seconds",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:05.000Z",
+				Timestamp: new("2022-01-01T00:00:05.000Z"),
 			},
 			expectedResult: 5 * time.Second,
 			expectedError:  "",
@@ -174,10 +174,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "normal time difference - minutes and seconds",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:01:30.000Z",
+				Timestamp: new("2022-01-01T00:01:30.000Z"),
 			},
 			expectedResult: 90 * time.Second,
 			expectedError:  "",
@@ -185,10 +185,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "millisecond precision",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.500Z",
+				Timestamp: new("2022-01-01T00:00:00.500Z"),
 			},
 			expectedResult: 500 * time.Millisecond,
 			expectedError:  "",
@@ -196,10 +196,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "edge case - same timestamp",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			expectedResult: 0,
 			expectedError:  "",
@@ -207,10 +207,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "edge case - invalid timestamp format",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "invalid-timestamp",
+				Timestamp: new("invalid-timestamp"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			expectedResult: 0,
 			expectedError:  "parsing time \"invalid-timestamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"invalid-timestamp\" as \"2006\"",
@@ -218,10 +218,10 @@ func TestEventTimeDifference(t *testing.T) {
 		{
 			name: "edge case - later event before earlier event",
 			earlierEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:05.000Z",
+				Timestamp: new("2022-01-01T00:00:05.000Z"),
 			},
 			laterEvent: pipelines.PipelineEvent{
-				Timestamp: "2022-01-01T00:00:00.000Z",
+				Timestamp: new("2022-01-01T00:00:00.000Z"),
 			},
 			expectedResult: 0,
 			expectedError:  "second event timestamp must be after first event timestamp",
@@ -282,34 +282,34 @@ func TestDisplayProgressEventsDurations(t *testing.T) {
 			name: "pipeline completed with all phases",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T00:00:01.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is CREATED.",
+					Timestamp: new("2022-01-01T00:00:01.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is CREATED."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:02.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is WAITING_FOR_RESOURCES.",
+					Timestamp: new("2022-01-01T00:00:02.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is WAITING_FOR_RESOURCES."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:03.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is INITIALIZING.",
+					Timestamp: new("2022-01-01T00:00:03.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is INITIALIZING."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:04.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is SETTING_UP_TABLES.",
+					Timestamp: new("2022-01-01T00:00:04.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is SETTING_UP_TABLES."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:05.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is RUNNING.",
+					Timestamp: new("2022-01-01T00:00:05.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is RUNNING."),
 				},
 				{
-					Timestamp: "2022-01-01T00:01:30.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is COMPLETED.",
+					Timestamp: new("2022-01-01T00:01:30.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-123 is COMPLETED."),
 				},
 			},
 			expected: `
@@ -326,19 +326,19 @@ RUNNING                   1m 25s
 			name: "pipeline with millisecond and decimal second durations",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T00:00:00.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-ms is WAITING_FOR_RESOURCES.",
+					Timestamp: new("2022-01-01T00:00:00.000Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-ms is WAITING_FOR_RESOURCES."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:00.500Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-ms is RUNNING.",
+					Timestamp: new("2022-01-01T00:00:00.500Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-ms is RUNNING."),
 				},
 				{
-					Timestamp: "2022-01-01T00:00:01.250Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-ms is COMPLETED.",
+					Timestamp: new("2022-01-01T00:00:01.250Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-ms is COMPLETED."),
 				},
 			},
 			expected: `
@@ -358,9 +358,9 @@ RUNNING                   750ms
 			name: "edge cases - single event",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T00:00:00Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-single is RUNNING.",
+					Timestamp: new("2022-01-01T00:00:00Z"),
+					EventType: new("update_progress"),
+					Message:   new("Update test-update-single is RUNNING."),
 				},
 			},
 			expected: "",

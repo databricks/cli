@@ -12,9 +12,9 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 // ErrResourceAlreadyBound is returned when attempting to bind a resource
@@ -61,7 +61,7 @@ type BindResult struct {
 // 5. Calculate plan again - this is the plan presented to the user
 //
 // Call Finalize to commit the state or Cancel to discard.
-func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
+func (b *DeploymentBundle) Bind(ctx context.Context, client *sdkclients.Clients, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	// The state is opened without a DMS client, so the writes below record nothing;
 	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.

@@ -4,15 +4,16 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
+
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresDatabaseConfig struct {
-	postgres.DatabaseDatabaseSpec
+	postgres.Database_DatabaseSpec
 
 	// DatabaseId is the user-specified ID for the database (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}/branches/{branch_id}/databases/{database_id}"
@@ -27,31 +28,15 @@ type PostgresDatabaseConfig struct {
 	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
-func (c *PostgresDatabaseConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
-}
-
 type PostgresDatabase struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresDatabaseConfig
 }
 
-func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, d)
-}
-
-func (d PostgresDatabase) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(d)
-}
-
-func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: name})
-	if apierr.IsMissing(err) {
+func (d *PostgresDatabase) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetDatabase(ctx, sdkpostgres.GetDatabaseRequest{Name: new(name)})
+	if apierrs.IsMissing(err) {
 		log.Debugf(ctx, "postgres database %s does not exist", name)
 		return false, nil
 	}

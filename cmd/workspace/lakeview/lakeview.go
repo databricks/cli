@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
+
+	lakeview "github.com/databricks/cli/libs/sdktypes/lakeview/v1"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -68,23 +71,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*dashboards.CreateDashboardRequest,
+	*lakeview.CreateDashboardRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq lakeview.CreateDashboardRequest
+	createReq.Dashboard = &lakeview.DashboardCreate{}
 
-	var createReq dashboards.CreateDashboardRequest
-	createReq.Dashboard = dashboards.Dashboard{}
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
-	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DatasetCatalog, "dataset-catalog", `Sets the default catalog for all datasets in this dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DatasetSchema, "dataset-schema", `Sets the default schema for all datasets in this dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Dashboard.DisplayName, "display-name", `The display name of the dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Dashboard.SerializedDashboard, "serialized-dashboard", `The contents of the dashboard in serialized string form.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Dashboard.WarehouseId, "warehouse-id", `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
@@ -110,6 +113,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.Dashboard)
@@ -124,12 +128,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.Lakeview.Create(ctx, createReq)
+		sdkReq, err := lakeview.CreateDashboardRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.CreateDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.DashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -150,21 +162,21 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createScheduleOverrides []func(
 	*cobra.Command,
-	*dashboards.CreateScheduleRequest,
+	*lakeview.CreateScheduleRequest,
 )
 
 func newCreateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createScheduleReq lakeview.CreateScheduleRequest
+	createScheduleReq.Schedule = &lakeview.ScheduleCreate{}
 
-	var createScheduleReq dashboards.CreateScheduleRequest
-	createScheduleReq.Schedule = dashboards.Schedule{}
 	var createScheduleJson flags.JsonFlag
 
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	flags.StringPtrVar(cmd.Flags(), &createScheduleReq.Schedule.DisplayName, "display-name", `The display name for schedule.`)
+	flags.EnumVar(cmd.Flags(), &createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`, "SchedulePauseStatus", "PAUSED", "UNPAUSED")
+	flags.StringPtrVar(cmd.Flags(), &createScheduleReq.Schedule.WarehouseId, "warehouse-id", `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
 	cmd.Short = `Create dashboard schedule.`
@@ -202,6 +214,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createScheduleJson.Unmarshal(&createScheduleReq.Schedule)
@@ -215,21 +228,25 @@ func newCreateSchedule() *cobra.Command {
 				}
 			}
 		}
-		createScheduleReq.DashboardId = args[0]
+		createScheduleReq.Schedule.DashboardId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createScheduleReq.Schedule.CronSchedule)
-			if err != nil {
-				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[1])
-			}
-
+			_ = args[1] // TODO: complex arg: cron_schedule
 		}
 
-		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
+		sdkReq, err := lakeview.CreateScheduleRequestToSDK(&createScheduleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.CreateSchedule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.ScheduleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -250,19 +267,19 @@ func newCreateSchedule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createSubscriptionOverrides []func(
 	*cobra.Command,
-	*dashboards.CreateSubscriptionRequest,
+	*lakeview.CreateSubscriptionRequest,
 )
 
 func newCreateSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createSubscriptionReq lakeview.CreateSubscriptionRequest
+	createSubscriptionReq.Subscription = &lakeview.SubscriptionCreate{}
 
-	var createSubscriptionReq dashboards.CreateSubscriptionRequest
-	createSubscriptionReq.Subscription = dashboards.Subscription{}
 	var createSubscriptionJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createSubscriptionReq.Subscription.SkipNotify, "skip-notify", createSubscriptionReq.Subscription.SkipNotify, `Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.`)
+	flags.BoolPtrVar(cmd.Flags(), &createSubscriptionReq.Subscription.SkipNotify, "skip-notify", `Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.`)
 
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER"
 	cmd.Short = `Create schedule subscription.`
@@ -304,6 +321,7 @@ func newCreateSubscription() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSubscriptionJson.Unmarshal(&createSubscriptionReq.Subscription)
@@ -317,22 +335,26 @@ func newCreateSubscription() *cobra.Command {
 				}
 			}
 		}
-		createSubscriptionReq.DashboardId = args[0]
-		createSubscriptionReq.ScheduleId = args[1]
+		createSubscriptionReq.Subscription.DashboardId = new(args[0])
+		createSubscriptionReq.Subscription.ScheduleId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createSubscriptionReq.Subscription.Subscriber)
-			if err != nil {
-				return fmt.Errorf("invalid SUBSCRIBER: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: subscriber
 		}
 
-		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
+		sdkReq, err := lakeview.CreateSubscriptionRequestToSDK(&createSubscriptionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.CreateSubscription(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.SubscriptionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -353,15 +375,14 @@ func newCreateSubscription() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteScheduleOverrides []func(
 	*cobra.Command,
-	*dashboards.DeleteScheduleRequest,
+	*lakeview.DeleteScheduleRequest,
 )
 
 func newDeleteSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteScheduleReq lakeview.DeleteScheduleRequest
 
-	var deleteScheduleReq dashboards.DeleteScheduleRequest
-
-	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteScheduleReq.Etag, "etag", `The etag for the schedule.`)
 
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Delete dashboard schedule.`
@@ -391,11 +412,16 @@ func newDeleteSchedule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteScheduleReq.DashboardId = args[0]
-		deleteScheduleReq.ScheduleId = args[1]
+		deleteScheduleReq.DashboardId = new(args[0])
+		deleteScheduleReq.ScheduleId = new(args[1])
 
-		err = w.Lakeview.DeleteSchedule(ctx, deleteScheduleReq)
+		sdkReq, err := lakeview.DeleteScheduleRequestToSDK(&deleteScheduleReq)
+		if err != nil {
+			return err
+		}
+		err = w.Lakeview.DeleteSchedule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -420,15 +446,14 @@ func newDeleteSchedule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSubscriptionOverrides []func(
 	*cobra.Command,
-	*dashboards.DeleteSubscriptionRequest,
+	*lakeview.DeleteSubscriptionRequest,
 )
 
 func newDeleteSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteSubscriptionReq lakeview.DeleteSubscriptionRequest
 
-	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
-
-	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteSubscriptionReq.Etag, "etag", `The etag for the subscription.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
@@ -462,12 +487,17 @@ func newDeleteSubscription() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSubscriptionReq.DashboardId = args[0]
-		deleteSubscriptionReq.ScheduleId = args[1]
-		deleteSubscriptionReq.SubscriptionId = args[2]
+		deleteSubscriptionReq.DashboardId = new(args[0])
+		deleteSubscriptionReq.ScheduleId = new(args[1])
+		deleteSubscriptionReq.SubscriptionId = new(args[2])
 
-		err = w.Lakeview.DeleteSubscription(ctx, deleteSubscriptionReq)
+		sdkReq, err := lakeview.DeleteSubscriptionRequestToSDK(&deleteSubscriptionReq)
+		if err != nil {
+			return err
+		}
+		err = w.Lakeview.DeleteSubscription(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -492,13 +522,12 @@ func newDeleteSubscription() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*dashboards.GetDashboardRequest,
+	*sdklakeview.GetDashboardRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq dashboards.GetDashboardRequest
+	var getReq sdklakeview.GetDashboardRequest
 
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Get dashboard.`
@@ -527,15 +556,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.DashboardId = args[0]
+		getReq.DashboardId = new(args[0])
 
-		response, err := w.Lakeview.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Lakeview.GetDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.DashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -556,13 +591,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPublishedOverrides []func(
 	*cobra.Command,
-	*dashboards.GetPublishedDashboardRequest,
+	*sdklakeview.GetPublishedDashboardRequest,
 )
 
 func newGetPublished() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPublishedReq dashboards.GetPublishedDashboardRequest
+	var getPublishedReq sdklakeview.GetPublishedDashboardRequest
 
 	cmd.Use = "get-published DASHBOARD_ID"
 	cmd.Short = `Get published dashboard.`
@@ -592,15 +626,21 @@ func newGetPublished() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPublishedReq.DashboardId = args[0]
+		getPublishedReq.DashboardId = new(args[0])
 
-		response, err := w.Lakeview.GetPublished(ctx, getPublishedReq)
+		sdkReq := &getPublishedReq
+		response, err := w.Lakeview.GetPublishedDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.PublishedDashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -621,13 +661,12 @@ func newGetPublished() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getScheduleOverrides []func(
 	*cobra.Command,
-	*dashboards.GetScheduleRequest,
+	*sdklakeview.GetScheduleRequest,
 )
 
 func newGetSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getScheduleReq dashboards.GetScheduleRequest
+	var getScheduleReq sdklakeview.GetScheduleRequest
 
 	cmd.Use = "get-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Get dashboard schedule.`
@@ -660,16 +699,22 @@ func newGetSchedule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getScheduleReq.DashboardId = args[0]
-		getScheduleReq.ScheduleId = args[1]
+		getScheduleReq.DashboardId = new(args[0])
+		getScheduleReq.ScheduleId = new(args[1])
 
-		response, err := w.Lakeview.GetSchedule(ctx, getScheduleReq)
+		sdkReq := &getScheduleReq
+		response, err := w.Lakeview.GetSchedule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.ScheduleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -690,13 +735,12 @@ func newGetSchedule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSubscriptionOverrides []func(
 	*cobra.Command,
-	*dashboards.GetSubscriptionRequest,
+	*sdklakeview.GetSubscriptionRequest,
 )
 
 func newGetSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSubscriptionReq dashboards.GetSubscriptionRequest
+	var getSubscriptionReq sdklakeview.GetSubscriptionRequest
 
 	cmd.Use = "get-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Get schedule subscription.`
@@ -730,17 +774,23 @@ func newGetSubscription() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSubscriptionReq.DashboardId = args[0]
-		getSubscriptionReq.ScheduleId = args[1]
-		getSubscriptionReq.SubscriptionId = args[2]
+		getSubscriptionReq.DashboardId = new(args[0])
+		getSubscriptionReq.ScheduleId = new(args[1])
+		getSubscriptionReq.SubscriptionId = new(args[2])
 
-		response, err := w.Lakeview.GetSubscription(ctx, getSubscriptionReq)
+		sdkReq := &getSubscriptionReq
+		response, err := w.Lakeview.GetSubscription(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.SubscriptionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -761,27 +811,27 @@ func newGetSubscription() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*dashboards.ListDashboardsRequest,
+	*lakeview.ListDashboardsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq lakeview.ListDashboardsRequest
 
-	var listReq dashboards.ListDashboardsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
-	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
-	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIC only includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `The number of dashboards to return per page.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.ShowTrashed, "show-trashed", `The flag to include dashboards located in the trash.`)
+	flags.EnumVar(cmd.Flags(), &listReq.View, "view", `DASHBOARD_VIEW_BASIC only includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`, "DashboardView", "DASHBOARD_VIEW_BASIC")
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -808,16 +858,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Lakeview.List(ctx, listReq)
+		sdkReq, err := lakeview.ListDashboardsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Lakeview.ListDashboardsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, lakeview.DashboardFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -838,25 +892,25 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSchedulesOverrides []func(
 	*cobra.Command,
-	*dashboards.ListSchedulesRequest,
+	*lakeview.ListSchedulesRequest,
 )
 
 func newListSchedules() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSchedulesReq lakeview.ListSchedulesRequest
 
-	var listSchedulesReq dashboards.ListSchedulesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSchedulesLimit int
 
-	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
+	flags.IntPtrVar(cmd.Flags(), &listSchedulesReq.PageSize, "page-size", `The number of schedules to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSchedulesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSchedulesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-schedules DASHBOARD_ID"
@@ -889,18 +943,22 @@ func newListSchedules() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSchedulesReq.DashboardId = args[0]
+		listSchedulesReq.DashboardId = new(args[0])
 
-		response := w.Lakeview.ListSchedules(ctx, listSchedulesReq)
+		sdkReq, err := lakeview.ListSchedulesRequestToSDK(&listSchedulesReq)
+		if err != nil {
+			return err
+		}
 		if listSchedulesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSchedulesLimit)
 		}
 		if listSchedulesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSchedulesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Lakeview.ListSchedulesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, lakeview.ScheduleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -921,25 +979,25 @@ func newListSchedules() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSubscriptionsOverrides []func(
 	*cobra.Command,
-	*dashboards.ListSubscriptionsRequest,
+	*lakeview.ListSubscriptionsRequest,
 )
 
 func newListSubscriptions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSubscriptionsReq lakeview.ListSubscriptionsRequest
 
-	var listSubscriptionsReq dashboards.ListSubscriptionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSubscriptionsLimit int
 
-	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
+	flags.IntPtrVar(cmd.Flags(), &listSubscriptionsReq.PageSize, "page-size", `The number of subscriptions to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSubscriptionsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSubscriptionsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
@@ -973,19 +1031,23 @@ func newListSubscriptions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSubscriptionsReq.DashboardId = args[0]
-		listSubscriptionsReq.ScheduleId = args[1]
+		listSubscriptionsReq.DashboardId = new(args[0])
+		listSubscriptionsReq.ScheduleId = new(args[1])
 
-		response := w.Lakeview.ListSubscriptions(ctx, listSubscriptionsReq)
+		sdkReq, err := lakeview.ListSubscriptionsRequestToSDK(&listSubscriptionsReq)
+		if err != nil {
+			return err
+		}
 		if listSubscriptionsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSubscriptionsLimit)
 		}
 		if listSubscriptionsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSubscriptionsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Lakeview.ListSubscriptionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, lakeview.SubscriptionFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1006,20 +1068,20 @@ func newListSubscriptions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var migrateOverrides []func(
 	*cobra.Command,
-	*dashboards.MigrateDashboardRequest,
+	*lakeview.MigrateDashboardRequest,
 )
 
 func newMigrate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var migrateReq lakeview.MigrateDashboardRequest
 
-	var migrateReq dashboards.MigrateDashboardRequest
 	var migrateJson flags.JsonFlag
 
 	cmd.Flags().Var(&migrateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
-	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
-	cmd.Flags().BoolVar(&migrateReq.UpdateParameterSyntax, "update-parameter-syntax", migrateReq.UpdateParameterSyntax, `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &migrateReq.DisplayName, "display-name", `Display name for the new Lakeview dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &migrateReq.ParentPath, "parent-path", `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
+	flags.BoolPtrVar(cmd.Flags(), &migrateReq.UpdateParameterSyntax, "update-parameter-syntax", `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.`)
 
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`
@@ -1051,6 +1113,7 @@ func newMigrate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := migrateJson.Unmarshal(&migrateReq)
@@ -1065,15 +1128,23 @@ func newMigrate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			migrateReq.SourceDashboardId = args[0]
+			migrateReq.SourceDashboardId = new(args[0])
 		}
 
-		response, err := w.Lakeview.Migrate(ctx, migrateReq)
+		sdkReq, err := lakeview.MigrateDashboardRequestToSDK(&migrateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.MigrateDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.DashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1094,19 +1165,19 @@ func newMigrate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var publishOverrides []func(
 	*cobra.Command,
-	*dashboards.PublishRequest,
+	*lakeview.PublishDashboardRequest,
 )
 
 func newPublish() *cobra.Command {
 	cmd := &cobra.Command{}
+	var publishReq lakeview.PublishDashboardRequest
 
-	var publishReq dashboards.PublishRequest
 	var publishJson flags.JsonFlag
 
 	cmd.Flags().Var(&publishJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&publishReq.EmbedCredentials, "embed-credentials", publishReq.EmbedCredentials, `Flag to indicate if the publisher's credentials should be embedded in the published dashboard.`)
-	cmd.Flags().StringVar(&publishReq.WarehouseId, "warehouse-id", publishReq.WarehouseId, `The ID of the warehouse that can be used to override the warehouse which was set in the draft.`)
+	flags.BoolPtrVar(cmd.Flags(), &publishReq.EmbedCredentials, "embed-credentials", `Flag to indicate if the publisher's credentials should be embedded in the published dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &publishReq.WarehouseId, "warehouse-id", `The ID of the warehouse that can be used to override the warehouse which was set in the draft.`)
 
 	cmd.Use = "publish DASHBOARD_ID"
 	cmd.Short = `Publish dashboard.`
@@ -1135,6 +1206,7 @@ func newPublish() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := publishJson.Unmarshal(&publishReq)
@@ -1148,14 +1220,22 @@ func newPublish() *cobra.Command {
 				}
 			}
 		}
-		publishReq.DashboardId = args[0]
+		publishReq.DashboardId = new(args[0])
 
-		response, err := w.Lakeview.Publish(ctx, publishReq)
+		sdkReq, err := lakeview.PublishDashboardRequestToSDK(&publishReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.PublishDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.PublishedDashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1176,13 +1256,13 @@ func newPublish() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var revertOverrides []func(
 	*cobra.Command,
-	*dashboards.RevertDashboardRequest,
+	*lakeview.RevertDashboardRequest,
 )
 
 func newRevert() *cobra.Command {
 	cmd := &cobra.Command{}
+	var revertReq lakeview.RevertDashboardRequest
 
-	var revertReq dashboards.RevertDashboardRequest
 	var revertJson flags.JsonFlag
 
 	cmd.Flags().Var(&revertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1214,6 +1294,7 @@ func newRevert() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := revertJson.Unmarshal(&revertReq)
@@ -1227,14 +1308,22 @@ func newRevert() *cobra.Command {
 				}
 			}
 		}
-		revertReq.DashboardId = args[0]
+		revertReq.DashboardId = new(args[0])
 
-		response, err := w.Lakeview.Revert(ctx, revertReq)
+		sdkReq, err := lakeview.RevertDashboardRequestToSDK(&revertReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.RevertDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.RevertDashboardResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1255,13 +1344,12 @@ func newRevert() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var trashOverrides []func(
 	*cobra.Command,
-	*dashboards.TrashDashboardRequest,
+	*sdklakeview.TrashDashboardRequest,
 )
 
 func newTrash() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var trashReq dashboards.TrashDashboardRequest
+	var trashReq sdklakeview.TrashDashboardRequest
 
 	cmd.Use = "trash DASHBOARD_ID"
 	cmd.Short = `Trash dashboard.`
@@ -1290,13 +1378,17 @@ func newTrash() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		trashReq.DashboardId = args[0]
+		trashReq.DashboardId = new(args[0])
 
-		err = w.Lakeview.Trash(ctx, trashReq)
+		sdkReq := &trashReq
+		response, err := w.Lakeview.TrashDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -1318,13 +1410,12 @@ func newTrash() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var unpublishOverrides []func(
 	*cobra.Command,
-	*dashboards.UnpublishDashboardRequest,
+	*sdklakeview.UnpublishDashboardRequest,
 )
 
 func newUnpublish() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var unpublishReq dashboards.UnpublishDashboardRequest
+	var unpublishReq sdklakeview.UnpublishDashboardRequest
 
 	cmd.Use = "unpublish DASHBOARD_ID"
 	cmd.Short = `Unpublish dashboard.`
@@ -1353,13 +1444,17 @@ func newUnpublish() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		unpublishReq.DashboardId = args[0]
+		unpublishReq.DashboardId = new(args[0])
 
-		err = w.Lakeview.Unpublish(ctx, unpublishReq)
+		sdkReq := &unpublishReq
+		response, err := w.Lakeview.UnpublishDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -1381,23 +1476,23 @@ func newUnpublish() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*dashboards.UpdateDashboardRequest,
+	*lakeview.UpdateDashboardRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq lakeview.UpdateDashboardRequest
+	updateReq.Dashboard = &lakeview.Dashboard{}
 
-	var updateReq dashboards.UpdateDashboardRequest
-	updateReq.Dashboard = dashboards.Dashboard{}
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
-	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DatasetCatalog, "dataset-catalog", `Sets the default catalog for all datasets in this dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.DatasetSchema, "dataset-schema", `Sets the default schema for all datasets in this dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Dashboard.DisplayName, "display-name", `The display name of the dashboard.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", `The contents of the dashboard in serialized string form.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Dashboard.WarehouseId, "warehouse-id", `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
@@ -1426,6 +1521,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.Dashboard)
@@ -1439,14 +1535,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.DashboardId = args[0]
+		updateReq.Dashboard.DashboardId = new(args[0])
 
-		response, err := w.Lakeview.Update(ctx, updateReq)
+		sdkReq, err := lakeview.UpdateDashboardRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.UpdateDashboard(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.DashboardFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1467,21 +1571,21 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateScheduleOverrides []func(
 	*cobra.Command,
-	*dashboards.UpdateScheduleRequest,
+	*lakeview.UpdateScheduleRequest,
 )
 
 func newUpdateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateScheduleReq lakeview.UpdateScheduleRequest
+	updateScheduleReq.Schedule = &lakeview.Schedule{}
 
-	var updateScheduleReq dashboards.UpdateScheduleRequest
-	updateScheduleReq.Schedule = dashboards.Schedule{}
 	var updateScheduleJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	flags.StringPtrVar(cmd.Flags(), &updateScheduleReq.Schedule.DisplayName, "display-name", `The display name for schedule.`)
+	flags.EnumVar(cmd.Flags(), &updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`, "SchedulePauseStatus", "PAUSED", "UNPAUSED")
+	flags.StringPtrVar(cmd.Flags(), &updateScheduleReq.Schedule.WarehouseId, "warehouse-id", `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"
 	cmd.Short = `Update dashboard schedule.`
@@ -1520,6 +1624,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateScheduleJson.Unmarshal(&updateScheduleReq.Schedule)
@@ -1533,22 +1638,26 @@ func newUpdateSchedule() *cobra.Command {
 				}
 			}
 		}
-		updateScheduleReq.DashboardId = args[0]
-		updateScheduleReq.ScheduleId = args[1]
+		updateScheduleReq.Schedule.DashboardId = new(args[0])
+		updateScheduleReq.Schedule.ScheduleId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateScheduleReq.Schedule.CronSchedule)
-			if err != nil {
-				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[2])
-			}
-
+			_ = args[2] // TODO: complex arg: cron_schedule
 		}
 
-		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)
+		sdkReq, err := lakeview.UpdateScheduleRequestToSDK(&updateScheduleReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Lakeview.UpdateSchedule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := lakeview.ScheduleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

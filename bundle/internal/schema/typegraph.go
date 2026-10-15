@@ -66,7 +66,16 @@ func newTypeGraph(root reflect.Type, transforms ...func(reflect.Type, jsonschema
 			}
 		}
 
-		g.fields[refPath] = edges
+		// Several API types can share one path (see getPath); keep the union of
+		// their fields, in first-seen order.
+		for _, e := range edges {
+			if _, ok := g.edge(refPath, e.name); !ok {
+				g.fields[refPath] = append(g.fields[refPath], e)
+			}
+		}
+		if _, ok := g.fields[refPath]; !ok {
+			g.fields[refPath] = nil
+		}
 		return s
 	}
 
@@ -97,7 +106,7 @@ func structFieldOrder(typ reflect.Type, props map[string]*jsonschema.Schema) []s
 	seen := map[string]bool{}
 	bfsQueue := list.New()
 
-	for field := range typ.Fields() {
+	for _, field := range declaredFields(typ) {
 		bfsQueue.PushBack(field)
 	}
 	for bfsQueue.Len() > 0 {
@@ -110,7 +119,7 @@ func structFieldOrder(typ reflect.Type, props map[string]*jsonschema.Schema) []s
 			if fieldType.Kind() == reflect.Pointer {
 				fieldType = fieldType.Elem()
 			}
-			for f := range fieldType.Fields() {
+			for _, f := range declaredFields(fieldType) {
 				bfsQueue.PushBack(f)
 			}
 			continue
@@ -144,9 +153,21 @@ func resolveEdgeType(prop *jsonschema.Schema) string {
 		case strings.HasPrefix(ref, "map/"):
 			ref = strings.TrimPrefix(ref, "map/")
 		case strings.HasPrefix(ref, "github.com"):
-			return ref
+			return legacyTypePath(ref)
 		default:
 			return ""
 		}
 	}
+}
+
+// declaredFields returns the fields of typ in declaration order. Fields of API
+// types are sorted by name instead: the previous SDK declared them
+// alphabetically, and the order decides where annotations.yml documents a
+// type that occurs several times.
+func declaredFields(typ reflect.Type) []reflect.StructField {
+	fields := slices.Collect(typ.Fields())
+	if _, ok := legacyTypePaths[typ.PkgPath()+"."+typ.Name()]; ok {
+		slices.SortStableFunc(fields, func(a, b reflect.StructField) int { return strings.Compare(a.Name, b.Name) })
+	}
+	return fields
 }

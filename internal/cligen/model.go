@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // This file defines the CLI-side view of the "commands" block of the cli.json
@@ -163,6 +164,9 @@ type MethodJSON struct {
 	Pagination           *PaginationJSON `json:"pagination,omitempty"`
 	Wait                 *WaitJSON       `json:"wait,omitempty"`
 	LongRunningOperation *LROJSON        `json:"long_running_operation,omitempty"`
+
+	// Bind is computed from the sdk-go sources (see bind.go).
+	Bind *MethodBind `json:"-"`
 }
 
 func (m *MethodJSON) KebabName() string  { return kebabName(m.Name) }
@@ -352,4 +356,49 @@ func (c *CommandsBlock) Resolve() error {
 		}
 	}
 	return nil
+}
+
+// FlagUsage is the help text of a flag for this field.
+func (f *FieldJSON) FlagUsage(hasFieldMask bool) string {
+	u := strings.TrimSuffix(strings.ReplaceAll(f.Summary(), "`", ""), ".")
+	if f.Summary() != "" {
+		u += "."
+	}
+	if hasFieldMask {
+		u += " Wire name: '" + f.Name + "'."
+	}
+	return u
+}
+
+// EnumFlagUsage is the help text of an enum flag for this field.
+func (f *FieldJSON) EnumFlagUsage(hasFieldMask bool) string {
+	u := strings.TrimSuffix(strings.ReplaceAll(f.Summary(), "`", ""), ".")
+	if f.Summary() != "" {
+		u += ". "
+	}
+	u += "Supported values: " + printArray(f.Entity.Enum)
+	if hasFieldMask {
+		u += ". Wire name: '" + f.Name + "'."
+	}
+	return u
+}
+
+func printArray(es []*EnumEntryJSON) string {
+	var sb strings.Builder
+	sb.WriteString("[")
+	if len(es) <= 5 {
+		for i, e := range es {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(e.Content)
+		}
+	} else {
+		for _, e := range es {
+			sb.WriteString("\n  " + e.Content + ",")
+		}
+		sb.WriteString("\n")
+	}
+	sb.WriteString("]")
+	return sb.String()
 }

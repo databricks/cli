@@ -4,35 +4,29 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 type VectorSearchEndpoint struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	vectorsearch.CreateEndpoint
+	vectorsearch.CreateEndpointRequest
 
 	Permissions []VectorSearchEndpointPermission `json:"permissions,omitempty"`
 }
 
-func (e *VectorSearchEndpoint) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, e)
-}
-
-func (e VectorSearchEndpoint) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(e)
-}
-
-func (e *VectorSearchEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.VectorSearchEndpoints.GetEndpoint(ctx, vectorsearch.GetEndpointRequest{EndpointName: name})
+func (e *VectorSearchEndpoint) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.VectorSearch.GetEndpoint(ctx, sdkvectorsearch.GetEndpointRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "vector search endpoint %s does not exist: %v", name, err)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err
@@ -50,12 +44,12 @@ func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 }
 
 func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
-	if e.Name == "" {
+	if e.Name == nil {
 		return
 	}
-	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_endpoints", e.Name)
+	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_endpoints", *e.Name)
 }
 
 func (e *VectorSearchEndpoint) GetName() string {
-	return e.Name
+	return utils.Deref(e.Name)
 }

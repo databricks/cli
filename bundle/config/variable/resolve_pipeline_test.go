@@ -3,43 +3,28 @@ package variable
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolvePipeline_ResolveSuccess(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockPipelinesAPI()
-	api.EXPECT().
-		GetByName(mock.Anything, "pipeline").
-		Return(&pipelines.PipelineStateInfo{
-			PipelineId: "abcd",
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.0/pipelines": map[string]any{"statuses": []map[string]any{{"pipeline_id": "abcd", "name": "pipeline"}}},
+	})
 	l := resolvePipeline{name: "pipeline"}
-	result, err := l.Resolve(ctx, m.WorkspaceClient)
+	result, err := l.Resolve(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, "abcd", result)
 }
 
 func TestResolvePipeline_ResolveNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockPipelinesAPI()
-	api.EXPECT().
-		GetByName(mock.Anything, "pipeline").
-		Return(nil, &apierr.APIError{StatusCode: 404})
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.0/pipelines": notFound(),
+	})
 	l := resolvePipeline{name: "pipeline"}
-	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorIs(t, err, apierr.ErrNotFound)
+	_, err := l.Resolve(t.Context(), w)
+	require.True(t, apierrs.Is(err, apierrs.ErrNotFound), "%v", err)
 }
 
 func TestResolvePipeline_String(t *testing.T) {

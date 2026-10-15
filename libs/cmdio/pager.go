@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/listing"
+
 	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // pagerFallbackPageSize is used before the first WindowSizeMsg arrives,
@@ -131,7 +132,7 @@ func (m *pagerModel[T]) doFetch(ctx context.Context, pageSize, limit, total int)
 		if err != nil {
 			return batchMsg{err: err}
 		}
-		buf = append(buf, n)
+		buf = append(buf, templateData(n))
 	}
 	lines, err := m.pager.flushLines(buf)
 	if err != nil {

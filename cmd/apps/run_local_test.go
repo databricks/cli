@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/apps/runlocal"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,11 +20,17 @@ func TestSetupProxyPortInUse(t *testing.T) {
 	defer ln.Close()
 	port := ln.Addr().(*net.TCPAddr).Port
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "test-user"}, nil)
+	cfg, _ := httpfixtures.Fixtures{{
+		Method:       "GET",
+		Resource:     "/api/2.0/preview/scim/v2/Me",
+		Response:     `{"userName":"test-user"}`,
+		ReuseRequest: true,
+	}}.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
 
 	config := runlocal.NewConfig("https://workspace.databricks.test", "123", t.TempDir(), runlocal.DEFAULT_HOST, runlocal.DEFAULT_PORT)
-	err = setupProxy(t.Context(), &cobra.Command{}, config, m.WorkspaceClient, port, false)
+	err = setupProxy(t.Context(), &cobra.Command{}, config, w, port, false)
 	require.ErrorContains(t, err, "failed to start app proxy")
 }
 

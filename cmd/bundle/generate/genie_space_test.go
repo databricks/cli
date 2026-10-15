@@ -11,15 +11,14 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/httpfixtures"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func newGenieSpaceTestBundle(t *testing.T, m *mocks.MockWorkspaceClient, filePath string) *bundle.Bundle {
+func newGenieSpaceTestBundle(t *testing.T, m *sdkclients.Clients, filePath string) *bundle.Bundle {
 	t.Helper()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
@@ -37,7 +36,7 @@ func newGenieSpaceTestBundle(t *testing.T, m *mocks.MockWorkspaceClient, filePat
 		},
 	}
 	b.Config.Resources.GenieSpaces["my_space"].ID = "space-id-1"
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(m)
 	return b
 }
 
@@ -45,18 +44,7 @@ func TestGenieSpace_UpdateForResource_WritesFileWhenNotWatching(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "my_space.geniespace.json")
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockGenieAPI().EXPECT().
-		GetSpace(mock.Anything, dashboards.GenieGetSpaceRequest{
-			SpaceId:                "space-id-1",
-			IncludeSerializedSpace: true,
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id-1",
-			Title:           "My Space",
-			SerializedSpace: `{"version":1}`,
-		}, nil).
-		Once()
+	m := genieSpaceClients(t)
 
 	g := &genieSpace{
 		resource: "my_space",
@@ -80,19 +68,7 @@ func TestGenieSpace_UpdateForResource_WatchExitsOnCancel(t *testing.T) {
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "my_space.geniespace.json")
 
-	m := mocks.NewMockWorkspaceClient(t)
-	// Allow any number of GetSpace calls; we don't know how many fire before cancel.
-	m.GetMockGenieAPI().EXPECT().
-		GetSpace(mock.Anything, dashboards.GenieGetSpaceRequest{
-			SpaceId:                "space-id-1",
-			IncludeSerializedSpace: true,
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id-1",
-			Title:           "My Space",
-			SerializedSpace: `{"version":1}`,
-		}, nil).
-		Maybe()
+	m := genieSpaceClients(t)
 
 	g := &genieSpace{
 		resource: "my_space",
@@ -123,4 +99,18 @@ func TestGenieSpace_UpdateForResource_WatchExitsOnCancel(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("watch loop did not exit promptly after ctx cancel")
 	}
+}
+
+// genieSpaceClients serves the Genie space of newGenieSpaceTestBundle.
+func genieSpaceClients(t *testing.T) *sdkclients.Clients {
+	t.Helper()
+	cfg, _ := httpfixtures.Fixtures{{
+		Method:       "GET",
+		Resource:     "/api/2.0/genie/spaces/space-id-1?include_serialized_space=true",
+		Response:     `{"space_id":"space-id-1","title":"My Space","serialized_space":"{\"version\":1}"}`,
+		ReuseRequest: true,
+	}}.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
+	return w
 }

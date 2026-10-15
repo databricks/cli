@@ -1,6 +1,8 @@
 package aircmd
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // fatalPatterns match log lines that signal a run-ending failure (OOM, NCCL
 // timeouts, CUDA errors, segfaults, etc.). In --json mode a matching line emits

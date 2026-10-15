@@ -22,10 +22,12 @@ var moduleToGitHub = map[string]string{
 // Modules excluded from NOTICE requirements (Databricks-owned).
 var noticeExclude = map[string]bool{
 	"github.com/databricks/databricks-sdk-go": true,
-	"github.com/databricks/sdk-go/core":       true,
-	"github.com/databricks/sdk-go/auth":       true,
-	"github.com/databricks/sdk-go/files":      true,
-	"github.com/databricks/sdk-go/options":    true,
+}
+
+// isExcludedFromNotice reports whether module path is a Databricks SDK, which
+// is covered by the Databricks notice at the top of NOTICE.
+func isExcludedFromNotice(path string) bool {
+	return noticeExclude[path] || strings.HasPrefix(path, "github.com/databricks/sdk-go/")
 }
 
 // Expected order of license sections in the NOTICE file.
@@ -130,7 +132,7 @@ func TestNoticeFileCompleteness(t *testing.T) {
 	// Build expected: license → sorted list of slugs.
 	expected := map[string][]string{}
 	for _, r := range modFile.Require {
-		if r.Indirect || noticeExclude[r.Mod.Path] {
+		if r.Indirect || isExcludedFromNotice(r.Mod.Path) {
 			continue
 		}
 		slug := githubSlugFromModule(r.Mod.Path)

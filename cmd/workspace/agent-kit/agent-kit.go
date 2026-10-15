@@ -5,15 +5,16 @@ package agent_kit
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/agentkit"
 	"github.com/spf13/cobra"
+
+	agentkit "github.com/databricks/cli/libs/sdktypes/agentkit/v1"
+	sdkagentkit "github.com/databricks/sdk-go/agentkit/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -85,8 +86,8 @@ var appendSessionItemsOverrides []func(
 
 func newAppendSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var appendSessionItemsReq agentkit.AppendSessionItemsRequest
+
 	var appendSessionItemsJson flags.JsonFlag
 
 	cmd.Flags().Var(&appendSessionItemsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -114,6 +115,7 @@ func newAppendSessionItems() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := appendSessionItemsJson.Unmarshal(&appendSessionItemsReq)
@@ -129,14 +131,22 @@ func newAppendSessionItems() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		appendSessionItemsReq.Parent = args[0]
+		appendSessionItemsReq.Parent = new(args[0])
 
-		response, err := w.AgentKit.AppendSessionItems(ctx, appendSessionItemsReq)
+		sdkReq, err := agentkit.AppendSessionItemsRequestToSDK(&appendSessionItemsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.AppendSessionItems(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.AppendSessionItemsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -162,7 +172,6 @@ var clearSessionItemsOverrides []func(
 
 func newClearSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var clearSessionItemsReq agentkit.ClearSessionItemsRequest
 
 	cmd.Use = "clear-session-items PARENT"
@@ -188,15 +197,21 @@ func newClearSessionItems() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		clearSessionItemsReq.Parent = args[0]
+		clearSessionItemsReq.Parent = new(args[0])
 
-		response, err := w.AgentKit.ClearSessionItems(ctx, clearSessionItemsReq)
+		sdkReq, err := agentkit.ClearSessionItemsRequestToSDK(&clearSessionItemsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.ClearSessionItems(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		_ = response
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -222,18 +237,18 @@ var createMemoryOverrides []func(
 
 func newCreateMemory() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createMemoryReq agentkit.CreateManagedMemoryEntryRequest
-	createMemoryReq.ManagedMemoryEntry = agentkit.ManagedMemoryEntry{}
+	createMemoryReq.ManagedMemoryEntry = &agentkit.ManagedMemoryEntry{}
+
 	var createMemoryJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMemoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntryId, "managed-memory-entry-id", createMemoryReq.ManagedMemoryEntryId, `Optional caller-selected managed memory entry ID.`)
-	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Content, "content", createMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
-	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Description, "description", createMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
-	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.SessionId, "session-id", createMemoryReq.ManagedMemoryEntry.SessionId, `Optional identifier for the session associated with this memory entry.`)
-	cmd.Flags().Var(&createMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryReq.ManagedMemoryEntryId, "managed-memory-entry-id", `Optional caller-selected managed memory entry ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryReq.ManagedMemoryEntry.Content, "content", `Optional free-form memory content.`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryReq.ManagedMemoryEntry.Description, "description", `Human-readable description of the memory entry.`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryReq.ManagedMemoryEntry.SessionId, "session-id", `Optional identifier for the session associated with this memory entry.`)
+	flags.EnumVar(cmd.Flags(), &createMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`, "ManagedMemoryEntrySourceType", "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT", "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER")
 
 	cmd.Use = "create-memory PARENT ACTOR_ID PATH"
 	cmd.Short = `Create a managed memory entry.`
@@ -275,6 +290,7 @@ func newCreateMemory() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMemoryJson.Unmarshal(&createMemoryReq.ManagedMemoryEntry)
@@ -288,20 +304,28 @@ func newCreateMemory() *cobra.Command {
 				}
 			}
 		}
-		createMemoryReq.Parent = args[0]
+		createMemoryReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createMemoryReq.ManagedMemoryEntry.ActorId = args[1]
+			createMemoryReq.ManagedMemoryEntry.ActorId = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createMemoryReq.ManagedMemoryEntry.Path = args[2]
+			createMemoryReq.ManagedMemoryEntry.Path = new(args[2])
 		}
 
-		response, err := w.AgentKit.CreateMemory(ctx, createMemoryReq)
+		sdkReq, err := agentkit.CreateManagedMemoryEntryRequestToSDK(&createMemoryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.CreateMemory(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryEntryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -327,15 +351,15 @@ var createMemoryStoreOverrides []func(
 
 func newCreateMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createMemoryStoreReq agentkit.CreateManagedMemoryStoreRequest
-	createMemoryStoreReq.ManagedMemoryStore = agentkit.ManagedMemoryStore{}
+	createMemoryStoreReq.ManagedMemoryStore = &agentkit.ManagedMemoryStore{}
+
 	var createMemoryStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&createMemoryStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMemoryStoreReq.ManagedMemoryStore.Description, "description", createMemoryStoreReq.ManagedMemoryStore.Description, `Human-readable description of the memory store.`)
-	cmd.Flags().StringVar(&createMemoryStoreReq.ManagedMemoryStore.DisplayName, "display-name", createMemoryStoreReq.ManagedMemoryStore.DisplayName, `Deprecated compatibility alias for the caller-provided managed memory store ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryStoreReq.ManagedMemoryStore.Description, "description", `Human-readable description of the memory store.`)
+	flags.StringPtrVar(cmd.Flags(), &createMemoryStoreReq.ManagedMemoryStore.DisplayName, "display-name", `Deprecated compatibility alias for the caller-provided managed memory store ID.`)
 	// TODO: complex arg: storage_backend
 
 	cmd.Use = "create-memory-store MANAGED_MEMORY_STORE_ID"
@@ -362,6 +386,7 @@ func newCreateMemoryStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createMemoryStoreJson.Unmarshal(&createMemoryStoreReq.ManagedMemoryStore)
@@ -375,14 +400,22 @@ func newCreateMemoryStore() *cobra.Command {
 				}
 			}
 		}
-		createMemoryStoreReq.ManagedMemoryStoreId = args[0]
+		createMemoryStoreReq.ManagedMemoryStoreId = new(args[0])
 
-		response, err := w.AgentKit.CreateMemoryStore(ctx, createMemoryStoreReq)
+		sdkReq, err := agentkit.CreateManagedMemoryStoreRequestToSDK(&createMemoryStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.CreateMemoryStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -408,16 +441,16 @@ var createSessionOverrides []func(
 
 func newCreateSession() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSessionReq agentkit.CreateSessionRequest
-	createSessionReq.Session = agentkit.Session{}
+	createSessionReq.Session = &agentkit.Session{}
+
 	var createSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSessionReq.SessionId, "session-id", createSessionReq.SessionId, `Optional caller-selected session ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createSessionReq.SessionId, "session-id", `Optional caller-selected session ID.`)
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&createSessionReq.Session.ParentSessionId, "parent-session-id", createSessionReq.Session.ParentSessionId, `Immediate parent session ID.`)
+	flags.StringPtrVar(cmd.Flags(), &createSessionReq.Session.ParentSessionId, "parent-session-id", `Immediate parent session ID.`)
 
 	cmd.Use = "create-session PARENT ACTOR_ID"
 	cmd.Short = `Create a session.`
@@ -456,6 +489,7 @@ func newCreateSession() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSessionJson.Unmarshal(&createSessionReq.Session)
@@ -469,17 +503,25 @@ func newCreateSession() *cobra.Command {
 				}
 			}
 		}
-		createSessionReq.Parent = args[0]
+		createSessionReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createSessionReq.Session.ActorId = args[1]
+			createSessionReq.Session.ActorId = new(args[1])
 		}
 
-		response, err := w.AgentKit.CreateSession(ctx, createSessionReq)
+		sdkReq, err := agentkit.CreateSessionRequestToSDK(&createSessionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.CreateSession(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -505,14 +547,14 @@ var createSessionStoreOverrides []func(
 
 func newCreateSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSessionStoreReq agentkit.CreateSessionStoreRequest
-	createSessionStoreReq.SessionStore = agentkit.SessionStore{}
+	createSessionStoreReq.SessionStore = &agentkit.SessionStore{}
+
 	var createSessionStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSessionStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSessionStoreReq.SessionStore.Description, "description", createSessionStoreReq.SessionStore.Description, `Human-readable description of the session store.`)
+	flags.StringPtrVar(cmd.Flags(), &createSessionStoreReq.SessionStore.Description, "description", `Human-readable description of the session store.`)
 	// TODO: map via StringToStringVar: metadata
 
 	cmd.Use = "create-session-store SESSION_STORE_ID"
@@ -539,6 +581,7 @@ func newCreateSessionStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSessionStoreJson.Unmarshal(&createSessionStoreReq.SessionStore)
@@ -552,14 +595,22 @@ func newCreateSessionStore() *cobra.Command {
 				}
 			}
 		}
-		createSessionStoreReq.SessionStoreId = args[0]
+		createSessionStoreReq.SessionStoreId = new(args[0])
 
-		response, err := w.AgentKit.CreateSessionStore(ctx, createSessionStoreReq)
+		sdkReq, err := agentkit.CreateSessionStoreRequestToSDK(&createSessionStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.CreateSessionStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -580,13 +631,12 @@ func newCreateSessionStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMemoryOverrides []func(
 	*cobra.Command,
-	*agentkit.DeleteManagedMemoryEntryRequest,
+	*sdkagentkit.DeleteManagedMemoryEntryRequest,
 )
 
 func newDeleteMemory() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteMemoryReq agentkit.DeleteManagedMemoryEntryRequest
+	var deleteMemoryReq sdkagentkit.DeleteManagedMemoryEntryRequest
 
 	cmd.Use = "delete-memory NAME"
 	cmd.Short = `Delete a managed memory entry by resource name.`
@@ -612,10 +662,12 @@ func newDeleteMemory() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMemoryReq.Name = args[0]
+		deleteMemoryReq.Name = new(args[0])
 
-		err = w.AgentKit.DeleteMemory(ctx, deleteMemoryReq)
+		sdkReq := &deleteMemoryReq
+		err = w.AgentKit.DeleteMemory(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -640,13 +692,12 @@ func newDeleteMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteMemoryStoreOverrides []func(
 	*cobra.Command,
-	*agentkit.DeleteManagedMemoryStoreRequest,
+	*sdkagentkit.DeleteManagedMemoryStoreRequest,
 )
 
 func newDeleteMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteMemoryStoreReq agentkit.DeleteManagedMemoryStoreRequest
+	var deleteMemoryStoreReq sdkagentkit.DeleteManagedMemoryStoreRequest
 
 	cmd.Use = "delete-memory-store NAME"
 	cmd.Short = `Delete a managed memory store by resource name.`
@@ -671,10 +722,12 @@ func newDeleteMemoryStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteMemoryStoreReq.Name = args[0]
+		deleteMemoryStoreReq.Name = new(args[0])
 
-		err = w.AgentKit.DeleteMemoryStore(ctx, deleteMemoryStoreReq)
+		sdkReq := &deleteMemoryStoreReq
+		err = w.AgentKit.DeleteMemoryStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -699,13 +752,12 @@ func newDeleteMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSessionOverrides []func(
 	*cobra.Command,
-	*agentkit.DeleteSessionRequest,
+	*sdkagentkit.DeleteSessionRequest,
 )
 
 func newDeleteSession() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSessionReq agentkit.DeleteSessionRequest
+	var deleteSessionReq sdkagentkit.DeleteSessionRequest
 
 	cmd.Use = "delete-session NAME"
 	cmd.Short = `Delete a session.`
@@ -731,10 +783,12 @@ func newDeleteSession() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSessionReq.Name = args[0]
+		deleteSessionReq.Name = new(args[0])
 
-		err = w.AgentKit.DeleteSession(ctx, deleteSessionReq)
+		sdkReq := &deleteSessionReq
+		err = w.AgentKit.DeleteSession(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -759,13 +813,12 @@ func newDeleteSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSessionStoreOverrides []func(
 	*cobra.Command,
-	*agentkit.DeleteSessionStoreRequest,
+	*sdkagentkit.DeleteSessionStoreRequest,
 )
 
 func newDeleteSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSessionStoreReq agentkit.DeleteSessionStoreRequest
+	var deleteSessionStoreReq sdkagentkit.DeleteSessionStoreRequest
 
 	cmd.Use = "delete-session-store NAME"
 	cmd.Short = `Delete a session store.`
@@ -790,10 +843,12 @@ func newDeleteSessionStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSessionStoreReq.Name = args[0]
+		deleteSessionStoreReq.Name = new(args[0])
 
-		err = w.AgentKit.DeleteSessionStore(ctx, deleteSessionStoreReq)
+		sdkReq := &deleteSessionStoreReq
+		err = w.AgentKit.DeleteSessionStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -823,14 +878,14 @@ var extractMemoriesOverrides []func(
 
 func newExtractMemories() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var extractMemoriesReq agentkit.ExtractMemoriesRequest
+
 	var extractMemoriesJson flags.JsonFlag
 
 	cmd.Flags().Var(&extractMemoriesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&extractMemoriesReq.DryRun, "dry-run", extractMemoriesReq.DryRun, `When true, extract and return the entries without writing them to the memory store.`)
-	cmd.Flags().StringVar(&extractMemoriesReq.Instructions, "instructions", extractMemoriesReq.Instructions, `Instructions steering what is extracted from the session.`)
+	flags.BoolPtrVar(cmd.Flags(), &extractMemoriesReq.DryRun, "dry-run", `When true, extract and return the entries without writing them to the memory store.`)
+	flags.StringPtrVar(cmd.Flags(), &extractMemoriesReq.Instructions, "instructions", `Instructions steering what is extracted from the session.`)
 
 	cmd.Use = "extract-memories SESSION_STORE SESSION_ID MEMORY_STORE"
 	cmd.Short = `Extract memories from a session.`
@@ -866,6 +921,7 @@ func newExtractMemories() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := extractMemoriesJson.Unmarshal(&extractMemoriesReq)
@@ -879,18 +935,26 @@ func newExtractMemories() *cobra.Command {
 				}
 			}
 		}
-		extractMemoriesReq.SessionStore = args[0]
-		extractMemoriesReq.SessionId = args[1]
+		extractMemoriesReq.SessionStore = new(args[0])
+		extractMemoriesReq.SessionId = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			extractMemoriesReq.MemoryStore = args[2]
+			extractMemoriesReq.MemoryStore = new(args[2])
 		}
 
-		response, err := w.AgentKit.ExtractMemories(ctx, extractMemoriesReq)
+		sdkReq, err := agentkit.ExtractMemoriesRequestToSDK(&extractMemoriesReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.ExtractMemories(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ExtractMemoriesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -916,15 +980,15 @@ var forkSessionOverrides []func(
 
 func newForkSession() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var forkSessionReq agentkit.ForkSessionRequest
+
 	var forkSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&forkSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&forkSessionReq.SessionId, "session-id", forkSessionReq.SessionId, `Optional unique ID for the forked session.`)
-	cmd.Flags().StringVar(&forkSessionReq.UpToItemId, "up-to-item-id", forkSessionReq.UpToItemId, `Optional last item ID to copy through, inclusively.`)
+	flags.StringPtrVar(cmd.Flags(), &forkSessionReq.SessionId, "session-id", `Optional unique ID for the forked session.`)
+	flags.StringPtrVar(cmd.Flags(), &forkSessionReq.UpToItemId, "up-to-item-id", `Optional last item ID to copy through, inclusively.`)
 
 	cmd.Use = "fork-session PARENT SOURCE_SESSION_ID ACTOR_ID"
 	cmd.Short = `Fork a session.`
@@ -959,6 +1023,7 @@ func newForkSession() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := forkSessionJson.Unmarshal(&forkSessionReq)
@@ -972,20 +1037,28 @@ func newForkSession() *cobra.Command {
 				}
 			}
 		}
-		forkSessionReq.Parent = args[0]
+		forkSessionReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			forkSessionReq.SourceSessionId = args[1]
+			forkSessionReq.SourceSessionId = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			forkSessionReq.ActorId = args[2]
+			forkSessionReq.ActorId = new(args[2])
 		}
 
-		response, err := w.AgentKit.ForkSession(ctx, forkSessionReq)
+		sdkReq, err := agentkit.ForkSessionRequestToSDK(&forkSessionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.ForkSession(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ForkSessionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1011,7 +1084,6 @@ var getMemoryOverrides []func(
 
 func newGetMemory() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var getMemoryReq agentkit.GetManagedMemoryEntryRequest
 
 	var readMaskParam string
@@ -1042,20 +1114,28 @@ func newGetMemory() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMemoryReq.Name = args[0]
+		getMemoryReq.Name = new(args[0])
 
 		if readMaskParam != "" {
-			readMaskArray := strings.Split(readMaskParam, ",")
-			getMemoryReq.ReadMask = fieldmask.New(readMaskArray)
+			_ = readMaskParam
 		}
 
-		response, err := w.AgentKit.GetMemory(ctx, getMemoryReq)
+		sdkReq, err := agentkit.GetManagedMemoryEntryRequestToSDK(&getMemoryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.GetMemory(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryEntryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1076,13 +1156,12 @@ func newGetMemory() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getMemoryStoreOverrides []func(
 	*cobra.Command,
-	*agentkit.GetManagedMemoryStoreRequest,
+	*sdkagentkit.GetManagedMemoryStoreRequest,
 )
 
 func newGetMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getMemoryStoreReq agentkit.GetManagedMemoryStoreRequest
+	var getMemoryStoreReq sdkagentkit.GetManagedMemoryStoreRequest
 
 	cmd.Use = "get-memory-store NAME"
 	cmd.Short = `Get a managed memory store by resource name.`
@@ -1107,15 +1186,21 @@ func newGetMemoryStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getMemoryStoreReq.Name = args[0]
+		getMemoryStoreReq.Name = new(args[0])
 
-		response, err := w.AgentKit.GetMemoryStore(ctx, getMemoryStoreReq)
+		sdkReq := &getMemoryStoreReq
+		response, err := w.AgentKit.GetMemoryStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1136,13 +1221,12 @@ func newGetMemoryStore() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSessionOverrides []func(
 	*cobra.Command,
-	*agentkit.GetSessionRequest,
+	*sdkagentkit.GetSessionRequest,
 )
 
 func newGetSession() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSessionReq agentkit.GetSessionRequest
+	var getSessionReq sdkagentkit.GetSessionRequest
 
 	cmd.Use = "get-session NAME"
 	cmd.Short = `Get a session.`
@@ -1167,15 +1251,21 @@ func newGetSession() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSessionReq.Name = args[0]
+		getSessionReq.Name = new(args[0])
 
-		response, err := w.AgentKit.GetSession(ctx, getSessionReq)
+		sdkReq := &getSessionReq
+		response, err := w.AgentKit.GetSession(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1196,13 +1286,12 @@ func newGetSession() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSessionStoreOverrides []func(
 	*cobra.Command,
-	*agentkit.GetSessionStoreRequest,
+	*sdkagentkit.GetSessionStoreRequest,
 )
 
 func newGetSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSessionStoreReq agentkit.GetSessionStoreRequest
+	var getSessionStoreReq sdkagentkit.GetSessionStoreRequest
 
 	cmd.Use = "get-session-store NAME"
 	cmd.Short = `Get a session store.`
@@ -1226,15 +1315,21 @@ func newGetSessionStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSessionStoreReq.Name = args[0]
+		getSessionStoreReq.Name = new(args[0])
 
-		response, err := w.AgentKit.GetSessionStore(ctx, getSessionStoreReq)
+		sdkReq := &getSessionStoreReq
+		response, err := w.AgentKit.GetSessionStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1260,24 +1355,24 @@ var listMemoriesOverrides []func(
 
 func newListMemories() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listMemoriesReq agentkit.ListManagedMemoryEntriesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listMemoriesLimit int
 
-	cmd.Flags().IntVar(&listMemoriesReq.PageSize, "page-size", listMemoriesReq.PageSize, `Maximum number of entries to return. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listMemoriesReq.PathPrefix, "path-prefix", listMemoriesReq.PathPrefix, `Optional path prefix used to restrict entries within the actor partition. Wire name: 'path_prefix'.`)
+	flags.IntPtrVar(cmd.Flags(), &listMemoriesReq.PageSize, "page-size", `Maximum number of entries to return. Wire name: 'page_size'.`)
+	flags.StringPtrVar(cmd.Flags(), &listMemoriesReq.PathPrefix, "path-prefix", `Optional path prefix used to restrict entries within the actor partition. Wire name: 'path_prefix'.`)
 	var readMaskParam string
 	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Deprecated. Wire name: 'read_mask'.`)
-	cmd.Flags().StringVar(&listMemoriesReq.SessionId, "session-id", listMemoriesReq.SessionId, `Optional session identifier. Wire name: 'session_id'.`)
+	flags.StringPtrVar(cmd.Flags(), &listMemoriesReq.SessionId, "session-id", `Optional session identifier. Wire name: 'session_id'.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMemoriesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listMemoriesReq.PageToken, "page-token", listMemoriesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listMemoriesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-memories PARENT ACTOR_ID"
@@ -1307,24 +1402,27 @@ func newListMemories() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listMemoriesReq.Parent = args[0]
-		listMemoriesReq.ActorId = args[1]
+		listMemoriesReq.Parent = new(args[0])
+		listMemoriesReq.ActorId = new(args[1])
 
 		if readMaskParam != "" {
-			readMaskArray := strings.Split(readMaskParam, ",")
-			listMemoriesReq.ReadMask = fieldmask.New(readMaskArray)
+			_ = readMaskParam
 		}
 
-		response := w.AgentKit.ListMemories(ctx, listMemoriesReq)
+		sdkReq, err := agentkit.ListManagedMemoryEntriesRequestToSDK(&listMemoriesReq)
+		if err != nil {
+			return err
+		}
 		if listMemoriesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMemoriesLimit)
 		}
 		if listMemoriesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listMemoriesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.ListMemoriesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.ManagedMemoryEntryFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1350,20 +1448,20 @@ var listMemoryStoresOverrides []func(
 
 func newListMemoryStores() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listMemoryStoresReq agentkit.ListManagedMemoryStoresRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listMemoryStoresLimit int
 
-	cmd.Flags().IntVar(&listMemoryStoresReq.PageSize, "page-size", listMemoryStoresReq.PageSize, `Maximum number of stores to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listMemoryStoresReq.PageSize, "page-size", `Maximum number of stores to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMemoryStoresLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listMemoryStoresReq.PageToken, "page-token", listMemoryStoresReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listMemoryStoresReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-memory-stores"
@@ -1385,16 +1483,20 @@ func newListMemoryStores() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AgentKit.ListMemoryStores(ctx, listMemoryStoresReq)
+		sdkReq, err := agentkit.ListManagedMemoryStoresRequestToSDK(&listMemoryStoresReq)
+		if err != nil {
+			return err
+		}
 		if listMemoryStoresLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMemoryStoresLimit)
 		}
 		if listMemoryStoresLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listMemoryStoresLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.ListMemoryStoresIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.ManagedMemoryStoreFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1420,21 +1522,21 @@ var listSessionItemsOverrides []func(
 
 func newListSessionItems() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSessionItemsReq agentkit.ListSessionItemsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSessionItemsLimit int
 
-	cmd.Flags().StringVar(&listSessionItemsReq.OrderBy, "order-by", listSessionItemsReq.OrderBy, `Sort order.`)
-	cmd.Flags().IntVar(&listSessionItemsReq.PageSize, "page-size", listSessionItemsReq.PageSize, `Maximum number of items to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionItemsReq.OrderBy, "order-by", `Sort order.`)
+	flags.IntPtrVar(cmd.Flags(), &listSessionItemsReq.PageSize, "page-size", `Maximum number of items to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSessionItemsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSessionItemsReq.PageToken, "page-token", listSessionItemsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionItemsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-session-items PARENT"
@@ -1460,18 +1562,22 @@ func newListSessionItems() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSessionItemsReq.Parent = args[0]
+		listSessionItemsReq.Parent = new(args[0])
 
-		response := w.AgentKit.ListSessionItems(ctx, listSessionItemsReq)
+		sdkReq, err := agentkit.ListSessionItemsRequestToSDK(&listSessionItemsReq)
+		if err != nil {
+			return err
+		}
 		if listSessionItemsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionItemsLimit)
 		}
 		if listSessionItemsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSessionItemsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.ListSessionItemsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.SessionItemFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1497,20 +1603,20 @@ var listSessionStoresOverrides []func(
 
 func newListSessionStores() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSessionStoresReq agentkit.ListSessionStoresRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSessionStoresLimit int
 
-	cmd.Flags().IntVar(&listSessionStoresReq.PageSize, "page-size", listSessionStoresReq.PageSize, `Maximum number of session stores to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listSessionStoresReq.PageSize, "page-size", `Maximum number of session stores to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSessionStoresLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSessionStoresReq.PageToken, "page-token", listSessionStoresReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionStoresReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-session-stores"
@@ -1532,16 +1638,20 @@ func newListSessionStores() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.AgentKit.ListSessionStores(ctx, listSessionStoresReq)
+		sdkReq, err := agentkit.ListSessionStoresRequestToSDK(&listSessionStoresReq)
+		if err != nil {
+			return err
+		}
 		if listSessionStoresLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionStoresLimit)
 		}
 		if listSessionStoresLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSessionStoresLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.ListSessionStoresIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.SessionStoreFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1567,22 +1677,22 @@ var listSessionsOverrides []func(
 
 func newListSessions() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSessionsReq agentkit.ListSessionsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSessionsLimit int
 
-	cmd.Flags().StringVar(&listSessionsReq.Filter, "filter", listSessionsReq.Filter, `Filter expression.`)
-	cmd.Flags().StringVar(&listSessionsReq.OrderBy, "order-by", listSessionsReq.OrderBy, `Sort order.`)
-	cmd.Flags().IntVar(&listSessionsReq.PageSize, "page-size", listSessionsReq.PageSize, `Maximum number of sessions to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionsReq.Filter, "filter", `Filter expression.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionsReq.OrderBy, "order-by", `Sort order.`)
+	flags.IntPtrVar(cmd.Flags(), &listSessionsReq.PageSize, "page-size", `Maximum number of sessions to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSessionsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSessionsReq.PageToken, "page-token", listSessionsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSessionsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-sessions PARENT"
@@ -1608,18 +1718,22 @@ func newListSessions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSessionsReq.Parent = args[0]
+		listSessionsReq.Parent = new(args[0])
 
-		response := w.AgentKit.ListSessions(ctx, listSessionsReq)
+		sdkReq, err := agentkit.ListSessionsRequestToSDK(&listSessionsReq)
+		if err != nil {
+			return err
+		}
 		if listSessionsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSessionsLimit)
 		}
 		if listSessionsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSessionsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.ListSessionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.SessionFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1645,7 +1759,6 @@ var popSessionItemOverrides []func(
 
 func newPopSessionItem() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var popSessionItemReq agentkit.PopSessionItemRequest
 
 	cmd.Use = "pop-session-item PARENT"
@@ -1671,15 +1784,24 @@ func newPopSessionItem() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		popSessionItemReq.Parent = args[0]
+		popSessionItemReq.Parent = new(args[0])
 
-		response, err := w.AgentKit.PopSessionItem(ctx, popSessionItemReq)
+		sdkReq, err := agentkit.PopSessionItemRequestToSDK(&popSessionItemReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.PopSessionItem(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.PopSessionItemResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1705,8 +1827,8 @@ var searchMemoriesOverrides []func(
 
 func newSearchMemories() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var searchMemoriesReq agentkit.SearchManagedMemoryEntriesRequest
+
 	var searchMemoriesJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -1715,17 +1837,17 @@ func newSearchMemories() *cobra.Command {
 
 	cmd.Flags().Var(&searchMemoriesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&searchMemoriesReq.PageSize, "page-size", searchMemoriesReq.PageSize, `Maximum number of relevance-ranked entries to return. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&searchMemoriesReq.PathPrefix, "path-prefix", searchMemoriesReq.PathPrefix, `Optional absolute, case-sensitive path prefix used to restrict searched entries within the actor partition. Wire name: 'path_prefix'.`)
+	flags.IntPtrVar(cmd.Flags(), &searchMemoriesReq.PageSize, "page-size", `Maximum number of relevance-ranked entries to return. Wire name: 'page_size'.`)
+	flags.StringPtrVar(cmd.Flags(), &searchMemoriesReq.PathPrefix, "path-prefix", `Optional absolute, case-sensitive path prefix used to restrict searched entries within the actor partition. Wire name: 'path_prefix'.`)
 	var readMaskParam string
 	cmd.Flags().StringVar(&readMaskParam, "read-mask", readMaskParam, `Deprecated. Wire name: 'read_mask'.`)
-	cmd.Flags().StringVar(&searchMemoriesReq.SessionId, "session-id", searchMemoriesReq.SessionId, `Optional session identifier. Wire name: 'session_id'.`)
+	flags.StringPtrVar(cmd.Flags(), &searchMemoriesReq.SessionId, "session-id", `Optional session identifier. Wire name: 'session_id'.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchMemoriesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchMemoriesReq.PageToken, "page-token", searchMemoriesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchMemoriesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-memories PARENT ACTOR_ID QUERY"
@@ -1762,6 +1884,7 @@ func newSearchMemories() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := searchMemoriesJson.Unmarshal(&searchMemoriesReq)
@@ -1775,28 +1898,30 @@ func newSearchMemories() *cobra.Command {
 				}
 			}
 		}
-		searchMemoriesReq.Parent = args[0]
+		searchMemoriesReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			searchMemoriesReq.ActorId = args[1]
+			searchMemoriesReq.ActorId = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			searchMemoriesReq.Query = args[2]
+			searchMemoriesReq.Query = new(args[2])
 		}
 
 		if readMaskParam != "" {
-			readMaskArray := strings.Split(readMaskParam, ",")
-			searchMemoriesReq.ReadMask = fieldmask.New(readMaskArray)
+			_ = readMaskParam
 		}
 
-		response := w.AgentKit.SearchMemories(ctx, searchMemoriesReq)
+		sdkReq, err := agentkit.SearchManagedMemoryEntriesRequestToSDK(&searchMemoriesReq)
+		if err != nil {
+			return err
+		}
 		if searchMemoriesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchMemoriesLimit)
 		}
 		if searchMemoriesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchMemoriesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.AgentKit.SearchMemoriesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, agentkit.ManagedMemoryEntrySearchResultFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1822,17 +1947,17 @@ var updateMemoryOverrides []func(
 
 func newUpdateMemory() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateMemoryReq agentkit.UpdateManagedMemoryEntryRequest
-	updateMemoryReq.ManagedMemoryEntry = agentkit.ManagedMemoryEntry{}
+	updateMemoryReq.ManagedMemoryEntry = &agentkit.ManagedMemoryEntry{}
+
 	var updateMemoryJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMemoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Content, "content", updateMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
-	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.Description, "description", updateMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
-	cmd.Flags().StringVar(&updateMemoryReq.ManagedMemoryEntry.SessionId, "session-id", updateMemoryReq.ManagedMemoryEntry.SessionId, `Optional identifier for the session associated with this memory entry.`)
-	cmd.Flags().Var(&updateMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`)
+	flags.StringPtrVar(cmd.Flags(), &updateMemoryReq.ManagedMemoryEntry.Content, "content", `Optional free-form memory content.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMemoryReq.ManagedMemoryEntry.Description, "description", `Human-readable description of the memory entry.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMemoryReq.ManagedMemoryEntry.SessionId, "session-id", `Optional identifier for the session associated with this memory entry.`)
+	flags.EnumVar(cmd.Flags(), &updateMemoryReq.ManagedMemoryEntry.SourceType, "source-type", `Which writer created this entry. Supported values: [MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT, MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER]`, "ManagedMemoryEntrySourceType", "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_AGENT", "MANAGED_MEMORY_ENTRY_SOURCE_TYPE_DREAMER")
 
 	cmd.Use = "update-memory NAME UPDATE_MASK ACTOR_ID PATH"
 	cmd.Short = `Update a managed memory entry.`
@@ -1871,6 +1996,7 @@ func newUpdateMemory() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateMemoryJson.Unmarshal(&updateMemoryReq.ManagedMemoryEntry)
@@ -1884,24 +2010,31 @@ func newUpdateMemory() *cobra.Command {
 				}
 			}
 		}
-		updateMemoryReq.Name = args[0]
+		updateMemoryReq.ManagedMemoryEntry.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateMemoryReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateMemoryReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateMemoryReq.ManagedMemoryEntry.ActorId = args[2]
+			updateMemoryReq.ManagedMemoryEntry.ActorId = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateMemoryReq.ManagedMemoryEntry.Path = args[3]
+			updateMemoryReq.ManagedMemoryEntry.Path = new(args[3])
 		}
 
-		response, err := w.AgentKit.UpdateMemory(ctx, updateMemoryReq)
+		sdkReq, err := agentkit.UpdateManagedMemoryEntryRequestToSDK(&updateMemoryReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.UpdateMemory(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryEntryFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1927,15 +2060,15 @@ var updateMemoryStoreOverrides []func(
 
 func newUpdateMemoryStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateMemoryStoreReq agentkit.UpdateManagedMemoryStoreRequest
-	updateMemoryStoreReq.ManagedMemoryStore = agentkit.ManagedMemoryStore{}
+	updateMemoryStoreReq.ManagedMemoryStore = &agentkit.ManagedMemoryStore{}
+
 	var updateMemoryStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateMemoryStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMemoryStoreReq.ManagedMemoryStore.Description, "description", updateMemoryStoreReq.ManagedMemoryStore.Description, `Human-readable description of the memory store.`)
-	cmd.Flags().StringVar(&updateMemoryStoreReq.ManagedMemoryStore.DisplayName, "display-name", updateMemoryStoreReq.ManagedMemoryStore.DisplayName, `Deprecated compatibility alias for the caller-provided managed memory store ID.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMemoryStoreReq.ManagedMemoryStore.Description, "description", `Human-readable description of the memory store.`)
+	flags.StringPtrVar(cmd.Flags(), &updateMemoryStoreReq.ManagedMemoryStore.DisplayName, "display-name", `Deprecated compatibility alias for the caller-provided managed memory store ID.`)
 	// TODO: complex arg: storage_backend
 
 	cmd.Use = "update-memory-store NAME UPDATE_MASK"
@@ -1962,6 +2095,7 @@ func newUpdateMemoryStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateMemoryStoreJson.Unmarshal(&updateMemoryStoreReq.ManagedMemoryStore)
@@ -1975,18 +2109,25 @@ func newUpdateMemoryStore() *cobra.Command {
 				}
 			}
 		}
-		updateMemoryStoreReq.Name = args[0]
+		updateMemoryStoreReq.ManagedMemoryStore.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateMemoryStoreReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateMemoryStoreReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AgentKit.UpdateMemoryStore(ctx, updateMemoryStoreReq)
+		sdkReq, err := agentkit.UpdateManagedMemoryStoreRequestToSDK(&updateMemoryStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.UpdateMemoryStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.ManagedMemoryStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2012,15 +2153,15 @@ var updateSessionOverrides []func(
 
 func newUpdateSession() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSessionReq agentkit.UpdateSessionRequest
-	updateSessionReq.Session = agentkit.Session{}
+	updateSessionReq.Session = &agentkit.Session{}
+
 	var updateSessionJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSessionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: metadata
-	cmd.Flags().StringVar(&updateSessionReq.Session.ParentSessionId, "parent-session-id", updateSessionReq.Session.ParentSessionId, `Immediate parent session ID.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSessionReq.Session.ParentSessionId, "parent-session-id", `Immediate parent session ID.`)
 
 	cmd.Use = "update-session NAME UPDATE_MASK ACTOR_ID"
 	cmd.Short = `Update a session.`
@@ -2061,6 +2202,7 @@ func newUpdateSession() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSessionJson.Unmarshal(&updateSessionReq.Session)
@@ -2074,21 +2216,28 @@ func newUpdateSession() *cobra.Command {
 				}
 			}
 		}
-		updateSessionReq.Name = args[0]
+		updateSessionReq.Session.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSessionReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSessionReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateSessionReq.Session.ActorId = args[2]
+			updateSessionReq.Session.ActorId = new(args[2])
 		}
 
-		response, err := w.AgentKit.UpdateSession(ctx, updateSessionReq)
+		sdkReq, err := agentkit.UpdateSessionRequestToSDK(&updateSessionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.UpdateSession(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2114,14 +2263,14 @@ var updateSessionStoreOverrides []func(
 
 func newUpdateSessionStore() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSessionStoreReq agentkit.UpdateSessionStoreRequest
-	updateSessionStoreReq.SessionStore = agentkit.SessionStore{}
+	updateSessionStoreReq.SessionStore = &agentkit.SessionStore{}
+
 	var updateSessionStoreJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSessionStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSessionStoreReq.SessionStore.Description, "description", updateSessionStoreReq.SessionStore.Description, `Human-readable description of the session store.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSessionStoreReq.SessionStore.Description, "description", `Human-readable description of the session store.`)
 	// TODO: map via StringToStringVar: metadata
 
 	cmd.Use = "update-session-store NAME UPDATE_MASK"
@@ -2148,6 +2297,7 @@ func newUpdateSessionStore() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSessionStoreJson.Unmarshal(&updateSessionStoreReq.SessionStore)
@@ -2161,18 +2311,25 @@ func newUpdateSessionStore() *cobra.Command {
 				}
 			}
 		}
-		updateSessionStoreReq.Name = args[0]
+		updateSessionStoreReq.SessionStore.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSessionStoreReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSessionStoreReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.AgentKit.UpdateSessionStore(ctx, updateSessionStoreReq)
+		sdkReq, err := agentkit.UpdateSessionStoreRequestToSDK(&updateSessionStoreReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AgentKit.UpdateSessionStore(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := agentkit.SessionStoreFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

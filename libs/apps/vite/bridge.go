@@ -19,8 +19,9 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/apps/v1"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
@@ -77,7 +78,7 @@ type prioritizedMessage struct {
 
 type Bridge struct {
 	ctx     context.Context
-	w       *databricks.WorkspaceClient
+	w       *sdkclients.Clients
 	appName string
 	// Atomic because reconnects swap the connection while the writer goroutine reads it.
 	tunnelConn         atomic.Pointer[websocket.Conn]
@@ -98,7 +99,7 @@ type Bridge struct {
 // NewBridge constructs a development bridge to a remote app. When autoApprove is
 // true, inbound connection requests from viewers are approved without prompting
 // on stdin.
-func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int, autoApprove bool) *Bridge {
+func NewBridge(ctx context.Context, w *sdkclients.Clients, appName string, port int, autoApprove bool) *Bridge {
 	// Configure HTTP client optimized for local high-volume requests
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -156,18 +157,18 @@ func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
 }
 
 func (vb *Bridge) GetAppDomain() (*url.URL, error) {
-	app, err := vb.w.Apps.Get(vb.ctx, apps.GetAppRequest{
-		Name: vb.appName,
+	app, err := vb.w.Apps.GetApp(vb.ctx, apps.GetAppRequest{
+		Name: new(vb.appName),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get app: %w", err)
 	}
 
-	if app.Url == "" {
+	if utils.Deref(app.Url) == "" {
 		return nil, errors.New("app URL is empty")
 	}
 
-	return url.Parse(app.Url)
+	return url.Parse(*app.Url)
 }
 
 func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {

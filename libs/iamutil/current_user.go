@@ -6,33 +6,35 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/retries"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/sdk-go/core/apierr"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
-// meRetryTimeout bounds how long GetCurrentUser retries transient 500s.
 const meRetryTimeout = 30 * time.Second
 
-// GetCurrentUser returns the current user, retrying on HTTP 500 responses.
-//
-// CurrentUser.Me is a read-only endpoint, so retrying any 500 is safe. The
-// Databricks SCIM API intermittently returns "500 TEMPORARILY_UNAVAILABLE" (a
-// condition it otherwise serves as 503), and the SDK retries 503 but not 500 —
-// see the "some API's recommend retries on HTTP 500, but we'll add that later"
-// comment on (*apierr.APIError).IsRetriable in databricks-sdk-go/apierr. This
-// call runs at the start of every bundle command, so an unretried 500 fails the
-// whole command; we close that gap here.
-func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	return retries.Poll(ctx, meRetryTimeout, func() (*iam.User, *retries.Err) {
-		user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+// meRetryInterval is the pause between attempts while the SCIM Me endpoint
+// returns 500, which it does transiently right after workspace creation.
+const meRetryInterval = time.Second
+
+// GetCurrentUser returns the authenticated user. It is returned as the
+// JSON-capable mirror type because callers store it in bundle configuration.
+func GetCurrentUser(ctx context.Context, w *sdkclients.Clients) (*scim.User, error) {
+	deadline := time.Now().Add(meRetryTimeout)
+	for {
+		user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 		if err == nil {
-			return user, nil
+			return scim.UserFromSDK(user)
 		}
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusInternalServerError {
-			return nil, retries.Continue(err)
+		apiErr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok || apiErr.HTTPStatusCode() != http.StatusInternalServerError || time.Now().Add(meRetryInterval).After(deadline) {
+			return nil, err
 		}
-		return nil, retries.Halt(err)
-	})
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(meRetryInterval):
+		}
+	}
 }

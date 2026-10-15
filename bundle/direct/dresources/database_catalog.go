@@ -4,15 +4,17 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/cli/libs/sdkclients"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkdatabase "github.com/databricks/sdk-go/database/v1"
 )
 
 type ResourceDatabaseCatalog struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceDatabaseCatalog) New(client *databricks.WorkspaceClient) *ResourceDatabaseCatalog {
+func (*ResourceDatabaseCatalog) New(client *sdkclients.Clients) *ResourceDatabaseCatalog {
 	return &ResourceDatabaseCatalog{client: client}
 }
 
@@ -21,21 +23,27 @@ func (*ResourceDatabaseCatalog) PrepareState(input *resources.DatabaseCatalog) *
 }
 
 func (r *ResourceDatabaseCatalog) DoRead(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
-	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
+	catalog, err := r.client.Database.GetDatabaseCatalog(ctx, sdkdatabase.GetDatabaseCatalogRequest{Name: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	return database.DatabaseCatalogFromSDK(catalog)
 }
 
 func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
-	result, err := r.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
-		Catalog: *config,
-	})
+	request, err := database.CreateDatabaseCatalogRequestToSDK(&database.CreateDatabaseCatalogRequest{Catalog: config})
 	if err != nil {
 		return "", nil, err
 	}
-	return result.Name, nil, nil
+	result, err := r.client.Database.CreateDatabaseCatalog(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(result.Name), nil, nil
 }
 
 func (r *ResourceDatabaseCatalog) DoDelete(ctx context.Context, id string, _ *database.DatabaseCatalog) error {
-	return r.client.Database.DeleteDatabaseCatalog(ctx, database.DeleteDatabaseCatalogRequest{
-		Name: id,
+	return r.client.Database.DeleteDatabaseCatalog(ctx, sdkdatabase.DeleteDatabaseCatalogRequest{
+		Name: new(id),
 	})
 }

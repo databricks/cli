@@ -15,10 +15,12 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/workspaceapi"
+	sdkalerts "github.com/databricks/sdk-go/alerts/v2"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -73,19 +75,23 @@ After generation, you can deploy this alert to other targets using:
 		w := b.WorkspaceClient(ctx)
 
 		// Get alert from Databricks
-		alert, err := w.AlertsV2.GetAlert(ctx, sql.GetAlertV2Request{Id: alertID})
+		sdkAlert, err := w.Alerts.GetAlert(ctx, sdkalerts.GetAlertRequest{Id: new(alertID)})
 		if err != nil {
 			// Check if it's a not found error to provide a better message
-			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.HTTPStatusCode() == http.StatusNotFound {
 				return fmt.Errorf("alert with ID %s not found", alertID)
 			}
+			return err
+		}
+		alert, err := alerts.AlertFromSDK(sdkAlert)
+		if err != nil {
 			return err
 		}
 
 		// Calculate paths
 		alertKey := cmd.Flag("key").Value.String()
 		if alertKey == "" {
-			alertKey = textutil.NormalizeString(alert.DisplayName)
+			alertKey = textutil.NormalizeString(utils.Deref(alert.DisplayName))
 		}
 
 		// Make paths absolute if they aren't already
@@ -108,8 +114,8 @@ After generation, you can deploy this alert to other targets using:
 		alertPath := filepath.Join(sourceDir, alertBasename)
 
 		// remote alert path
-		remoteAlertPath := path.Join(alert.ParentPath, alert.DisplayName+".dbalert.json")
-		resp, err := w.Workspace.Export(ctx, workspace.ExportRequest{
+		remoteAlertPath := path.Join(utils.Deref(alert.ParentPath), utils.Deref(alert.DisplayName)+".dbalert.json")
+		resp, err := w.Workspace.Export(ctx, workspaceapi.ExportRequest{
 			Path: remoteAlertPath,
 		})
 		if err != nil {

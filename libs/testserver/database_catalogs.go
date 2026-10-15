@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go/service/database"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
@@ -22,22 +23,22 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 	// check that the instance exists:
 	found := false
 	for _, instance := range s.DatabaseInstances {
-		if instance.Name == databaseCatalog.DatabaseInstanceName {
+		if utils.Deref(instance.Name) == utils.Deref(databaseCatalog.DatabaseInstanceName) {
 			found = true
 			break
 		}
 	}
 	if !found {
 		return Response{
-			Body:       fmt.Sprintf("database instance with name '%s' not found", databaseCatalog.DatabaseInstanceName),
+			Body:       fmt.Sprintf("database instance with name '%s' not found", utils.Deref(databaseCatalog.DatabaseInstanceName)),
 			StatusCode: 404,
 		}
 	}
 
 	// Assign uid like the real backend does
-	databaseCatalog.Uid = nextUUID()
+	databaseCatalog.Uid = utils.NonZero(nextUUID())
 
-	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
+	s.DatabaseCatalogs[utils.Deref(databaseCatalog.Name)] = databaseCatalog
 
 	return Response{
 		Body: databaseCatalog,
@@ -57,7 +58,7 @@ func (s *FakeWorkspace) DatabaseCatalogGet(name string) Response {
 
 	// create_database_if_not_exists is a write-only field - the real API doesn't return it
 	result := catalog
-	result.CreateDatabaseIfNotExists = false
+	result.CreateDatabaseIfNotExists = nil
 
 	return Response{Body: result}
 }

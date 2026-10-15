@@ -24,6 +24,8 @@
         "permission_level": "IS_OWNER",
         "service_principal_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[INTERIM_GOLD_LAYER_JOB_ID]",
+    "request_object_type": "jobs"
   }
 }

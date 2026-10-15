@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // FileInfoWithWorkspaceObjectInfo is an interface implemented by [fs.FileInfo] values that

@@ -15,18 +15,19 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolveLogAttempt(t *testing.T) {
-	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{
-		{RunId: 100, AttemptNumber: 0},
-		{RunId: 101, AttemptNumber: 1},
-		{RunId: 102, AttemptNumber: 2},
+	run := &jobs.GetRunResponse{RunId: new(int64(5)), Tasks: []jobs.RunTask{
+		{RunId: new(int64(100)), AttemptNumber: new(0)},
+		{RunId: new(int64(101)), AttemptNumber: new(1)},
+		{RunId: new(int64(102)), AttemptNumber: new(2)},
 	}}
 
 	attempt, taskRunID, err := resolveLogAttempt(run, -1)
@@ -278,7 +279,7 @@ func TestVolumeArtifactListAndDownload(t *testing.T) {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	w, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 	fc, err := filer.NewFilesClient(t.Context(), w, "/Volumes/main/default/logs/root")
 	require.NoError(t, err)

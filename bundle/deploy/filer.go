@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // FilerFactory is a function that returns a filer.Filer.
@@ -18,7 +18,7 @@ type FilerFactory func(ctx context.Context, b *bundle.Bundle) (filer.Filer, erro
 type stateFiler struct {
 	filer filer.Filer
 
-	workspaceClient *databricks.WorkspaceClient
+	workspaceClient *sdkclients.Clients
 	root            filer.WorkspaceRootPath
 }
 

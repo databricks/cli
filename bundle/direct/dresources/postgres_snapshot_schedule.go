@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // snapshotScheduleSuffix is the final segment of a snapshot schedule's resource
@@ -31,57 +31,51 @@ type PostgresSnapshotScheduleRemote struct {
 	Name     string                     `json:"name,omitempty"`
 }
 
-func (s *PostgresSnapshotScheduleRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresSnapshotScheduleRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
 type ResourcePostgresSnapshotSchedule struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresSnapshotScheduleState = resources.PostgresSnapshotScheduleConfig
 
-func (*ResourcePostgresSnapshotSchedule) New(client *databricks.WorkspaceClient) *ResourcePostgresSnapshotSchedule {
+func (*ResourcePostgresSnapshotSchedule) New(client *sdkclients.Clients) *ResourcePostgresSnapshotSchedule {
 	return &ResourcePostgresSnapshotSchedule{client: client}
 }
 
 func (*ResourcePostgresSnapshotSchedule) PrepareState(input *resources.PostgresSnapshotSchedule) *PostgresSnapshotScheduleState {
 	return &PostgresSnapshotScheduleState{
-		Branch:          input.Branch,
-		Schedule:        input.Schedule,
-		ForceSendFields: input.ForceSendFields,
+		Branch:   input.Branch,
+		Schedule: input.Schedule,
 	}
 }
 
 func (*ResourcePostgresSnapshotSchedule) RemapState(remote *PostgresSnapshotScheduleRemote) *PostgresSnapshotScheduleState {
 	return &PostgresSnapshotScheduleState{
-		Branch:          remote.Branch,
-		Schedule:        remote.Schedule,
-		ForceSendFields: nil,
+		Branch:   remote.Branch,
+		Schedule: remote.Schedule,
 	}
 }
 
 // makePostgresSnapshotScheduleRemote converts the SDK SnapshotSchedule into the
 // remote shape. The API addresses the schedule by "{branch}/snapshot-schedule";
 // branch is derived by stripping that suffix so it participates in drift detection.
-func makePostgresSnapshotScheduleRemote(schedule *postgres.SnapshotSchedule) *PostgresSnapshotScheduleRemote {
-	return &PostgresSnapshotScheduleRemote{
-		Branch:   strings.TrimSuffix(schedule.Name, snapshotScheduleSuffix),
-		Schedule: schedule.Schedule,
-		Name:     schedule.Name,
-	}
-}
-
-func (r *ResourcePostgresSnapshotSchedule) DoRead(ctx context.Context, id string) (*PostgresSnapshotScheduleRemote, error) {
-	schedule, err := r.client.Postgres.GetSnapshotSchedule(ctx, postgres.GetSnapshotScheduleRequest{Name: id})
+func makePostgresSnapshotScheduleRemote(resp *sdkpostgres.SnapshotSchedule) (*PostgresSnapshotScheduleRemote, error) {
+	schedule, err := postgres.SnapshotScheduleFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresSnapshotScheduleRemote(schedule), nil
+	return &PostgresSnapshotScheduleRemote{
+		Branch:   strings.TrimSuffix(utils.Deref(schedule.Name), snapshotScheduleSuffix),
+		Schedule: schedule.Schedule,
+		Name:     utils.Deref(schedule.Name),
+	}, nil
+}
+
+func (r *ResourcePostgresSnapshotSchedule) DoRead(ctx context.Context, id string) (*PostgresSnapshotScheduleRemote, error) {
+	schedule, err := r.client.Postgres.GetSnapshotSchedule(ctx, sdkpostgres.GetSnapshotScheduleRequest{Name: new(id)})
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresSnapshotScheduleRemote(schedule)
 }
 
 // updateSnapshotSchedule sets the branch's schedule to the given cadences and
@@ -89,20 +83,15 @@ func (r *ResourcePostgresSnapshotSchedule) DoRead(ctx context.Context, id string
 // behind create, update, and delete: there is no Create/DeleteSnapshotSchedule
 // endpoint, so the schedule is managed entirely through UpdateSnapshotSchedule.
 // schedule is the only updatable path, so a static mask is used.
-func (r *ResourcePostgresSnapshotSchedule) updateSnapshotSchedule(ctx context.Context, name string, cadences []postgres.ScheduleCadence) (*postgres.SnapshotSchedule, error) {
-	waiter, err := r.client.Postgres.UpdateSnapshotSchedule(ctx, postgres.UpdateSnapshotScheduleRequest{
-		Name: name,
-		SnapshotSchedule: postgres.SnapshotSchedule{
-			Schedule: cadences,
-
-			// Name is carried in the request's Name field, not the body.
-			Name:            "",
-			ForceSendFields: nil,
-		},
-		UpdateMask: fieldmask.FieldMask{
-			Paths: []string{"schedule"},
-		},
+func (r *ResourcePostgresSnapshotSchedule) updateSnapshotSchedule(ctx context.Context, name string, cadences []postgres.ScheduleCadence) (*sdkpostgres.SnapshotSchedule, error) {
+	request, err := postgres.UpdateSnapshotScheduleRequestToSDK(&postgres.UpdateSnapshotScheduleRequest{
+		SnapshotSchedule: &postgres.SnapshotSchedule{Name: new(name), Schedule: cadences},
+		UpdateMask:       new("schedule"),
 	})
+	if err != nil {
+		return nil, err
+	}
+	waiter, err := r.client.Postgres.UpdateSnapshotSchedule(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +105,10 @@ func (r *ResourcePostgresSnapshotSchedule) DoCreate(ctx context.Context, config 
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresSnapshotScheduleRemote(result)
+	remote, err := makePostgresSnapshotScheduleRemote(result)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 
@@ -125,7 +117,7 @@ func (r *ResourcePostgresSnapshotSchedule) DoUpdate(ctx context.Context, id stri
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresSnapshotScheduleRemote(result), nil
+	return makePostgresSnapshotScheduleRemote(result)
 }
 
 func (r *ResourcePostgresSnapshotSchedule) DoDelete(ctx context.Context, id string, _ *PostgresSnapshotScheduleState) error {

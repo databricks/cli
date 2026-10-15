@@ -12,11 +12,12 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/bundle/internal/sdkmeta"
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 )
 
 // interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
@@ -175,6 +176,66 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	return s
 }
 
+// removeFieldsMissingFromSpec drops fields of API types that the cli.json
+// schema of the type does not define. sdk-go can be ahead of cli.json (new
+// fields) and its messages often combine input and output fields where the
+// spec has separate input types; the spec decides what is configurable.
+func removeFieldsMissingFromSpec(meta *sdkmeta.Meta) func(reflect.Type, jsonschema.Schema) jsonschema.Schema {
+	return func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+		if typ.Kind() != reflect.Struct || s.Properties == nil {
+			return s
+		}
+		owners := meta.FieldOwners(typ)
+		for name := range s.Properties {
+			owner, ok := owners[name]
+			if !ok {
+				continue
+			}
+			spec, ok := meta.Schema(owner)
+			if !ok || spec.Fields == nil {
+				continue
+			}
+			inSpec := spec.Fields[name] != nil
+			for _, alt := range meta.AltSchemas(owner) {
+				inSpec = inSpec || alt.Fields[name] != nil
+			}
+			if !inSpec {
+				delete(s.Properties, name)
+				s.Required = slices.DeleteFunc(s.Required, func(r string) bool { return r == name })
+			}
+		}
+		return s
+	}
+}
+
+// addRequiredFields marks the required fields of API types as required.
+// sdk-go and its JSON mirrors declare every field optional, so the required
+// fields come from sdkmeta instead of the json tags.
+func addRequiredFields(meta *sdkmeta.Meta) func(reflect.Type, jsonschema.Schema) jsonschema.Schema {
+	return func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+		if typ.Kind() != reflect.Struct || s.Properties == nil {
+			return s
+		}
+		required := meta.Required(typ)
+		if len(required) == 0 {
+			return s
+		}
+		// Fields declared by the CLI come first, in declaration order; API
+		// fields follow sorted, matching the alphabetical field order of the
+		// previous SDK types.
+		res := slices.Clone(s.Required)
+		var api []string
+		for _, name := range required {
+			if _, ok := s.Properties[name]; ok && !slices.Contains(res, name) {
+				api = append(api, name)
+			}
+		}
+		slices.Sort(api)
+		s.Required = append(res, api...)
+		return s
+	}
+}
+
 func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	// Only process object types with properties
 	if s.Type != jsonschema.ObjectType || s.Properties == nil {
@@ -234,8 +295,8 @@ func main() {
 // schema generator's structural field prunes applied, so the annotations file
 // only documents fields the generated schema actually contains. Both the
 // generator and the detached-annotation test use it to stay in lockstep.
-func configTypeGraph() (*typeGraph, error) {
-	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+func configTypeGraph(meta *sdkmeta.Meta) (*typeGraph, error) {
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeFieldsMissingFromSpec(meta), removeJobsFields, removePipelineFields)
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
@@ -252,12 +313,18 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatalf("no schemas found in %s", cliJSONFile)
 	}
 
-	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	meta, err := sdkmeta.Build(reflect.TypeFor[config.Root](), doc.Schemas)
+	if err != nil {
+		log.Fatal(err)
+	}
+	setLegacyTypePaths(meta)
+
+	extracted, err := newParser(doc.Schemas, meta.Name, meta.AltSchemas).extractAnnotations(reflect.TypeFor[config.Root]())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	graph, err := configTypeGraph()
+	graph, err := configTypeGraph(meta)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -282,6 +349,8 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	}
 
 	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+		removeFieldsMissingFromSpec(meta),
+		addRequiredFields(meta),
 		removeJobsFields,
 		removePipelineFields,
 		removeDeploymentFields,
@@ -307,6 +376,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	renameDefinitions(&s, meta, doc.Schemas, docsMode)
 
 	// Overwrite the input annotation file, adding missing annotations
 	err = a.syncWithMissingAnnotations(annotationsPath, graph)

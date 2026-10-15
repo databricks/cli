@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/spf13/cobra"
+
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -70,15 +73,15 @@ var createIndexOverrides []func(
 
 func newCreateIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createIndexReq vectorsearch.CreateVectorIndexRequest
+
 	var createIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
-	cmd.Flags().Var(&createIndexReq.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
+	flags.EnumVar(cmd.Flags(), &createIndexReq.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`, "IndexSubtype", "FULL_TEXT", "HYBRID", "VECTOR")
 
 	cmd.Use = "create-index NAME ENDPOINT_NAME PRIMARY_KEY INDEX_TYPE"
 	cmd.Short = `Create an index.`
@@ -113,6 +116,7 @@ func newCreateIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createIndexJson.Unmarshal(&createIndexReq)
@@ -127,28 +131,32 @@ func newCreateIndex() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createIndexReq.Name = args[0]
+			createIndexReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createIndexReq.EndpointName = args[1]
+			createIndexReq.EndpointName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createIndexReq.PrimaryKey = args[2]
+			createIndexReq.PrimaryKey = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createIndexReq.IndexType)
-			if err != nil {
-				return fmt.Errorf("invalid INDEX_TYPE: %s", args[3])
-			}
-
+			createIndexReq.IndexType = vectorsearch.VectorIndexType(args[3])
 		}
 
-		response, err := w.VectorSearchIndexes.CreateIndex(ctx, createIndexReq)
+		sdkReq, err := vectorsearch.CreateVectorIndexRequestToSDK(&createIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.CreateVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.VectorIndexFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -174,8 +182,8 @@ var deleteDataVectorIndexOverrides []func(
 
 func newDeleteDataVectorIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteDataVectorIndexReq vectorsearch.DeleteDataVectorIndexRequest
+
 	var deleteDataVectorIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -203,6 +211,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
@@ -218,14 +227,22 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		deleteDataVectorIndexReq.IndexName = args[0]
+		deleteDataVectorIndexReq.Name = new(args[0])
 
-		response, err := w.VectorSearchIndexes.DeleteDataVectorIndex(ctx, deleteDataVectorIndexReq)
+		sdkReq, err := vectorsearch.DeleteDataVectorIndexRequestToSDK(&deleteDataVectorIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.DeleteDataVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.DeleteDataVectorIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -246,13 +263,12 @@ func newDeleteDataVectorIndex() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteIndexOverrides []func(
 	*cobra.Command,
-	*vectorsearch.DeleteIndexRequest,
+	*sdkvectorsearch.DeleteVectorIndexRequest,
 )
 
 func newDeleteIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteIndexReq vectorsearch.DeleteIndexRequest
+	var deleteIndexReq sdkvectorsearch.DeleteVectorIndexRequest
 
 	cmd.Use = "delete-index INDEX_NAME"
 	cmd.Short = `Delete an index.`
@@ -274,13 +290,17 @@ func newDeleteIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteIndexReq.IndexName = args[0]
+		deleteIndexReq.Name = new(args[0])
 
-		err = w.VectorSearchIndexes.DeleteIndex(ctx, deleteIndexReq)
+		sdkReq := &deleteIndexReq
+		response, err := w.VectorSearch.DeleteVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -302,15 +322,14 @@ func newDeleteIndex() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getIndexOverrides []func(
 	*cobra.Command,
-	*vectorsearch.GetIndexRequest,
+	*vectorsearch.GetVectorIndexRequest,
 )
 
 func newGetIndex() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getIndexReq vectorsearch.GetVectorIndexRequest
 
-	var getIndexReq vectorsearch.GetIndexRequest
-
-	cmd.Flags().BoolVar(&getIndexReq.EnsureRerankerCompatible, "ensure-reranker-compatible", getIndexReq.EnsureRerankerCompatible, `If true, the URL returned for the index is guaranteed to be compatible with the reranker.`)
+	flags.BoolPtrVar(cmd.Flags(), &getIndexReq.EnsureRerankerCompatible, "ensure-reranker-compatible", `If true, the URL returned for the index is guaranteed to be compatible with the reranker.`)
 
 	cmd.Use = "get-index INDEX_NAME"
 	cmd.Short = `Get an index.`
@@ -332,15 +351,24 @@ func newGetIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getIndexReq.IndexName = args[0]
+		getIndexReq.Name = new(args[0])
 
-		response, err := w.VectorSearchIndexes.GetIndex(ctx, getIndexReq)
+		sdkReq, err := vectorsearch.GetVectorIndexRequestToSDK(&getIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.GetVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.VectorIndexFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -361,13 +389,13 @@ func newGetIndex() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listIndexesOverrides []func(
 	*cobra.Command,
-	*vectorsearch.ListIndexesRequest,
+	*vectorsearch.ListVectorIndexRequest,
 )
 
 func newListIndexes() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listIndexesReq vectorsearch.ListVectorIndexRequest
 
-	var listIndexesReq vectorsearch.ListIndexesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -377,7 +405,7 @@ func newListIndexes() *cobra.Command {
 	cmd.Flags().IntVar(&listIndexesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listIndexesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-indexes ENDPOINT_NAME"
@@ -402,18 +430,22 @@ func newListIndexes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listIndexesReq.EndpointName = args[0]
+		listIndexesReq.EndpointName = new(args[0])
 
-		response := w.VectorSearchIndexes.ListIndexes(ctx, listIndexesReq)
+		sdkReq, err := vectorsearch.ListVectorIndexRequestToSDK(&listIndexesReq)
+		if err != nil {
+			return err
+		}
 		if listIndexesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listIndexesLimit)
 		}
 		if listIndexesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listIndexesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.VectorSearch.ListVectorIndexIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, vectorsearch.MiniVectorIndexFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -439,22 +471,22 @@ var queryIndexOverrides []func(
 
 func newQueryIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var queryIndexReq vectorsearch.QueryVectorIndexRequest
+
 	var queryIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
 	// TODO: array: facets
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
-	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.FiltersJson, "filters-json", `JSON string representing query filters.`)
+	flags.IntPtrVar(cmd.Flags(), &queryIndexReq.NumResults, "num-results", `Number of results to return.`)
 	// TODO: array: query_columns
-	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.QueryText, "query-text", `Query text.`)
+	flags.StringPtrVar(cmd.Flags(), &queryIndexReq.QueryType, "query-type", `The query type to use.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
+	flags.Float32PtrVar(cmd.Flags(), &queryIndexReq.ScoreThreshold, "score-threshold", `Threshold for the approximate nearest neighbor search.`)
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index INDEX_NAME"
@@ -479,6 +511,7 @@ func newQueryIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := queryIndexJson.Unmarshal(&queryIndexReq)
@@ -494,14 +527,22 @@ func newQueryIndex() *cobra.Command {
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		queryIndexReq.IndexName = args[0]
+		queryIndexReq.Name = new(args[0])
 
-		response, err := w.VectorSearchIndexes.QueryIndex(ctx, queryIndexReq)
+		sdkReq, err := vectorsearch.QueryVectorIndexRequestToSDK(&queryIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.QueryVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.QueryVectorIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -527,14 +568,14 @@ var queryNextPageOverrides []func(
 
 func newQueryNextPage() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var queryNextPageReq vectorsearch.QueryVectorIndexNextPageRequest
+
 	var queryNextPageJson flags.JsonFlag
 
 	cmd.Flags().Var(&queryNextPageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint.`)
-	cmd.Flags().StringVar(&queryNextPageReq.PageToken, "page-token", queryNextPageReq.PageToken, `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.`)
+	flags.StringPtrVar(cmd.Flags(), &queryNextPageReq.EndpointName, "endpoint-name", `Name of the endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &queryNextPageReq.PageToken, "page-token", `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.`)
 
 	cmd.Use = "query-next-page INDEX_NAME"
 	cmd.Short = `Query next page.`
@@ -559,6 +600,7 @@ func newQueryNextPage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := queryNextPageJson.Unmarshal(&queryNextPageReq)
@@ -572,14 +614,22 @@ func newQueryNextPage() *cobra.Command {
 				}
 			}
 		}
-		queryNextPageReq.IndexName = args[0]
+		queryNextPageReq.Name = new(args[0])
 
-		response, err := w.VectorSearchIndexes.QueryNextPage(ctx, queryNextPageReq)
+		sdkReq, err := vectorsearch.QueryVectorIndexNextPageRequestToSDK(&queryNextPageReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.QueryVectorIndexNextPage(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.QueryVectorIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -605,14 +655,14 @@ var scanIndexOverrides []func(
 
 func newScanIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var scanIndexReq vectorsearch.ScanVectorIndexRequest
+
 	var scanIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&scanIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&scanIndexReq.LastPrimaryKey, "last-primary-key", scanIndexReq.LastPrimaryKey, `Primary key of the last entry returned in the previous scan.`)
-	cmd.Flags().IntVar(&scanIndexReq.NumResults, "num-results", scanIndexReq.NumResults, `Number of results to return.`)
+	flags.StringPtrVar(cmd.Flags(), &scanIndexReq.LastPrimaryKey, "last-primary-key", `Primary key of the last entry returned in the previous scan.`)
+	flags.IntPtrVar(cmd.Flags(), &scanIndexReq.NumResults, "num-results", `Number of results to return.`)
 
 	cmd.Use = "scan-index INDEX_NAME"
 	cmd.Short = `Scan an index.`
@@ -637,6 +687,7 @@ func newScanIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := scanIndexJson.Unmarshal(&scanIndexReq)
@@ -650,14 +701,22 @@ func newScanIndex() *cobra.Command {
 				}
 			}
 		}
-		scanIndexReq.IndexName = args[0]
+		scanIndexReq.Name = new(args[0])
 
-		response, err := w.VectorSearchIndexes.ScanIndex(ctx, scanIndexReq)
+		sdkReq, err := vectorsearch.ScanVectorIndexRequestToSDK(&scanIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.ScanVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.ScanVectorIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -678,13 +737,12 @@ func newScanIndex() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var syncIndexOverrides []func(
 	*cobra.Command,
-	*vectorsearch.SyncIndexRequest,
+	*vectorsearch.SyncVectorIndexRequest,
 )
 
 func newSyncIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var syncIndexReq vectorsearch.SyncIndexRequest
+	var syncIndexReq vectorsearch.SyncVectorIndexRequest
 
 	cmd.Use = "sync-index INDEX_NAME"
 	cmd.Short = `Synchronize an index.`
@@ -708,13 +766,20 @@ func newSyncIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		syncIndexReq.IndexName = args[0]
+		syncIndexReq.Name = new(args[0])
 
-		err = w.VectorSearchIndexes.SyncIndex(ctx, syncIndexReq)
+		sdkReq, err := vectorsearch.SyncVectorIndexRequestToSDK(&syncIndexReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.VectorSearch.SyncVectorIndex(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -741,8 +806,8 @@ var upsertDataVectorIndexOverrides []func(
 
 func newUpsertDataVectorIndex() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var upsertDataVectorIndexReq vectorsearch.UpsertDataVectorIndexRequest
+
 	var upsertDataVectorIndexJson flags.JsonFlag
 
 	cmd.Flags().Var(&upsertDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -778,6 +843,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
@@ -791,17 +857,25 @@ func newUpsertDataVectorIndex() *cobra.Command {
 				}
 			}
 		}
-		upsertDataVectorIndexReq.IndexName = args[0]
+		upsertDataVectorIndexReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			upsertDataVectorIndexReq.InputsJson = args[1]
+			upsertDataVectorIndexReq.InputsJson = new(args[1])
 		}
 
-		response, err := w.VectorSearchIndexes.UpsertDataVectorIndex(ctx, upsertDataVectorIndexReq)
+		sdkReq, err := vectorsearch.UpsertDataVectorIndexRequestToSDK(&upsertDataVectorIndexReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.VectorSearch.UpsertDataVectorIndex(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := vectorsearch.UpsertDataVectorIndexResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

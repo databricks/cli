@@ -2,11 +2,11 @@ package query_history
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	queryhistory "github.com/databricks/cli/libs/sdktypes/queryhistory/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *sql.ListQueryHistoryRequest) {
+func listOverride(listCmd *cobra.Command, listReq *queryhistory.ListQueriesRequest) {
 	// TODO: figure out the right format
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .Res}}{{.UserName}}	{{cyan "%s" .Status}}	{{.QueryText}}

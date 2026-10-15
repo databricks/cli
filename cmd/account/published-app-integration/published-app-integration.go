@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
+
+	oauth "github.com/databricks/cli/libs/sdktypes/oauth/v1"
+	sdkoauth "github.com/databricks/sdk-go/oauth/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,18 +56,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*oauth2.CreatePublishedAppIntegration,
+	*oauth.CreatePublishedOAuthAppIntegrationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq oauth.CreatePublishedOAuthAppIntegrationRequest
 
-	var createReq oauth2.CreatePublishedAppIntegration
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.AppId, "app-id", `App id of the OAuth published app integration.`)
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"
@@ -91,6 +94,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -105,12 +109,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := a.PublishedAppIntegration.Create(ctx, createReq)
+		sdkReq, err := oauth.CreatePublishedOAuthAppIntegrationRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.OAuth.CreatePublishedOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := oauth.CreatePublishedOAuthAppIntegrationResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -131,13 +143,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*oauth2.DeletePublishedAppIntegrationRequest,
+	*sdkoauth.DeletePublishedOAuthAppIntegrationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq oauth2.DeletePublishedAppIntegrationRequest
+	var deleteReq sdkoauth.DeletePublishedOAuthAppIntegrationRequest
 
 	cmd.Use = "delete INTEGRATION_ID"
 	cmd.Short = `Delete Published OAuth App Integration.`
@@ -161,13 +172,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteReq.IntegrationId = args[0]
+		deleteReq.IntegrationId = new(args[0])
 
-		err = a.PublishedAppIntegration.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.OAuth.DeletePublishedOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -189,13 +204,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*oauth2.GetPublishedAppIntegrationRequest,
+	*sdkoauth.GetPublishedOAuthAppIntegrationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq oauth2.GetPublishedAppIntegrationRequest
+	var getReq sdkoauth.GetPublishedOAuthAppIntegrationRequest
 
 	cmd.Use = "get INTEGRATION_ID"
 	cmd.Short = `Get OAuth Published App Integration.`
@@ -216,15 +230,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getReq.IntegrationId = args[0]
+		getReq.IntegrationId = new(args[0])
 
-		response, err := a.PublishedAppIntegration.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.OAuth.GetPublishedOAuthAppIntegration(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := oauth.PublishedOAuthAppIntegrationFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -245,25 +265,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*oauth2.ListPublishedAppIntegrationsRequest,
+	*oauth.ListPublishedOAuthAppIntegrationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq oauth.ListPublishedOAuthAppIntegrationsRequest
 
-	var listReq oauth2.ListPublishedAppIntegrationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -286,16 +306,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.PublishedAppIntegration.List(ctx, listReq)
+		sdkReq, err := oauth.ListPublishedOAuthAppIntegrationsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.OAuth.ListPublishedOAuthAppIntegrationsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, oauth.PublishedOAuthAppIntegrationFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -316,13 +340,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*oauth2.UpdatePublishedAppIntegration,
+	*oauth.UpdatePublishedOAuthAppIntegrationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq oauth.UpdatePublishedOAuthAppIntegrationRequest
 
-	var updateReq oauth2.UpdatePublishedAppIntegration
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -351,6 +375,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -364,12 +389,18 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.IntegrationId = args[0]
+		updateReq.IntegrationId = new(args[0])
 
-		err = a.PublishedAppIntegration.Update(ctx, updateReq)
+		sdkReq, err := oauth.UpdatePublishedOAuthAppIntegrationRequestToSDK(&updateReq)
 		if err != nil {
 			return err
 		}
+		response, err := a.OAuth.UpdatePublishedOAuthAppIntegration(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

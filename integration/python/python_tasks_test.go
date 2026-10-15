@@ -15,10 +15,10 @@ import (
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/workspaceapi"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +48,7 @@ type testOutput struct {
 }
 
 type testFiles struct {
-	w               *databricks.WorkspaceClient
+	w               *sdkclients.Clients
 	pyNotebookPath  string
 	sparkPythonPath string
 	wheelPath       string
@@ -121,7 +121,7 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 	w := tw.w
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
-	var tasks []jobs.SubmitTask
+	var tasks []jobs.RunTaskSettings
 	if opts.includeNotebookTasks {
 		tasks = append(tasks, GenerateNotebookTasks(tw.pyNotebookPath, sparkVersions, nodeTypeId)...)
 	}
@@ -139,16 +139,18 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 	}
 
 	ctx := t.Context()
-	run, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
-		RunName: opts.name,
+	req, err := jobs.SubmitRunRequestToSDK(&jobs.SubmitRunRequest{
+		RunName: new(opts.name),
 		Tasks:   tasks,
 	})
 	require.NoError(t, err)
-
-	_, err = w.Jobs.WaitGetRunJobTerminatedOrSkipped(ctx, run.RunId, time.Hour, nil)
+	run, err := w.Jobs.SubmitRun(ctx, *req)
 	require.NoError(t, err)
 
-	output, err := output.GetJobOutput(ctx, w, run.RunId)
+	_, err = run.Wait(ctx, lro.WithTimeout(time.Hour))
+	require.NoError(t, err)
+
+	output, err := output.GetJobOutput(ctx, w, run.GetRunId())
 	require.NoError(t, err)
 
 	result := make(map[string]testOutput, 0)
@@ -179,20 +181,20 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 	baseDir := acc.TemporaryWorkspaceDir(wt, "python-tasks-")
 
 	pyNotebookPath := path.Join(baseDir, "test.py")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      pyNotebookPath,
 		Overwrite: true,
-		Language:  workspace.LanguagePython,
-		Format:    workspace.ImportFormatSource,
+		Language:  workspaceapi.LanguagePython,
+		Format:    workspaceapi.ImportFormatSource,
 		Content:   base64.StdEncoding.EncodeToString([]byte(PY_CONTENT)),
 	})
 	require.NoError(t, err)
 
 	sparkPythonPath := path.Join(baseDir, "spark.py")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      sparkPythonPath,
 		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
+		Format:    workspaceapi.ImportFormatAuto,
 		Content:   base64.StdEncoding.EncodeToString([]byte(SPARK_PY_CONTENT)),
 	})
 	require.NoError(t, err)
@@ -201,10 +203,10 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 	require.NoError(t, err)
 
 	wheelPath := path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl")
-	err = w.Workspace.Import(ctx, workspace.Import{
+	err = w.Workspace.Import(ctx, workspaceapi.Import{
 		Path:      path.Join(baseDir, "my_test_code-0.0.1-py3-none-any.whl"),
 		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
+		Format:    workspaceapi.ImportFormatAuto,
 		Content:   base64.StdEncoding.EncodeToString(raw),
 	})
 	require.NoError(t, err)
@@ -262,19 +264,19 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 	}
 }
 
-func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	var tasks []jobs.SubmitTask
+func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.RunTaskSettings {
+	var tasks []jobs.RunTaskSettings
 	for i := range versions {
-		task := jobs.SubmitTask{
-			TaskKey: "notebook_" + strings.ReplaceAll(versions[i], ".", "_"),
+		task := jobs.RunTaskSettings{
+			TaskKey: new("notebook_" + strings.ReplaceAll(versions[i], ".", "_")),
 			NotebookTask: &jobs.NotebookTask{
-				NotebookPath: notebookPath,
+				NotebookPath: new(notebookPath),
 			},
-			NewCluster: &compute.ClusterSpec{
-				SparkVersion:     versions[i],
-				NumWorkers:       1,
-				NodeTypeId:       nodeTypeId,
-				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			NewCluster: &jobs.ClusterSpec_NewCluster{
+				SparkVersion:     new(versions[i]),
+				NumWorkers:       new(1),
+				NodeTypeId:       new(nodeTypeId),
+				DataSecurityMode: jobs.DataSecurityMode_UserIsolation,
 			},
 		}
 		tasks = append(tasks, task)
@@ -283,19 +285,19 @@ func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId st
 	return tasks
 }
 
-func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	var tasks []jobs.SubmitTask
+func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.RunTaskSettings {
+	var tasks []jobs.RunTaskSettings
 	for i := range versions {
-		task := jobs.SubmitTask{
-			TaskKey: "spark_" + strings.ReplaceAll(versions[i], ".", "_"),
+		task := jobs.RunTaskSettings{
+			TaskKey: new("spark_" + strings.ReplaceAll(versions[i], ".", "_")),
 			SparkPythonTask: &jobs.SparkPythonTask{
-				PythonFile: notebookPath,
+				PythonFile: new(notebookPath),
 			},
-			NewCluster: &compute.ClusterSpec{
-				SparkVersion:     versions[i],
-				NumWorkers:       1,
-				NodeTypeId:       nodeTypeId,
-				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			NewCluster: &jobs.ClusterSpec_NewCluster{
+				SparkVersion:     new(versions[i]),
+				NumWorkers:       new(1),
+				NodeTypeId:       new(nodeTypeId),
+				DataSecurityMode: jobs.DataSecurityMode_UserIsolation,
 			},
 		}
 		tasks = append(tasks, task)
@@ -304,23 +306,23 @@ func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId
 	return tasks
 }
 
-func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
-	var tasks []jobs.SubmitTask
+func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.RunTaskSettings {
+	var tasks []jobs.RunTaskSettings
 	for i := range versions {
-		task := jobs.SubmitTask{
-			TaskKey: "whl_" + strings.ReplaceAll(versions[i], ".", "_"),
+		task := jobs.RunTaskSettings{
+			TaskKey: new("whl_" + strings.ReplaceAll(versions[i], ".", "_")),
 			PythonWheelTask: &jobs.PythonWheelTask{
-				PackageName: "my_test_code",
-				EntryPoint:  "run",
+				PackageName: new("my_test_code"),
+				EntryPoint:  new("run"),
 			},
-			NewCluster: &compute.ClusterSpec{
-				SparkVersion:     versions[i],
-				NumWorkers:       1,
-				NodeTypeId:       nodeTypeId,
-				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			NewCluster: &jobs.ClusterSpec_NewCluster{
+				SparkVersion:     new(versions[i]),
+				NumWorkers:       new(1),
+				NodeTypeId:       new(nodeTypeId),
+				DataSecurityMode: jobs.DataSecurityMode_UserIsolation,
 			},
-			Libraries: []compute.Library{
-				{Whl: wheelPath},
+			Libraries: []jobs.Library{
+				{Whl: new(wheelPath)},
 			},
 		}
 		tasks = append(tasks, task)

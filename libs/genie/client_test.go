@@ -8,8 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/databricks/cli/libs/apierrs"
+
 	"github.com/databricks/cli/libs/genie/agentstream"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -148,7 +149,7 @@ func TestPostStream_EndpointGone(t *testing.T) {
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
 	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
-	assert.ErrorIs(t, err, apierr.ErrNotFound)
+	assert.True(t, apierrs.Is(err, apierrs.ErrNotFound))
 	assert.Contains(t, err.Error(), "No API found")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 }
@@ -167,7 +168,7 @@ func TestPostStream_ResourceNotFound(t *testing.T) {
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
 	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing", ""))
 	require.Error(t, err)
-	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
+	assert.True(t, apierrs.Is(err, apierrs.ErrResourceDoesNotExist))
 	assert.Contains(t, err.Error(), "Warehouse wh-missing does not exist")
 	assert.NotContains(t, err.Error(), "update the Databricks CLI")
 }
@@ -201,7 +202,7 @@ func TestPostStream_InternalErrorEmptyMessage(t *testing.T) {
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
 	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
-	assert.ErrorIs(t, err, apierr.ErrInternalError)
+	assert.True(t, apierrs.Is(err, apierrs.ErrInternalError))
 	assert.Contains(t, err.Error(), "could not process the request (500 with no details)")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 }

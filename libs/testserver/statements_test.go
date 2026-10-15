@@ -5,18 +5,20 @@ import (
 	"regexp"
 	"testing"
 
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // submitSQL runs a statement through the POST handler and returns the response.
-func submitSQL(t *testing.T, server *Server, statement string) *sql.StatementResponse {
+func submitSQL(t *testing.T, server *Server, statement string) *statementexecution.StatementResponse {
 	t.Helper()
-	body, err := json.Marshal(sql.ExecuteStatementRequest{Statement: statement, WaitTimeout: "10s"})
+	body, err := json.Marshal(statementexecution.ExecuteStatementRequest{Statement: utils.NonZero(statement), WaitTimeout: utils.NonZero("10s")})
 	require.NoError(t, err)
-	resp, ok := server.sqlExecuteStatement(Request{Body: body}).(*sql.StatementResponse)
+	resp, ok := server.sqlExecuteStatement(Request{Body: body}).(*statementexecution.StatementResponse)
 	require.True(t, ok)
 	return resp
 }
@@ -30,9 +32,9 @@ func TestHandleSQL(t *testing.T) {
 
 	resp := submitSQL(t, server, "SELECT 1 AS a")
 	require.NotNil(t, resp.Status)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	assert.Equal(t, statementexecution.StatementStatus_State_Succeeded, resp.Status.State)
 	require.NotNil(t, resp.Result)
-	assert.Equal(t, [][]string{{"1"}}, resp.Result.DataArray)
+	assert.Equal(t, [][]string{{"1"}}, sqlRows(resp.Result.DataArray))
 }
 
 func TestHandleSQLPattern(t *testing.T) {
@@ -45,7 +47,18 @@ func TestHandleSQLPattern(t *testing.T) {
 
 	resp := submitSQL(t, server, "SELECT 42")
 	require.NotNil(t, resp.Status)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
+	assert.Equal(t, statementexecution.StatementStatus_State_Succeeded, resp.Status.State)
 	require.NotNil(t, resp.Result)
-	assert.Equal(t, [][]string{{"42"}}, resp.Result.DataArray)
+	assert.Equal(t, [][]string{{"42"}}, sqlRows(resp.Result.DataArray))
+}
+
+func sqlRows(data [][]json.RawMessage) [][]string {
+	out := make([][]string, len(data))
+	for i, row := range data {
+		out[i] = make([]string, len(row))
+		for j, cell := range row {
+			_ = json.Unmarshal(cell, &out[i][j])
+		}
+	}
+	return out
 }

@@ -13,12 +13,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,8 +44,7 @@ func TestGetCommandShape(t *testing.T) {
 }
 
 func TestGetRunInvalidID(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), fakeWorkspace(t, nil))
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
@@ -87,11 +83,15 @@ func TestGetRunNotFound(t *testing.T) {
 }
 
 func TestGetRunAuthFailed(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
 	// A genuine auth failure (permission denied) is validated before the run is
 	// fetched, so GetRun is never reached and nothing is rendered.
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	w := fakeWorkspace(t, map[string]http.HandlerFunc{
+		"GET /api/2.0/preview/scim/v2/Me": respond(403, `{"error_code":"PERMISSION_DENIED","message":"denied"}`),
+		"GET /api/2.2/jobs/runs/get": func(w http.ResponseWriter, r *http.Request) {
+			t.Error("runs/get must not be called after a failed auth probe")
+		},
+	})
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), w)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
@@ -101,11 +101,12 @@ func TestGetRunAuthFailed(t *testing.T) {
 }
 
 func TestGetRunAuthTransient(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
 	// A transient failure at the auth probe must not be misreported as an auth
 	// error; it surfaces as a retryable internal error instead.
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("connection reset"))
-	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+	w := fakeWorkspace(t, map[string]http.HandlerFunc{
+		"GET /api/2.0/preview/scim/v2/Me": respond(500, `{"error_code":"INTERNAL_ERROR","message":"connection reset"}`),
+	})
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), w)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
@@ -125,11 +126,11 @@ func TestAuthError(t *testing.T) {
 	assert.Contains(t, noProfile.Error(), "no default profile is set")
 
 	// A 401 / 403 (via the SDK sentinels) is a real auth failure.
-	unauth := authError(ctx, cmd, apierr.ErrUnauthenticated)
+	unauth := authError(ctx, cmd, newAPIError(401, "UNAUTHENTICATED", "invalid token"))
 	require.Error(t, unauth)
 	assert.Contains(t, unauth.Error(), "authentication was not successful")
 
-	denied := authError(ctx, cmd, apierr.ErrPermissionDenied)
+	denied := authError(ctx, cmd, newAPIError(403, "PERMISSION_DENIED", "denied"))
 	require.Error(t, denied)
 	assert.Contains(t, denied.Error(), "authentication was not successful")
 
@@ -191,17 +192,17 @@ func TestGetTemplateSweepNoTasks(t *testing.T) {
 }
 
 func TestBuildGetData(t *testing.T) {
-	run := &jobs.Run{
-		RunId:           123,
-		CreatorUserName: "me@example.com",
-		StartTime:       1700000000000,
-		EndTime:         1700000012000,
-		State:           &jobs.RunState{ResultState: jobs.RunResultStateSuccess},
+	run := &jobs.GetRunResponse{
+		RunId:           new(int64(123)),
+		CreatorUserName: new("me@example.com"),
+		StartTime:       new(int64(1700000000000)),
+		EndTime:         new(int64(1700000012000)),
+		State:           &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Success},
 		Tasks: []jobs.RunTask{{
-			AttemptNumber: 1,
+			AttemptNumber: new(1),
 			GenAiComputeTask: &jobs.GenAiComputeTask{
-				MlflowExperimentName: "/Users/me@example.com/exp",
-				Compute:              &jobs.ComputeConfig{NumGpus: 8, GpuType: "GPU_8xH100"},
+				MlflowExperimentName: new("/Users/me@example.com/exp"),
+				Compute:              &jobs.ComputeConfig{NumGpus: new(8), GpuType: new("GPU_8xH100")},
 			},
 		}},
 	}
@@ -221,11 +222,11 @@ func TestBuildGetData(t *testing.T) {
 }
 
 func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
-	failed := buildGetData(&jobs.Run{
-		RunId: 5,
-		State: &jobs.RunState{ResultState: jobs.RunResultStateFailed},
+	failed := buildGetData(&jobs.GetRunResponse{
+		RunId: new(int64(5)),
+		State: &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Failed},
 		Status: &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{
-			Message: "out of memory",
+			Message: new("out of memory"),
 		}},
 	})
 	body, err := json.Marshal(failed)
@@ -236,7 +237,7 @@ func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
 		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null
 	}`, string(body))
 
-	canceled := buildGetData(&jobs.Run{RunId: 6, State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "user canceled"}})
+	canceled := buildGetData(&jobs.GetRunResponse{RunId: new(int64(6)), State: &jobs.RunState{ResultState: jobs.RunResultState_RunResultState_Canceled, StateMessage: new("user canceled")}})
 	body, err = json.Marshal(canceled)
 	require.NoError(t, err)
 	assert.NotContains(t, string(body), "termination_reason")
@@ -254,12 +255,12 @@ func TestGetTemplateUsesDisplayStatus(t *testing.T) {
 
 func TestEnrichFromAiRuntimeTask(t *testing.T) {
 	t.Run("fills config path, experiment, and accelerators", func(t *testing.T) {
-		run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{
+		run := &jobs.GetRunResponse{RunId: new(int64(5)), Tasks: []jobs.RunTask{{
 			AiRuntimeTask: &jobs.AiRuntimeTask{
-				Experiment: "/Users/me@example.com/my-exp",
+				Experiment: new("/Users/me@example.com/my-exp"),
 				Deployments: []jobs.DeploymentSpec{{
-					CommandPath: "/Workspace/run/command.sh",
-					Compute:     jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xA10, AcceleratorCount: 1},
+					CommandPath: new("/Workspace/run/command.sh"),
+					Compute:     &jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpec_AcceleratorType_Gpu1xA10, AcceleratorCount: new(1)},
 				}},
 			},
 		}}}
@@ -273,7 +274,7 @@ func TestEnrichFromAiRuntimeTask(t *testing.T) {
 	})
 
 	t.Run("leaves fallbacks when the run has no ai_runtime_task", func(t *testing.T) {
-		run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{}}}
+		run := &jobs.GetRunResponse{RunId: new(int64(5)), Tasks: []jobs.RunTask{{}}}
 		data := &getData{ExperimentDisplay: na, AcceleratorsDisplay: na}
 		enrichFromAiRuntimeTask(run, data)
 		assert.Empty(t, data.TrainingConfigPath)
@@ -284,7 +285,7 @@ func TestEnrichFromAiRuntimeTask(t *testing.T) {
 
 func TestBuildGetDataEmpty(t *testing.T) {
 	// A run with no tasks, creator, or timing renders every text cell as "N/A".
-	d := buildGetData(&jobs.Run{RunId: 7})
+	d := buildGetData(&jobs.GetRunResponse{RunId: new(int64(7))})
 	assert.Equal(t, "7", d.RunID)
 	assert.Equal(t, na, d.SubmittedDisplay)
 	assert.Equal(t, na, d.DurationDisplay)

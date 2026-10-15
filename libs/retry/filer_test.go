@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,7 @@ func (f *flakyFiler) Write(ctx context.Context, path string, r io.Reader, mode .
 	return nil
 }
 
-var errTransient = &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "TEMPORARILY_UNAVAILABLE"}
+var errTransient = apierr.FromHTTPError(http.StatusGatewayTimeout, nil, []byte(`{"message":"TEMPORARILY_UNAVAILABLE"}`))
 
 func TestFilerRetriesSeekableReader(t *testing.T) {
 	f := &flakyFiler{failures: 1, err: errTransient}
@@ -69,7 +69,7 @@ func TestFilerGivesUp(t *testing.T) {
 }
 
 func TestFilerDoesNotRetryOtherErrors(t *testing.T) {
-	f := &flakyFiler{failures: 100, err: &apierr.APIError{StatusCode: http.StatusForbidden}}
+	f := &flakyFiler{failures: 100, err: apierr.FromHTTPError(http.StatusForbidden, nil, nil)}
 	err := Filer(f).Write(testContext(t), "a", strings.NewReader("x"), filer.OverwriteIfExists)
 	require.Error(t, err)
 	assert.Len(t, f.bodies, 1)

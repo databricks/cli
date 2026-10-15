@@ -5,16 +5,22 @@ package warehouses
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	warehouses "github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
+	sdkwarehouses "github.com/databricks/sdk-go/warehouses/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -70,13 +76,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateWarehouseRequest,
+	*warehouses.CreateWarehouseRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq warehouses.CreateWarehouseRequest
 
-	var createReq sql.CreateWarehouseRequest
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -87,20 +93,20 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&createReq.AutoStopMins, "auto-stop-mins", createReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	flags.IntPtrVar(cmd.Flags(), &createReq.AutoStopMins, "auto-stop-mins", `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
-	cmd.Flags().StringVar(&createReq.ClusterSize, "cluster-size", createReq.ClusterSize, `Size of the clusters allocated for this warehouse.`)
-	cmd.Flags().StringVar(&createReq.CreatorName, "creator-name", createReq.CreatorName, `warehouse creator name.`)
-	cmd.Flags().BoolVar(&createReq.EnablePhoton, "enable-photon", createReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
-	cmd.Flags().BoolVar(&createReq.EnableServerlessCompute, "enable-serverless-compute", createReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
-	cmd.Flags().StringVar(&createReq.InstanceProfileArn, "instance-profile-arn", createReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
-	cmd.Flags().IntVar(&createReq.StatementTimeout, "statement-timeout", createReq.StatementTimeout, `Warehouse statement timeout in seconds.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.ClusterSize, "cluster-size", `Size of the clusters allocated for this warehouse.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CreatorName, "creator-name", `warehouse creator name.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.EnablePhoton, "enable-photon", `Configures whether the warehouse should use Photon optimized clusters.`)
+	flags.BoolPtrVar(cmd.Flags(), &createReq.EnableServerlessCompute, "enable-serverless-compute", `Configures whether the warehouse should use serverless compute.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.InstanceProfileArn, "instance-profile-arn", `Deprecated.`)
+	flags.IntPtrVar(cmd.Flags(), &createReq.MaxNumClusters, "max-num-clusters", `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
+	flags.IntPtrVar(cmd.Flags(), &createReq.MinNumClusters, "min-num-clusters", `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Name, "name", `Logical name for the cluster.`)
+	flags.EnumVar(cmd.Flags(), &createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`, "SpotInstancePolicy", "COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED")
+	flags.IntPtrVar(cmd.Flags(), &createReq.StatementTimeout, "statement-timeout", `Warehouse statement timeout in seconds.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	flags.EnumVar(cmd.Flags(), &createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`, "CreateWarehouseRequestWarehouseType", "CLASSIC", "PRO", "TYPE_UNSPECIFIED")
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -121,6 +127,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -135,30 +142,39 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		wait, err := w.Warehouses.Create(ctx, createReq)
+		sdkReq, err := warehouses.CreateWarehouseRequestToSDK(&createReq)
 		if err != nil {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			api, err := apiclient.New(w.Config)
+			if err != nil {
+				return err
+			}
+			var current warehouses.CreateWarehouseResponse
+			err = api.Do(ctx, "POST", "/api/2.0/sql/warehouses", auth.WorkspaceIDHeaders(w.Config), nil, &createReq, &current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, current)
 		}
-		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
-			if i.Health == nil {
-				return
-			}
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Health != nil {
-				statusMessage = i.Health.Summary
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		wait, err := w.Warehouses.CreateWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for create to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(createTimeout))
+		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := warehouses.GetWarehouseResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -179,20 +195,20 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createDefaultWarehouseOverrideOverrides []func(
 	*cobra.Command,
-	*sql.CreateDefaultWarehouseOverrideRequest,
+	*warehouses.CreateDefaultWarehouseOverrideRequest,
 )
 
 func newCreateDefaultWarehouseOverride() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createDefaultWarehouseOverrideReq warehouses.CreateDefaultWarehouseOverrideRequest
+	createDefaultWarehouseOverrideReq.DefaultWarehouseOverride = &warehouses.DefaultWarehouseOverride{}
 
-	var createDefaultWarehouseOverrideReq sql.CreateDefaultWarehouseOverrideRequest
-	createDefaultWarehouseOverrideReq.DefaultWarehouseOverride = sql.DefaultWarehouseOverride{}
 	var createDefaultWarehouseOverrideJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDefaultWarehouseOverrideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, `The resource name of the default warehouse override.`)
-	cmd.Flags().StringVar(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
+	flags.StringPtrVar(cmd.Flags(), &createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", `The resource name of the default warehouse override.`)
+	flags.StringPtrVar(cmd.Flags(), &createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", `The specific warehouse ID when type is CUSTOM.`)
 
 	cmd.Use = "create-default-warehouse-override DEFAULT_WAREHOUSE_OVERRIDE_ID TYPE"
 	cmd.Short = `*Beta* Create default warehouse override.`
@@ -230,6 +246,7 @@ Create default warehouse override.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDefaultWarehouseOverrideJson.Unmarshal(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
@@ -243,21 +260,25 @@ Create default warehouse override.
 				}
 			}
 		}
-		createDefaultWarehouseOverrideReq.DefaultWarehouseOverrideId = args[0]
+		createDefaultWarehouseOverrideReq.DefaultWarehouseOverrideId = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type)
-			if err != nil {
-				return fmt.Errorf("invalid TYPE: %s", args[1])
-			}
-
+			createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type = warehouses.DefaultWarehouseOverrideType(args[1])
 		}
 
-		response, err := w.Warehouses.CreateDefaultWarehouseOverride(ctx, createDefaultWarehouseOverrideReq)
+		sdkReq, err := warehouses.CreateDefaultWarehouseOverrideRequestToSDK(&createDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Warehouses.CreateDefaultWarehouseOverride(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := warehouses.DefaultWarehouseOverrideFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -278,13 +299,12 @@ Create default warehouse override.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteWarehouseRequest,
+	*sdkwarehouses.DeleteWarehouseRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sql.DeleteWarehouseRequest
+	var deleteReq sdkwarehouses.DeleteWarehouseRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a warehouse.`
@@ -303,11 +323,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -321,12 +342,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.Warehouses.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Warehouses.DeleteWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -348,13 +372,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDefaultWarehouseOverrideOverrides []func(
 	*cobra.Command,
-	*sql.DeleteDefaultWarehouseOverrideRequest,
+	*sdkwarehouses.DeleteDefaultWarehouseOverrideRequest,
 )
 
 func newDeleteDefaultWarehouseOverride() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDefaultWarehouseOverrideReq sql.DeleteDefaultWarehouseOverrideRequest
+	var deleteDefaultWarehouseOverrideReq sdkwarehouses.DeleteDefaultWarehouseOverrideRequest
 
 	cmd.Use = "delete-default-warehouse-override NAME"
 	cmd.Short = `*Beta* Delete default warehouse override.`
@@ -380,11 +403,12 @@ Delete default warehouse override.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -398,9 +422,10 @@ Delete default warehouse override.
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		deleteDefaultWarehouseOverrideReq.Name = args[0]
+		deleteDefaultWarehouseOverrideReq.Name = new(args[0])
 
-		err = w.Warehouses.DeleteDefaultWarehouseOverride(ctx, deleteDefaultWarehouseOverrideReq)
+		sdkReq := &deleteDefaultWarehouseOverrideReq
+		err = w.Warehouses.DeleteDefaultWarehouseOverride(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -425,13 +450,13 @@ Delete default warehouse override.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var editOverrides []func(
 	*cobra.Command,
-	*sql.EditWarehouseRequest,
+	*warehouses.EditWarehouseRequest,
 )
 
 func newEdit() *cobra.Command {
 	cmd := &cobra.Command{}
+	var editReq warehouses.EditWarehouseRequest
 
-	var editReq sql.EditWarehouseRequest
 	var editJson flags.JsonFlag
 
 	var editSkipWait bool
@@ -442,20 +467,20 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&editReq.AutoStopMins, "auto-stop-mins", editReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	flags.IntPtrVar(cmd.Flags(), &editReq.AutoStopMins, "auto-stop-mins", `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
-	cmd.Flags().StringVar(&editReq.ClusterSize, "cluster-size", editReq.ClusterSize, `Size of the clusters allocated for this warehouse.`)
-	cmd.Flags().StringVar(&editReq.CreatorName, "creator-name", editReq.CreatorName, `warehouse creator name.`)
-	cmd.Flags().BoolVar(&editReq.EnablePhoton, "enable-photon", editReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
-	cmd.Flags().BoolVar(&editReq.EnableServerlessCompute, "enable-serverless-compute", editReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
-	cmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
-	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
-	cmd.Flags().IntVar(&editReq.StatementTimeout, "statement-timeout", editReq.StatementTimeout, `Warehouse statement timeout in seconds.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.ClusterSize, "cluster-size", `Size of the clusters allocated for this warehouse.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.CreatorName, "creator-name", `warehouse creator name.`)
+	flags.BoolPtrVar(cmd.Flags(), &editReq.EnablePhoton, "enable-photon", `Configures whether the warehouse should use Photon optimized clusters.`)
+	flags.BoolPtrVar(cmd.Flags(), &editReq.EnableServerlessCompute, "enable-serverless-compute", `Configures whether the warehouse should use serverless compute.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.InstanceProfileArn, "instance-profile-arn", `Deprecated.`)
+	flags.IntPtrVar(cmd.Flags(), &editReq.MaxNumClusters, "max-num-clusters", `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
+	flags.IntPtrVar(cmd.Flags(), &editReq.MinNumClusters, "min-num-clusters", `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
+	flags.StringPtrVar(cmd.Flags(), &editReq.Name, "name", `Logical name for the cluster.`)
+	flags.EnumVar(cmd.Flags(), &editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`, "SpotInstancePolicy", "COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED")
+	flags.IntPtrVar(cmd.Flags(), &editReq.StatementTimeout, "statement-timeout", `Warehouse statement timeout in seconds.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	flags.EnumVar(cmd.Flags(), &editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`, "EditWarehouseRequestWarehouseType", "CLASSIC", "PRO", "TYPE_UNSPECIFIED")
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
@@ -474,6 +499,7 @@ func newEdit() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
@@ -490,7 +516,7 @@ func newEdit() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -504,32 +530,41 @@ func newEdit() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		editReq.Id = args[0]
+		editReq.Id = new(args[0])
 
-		wait, err := w.Warehouses.Edit(ctx, editReq)
+		sdkReq, err := warehouses.EditWarehouseRequestToSDK(&editReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Warehouses.EditWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if editSkipWait {
-			return nil
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
-			if i.Health == nil {
-				return
-			}
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Health != nil {
-				statusMessage = i.Health.Summary
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(editTimeout)
+		sp.Update("Waiting for edit to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(editTimeout))
 		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := warehouses.GetWarehouseResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -550,13 +585,12 @@ func newEdit() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sql.GetWarehouseRequest,
+	*sdkwarehouses.GetWarehouseRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sql.GetWarehouseRequest
+	var getReq sdkwarehouses.GetWarehouseRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get warehouse info.`
@@ -575,11 +609,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -593,14 +628,19 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.Warehouses.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Warehouses.GetWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := warehouses.GetWarehouseResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -621,13 +661,12 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDefaultWarehouseOverrideOverrides []func(
 	*cobra.Command,
-	*sql.GetDefaultWarehouseOverrideRequest,
+	*sdkwarehouses.GetDefaultWarehouseOverrideRequest,
 )
 
 func newGetDefaultWarehouseOverride() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDefaultWarehouseOverrideReq sql.GetDefaultWarehouseOverrideRequest
+	var getDefaultWarehouseOverrideReq sdkwarehouses.GetDefaultWarehouseOverrideRequest
 
 	cmd.Use = "get-default-warehouse-override NAME"
 	cmd.Short = `*Beta* Get default warehouse override.`
@@ -653,11 +692,12 @@ Get default warehouse override.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -671,14 +711,19 @@ Get default warehouse override.
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		getDefaultWarehouseOverrideReq.Name = args[0]
+		getDefaultWarehouseOverrideReq.Name = new(args[0])
 
-		response, err := w.Warehouses.GetDefaultWarehouseOverride(ctx, getDefaultWarehouseOverrideReq)
+		sdkReq := &getDefaultWarehouseOverrideReq
+		response, err := w.Warehouses.GetDefaultWarehouseOverride(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := warehouses.DefaultWarehouseOverrideFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -699,13 +744,12 @@ Get default warehouse override.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*sql.GetWarehousePermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq sql.GetWarehousePermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permission levels.`
@@ -724,11 +768,12 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -742,14 +787,21 @@ func newGetPermissionLevels() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		getPermissionLevelsReq.WarehouseId = args[0]
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Warehouses.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("warehouses")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -770,13 +822,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*sql.GetWarehousePermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq sql.GetWarehousePermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permissions.`
@@ -796,11 +847,12 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -814,14 +866,21 @@ func newGetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		getPermissionsReq.WarehouseId = args[0]
+		getPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Warehouses.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("warehouses")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -862,12 +921,20 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx)
+		_ = w
+
+		sdkReq := &sdkwarehouses.GetWorkspaceWarehouseConfigRequest{}
+
+		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := warehouses.GetWorkspaceWarehouseConfigResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -888,26 +955,26 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*sql.ListWarehousesRequest,
+	*warehouses.ListWarehousesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq warehouses.ListWarehousesRequest
 
-	var listReq sql.ListWarehousesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of warehouses to return.`)
-	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Deprecated: this field is ignored by the server.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", `The max number of warehouses to return.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.RunAsUserId, "run-as-user-id", `Deprecated: this field is ignored by the server.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -929,16 +996,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Warehouses.List(ctx, listReq)
+		sdkReq, err := warehouses.ListWarehousesRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Warehouses.ListWarehousesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, warehouses.EndpointInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -959,25 +1030,25 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listDefaultWarehouseOverridesOverrides []func(
 	*cobra.Command,
-	*sql.ListDefaultWarehouseOverridesRequest,
+	*warehouses.ListDefaultWarehouseOverridesRequest,
 )
 
 func newListDefaultWarehouseOverrides() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listDefaultWarehouseOverridesReq warehouses.ListDefaultWarehouseOverridesRequest
 
-	var listDefaultWarehouseOverridesReq sql.ListDefaultWarehouseOverridesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDefaultWarehouseOverridesLimit int
 
-	cmd.Flags().IntVar(&listDefaultWarehouseOverridesReq.PageSize, "page-size", listDefaultWarehouseOverridesReq.PageSize, `The maximum number of overrides to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listDefaultWarehouseOverridesReq.PageSize, "page-size", `The maximum number of overrides to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDefaultWarehouseOverridesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDefaultWarehouseOverridesReq.PageToken, "page-token", listDefaultWarehouseOverridesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDefaultWarehouseOverridesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-default-warehouse-overrides"
@@ -1002,16 +1073,20 @@ List default warehouse overrides.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Warehouses.ListDefaultWarehouseOverrides(ctx, listDefaultWarehouseOverridesReq)
+		sdkReq, err := warehouses.ListDefaultWarehouseOverridesRequestToSDK(&listDefaultWarehouseOverridesReq)
+		if err != nil {
+			return err
+		}
 		if listDefaultWarehouseOverridesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDefaultWarehouseOverridesLimit)
 		}
 		if listDefaultWarehouseOverridesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDefaultWarehouseOverridesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Warehouses.ListDefaultWarehouseOverridesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, warehouses.DefaultWarehouseOverrideFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1032,13 +1107,13 @@ List default warehouse overrides.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*sql.WarehousePermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq sql.WarehousePermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1064,6 +1139,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -1080,7 +1156,7 @@ func newSetPermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1094,14 +1170,24 @@ func newSetPermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		setPermissionsReq.WarehouseId = args[0]
+		setPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Warehouses.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("warehouses")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1122,13 +1208,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setWorkspaceWarehouseConfigOverrides []func(
 	*cobra.Command,
-	*sql.SetWorkspaceWarehouseConfigRequest,
+	*warehouses.SetWorkspaceWarehouseConfigRequest,
 )
 
 func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setWorkspaceWarehouseConfigReq warehouses.SetWorkspaceWarehouseConfigRequest
 
-	var setWorkspaceWarehouseConfigReq sql.SetWorkspaceWarehouseConfigRequest
 	var setWorkspaceWarehouseConfigJson flags.JsonFlag
 
 	cmd.Flags().Var(&setWorkspaceWarehouseConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1136,12 +1222,12 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
 	// TODO: array: data_access_config
-	cmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", setWorkspaceWarehouseConfigReq.EnableServerlessCompute, `Deprecated: only setting this to true is allowed.`)
+	flags.BoolPtrVar(cmd.Flags(), &setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", `Deprecated: only setting this to true is allowed.`)
 	// TODO: array: enabled_warehouse_types
 	// TODO: complex arg: global_param
-	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
-	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: The instance profile used to pass an IAM role to the SQL warehouses.`)
-	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]`)
+	flags.StringPtrVar(cmd.Flags(), &setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
+	flags.StringPtrVar(cmd.Flags(), &setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", `AWS Only: The instance profile used to pass an IAM role to the SQL warehouses.`)
+	flags.EnumVar(cmd.Flags(), &setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]`, "SetWorkspaceWarehouseConfigRequestSecurityPolicy", "DATA_ACCESS_CONTROL", "NONE", "PASSTHROUGH")
 	// TODO: complex arg: sql_configuration_parameters
 
 	cmd.Use = "set-workspace-warehouse-config"
@@ -1164,6 +1250,7 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setWorkspaceWarehouseConfigJson.Unmarshal(&setWorkspaceWarehouseConfigReq)
@@ -1178,10 +1265,16 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 			}
 		}
 
-		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
+		sdkReq, err := warehouses.SetWorkspaceWarehouseConfigRequestToSDK(&setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Warehouses.SetWorkspaceWarehouseConfig(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1203,13 +1296,12 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var startOverrides []func(
 	*cobra.Command,
-	*sql.StartRequest,
+	*warehouses.StartRequest,
 )
 
 func newStart() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var startReq sql.StartRequest
+	var startReq warehouses.StartRequest
 
 	var startSkipWait bool
 	var startTimeout time.Duration
@@ -1234,11 +1326,12 @@ func newStart() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1252,32 +1345,41 @@ func newStart() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		startReq.Id = args[0]
+		startReq.Id = new(args[0])
 
-		wait, err := w.Warehouses.Start(ctx, startReq)
+		sdkReq, err := warehouses.StartRequestToSDK(&startReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Warehouses.StartWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if startSkipWait {
-			return nil
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
-			if i.Health == nil {
-				return
-			}
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Health != nil {
-				statusMessage = i.Health.Summary
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(startTimeout)
+		sp.Update("Waiting for start to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(startTimeout))
 		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := warehouses.GetWarehouseResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1298,13 +1400,12 @@ func newStart() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var stopOverrides []func(
 	*cobra.Command,
-	*sql.StopRequest,
+	*warehouses.StopRequest,
 )
 
 func newStop() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var stopReq sql.StopRequest
+	var stopReq warehouses.StopRequest
 
 	var stopSkipWait bool
 	var stopTimeout time.Duration
@@ -1329,11 +1430,12 @@ func newStop() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1347,32 +1449,41 @@ func newStop() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have required")
 		}
-		stopReq.Id = args[0]
+		stopReq.Id = new(args[0])
 
-		wait, err := w.Warehouses.Stop(ctx, stopReq)
+		sdkReq, err := warehouses.StopRequestToSDK(&stopReq)
+		if err != nil {
+			return err
+		}
+		wait, err := w.Warehouses.StopWarehouse(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 		if stopSkipWait {
-			return nil
+			// Render the current state, as of right after the call.
+			current, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(wait.GetId())})
+			if err != nil {
+				return err
+			}
+			out, err := warehouses.GetWarehouseResponseFromSDK(current)
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, out)
 		}
 		sp := cmdio.NewSpinner(ctx)
-		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
-			if i.Health == nil {
-				return
-			}
-			status := i.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Health != nil {
-				statusMessage = i.Health.Summary
-			}
-			sp.Update(statusMessage)
-		}).GetWithTimeout(stopTimeout)
+		sp.Update("Waiting for stop to complete...")
+		response, err := wait.Wait(ctx, lro.WithTimeout(stopTimeout))
 		sp.Close()
+		if err != nil {
+			return &cmdgen.WaitError{Err: err}
+		}
+
+		out, err := warehouses.GetWarehouseResponseFromSDK(response)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1393,21 +1504,21 @@ func newStop() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateDefaultWarehouseOverrideOverrides []func(
 	*cobra.Command,
-	*sql.UpdateDefaultWarehouseOverrideRequest,
+	*warehouses.UpdateDefaultWarehouseOverrideRequest,
 )
 
 func newUpdateDefaultWarehouseOverride() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateDefaultWarehouseOverrideReq warehouses.UpdateDefaultWarehouseOverrideRequest
+	updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride = &warehouses.DefaultWarehouseOverride{}
 
-	var updateDefaultWarehouseOverrideReq sql.UpdateDefaultWarehouseOverrideRequest
-	updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride = sql.DefaultWarehouseOverride{}
 	var updateDefaultWarehouseOverrideJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateDefaultWarehouseOverrideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDefaultWarehouseOverrideReq.AllowMissing, "allow-missing", updateDefaultWarehouseOverrideReq.AllowMissing, `If set to true, and the override is not found, a new override will be created.`)
-	cmd.Flags().StringVar(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, `The resource name of the default warehouse override.`)
-	cmd.Flags().StringVar(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
+	flags.BoolPtrVar(cmd.Flags(), &updateDefaultWarehouseOverrideReq.AllowMissing, "allow-missing", `If set to true, and the override is not found, a new override will be created.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", `The resource name of the default warehouse override.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", `The specific warehouse ID when type is CUSTOM.`)
 
 	cmd.Use = "update-default-warehouse-override NAME UPDATE_MASK TYPE"
 	cmd.Short = `*Beta* Update default warehouse override.`
@@ -1447,6 +1558,7 @@ Update default warehouse override.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDefaultWarehouseOverrideJson.Unmarshal(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
@@ -1460,25 +1572,28 @@ Update default warehouse override.
 				}
 			}
 		}
-		updateDefaultWarehouseOverrideReq.Name = args[0]
+		updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateDefaultWarehouseOverrideReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateDefaultWarehouseOverrideReq.UpdateMask = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type)
-			if err != nil {
-				return fmt.Errorf("invalid TYPE: %s", args[2])
-			}
-
+			updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type = warehouses.DefaultWarehouseOverrideType(args[2])
 		}
 
-		response, err := w.Warehouses.UpdateDefaultWarehouseOverride(ctx, updateDefaultWarehouseOverrideReq)
+		sdkReq, err := warehouses.UpdateDefaultWarehouseOverrideRequestToSDK(&updateDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Warehouses.UpdateDefaultWarehouseOverride(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := warehouses.DefaultWarehouseOverrideFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1499,13 +1614,13 @@ Update default warehouse override.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*sql.WarehousePermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq sql.WarehousePermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -1530,6 +1645,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -1546,7 +1662,7 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Warehouses.ListWarehousesIter(ctx, sdkwarehouses.ListWarehousesRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1560,14 +1676,24 @@ func newUpdatePermissions() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
-		updatePermissionsReq.WarehouseId = args[0]
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.Warehouses.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("warehouses")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

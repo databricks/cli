@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/networking"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,9 +59,9 @@ var createEndpointOverrides []func(
 
 func newCreateEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createEndpointReq networking.CreateEndpointRequest
-	createEndpointReq.Endpoint = networking.Endpoint{}
+	createEndpointReq.Endpoint = &networking.Endpoint{}
+
 	var createEndpointJson flags.JsonFlag
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -109,6 +112,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createEndpointJson.Unmarshal(&createEndpointReq.Endpoint)
@@ -122,20 +126,28 @@ func newCreateEndpoint() *cobra.Command {
 				}
 			}
 		}
-		createEndpointReq.Parent = args[0]
+		createEndpointReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createEndpointReq.Endpoint.DisplayName = args[1]
+			createEndpointReq.Endpoint.DisplayName = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createEndpointReq.Endpoint.Region = args[2]
+			createEndpointReq.Endpoint.Region = new(args[2])
 		}
 
-		response, err := a.Endpoints.CreateEndpoint(ctx, createEndpointReq)
+		sdkReq, err := networking.CreateEndpointRequestToSDK(&createEndpointReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -156,13 +168,12 @@ func newCreateEndpoint() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteEndpointOverrides []func(
 	*cobra.Command,
-	*networking.DeleteEndpointRequest,
+	*sdknetworking.DeleteEndpointRequest,
 )
 
 func newDeleteEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteEndpointReq networking.DeleteEndpointRequest
+	var deleteEndpointReq sdknetworking.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
 	cmd.Short = `Delete a network endpoint.`
@@ -185,10 +196,12 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteEndpointReq.Name = args[0]
+		deleteEndpointReq.Name = new(args[0])
 
-		err = a.Endpoints.DeleteEndpoint(ctx, deleteEndpointReq)
+		sdkReq := &deleteEndpointReq
+		err = a.Networking.DeleteEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -213,13 +226,12 @@ func newDeleteEndpoint() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getEndpointOverrides []func(
 	*cobra.Command,
-	*networking.GetEndpointRequest,
+	*sdknetworking.GetEndpointRequest,
 )
 
 func newGetEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getEndpointReq networking.GetEndpointRequest
+	var getEndpointReq sdknetworking.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
 	cmd.Short = `Get a network endpoint.`
@@ -240,15 +252,21 @@ func newGetEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getEndpointReq.Name = args[0]
+		getEndpointReq.Name = new(args[0])
 
-		response, err := a.Endpoints.GetEndpoint(ctx, getEndpointReq)
+		sdkReq := &getEndpointReq
+		response, err := a.Networking.GetEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -274,20 +292,20 @@ var listEndpointsOverrides []func(
 
 func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listEndpointsReq networking.ListEndpointsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listEndpointsReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listEndpointsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
@@ -313,18 +331,22 @@ func newListEndpoints() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listEndpointsReq.Parent = args[0]
+		listEndpointsReq.Parent = new(args[0])
 
-		response := a.Endpoints.ListEndpoints(ctx, listEndpointsReq)
+		sdkReq, err := networking.ListEndpointsRequestToSDK(&listEndpointsReq)
+		if err != nil {
+			return err
+		}
 		if listEndpointsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
 		}
 		if listEndpointsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Networking.ListEndpointsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, networking.EndpointFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

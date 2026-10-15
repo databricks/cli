@@ -3,60 +3,42 @@ package variable
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolveMetastore_ResolveSuccess(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockMetastoresAPI()
-	api.EXPECT().
-		ListAll(mock.Anything, mock.Anything).
-		Return([]catalog.MetastoreInfo{
-			{MetastoreId: "abcd", Name: "metastore"},
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/metastores": map[string]any{"metastores": []map[string]any{
+			{"metastore_id": "abcd", "name": "metastore"},
+		}},
+	})
 	l := resolveMetastore{name: "metastore"}
-	result, err := l.Resolve(ctx, m.WorkspaceClient)
+	result, err := l.Resolve(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, "abcd", result)
 }
 
 func TestResolveMetastore_ResolveNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockMetastoresAPI()
-	api.EXPECT().
-		ListAll(mock.Anything, mock.Anything).
-		Return([]catalog.MetastoreInfo{
-			{MetastoreId: "abcd", Name: "different"},
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/metastores": map[string]any{"metastores": []map[string]any{
+			{"metastore_id": "abcd", "name": "different"},
+		}},
+	})
 	l := resolveMetastore{name: "metastore"}
-	_, err := l.Resolve(ctx, m.WorkspaceClient)
+	_, err := l.Resolve(t.Context(), w)
 	require.ErrorContains(t, err, "metastore named \"metastore\" does not exist")
 }
 
 func TestResolveMetastore_ResolveMultiple(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockMetastoresAPI()
-	api.EXPECT().
-		ListAll(mock.Anything, mock.Anything).
-		Return([]catalog.MetastoreInfo{
-			{MetastoreId: "abcd", Name: "metastore"},
-			{MetastoreId: "efgh", Name: "metastore"},
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/unity-catalog/metastores": map[string]any{"metastores": []map[string]any{
+			{"metastore_id": "abcd", "name": "metastore"},
+			{"metastore_id": "efgh", "name": "metastore"},
+		}},
+	})
 	l := resolveMetastore{name: "metastore"}
-	_, err := l.Resolve(ctx, m.WorkspaceClient)
+	_, err := l.Resolve(t.Context(), w)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "there are 2 instances of metastores named \"metastore\"")
 }

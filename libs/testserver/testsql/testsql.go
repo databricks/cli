@@ -14,12 +14,15 @@
 package testsql
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
+
+	sql "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
 )
 
 // asyncWaitTimeout is the WaitTimeout value that callers send to submit a
@@ -37,7 +40,7 @@ type Request struct {
 	// Handle matcher it is []string{Statement}.
 	Match []string
 	// Parameters are the bound :name parameters from the submit request.
-	Parameters []sql.StatementParameterListItem
+	Parameters []sql.StatementParameter
 }
 
 // Result is the declarative plan a matcher returns. The zero value is a
@@ -136,7 +139,7 @@ func (h *Handler) HandlePattern(re *regexp.Regexp, fn func(Request) Result) {
 // and returns the first lifecycle response. A "0s" wait timeout always yields
 // PENDING; otherwise the response is terminal when the plan has no remaining
 // polls and PENDING otherwise.
-func (h *Handler) Submit(statement, waitTimeout string, params []sql.StatementParameterListItem) *sql.StatementResponse {
+func (h *Handler) Submit(statement, waitTimeout string, params []sql.StatementParameter) *sql.StatementResponse {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -147,8 +150,8 @@ func (h *Handler) Submit(statement, waitTimeout string, params []sql.StatementPa
 
 	if waitTimeout == asyncWaitTimeout || stmt.remainingPolls > 0 {
 		return &sql.StatementResponse{
-			StatementId: stmt.id,
-			Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+			StatementId: &stmt.id,
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Pending},
 		}
 	}
 	return stmt.terminalResponse()
@@ -169,15 +172,15 @@ func (h *Handler) Get(statementID string) *sql.StatementResponse {
 	}
 	if stmt.canceled {
 		return &sql.StatementResponse{
-			StatementId: stmt.id,
-			Status:      &sql.StatementStatus{State: sql.StatementStateCanceled},
+			StatementId: &stmt.id,
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Canceled},
 		}
 	}
 	if stmt.remainingPolls > 0 {
 		stmt.remainingPolls--
 		return &sql.StatementResponse{
-			StatementId: stmt.id,
-			Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
+			StatementId: &stmt.id,
+			Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Running},
 		}
 	}
 	return stmt.terminalResponse()
@@ -193,7 +196,7 @@ func (h *Handler) Chunk(statementID string, chunkIndex int) *sql.ResultData {
 	if stmt == nil || chunkIndex < 0 || chunkIndex >= len(stmt.chunks) {
 		return nil
 	}
-	return &sql.ResultData{DataArray: stmt.chunks[chunkIndex]}
+	return &sql.ResultData{DataArray: dataArray(stmt.chunks[chunkIndex])}
 }
 
 // Cancel marks the statement canceled. An unknown id is a no-op.
@@ -210,9 +213,9 @@ func (h *Handler) Cancel(statementID string) {
 // statement. With no matching matcher the statement terminates as FAILED with
 // an "unsupported statement" error, mirroring how the real backend rejects a
 // statement it cannot run.
-func (h *Handler) plan(stmt string, params []sql.StatementParameterListItem) *statement {
+func (h *Handler) plan(stmt string, params []sql.StatementParameter) *statement {
 	res := Result{Error: &Error{
-		Code:    sql.ServiceErrorCodeBadRequest,
+		Code:    sql.ServiceErrorCode_BadRequest,
 		Message: "unsupported statement: " + stmt,
 	}}
 	for _, m := range h.matchers {
@@ -236,32 +239,32 @@ func (h *Handler) plan(stmt string, params []sql.StatementParameterListItem) *st
 func (s *statement) terminalResponse() *sql.StatementResponse {
 	if s.err != nil {
 		return &sql.StatementResponse{
-			StatementId: s.id,
+			StatementId: &s.id,
 			Status: &sql.StatementStatus{
-				State:    sql.StatementStateFailed,
-				SqlState: s.err.SQLState,
-				Error:    &sql.ServiceError{ErrorCode: s.err.Code, Message: s.err.Message},
+				State:    sql.StatementStatus_State_Failed,
+				SqlState: utils.NonZero(s.err.SQLState),
+				Error:    &sql.ServiceError{ErrorCode: s.err.Code, Message: utils.NonZero(s.err.Message)},
 			},
 		}
 	}
 
-	manifest := &sql.ResultManifest{TotalChunkCount: len(s.chunks)}
+	manifest := &sql.ResultManifest{TotalChunkCount: utils.NonZero(len(s.chunks))}
 	if len(s.columns) > 0 {
 		cols := make([]sql.ColumnInfo, len(s.columns))
 		for i, name := range s.columns {
-			cols[i] = sql.ColumnInfo{Name: name}
+			cols[i] = sql.ColumnInfo{Name: utils.NonZero(name)}
 		}
-		manifest.Schema = &sql.ResultSchema{Columns: cols}
+		manifest.Schema = &sql.Schema{Columns: cols}
 	}
 	// A no-row statement reports an empty result (matching the real API, which
 	// returns "result": {} with no data_array); otherwise chunk 0 is inlined.
 	result := &sql.ResultData{}
 	if len(s.chunks) > 0 {
-		result.DataArray = s.chunks[0]
+		result.DataArray = dataArray(s.chunks[0])
 	}
 	return &sql.StatementResponse{
-		StatementId: s.id,
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		StatementId: &s.id,
+		Status:      &sql.StatementStatus{State: sql.StatementStatus_State_Succeeded},
 		Manifest:    manifest,
 		Result:      result,
 	}
@@ -282,6 +285,18 @@ func splitChunks(rows [][]string, chunks int) [][][]string {
 		start := min(i*size, len(rows))
 		end := min(start+size, len(rows))
 		out[i] = rows[start:end]
+	}
+	return out
+}
+
+// dataArray encodes rows the way the API sends data_array: every cell a JSON string.
+func dataArray(rows [][]string) [][]json.RawMessage {
+	out := make([][]json.RawMessage, len(rows))
+	for i, row := range rows {
+		out[i] = make([]json.RawMessage, len(row))
+		for j, cell := range row {
+			out[i][j], _ = json.Marshal(cell)
+		}
 	}
 	return out
 }

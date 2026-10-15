@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +35,12 @@ func (a *appRunner) Name() string {
 		return ""
 	}
 
-	return a.app.Name
+	return utils.Deref(a.app.Name)
 }
 
-func isAppComputeStopped(app *apps.App) bool {
+func isAppComputeStopped(app *sdkapps.App) bool {
 	return app.ComputeStatus == nil ||
-		(app.ComputeStatus.State == apps.ComputeStateStopped || app.ComputeStatus.State == apps.ComputeStateError)
+		(app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Stopped || app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Error)
 }
 
 func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
@@ -49,11 +50,12 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		return nil, errors.New("app is not defined")
 	}
 
-	logProgress(ctx, "Getting the status of the app "+app.Name)
+	appName := utils.Deref(app.Name)
+	logProgress(ctx, "Getting the status of the app "+appName)
 	w := b.WorkspaceClient(ctx)
 
 	// Check the status of the app first.
-	createdApp, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: app.Name})
+	createdApp, err := w.Apps.GetApp(ctx, sdkapps.GetAppRequest{Name: new(appName)})
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +81,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	// If the app is starting, we need to wait for it to be active before we can deploy it.
 	if isAppComputeStarting(createdApp) {
-		_, err := w.Apps.WaitGetAppActive(ctx, app.Name, 20*time.Minute, nil)
+		_, err := appdeploy.WaitAppActive(ctx, w, appName, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -91,12 +93,12 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, "You can access the app at "+createdApp.Url)
+	cmdio.LogString(ctx, "You can access the app at "+utils.Deref(createdApp.Url))
 	return nil, nil
 }
 
-func isAppComputeStarting(app *apps.App) bool {
-	return app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateStarting
+func isAppComputeStarting(app *sdkapps.App) bool {
+	return app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Starting
 }
 
 func (a *appRunner) start(ctx context.Context) error {
@@ -104,18 +106,19 @@ func (a *appRunner) start(ctx context.Context) error {
 	b := a.bundle
 	w := b.WorkspaceClient(ctx)
 
-	logProgress(ctx, "Starting the app "+app.Name)
-	wait, err := w.Apps.Start(ctx, apps.StartAppRequest{Name: app.Name})
+	appName := utils.Deref(app.Name)
+	logProgress(ctx, "Starting the app "+appName)
+	_, err := w.Apps.StartApp(ctx, sdkapps.StartAppRequest{Name: new(appName)})
 	if err != nil {
 		return err
 	}
 
-	startedApp, err := wait.OnProgress(func(p *apps.App) {
+	startedApp, err := appdeploy.WaitAppActive(ctx, w, appName, func(p *sdkapps.App) {
 		if p.AppStatus == nil {
 			return
 		}
 		logProgress(ctx, "App is starting...")
-	}).Get()
+	})
 	if err != nil {
 		return err
 	}
@@ -138,8 +141,11 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	// source_code_path and config already have their ${resources.*} references resolved
 	// against the deployed state during run setup (see
 	// DeploymentBundle.ResolveConfigAgainstState), so they are usable as-is.
-	deployment := appdeploy.BuildDeployment(a.app.SourceCodePath, a.app.Config, a.app.GitSource)
-	return appdeploy.Deploy(ctx, w, a.app.Name, deployment)
+	deployment, err := appdeploy.BuildDeployment(utils.Deref(a.app.SourceCodePath), a.app.Config, a.app.GitSource)
+	if err != nil {
+		return err
+	}
+	return appdeploy.Deploy(ctx, w, utils.Deref(a.app.Name), deployment)
 }
 
 func (a *appRunner) Cancel(ctx context.Context) error {
@@ -152,18 +158,19 @@ func (a *appRunner) Cancel(ctx context.Context) error {
 
 	w := b.WorkspaceClient(ctx)
 
-	logProgress(ctx, "Stopping app "+app.Name)
-	wait, err := w.Apps.Stop(ctx, apps.StopAppRequest{Name: app.Name})
+	appName := utils.Deref(app.Name)
+	logProgress(ctx, "Stopping app "+appName)
+	_, err := w.Apps.StopApp(ctx, sdkapps.StopAppRequest{Name: new(appName)})
 	if err != nil {
 		return err
 	}
 
-	_, err = wait.OnProgress(func(p *apps.App) {
+	_, err = appdeploy.WaitAppStopped(ctx, w, appName, func(p *sdkapps.App) {
 		if p.AppStatus == nil {
 			return
 		}
-		logProgress(ctx, p.AppStatus.Message)
-	}).Get()
+		logProgress(ctx, utils.Deref(p.AppStatus.Message))
+	})
 
 	logProgress(ctx, "App is stopped!")
 	return err

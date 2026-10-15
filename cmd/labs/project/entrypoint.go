@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
@@ -124,18 +124,22 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 func (e *Entrypoint) ensureRunningCluster(ctx context.Context, cfg *config.Config) error {
 	sp := cmdio.NewSpinner(ctx)
 	defer sp.Close()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	w, err := sdkclients.New(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("workspace client: %w", err)
 	}
 	// TODO: add in-progress callback to EnsureClusterIsRunning() in SDK
 	sp.Update("Ensuring the cluster is running...")
-	err = w.Clusters.EnsureClusterIsRunning(ctx, cfg.ClusterID)
+	err = w.EnsureClusterIsRunning(ctx, cfg.ClusterID)
 	if err != nil {
 		return fmt.Errorf("ensure running: %w", err)
 	}
 	return nil
 }
+
+// errNotAccountClient is returned when an account-level command runs with a
+// workspace profile.
+var errNotAccountClient = errors.New("invalid Databricks Account configuration - host incorrect or account_id missing")
 
 func (e *Entrypoint) joinPaths(paths ...string) string {
 	return strings.Join(paths, string(os.PathListSeparator))
@@ -267,7 +271,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 		}
 		return replaceCfg, nil
 	} else if e.IsAccountLevel && !isACC {
-		return nil, databricks.ErrNotAccountClient
+		return nil, errNotAccountClient
 	}
 	if e.NeedsCluster() && !isACC && cfg.ClusterID == "" {
 		return nil, ErrMissingClusterID

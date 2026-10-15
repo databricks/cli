@@ -3,7 +3,7 @@ package dresources
 import (
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 var SupportedResources = map[string]any{
@@ -81,7 +81,7 @@ var SupportedResources = map[string]any{
 	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),
 }
 
-func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
+func InitAll(client *sdkclients.Clients) (map[string]*Adapter, error) {
 	result := make(map[string]*Adapter)
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, client)

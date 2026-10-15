@@ -7,8 +7,8 @@ Pattern = "GET /api/2.1/clusters/list"
 Response.Body = '''
 {
   "clusters": [
-    {"cluster_id": "cid-123", "cluster_name": "my-cluster", "spark_version": "15.4.x-scala2.12"},
-    {"cluster_id": "cid-999", "cluster_name": "other-cluster", "spark_version": "14.3.x-scala2.12"}
+    {"cluster_id": "cid-123", "cluster_name": "my-cluster", "spark_version": "15.4.x-scala2.12", "state": "RUNNING"},
+    {"cluster_id": "cid-999", "cluster_name": "other-cluster", "spark_version": "14.3.x-scala2.12", "state": "RUNNING"}
   ]
 }
 '''

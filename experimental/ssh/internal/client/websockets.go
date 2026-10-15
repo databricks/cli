@@ -10,11 +10,11 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/gorilla/websocket"
 )
 
-func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, dial proxy.DialRequest, clusterID string, serverPort int, liteswap string) (*websocket.Conn, error) {
+func createWebsocketConnection(ctx context.Context, client *sdkclients.Clients, dial proxy.DialRequest, clusterID string, serverPort int, liteswap string) (*websocket.Conn, error) {
 	proxyURL, err := getProxyURL(ctx, client, dial, clusterID, serverPort)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
@@ -49,7 +49,7 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 	return conn, nil
 }
 
-func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, dial proxy.DialRequest, clusterID string, serverPort int) (string, error) {
+func getProxyURL(ctx context.Context, client *sdkclients.Clients, dial proxy.DialRequest, clusterID string, serverPort int) (string, error) {
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current workspace ID: %w", err)

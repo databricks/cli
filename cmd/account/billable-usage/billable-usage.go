@@ -3,10 +3,14 @@
 package billable_usage
 
 import (
+	"fmt"
+
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
 
@@ -45,15 +49,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var downloadOverrides []func(
 	*cobra.Command,
-	*billing.DownloadRequest,
+	*map[string]any,
 )
 
 func newDownload() *cobra.Command {
 	cmd := &cobra.Command{}
+	var downloadReq map[string]any
+	downloadReq = map[string]any{}
+	var downloadEndMonthRaw string
+	var downloadPersonalDataRaw bool
+	var downloadStartMonthRaw string
 
-	var downloadReq billing.DownloadRequest
-
-	cmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
+	cmd.Flags().BoolVar(&downloadPersonalDataRaw, "personal-data", downloadPersonalDataRaw, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
 
 	cmd.Use = "download START_MONTH END_MONTH"
 	cmd.Short = `Return billable usage logs.`
@@ -89,17 +96,34 @@ func newDownload() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		downloadReq.StartMonth = args[0]
-		downloadReq.EndMonth = args[1]
+		downloadStartMonthRaw = args[0]
+		downloadEndMonthRaw = args[1]
 
-		response, err := a.BillableUsage.Download(ctx, downloadReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("end-month") || downloadEndMonthRaw != "" {
+			rawQuery["end_month"] = downloadEndMonthRaw
+		}
+		if cmd.Flags().Changed("personal-data") || downloadPersonalDataRaw != false {
+			rawQuery["personal_data"] = downloadPersonalDataRaw
+		}
+		if cmd.Flags().Changed("start-month") || downloadStartMonthRaw != "" {
+			rawQuery["start_month"] = downloadStartMonthRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/accounts/%s/usage/download", a.Config.AccountID)
+
+		maps.Copy(rawQuery, downloadReq)
+		api, err := apiclient.New(a.Config)
 		if err != nil {
 			return err
 		}
-
-		defer response.Contents.Close()
-		return cmdio.Render(ctx, response.Contents)
+		var response any
+		err = api.Do(ctx, "GET", rawPath, nil, rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

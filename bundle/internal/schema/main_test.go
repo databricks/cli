@@ -106,7 +106,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 // Checks that the annotations file only contains entries that match the
 // current bundle configuration structure.
 func TestNoDetachedAnnotations(t *testing.T) {
-	g, err := configTypeGraph()
+	g, err := configTypeGraph(testMeta(t))
 	require.NoError(t, err)
 
 	_, unknown, err := loadAnnotationsFile("annotations.yml", g)

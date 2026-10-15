@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/apiclient"
 )
 
 // bricklensLogsPathFmt is the log endpoint, keyed by Jobs run id. Called with a
@@ -55,7 +55,7 @@ type bricklensLogsQuery struct {
 // getBricklensLogs fetches one page of logs. The API client is built once by the
 // caller and reused across the poll loop. It returns the raw error so the caller
 // can classify it via classifyLogError.
-func getBricklensLogs(ctx context.Context, apiClient *client.DatabricksClient, headers map[string]string, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
+func getBricklensLogs(ctx context.Context, apiClient *apiclient.Client, headers map[string]string, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
 	query := map[string]any{
 		// Always sent: the tail path relies on an explicit false for newest-first.
 		"ascending": strconv.FormatBool(q.ascending),

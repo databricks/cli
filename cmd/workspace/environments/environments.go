@@ -5,17 +5,18 @@ package environments
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/service/environments"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	environments "github.com/databricks/cli/libs/sdktypes/environments/v1"
+	sdkenvironments "github.com/databricks/sdk-go/environments/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -70,9 +71,9 @@ var createWorkspaceBaseEnvironmentOverrides []func(
 
 func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createWorkspaceBaseEnvironmentReq environments.CreateWorkspaceBaseEnvironmentRequest
-	createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment = environments.WorkspaceBaseEnvironment{}
+	createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment = &environments.WorkspaceBaseEnvironment{}
+
 	var createWorkspaceBaseEnvironmentJson flags.JsonFlag
 
 	var createWorkspaceBaseEnvironmentSkipWait bool
@@ -83,11 +84,11 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.RequestId, "request-id", createWorkspaceBaseEnvironmentReq.RequestId, `A unique identifier for this request.`)
-	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironmentId, "workspace-base-environment-id", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironmentId, `The ID to use for the workspace base environment, which will become the final component of the resource name.`)
-	cmd.Flags().Var(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
-	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
-	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
+	flags.StringPtrVar(cmd.Flags(), &createWorkspaceBaseEnvironmentReq.RequestId, "request-id", `A unique identifier for this request.`)
+	flags.StringPtrVar(cmd.Flags(), &createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironmentId, "workspace-base-environment-id", `The ID to use for the workspace base environment, which will become the final component of the resource name.`)
+	flags.EnumVar(cmd.Flags(), &createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`, "BaseEnvironmentType", "CPU", "GPU")
+	flags.StringPtrVar(cmd.Flags(), &createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", `The WSFS or UC Volumes path to the environment YAML file.`)
+	flags.StringPtrVar(cmd.Flags(), &createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", `The resource name of the workspace base environment.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "create-workspace-base-environment DISPLAY_NAME"
@@ -127,6 +128,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createWorkspaceBaseEnvironmentJson.Unmarshal(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment)
@@ -141,28 +143,26 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.DisplayName = args[0]
+			createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.DisplayName = new(args[0])
 		}
 
+		sdkReq, err := environments.CreateWorkspaceBaseEnvironmentRequestToSDK(&createWorkspaceBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createWorkspaceBaseEnvironmentSkipWait:
-			wait, err := w.Environments.CreateWorkspaceBaseEnvironment(ctx, createWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.CreateWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Environments.GetOperation(ctx, environments.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Environments.CreateWorkspaceBaseEnvironment(ctx, createWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.CreateWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -172,13 +172,17 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 			sp.Update("Waiting for create-workspace-base-environment to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createWorkspaceBaseEnvironmentTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createWorkspaceBaseEnvironmentTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := environments.WorkspaceBaseEnvironmentFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -200,13 +204,12 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteWorkspaceBaseEnvironmentOverrides []func(
 	*cobra.Command,
-	*environments.DeleteWorkspaceBaseEnvironmentRequest,
+	*sdkenvironments.DeleteWorkspaceBaseEnvironmentRequest,
 )
 
 func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteWorkspaceBaseEnvironmentReq environments.DeleteWorkspaceBaseEnvironmentRequest
+	var deleteWorkspaceBaseEnvironmentReq sdkenvironments.DeleteWorkspaceBaseEnvironmentRequest
 
 	cmd.Use = "delete-workspace-base-environment NAME"
 	cmd.Short = `Delete a workspace base environment.`
@@ -233,10 +236,12 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteWorkspaceBaseEnvironmentReq.Name = args[0]
+		deleteWorkspaceBaseEnvironmentReq.Name = new(args[0])
 
-		err = w.Environments.DeleteWorkspaceBaseEnvironment(ctx, deleteWorkspaceBaseEnvironmentReq)
+		sdkReq := &deleteWorkspaceBaseEnvironmentReq
+		err = w.Environments.DeleteWorkspaceBaseEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -261,13 +266,12 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDefaultWorkspaceBaseEnvironmentOverrides []func(
 	*cobra.Command,
-	*environments.GetDefaultWorkspaceBaseEnvironmentRequest,
+	*sdkenvironments.GetDefaultWorkspaceBaseEnvironmentRequest,
 )
 
 func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDefaultWorkspaceBaseEnvironmentReq environments.GetDefaultWorkspaceBaseEnvironmentRequest
+	var getDefaultWorkspaceBaseEnvironmentReq sdkenvironments.GetDefaultWorkspaceBaseEnvironmentRequest
 
 	cmd.Use = "get-default-workspace-base-environment NAME"
 	cmd.Short = `Get the default workspace base environment configuration.`
@@ -294,15 +298,21 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDefaultWorkspaceBaseEnvironmentReq.Name = args[0]
+		getDefaultWorkspaceBaseEnvironmentReq.Name = new(args[0])
 
-		response, err := w.Environments.GetDefaultWorkspaceBaseEnvironment(ctx, getDefaultWorkspaceBaseEnvironmentReq)
+		sdkReq := &getDefaultWorkspaceBaseEnvironmentReq
+		response, err := w.Environments.GetDefaultWorkspaceBaseEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := environments.DefaultWorkspaceBaseEnvironmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -323,13 +333,12 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOperationOverrides []func(
 	*cobra.Command,
-	*environments.GetOperationRequest,
+	*sdkenvironments.GetDefaultWorkspaceBaseEnvironmentRequest,
 )
 
 func newGetOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getOperationReq environments.GetOperationRequest
+	var getOperationReq sdkenvironments.GetDefaultWorkspaceBaseEnvironmentRequest
 
 	cmd.Use = "get-operation NAME"
 	cmd.Short = `Get the status of a long-running operation.`
@@ -354,15 +363,21 @@ func newGetOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getOperationReq.Name = args[0]
+		getOperationReq.Name = new(args[0])
 
-		response, err := w.Environments.GetOperation(ctx, getOperationReq)
+		sdkReq := &getOperationReq
+		response, err := w.Environments.GetDefaultWorkspaceBaseEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := environments.DefaultWorkspaceBaseEnvironmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -383,13 +398,12 @@ func newGetOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceBaseEnvironmentOverrides []func(
 	*cobra.Command,
-	*environments.GetWorkspaceBaseEnvironmentRequest,
+	*sdkenvironments.GetWorkspaceBaseEnvironmentRequest,
 )
 
 func newGetWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getWorkspaceBaseEnvironmentReq environments.GetWorkspaceBaseEnvironmentRequest
+	var getWorkspaceBaseEnvironmentReq sdkenvironments.GetWorkspaceBaseEnvironmentRequest
 
 	cmd.Use = "get-workspace-base-environment NAME"
 	cmd.Short = `Get a workspace base environment.`
@@ -414,15 +428,21 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getWorkspaceBaseEnvironmentReq.Name = args[0]
+		getWorkspaceBaseEnvironmentReq.Name = new(args[0])
 
-		response, err := w.Environments.GetWorkspaceBaseEnvironment(ctx, getWorkspaceBaseEnvironmentReq)
+		sdkReq := &getWorkspaceBaseEnvironmentReq
+		response, err := w.Environments.GetWorkspaceBaseEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := environments.WorkspaceBaseEnvironmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -448,20 +468,20 @@ var listWorkspaceBaseEnvironmentsOverrides []func(
 
 func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listWorkspaceBaseEnvironmentsReq environments.ListWorkspaceBaseEnvironmentsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listWorkspaceBaseEnvironmentsLimit int
 
-	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsReq.PageSize, "page-size", listWorkspaceBaseEnvironmentsReq.PageSize, `The maximum number of environments to return per page.`)
+	flags.IntPtrVar(cmd.Flags(), &listWorkspaceBaseEnvironmentsReq.PageSize, "page-size", `The maximum number of environments to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", listWorkspaceBaseEnvironmentsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-base-environments"
@@ -495,16 +515,20 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Environments.ListWorkspaceBaseEnvironments(ctx, listWorkspaceBaseEnvironmentsReq)
+		sdkReq, err := environments.ListWorkspaceBaseEnvironmentsRequestToSDK(&listWorkspaceBaseEnvironmentsReq)
+		if err != nil {
+			return err
+		}
 		if listWorkspaceBaseEnvironmentsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceBaseEnvironmentsLimit)
 		}
 		if listWorkspaceBaseEnvironmentsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listWorkspaceBaseEnvironmentsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Environments.ListWorkspaceBaseEnvironmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, environments.WorkspaceBaseEnvironmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -530,7 +554,6 @@ var refreshWorkspaceBaseEnvironmentOverrides []func(
 
 func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var refreshWorkspaceBaseEnvironmentReq environments.RefreshWorkspaceBaseEnvironmentRequest
 
 	var refreshWorkspaceBaseEnvironmentSkipWait bool
@@ -571,28 +594,27 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		refreshWorkspaceBaseEnvironmentReq.Name = args[0]
+		refreshWorkspaceBaseEnvironmentReq.Name = new(args[0])
 
+		sdkReq, err := environments.RefreshWorkspaceBaseEnvironmentRequestToSDK(&refreshWorkspaceBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case refreshWorkspaceBaseEnvironmentSkipWait:
-			wait, err := w.Environments.RefreshWorkspaceBaseEnvironment(ctx, refreshWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.RefreshWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Environments.GetOperation(ctx, environments.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Environments.RefreshWorkspaceBaseEnvironment(ctx, refreshWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.RefreshWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -602,13 +624,17 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
 			sp.Update("Waiting for refresh-workspace-base-environment to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(refreshWorkspaceBaseEnvironmentTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(refreshWorkspaceBaseEnvironmentTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := environments.WorkspaceBaseEnvironmentFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -635,16 +661,16 @@ var updateDefaultWorkspaceBaseEnvironmentOverrides []func(
 
 func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDefaultWorkspaceBaseEnvironmentReq environments.UpdateDefaultWorkspaceBaseEnvironmentRequest
-	updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment = environments.DefaultWorkspaceBaseEnvironment{}
+	updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment = &environments.DefaultWorkspaceBaseEnvironment{}
+
 	var updateDefaultWorkspaceBaseEnvironmentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateDefaultWorkspaceBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.CpuWorkspaceBaseEnvironment, "cpu-workspace-base-environment", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.CpuWorkspaceBaseEnvironment, `The default workspace base environment for CPU compute.`)
-	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.GpuWorkspaceBaseEnvironment, "gpu-workspace-base-environment", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.GpuWorkspaceBaseEnvironment, `The default workspace base environment for GPU compute.`)
-	cmd.Flags().StringVar(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name, "name", updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name, `The resource name of this singleton resource.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.CpuWorkspaceBaseEnvironment, "cpu-workspace-base-environment", `The default workspace base environment for CPU compute.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.GpuWorkspaceBaseEnvironment, "gpu-workspace-base-environment", `The default workspace base environment for GPU compute.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name, "name", `The resource name of this singleton resource.`)
 
 	cmd.Use = "update-default-workspace-base-environment NAME UPDATE_MASK"
 	cmd.Short = `Update the default workspace base environment configuration.`
@@ -679,6 +705,7 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDefaultWorkspaceBaseEnvironmentJson.Unmarshal(&updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment)
@@ -692,18 +719,25 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 				}
 			}
 		}
-		updateDefaultWorkspaceBaseEnvironmentReq.Name = args[0]
+		updateDefaultWorkspaceBaseEnvironmentReq.DefaultWorkspaceBaseEnvironment.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateDefaultWorkspaceBaseEnvironmentReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateDefaultWorkspaceBaseEnvironmentReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.Environments.UpdateDefaultWorkspaceBaseEnvironment(ctx, updateDefaultWorkspaceBaseEnvironmentReq)
+		sdkReq, err := environments.UpdateDefaultWorkspaceBaseEnvironmentRequestToSDK(&updateDefaultWorkspaceBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Environments.UpdateDefaultWorkspaceBaseEnvironment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := environments.DefaultWorkspaceBaseEnvironmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -729,9 +763,9 @@ var updateWorkspaceBaseEnvironmentOverrides []func(
 
 func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateWorkspaceBaseEnvironmentReq environments.UpdateWorkspaceBaseEnvironmentRequest
-	updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment = environments.WorkspaceBaseEnvironment{}
+	updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment = &environments.WorkspaceBaseEnvironment{}
+
 	var updateWorkspaceBaseEnvironmentJson flags.JsonFlag
 
 	var updateWorkspaceBaseEnvironmentSkipWait bool
@@ -742,9 +776,9 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
-	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
-	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
+	flags.EnumVar(cmd.Flags(), &updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`, "BaseEnvironmentType", "CPU", "GPU")
+	flags.StringPtrVar(cmd.Flags(), &updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", `The WSFS or UC Volumes path to the environment YAML file.`)
+	flags.StringPtrVar(cmd.Flags(), &updateWorkspaceBaseEnvironmentReq.Name, "name", `The resource name of the workspace base environment.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "update-workspace-base-environment NAME DISPLAY_NAME"
@@ -786,6 +820,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateWorkspaceBaseEnvironmentJson.Unmarshal(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment)
@@ -799,30 +834,28 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 				}
 			}
 		}
-		updateWorkspaceBaseEnvironmentReq.Name = args[0]
+		updateWorkspaceBaseEnvironmentReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.DisplayName = args[1]
+			updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.DisplayName = new(args[1])
 		}
 
+		sdkReq, err := environments.UpdateWorkspaceBaseEnvironmentRequestToSDK(&updateWorkspaceBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateWorkspaceBaseEnvironmentSkipWait:
-			wait, err := w.Environments.UpdateWorkspaceBaseEnvironment(ctx, updateWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.UpdateWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Environments.GetOperation(ctx, environments.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Environments.UpdateWorkspaceBaseEnvironment(ctx, updateWorkspaceBaseEnvironmentReq)
+			wait, err := w.Environments.UpdateWorkspaceBaseEnvironment(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -832,13 +865,17 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 			sp.Update("Waiting for update-workspace-base-environment to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateWorkspaceBaseEnvironmentTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateWorkspaceBaseEnvironmentTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := environments.WorkspaceBaseEnvironmentFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 

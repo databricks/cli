@@ -16,9 +16,9 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
@@ -117,7 +117,7 @@ func uploadFileSizeHistogram(files []sizer) []int64 {
 // fields (notebook_task, spark_python_task, ai_runtime_task, ...); we reflect over
 // the fields whose JSON name ends in "_task" so every task type is captured,
 // including ones added later, without changing this code.
-func addTaskTypeKeys(task jobs.Task, out map[string]bool) {
+func addTaskTypeKeys(task jobs.TaskSettings, out map[string]bool) {
 	v := reflect.ValueOf(task)
 	t := v.Type()
 	for i := range t.NumField() {
@@ -143,8 +143,8 @@ func collectTaskTypes(jobs map[string]*resources.Job) []string {
 		}
 		for _, task := range job.Tasks {
 			addTaskTypeKeys(task, seen)
-			if task.ForEachTask != nil {
-				addTaskTypeKeys(task.ForEachTask.Task, seen)
+			if task.ForEachTask != nil && task.ForEachTask.Task != nil {
+				addTaskTypeKeys(*task.ForEachTask.Task, seen)
 			}
 		}
 	}
@@ -173,7 +173,7 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 		jobHasAiRuntimeTask := false
 		for _, task := range job.Tasks {
 			rt := task.AiRuntimeTask
-			if rt == nil && task.ForEachTask != nil {
+			if rt == nil && task.ForEachTask != nil && task.ForEachTask.Task != nil {
 				rt = task.ForEachTask.Task.AiRuntimeTask
 			}
 			if rt != nil {

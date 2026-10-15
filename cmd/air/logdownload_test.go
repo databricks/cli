@@ -12,22 +12,22 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // airRunWithCompute builds a run reporting the given accelerator type and count.
-func airRunWithCompute(accelType string, count int) *jobs.Run {
-	return &jobs.Run{
-		RunId: 123,
+func airRunWithCompute(accelType string, count int) *jobs.GetRunResponse {
+	return &jobs.GetRunResponse{
+		RunId: new(int64(123)),
 		Tasks: []jobs.RunTask{{
-			RunId: 456,
+			RunId: new(int64(456)),
 			AiRuntimeTask: &jobs.AiRuntimeTask{
 				Deployments: []jobs.DeploymentSpec{{
-					Compute: jobs.ComputeSpec{
-						AcceleratorType:  jobs.ComputeSpecAcceleratorType(accelType),
-						AcceleratorCount: count,
+					Compute: &jobs.ComputeSpec{
+						AcceleratorType:  jobs.ComputeSpec_AcceleratorType(accelType),
+						AcceleratorCount: new(count),
 					},
 				}},
 			},
@@ -53,7 +53,7 @@ func TestResolveNodeCount(t *testing.T) {
 	}
 
 	// A run with no AI runtime compute errors.
-	_, err := resolveNodeCount(&jobs.Run{RunId: 1})
+	_, err := resolveNodeCount(&jobs.GetRunResponse{RunId: new(int64(1))})
 	require.Error(t, err)
 
 	// A count that isn't a whole number of nodes can't be mapped to node indices,

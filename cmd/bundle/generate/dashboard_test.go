@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/httpfixtures"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,19 +25,20 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 		existingPath: "/path/to/legacy dashboard",
 	}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	w := m.GetMockWorkspaceAPI()
-	w.On("GetStatusByPath", mock.Anything, "/path/to/legacy dashboard").Return(nil, &apierr.APIError{
-		StatusCode: 400,
-		ErrorCode:  "BAD_REQUEST",
-		Message:    "dbsqlDashboard is not user-facing.",
-	})
+	cfg, _ := httpfixtures.Fixtures{{
+		Method:   "GET",
+		Resource: "/api/2.0/workspace/get-status?path=/path/to/legacy%20dashboard",
+		Status:   400,
+		Response: `{"error_code":"BAD_REQUEST","message":"dbsqlDashboard is not user-facing."}`,
+	}}.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
 
 	ctx := t.Context()
 	ctx = logdiag.InitContext(ctx)
 	logdiag.SetCollect(ctx, true)
 	b := &bundle.Bundle{}
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(w)
 
 	id := d.resolveID(ctx, b)
 	assert.Empty(t, id)

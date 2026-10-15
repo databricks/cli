@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
+
+	sharing "github.com/databricks/cli/libs/sdktypes/sharing/v1"
+	sdksharing "github.com/databricks/sdk-go/sharing/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,19 +59,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sharing.CreateProvider,
+	*sharing.CreateProviderRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq sharing.CreateProviderRequest
 
-	var createReq sharing.CreateProvider
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
-	cmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `Description about the provider.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.RecipientProfileStr, "recipient-profile-str", `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
 
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create an auth provider.`
@@ -102,6 +105,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -116,22 +120,26 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
-			if err != nil {
-				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
-			}
-
+			createReq.AuthenticationType = sharing.DeltaSharingAuthenticationType(args[1])
 		}
 
-		response, err := w.Providers.Create(ctx, createReq)
+		sdkReq, err := sharing.CreateProviderRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.CreateProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.ProviderInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -152,13 +160,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sharing.DeleteProviderRequest,
+	*sdksharing.DeleteProviderRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sharing.DeleteProviderRequest
+	var deleteReq sdksharing.DeleteProviderRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a provider.`
@@ -178,11 +185,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Providers drop-down.")
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Sharing.ListProvidersIter(ctx, sdksharing.ListProvidersRequest{}), []string{"Name"}, []string{"MetastoreId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -196,12 +204,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have name of the provider")
 		}
-		deleteReq.Name = args[0]
+		deleteReq.NameArg = new(args[0])
 
-		err = w.Providers.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Sharing.DeleteProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -223,13 +234,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sharing.GetProviderRequest,
+	*sdksharing.GetProviderRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sharing.GetProviderRequest
+	var getReq sdksharing.GetProviderRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a provider.`
@@ -250,11 +260,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Providers drop-down.")
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Sharing.ListProvidersIter(ctx, sdksharing.ListProvidersRequest{}), []string{"Name"}, []string{"MetastoreId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -268,14 +279,19 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have name of the provider")
 		}
-		getReq.Name = args[0]
+		getReq.NameArg = new(args[0])
 
-		response, err := w.Providers.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Sharing.GetProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.ProviderInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -301,22 +317,22 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq sharing.ListProvidersRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", `If not provided, all providers will be returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of providers to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of providers to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
@@ -343,16 +359,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Providers.List(ctx, listReq)
+		sdkReq, err := sharing.ListProvidersRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Sharing.ListProvidersIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sharing.ProviderInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -378,13 +398,12 @@ var listProviderShareAssetsOverrides []func(
 
 func newListProviderShareAssets() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listProviderShareAssetsReq sharing.ListProviderShareAssetsRequest
 
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.TableMaxResults, "table-max-results", listProviderShareAssetsReq.TableMaxResults, `Maximum number of tables to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", listProviderShareAssetsReq.VolumeMaxResults, `Maximum number of volumes to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", `Maximum number of functions to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", `Maximum number of notebooks to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listProviderShareAssetsReq.TableMaxResults, "table-max-results", `Maximum number of tables to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", `Maximum number of volumes to return.`)
 
 	cmd.Use = "list-provider-share-assets PROVIDER_NAME SHARE_NAME"
 	cmd.Short = `List assets by provider share.`
@@ -410,16 +429,25 @@ func newListProviderShareAssets() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listProviderShareAssetsReq.ProviderName = args[0]
-		listProviderShareAssetsReq.ShareName = args[1]
+		listProviderShareAssetsReq.ProviderNameArg = new(args[0])
+		listProviderShareAssetsReq.ShareNameArg = new(args[1])
 
-		response, err := w.Providers.ListProviderShareAssets(ctx, listProviderShareAssetsReq)
+		sdkReq, err := sharing.ListProviderShareAssetsRequestToSDK(&listProviderShareAssetsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.ListProviderShareAssets(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.ListProviderShareAssetsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -440,13 +468,13 @@ func newListProviderShareAssets() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSharesOverrides []func(
 	*cobra.Command,
-	*sharing.ListSharesRequest,
+	*sharing.ListProviderSharesRequest,
 )
 
 func newListShares() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSharesReq sharing.ListProviderSharesRequest
 
-	var listSharesReq sharing.ListSharesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -456,9 +484,9 @@ func newListShares() *cobra.Command {
 	cmd.Flags().IntVar(&listSharesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSharesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listSharesReq.MaxResults, "max-results", `Maximum number of shares to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list-shares NAME"
@@ -480,11 +508,12 @@ func newListShares() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Providers drop-down.")
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Sharing.ListProvidersIter(ctx, sdksharing.ListProvidersRequest{}), []string{"Name"}, []string{"MetastoreId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -498,17 +527,20 @@ func newListShares() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have name of the provider in which to list shares")
 		}
-		listSharesReq.Name = args[0]
+		listSharesReq.ProviderNameArg = new(args[0])
 
-		response := w.Providers.ListShares(ctx, listSharesReq)
+		sdkReq, err := sharing.ListProviderSharesRequestToSDK(&listSharesReq)
+		if err != nil {
+			return err
+		}
 		if listSharesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSharesLimit)
 		}
 		if listSharesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSharesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Sharing.ListProviderSharesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sharing.ProviderShareFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -529,21 +561,21 @@ func newListShares() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sharing.UpdateProvider,
+	*sharing.UpdateProviderRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq sharing.UpdateProviderRequest
 
-	var updateReq sharing.UpdateProvider
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the provider.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
-	cmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `Description about the provider.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the provider.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of Provider owner.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.RecipientProfileStr, "recipient-profile-str", `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a provider.`
@@ -565,6 +597,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -581,7 +614,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Providers drop-down.")
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Sharing.ListProvidersIter(ctx, sdksharing.ListProvidersRequest{}), []string{"Name"}, []string{"MetastoreId"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -595,14 +628,22 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have name of the provider")
 		}
-		updateReq.Name = args[0]
+		updateReq.NameArg = new(args[0])
 
-		response, err := w.Providers.Update(ctx, updateReq)
+		sdkReq, err := sharing.UpdateProviderRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.UpdateProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.ProviderInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

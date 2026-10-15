@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,13 +56,13 @@ Marketplace exchanges filters curate which groups can access an exchange.`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateExchangeFilterRequest,
+	*marketplaces.CreateExchangeFilterRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq marketplaces.CreateExchangeFilterRequest
 
-	var createReq marketplace.CreateExchangeFilterRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -80,6 +83,7 @@ Create a new exchange filter.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -96,12 +100,20 @@ Create a new exchange filter.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ProviderExchangeFilters.Create(ctx, createReq)
+		sdkReq, err := marketplaces.CreateExchangeFilterRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.CreateExchangeFilter(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreateExchangeFilterResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -122,13 +134,12 @@ Create a new exchange filter.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteExchangeFilterRequest,
+	*sdkmarketplaces.DeleteExchangeFilterRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq marketplace.DeleteExchangeFilterRequest
+	var deleteReq sdkmarketplaces.DeleteExchangeFilterRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `*Public Preview* Delete an exchange filter.`
@@ -146,11 +157,12 @@ Delete an exchange filter.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Provider Exchange Filters drop-down.")
-			names, err := w.ProviderExchangeFilters.ExchangeFilterNameToIdMap(ctx, marketplace.ListExchangeFiltersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListExchangeFiltersIter(ctx, sdkmarketplaces.ListExchangeFiltersRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Exchange Filters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -164,12 +176,15 @@ Delete an exchange filter.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.ProviderExchangeFilters.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Marketplaces.DeleteExchangeFilter(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -191,25 +206,25 @@ Delete an exchange filter.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListExchangeFiltersRequest,
+	*marketplaces.ListExchangeFiltersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListExchangeFiltersRequest
 
-	var listReq marketplace.ListExchangeFiltersRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list EXCHANGE_ID"
@@ -233,18 +248,22 @@ List exchange filters.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.ExchangeId = args[0]
+		listReq.ExchangeId = new(args[0])
 
-		response := w.ProviderExchangeFilters.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListExchangeFiltersRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListExchangeFiltersIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ExchangeFilterFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -265,13 +284,13 @@ List exchange filters.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateExchangeFilterRequest,
+	*marketplaces.UpdateExchangeFilterRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq marketplaces.UpdateExchangeFilterRequest
 
-	var updateReq marketplace.UpdateExchangeFilterRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -297,6 +316,7 @@ Update exchange filter.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -312,14 +332,22 @@ Update exchange filter.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		response, err := w.ProviderExchangeFilters.Update(ctx, updateReq)
+		sdkReq, err := marketplaces.UpdateExchangeFilterRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.UpdateExchangeFilter(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.UpdateExchangeFilterResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

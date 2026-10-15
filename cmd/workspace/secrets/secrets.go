@@ -10,8 +10,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	sdksecrets "github.com/databricks/sdk-go/secrets/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -68,20 +70,20 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createScopeOverrides []func(
 	*cobra.Command,
-	*workspace.CreateScope,
+	*secrets.CreateScopeRequest,
 )
 
 func newCreateScope() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createScopeReq secrets.CreateScopeRequest
 
-	var createScopeReq workspace.CreateScope
 	var createScopeJson flags.JsonFlag
 
 	cmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: backend_azure_keyvault
-	cmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS]`)
+	flags.StringPtrVar(cmd.Flags(), &createScopeReq.InitialManagePrincipal, "initial-manage-principal", `The principal that is initially granted MANAGE permission to the created scope.`)
+	flags.EnumVar(cmd.Flags(), &createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS]`, "ScopeBackendType", "AZURE_KEYVAULT", "DATABRICKS")
 
 	cmd.Use = "create-scope SCOPE"
 	cmd.Short = `Create a new secret scope.`
@@ -148,6 +150,7 @@ func newCreateScope() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createScopeJson.Unmarshal(&createScopeReq)
@@ -162,13 +165,19 @@ func newCreateScope() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createScopeReq.Scope = args[0]
+			createScopeReq.Scope = new(args[0])
 		}
 
-		err = w.Secrets.CreateScope(ctx, createScopeReq)
+		sdkReq, err := secrets.CreateScopeRequestToSDK(&createScopeReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Secrets.CreateScope(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -190,13 +199,13 @@ func newCreateScope() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteAclOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteAcl,
+	*secrets.DeleteAclRequest,
 )
 
 func newDeleteAcl() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteAclReq secrets.DeleteAclRequest
 
-	var deleteAclReq workspace.DeleteAcl
 	var deleteAclJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -244,6 +253,7 @@ func newDeleteAcl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteAclJson.Unmarshal(&deleteAclReq)
@@ -258,16 +268,22 @@ func newDeleteAcl() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteAclReq.Scope = args[0]
+			deleteAclReq.Scope = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteAclReq.Principal = args[1]
+			deleteAclReq.Principal = new(args[1])
 		}
 
-		err = w.Secrets.DeleteAcl(ctx, deleteAclReq)
+		sdkReq, err := secrets.DeleteAclRequestToSDK(&deleteAclReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Secrets.DeleteAcl(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -289,13 +305,13 @@ func newDeleteAcl() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteScopeOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteScope,
+	*secrets.DeleteScopeRequest,
 )
 
 func newDeleteScope() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteScopeReq secrets.DeleteScopeRequest
 
-	var deleteScopeReq workspace.DeleteScope
 	var deleteScopeJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -340,6 +356,7 @@ func newDeleteScope() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteScopeJson.Unmarshal(&deleteScopeReq)
@@ -354,13 +371,19 @@ func newDeleteScope() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteScopeReq.Scope = args[0]
+			deleteScopeReq.Scope = new(args[0])
 		}
 
-		err = w.Secrets.DeleteScope(ctx, deleteScopeReq)
+		sdkReq, err := secrets.DeleteScopeRequestToSDK(&deleteScopeReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Secrets.DeleteScope(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -382,13 +405,13 @@ func newDeleteScope() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSecretOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteSecret,
+	*secrets.DeleteSecretRequest,
 )
 
 func newDeleteSecret() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteSecretReq secrets.DeleteSecretRequest
 
-	var deleteSecretReq workspace.DeleteSecret
 	var deleteSecretJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -435,6 +458,7 @@ func newDeleteSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteSecretJson.Unmarshal(&deleteSecretReq)
@@ -449,16 +473,22 @@ func newDeleteSecret() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteSecretReq.Scope = args[0]
+			deleteSecretReq.Scope = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			deleteSecretReq.Key = args[1]
+			deleteSecretReq.Key = new(args[1])
 		}
 
-		err = w.Secrets.DeleteSecret(ctx, deleteSecretReq)
+		sdkReq, err := secrets.DeleteSecretRequestToSDK(&deleteSecretReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Secrets.DeleteSecret(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -480,13 +510,12 @@ func newDeleteSecret() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getAclOverrides []func(
 	*cobra.Command,
-	*workspace.GetAclRequest,
+	*secrets.GetAclRequest,
 )
 
 func newGetAcl() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getAclReq workspace.GetAclRequest
+	var getAclReq secrets.GetAclRequest
 
 	cmd.Use = "get-acl SCOPE PRINCIPAL"
 	cmd.Short = `Get secret ACL details.`
@@ -524,16 +553,25 @@ func newGetAcl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getAclReq.Scope = args[0]
-		getAclReq.Principal = args[1]
+		getAclReq.Scope = new(args[0])
+		getAclReq.Principal = new(args[1])
 
-		response, err := w.Secrets.GetAcl(ctx, getAclReq)
+		sdkReq, err := secrets.GetAclRequestToSDK(&getAclReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Secrets.GetAcl(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := secrets.AclItemFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -554,13 +592,12 @@ func newGetAcl() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSecretOverrides []func(
 	*cobra.Command,
-	*workspace.GetSecretRequest,
+	*secrets.GetSecretRequest,
 )
 
 func newGetSecret() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSecretReq workspace.GetSecretRequest
+	var getSecretReq secrets.GetSecretRequest
 
 	cmd.Use = "get-secret SCOPE KEY"
 	cmd.Short = `Get a secret.`
@@ -611,16 +648,25 @@ func newGetSecret() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSecretReq.Scope = args[0]
-		getSecretReq.Key = args[1]
+		getSecretReq.Scope = new(args[0])
+		getSecretReq.Key = new(args[1])
 
-		response, err := w.Secrets.GetSecret(ctx, getSecretReq)
+		sdkReq, err := secrets.GetSecretRequestToSDK(&getSecretReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Secrets.GetSecret(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := secrets.GetSecretResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -641,13 +687,13 @@ func newGetSecret() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listAclsOverrides []func(
 	*cobra.Command,
-	*workspace.ListAclsRequest,
+	*secrets.ListAclsRequest,
 )
 
 func newListAcls() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listAclsReq secrets.ListAclsRequest
 
-	var listAclsReq workspace.ListAclsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -693,10 +739,18 @@ func newListAcls() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listAclsReq.Scope = args[0]
+		listAclsReq.Scope = new(args[0])
 
-		response := w.Secrets.ListAcls(ctx, listAclsReq)
+		sdkReq, err := secrets.ListAclsRequestToSDK(&listAclsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Secrets.ListAcls(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listAclsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAclsLimit)
 		}
@@ -704,7 +758,11 @@ func newListAcls() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listAclsLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := secrets.ListAclsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Items)
 	}
 
 	// Disable completions since they are not applicable.
@@ -763,7 +821,14 @@ func newListScopes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.Secrets.ListScopes(ctx)
+		_ = w
+
+		sdkReq := &sdksecrets.ListScopesRequest{}
+
+		response, err := w.Secrets.ListScopes(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listScopesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listScopesLimit)
 		}
@@ -771,7 +836,11 @@ func newListScopes() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listScopesLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := secrets.ListScopesResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Scopes)
 	}
 
 	// Disable completions since they are not applicable.
@@ -792,13 +861,13 @@ func newListScopes() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listSecretsOverrides []func(
 	*cobra.Command,
-	*workspace.ListSecretsRequest,
+	*secrets.ListSecretsRequest,
 )
 
 func newListSecrets() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listSecretsReq secrets.ListSecretsRequest
 
-	var listSecretsReq workspace.ListSecretsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -847,10 +916,18 @@ func newListSecrets() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSecretsReq.Scope = args[0]
+		listSecretsReq.Scope = new(args[0])
 
-		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
+		sdkReq, err := secrets.ListSecretsRequestToSDK(&listSecretsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Secrets.ListSecrets(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listSecretsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSecretsLimit)
 		}
@@ -858,7 +935,11 @@ func newListSecrets() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listSecretsLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := secrets.ListSecretsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Secrets)
 	}
 
 	// Disable completions since they are not applicable.
@@ -879,13 +960,13 @@ func newListSecrets() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var putAclOverrides []func(
 	*cobra.Command,
-	*workspace.PutAcl,
+	*secrets.PutAclRequest,
 )
 
 func newPutAcl() *cobra.Command {
 	cmd := &cobra.Command{}
+	var putAclReq secrets.PutAclRequest
 
-	var putAclReq workspace.PutAcl
 	var putAclJson flags.JsonFlag
 
 	cmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -954,6 +1035,7 @@ func newPutAcl() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := putAclJson.Unmarshal(&putAclReq)
@@ -968,23 +1050,25 @@ func newPutAcl() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			putAclReq.Scope = args[0]
+			putAclReq.Scope = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			putAclReq.Principal = args[1]
+			putAclReq.Principal = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &putAclReq.Permission)
-			if err != nil {
-				return fmt.Errorf("invalid PERMISSION: %s", args[2])
-			}
-
+			putAclReq.Permission = secrets.AclPermission(args[2])
 		}
 
-		err = w.Secrets.PutAcl(ctx, putAclReq)
+		sdkReq, err := secrets.PutAclRequestToSDK(&putAclReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Secrets.PutAcl(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 

@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	repos "github.com/databricks/cli/libs/sdktypes/repos/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // fakeHeadCommitID is the commit the fake reports a clone is checked out to.
@@ -17,7 +18,7 @@ const fakeHeadCommitID = "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f"
 func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var repoReq workspace.CreateRepoRequest
+	var repoReq repos.CreateRepoRequest
 
 	if err := json.Unmarshal(req.Body, &repoReq); err != nil {
 		return Response{
@@ -29,17 +30,17 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	repoId := nextTreenodeID()
 	id := strconv.FormatInt(repoId, 10)
 
-	repoInfo := workspace.RepoInfo{
-		Id:           repoId,
+	repoInfo := repos.RepoInfo{
+		Id:           utils.NonZero(repoId),
 		Path:         repoReq.Path,
 		Provider:     repoReq.Provider,
 		Url:          repoReq.Url,
-		Branch:       "main",
-		HeadCommitId: fakeHeadCommitID,
+		Branch:       utils.NonZero("main"),
+		HeadCommitId: utils.NonZero(fakeHeadCommitID),
 	}
 
 	s.Repos[id] = repoInfo
-	s.repoIdByPath[repoReq.Path] = repoId
+	s.repoIdByPath[utils.Deref(repoReq.Path)] = repoId
 
 	return Response{
 		Body: repoInfo,
@@ -49,7 +50,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var repoReq workspace.UpdateRepoRequest
+	var repoReq repos.UpdateRepoRequest
 
 	if err := json.Unmarshal(req.Body, &repoReq); err != nil {
 		return Response{
@@ -67,7 +68,7 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 
 	newRepoInfo := repoInfo
 
-	if repoReq.Branch != "" {
+	if utils.Deref(repoReq.Branch) != "" {
 		newRepoInfo.Branch = repoReq.Branch
 	}
 
@@ -89,6 +90,6 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	}
 
 	delete(s.Repos, req.Vars["repo_id"])
-	delete(s.repoIdByPath, repoInfo.Path)
+	delete(s.repoIdByPath, utils.Deref(repoInfo.Path))
 	return Response{}
 }

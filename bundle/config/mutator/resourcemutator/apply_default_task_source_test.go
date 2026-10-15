@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,13 +18,13 @@ func TestApplyDefaultTaskSourceGitJob(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"git": {
 						JobSettings: jobs.JobSettings{
-							GitSource: &jobs.GitSource{GitUrl: "https://example.invalid/repo", GitProvider: "gitHub", GitBranch: "main"},
-							Tasks: []jobs.Task{
-								{TaskKey: "py", SparkPythonTask: &jobs.SparkPythonTask{PythonFile: "src/main.py"}},
-								{TaskKey: "nb_explicit", NotebookTask: &jobs.NotebookTask{NotebookPath: "nb", Source: jobs.SourceWorkspace}},
-								{TaskKey: "foreach", ForEachTask: &jobs.ForEachTask{Task: jobs.Task{
-									TaskKey:         "inner",
-									SparkPythonTask: &jobs.SparkPythonTask{PythonFile: "src/inner.py"},
+							GitSource: &jobs.GitSource{GitUrl: new("https://example.invalid/repo"), GitProvider: new("gitHub"), GitBranch: new("main")},
+							Tasks: []jobs.TaskSettings{
+								{TaskKey: new("py"), SparkPythonTask: &jobs.SparkPythonTask{PythonFile: new("src/main.py")}},
+								{TaskKey: new("nb_explicit"), NotebookTask: &jobs.NotebookTask{NotebookPath: new("nb"), Source: jobs.Source_Workspace}},
+								{TaskKey: new("foreach"), ForEachTask: &jobs.ForEachTask{Task: &jobs.TaskSettings{
+									TaskKey:         new("inner"),
+									SparkPythonTask: &jobs.SparkPythonTask{PythonFile: new("src/inner.py")},
 								}}},
 							},
 						},
@@ -39,11 +39,11 @@ func TestApplyDefaultTaskSourceGitJob(t *testing.T) {
 
 	tasks := b.Config.Resources.Jobs["git"].Tasks
 	// Unset source on a git job is defaulted to GIT.
-	assert.Equal(t, jobs.SourceGit, tasks[0].SparkPythonTask.Source)
+	assert.Equal(t, jobs.Source_Git, tasks[0].SparkPythonTask.Source)
 	// An explicit source is preserved.
-	assert.Equal(t, jobs.SourceWorkspace, tasks[1].NotebookTask.Source)
+	assert.Equal(t, jobs.Source_Workspace, tasks[1].NotebookTask.Source)
 	// The nested for_each task is handled too.
-	assert.Equal(t, jobs.SourceGit, tasks[2].ForEachTask.Task.SparkPythonTask.Source)
+	assert.Equal(t, jobs.Source_Git, tasks[2].ForEachTask.Task.SparkPythonTask.Source)
 }
 
 func TestApplyDefaultTaskSourceNullGitSourceUntouched(t *testing.T) {
@@ -77,8 +77,8 @@ func TestApplyDefaultTaskSourceNonGitJobUntouched(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"plain": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
-								{TaskKey: "py", SparkPythonTask: &jobs.SparkPythonTask{PythonFile: "/Workspace/main.py"}},
+							Tasks: []jobs.TaskSettings{
+								{TaskKey: new("py"), SparkPythonTask: &jobs.SparkPythonTask{PythonFile: new("/Workspace/main.py")}},
 							},
 						},
 					},

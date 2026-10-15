@@ -9,8 +9,9 @@ import (
 	"text/template"
 	"unicode/utf8"
 
+	"github.com/databricks/cli/libs/listing"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // ansiCSIPattern matches ANSI SGR escape sequences so colored cells

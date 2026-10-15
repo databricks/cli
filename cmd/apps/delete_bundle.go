@@ -2,14 +2,13 @@ package apps
 
 import (
 	"github.com/databricks/cli/cmd/bundle"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
 // BundleDeleteOverrideWithWrapper creates a delete override function that uses
 // the provided error wrapper for API fallback errors.
-func BundleDeleteOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.DeleteAppRequest) {
-	return func(deleteCmd *cobra.Command, deleteReq *apps.DeleteAppRequest) {
+func BundleDeleteOverrideWithWrapper[R any](wrapError ErrorWrapper) func(*cobra.Command, *R) {
+	return func(deleteCmd *cobra.Command, _ *R) {
 		var (
 			autoApprove  bool
 			forceDestroy bool
@@ -27,7 +26,7 @@ func BundleDeleteOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 			}
 
 			err := originalRunE(cmd, args)
-			return wrapError(cmd, deleteReq.Name, err)
+			return wrapError(cmd, appNameArg(args), err)
 		}
 
 		deleteCmd.Long = `Delete an app.

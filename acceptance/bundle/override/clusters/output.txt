@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle validate -o json -t default
+Warning: num_workers is ignored because autoscale is set
+  at resources.clusters.foo.num_workers
+  in databricks.yml:8:20
+
 {
   "autoscale": {
     "max_workers": 7,
@@ -8,7 +12,6 @@
   "autotermination_minutes": 60,
   "cluster_name": "foo",
   "node_type_id": "[NODE_TYPE_ID]",
-  "num_workers": 2,
   "spark_conf": {
     "spark.executor.memory": "2g"
   },
@@ -16,6 +19,11 @@
 }
 
 >>> [CLI] bundle validate -o json -t development
+Warning: num_workers is ignored because autoscale is set
+  at resources.clusters.foo.num_workers
+  in databricks.yml:25:24
+     databricks.yml:8:20
+
 {
   "autoscale": {
     "max_workers": 3,
@@ -24,7 +32,6 @@
   "autotermination_minutes": 60,
   "cluster_name": "foo-override",
   "node_type_id": "m5.xlarge",
-  "num_workers": 3,
   "spark_conf": {
     "spark.executor.memory": "4g",
     "spark.executor.memory2": "4g"

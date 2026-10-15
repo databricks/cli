@@ -7,79 +7,84 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/apierrs"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/sdktypes/modelserving/v1"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	grants "github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	"github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/databricks-sdk-go/config"
+	sdkapps "github.com/databricks/sdk-go/apps/v1"
+	sdkgenie "github.com/databricks/sdk-go/genie/v1"
+	sdklakeview "github.com/databricks/sdk-go/lakeview/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
+	sdkvectorsearch "github.com/databricks/sdk-go/vectorsearch/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var testConfig map[string]any = map[string]any{
 	"apps": &resources.App{
-		Name: "myapp",
+		Name: new("myapp"),
 	},
 
 	"catalogs": &resources.Catalog{
-		Name:    "mycatalog",
-		Comment: "Test catalog",
+		Name:    new("mycatalog"),
+		Comment: new("Test catalog"),
 		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
 		// only during updates. They are not included in the test config.
 	},
 
 	"external_locations": &resources.ExternalLocation{
-		Name:           "myexternallocation",
-		Url:            "s3://mybucket/mypath",
-		CredentialName: "mycredential",
-		Comment:        "Test external location",
+		Name:           new("myexternallocation"),
+		Url:            new("s3://mybucket/mypath"),
+		CredentialName: new("mycredential"),
+		Comment:        new("Test external location"),
 	},
 
 	"schemas": &resources.Schema{
-		CatalogName: "main",
-		Name:        "myschema",
-		Comment:     "Test schema",
+		CatalogName: new("main"),
+		Name:        new("myschema"),
+		Comment:     new("Test schema"),
 	},
 
 	"volumes": &resources.Volume{
-		CatalogName: "main",
-		SchemaName:  "myschema",
-		Name:        "myvolume",
-		Comment:     "Test volume",
+		CatalogName: new("main"),
+		SchemaName:  new("myschema"),
+		Name:        new("myvolume"),
+		Comment:     new("Test volume"),
 	},
 
 	"database_instances": &resources.DatabaseInstance{
-		Name: "mydbinstance",
+		Name: new("mydbinstance"),
 	},
 
 	"instance_pools": &resources.InstancePool{
-		InstancePoolName: "my-instance-pool",
-		NodeTypeId:       "i3.xlarge",
+		InstancePoolName: new("my-instance-pool"),
+		NodeTypeId:       new("i3.xlarge"),
 	},
 
 	"synced_database_tables": &resources.SyncedDatabaseTable{
-		Name: "main.myschema.my_synced_table",
+		Name: new("main.myschema.my_synced_table"),
 	},
 
 	"model_services": &resources.ModelService{
@@ -101,95 +106,91 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"registered_models": &resources.RegisteredModel{
-		Name:            "my_registered_model",
-		Comment:         "Test registered model",
-		CatalogName:     "main",
-		SchemaName:      "default",
-		StorageLocation: "s3://my-bucket/my-path",
+		Name:            new("my_registered_model"),
+		Comment:         new("Test registered model"),
+		CatalogName:     new("main"),
+		SchemaName:      new("default"),
+		StorageLocation: new("s3://my-bucket/my-path"),
 	},
 
 	"experiments": &resources.MlflowExperiment{
-		Name: "my-experiment",
-		Tags: []ml.ExperimentTag{
+		Name: new("my-experiment"),
+		Tags: []experiments.ExperimentTag{
 			{
-				Key:   "my-tag",
-				Value: "my-value",
+				Key:   new("my-tag"),
+				Value: new("my-value"),
 			},
 		},
-		ArtifactLocation: "s3://my-bucket/my-experiment",
+		ArtifactLocation: new("s3://my-bucket/my-experiment"),
 	},
 
 	"models": &resources.MlflowModel{
-		Name:        "my_mlflow_model",
-		Description: "my_mlflow_model_description",
-		Tags: []ml.ModelTag{
+		Name:        new("my_mlflow_model"),
+		Description: new("my_mlflow_model_description"),
+		Tags: []modelregistry.RegisteredModelTag{
 			{
-				Key:   "k1",
-				Value: "v1",
+				Key:   new("k1"),
+				Value: new("v1"),
 			},
 		},
 	},
 
 	"secrets": &resources.Secret{
-		CatalogName: "main",
-		SchemaName:  "default",
-		Name:        "my_secret",
-		Value:       "my_secret_value",
-		Comment:     "Test secret",
+		CatalogName: new("main"),
+		SchemaName:  new("default"),
+		Name:        new("my_secret"),
+		Value:       new("my_secret_value"),
+		Comment:     new("Test secret"),
 	},
 
 	"secret_scopes": &resources.SecretScope{
 		Name:        "my_secret_scope",
-		BackendType: workspace.ScopeBackendTypeAzureKeyvault,
+		BackendType: secrets.ScopeBackendType_AzureKeyvault,
 		Permissions: []resources.SecretScopePermission{
 			{
 				Level:    resources.SecretScopePermissionLevelManage,
 				UserName: "user@example.com",
 			},
 		},
-		KeyvaultMetadata: &workspace.AzureKeyVaultSecretScopeMetadata{
-			DnsName:    "https://my-keyvault.vault.azure.net/",
-			ResourceId: "my-keyvault-resource-id",
+		KeyvaultMetadata: &secrets.AzureKeyVaultSecretScopeMetadata{
+			DnsName:    new("https://my-keyvault.vault.azure.net/"),
+			ResourceId: new("my-keyvault-resource-id"),
 		},
 	},
 
 	"model_serving_endpoints": &resources.ModelServingEndpoint{
-		Name: "my-endpoint",
-		Config: &serving.EndpointCoreConfigInput{
-			Name: "my-endpoint",
-			//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
-			AutoCaptureConfig: &serving.AutoCaptureConfigInput{
-				CatalogName:     "main",
-				SchemaName:      "myschema",
-				TableNamePrefix: "my_table",
-				Enabled:         true,
-				ForceSendFields: nil,
+		Name: new("my-endpoint"),
+		Config: &modelserving.EndpointCoreConfig{
+			//nolint:staticcheck
+			AutoCaptureConfig: &modelserving.AutoCaptureConfig{
+				CatalogName:     new("main"),
+				SchemaName:      new("myschema"),
+				TableNamePrefix: new("my_table"),
+				Enabled:         new(true),
 			},
 			ServedModels: nil,
-			ServedEntities: []serving.ServedEntityInput{
+			ServedEntities: []modelserving.ServedModel{
 				{
-					EntityName:                "entity-name",
-					EntityVersion:             "1",
-					WorkloadSize:              "Small",
-					ScaleToZeroEnabled:        true,
-					WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+					EntityName:                new("entity-name"),
+					EntityVersion:             new("1"),
+					WorkloadSize:              new("Small"),
+					ScaleToZeroEnabled:        new(true),
 					EnvironmentVars:           map[string]string{"key": "value"},
-					InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
-					MaxProvisionedConcurrency: 10,
-					MaxProvisionedThroughput:  100,
-					MinProvisionedConcurrency: 1,
-					MinProvisionedThroughput:  10,
-					Name:                      "entity-name",
-					ProvisionedModelUnits:     100,
+					InstanceProfileArn:        new("arn:aws:iam::123456789012:instance-profile/my-instance-profile"),
+					MaxProvisionedConcurrency: new(10),
+					MaxProvisionedThroughput:  new(100),
+					MinProvisionedConcurrency: new(1),
+					MinProvisionedThroughput:  new(10),
+					Name:                      new("entity-name"),
+					ProvisionedModelUnits:     new(int64(100)),
 					ExternalModel:             nil,
-					ForceSendFields:           nil,
 				},
 			},
-			TrafficConfig: &serving.TrafficConfig{
-				Routes: []serving.Route{
+			TrafficConfig: &modelserving.TrafficConfig{
+				Routes: []modelserving.Route{
 					{
-						ServedModelName:   "model-name-1",
-						TrafficPercentage: 100,
+						ServedModelName:   new("model-name-1"),
+						TrafficPercentage: new(100),
 					},
 				},
 			},
@@ -198,8 +199,8 @@ var testConfig map[string]any = map[string]any{
 
 	"postgres_projects": &resources.PostgresProject{
 		ProjectId:   "test-project",
-		DisplayName: "Test Project",
-		PgVersion:   16,
+		DisplayName: new("Test Project"),
+		PgVersion:   new(16),
 	},
 
 	"postgres_catalogs": &resources.PostgresCatalog{
@@ -211,21 +212,21 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"alerts": &resources.Alert{
-		DisplayName: "my-alert",
-		QueryText:   "SELECT 1",
-		WarehouseId: "test-warehouse-id",
-		Schedule: sql.CronSchedule{
-			QuartzCronSchedule: "0 0 12 * * ?",
-			TimezoneId:         "UTC",
+		DisplayName: new("my-alert"),
+		QueryText:   new("SELECT 1"),
+		WarehouseId: new("test-warehouse-id"),
+		Schedule: &alerts.CronSchedule{
+			QuartzCronSchedule: new("0 0 12 * * ?"),
+			TimezoneId:         new("UTC"),
 		},
-		Evaluation: sql.AlertV2Evaluation{
-			ComparisonOperator: sql.ComparisonOperatorGreaterThan,
-			Source: sql.AlertV2OperandColumn{
-				Name: "column1",
+		Evaluation: &alerts.AlertEvaluation{
+			ComparisonOperator: alerts.ComparisonOperator_GreaterThan,
+			Source: &alerts.AlertOperandColumn{
+				Name: new("column1"),
 			},
-			Threshold: &sql.AlertV2Operand{
-				Column: &sql.AlertV2OperandColumn{
-					Name: "column2",
+			Threshold: &alerts.AlertOperand{
+				Column: &alerts.AlertOperandColumn{
+					Name: new("column2"),
 				},
 			},
 		},
@@ -255,53 +256,51 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
-		Name:         "my-endpoint",
-		EndpointType: vectorsearch.EndpointTypeStandard,
+		Name:         new("my-endpoint"),
+		EndpointType: vectorsearch.EndpointType_Standard,
 	},
 
 	"vector_search_indexes": &resources.VectorSearchIndex{
-		Name:         "main.default.my_index",
-		EndpointName: "my-index-endpoint",
-		PrimaryKey:   "id",
-		IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+		Name:         new("main.default.my_index"),
+		EndpointName: new("my-index-endpoint"),
+		PrimaryKey:   new("id"),
+		IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
 		DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-			SourceTable:  "main.default.source_table",
-			PipelineType: vectorsearch.PipelineTypeTriggered,
+			SourceTable:  new("main.default.source_table"),
+			PipelineType: vectorsearch.PipelineType("TRIGGERED"),
 		},
-		Grants: []catalog.PrivilegeAssignment{{
-			Principal:  "user@example.com",
-			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		Grants: []grants.PrivilegeAssignment{{
+			Principal:  new("user@example.com"),
+			Privileges: []string{"SELECT"},
 		}},
 	},
 
 	"internal_immutable_snapshots": &resources.Snapshot{
-		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		RemoteRoot: "/Workspace/Users/" + utils.Deref(testserver.TestUserSP.UserName) + "/.snapshots",
 		BundleID:   "test-bundle-id",
 		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
 }
 
-type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
+type prepareWorkspace func(ctx context.Context, client *sdkclients.Clients) (any, error)
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
-	"database_catalogs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
-			DatabaseInstance: database.DatabaseInstance{
-				Name: "mydbinstance1",
-			},
+	"database_catalogs": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		_, _, err := (&ResourceDatabaseInstance{client: client}).DoCreate(ctx, &database.DatabaseInstance{
+			Name: new("mydbinstance1"),
 		})
 
 		return &resources.DatabaseCatalog{
-			Name:                 "mydbcatalog",
-			DatabaseInstanceName: "mydbinstance1",
+			Name:                 new("mydbcatalog"),
+			DatabaseInstanceName: new("mydbinstance1"),
 		}, err
 	},
 
-	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
-			Name:         "my-index-endpoint",
-			EndpointType: vectorsearch.EndpointTypeStandard,
+	"vector_search_indexes": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		_, _, err := (&ResourceVectorSearchEndpoint{client: client}).DoCreate(ctx, &vectorsearch.CreateEndpointRequest{
+			Name:         new("my-index-endpoint"),
+			EndpointType: vectorsearch.EndpointType_Standard,
 		})
 		if err != nil {
 			return nil, err
@@ -310,36 +309,40 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
-	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"job_runs": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// A run can only be triggered against an existing job, so create one first.
-		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
-			Name: "job-for-run",
-			Tasks: []jobs.Task{
+		id, _, err := (&ResourceJob{client: client}).DoCreate(ctx, &jobs.JobSettings{
+			Name: new("job-for-run"),
+			Tasks: []jobs.TaskSettings{
 				{
-					TaskKey: "t",
+					TaskKey: new("t"),
 					NotebookTask: &jobs.NotebookTask{
-						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+						NotebookPath: new("/Workspace/Users/user@example.com/notebook"),
 					},
 				},
 			},
 		})
+		if err != nil {
+			return nil, err
+		}
+		jobID, err := parseJobID(id)
 		if err != nil {
 			return nil, err
 		}
 
 		return &resources.JobRun{
-			JobId: resp.JobId,
+			JobId: new(jobID),
 		}, nil
 	},
 
-	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
-			Name: "job-permissions",
-			Tasks: []jobs.Task{
+	"jobs.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		id, _, err := (&ResourceJob{client: client}).DoCreate(ctx, &jobs.JobSettings{
+			Name: new("job-permissions"),
+			Tasks: []jobs.TaskSettings{
 				{
-					TaskKey: "t",
+					TaskKey: new("t"),
 					NotebookTask: &jobs.NotebookTask{
-						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+						NotebookPath: new("/Workspace/Users/user@example.com/notebook"),
 					},
 				},
 			},
@@ -347,9 +350,8 @@ var testDeps = map[string]prepareWorkspace{
 		if err != nil {
 			return nil, err
 		}
-
 		return &PermissionsState{
-			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
+			ObjectID: "/jobs/" + id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "IS_OWNER",
 				UserName: "user@example.com",
@@ -357,16 +359,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"pipelines.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Pipelines.Create(ctx, pipelines.CreatePipeline{
-			Name: "pipeline-permissions",
+	"pipelines.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		id, _, err := (&ResourcePipeline{client: client}).DoCreate(ctx, &PipelineState{
+			Name: new("pipeline-permissions"),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/pipelines/" + resp.PipelineId,
+			ObjectID: "/pipelines/" + id,
 			EmbeddedSlice: []StatePermission{{
 				// Pipelines require exactly one owner, like jobs.
 				Level:    "IS_OWNER",
@@ -375,17 +377,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"models.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.ModelRegistry.CreateModel(ctx, ml.CreateModelRequest{
-			Name:        "model-permissions",
-			Description: "model for permissions testing",
+	"models.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		name, _, err := (&ResourceMlflowModel{client: client}).DoCreate(ctx, &modelregistry.CreateRegisteredModelRequest{
+			Name:        new("model-permissions"),
+			Description: new("model for permissions testing"),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
+			ObjectID: "/registered-models/" + name,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -393,16 +395,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"experiments.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Experiments.CreateExperiment(ctx, ml.CreateExperiment{
-			Name: "experiment-permissions",
+	"experiments.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		id, _, err := (&ResourceExperiment{client: client}).DoCreate(ctx, &experiments.CreateExperimentRequest{
+			Name: new("experiment-permissions"),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/experiments/" + resp.ExperimentId,
+			ObjectID: "/experiments/" + id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -410,7 +412,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"clusters.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -420,7 +422,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"cluster_policies.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/cluster-policies/cluster-policy-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -430,7 +432,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"instance_pools.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/instance-pools/pool-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -440,10 +442,10 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"apps.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
-			App: apps.App{
-				Name: "app-permissions",
+	"apps.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		waiter, err := client.Apps.CreateApp(ctx, sdkapps.CreateAppRequest{
+			App: &sdkapps.App{
+				Name: new("app-permissions"),
 			},
 		})
 		if err != nil {
@@ -451,7 +453,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/apps/" + waiter.Response.Name,
+			ObjectID: "/apps/" + waiter.GetName(),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -459,7 +461,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"sql_warehouses.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
 			EmbeddedSlice: []StatePermission{{
@@ -469,18 +471,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"database_instances.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
-			DatabaseInstance: database.DatabaseInstance{
-				Name: "dbinstance-permissions",
-			},
+	"database_instances.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		name, _, err := (&ResourceDatabaseInstance{client: client}).DoCreate(ctx, &database.DatabaseInstance{
+			Name: new("dbinstance-permissions"),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/database-instances/" + waiter.Response.Name,
+			ObjectID: "/database-instances/" + name,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -488,10 +488,10 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_projects.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		const projectID = "permissions-project"
-		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: projectID,
+		waiter, err := client.Postgres.CreateProject(ctx, sdkpostgres.CreateProjectRequest{
+			ProjectId: new(projectID),
 		})
 		if err != nil {
 			return nil, err
@@ -509,7 +509,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"dashboards.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"dashboards.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
@@ -518,11 +518,11 @@ var testDeps = map[string]prepareWorkspace{
 			return nil, err
 		}
 
-		resp, err := client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard: dashboards.Dashboard{
-				DisplayName:         "dashboard-permissions",
-				ParentPath:          parentPath,
-				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
+		resp, err := client.Lakeview.CreateDashboard(ctx, sdklakeview.CreateDashboardRequest{
+			Dashboard: &sdklakeview.DashboardCreate{
+				DisplayName:         new("dashboard-permissions"),
+				ParentPath:          new(parentPath),
+				SerializedDashboard: new(`{"pages":[{"name":"page1","displayName":"Page 1"}]}`),
 			},
 		})
 		if err != nil {
@@ -530,7 +530,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/dashboards/" + resp.DashboardId,
+			ObjectID: "/dashboards/" + utils.Deref(resp.DashboardId),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -538,18 +538,18 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
-			Title:           "genie-space-permissions",
-			WarehouseId:     "test-warehouse-id",
-			SerializedSpace: "{}",
+	"genie_spaces.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, sdkgenie.GenieCreateSpaceRequest{
+			Title:           new("genie-space-permissions"),
+			WarehouseId:     new("test-warehouse-id"),
+			SerializedSpace: new("{}"),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/genie/" + resp.SpaceId,
+			ObjectID: "/genie/" + utils.Deref(resp.SpaceId),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -557,16 +557,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
-			Name: "endpoint-permissions",
-			Config: &serving.EndpointCoreConfigInput{
-				ServedModels: []serving.ServedModelInput{
+	"model_serving_endpoints.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		name, _, err := (&ResourceModelServingEndpoint{client: client}).DoCreate(ctx, &modelserving.CreateInferenceEndpointRequest{
+			Name: new("endpoint-permissions"),
+			Config: &modelserving.EndpointCoreConfig{
+				ServedModels: []modelserving.ServedModel{
 					{
-						ModelName:          "model-name",
-						ModelVersion:       "1",
-						WorkloadSize:       "Small",
-						ScaleToZeroEnabled: true,
+						ModelName:          new("model-name"),
+						ModelVersion:       new("1"),
+						WorkloadSize:       new("Small"),
+						ScaleToZeroEnabled: new(true),
 					},
 				},
 			},
@@ -576,7 +576,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			ObjectID: "/serving-endpoints/" + name,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -584,17 +584,21 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
-			Name:         "vs-endpoint-permissions",
-			EndpointType: vectorsearch.EndpointTypeStandard,
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		waiter, err := client.VectorSearch.CreateEndpoint(ctx, sdkvectorsearch.CreateEndpointRequest{
+			Name:         new("vs-endpoint-permissions"),
+			EndpointType: sdkvectorsearch.EndpointType_Standard,
 		})
+		if err != nil {
+			return nil, err
+		}
+		endpoint, err := client.VectorSearch.GetEndpoint(ctx, sdkvectorsearch.GetEndpointRequest{Name: new(waiter.GetName())})
 		if err != nil {
 			return nil, err
 		}
 
 		return &PermissionsState{
-			ObjectID: "/vector-search-endpoints/" + waiter.Response.Id,
+			ObjectID: "/vector-search-endpoints/" + utils.Deref(endpoint.Id),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -602,21 +606,19 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"alerts.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.AlertsV2.CreateAlert(ctx, sql.CreateAlertV2Request{
-			Alert: sql.AlertV2{
-				DisplayName: "alert-permissions",
-				QueryText:   "SELECT 1",
-				WarehouseId: "test-warehouse-id",
-				Schedule: sql.CronSchedule{
-					QuartzCronSchedule: "0 0 12 * * ?",
-					TimezoneId:         "UTC",
-				},
-				Evaluation: sql.AlertV2Evaluation{
-					ComparisonOperator: sql.ComparisonOperatorGreaterThan,
-					Source: sql.AlertV2OperandColumn{
-						Name: "column1",
-					},
+	"alerts.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		id, _, err := (&ResourceAlert{client: client}).DoCreate(ctx, &alerts.Alert{
+			DisplayName: new("alert-permissions"),
+			QueryText:   new("SELECT 1"),
+			WarehouseId: new("test-warehouse-id"),
+			Schedule: &alerts.CronSchedule{
+				QuartzCronSchedule: new("0 0 12 * * ?"),
+				TimezoneId:         new("UTC"),
+			},
+			Evaluation: &alerts.AlertEvaluation{
+				ComparisonOperator: alerts.ComparisonOperator_GreaterThan,
+				Source: &alerts.AlertOperandColumn{
+					Name: new("column1"),
 				},
 			},
 		})
@@ -625,7 +627,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/alertsv2/" + resp.Id,
+			ObjectID: "/alertsv2/" + id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -633,123 +635,123 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"catalogs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"catalogs.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "catalog",
 			FullName:      "mycatalog",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"USE_CATALOG"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"external_locations.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"external_locations.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "external_location",
 			FullName:      "myexternallocation",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"READ_FILES"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"schemas.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"schemas.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"CREATE_VIEW"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"volumes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"volumes.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"CREATE_VIEW"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"registered_models.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"registered_models.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"CREATE_VIEW"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"vector_search_indexes.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "table",
 			FullName:      "main.default.my_index",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"SELECT"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"secrets.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "secret",
 			FullName:      "main.default.my_secret",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"SELECT"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"model_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "model_service",
 			FullName:      "main.myschema.mymodelservice",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"APPLY_TAG"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"mcp_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "mcp_service",
 			FullName:      "main.myschema.mymcpservice",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"APPLY_TAG"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"model_provider_services.grants": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		return &GrantsState{
 			SecurableType: "model_provider_service",
 			FullName:      "main.myschema.myproviderservice",
-			EmbeddedSlice: []catalog.PrivilegeAssignment{{
-				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
-				Principal:  "user@example.com",
+			EmbeddedSlice: []grants.PrivilegeAssignment{{
+				Privileges: []string{"APPLY_TAG"},
+				Principal:  new("user@example.com"),
 			}},
 		}, nil
 	},
 
-	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
-			Scope:            "permissions_test_scope",
-			ScopeBackendType: workspace.ScopeBackendTypeAzureKeyvault,
-			BackendAzureKeyvault: &workspace.AzureKeyVaultSecretScopeMetadata{
-				DnsName:    "https://my-keyvault.vault.azure.net/",
-				ResourceId: "my-keyvault-resource-id",
+	"secret_scopes.permissions": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
+		_, _, err := (&ResourceSecretScope{client: client}).DoCreate(ctx, &SecretScopeConfig{
+			Scope:            new("permissions_test_scope"),
+			ScopeBackendType: secrets.ScopeBackendType_AzureKeyvault,
+			BackendAzureKeyvault: &secrets.AzureKeyVaultSecretScopeMetadata{
+				DnsName:    new("https://my-keyvault.vault.azure.net/"),
+				ResourceId: new("my-keyvault-resource-id"),
 			},
 		})
 		if err != nil {
@@ -758,48 +760,39 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &SecretScopeAclsState{
 			ScopeName: "permissions_test_scope",
-			Acls: []workspace.AclItem{
+			Acls: []secrets.AclItem{
 				{
-					Principal:  "user@example.com",
-					Permission: workspace.AclPermissionManage,
+					Principal:  new("user@example.com"),
+					Permission: secrets.AclPermission_Manage,
 				},
 			},
 		}, nil
 	},
 
-	"postgres_branches": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_branches": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
-		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "test-project-for-branch",
-			Project: postgres.Project{
-				Spec: &postgres.ProjectSpec{
-					DisplayName: "Test Project for Branch",
-					PgVersion:   16,
-				},
-			},
+		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
+			ProjectId:   "test-project-for-branch",
+			DisplayName: new("Test Project for Branch"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		return &resources.PostgresBranch{
-			Parent:     "projects/test-project-for-branch",
-			BranchId:   "test-branch",
-			BranchSpec: postgres.BranchSpec{},
+			Parent:   "projects/test-project-for-branch",
+			BranchId: "test-branch",
 		}, nil
 	},
 
-	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_snapshot_schedules": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Creating the project implicitly provisions the root "production"
 		// branch, the only branch a snapshot schedule may target.
-		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "test-project-for-snapshot-schedule",
-			Project: postgres.Project{
-				Spec: &postgres.ProjectSpec{
-					DisplayName: "Test Project for Snapshot Schedule",
-					PgVersion:   16,
-				},
-			},
+		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
+			ProjectId:   "test-project-for-snapshot-schedule",
+			DisplayName: new("Test Project for Snapshot Schedule"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
@@ -810,26 +803,21 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"postgres_endpoints": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_endpoints": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
-		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "test-project-for-endpoint",
-			Project: postgres.Project{
-				Spec: &postgres.ProjectSpec{
-					DisplayName: "Test Project for Endpoint",
-					PgVersion:   16,
-				},
-			},
+		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
+			ProjectId:   "test-project-for-endpoint",
+			DisplayName: new("Test Project for Endpoint"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		// Create parent branch
-		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+		_, _, err = (&ResourcePostgresBranch{client: client}).DoCreate(ctx, &PostgresBranchState{
 			Parent:   "projects/test-project-for-endpoint",
 			BranchId: "test-branch-for-endpoint",
-			Branch:   postgres.Branch{},
 		})
 		if err != nil {
 			return nil, err
@@ -838,30 +826,25 @@ var testDeps = map[string]prepareWorkspace{
 		return &resources.PostgresEndpoint{
 			Parent:       "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
 			EndpointId:   "test-endpoint",
-			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+			EndpointType: postgres.EndpointType_EndpointTypeReadWrite,
 		}, nil
 	},
 
-	"postgres_databases": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_databases": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
-		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "test-project-for-database",
-			Project: postgres.Project{
-				Spec: &postgres.ProjectSpec{
-					DisplayName: "Test Project for Database",
-					PgVersion:   16,
-				},
-			},
+		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
+			ProjectId:   "test-project-for-database",
+			DisplayName: new("Test Project for Database"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		// Create parent branch
-		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+		_, _, err = (&ResourcePostgresBranch{client: client}).DoCreate(ctx, &PostgresBranchState{
 			Parent:   "projects/test-project-for-database",
 			BranchId: "test-branch-for-database",
-			Branch:   postgres.Branch{},
 		})
 		if err != nil {
 			return nil, err
@@ -870,31 +853,26 @@ var testDeps = map[string]prepareWorkspace{
 		return &resources.PostgresDatabase{
 			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
 			DatabaseId:       "test-database",
-			PostgresDatabase: "app_db",
-			Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+			PostgresDatabase: new("app_db"),
+			Role:             new("projects/test-project-for-database/branches/test-branch-for-database/roles/owner"),
 		}, nil
 	},
 
-	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+	"postgres_roles": func(ctx context.Context, client *sdkclients.Clients) (any, error) {
 		// Create parent project first
-		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "test-project-for-role",
-			Project: postgres.Project{
-				Spec: &postgres.ProjectSpec{
-					DisplayName: "Test Project for Role",
-					PgVersion:   16,
-				},
-			},
+		_, _, err := (&ResourcePostgresProject{client: client}).DoCreate(ctx, &PostgresProjectState{
+			ProjectId:   "test-project-for-role",
+			DisplayName: new("Test Project for Role"),
+			PgVersion:   new(16),
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		// Create parent branch
-		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+		_, _, err = (&ResourcePostgresBranch{client: client}).DoCreate(ctx, &PostgresBranchState{
 			Parent:   "projects/test-project-for-role",
 			BranchId: "test-branch-for-role",
-			Branch:   postgres.Branch{},
 		})
 		if err != nil {
 			return nil, err
@@ -903,7 +881,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &resources.PostgresRole{
 			Parent:       "projects/test-project-for-role/branches/test-branch-for-role",
 			RoleId:       "test-role",
-			PostgresRole: "test_role",
+			PostgresRole: new("test_role"),
 		}, nil
 	},
 }
@@ -1001,7 +979,7 @@ func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgA
 	require.Empty(t, relevantChanges, msgAndArgs...)
 }
 
-func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+func testCRUD(t *testing.T, group string, adapter *Adapter, client *sdkclients.Clients) {
 	var inputConfig any
 	var err error
 
@@ -1150,7 +1128,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
 	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	if !apierr.IsMissing(err) {
+	if !apierrs.IsMissing(err) {
 		require.NoError(t, err)
 	}
 
@@ -1406,10 +1384,10 @@ func TestNameStableOrOptedOut(t *testing.T) {
 	}
 }
 
-func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
+func setupTestServerClient(t *testing.T) (*testserver.Server, *sdkclients.Clients) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:               server.URL,
 		Token:              "testtoken",
 		RateLimitPerSecond: math.MaxInt,

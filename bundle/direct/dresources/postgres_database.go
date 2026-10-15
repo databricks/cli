@@ -2,57 +2,48 @@ package dresources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // PostgresDatabaseRemote is the return type for DoRead. It embeds
-// DatabaseDatabaseSpec so that all paths in StateType are valid paths in
+// Database_DatabaseSpec so that all paths in StateType are valid paths in
 // RemoteType, enabling drift detection for spec fields once the backend echoes
 // spec on GET.
 type PostgresDatabaseRemote struct {
-	postgres.DatabaseDatabaseSpec
+	postgres.Database_DatabaseSpec
 
 	DatabaseId string `json:"database_id,omitempty"`
 	Parent     string `json:"parent,omitempty"`
 
-	Name       string                           `json:"name,omitempty"`
-	Status     *postgres.DatabaseDatabaseStatus `json:"status,omitempty"`
-	CreateTime *sdktime.Time                    `json:"create_time,omitempty"`
-	UpdateTime *sdktime.Time                    `json:"update_time,omitempty"`
-}
-
-// Custom marshaler needed because embedded DatabaseDatabaseSpec has its own
-// MarshalJSON which would otherwise take over and ignore the additional fields.
-func (s *PostgresDatabaseRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresDatabaseRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	Name       string                            `json:"name,omitempty"`
+	Status     *postgres.Database_DatabaseStatus `json:"status,omitempty"`
+	CreateTime *types.Time                       `json:"create_time,omitempty"`
+	UpdateTime *types.Time                       `json:"update_time,omitempty"`
 }
 
 type ResourcePostgresDatabase struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresDatabaseState = resources.PostgresDatabaseConfig
 
-func (*ResourcePostgresDatabase) New(client *databricks.WorkspaceClient) *ResourcePostgresDatabase {
+func (*ResourcePostgresDatabase) New(client *sdkclients.Clients) *ResourcePostgresDatabase {
 	return &ResourcePostgresDatabase{client: client}
 }
 
 func (*ResourcePostgresDatabase) PrepareState(input *resources.PostgresDatabase) *PostgresDatabaseState {
 	return &PostgresDatabaseState{
-		DatabaseId:           input.DatabaseId,
-		Parent:               input.Parent,
-		ReplaceExisting:      input.ReplaceExisting,
-		DatabaseDatabaseSpec: input.DatabaseDatabaseSpec,
+		DatabaseId:            input.DatabaseId,
+		Parent:                input.Parent,
+		ReplaceExisting:       input.ReplaceExisting,
+		Database_DatabaseSpec: input.Database_DatabaseSpec,
 	}
 }
 
@@ -65,7 +56,7 @@ func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *Pos
 		// it, so RemapState leaves it false.
 		ReplaceExisting: false,
 
-		DatabaseDatabaseSpec: remote.DatabaseDatabaseSpec,
+		Database_DatabaseSpec: remote.Database_DatabaseSpec,
 	}
 }
 
@@ -73,49 +64,53 @@ func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *Pos
 // shape. GET does not echo spec today (only status is returned); the embedded
 // spec fields stay at their zero values, and postgres_databases.yml suppresses phantom
 // drift via ignore_remote_changes with reason spec:input_only.
-func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRemote {
-	var spec postgres.DatabaseDatabaseSpec
+func makePostgresDatabaseRemote(resp *sdkpostgres.Database) (*PostgresDatabaseRemote, error) {
+	database, err := postgres.DatabaseFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
+	var spec postgres.Database_DatabaseSpec
 	if database.Spec != nil {
 		spec = *database.Spec
 	}
 	return &PostgresDatabaseRemote{
-		DatabaseDatabaseSpec: spec,
-		DatabaseId:           database.DatabaseId,
-		Parent:               database.Parent,
-		Name:                 database.Name,
-		Status:               database.Status,
-		CreateTime:           database.CreateTime,
-		UpdateTime:           database.UpdateTime,
-	}
+		Database_DatabaseSpec: spec,
+		DatabaseId:            utils.Deref(database.DatabaseId),
+		Parent:                utils.Deref(database.Parent),
+		Name:                  utils.Deref(database.Name),
+		Status:                database.Status,
+		CreateTime:            database.CreateTime,
+		UpdateTime:            database.UpdateTime,
+	}, nil
 }
 
 func (r *ResourcePostgresDatabase) DoRead(ctx context.Context, id string) (*PostgresDatabaseRemote, error) {
-	database, err := r.client.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: id})
+	database, err := r.client.Postgres.GetDatabase(ctx, sdkpostgres.GetDatabaseRequest{Name: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresDatabaseRemote(database), nil
+	return makePostgresDatabaseRemote(database)
 }
 
 func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *PostgresDatabaseState) (string, *PostgresDatabaseRemote, error) {
-	waiter, err := r.client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
-		DatabaseId: config.DatabaseId,
-		Parent:     config.Parent,
-		Database: postgres.Database{
-			Spec: &config.DatabaseDatabaseSpec,
-
-			// Output-only fields.
-			DatabaseId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+	request, err := postgres.CreateDatabaseRequestToSDK(&postgres.CreateDatabaseRequest{
+		DatabaseId:      nonEmpty(config.DatabaseId),
+		Parent:          nonEmpty(config.Parent),
+		ReplaceExisting: trueOrNil(config.ReplaceExisting),
+		Database: &postgres.Database{
+			Spec:       &config.Database_DatabaseSpec,
+			CreateTime: nil, // Not set by DABs
+			DatabaseId: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
 		},
-		ReplaceExisting: config.ReplaceExisting,
-		ForceSendFields: nil,
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.Postgres.CreateDatabase(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -126,7 +121,10 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 		return "", nil, err
 	}
 
-	remote := makePostgresDatabaseRemote(result)
+	remote, err := makePostgresDatabaseRemote(result)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 
@@ -137,24 +135,21 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
 
-	waiter, err := r.client.Postgres.UpdateDatabase(ctx, postgres.UpdateDatabaseRequest{
-		Database: postgres.Database{
-			Spec: &config.DatabaseDatabaseSpec,
-
-			// Output-only fields.
-			DatabaseId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+	request, err := postgres.UpdateDatabaseRequestToSDK(&postgres.UpdateDatabaseRequest{
+		Database: &postgres.Database{
+			Name: new(id), Spec: &config.Database_DatabaseSpec,
+			CreateTime: nil, // Not set by DABs
+			DatabaseId: nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
 		},
-		Name: id,
-		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
-		},
+		UpdateMask: new(strings.Join(fieldPaths, ",")),
 	})
+	if err != nil {
+		return nil, err
+	}
+	waiter, err := r.client.Postgres.UpdateDatabase(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -164,13 +159,11 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresDatabaseRemote(result), nil
+	return makePostgresDatabaseRemote(result)
 }
 
 func (r *ResourcePostgresDatabase) DoDelete(ctx context.Context, id string, _ *PostgresDatabaseState) error {
-	waiter, err := r.client.Postgres.DeleteDatabase(ctx, postgres.DeleteDatabaseRequest{
-		Name: id,
-	})
+	waiter, err := r.client.Postgres.DeleteDatabase(ctx, sdkpostgres.DeleteDatabaseRequest{Name: new(id)})
 	if err != nil {
 		return err
 	}

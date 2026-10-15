@@ -1,14 +1,15 @@
 package psql
 
 import (
-	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
+	database "github.com/databricks/sdk-go/database/v1"
+	postgres "github.com/databricks/sdk-go/postgres/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,15 +89,15 @@ func TestParseResourcePath(t *testing.T) {
 }
 
 func TestListAllDatabases(t *testing.T) {
-	instErr := errors.New("instances list failed")
-	projErr := errors.New("projects list failed")
-	instances := []database.DatabaseInstance{{Name: "my-instance"}}
-	projects := []postgres.Project{{Name: "projects/my-project"}}
+	const instancesBody = `{"database_instances":[{"name":"my-instance"}]}`
+	const projectsBody = `{"projects":[{"name":"projects/my-project"}]}`
+	instances := []database.DatabaseInstance{{Name: new("my-instance")}}
+	projects := []postgres.Project{{Name: new("projects/my-project")}}
 
 	tests := []struct {
 		name          string
-		instErr       error
-		projErr       error
+		instFails     bool
+		projFails     bool
 		wantInstances []database.DatabaseInstance
 		wantProjects  []postgres.Project
 		wantErr       bool
@@ -108,47 +109,52 @@ func TestListAllDatabases(t *testing.T) {
 		},
 		{
 			name:         "instances call fails",
-			instErr:      instErr,
+			instFails:    true,
 			wantProjects: projects,
 		},
 		{
 			name:          "projects call fails",
-			projErr:       projErr,
+			projFails:     true,
 			wantInstances: instances,
 		},
 		{
-			name:    "both calls fail",
-			instErr: instErr,
-			projErr: projErr,
-			wantErr: true,
+			name:      "both calls fail",
+			instFails: true,
+			projFails: true,
+			wantErr:   true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := mocks.NewMockWorkspaceClient(t)
-
-			var instReturn []database.DatabaseInstance
-			if tc.instErr == nil {
-				instReturn = instances
+			handler := func(fails bool, body, message string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					if fails {
+						w.WriteHeader(http.StatusInternalServerError)
+						body = `{"error_code":"INTERNAL_ERROR","message":"` + message + `"}`
+					}
+					_, _ = w.Write([]byte(body))
+				}
 			}
-			m.GetMockDatabaseAPI().EXPECT().
-				ListDatabaseInstancesAll(mock.Anything, database.ListDatabaseInstancesRequest{}).
-				Return(instReturn, tc.instErr)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/api/2.0/database/instances":
+					handler(tc.instFails, instancesBody, "instances list failed")(w, r)
+				case "/api/2.0/postgres/projects":
+					handler(tc.projFails, projectsBody, "projects list failed")(w, r)
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+			w, err := sdkclients.New(t.Context(), &config.Config{Host: srv.URL, Token: "token"})
+			require.NoError(t, err)
 
-			var projReturn []postgres.Project
-			if tc.projErr == nil {
-				projReturn = projects
-			}
-			m.GetMockPostgresAPI().EXPECT().
-				ListProjectsAll(mock.Anything, postgres.ListProjectsRequest{}).
-				Return(projReturn, tc.projErr)
-
-			gotInstances, gotProjects, err := listAllDatabases(t.Context(), m.WorkspaceClient)
+			gotInstances, gotProjects, err := listAllDatabases(t.Context(), w)
 			if tc.wantErr {
 				require.Error(t, err)
-				assert.ErrorIs(t, err, tc.instErr)
-				assert.ErrorIs(t, err, tc.projErr)
+				assert.Contains(t, err.Error(), "instances list failed")
+				assert.Contains(t, err.Error(), "projects list failed")
 				return
 			}
 			require.NoError(t, err)

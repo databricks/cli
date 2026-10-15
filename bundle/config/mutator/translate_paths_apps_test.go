@@ -4,14 +4,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,8 +34,8 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app": {
 						App: apps.App{
-							Name:           "My App",
-							SourceCodePath: "../src/app",
+							Name:           new("My App"),
+							SourceCodePath: new("../src/app"),
 						},
 					},
 				},
@@ -52,6 +54,6 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 	assert.Equal(
 		t,
 		"/bundle/files/src/app",
-		b.Config.Resources.Apps["app"].SourceCodePath,
+		utils.Deref(b.Config.Resources.Apps["app"].SourceCodePath),
 	)
 }

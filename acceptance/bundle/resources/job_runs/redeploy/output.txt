@@ -70,12 +70,12 @@ Resources:
     "result_state": "SUCCESS",
     "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
-    "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "TERMINATED",
       "result_state": "SUCCESS"
-    }
+    },
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[WORKSPACE_ID]",
+    "run_type": "JOB_RUN"
   },
   "changes": {
     "job_parameters['env']": {

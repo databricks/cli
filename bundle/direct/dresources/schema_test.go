@@ -4,38 +4,29 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
+func TestResourceSchema_DoUpdate(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	adapter := (*ResourceSchema)(nil).New(client)
 	ctx := t.Context()
 
-	config := &catalog.CreateSchema{
-		CatalogName:     "main",
-		Name:            "test_schema",
-		Comment:         "original comment",
-		Properties:      map[string]string{"key": "value"},
-		StorageRoot:     "",
-		ForceSendFields: nil,
+	config := &resources.CreateSchema{
+		CatalogName: new("main"),
+		Name:        new("test_schema"),
+		Comment:     new("original comment"),
+		Properties:  map[string]string{"key": "value"},
 	}
 
 	id, _, err := adapter.DoCreate(ctx, config)
 	require.NoError(t, err)
 
-	config.Comment = "updated comment"
+	config.Comment = new("updated comment")
 	config.Properties = map[string]string{"key": "updated_value"}
-	config.ForceSendFields = []string{
-		"Comment",
-		"Properties",
-		"EnablePredictiveOptimization", // Unsupported - should be filtered out
-		"NewName",                      // Unsupported - should be filtered out
-		"Owner",                        // Unsupported - should be filtered out
-	}
 
 	_, err = adapter.DoUpdate(ctx, id, config, &PlanEntry{})
 	require.NoError(t, err)
@@ -43,9 +34,9 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	result, err := adapter.DoRead(ctx, id)
 	require.NoError(t, err)
 
-	result.CreatedAt = 0
-	result.UpdatedAt = 0
-	result.SchemaId = ""
+	result.CreatedAt = new(int64(0))
+	result.UpdatedAt = new(int64(0))
+	result.SchemaId = new("")
 
 	resultJSON, err := json.Marshal(result)
 	require.NoError(t, err)

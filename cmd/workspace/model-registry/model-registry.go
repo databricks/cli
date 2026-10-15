@@ -8,10 +8,14 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	modelregistry "github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -90,18 +94,18 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var approveTransitionRequestOverrides []func(
 	*cobra.Command,
-	*ml.ApproveTransitionRequest,
+	*modelregistry.ApproveTransitionRequest,
 )
 
 func newApproveTransitionRequest() *cobra.Command {
 	cmd := &cobra.Command{}
+	var approveTransitionRequestReq modelregistry.ApproveTransitionRequest
 
-	var approveTransitionRequestReq ml.ApproveTransitionRequest
 	var approveTransitionRequestJson flags.JsonFlag
 
 	cmd.Flags().Var(&approveTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&approveTransitionRequestReq.Comment, "comment", approveTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	flags.StringPtrVar(cmd.Flags(), &approveTransitionRequestReq.Comment, "comment", `User-provided comment on the action.`)
 
 	cmd.Use = "approve-transition-request NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS"
 	cmd.Short = `Approve transition request.`
@@ -144,6 +148,7 @@ func newApproveTransitionRequest() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
@@ -158,28 +163,37 @@ func newApproveTransitionRequest() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			approveTransitionRequestReq.Name = args[0]
+			approveTransitionRequestReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			approveTransitionRequestReq.Version = args[1]
+			approveTransitionRequestReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			approveTransitionRequestReq.Stage = args[2]
+			approveTransitionRequestReq.Stage = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &approveTransitionRequestReq.ArchiveExistingVersions)
+			var approveTransitionRequestArchiveExistingVersionsArg bool
+			_, err = fmt.Sscan(args[3], &approveTransitionRequestArchiveExistingVersionsArg)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
-
+			approveTransitionRequestReq.ArchiveExistingVersions = &approveTransitionRequestArchiveExistingVersionsArg
 		}
 
-		response, err := w.ModelRegistry.ApproveTransitionRequest(ctx, approveTransitionRequestReq)
+		sdkReq, err := modelregistry.ApproveTransitionRequestToSDK(&approveTransitionRequestReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.ApproveTransitionRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.ApproveTransitionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -200,13 +214,13 @@ func newApproveTransitionRequest() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createCommentOverrides []func(
 	*cobra.Command,
-	*ml.CreateComment,
+	*modelregistry.CreateCommentRequest,
 )
 
 func newCreateComment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createCommentReq modelregistry.CreateCommentRequest
 
-	var createCommentReq ml.CreateComment
 	var createCommentJson flags.JsonFlag
 
 	cmd.Flags().Var(&createCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -244,6 +258,7 @@ func newCreateComment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCommentJson.Unmarshal(&createCommentReq)
@@ -258,21 +273,29 @@ func newCreateComment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createCommentReq.Name = args[0]
+			createCommentReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCommentReq.Version = args[1]
+			createCommentReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCommentReq.Comment = args[2]
+			createCommentReq.Comment = new(args[2])
 		}
 
-		response, err := w.ModelRegistry.CreateComment(ctx, createCommentReq)
+		sdkReq, err := modelregistry.CreateCommentRequestToSDK(&createCommentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.CreateComment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.CreateCommentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -293,18 +316,18 @@ func newCreateComment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createModelOverrides []func(
 	*cobra.Command,
-	*ml.CreateModelRequest,
+	*modelregistry.CreateRegisteredModelRequest,
 )
 
 func newCreateModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createModelReq modelregistry.CreateRegisteredModelRequest
 
-	var createModelReq ml.CreateModelRequest
 	var createModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&createModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createModelReq.Description, "description", createModelReq.Description, `Optional description for registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelReq.Description, "description", `Optional description for registered model.`)
 	// TODO: array: tags
 
 	cmd.Use = "create-model NAME"
@@ -338,6 +361,7 @@ func newCreateModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelJson.Unmarshal(&createModelReq)
@@ -352,15 +376,23 @@ func newCreateModel() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createModelReq.Name = args[0]
+			createModelReq.Name = new(args[0])
 		}
 
-		response, err := w.ModelRegistry.CreateModel(ctx, createModelReq)
+		sdkReq, err := modelregistry.CreateRegisteredModelRequestToSDK(&createModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.CreateRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.CreateRegisteredModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -381,20 +413,20 @@ func newCreateModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createModelVersionOverrides []func(
 	*cobra.Command,
-	*ml.CreateModelVersionRequest,
+	*modelregistry.CreateModelVersionRequest,
 )
 
 func newCreateModelVersion() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createModelVersionReq modelregistry.CreateModelVersionRequest
 
-	var createModelVersionReq ml.CreateModelVersionRequest
 	var createModelVersionJson flags.JsonFlag
 
 	cmd.Flags().Var(&createModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createModelVersionReq.Description, "description", createModelVersionReq.Description, `Optional description for model version.`)
-	cmd.Flags().StringVar(&createModelVersionReq.RunId, "run-id", createModelVersionReq.RunId, `MLflow run ID for correlation, if source was generated by an experiment run in MLflow tracking server.`)
-	cmd.Flags().StringVar(&createModelVersionReq.RunLink, "run-link", createModelVersionReq.RunLink, `MLflow run link - this is the exact link of the run that generated this model version, potentially hosted at another instance of MLflow.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelVersionReq.Description, "description", `Optional description for model version.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelVersionReq.RunId, "run-id", `MLflow run ID for correlation, if source was generated by an experiment run in MLflow tracking server.`)
+	flags.StringPtrVar(cmd.Flags(), &createModelVersionReq.RunLink, "run-link", `MLflow run link - this is the exact link of the run that generated this model version, potentially hosted at another instance of MLflow.`)
 	// TODO: array: tags
 
 	cmd.Use = "create-model-version NAME SOURCE"
@@ -427,6 +459,7 @@ func newCreateModelVersion() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelVersionJson.Unmarshal(&createModelVersionReq)
@@ -441,18 +474,26 @@ func newCreateModelVersion() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createModelVersionReq.Name = args[0]
+			createModelVersionReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createModelVersionReq.Source = args[1]
+			createModelVersionReq.Source = new(args[1])
 		}
 
-		response, err := w.ModelRegistry.CreateModelVersion(ctx, createModelVersionReq)
+		sdkReq, err := modelregistry.CreateModelVersionRequestToSDK(&createModelVersionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.CreateModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.CreateModelVersionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -473,18 +514,18 @@ func newCreateModelVersion() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createTransitionRequestOverrides []func(
 	*cobra.Command,
-	*ml.CreateTransitionRequest,
+	*modelregistry.CreateTransitionRequest,
 )
 
 func newCreateTransitionRequest() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createTransitionRequestReq modelregistry.CreateTransitionRequest
 
-	var createTransitionRequestReq ml.CreateTransitionRequest
 	var createTransitionRequestJson flags.JsonFlag
 
 	cmd.Flags().Var(&createTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTransitionRequestReq.Comment, "comment", createTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	flags.StringPtrVar(cmd.Flags(), &createTransitionRequestReq.Comment, "comment", `User-provided comment on the action.`)
 
 	cmd.Use = "create-transition-request NAME VERSION STAGE"
 	cmd.Short = `Make a transition request.`
@@ -525,6 +566,7 @@ func newCreateTransitionRequest() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
@@ -539,21 +581,29 @@ func newCreateTransitionRequest() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createTransitionRequestReq.Name = args[0]
+			createTransitionRequestReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createTransitionRequestReq.Version = args[1]
+			createTransitionRequestReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createTransitionRequestReq.Stage = args[2]
+			createTransitionRequestReq.Stage = new(args[2])
 		}
 
-		response, err := w.ModelRegistry.CreateTransitionRequest(ctx, createTransitionRequestReq)
+		sdkReq, err := modelregistry.CreateTransitionRequestToSDK(&createTransitionRequestReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.CreateTransitionRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.CreateTransitionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -574,22 +624,22 @@ func newCreateTransitionRequest() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createWebhookOverrides []func(
 	*cobra.Command,
-	*ml.CreateRegistryWebhook,
+	*modelregistry.CreateRegistryWebhookRequest,
 )
 
 func newCreateWebhook() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createWebhookReq modelregistry.CreateRegistryWebhookRequest
 
-	var createWebhookReq ml.CreateRegistryWebhook
 	var createWebhookJson flags.JsonFlag
 
 	cmd.Flags().Var(&createWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
+	flags.StringPtrVar(cmd.Flags(), &createWebhookReq.Description, "description", `User-specified description for the webhook.`)
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
+	flags.StringPtrVar(cmd.Flags(), &createWebhookReq.ModelName, "model-name", `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
+	flags.EnumVar(cmd.Flags(), &createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`, "RegistryWebhookStatus", "ACTIVE", "DISABLED", "TEST_MODE")
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -605,6 +655,7 @@ func newCreateWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createWebhookJson.Unmarshal(&createWebhookReq)
@@ -621,12 +672,20 @@ func newCreateWebhook() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ModelRegistry.CreateWebhook(ctx, createWebhookReq)
+		sdkReq, err := modelregistry.CreateRegistryWebhookRequestToSDK(&createWebhookReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.CreateRegistryWebhook(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.CreateRegistryWebhookResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -647,13 +706,12 @@ func newCreateWebhook() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCommentOverrides []func(
 	*cobra.Command,
-	*ml.DeleteCommentRequest,
+	*modelregistry.DeleteCommentRequest,
 )
 
 func newDeleteComment() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteCommentReq ml.DeleteCommentRequest
+	var deleteCommentReq modelregistry.DeleteCommentRequest
 
 	cmd.Use = "delete-comment ID"
 	cmd.Short = `Delete a comment.`
@@ -677,13 +735,20 @@ func newDeleteComment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCommentReq.Id = args[0]
+		deleteCommentReq.Id = new(args[0])
 
-		err = w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
+		sdkReq, err := modelregistry.DeleteCommentRequestToSDK(&deleteCommentReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteComment(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -705,13 +770,12 @@ func newDeleteComment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelOverrides []func(
 	*cobra.Command,
-	*ml.DeleteModelRequest,
+	*modelregistry.DeleteRegisteredModelRequest,
 )
 
 func newDeleteModel() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteModelReq ml.DeleteModelRequest
+	var deleteModelReq modelregistry.DeleteRegisteredModelRequest
 
 	cmd.Use = "delete-model NAME"
 	cmd.Short = `Delete a model.`
@@ -735,13 +799,20 @@ func newDeleteModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelReq.Name = args[0]
+		deleteModelReq.Name = new(args[0])
 
-		err = w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
+		sdkReq, err := modelregistry.DeleteRegisteredModelRequestToSDK(&deleteModelReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteRegisteredModel(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -763,13 +834,12 @@ func newDeleteModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelTagOverrides []func(
 	*cobra.Command,
-	*ml.DeleteModelTagRequest,
+	*modelregistry.DeleteRegisteredModelTagRequest,
 )
 
 func newDeleteModelTag() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteModelTagReq ml.DeleteModelTagRequest
+	var deleteModelTagReq modelregistry.DeleteRegisteredModelTagRequest
 
 	cmd.Use = "delete-model-tag NAME KEY"
 	cmd.Short = `Delete a model tag.`
@@ -795,14 +865,21 @@ func newDeleteModelTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelTagReq.Name = args[0]
-		deleteModelTagReq.Key = args[1]
+		deleteModelTagReq.Name = new(args[0])
+		deleteModelTagReq.Key = new(args[1])
 
-		err = w.ModelRegistry.DeleteModelTag(ctx, deleteModelTagReq)
+		sdkReq, err := modelregistry.DeleteRegisteredModelTagRequestToSDK(&deleteModelTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteRegisteredModelTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -824,13 +901,12 @@ func newDeleteModelTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelVersionOverrides []func(
 	*cobra.Command,
-	*ml.DeleteModelVersionRequest,
+	*modelregistry.DeleteModelVersionRequest,
 )
 
 func newDeleteModelVersion() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteModelVersionReq ml.DeleteModelVersionRequest
+	var deleteModelVersionReq modelregistry.DeleteModelVersionRequest
 
 	cmd.Use = "delete-model-version NAME VERSION"
 	cmd.Short = `Delete a model version.`
@@ -855,14 +931,21 @@ func newDeleteModelVersion() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelVersionReq.Name = args[0]
-		deleteModelVersionReq.Version = args[1]
+		deleteModelVersionReq.Name = new(args[0])
+		deleteModelVersionReq.Version = new(args[1])
 
-		err = w.ModelRegistry.DeleteModelVersion(ctx, deleteModelVersionReq)
+		sdkReq, err := modelregistry.DeleteModelVersionRequestToSDK(&deleteModelVersionReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteModelVersion(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -884,13 +967,12 @@ func newDeleteModelVersion() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteModelVersionTagOverrides []func(
 	*cobra.Command,
-	*ml.DeleteModelVersionTagRequest,
+	*modelregistry.DeleteModelVersionTagRequest,
 )
 
 func newDeleteModelVersionTag() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteModelVersionTagReq ml.DeleteModelVersionTagRequest
+	var deleteModelVersionTagReq modelregistry.DeleteModelVersionTagRequest
 
 	cmd.Use = "delete-model-version-tag NAME VERSION KEY"
 	cmd.Short = `Delete a model version tag.`
@@ -917,15 +999,22 @@ func newDeleteModelVersionTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteModelVersionTagReq.Name = args[0]
-		deleteModelVersionTagReq.Version = args[1]
-		deleteModelVersionTagReq.Key = args[2]
+		deleteModelVersionTagReq.Name = new(args[0])
+		deleteModelVersionTagReq.Version = new(args[1])
+		deleteModelVersionTagReq.Key = new(args[2])
 
-		err = w.ModelRegistry.DeleteModelVersionTag(ctx, deleteModelVersionTagReq)
+		sdkReq, err := modelregistry.DeleteModelVersionTagRequestToSDK(&deleteModelVersionTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteModelVersionTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -947,15 +1036,14 @@ func newDeleteModelVersionTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteTransitionRequestOverrides []func(
 	*cobra.Command,
-	*ml.DeleteTransitionRequestRequest,
+	*modelregistry.DeleteTransitionRequest,
 )
 
 func newDeleteTransitionRequest() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteTransitionRequestReq modelregistry.DeleteTransitionRequest
 
-	var deleteTransitionRequestReq ml.DeleteTransitionRequestRequest
-
-	cmd.Flags().StringVar(&deleteTransitionRequestReq.Comment, "comment", deleteTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteTransitionRequestReq.Comment, "comment", `User-provided comment on the action.`)
 
 	cmd.Use = "delete-transition-request NAME VERSION STAGE CREATOR"
 	cmd.Short = `Delete a transition request.`
@@ -992,18 +1080,27 @@ func newDeleteTransitionRequest() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteTransitionRequestReq.Name = args[0]
-		deleteTransitionRequestReq.Version = args[1]
-		deleteTransitionRequestReq.Stage = args[2]
-		deleteTransitionRequestReq.Creator = args[3]
+		deleteTransitionRequestReq.Name = new(args[0])
+		deleteTransitionRequestReq.Version = new(args[1])
+		deleteTransitionRequestReq.Stage = new(args[2])
+		deleteTransitionRequestReq.Creator = new(args[3])
 
-		response, err := w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
+		sdkReq, err := modelregistry.DeleteTransitionRequestToSDK(&deleteTransitionRequestReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.DeleteTransitionRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.DeleteTransitionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1024,13 +1121,12 @@ func newDeleteTransitionRequest() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteWebhookOverrides []func(
 	*cobra.Command,
-	*ml.DeleteWebhookRequest,
+	*modelregistry.DeleteRegistryWebhookRequest,
 )
 
 func newDeleteWebhook() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteWebhookReq ml.DeleteWebhookRequest
+	var deleteWebhookReq modelregistry.DeleteRegistryWebhookRequest
 
 	cmd.Use = "delete-webhook ID"
 	cmd.Short = `Delete a webhook.`
@@ -1054,13 +1150,20 @@ func newDeleteWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteWebhookReq.Id = args[0]
+		deleteWebhookReq.Id = new(args[0])
 
-		err = w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
+		sdkReq, err := modelregistry.DeleteRegistryWebhookRequestToSDK(&deleteWebhookReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.DeleteRegistryWebhook(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -1082,13 +1185,13 @@ func newDeleteWebhook() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getLatestVersionsOverrides []func(
 	*cobra.Command,
-	*ml.GetLatestVersionsRequest,
+	*modelregistry.ListLatestVersionsRequest,
 )
 
 func newGetLatestVersions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getLatestVersionsReq modelregistry.ListLatestVersionsRequest
 
-	var getLatestVersionsReq ml.GetLatestVersionsRequest
 	var getLatestVersionsJson flags.JsonFlag
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
@@ -1133,6 +1236,7 @@ func newGetLatestVersions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
@@ -1147,10 +1251,17 @@ func newGetLatestVersions() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			getLatestVersionsReq.Name = args[0]
+			getLatestVersionsReq.Name = new(args[0])
 		}
 
-		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
+		sdkReq, err := modelregistry.ListLatestVersionsRequestToSDK(&getLatestVersionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.ListLatestVersions(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if getLatestVersionsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", getLatestVersionsLimit)
 		}
@@ -1158,7 +1269,11 @@ func newGetLatestVersions() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, getLatestVersionsLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := modelregistry.GetLatestVersionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.ModelVersions)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1179,13 +1294,12 @@ func newGetLatestVersions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getModelOverrides []func(
 	*cobra.Command,
-	*ml.GetModelRequest,
+	*modelregistry.GetRegisteredModelDatabricksRequest,
 )
 
 func newGetModel() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getModelReq ml.GetModelRequest
+	var getModelReq modelregistry.GetRegisteredModelDatabricksRequest
 
 	cmd.Use = "get-model NAME"
 	cmd.Short = `Get model.`
@@ -1213,15 +1327,24 @@ func newGetModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getModelReq.Name = args[0]
+		getModelReq.Name = new(args[0])
 
-		response, err := w.ModelRegistry.GetModel(ctx, getModelReq)
+		sdkReq, err := modelregistry.GetRegisteredModelDatabricksRequestToSDK(&getModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.GetRegisteredModelDatabricks(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.GetRegisteredModelDatabricksResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1242,13 +1365,12 @@ func newGetModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getModelVersionOverrides []func(
 	*cobra.Command,
-	*ml.GetModelVersionRequest,
+	*modelregistry.GetModelVersionRequest,
 )
 
 func newGetModelVersion() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getModelVersionReq ml.GetModelVersionRequest
+	var getModelVersionReq modelregistry.GetModelVersionRequest
 
 	cmd.Use = "get-model-version NAME VERSION"
 	cmd.Short = `Get a model version.`
@@ -1271,16 +1393,25 @@ func newGetModelVersion() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getModelVersionReq.Name = args[0]
-		getModelVersionReq.Version = args[1]
+		getModelVersionReq.Name = new(args[0])
+		getModelVersionReq.Version = new(args[1])
 
-		response, err := w.ModelRegistry.GetModelVersion(ctx, getModelVersionReq)
+		sdkReq, err := modelregistry.GetModelVersionRequestToSDK(&getModelVersionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.GetModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.GetModelVersionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1301,13 +1432,12 @@ func newGetModelVersion() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getModelVersionDownloadUriOverrides []func(
 	*cobra.Command,
-	*ml.GetModelVersionDownloadUriRequest,
+	*modelregistry.GetModelVersionDownloadUriRequest,
 )
 
 func newGetModelVersionDownloadUri() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getModelVersionDownloadUriReq ml.GetModelVersionDownloadUriRequest
+	var getModelVersionDownloadUriReq modelregistry.GetModelVersionDownloadUriRequest
 
 	cmd.Use = "get-model-version-download-uri NAME VERSION"
 	cmd.Short = `Get a model version URI.`
@@ -1332,16 +1462,25 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getModelVersionDownloadUriReq.Name = args[0]
-		getModelVersionDownloadUriReq.Version = args[1]
+		getModelVersionDownloadUriReq.Name = new(args[0])
+		getModelVersionDownloadUriReq.Version = new(args[1])
 
-		response, err := w.ModelRegistry.GetModelVersionDownloadUri(ctx, getModelVersionDownloadUriReq)
+		sdkReq, err := modelregistry.GetModelVersionDownloadUriRequestToSDK(&getModelVersionDownloadUriReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.GetModelVersionDownloadUri(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.GetModelVersionDownloadUriResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1362,13 +1501,12 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*ml.GetRegisteredModelPermissionLevelsRequest,
+	*sdkaccessmanagement.ListPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq ml.GetRegisteredModelPermissionLevelsRequest
+	var getPermissionLevelsReq sdkaccessmanagement.ListPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels REGISTERED_MODEL_ID"
 	cmd.Short = `Get registered model permission levels.`
@@ -1392,15 +1530,23 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionLevelsReq.RegisteredModelId = args[0]
+		getPermissionLevelsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ModelRegistry.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		getPermissionLevelsReq.RequestObjectType = new("registered-models")
+
+		sdkReq := &getPermissionLevelsReq
+		response, err := w.AccessManagement.ListPermissionLevels(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListPermissionLevelsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1421,13 +1567,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*ml.GetRegisteredModelPermissionsRequest,
+	*sdkaccessmanagement.GetObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq ml.GetRegisteredModelPermissionsRequest
+	var getPermissionsReq sdkaccessmanagement.GetObjectPermissionsRequest
 
 	cmd.Use = "get-permissions REGISTERED_MODEL_ID"
 	cmd.Short = `Get registered model permissions.`
@@ -1452,15 +1597,23 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getPermissionsReq.RegisteredModelId = args[0]
+		getPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ModelRegistry.GetPermissions(ctx, getPermissionsReq)
+		getPermissionsReq.RequestObjectType = new("registered-models")
+
+		sdkReq := &getPermissionsReq
+		response, err := w.AccessManagement.GetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1481,25 +1634,25 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listModelsOverrides []func(
 	*cobra.Command,
-	*ml.ListModelsRequest,
+	*modelregistry.ListRegisteredModelsRequest,
 )
 
 func newListModels() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listModelsReq modelregistry.ListRegisteredModelsRequest
 
-	var listModelsReq ml.ListModelsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listModelsLimit int
 
-	cmd.Flags().Int64Var(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
+	flags.Int64PtrVar(cmd.Flags(), &listModelsReq.MaxResults, "max-results", `Maximum number of registered models desired.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listModelsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listModelsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-models"
@@ -1522,16 +1675,20 @@ func newListModels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
+		sdkReq, err := modelregistry.ListRegisteredModelsRequestToSDK(&listModelsReq)
+		if err != nil {
+			return err
+		}
 		if listModelsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelsLimit)
 		}
 		if listModelsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listModelsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ModelRegistry.ListRegisteredModelsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, modelregistry.RegisteredModelFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1552,13 +1709,13 @@ func newListModels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listTransitionRequestsOverrides []func(
 	*cobra.Command,
-	*ml.ListTransitionRequestsRequest,
+	*modelregistry.ListTransitionRequest,
 )
 
 func newListTransitionRequests() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listTransitionRequestsReq modelregistry.ListTransitionRequest
 
-	var listTransitionRequestsReq ml.ListTransitionRequestsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -1592,11 +1749,19 @@ func newListTransitionRequests() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listTransitionRequestsReq.Name = args[0]
-		listTransitionRequestsReq.Version = args[1]
+		listTransitionRequestsReq.Name = new(args[0])
+		listTransitionRequestsReq.Version = new(args[1])
 
-		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
+		sdkReq, err := modelregistry.ListTransitionRequestToSDK(&listTransitionRequestsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.ListTransitionRequests(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listTransitionRequestsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTransitionRequestsLimit)
 		}
@@ -1604,7 +1769,11 @@ func newListTransitionRequests() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listTransitionRequestsLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := modelregistry.ListTransitionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.Requests)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1625,27 +1794,27 @@ func newListTransitionRequests() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listWebhooksOverrides []func(
 	*cobra.Command,
-	*ml.ListWebhooksRequest,
+	*modelregistry.ListRegistryWebhooksRequest,
 )
 
 func newListWebhooks() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listWebhooksReq modelregistry.ListRegistryWebhooksRequest
 
-	var listWebhooksReq ml.ListWebhooksRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listWebhooksLimit int
 
 	// TODO: array: events
-	cmd.Flags().Int64Var(&listWebhooksReq.MaxResults, "max-results", listWebhooksReq.MaxResults, ``)
-	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `Registered model name If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
+	flags.Int64PtrVar(cmd.Flags(), &listWebhooksReq.MaxResults, "max-results", ``)
+	flags.StringPtrVar(cmd.Flags(), &listWebhooksReq.ModelName, "model-name", `Registered model name If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listWebhooksLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listWebhooksReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-webhooks"
@@ -1667,16 +1836,20 @@ func newListWebhooks() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
+		sdkReq, err := modelregistry.ListRegistryWebhooksRequestToSDK(&listWebhooksReq)
+		if err != nil {
+			return err
+		}
 		if listWebhooksLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWebhooksLimit)
 		}
 		if listWebhooksLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listWebhooksLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ModelRegistry.ListRegistryWebhooksIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, modelregistry.RegistryWebhookFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1697,18 +1870,18 @@ func newListWebhooks() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var rejectTransitionRequestOverrides []func(
 	*cobra.Command,
-	*ml.RejectTransitionRequest,
+	*modelregistry.RejectTransitionRequest,
 )
 
 func newRejectTransitionRequest() *cobra.Command {
 	cmd := &cobra.Command{}
+	var rejectTransitionRequestReq modelregistry.RejectTransitionRequest
 
-	var rejectTransitionRequestReq ml.RejectTransitionRequest
 	var rejectTransitionRequestJson flags.JsonFlag
 
 	cmd.Flags().Var(&rejectTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&rejectTransitionRequestReq.Comment, "comment", rejectTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	flags.StringPtrVar(cmd.Flags(), &rejectTransitionRequestReq.Comment, "comment", `User-provided comment on the action.`)
 
 	cmd.Use = "reject-transition-request NAME VERSION STAGE"
 	cmd.Short = `Reject a transition request.`
@@ -1749,6 +1922,7 @@ func newRejectTransitionRequest() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
@@ -1763,21 +1937,29 @@ func newRejectTransitionRequest() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			rejectTransitionRequestReq.Name = args[0]
+			rejectTransitionRequestReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			rejectTransitionRequestReq.Version = args[1]
+			rejectTransitionRequestReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			rejectTransitionRequestReq.Stage = args[2]
+			rejectTransitionRequestReq.Stage = new(args[2])
 		}
 
-		response, err := w.ModelRegistry.RejectTransitionRequest(ctx, rejectTransitionRequestReq)
+		sdkReq, err := modelregistry.RejectTransitionRequestToSDK(&rejectTransitionRequestReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.RejectTransitionRequest(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.RejectTransitionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1798,18 +1980,18 @@ func newRejectTransitionRequest() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var renameModelOverrides []func(
 	*cobra.Command,
-	*ml.RenameModelRequest,
+	*modelregistry.RenameRegisteredModelRequest,
 )
 
 func newRenameModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var renameModelReq modelregistry.RenameRegisteredModelRequest
 
-	var renameModelReq ml.RenameModelRequest
 	var renameModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&renameModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&renameModelReq.NewName, "new-name", renameModelReq.NewName, `If provided, updates the name for this registered_model.`)
+	flags.StringPtrVar(cmd.Flags(), &renameModelReq.NewName, "new-name", `If provided, updates the name for this registered_model.`)
 
 	cmd.Use = "rename-model NAME"
 	cmd.Short = `Rename a model.`
@@ -1840,6 +2022,7 @@ func newRenameModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := renameModelJson.Unmarshal(&renameModelReq)
@@ -1854,15 +2037,23 @@ func newRenameModel() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			renameModelReq.Name = args[0]
+			renameModelReq.Name = new(args[0])
 		}
 
-		response, err := w.ModelRegistry.RenameModel(ctx, renameModelReq)
+		sdkReq, err := modelregistry.RenameRegisteredModelRequestToSDK(&renameModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.RenameRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.RenameRegisteredModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1883,27 +2074,27 @@ func newRenameModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchModelVersionsOverrides []func(
 	*cobra.Command,
-	*ml.SearchModelVersionsRequest,
+	*modelregistry.SearchModelVersionsRequest,
 )
 
 func newSearchModelVersions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchModelVersionsReq modelregistry.SearchModelVersionsRequest
 
-	var searchModelVersionsReq ml.SearchModelVersionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var searchModelVersionsLimit int
 
-	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
-	cmd.Flags().Int64Var(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
+	flags.StringPtrVar(cmd.Flags(), &searchModelVersionsReq.Filter, "filter", `String filter condition, like "name='my-model-name'".`)
+	flags.Int64PtrVar(cmd.Flags(), &searchModelVersionsReq.MaxResults, "max-results", `Maximum number of models desired.`)
 	// TODO: array: order_by
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchModelVersionsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchModelVersionsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-model-versions"
@@ -1925,16 +2116,20 @@ func newSearchModelVersions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
+		sdkReq, err := modelregistry.SearchModelVersionsRequestToSDK(&searchModelVersionsReq)
+		if err != nil {
+			return err
+		}
 		if searchModelVersionsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchModelVersionsLimit)
 		}
 		if searchModelVersionsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchModelVersionsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ModelRegistry.SearchModelVersionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, modelregistry.ModelVersionFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -1955,27 +2150,27 @@ func newSearchModelVersions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchModelsOverrides []func(
 	*cobra.Command,
-	*ml.SearchModelsRequest,
+	*modelregistry.SearchRegisteredModelsRequest,
 )
 
 func newSearchModels() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchModelsReq modelregistry.SearchRegisteredModelsRequest
 
-	var searchModelsReq ml.SearchModelsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var searchModelsLimit int
 
-	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
-	cmd.Flags().Int64Var(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
+	flags.StringPtrVar(cmd.Flags(), &searchModelsReq.Filter, "filter", `String filter condition, like "name LIKE 'my-model-name'".`)
+	flags.Int64PtrVar(cmd.Flags(), &searchModelsReq.MaxResults, "max-results", `Maximum number of models desired.`)
 	// TODO: array: order_by
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchModelsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchModelsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-models"
@@ -1997,16 +2192,20 @@ func newSearchModels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
+		sdkReq, err := modelregistry.SearchRegisteredModelsRequestToSDK(&searchModelsReq)
+		if err != nil {
+			return err
+		}
 		if searchModelsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchModelsLimit)
 		}
 		if searchModelsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchModelsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.ModelRegistry.SearchRegisteredModelsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, modelregistry.RegisteredModelFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -2027,13 +2226,13 @@ func newSearchModels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setModelTagOverrides []func(
 	*cobra.Command,
-	*ml.SetModelTagRequest,
+	*modelregistry.SetRegisteredModelTagRequest,
 )
 
 func newSetModelTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setModelTagReq modelregistry.SetRegisteredModelTagRequest
 
-	var setModelTagReq ml.SetModelTagRequest
 	var setModelTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&setModelTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2074,6 +2273,7 @@ func newSetModelTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setModelTagJson.Unmarshal(&setModelTagReq)
@@ -2088,19 +2288,25 @@ func newSetModelTag() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelTagReq.Name = args[0]
+			setModelTagReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelTagReq.Key = args[1]
+			setModelTagReq.Key = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelTagReq.Value = args[2]
+			setModelTagReq.Value = new(args[2])
 		}
 
-		err = w.ModelRegistry.SetModelTag(ctx, setModelTagReq)
+		sdkReq, err := modelregistry.SetRegisteredModelTagRequestToSDK(&setModelTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.SetRegisteredModelTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2122,13 +2328,13 @@ func newSetModelTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setModelVersionTagOverrides []func(
 	*cobra.Command,
-	*ml.SetModelVersionTagRequest,
+	*modelregistry.SetModelVersionTagRequest,
 )
 
 func newSetModelVersionTag() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setModelVersionTagReq modelregistry.SetModelVersionTagRequest
 
-	var setModelVersionTagReq ml.SetModelVersionTagRequest
 	var setModelVersionTagJson flags.JsonFlag
 
 	cmd.Flags().Var(&setModelVersionTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2170,6 +2376,7 @@ func newSetModelVersionTag() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
@@ -2184,22 +2391,28 @@ func newSetModelVersionTag() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelVersionTagReq.Name = args[0]
+			setModelVersionTagReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelVersionTagReq.Version = args[1]
+			setModelVersionTagReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelVersionTagReq.Key = args[2]
+			setModelVersionTagReq.Key = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			setModelVersionTagReq.Value = args[3]
+			setModelVersionTagReq.Value = new(args[3])
 		}
 
-		err = w.ModelRegistry.SetModelVersionTag(ctx, setModelVersionTagReq)
+		sdkReq, err := modelregistry.SetModelVersionTagRequestToSDK(&setModelVersionTagReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.ModelRegistry.SetModelVersionTag(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -2221,13 +2434,13 @@ func newSetModelVersionTag() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*ml.RegisteredModelPermissionsRequest,
+	*accessmanagement.SetObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq accessmanagement.SetObjectPermissionsRequest
 
-	var setPermissionsReq ml.RegisteredModelPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2258,6 +2471,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -2271,14 +2485,24 @@ func newSetPermissions() *cobra.Command {
 				}
 			}
 		}
-		setPermissionsReq.RegisteredModelId = args[0]
+		setPermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ModelRegistry.SetPermissions(ctx, setPermissionsReq)
+		setPermissionsReq.RequestObjectType = new("registered-models")
+
+		sdkReq, err := accessmanagement.SetObjectPermissionsRequestToSDK(&setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.SetObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2299,18 +2523,18 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var testRegistryWebhookOverrides []func(
 	*cobra.Command,
-	*ml.TestRegistryWebhookRequest,
+	*modelregistry.TestRegistryWebhookRequest,
 )
 
 func newTestRegistryWebhook() *cobra.Command {
 	cmd := &cobra.Command{}
+	var testRegistryWebhookReq modelregistry.TestRegistryWebhookRequest
 
-	var testRegistryWebhookReq ml.TestRegistryWebhookRequest
 	var testRegistryWebhookJson flags.JsonFlag
 
 	cmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event. Supported values: [
+	flags.EnumVar(cmd.Flags(), &testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event. Supported values: [
   COMMENT_CREATED,
   MODEL_VERSION_CREATED,
   MODEL_VERSION_TAG_SET,
@@ -2323,7 +2547,7 @@ func newTestRegistryWebhook() *cobra.Command {
   TRANSITION_REQUEST_TO_ARCHIVED_CREATED,
   TRANSITION_REQUEST_TO_PRODUCTION_CREATED,
   TRANSITION_REQUEST_TO_STAGING_CREATED,
-]`)
+]`, "RegistryWebhookEvent", "COMMENT_CREATED", "MODEL_VERSION_CREATED", "MODEL_VERSION_TAG_SET", "MODEL_VERSION_TRANSITIONED_STAGE", "MODEL_VERSION_TRANSITIONED_TO_ARCHIVED", "MODEL_VERSION_TRANSITIONED_TO_PRODUCTION", "MODEL_VERSION_TRANSITIONED_TO_STAGING", "REGISTERED_MODEL_CREATED", "TRANSITION_REQUEST_CREATED", "TRANSITION_REQUEST_TO_ARCHIVED_CREATED", "TRANSITION_REQUEST_TO_PRODUCTION_CREATED", "TRANSITION_REQUEST_TO_STAGING_CREATED")
 
 	cmd.Use = "test-registry-webhook ID"
 	cmd.Short = `Test a webhook.`
@@ -2354,6 +2578,7 @@ func newTestRegistryWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
@@ -2368,15 +2593,23 @@ func newTestRegistryWebhook() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			testRegistryWebhookReq.Id = args[0]
+			testRegistryWebhookReq.Id = new(args[0])
 		}
 
-		response, err := w.ModelRegistry.TestRegistryWebhook(ctx, testRegistryWebhookReq)
+		sdkReq, err := modelregistry.TestRegistryWebhookRequestToSDK(&testRegistryWebhookReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.TestRegistryWebhook(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.TestRegistryWebhookResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2397,18 +2630,18 @@ func newTestRegistryWebhook() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var transitionStageOverrides []func(
 	*cobra.Command,
-	*ml.TransitionModelVersionStageDatabricks,
+	*modelregistry.TransitionModelVersionStageDatabricksRequest,
 )
 
 func newTransitionStage() *cobra.Command {
 	cmd := &cobra.Command{}
+	var transitionStageReq modelregistry.TransitionModelVersionStageDatabricksRequest
 
-	var transitionStageReq ml.TransitionModelVersionStageDatabricks
 	var transitionStageJson flags.JsonFlag
 
 	cmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
+	flags.StringPtrVar(cmd.Flags(), &transitionStageReq.Comment, "comment", `User-provided comment on the action.`)
 
 	cmd.Use = "transition-stage NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS"
 	cmd.Short = `Transition a stage.`
@@ -2455,6 +2688,7 @@ func newTransitionStage() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := transitionStageJson.Unmarshal(&transitionStageReq)
@@ -2469,28 +2703,37 @@ func newTransitionStage() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			transitionStageReq.Name = args[0]
+			transitionStageReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			transitionStageReq.Version = args[1]
+			transitionStageReq.Version = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			transitionStageReq.Stage = args[2]
+			transitionStageReq.Stage = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
+			var transitionStageArchiveExistingVersionsArg bool
+			_, err = fmt.Sscan(args[3], &transitionStageArchiveExistingVersionsArg)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
-
+			transitionStageReq.ArchiveExistingVersions = &transitionStageArchiveExistingVersionsArg
 		}
 
-		response, err := w.ModelRegistry.TransitionStage(ctx, transitionStageReq)
+		sdkReq, err := modelregistry.TransitionModelVersionStageDatabricksRequestToSDK(&transitionStageReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.TransitionModelVersionStageDatabricks(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.TransitionModelVersionStageDatabricksResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2511,13 +2754,13 @@ func newTransitionStage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateCommentOverrides []func(
 	*cobra.Command,
-	*ml.UpdateComment,
+	*modelregistry.UpdateCommentRequest,
 )
 
 func newUpdateComment() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateCommentReq modelregistry.UpdateCommentRequest
 
-	var updateCommentReq ml.UpdateComment
 	var updateCommentJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2552,6 +2795,7 @@ func newUpdateComment() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCommentJson.Unmarshal(&updateCommentReq)
@@ -2566,18 +2810,26 @@ func newUpdateComment() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateCommentReq.Id = args[0]
+			updateCommentReq.Id = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateCommentReq.Comment = args[1]
+			updateCommentReq.Comment = new(args[1])
 		}
 
-		response, err := w.ModelRegistry.UpdateComment(ctx, updateCommentReq)
+		sdkReq, err := modelregistry.UpdateCommentRequestToSDK(&updateCommentReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.UpdateComment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.UpdateCommentResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2598,18 +2850,18 @@ func newUpdateComment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateModelOverrides []func(
 	*cobra.Command,
-	*ml.UpdateModelRequest,
+	*modelregistry.UpdateRegisteredModelRequest,
 )
 
 func newUpdateModel() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateModelReq modelregistry.UpdateRegisteredModelRequest
 
-	var updateModelReq ml.UpdateModelRequest
 	var updateModelJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelReq.Description, "description", updateModelReq.Description, `If provided, updates the description for this registered_model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelReq.Description, "description", `If provided, updates the description for this registered_model.`)
 
 	cmd.Use = "update-model NAME"
 	cmd.Short = `Update model.`
@@ -2640,6 +2892,7 @@ func newUpdateModel() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelJson.Unmarshal(&updateModelReq)
@@ -2654,15 +2907,23 @@ func newUpdateModel() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateModelReq.Name = args[0]
+			updateModelReq.Name = new(args[0])
 		}
 
-		response, err := w.ModelRegistry.UpdateModel(ctx, updateModelReq)
+		sdkReq, err := modelregistry.UpdateRegisteredModelRequestToSDK(&updateModelReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.UpdateRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.UpdateRegisteredModelResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2683,18 +2944,18 @@ func newUpdateModel() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateModelVersionOverrides []func(
 	*cobra.Command,
-	*ml.UpdateModelVersionRequest,
+	*modelregistry.UpdateModelVersionRequest,
 )
 
 func newUpdateModelVersion() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateModelVersionReq modelregistry.UpdateModelVersionRequest
 
-	var updateModelVersionReq ml.UpdateModelVersionRequest
 	var updateModelVersionJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelVersionReq.Description, "description", updateModelVersionReq.Description, `If provided, updates the description for this registered_model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateModelVersionReq.Description, "description", `If provided, updates the description for this registered_model.`)
 
 	cmd.Use = "update-model-version NAME VERSION"
 	cmd.Short = `Update model version.`
@@ -2726,6 +2987,7 @@ func newUpdateModelVersion() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelVersionJson.Unmarshal(&updateModelVersionReq)
@@ -2740,18 +3002,26 @@ func newUpdateModelVersion() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateModelVersionReq.Name = args[0]
+			updateModelVersionReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			updateModelVersionReq.Version = args[1]
+			updateModelVersionReq.Version = new(args[1])
 		}
 
-		response, err := w.ModelRegistry.UpdateModelVersion(ctx, updateModelVersionReq)
+		sdkReq, err := modelregistry.UpdateModelVersionRequestToSDK(&updateModelVersionReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.UpdateModelVersion(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.UpdateModelVersionResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2772,13 +3042,13 @@ func newUpdateModelVersion() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*ml.RegisteredModelPermissionsRequest,
+	*accessmanagement.UpdateObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq accessmanagement.UpdateObjectPermissionsRequest
 
-	var updatePermissionsReq ml.RegisteredModelPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2808,6 +3078,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -2821,14 +3092,24 @@ func newUpdatePermissions() *cobra.Command {
 				}
 			}
 		}
-		updatePermissionsReq.RegisteredModelId = args[0]
+		updatePermissionsReq.RequestObjectId = new(args[0])
 
-		response, err := w.ModelRegistry.UpdatePermissions(ctx, updatePermissionsReq)
+		updatePermissionsReq.RequestObjectType = new("registered-models")
+
+		sdkReq, err := accessmanagement.UpdateObjectPermissionsRequestToSDK(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.AccessManagement.UpdateObjectPermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.PermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2849,22 +3130,22 @@ func newUpdatePermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateWebhookOverrides []func(
 	*cobra.Command,
-	*ml.UpdateRegistryWebhook,
+	*modelregistry.UpdateRegistryWebhookRequest,
 )
 
 func newUpdateWebhook() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateWebhookReq modelregistry.UpdateRegistryWebhookRequest
 
-	var updateWebhookReq ml.UpdateRegistryWebhook
 	var updateWebhookJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateWebhookReq.Description, "description", updateWebhookReq.Description, `User-specified description for the webhook.`)
+	flags.StringPtrVar(cmd.Flags(), &updateWebhookReq.Description, "description", `User-specified description for the webhook.`)
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
+	flags.EnumVar(cmd.Flags(), &updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE]`, "RegistryWebhookStatus", "ACTIVE", "DISABLED", "TEST_MODE")
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`
@@ -2895,6 +3176,7 @@ func newUpdateWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateWebhookJson.Unmarshal(&updateWebhookReq)
@@ -2909,15 +3191,23 @@ func newUpdateWebhook() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateWebhookReq.Id = args[0]
+			updateWebhookReq.Id = new(args[0])
 		}
 
-		response, err := w.ModelRegistry.UpdateWebhook(ctx, updateWebhookReq)
+		sdkReq, err := modelregistry.UpdateRegistryWebhookRequestToSDK(&updateWebhookReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.ModelRegistry.UpdateRegistryWebhook(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := modelregistry.UpdateRegistryWebhookResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

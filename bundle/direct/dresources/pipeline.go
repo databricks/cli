@@ -5,18 +5,19 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
+	pipelines "github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/sdktypes/sdkconv"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
 )
 
 // PipelineState is the state type for Pipeline resources. It extends CreatePipeline with
 // the CascadeOnDestroy field, a delete-time setting that is not part of the pipeline spec
 type PipelineState struct {
-	pipelines.CreatePipeline
+	pipelines.CreatePipelineRequest
 
 	// CascadeOnDestroy controls whether deleting the pipeline also deletes its datasets (MVs,
 	// STs, Views). Nil means the server default (cascade) applies. Read from persisted state at
@@ -24,51 +25,33 @@ type PipelineState struct {
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 }
 
-func (s *PipelineState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PipelineState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
 // PipelineRemote is the return type for DoRead. It embeds CreatePipeline so that all
 // paths in StateType are valid paths in RemoteType.
 // Note that cascade_on_destroy is intentionally absent: it is a delete-time-only setting
 // that the GET response never returns, so the engine suppresses its drift automatically
 type PipelineRemote struct {
-	pipelines.CreatePipeline
+	pipelines.CreatePipelineRequest
 
 	// Remote-specific fields from pipelines.GetPipelineResponse
-	Cause                        string                              `json:"cause,omitempty"`
-	ClusterId                    string                              `json:"cluster_id,omitempty"`
-	CreatorUserName              string                              `json:"creator_user_name,omitempty"`
-	EffectiveBudgetPolicyId      string                              `json:"effective_budget_policy_id,omitempty"`
-	EffectivePublishingMode      pipelines.PublishingMode            `json:"effective_publishing_mode,omitempty"`
-	EffectiveServerlessComputeId string                              `json:"effective_serverless_compute_id,omitempty"`
-	Health                       pipelines.GetPipelineResponseHealth `json:"health,omitempty"`
-	LastModified                 int64                               `json:"last_modified,omitempty"`
-	LatestUpdates                []pipelines.UpdateStateInfo         `json:"latest_updates,omitempty"`
-	PipelineId                   string                              `json:"pipeline_id,omitempty"`
-	RunAsUserName                string                              `json:"run_as_user_name,omitempty"`
-	State                        pipelines.PipelineState             `json:"state,omitempty"`
-}
-
-// Custom marshaler needed because embedded CreatePipeline has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *PipelineRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PipelineRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	Cause                        *string                               `json:"cause,omitempty"`
+	ClusterId                    *string                               `json:"cluster_id,omitempty"`
+	CreatorUserName              *string                               `json:"creator_user_name,omitempty"`
+	EffectiveBudgetPolicyId      *string                               `json:"effective_budget_policy_id,omitempty"`
+	EffectivePublishingMode      pipelines.PublishingMode              `json:"effective_publishing_mode,omitempty"`
+	EffectiveServerlessComputeId *string                               `json:"effective_serverless_compute_id,omitempty"`
+	Health                       pipelines.PipelineHealthStatus        `json:"health,omitempty"`
+	LastModified                 *int64                                `json:"last_modified,omitempty"`
+	LatestUpdates                []pipelines.UpdateStateInfo           `json:"latest_updates,omitempty"`
+	PipelineId                   *string                               `json:"pipeline_id,omitempty"`
+	RunAsUserName                *string                               `json:"run_as_user_name,omitempty"`
+	State                        pipelines.PipelineState_PipelineState `json:"state,omitempty"`
 }
 
 type ResourcePipeline struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeline {
+func (*ResourcePipeline) New(client *sdkclients.Clients) *ResourcePipeline {
 	return &ResourcePipeline{
 		client: client,
 	}
@@ -76,73 +59,44 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 
 func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
 	return &PipelineState{
-		CreatePipeline:   input.CreatePipeline,
-		CascadeOnDestroy: input.CascadeOnDestroy,
+		CreatePipelineRequest: input.CreatePipelineRequest,
+		CascadeOnDestroy:      input.CascadeOnDestroy,
 	}
 }
 
 func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
 	return &PipelineState{
-		CreatePipeline: remote.CreatePipeline,
+		CreatePipelineRequest: remote.CreatePipelineRequest,
 		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
 		CascadeOnDestroy: nil,
 	}
 }
 
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
-	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
+	resp, err := r.client.Pipelines.Get(ctx, sdkpipelines.GetPipelineRequest{PipelineId: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePipelineRemote(resp), nil
+	return makePipelineRemote(resp)
 }
 
-func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
-	var createPipeline pipelines.CreatePipeline
+func makePipelineRemote(resp *sdkpipelines.GetPipelineResponse) (*PipelineRemote, error) {
+	p, err := sdkconv.FromSDK[pipelines.GetPipelineResponse](resp)
+	if err != nil {
+		return nil, err
+	}
+	var createPipeline pipelines.CreatePipelineRequest
 	if p.Spec != nil {
-		spec := p.Spec
-		createPipeline = pipelines.CreatePipeline{
-			// Note: AllowDuplicateNames and DryRun are not in PipelineSpec,
-			// they are request-only fields, so they stay at their zero values.
-			AllowDuplicateNames: false,
-			BudgetPolicyId:      spec.BudgetPolicyId,
-			Catalog:             spec.Catalog,
-			Channel:             spec.Channel,
-			Clusters:            spec.Clusters,
-			Configuration:       spec.Configuration,
-			Continuous:          spec.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-			Deployment:          spec.Deployment,
-			Development:         spec.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-			DryRun:              false,
-			Edition:             spec.Edition,
-			Environment:         spec.Environment,
-			EventLog:            spec.EventLog,
-			Filters:             spec.Filters,
-			GatewayDefinition:   spec.GatewayDefinition,
-			Id:                  spec.Id,
-			IngestionDefinition: spec.IngestionDefinition,
-			Libraries:           spec.Libraries,
-			Name:                spec.Name,
-			Notifications:       spec.Notifications,
-			Parameters:          p.Parameters,
-			ParentPath:          spec.ParentPath,
-			Photon:              spec.Photon,
-			RestartWindow:       spec.RestartWindow,
-			RootPath:            spec.RootPath,
-			RunAs:               p.RunAs,
-			Schema:              spec.Schema,
-			Serverless:          spec.Serverless,
-			ServerlessComputeId: spec.ServerlessComputeId,
-			Storage:             spec.Storage,
-			Tags:                spec.Tags,
-			Target:              spec.Target,
-			Trigger:             spec.Trigger,
-			UsagePolicyId:       spec.UsagePolicyId,
-			ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "Parameters", "RunAs"),
+		// PipelineSpec is CreatePipelineRequest without the request-only fields
+		// (allow_duplicate_names, dry_run) and the ones returned at the top level.
+		if err := sdkconv.Convert(&createPipeline, p.Spec); err != nil {
+			return nil, err
 		}
+		createPipeline.Parameters = p.Parameters
+		createPipeline.RunAs = p.RunAs
 	}
 	return &PipelineRemote{
-		CreatePipeline:               createPipeline,
+		CreatePipelineRequest:        createPipeline,
 		Cause:                        p.Cause,
 		ClusterId:                    p.ClusterId,
 		CreatorUserName:              p.CreatorUserName,
@@ -155,15 +109,19 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		PipelineId:                   p.PipelineId,
 		RunAsUserName:                p.RunAsUserName,
 		State:                        p.State,
-	}
+	}, nil
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) (string, *PipelineRemote, error) {
-	response, err := r.client.Pipelines.Create(ctx, config.CreatePipeline)
+	request, err := sdkconv.ToSDK[sdkpipelines.CreatePipelineRequest](&config.CreatePipelineRequest)
 	if err != nil {
 		return "", nil, err
 	}
-	return response.PipelineId, nil, nil
+	response, err := r.client.Pipelines.Create(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(response.PipelineId), nil, nil
 }
 
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
@@ -173,61 +131,27 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		return nil, nil
 	}
 
-	request := pipelines.EditPipeline{
-		AllowDuplicateNames:  config.AllowDuplicateNames,
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Catalog:              config.Catalog,
-		Channel:              config.Channel,
-		Clusters:             config.Clusters,
-		Configuration:        config.Configuration,
-		Continuous:           config.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-		Deployment:           config.Deployment,
-		Development:          config.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-		Edition:              config.Edition,
-		Environment:          config.Environment,
-		EventLog:             config.EventLog,
-		ExpectedLastModified: 0,
-		Filters:              config.Filters,
-		GatewayDefinition:    config.GatewayDefinition,
-		Id:                   config.Id,
-		IngestionDefinition:  config.IngestionDefinition,
-		Libraries:            config.Libraries,
-		Name:                 config.Name,
-		Notifications:        config.Notifications,
-		Parameters:           config.Parameters,
-		ParentPath:           config.ParentPath,
-		Photon:               config.Photon,
-		RestartWindow:        config.RestartWindow,
-		RootPath:             config.RootPath,
-		RunAs:                config.RunAs,
-		Schema:               config.Schema,
-		Serverless:           config.Serverless,
-		ServerlessComputeId:  config.ServerlessComputeId,
-		Storage:              config.Storage,
-		Tags:                 config.Tags,
-		Target:               config.Target,
-		Trigger:              config.Trigger,
-		UsagePolicyId:        config.UsagePolicyId,
-		PipelineId:           id,
-		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
+	// EditPipelineRequest is CreatePipelineRequest without dry_run plus the pipeline id.
+	create := config.CreatePipelineRequest
+	create.DryRun = nil
+	request, err := sdkconv.ToSDK[sdkpipelines.EditPipelineRequest](&create)
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, r.client.Pipelines.Update(ctx, request)
+	request.PipelineId = new(id)
+	_, err = r.client.Pipelines.Edit(ctx, *request)
+	return nil, err
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *PipelineState) error {
-	if state.CascadeOnDestroy == nil {
-		// No explicit cascade_on_destroy in config: preserve the backend default (cascade).
-		return r.client.Pipelines.DeleteByPipelineId(ctx, id)
-	}
-	return r.client.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
-		PipelineId: id,
-		Cascade:    *state.CascadeOnDestroy,
-		Force:      false,
-		// Cascade is marshaled as `url:"cascade,omitempty"`, so a false value would be dropped from
-		// the query string. We specify `cascade` in ForceSendFields so the SDK send cascade=false explicitly
-		ForceSendFields: []string{"Cascade"},
+	// A nil cascade_on_destroy preserves the backend default (cascade); an explicit
+	// false is sent as cascade=false.
+	_, err := r.client.Pipelines.Delete(ctx, sdkpipelines.DeletePipelineRequest{
+		PipelineId: new(id),
+		Cascade:    state.CascadeOnDestroy,
+		Force:      nil, // Not set by DABs
 	})
+	return err
 }
 
 // OverrideChangeDesc forces a state-only Update when cascade_on_destroy changes locally.

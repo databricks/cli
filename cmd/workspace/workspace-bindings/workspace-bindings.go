@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucworkspacebindings "github.com/databricks/cli/libs/sdktypes/uc/workspacebindings/v1"
+	sdkucworkspacebindings "github.com/databricks/sdk-go/uc/workspacebindings/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -68,13 +71,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetWorkspaceBindingRequest,
+	*sdkucworkspacebindings.GetCatalogWorkspaceBindingsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetWorkspaceBindingRequest
+	var getReq sdkucworkspacebindings.GetCatalogWorkspaceBindingsRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get catalog workspace bindings.`
@@ -99,15 +101,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.CatalogName = new(args[0])
 
-		response, err := w.WorkspaceBindings.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.WorkspaceBindings.GetCatalogWorkspaceBindings(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucworkspacebindings.GetCatalogWorkspaceBindingsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -128,13 +136,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getBindingsOverrides []func(
 	*cobra.Command,
-	*catalog.GetBindingsRequest,
+	*ucworkspacebindings.GetWorkspaceBindingsRequest,
 )
 
 func newGetBindings() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getBindingsReq ucworkspacebindings.GetWorkspaceBindingsRequest
 
-	var getBindingsReq catalog.GetBindingsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -144,9 +152,9 @@ func newGetBindings() *cobra.Command {
 	cmd.Flags().IntVar(&getBindingsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &getBindingsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
+	flags.IntPtrVar(cmd.Flags(), &getBindingsReq.MaxResults, "max-results", `Maximum number of workspace bindings to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "get-bindings SECURABLE_TYPE SECURABLE_NAME"
@@ -182,19 +190,23 @@ func newGetBindings() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getBindingsReq.SecurableType = args[0]
-		getBindingsReq.SecurableName = args[1]
+		getBindingsReq.SecurableType = new(args[0])
+		getBindingsReq.SecurableFullName = new(args[1])
 
-		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
+		sdkReq, err := ucworkspacebindings.GetWorkspaceBindingsRequestToSDK(&getBindingsReq)
+		if err != nil {
+			return err
+		}
 		if getBindingsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", getBindingsLimit)
 		}
 		if getBindingsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, getBindingsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.WorkspaceBindings.GetWorkspaceBindingsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucworkspacebindings.WorkspaceBindingInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -215,13 +227,13 @@ func newGetBindings() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateWorkspaceBindings,
+	*ucworkspacebindings.UpdateCatalogWorkspaceBindingsRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucworkspacebindings.UpdateCatalogWorkspaceBindingsRequest
 
-	var updateReq catalog.UpdateWorkspaceBindings
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -252,6 +264,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -265,14 +278,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		updateReq.CatalogName = new(args[0])
 
-		response, err := w.WorkspaceBindings.Update(ctx, updateReq)
+		sdkReq, err := ucworkspacebindings.UpdateCatalogWorkspaceBindingsRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.WorkspaceBindings.UpdateCatalogWorkspaceBindings(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucworkspacebindings.UpdateCatalogWorkspaceBindingsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -293,13 +314,13 @@ func newUpdate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateBindingsOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateWorkspaceBindingsParameters,
+	*ucworkspacebindings.UpdateWorkspaceBindingsRequest,
 )
 
 func newUpdateBindings() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateBindingsReq ucworkspacebindings.UpdateWorkspaceBindingsRequest
 
-	var updateBindingsReq catalog.UpdateWorkspaceBindingsParameters
 	var updateBindingsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateBindingsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -332,6 +353,7 @@ func newUpdateBindings() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateBindingsJson.Unmarshal(&updateBindingsReq)
@@ -345,15 +367,23 @@ func newUpdateBindings() *cobra.Command {
 				}
 			}
 		}
-		updateBindingsReq.SecurableType = args[0]
-		updateBindingsReq.SecurableName = args[1]
+		updateBindingsReq.SecurableType = new(args[0])
+		updateBindingsReq.SecurableFullName = new(args[1])
 
-		response, err := w.WorkspaceBindings.UpdateBindings(ctx, updateBindingsReq)
+		sdkReq, err := ucworkspacebindings.UpdateWorkspaceBindingsRequestToSDK(&updateBindingsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.WorkspaceBindings.UpdateWorkspaceBindings(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucworkspacebindings.UpdateWorkspaceBindingsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

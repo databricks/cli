@@ -4,12 +4,14 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // McpServiceConfig is the bundle-authored state for an AI Gateway MCP service.
@@ -30,17 +32,7 @@ type McpServiceConfig struct {
 	// User-provided description.
 	Comment string `json:"comment,omitempty"`
 	// Operational configuration: source connection, tool selectors, rate limit.
-	Config *catalog.McpServiceConfig `json:"config,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *McpServiceConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c McpServiceConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
+	Config *aigateway.McpServiceConfig `json:"config,omitempty"`
 }
 
 type McpService struct {
@@ -52,27 +44,20 @@ type McpService struct {
 	// permissions API (the `.grants` sub-resource), not the MCP-service body, so
 	// this field lives on the wrapper and stays out of the diffed state that
 	// PrepareState returns (the embedded McpServiceConfig).
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 // UnmarshalJSON / MarshalJSON are defined on the wrapper so it does not inherit
 // McpServiceConfig's promoted marshaler, which would silently drop the
 // BaseResource fields (id, url, lifecycle, modified_status).
-func (m *McpService) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, m)
-}
 
-func (m McpService) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(m)
-}
-
-func (m *McpService) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (m *McpService) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	// The engine tracks the id as the bare {catalog}.{schema}.{mcp_service};
 	// the API addresses the resource by its full name.
-	_, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: "mcp-services/" + id})
+	_, err := w.AiGateway.GetMcpService(ctx, sdkaigateway.GetMcpServiceRequest{Name: new("mcp-services/" + id)})
 	if err != nil {
 		log.Debugf(ctx, "mcp service %s does not exist", id)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err

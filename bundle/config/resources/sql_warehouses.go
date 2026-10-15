@@ -4,17 +4,19 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
+	"github.com/databricks/cli/libs/utils"
+	sdkwarehouses "github.com/databricks/sdk-go/warehouses/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type SqlWarehouse struct {
 	BaseResource
 	ID string `json:"id,omitempty" bundle:"readonly"`
-	sql.CreateWarehouseRequest
+	warehouses.CreateWarehouseRequest
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
 	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
@@ -30,16 +32,8 @@ func (sw *SqlWarehouse) GetLifecycle() LifecycleConfig {
 	return *sw.Lifecycle
 }
 
-func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, sw)
-}
-
-func (sw SqlWarehouse) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(sw)
-}
-
-func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Warehouses.GetById(ctx, id)
+func (sw *SqlWarehouse) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Warehouses.GetWarehouse(ctx, sdkwarehouses.GetWarehouseRequest{Id: new(id)})
 	if err != nil {
 		log.Debugf(ctx, "sql warehouse %s does not exist", id)
 		return false, err
@@ -64,5 +58,5 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 }
 
 func (sw *SqlWarehouse) GetName() string {
-	return sw.Name
+	return utils.Deref(sw.Name)
 }

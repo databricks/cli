@@ -5,25 +5,24 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspacePathPermissionsCompare(t *testing.T) {
 	testCases := []struct {
 		perms    []resources.Permission
-		acl      []workspace.WorkspaceObjectAccessControlResponse
+		acl      []workspaceapi.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -34,16 +33,16 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
 				{
 					GroupName: "admins",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -55,10 +54,10 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 				{Level: CAN_VIEW, UserName: "foo@bar.test"},
 				{Level: CAN_MANAGE, ServicePrincipalName: "sp.com"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_READ"},
 					},
 				},
@@ -69,16 +68,16 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
 				{
 					GroupName: "foo",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -98,10 +97,10 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo2@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -130,7 +129,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 	testCases := []struct {
 		name     string
 		perms    []resources.Permission
-		acl      []workspace.WorkspaceObjectAccessControlResponse
+		acl      []workspaceapi.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
@@ -138,10 +137,10 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_READ"},
 					},
 				},
@@ -153,10 +152,10 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_VIEW, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -177,10 +176,10 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
-			acl: []workspace.WorkspaceObjectAccessControlResponse{
+			acl: []workspaceapi.WorkspaceObjectAccessControlResponse{
 				{
 					UserName: "foo@bar.test",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
+					AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
 				},
@@ -200,10 +199,10 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 
 func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 	// User has both inherited CAN_VIEW and explicit CAN_MANAGE
-	acl := []workspace.WorkspaceObjectAccessControlResponse{
+	acl := []workspaceapi.WorkspaceObjectAccessControlResponse{
 		{
 			UserName: "foo@bar.test",
-			AllPermissions: []workspace.WorkspaceObjectPermission{
+			AllPermissions: []workspaceapi.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_READ"},   // inherited
 				{PermissionLevel: "CAN_MANAGE"}, // explicit
 			},
@@ -214,7 +213,7 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 
 	// Should only have one permission entry with the highest level
 	require.Len(t, wp.Permissions, 1)
-	require.Equal(t, iam.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
+	require.Equal(t, resources.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
 	require.Equal(t, "foo@bar.test", wp.Permissions[0].UserName)
 }
 

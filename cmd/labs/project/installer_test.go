@@ -23,9 +23,6 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -188,9 +185,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
-			respondWithJSON(t, w, &compute.ClusterDetails{
-				State: compute.StateRunning,
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"state":"RUNNING"}`))
 			return
 		}
 		t.Errorf("unexpected request: %s", r.URL.Path)
@@ -257,9 +252,7 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
-			respondWithJSON(t, w, &compute.ClusterDetails{
-				State: compute.StateRunning,
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"state":"RUNNING"}`))
 			return
 		}
 		t.Errorf("unexpected request: %s", r.URL.Path)
@@ -304,62 +297,26 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/list" {
-			respondWithJSON(t, w, compute.ListClustersResponse{
-				Clusters: []compute.ClusterDetails{
-					{
-						ClusterId:        "abc-id",
-						ClusterName:      "first shared",
-						ClusterSource:    compute.ClusterSourceApi,
-						DataSecurityMode: compute.DataSecurityModeUserIsolation,
-						SparkVersion:     "12.2.x-whatever",
-						State:            compute.StateRunning,
-					},
-					{
-						ClusterId:        "bcd-id",
-						ClusterName:      "second personal",
-						ClusterSource:    compute.ClusterSourceApi,
-						DataSecurityMode: compute.DataSecurityModeSingleUser,
-						SparkVersion:     "14.5.x-whatever",
-						State:            compute.StateRunning,
-						SingleUserName:   "serge",
-					},
-				},
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"clusters":[
+				{"cluster_id":"abc-id","cluster_name":"first shared","cluster_source":"API","data_security_mode":"USER_ISOLATION","spark_version":"12.2.x-whatever","state":"RUNNING"},
+				{"cluster_id":"bcd-id","cluster_name":"second personal","cluster_source":"API","data_security_mode":"SINGLE_USER","spark_version":"14.5.x-whatever","state":"RUNNING","single_user_name":"serge"}
+			]}`))
 			return
 		}
 		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
-			respondWithJSON(t, w, iam.User{
-				UserName: "serge",
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"userName":"serge"}`))
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/spark-versions" {
-			respondWithJSON(t, w, compute.GetSparkVersionsResponse{
-				Versions: []compute.SparkVersion{
-					{
-						Key:  "14.5.x-whatever",
-						Name: "14.5 (Awesome)",
-					},
-				},
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"versions":[{"key":"14.5.x-whatever","name":"14.5 (Awesome)"}]}`))
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
-			respondWithJSON(t, w, &compute.ClusterDetails{
-				State: compute.StateRunning,
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"state":"RUNNING"}`))
 			return
 		}
 		if r.URL.Path == "/api/2.0/sql/warehouses" {
-			respondWithJSON(t, w, sql.ListWarehousesResponse{
-				Warehouses: []sql.EndpointInfo{
-					{
-						Id:            "efg-id",
-						Name:          "First PRO Warehouse",
-						WarehouseType: sql.EndpointInfoWarehouseTypePro,
-					},
-				},
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"warehouses":[{"id":"efg-id","name":"First PRO Warehouse","warehouse_type":"PRO"}]}`))
 			return
 		}
 		t.Errorf("unexpected request: %s", r.URL.Path)
@@ -448,9 +405,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
-			respondWithJSON(t, w, &compute.ClusterDetails{
-				State: compute.StateRunning,
-			})
+			respondWithJSON(t, w, json.RawMessage(`{"state":"RUNNING"}`))
 			return
 		}
 		t.Errorf("unexpected request: %s", r.URL.Path)

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func countFields(typ reflect.Type) (int, error) {

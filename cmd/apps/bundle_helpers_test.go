@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,10 +46,10 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	t.Run("handles unavailable app state", func(t *testing.T) {
 		appInfo := &apps.App{
 			AppStatus: &apps.ApplicationStatus{
-				State: apps.ApplicationStateUnavailable,
+				State: apps.ApplicationStatus_ApplicationState_Unavailable,
 			},
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
+				State: apps.ComputeStatus_ComputeState_Active,
 			},
 		}
 		msg := formatAppStatusMessage(appInfo, "test-app", "started")
@@ -60,7 +60,7 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	t.Run("formats active state with 'is deployed' verb", func(t *testing.T) {
 		appInfo := &apps.App{
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
+				State: apps.ComputeStatus_ComputeState_Active,
 			},
 		}
 		msg := formatAppStatusMessage(appInfo, "test-app", "is deployed")
@@ -71,7 +71,7 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	t.Run("formats active state with 'started' verb", func(t *testing.T) {
 		appInfo := &apps.App{
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
+				State: apps.ComputeStatus_ComputeState_Active,
 			},
 		}
 		msg := formatAppStatusMessage(appInfo, "test-app", "started")
@@ -82,7 +82,7 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	t.Run("formats starting state", func(t *testing.T) {
 		appInfo := &apps.App{
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateStarting,
+				State: apps.ComputeStatus_ComputeState_Starting,
 			},
 		}
 		msg := formatAppStatusMessage(appInfo, "test-app", "started")
@@ -93,7 +93,7 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	t.Run("formats other compute states", func(t *testing.T) {
 		appInfo := &apps.App{
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateStopped,
+				State: apps.ComputeStatus_ComputeState_Stopped,
 			},
 		}
 		msg := formatAppStatusMessage(appInfo, "test-app", "stopped")

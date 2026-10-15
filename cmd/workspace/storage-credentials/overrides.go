@@ -2,11 +2,11 @@ package storage_credentials
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *catalog.ListStorageCredentialsRequest) {
+func listOverride(listCmd *cobra.Command, listReq *uccredentials.ListStorageCredentialsRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "Credentials"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

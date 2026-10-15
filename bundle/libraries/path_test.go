@@ -3,7 +3,8 @@ package libraries
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,15 +22,15 @@ func TestIsWorkspacePath(t *testing.T) {
 
 func TestIsWorkspaceLibrary(t *testing.T) {
 	// Workspace paths.
-	assert.True(t, IsWorkspaceLibrary(&compute.Library{Whl: "/Workspace/path/to/file.whl"}))
+	assert.True(t, IsWorkspaceLibrary(&jobs.Library{Whl: new("/Workspace/path/to/file.whl")}))
 
 	// Non-workspace paths.
-	assert.False(t, IsWorkspaceLibrary(&compute.Library{Whl: "./file.whl"}))
-	assert.False(t, IsWorkspaceLibrary(&compute.Library{Jar: "../target/some.jar"}))
-	assert.False(t, IsWorkspaceLibrary(&compute.Library{Jar: "s3:/bucket/path/some.jar"}))
+	assert.False(t, IsWorkspaceLibrary(&jobs.Library{Whl: new("./file.whl")}))
+	assert.False(t, IsWorkspaceLibrary(&jobs.Library{Jar: new("../target/some.jar")}))
+	assert.False(t, IsWorkspaceLibrary(&jobs.Library{Jar: new("s3:/bucket/path/some.jar")}))
 
 	// Empty.
-	assert.False(t, IsWorkspaceLibrary(&compute.Library{}))
+	assert.False(t, IsWorkspaceLibrary(&jobs.Library{}))
 }
 
 func TestIsVolumesPath(t *testing.T) {

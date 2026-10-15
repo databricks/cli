@@ -6,16 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+
+	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/sandbox"
+	sdkcoretypes "github.com/databricks/sdk-go/core/types"
 	"github.com/spf13/cobra"
+
+	sandbox "github.com/databricks/cli/libs/sdktypes/sandbox/v1"
+	sdksandbox "github.com/databricks/sdk-go/sandbox/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -68,15 +71,15 @@ var createSandboxOverrides []func(
 
 func newCreateSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSandboxReq sandbox.CreateSandboxRequest
-	createSandboxReq.Sandbox = sandbox.Sandbox{}
+	createSandboxReq.Sandbox = &sandbox.Sandbox{}
+
 	var createSandboxJson flags.JsonFlag
 
 	cmd.Flags().Var(&createSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSandboxReq.Sandbox.DisplayName, "display-name", createSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
-	cmd.Flags().StringVar(&createSandboxReq.Sandbox.Name, "name", createSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &createSandboxReq.Sandbox.DisplayName, "display-name", `Human-readable display label for the sandbox.`)
+	flags.StringPtrVar(cmd.Flags(), &createSandboxReq.Sandbox.Name, "name", `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -105,6 +108,7 @@ Create a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSandboxJson.Unmarshal(&createSandboxReq.Sandbox)
@@ -118,14 +122,22 @@ Create a sandbox.
 				}
 			}
 		}
-		createSandboxReq.SandboxId = args[0]
+		createSandboxReq.SandboxId = new(args[0])
 
-		response, err := w.Sandbox.CreateSandbox(ctx, createSandboxReq)
+		sdkReq, err := sandbox.CreateSandboxRequestToSDK(&createSandboxReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.CreateSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.SandboxFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -146,13 +158,12 @@ Create a sandbox.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSandboxOverrides []func(
 	*cobra.Command,
-	*sandbox.DeleteSandboxRequest,
+	*sdksandbox.DeleteSandboxRequest,
 )
 
 func newDeleteSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSandboxReq sandbox.DeleteSandboxRequest
+	var deleteSandboxReq sdksandbox.DeleteSandboxRequest
 
 	cmd.Use = "delete-sandbox NAME"
 	cmd.Short = `*Beta* Delete a sandbox.`
@@ -175,10 +186,12 @@ Delete a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSandboxReq.Name = args[0]
+		deleteSandboxReq.Name = new(args[0])
 
-		err = w.Sandbox.DeleteSandbox(ctx, deleteSandboxReq)
+		sdkReq := &deleteSandboxReq
+		err = w.Sandbox.DeleteSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -208,8 +221,8 @@ var executeCommandSyncOverrides []func(
 
 func newExecuteCommandSync() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var executeCommandSyncReq sandbox.ExecuteCommandSyncRequest
+
 	var executeCommandSyncJson flags.JsonFlag
 
 	cmd.Flags().Var(&executeCommandSyncJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -253,6 +266,7 @@ Run a command in a sandbox and wait for its result.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := executeCommandSyncJson.Unmarshal(&executeCommandSyncReq)
@@ -266,27 +280,34 @@ Run a command in a sandbox and wait for its result.
 				}
 			}
 		}
-		executeCommandSyncReq.Name = args[0]
+		executeCommandSyncReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			executeCommandSyncReq.Cmd = args[1]
+			executeCommandSyncReq.Cmd = new(args[1])
 		}
 
 		if executionTimeoutParam != "" {
-			executionTimeoutBytes := []byte(fmt.Sprintf("\"%s\"", executionTimeoutParam))
-			var executionTimeoutField duration.Duration
-			err = json.Unmarshal(executionTimeoutBytes, &executionTimeoutField)
+			var executionTimeoutField sdkcoretypes.Duration
+			err = json.Unmarshal([]byte(strconv.Quote(executionTimeoutParam)), &executionTimeoutField)
 			if err != nil {
 				return fmt.Errorf("invalid EXECUTION_TIMEOUT: %s", executionTimeoutParam)
 			}
 			executeCommandSyncReq.ExecutionTimeout = &executionTimeoutField
 		}
 
-		response, err := w.Sandbox.ExecuteCommandSync(ctx, executeCommandSyncReq)
+		sdkReq, err := sandbox.ExecuteCommandSyncRequestToSDK(&executeCommandSyncReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.ExecuteCommandSync(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.ExecuteCommandSyncResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -307,13 +328,12 @@ Run a command in a sandbox and wait for its result.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSandboxOverrides []func(
 	*cobra.Command,
-	*sandbox.GetSandboxRequest,
+	*sdksandbox.GetSandboxRequest,
 )
 
 func newGetSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSandboxReq sandbox.GetSandboxRequest
+	var getSandboxReq sdksandbox.GetSandboxRequest
 
 	cmd.Use = "get-sandbox NAME"
 	cmd.Short = `*Beta* Get a sandbox.`
@@ -336,15 +356,21 @@ Get a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSandboxReq.Name = args[0]
+		getSandboxReq.Name = new(args[0])
 
-		response, err := w.Sandbox.GetSandbox(ctx, getSandboxReq)
+		sdkReq := &getSandboxReq
+		response, err := w.Sandbox.GetSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.SandboxFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -370,11 +396,10 @@ var listCommandsOverrides []func(
 
 func newListCommands() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listCommandsReq sandbox.ListCommandsRequest
 
-	cmd.Flags().IntVar(&listCommandsReq.PageSize, "page-size", listCommandsReq.PageSize, `Maximum number of commands to return.`)
-	cmd.Flags().StringVar(&listCommandsReq.PageToken, "page-token", listCommandsReq.PageToken, `Page token returned by a previous ListCommands call.`)
+	flags.IntPtrVar(cmd.Flags(), &listCommandsReq.PageSize, "page-size", `Maximum number of commands to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listCommandsReq.PageToken, "page-token", `Page token returned by a previous ListCommands call.`)
 
 	cmd.Use = "list-commands PARENT"
 	cmd.Short = `*Beta* List the tracked command executions in a sandbox.`
@@ -400,15 +425,24 @@ List the tracked command executions in a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listCommandsReq.Parent = args[0]
+		listCommandsReq.Parent = new(args[0])
 
-		response, err := w.Sandbox.ListCommands(ctx, listCommandsReq)
+		sdkReq, err := sandbox.ListCommandsRequestToSDK(&listCommandsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.ListCommands(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.ListCommandsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -434,20 +468,20 @@ var listSandboxesOverrides []func(
 
 func newListSandboxes() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSandboxesReq sandbox.ListSandboxesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSandboxesLimit int
 
-	cmd.Flags().IntVar(&listSandboxesReq.PageSize, "page-size", listSandboxesReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listSandboxesReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSandboxesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSandboxesReq.PageToken, "page-token", listSandboxesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSandboxesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-sandboxes"
@@ -471,16 +505,20 @@ List sandboxes.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Sandbox.ListSandboxes(ctx, listSandboxesReq)
+		sdkReq, err := sandbox.ListSandboxesRequestToSDK(&listSandboxesReq)
+		if err != nil {
+			return err
+		}
 		if listSandboxesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSandboxesLimit)
 		}
 		if listSandboxesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSandboxesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Sandbox.ListSandboxesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sandbox.SandboxFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -506,7 +544,6 @@ var startSandboxOverrides []func(
 
 func newStartSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var startSandboxReq sandbox.StartSandboxRequest
 
 	cmd.Use = "start-sandbox NAME"
@@ -535,15 +572,24 @@ Start a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		startSandboxReq.Name = args[0]
+		startSandboxReq.Name = new(args[0])
 
-		response, err := w.Sandbox.StartSandbox(ctx, startSandboxReq)
+		sdkReq, err := sandbox.StartSandboxRequestToSDK(&startSandboxReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.StartSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.SandboxFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -569,7 +615,6 @@ var stopSandboxOverrides []func(
 
 func newStopSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var stopSandboxReq sandbox.StopSandboxRequest
 
 	cmd.Use = "stop-sandbox NAME"
@@ -598,15 +643,24 @@ Stop a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		stopSandboxReq.Name = args[0]
+		stopSandboxReq.Name = new(args[0])
 
-		response, err := w.Sandbox.StopSandbox(ctx, stopSandboxReq)
+		sdkReq, err := sandbox.StopSandboxRequestToSDK(&stopSandboxReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.StopSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.SandboxFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -632,15 +686,15 @@ var updateSandboxOverrides []func(
 
 func newUpdateSandbox() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSandboxReq sandbox.UpdateSandboxRequest
-	updateSandboxReq.Sandbox = sandbox.Sandbox{}
+	updateSandboxReq.Sandbox = &sandbox.Sandbox{}
+
 	var updateSandboxJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateSandboxJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.DisplayName, "display-name", updateSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
-	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.Name, "name", updateSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSandboxReq.Sandbox.DisplayName, "display-name", `Human-readable display label for the sandbox.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSandboxReq.Name, "name", `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -675,6 +729,7 @@ Update a sandbox.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSandboxJson.Unmarshal(&updateSandboxReq.Sandbox)
@@ -688,18 +743,25 @@ Update a sandbox.
 				}
 			}
 		}
-		updateSandboxReq.Name = args[0]
+		updateSandboxReq.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSandboxReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSandboxReq.UpdateMask = new(args[1])
 		}
 
-		response, err := w.Sandbox.UpdateSandbox(ctx, updateSandboxReq)
+		sdkReq, err := sandbox.UpdateSandboxRequestToSDK(&updateSandboxReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sandbox.UpdateSandbox(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sandbox.SandboxFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

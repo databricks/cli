@@ -4,12 +4,14 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/sdktypes/uc/grants/v1"
+	sdkaigateway "github.com/databricks/sdk-go/aigateway/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 // ModelProviderServiceConfig is the bundle-authored state for an AI Gateway
@@ -37,17 +39,7 @@ type ModelProviderServiceConfig struct {
 	Comment string `json:"comment,omitempty"`
 	// Behavioral configuration: provider connection, model catalog, passthrough
 	// policy. config.provider_type is required at create and immutable after.
-	Config *catalog.ModelProviderServiceConfig `json:"config,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-func (c *ModelProviderServiceConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c ModelProviderServiceConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
+	Config *aigateway.ModelProviderServiceConfig `json:"config,omitempty"`
 }
 
 type ModelProviderService struct {
@@ -59,28 +51,21 @@ type ModelProviderService struct {
 	// via the permissions API (the `.grants` sub-resource), not the service body,
 	// so this field lives on the wrapper and stays out of the diffed state that
 	// PrepareState returns (the embedded ModelProviderServiceConfig).
-	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	Grants []grants.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 // UnmarshalJSON / MarshalJSON are defined on the wrapper so it does not inherit
 // ModelProviderServiceConfig's promoted marshaler, which would silently drop the
 // BaseResource fields (id, url, lifecycle, modified_status).
-func (m *ModelProviderService) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, m)
-}
 
-func (m ModelProviderService) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(m)
-}
-
-func (m *ModelProviderService) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (m *ModelProviderService) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
 	// The engine tracks the id as the bare
 	// {catalog}.{schema}.{model_provider_service}; the API addresses the
 	// resource by its full name.
-	_, err := w.AiGateway.GetModelProviderService(ctx, catalog.GetModelProviderServiceRequest{Name: "model-provider-services/" + id})
+	_, err := w.AiGateway.GetModelProviderService(ctx, sdkaigateway.GetModelProviderServiceRequest{Name: new("model-provider-services/" + id)})
 	if err != nil {
 		log.Debugf(ctx, "model provider service %s does not exist", id)
-		if apierr.IsMissing(err) {
+		if apierrs.IsMissing(err) {
 			return false, nil
 		}
 		return false, err

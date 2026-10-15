@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	secrets "github.com/databricks/cli/libs/sdktypes/secrets/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
@@ -14,7 +15,7 @@ func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 	principal := req.URL.Query().Get("principal")
 
 	for _, acl := range s.Acls[scope] {
-		if acl.Principal == principal {
+		if utils.Deref(acl.Principal) == principal {
 			return Response{Body: acl}
 		}
 	}
@@ -24,7 +25,7 @@ func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.PutAcl
+	var request secrets.PutAclRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -33,10 +34,10 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// If the ACL already exists, update it in place
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.Acls[utils.Deref(request.Scope)]
 	for i, acl := range scopeAcls {
-		if acl.Principal == request.Principal {
-			s.Acls[request.Scope][i] = workspace.AclItem{
+		if utils.Deref(acl.Principal) == utils.Deref(request.Principal) {
+			s.Acls[utils.Deref(request.Scope)][i] = secrets.AclItem{
 				Principal:  request.Principal,
 				Permission: request.Permission,
 			}
@@ -45,7 +46,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// Otherwise, add a new ACL
-	s.Acls[request.Scope] = append(s.Acls[request.Scope], workspace.AclItem{
+	s.Acls[utils.Deref(request.Scope)] = append(s.Acls[utils.Deref(request.Scope)], secrets.AclItem{
 		Principal:  request.Principal,
 		Permission: request.Permission,
 	})
@@ -55,7 +56,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 	defer s.LockUnlock()()
 
-	var request workspace.DeleteAcl
+	var request secrets.DeleteAclRequest
 	if err := json.Unmarshal(req.Body, &request); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -63,10 +64,10 @@ func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 		}
 	}
 
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.Acls[utils.Deref(request.Scope)]
 	for i, acl := range scopeAcls {
-		if acl.Principal == request.Principal {
-			s.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
+		if utils.Deref(acl.Principal) == utils.Deref(request.Principal) {
+			s.Acls[utils.Deref(request.Scope)] = append(scopeAcls[:i], scopeAcls[i+1:]...)
 			return Response{}
 		}
 	}

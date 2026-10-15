@@ -6,19 +6,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
+
+	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/experimental/api"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	sdkcoretypes "github.com/databricks/sdk-go/core/types"
+	"github.com/databricks/sdk-go/options/lro"
 	"github.com/spf13/cobra"
+
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -121,9 +123,9 @@ var createBranchOverrides []func(
 
 func newCreateBranch() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createBranchReq postgres.CreateBranchRequest
-	createBranchReq.Branch = postgres.Branch{}
+	createBranchReq.Branch = &postgres.Branch{}
+
 	var createBranchJson flags.JsonFlag
 
 	var createBranchSkipWait bool
@@ -134,8 +136,8 @@ func newCreateBranch() *cobra.Command {
 
 	cmd.Flags().Var(&createBranchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createBranchReq.ReplaceExisting, "replace-existing", createBranchReq.ReplaceExisting, `If true, update the branch if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createBranchReq.Branch.Name, "name", createBranchReq.Branch.Name, `Output only.`)
+	flags.BoolPtrVar(cmd.Flags(), &createBranchReq.ReplaceExisting, "replace-existing", `If true, update the branch if it already exists instead of returning an error.`)
+	flags.StringPtrVar(cmd.Flags(), &createBranchReq.Branch.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -172,6 +174,7 @@ func newCreateBranch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createBranchJson.Unmarshal(&createBranchReq.Branch)
@@ -185,28 +188,26 @@ func newCreateBranch() *cobra.Command {
 				}
 			}
 		}
-		createBranchReq.Parent = args[0]
-		createBranchReq.BranchId = args[1]
+		createBranchReq.Parent = new(args[0])
+		createBranchReq.BranchId = new(args[1])
 
+		sdkReq, err := postgres.CreateBranchRequestToSDK(&createBranchReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createBranchSkipWait:
-			wait, err := w.Postgres.CreateBranch(ctx, createBranchReq)
+			wait, err := w.Postgres.CreateBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateBranch(ctx, createBranchReq)
+			wait, err := w.Postgres.CreateBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -216,13 +217,17 @@ func newCreateBranch() *cobra.Command {
 			sp.Update("Waiting for create-branch to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createBranchTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createBranchTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.BranchFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -249,9 +254,9 @@ var createCatalogOverrides []func(
 
 func newCreateCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createCatalogReq postgres.CreateCatalogRequest
-	createCatalogReq.Catalog = postgres.Catalog{}
+	createCatalogReq.Catalog = &postgres.Catalog{}
+
 	var createCatalogJson flags.JsonFlag
 
 	var createCatalogSkipWait bool
@@ -262,7 +267,7 @@ func newCreateCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&createCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCatalogReq.Catalog.Name, "name", createCatalogReq.Catalog.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &createCatalogReq.Catalog.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -294,6 +299,7 @@ func newCreateCatalog() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCatalogJson.Unmarshal(&createCatalogReq.Catalog)
@@ -307,27 +313,25 @@ func newCreateCatalog() *cobra.Command {
 				}
 			}
 		}
-		createCatalogReq.CatalogId = args[0]
+		createCatalogReq.CatalogId = new(args[0])
 
+		sdkReq, err := postgres.CreateCatalogRequestToSDK(&createCatalogReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createCatalogSkipWait:
-			wait, err := w.Postgres.CreateCatalog(ctx, createCatalogReq)
+			wait, err := w.Postgres.CreateCatalog(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateCatalog(ctx, createCatalogReq)
+			wait, err := w.Postgres.CreateCatalog(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -337,13 +341,17 @@ func newCreateCatalog() *cobra.Command {
 			sp.Update("Waiting for create-catalog to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createCatalogTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createCatalogTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.CatalogFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -370,9 +378,9 @@ var createCdfConfigOverrides []func(
 
 func newCreateCdfConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createCdfConfigReq postgres.CreateCdfConfigRequest
-	createCdfConfigReq.CdfConfig = postgres.CdfConfig{}
+	createCdfConfigReq.CdfConfig = &postgres.CdfConfig{}
+
 	var createCdfConfigJson flags.JsonFlag
 
 	var createCdfConfigSkipWait bool
@@ -383,8 +391,8 @@ func newCreateCdfConfig() *cobra.Command {
 
 	cmd.Flags().Var(&createCdfConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfigId, "cdf-config-id", createCdfConfigReq.CdfConfigId, `The user-specified id for the CdfConfig, forming the final segment of its resource name.`)
-	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfig.Name, "name", createCdfConfigReq.CdfConfig.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &createCdfConfigReq.CdfConfigId, "cdf-config-id", `The user-specified id for the CdfConfig, forming the final segment of its resource name.`)
+	flags.StringPtrVar(cmd.Flags(), &createCdfConfigReq.CdfConfig.Name, "name", `Output only.`)
 
 	cmd.Use = "create-cdf-config PARENT CATALOG SCHEMA POSTGRES_SCHEMA"
 	cmd.Short = `*Beta* Create a change data feed configuration.`
@@ -432,6 +440,7 @@ Create a change data feed configuration.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createCdfConfigJson.Unmarshal(&createCdfConfigReq.CdfConfig)
@@ -445,36 +454,34 @@ Create a change data feed configuration.
 				}
 			}
 		}
-		createCdfConfigReq.Parent = args[0]
+		createCdfConfigReq.Parent = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			createCdfConfigReq.CdfConfig.Catalog = args[1]
+			createCdfConfigReq.CdfConfig.Catalog = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCdfConfigReq.CdfConfig.Schema = args[2]
+			createCdfConfigReq.CdfConfig.Schema = new(args[2])
 		}
 		if !cmd.Flags().Changed("json") {
-			createCdfConfigReq.CdfConfig.PostgresSchema = args[3]
+			createCdfConfigReq.CdfConfig.PostgresSchema = new(args[3])
 		}
 
+		sdkReq, err := postgres.CreateCdfConfigRequestToSDK(&createCdfConfigReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createCdfConfigSkipWait:
-			wait, err := w.Postgres.CreateCdfConfig(ctx, createCdfConfigReq)
+			wait, err := w.Postgres.CreateCdfConfig(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateCdfConfig(ctx, createCdfConfigReq)
+			wait, err := w.Postgres.CreateCdfConfig(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -484,13 +491,17 @@ Create a change data feed configuration.
 			sp.Update("Waiting for create-cdf-config to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createCdfConfigTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createCdfConfigTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.CdfConfigFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -517,9 +528,9 @@ var createDataApiOverrides []func(
 
 func newCreateDataApi() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDataApiReq postgres.CreateDataApiRequest
-	createDataApiReq.DataApi = postgres.DataApi{}
+	createDataApiReq.DataApi = &postgres.DataApi{}
+
 	var createDataApiJson flags.JsonFlag
 
 	var createDataApiSkipWait bool
@@ -530,7 +541,7 @@ func newCreateDataApi() *cobra.Command {
 
 	cmd.Flags().Var(&createDataApiJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDataApiReq.DataApi.Name, "name", createDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
+	flags.StringPtrVar(cmd.Flags(), &createDataApiReq.DataApi.Name, "name", `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -563,6 +574,7 @@ func newCreateDataApi() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDataApiJson.Unmarshal(&createDataApiReq.DataApi)
@@ -576,27 +588,25 @@ func newCreateDataApi() *cobra.Command {
 				}
 			}
 		}
-		createDataApiReq.Parent = args[0]
+		createDataApiReq.Parent = new(args[0])
 
+		sdkReq, err := postgres.CreateDataApiRequestToSDK(&createDataApiReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createDataApiSkipWait:
-			wait, err := w.Postgres.CreateDataApi(ctx, createDataApiReq)
+			wait, err := w.Postgres.CreateDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateDataApi(ctx, createDataApiReq)
+			wait, err := w.Postgres.CreateDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -606,13 +616,17 @@ func newCreateDataApi() *cobra.Command {
 			sp.Update("Waiting for create-data-api to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createDataApiTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createDataApiTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.DataApiFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -639,9 +653,9 @@ var createDatabaseOverrides []func(
 
 func newCreateDatabase() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createDatabaseReq postgres.CreateDatabaseRequest
-	createDatabaseReq.Database = postgres.Database{}
+	createDatabaseReq.Database = &postgres.Database{}
+
 	var createDatabaseJson flags.JsonFlag
 
 	var createDatabaseSkipWait bool
@@ -652,9 +666,9 @@ func newCreateDatabase() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
-	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseReq.DatabaseId, "database-id", `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	flags.BoolPtrVar(cmd.Flags(), &createDatabaseReq.ReplaceExisting, "replace-existing", `If true, update the database if it already exists instead of returning an error.`)
+	flags.StringPtrVar(cmd.Flags(), &createDatabaseReq.Database.Name, "name", `The resource name of the database.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -689,6 +703,7 @@ func newCreateDatabase() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createDatabaseJson.Unmarshal(&createDatabaseReq.Database)
@@ -702,27 +717,25 @@ func newCreateDatabase() *cobra.Command {
 				}
 			}
 		}
-		createDatabaseReq.Parent = args[0]
+		createDatabaseReq.Parent = new(args[0])
 
+		sdkReq, err := postgres.CreateDatabaseRequestToSDK(&createDatabaseReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createDatabaseSkipWait:
-			wait, err := w.Postgres.CreateDatabase(ctx, createDatabaseReq)
+			wait, err := w.Postgres.CreateDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateDatabase(ctx, createDatabaseReq)
+			wait, err := w.Postgres.CreateDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -732,13 +745,17 @@ func newCreateDatabase() *cobra.Command {
 			sp.Update("Waiting for create-database to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createDatabaseTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createDatabaseTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.DatabaseFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -765,9 +782,9 @@ var createEndpointOverrides []func(
 
 func newCreateEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createEndpointReq postgres.CreateEndpointRequest
-	createEndpointReq.Endpoint = postgres.Endpoint{}
+	createEndpointReq.Endpoint = &postgres.Endpoint{}
+
 	var createEndpointJson flags.JsonFlag
 
 	var createEndpointSkipWait bool
@@ -778,8 +795,8 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createEndpointReq.ReplaceExisting, "replace-existing", createEndpointReq.ReplaceExisting, `If true, update the endpoint if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Output only.`)
+	flags.BoolPtrVar(cmd.Flags(), &createEndpointReq.ReplaceExisting, "replace-existing", `If true, update the endpoint if it already exists instead of returning an error.`)
+	flags.StringPtrVar(cmd.Flags(), &createEndpointReq.Endpoint.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -816,6 +833,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createEndpointJson.Unmarshal(&createEndpointReq.Endpoint)
@@ -829,28 +847,26 @@ func newCreateEndpoint() *cobra.Command {
 				}
 			}
 		}
-		createEndpointReq.Parent = args[0]
-		createEndpointReq.EndpointId = args[1]
+		createEndpointReq.Parent = new(args[0])
+		createEndpointReq.EndpointId = new(args[1])
 
+		sdkReq, err := postgres.CreateEndpointRequestToSDK(&createEndpointReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createEndpointSkipWait:
-			wait, err := w.Postgres.CreateEndpoint(ctx, createEndpointReq)
+			wait, err := w.Postgres.CreateEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateEndpoint(ctx, createEndpointReq)
+			wait, err := w.Postgres.CreateEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -860,13 +876,17 @@ func newCreateEndpoint() *cobra.Command {
 			sp.Update("Waiting for create-endpoint to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createEndpointTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createEndpointTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.EndpointFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -893,9 +913,9 @@ var createProjectOverrides []func(
 
 func newCreateProject() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createProjectReq postgres.CreateProjectRequest
-	createProjectReq.Project = postgres.Project{}
+	createProjectReq.Project = &postgres.Project{}
+
 	var createProjectJson flags.JsonFlag
 
 	var createProjectSkipWait bool
@@ -908,7 +928,7 @@ func newCreateProject() *cobra.Command {
 
 	// TODO: complex arg: initial_branch_spec
 	// TODO: complex arg: initial_endpoint_spec
-	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &createProjectReq.Project.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -943,6 +963,7 @@ func newCreateProject() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createProjectJson.Unmarshal(&createProjectReq.Project)
@@ -956,27 +977,25 @@ func newCreateProject() *cobra.Command {
 				}
 			}
 		}
-		createProjectReq.ProjectId = args[0]
+		createProjectReq.ProjectId = new(args[0])
 
+		sdkReq, err := postgres.CreateProjectRequestToSDK(&createProjectReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createProjectSkipWait:
-			wait, err := w.Postgres.CreateProject(ctx, createProjectReq)
+			wait, err := w.Postgres.CreateProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateProject(ctx, createProjectReq)
+			wait, err := w.Postgres.CreateProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -986,13 +1005,17 @@ func newCreateProject() *cobra.Command {
 			sp.Update("Waiting for create-project to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createProjectTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createProjectTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.ProjectFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -1019,9 +1042,9 @@ var createRoleOverrides []func(
 
 func newCreateRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createRoleReq postgres.CreateRoleRequest
-	createRoleReq.Role = postgres.Role{}
+	createRoleReq.Role = &postgres.Role{}
+
 	var createRoleJson flags.JsonFlag
 
 	var createRoleSkipWait bool
@@ -1032,9 +1055,9 @@ func newCreateRole() *cobra.Command {
 
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createRoleReq.ReplaceExisting, "replace-existing", createRoleReq.ReplaceExisting, `If true, update the role if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
-	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
+	flags.BoolPtrVar(cmd.Flags(), &createRoleReq.ReplaceExisting, "replace-existing", `If true, update the role if it already exists instead of returning an error.`)
+	flags.StringPtrVar(cmd.Flags(), &createRoleReq.RoleId, "role-id", `The ID to use for the Role, which will become the final component of the role's resource name.`)
+	flags.StringPtrVar(cmd.Flags(), &createRoleReq.Role.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1066,6 +1089,7 @@ func newCreateRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createRoleJson.Unmarshal(&createRoleReq.Role)
@@ -1079,27 +1103,25 @@ func newCreateRole() *cobra.Command {
 				}
 			}
 		}
-		createRoleReq.Parent = args[0]
+		createRoleReq.Parent = new(args[0])
 
+		sdkReq, err := postgres.CreateRoleRequestToSDK(&createRoleReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createRoleSkipWait:
-			wait, err := w.Postgres.CreateRole(ctx, createRoleReq)
+			wait, err := w.Postgres.CreateRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateRole(ctx, createRoleReq)
+			wait, err := w.Postgres.CreateRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1109,13 +1131,17 @@ func newCreateRole() *cobra.Command {
 			sp.Update("Waiting for create-role to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createRoleTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createRoleTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.RoleFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -1142,9 +1168,9 @@ var createSnapshotOverrides []func(
 
 func newCreateSnapshot() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSnapshotReq postgres.CreateSnapshotRequest
-	createSnapshotReq.Snapshot = postgres.Snapshot{}
+	createSnapshotReq.Snapshot = &postgres.Snapshot{}
+
 	var createSnapshotJson flags.JsonFlag
 
 	var createSnapshotSkipWait bool
@@ -1155,7 +1181,7 @@ func newCreateSnapshot() *cobra.Command {
 
 	cmd.Flags().Var(&createSnapshotJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSnapshotReq.Snapshot.Name, "name", createSnapshotReq.Snapshot.Name, `The resource name of the snapshot.`)
+	flags.StringPtrVar(cmd.Flags(), &createSnapshotReq.Snapshot.Name, "name", `The resource name of the snapshot.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1191,6 +1217,7 @@ Create a Snapshot.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSnapshotJson.Unmarshal(&createSnapshotReq.Snapshot)
@@ -1204,28 +1231,26 @@ Create a Snapshot.
 				}
 			}
 		}
-		createSnapshotReq.Parent = args[0]
-		createSnapshotReq.SnapshotId = args[1]
+		createSnapshotReq.Parent = new(args[0])
+		createSnapshotReq.SnapshotId = new(args[1])
 
+		sdkReq, err := postgres.CreateSnapshotRequestToSDK(&createSnapshotReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createSnapshotSkipWait:
-			wait, err := w.Postgres.CreateSnapshot(ctx, createSnapshotReq)
+			wait, err := w.Postgres.CreateSnapshot(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateSnapshot(ctx, createSnapshotReq)
+			wait, err := w.Postgres.CreateSnapshot(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1235,13 +1260,17 @@ Create a Snapshot.
 			sp.Update("Waiting for create-snapshot to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createSnapshotTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createSnapshotTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.SnapshotFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -1268,9 +1297,9 @@ var createSyncedTableOverrides []func(
 
 func newCreateSyncedTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var createSyncedTableReq postgres.CreateSyncedTableRequest
-	createSyncedTableReq.SyncedTable = postgres.SyncedTable{}
+	createSyncedTableReq.SyncedTable = &postgres.SyncedTable{}
+
 	var createSyncedTableJson flags.JsonFlag
 
 	var createSyncedTableSkipWait bool
@@ -1281,7 +1310,7 @@ func newCreateSyncedTable() *cobra.Command {
 
 	cmd.Flags().Var(&createSyncedTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &createSyncedTableReq.SyncedTable.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1323,6 +1352,7 @@ func newCreateSyncedTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createSyncedTableJson.Unmarshal(&createSyncedTableReq.SyncedTable)
@@ -1336,27 +1366,25 @@ func newCreateSyncedTable() *cobra.Command {
 				}
 			}
 		}
-		createSyncedTableReq.SyncedTableId = args[0]
+		createSyncedTableReq.SyncedTableId = new(args[0])
 
+		sdkReq, err := postgres.CreateSyncedTableRequestToSDK(&createSyncedTableReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case createSyncedTableSkipWait:
-			wait, err := w.Postgres.CreateSyncedTable(ctx, createSyncedTableReq)
+			wait, err := w.Postgres.CreateSyncedTable(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.CreateSyncedTable(ctx, createSyncedTableReq)
+			wait, err := w.Postgres.CreateSyncedTable(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1366,13 +1394,17 @@ func newCreateSyncedTable() *cobra.Command {
 			sp.Update("Waiting for create-synced-table to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(createSyncedTableTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(createSyncedTableTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.SyncedTableFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -1399,7 +1431,6 @@ var deleteBranchOverrides []func(
 
 func newDeleteBranch() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteBranchReq postgres.DeleteBranchRequest
 
 	var deleteBranchSkipWait bool
@@ -1408,7 +1439,7 @@ func newDeleteBranch() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteBranchSkipWait, "no-wait", deleteBranchSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteBranchTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteBranchReq.Purge, "purge", deleteBranchReq.Purge, `If true, permanently delete the branch; if false, soft delete.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteBranchReq.Purge, "purge", `If true, permanently delete the branch; if false, soft delete.`)
 
 	cmd.Use = "delete-branch NAME"
 	cmd.Short = `Delete a Branch.`
@@ -1438,28 +1469,27 @@ func newDeleteBranch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteBranchReq.Name = args[0]
+		deleteBranchReq.Name = new(args[0])
 
+		sdkReq, err := postgres.DeleteBranchRequestToSDK(&deleteBranchReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteBranchSkipWait:
-			wait, err := w.Postgres.DeleteBranch(ctx, deleteBranchReq)
+			wait, err := w.Postgres.DeleteBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteBranch(ctx, deleteBranchReq)
+			wait, err := w.Postgres.DeleteBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1469,13 +1499,14 @@ func newDeleteBranch() *cobra.Command {
 			sp.Update("Waiting for delete-branch to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteBranchTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -1498,13 +1529,12 @@ func newDeleteBranch() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteCatalogOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteCatalogRequest,
+	*sdkpostgres.DeleteCatalogRequest,
 )
 
 func newDeleteCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteCatalogReq postgres.DeleteCatalogRequest
+	var deleteCatalogReq sdkpostgres.DeleteCatalogRequest
 
 	var deleteCatalogSkipWait bool
 	var deleteCatalogTimeout time.Duration
@@ -1539,28 +1569,24 @@ func newDeleteCatalog() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCatalogReq.Name = args[0]
+		deleteCatalogReq.Name = new(args[0])
 
+		sdkReq := &deleteCatalogReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteCatalogSkipWait:
-			wait, err := w.Postgres.DeleteCatalog(ctx, deleteCatalogReq)
+			wait, err := w.Postgres.DeleteCatalog(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteCatalog(ctx, deleteCatalogReq)
+			wait, err := w.Postgres.DeleteCatalog(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1570,13 +1596,14 @@ func newDeleteCatalog() *cobra.Command {
 			sp.Update("Waiting for delete-catalog to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteCatalogTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteCatalogTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -1604,7 +1631,6 @@ var deleteCdfConfigOverrides []func(
 
 func newDeleteCdfConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteCdfConfigReq postgres.DeleteCdfConfigRequest
 
 	var deleteCdfConfigSkipWait bool
@@ -1613,7 +1639,7 @@ func newDeleteCdfConfig() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteCdfConfigSkipWait, "no-wait", deleteCdfConfigSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteCdfConfigTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteCdfConfigReq.Force, "force", deleteCdfConfigReq.Force, `When true, also drops the replicated Delta tables in Unity Catalog.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteCdfConfigReq.Force, "force", `When true, also drops the replicated Delta tables in Unity Catalog.`)
 
 	cmd.Use = "delete-cdf-config NAME"
 	cmd.Short = `*Beta* Delete a change data feed configuration.`
@@ -1647,28 +1673,27 @@ Delete a change data feed configuration.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteCdfConfigReq.Name = args[0]
+		deleteCdfConfigReq.Name = new(args[0])
 
+		sdkReq, err := postgres.DeleteCdfConfigRequestToSDK(&deleteCdfConfigReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteCdfConfigSkipWait:
-			wait, err := w.Postgres.DeleteCdfConfig(ctx, deleteCdfConfigReq)
+			wait, err := w.Postgres.DeleteCdfConfig(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteCdfConfig(ctx, deleteCdfConfigReq)
+			wait, err := w.Postgres.DeleteCdfConfig(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1678,13 +1703,14 @@ Delete a change data feed configuration.
 			sp.Update("Waiting for delete-cdf-config to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteCdfConfigTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteCdfConfigTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -1707,13 +1733,12 @@ Delete a change data feed configuration.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDataApiOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteDataApiRequest,
+	*sdkpostgres.DeleteDataApiRequest,
 )
 
 func newDeleteDataApi() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDataApiReq postgres.DeleteDataApiRequest
+	var deleteDataApiReq sdkpostgres.DeleteDataApiRequest
 
 	var deleteDataApiSkipWait bool
 	var deleteDataApiTimeout time.Duration
@@ -1750,28 +1775,24 @@ func newDeleteDataApi() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDataApiReq.Name = args[0]
+		deleteDataApiReq.Name = new(args[0])
 
+		sdkReq := &deleteDataApiReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteDataApiSkipWait:
-			wait, err := w.Postgres.DeleteDataApi(ctx, deleteDataApiReq)
+			wait, err := w.Postgres.DeleteDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteDataApi(ctx, deleteDataApiReq)
+			wait, err := w.Postgres.DeleteDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1781,13 +1802,14 @@ func newDeleteDataApi() *cobra.Command {
 			sp.Update("Waiting for delete-data-api to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteDataApiTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteDataApiTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -1810,13 +1832,12 @@ func newDeleteDataApi() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDatabaseOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteDatabaseRequest,
+	*sdkpostgres.DeleteDatabaseRequest,
 )
 
 func newDeleteDatabase() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDatabaseReq postgres.DeleteDatabaseRequest
+	var deleteDatabaseReq sdkpostgres.DeleteDatabaseRequest
 
 	var deleteDatabaseSkipWait bool
 	var deleteDatabaseTimeout time.Duration
@@ -1850,28 +1871,24 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteDatabaseReq.Name = args[0]
+		deleteDatabaseReq.Name = new(args[0])
 
+		sdkReq := &deleteDatabaseReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteDatabaseSkipWait:
-			wait, err := w.Postgres.DeleteDatabase(ctx, deleteDatabaseReq)
+			wait, err := w.Postgres.DeleteDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteDatabase(ctx, deleteDatabaseReq)
+			wait, err := w.Postgres.DeleteDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1881,13 +1898,14 @@ func newDeleteDatabase() *cobra.Command {
 			sp.Update("Waiting for delete-database to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteDatabaseTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteDatabaseTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -1910,13 +1928,12 @@ func newDeleteDatabase() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteEndpointOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteEndpointRequest,
+	*sdkpostgres.DeleteEndpointRequest,
 )
 
 func newDeleteEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteEndpointReq postgres.DeleteEndpointRequest
+	var deleteEndpointReq sdkpostgres.DeleteEndpointRequest
 
 	var deleteEndpointSkipWait bool
 	var deleteEndpointTimeout time.Duration
@@ -1952,28 +1969,24 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteEndpointReq.Name = args[0]
+		deleteEndpointReq.Name = new(args[0])
 
+		sdkReq := &deleteEndpointReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteEndpointSkipWait:
-			wait, err := w.Postgres.DeleteEndpoint(ctx, deleteEndpointReq)
+			wait, err := w.Postgres.DeleteEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteEndpoint(ctx, deleteEndpointReq)
+			wait, err := w.Postgres.DeleteEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -1983,13 +1996,14 @@ func newDeleteEndpoint() *cobra.Command {
 			sp.Update("Waiting for delete-endpoint to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteEndpointTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteEndpointTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -2017,7 +2031,6 @@ var deleteProjectOverrides []func(
 
 func newDeleteProject() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteProjectReq postgres.DeleteProjectRequest
 
 	var deleteProjectSkipWait bool
@@ -2026,7 +2039,7 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectSkipWait, "no-wait", deleteProjectSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteProjectReq.Purge, "purge", `If true, permanently deletes the project (hard delete).`)
 
 	cmd.Use = "delete-project NAME"
 	cmd.Short = `Delete a Project.`
@@ -2056,28 +2069,27 @@ func newDeleteProject() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteProjectReq.Name = args[0]
+		deleteProjectReq.Name = new(args[0])
 
+		sdkReq, err := postgres.DeleteProjectRequestToSDK(&deleteProjectReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteProjectSkipWait:
-			wait, err := w.Postgres.DeleteProject(ctx, deleteProjectReq)
+			wait, err := w.Postgres.DeleteProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteProject(ctx, deleteProjectReq)
+			wait, err := w.Postgres.DeleteProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -2087,13 +2099,14 @@ func newDeleteProject() *cobra.Command {
 			sp.Update("Waiting for delete-project to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteProjectTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -2121,7 +2134,6 @@ var deleteRoleOverrides []func(
 
 func newDeleteRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var deleteRoleReq postgres.DeleteRoleRequest
 
 	var deleteRoleSkipWait bool
@@ -2130,7 +2142,7 @@ func newDeleteRole() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteRoleSkipWait, "no-wait", deleteRoleSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteRoleTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().StringVar(&deleteRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteRoleReq.ReassignOwnedTo, `Reassign objects.`)
+	flags.StringPtrVar(cmd.Flags(), &deleteRoleReq.ReassignOwnedTo, "reassign-owned-to", `Reassign objects.`)
 
 	cmd.Use = "delete-role NAME"
 	cmd.Short = `Delete a Postgres Role from a Branch.`
@@ -2160,28 +2172,27 @@ func newDeleteRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteRoleReq.Name = args[0]
+		deleteRoleReq.Name = new(args[0])
 
+		sdkReq, err := postgres.DeleteRoleRequestToSDK(&deleteRoleReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteRoleSkipWait:
-			wait, err := w.Postgres.DeleteRole(ctx, deleteRoleReq)
+			wait, err := w.Postgres.DeleteRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteRole(ctx, deleteRoleReq)
+			wait, err := w.Postgres.DeleteRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -2191,13 +2202,14 @@ func newDeleteRole() *cobra.Command {
 			sp.Update("Waiting for delete-role to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteRoleTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteRoleTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -2220,13 +2232,12 @@ func newDeleteRole() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSnapshotOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteSnapshotRequest,
+	*sdkpostgres.DeleteSnapshotRequest,
 )
 
 func newDeleteSnapshot() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSnapshotReq postgres.DeleteSnapshotRequest
+	var deleteSnapshotReq sdkpostgres.DeleteSnapshotRequest
 
 	var deleteSnapshotSkipWait bool
 	var deleteSnapshotTimeout time.Duration
@@ -2264,28 +2275,24 @@ Delete a Snapshot.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSnapshotReq.Name = args[0]
+		deleteSnapshotReq.Name = new(args[0])
 
+		sdkReq := &deleteSnapshotReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteSnapshotSkipWait:
-			wait, err := w.Postgres.DeleteSnapshot(ctx, deleteSnapshotReq)
+			wait, err := w.Postgres.DeleteSnapshot(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteSnapshot(ctx, deleteSnapshotReq)
+			wait, err := w.Postgres.DeleteSnapshot(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -2295,13 +2302,14 @@ Delete a Snapshot.
 			sp.Update("Waiting for delete-snapshot to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteSnapshotTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteSnapshotTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -2324,13 +2332,12 @@ Delete a Snapshot.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteSyncedTableOverrides []func(
 	*cobra.Command,
-	*postgres.DeleteSyncedTableRequest,
+	*sdkpostgres.DeleteSyncedTableRequest,
 )
 
 func newDeleteSyncedTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteSyncedTableReq postgres.DeleteSyncedTableRequest
+	var deleteSyncedTableReq sdkpostgres.DeleteSyncedTableRequest
 
 	var deleteSyncedTableSkipWait bool
 	var deleteSyncedTableTimeout time.Duration
@@ -2367,28 +2374,24 @@ func newDeleteSyncedTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteSyncedTableReq.Name = args[0]
+		deleteSyncedTableReq.Name = new(args[0])
 
+		sdkReq := &deleteSyncedTableReq
 		// Determine which mode to execute based on flags.
 		switch {
 		case deleteSyncedTableSkipWait:
-			wait, err := w.Postgres.DeleteSyncedTable(ctx, deleteSyncedTableReq)
+			wait, err := w.Postgres.DeleteSyncedTable(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.DeleteSyncedTable(ctx, deleteSyncedTableReq)
+			wait, err := w.Postgres.DeleteSyncedTable(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -2398,13 +2401,14 @@ func newDeleteSyncedTable() *cobra.Command {
 			sp.Update("Waiting for delete-synced-table to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(deleteSyncedTableTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(deleteSyncedTableTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -2432,8 +2436,8 @@ var generateDatabaseCredentialOverrides []func(
 
 func newGenerateDatabaseCredential() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var generateDatabaseCredentialReq postgres.GenerateDatabaseCredentialRequest
+
 	var generateDatabaseCredentialJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2472,6 +2476,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateDatabaseCredentialJson.Unmarshal(&generateDatabaseCredentialReq)
@@ -2486,13 +2491,12 @@ func newGenerateDatabaseCredential() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			generateDatabaseCredentialReq.Endpoint = args[0]
+			generateDatabaseCredentialReq.Endpoint = new(args[0])
 		}
 
 		if expireTimeParam != "" {
-			expireTimeBytes := []byte(fmt.Sprintf("\"%s\"", expireTimeParam))
-			var expireTimeField sdktime.Time
-			err = json.Unmarshal(expireTimeBytes, &expireTimeField)
+			var expireTimeField sdkcoretypes.Time
+			err = json.Unmarshal([]byte(strconv.Quote(expireTimeParam)), &expireTimeField)
 			if err != nil {
 				return fmt.Errorf("invalid EXPIRE_TIME: %s", expireTimeParam)
 			}
@@ -2500,21 +2504,28 @@ func newGenerateDatabaseCredential() *cobra.Command {
 		}
 
 		if ttlParam != "" {
-			ttlBytes := []byte(fmt.Sprintf("\"%s\"", ttlParam))
-			var ttlField duration.Duration
-			err = json.Unmarshal(ttlBytes, &ttlField)
+			var ttlField sdkcoretypes.Duration
+			err = json.Unmarshal([]byte(strconv.Quote(ttlParam)), &ttlField)
 			if err != nil {
 				return fmt.Errorf("invalid TTL: %s", ttlParam)
 			}
 			generateDatabaseCredentialReq.Ttl = &ttlField
 		}
 
-		response, err := w.Postgres.GenerateDatabaseCredential(ctx, generateDatabaseCredentialReq)
+		sdkReq, err := postgres.GenerateDatabaseCredentialRequestToSDK(&generateDatabaseCredentialReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Postgres.GenerateDatabaseCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.DatabaseCredentialFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2535,13 +2546,12 @@ func newGenerateDatabaseCredential() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getBranchOverrides []func(
 	*cobra.Command,
-	*postgres.GetBranchRequest,
+	*sdkpostgres.GetBranchRequest,
 )
 
 func newGetBranch() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getBranchReq postgres.GetBranchRequest
+	var getBranchReq sdkpostgres.GetBranchRequest
 
 	cmd.Use = "get-branch NAME"
 	cmd.Short = `Get a Branch.`
@@ -2566,15 +2576,21 @@ func newGetBranch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getBranchReq.Name = args[0]
+		getBranchReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetBranch(ctx, getBranchReq)
+		sdkReq := &getBranchReq
+		response, err := w.Postgres.GetBranch(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.BranchFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2595,13 +2611,12 @@ func newGetBranch() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCatalogOverrides []func(
 	*cobra.Command,
-	*postgres.GetCatalogRequest,
+	*sdkpostgres.GetCatalogRequest,
 )
 
 func newGetCatalog() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCatalogReq postgres.GetCatalogRequest
+	var getCatalogReq sdkpostgres.GetCatalogRequest
 
 	cmd.Use = "get-catalog NAME"
 	cmd.Short = `Get a Database Catalog.`
@@ -2625,15 +2640,21 @@ func newGetCatalog() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCatalogReq.Name = args[0]
+		getCatalogReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetCatalog(ctx, getCatalogReq)
+		sdkReq := &getCatalogReq
+		response, err := w.Postgres.GetCatalog(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.CatalogFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2654,13 +2675,12 @@ func newGetCatalog() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCdfConfigOverrides []func(
 	*cobra.Command,
-	*postgres.GetCdfConfigRequest,
+	*sdkpostgres.GetCdfConfigRequest,
 )
 
 func newGetCdfConfig() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCdfConfigReq postgres.GetCdfConfigRequest
+	var getCdfConfigReq sdkpostgres.GetCdfConfigRequest
 
 	cmd.Use = "get-cdf-config NAME"
 	cmd.Short = `*Beta* Get a change data feed configuration.`
@@ -2688,15 +2708,21 @@ Get a change data feed configuration.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCdfConfigReq.Name = args[0]
+		getCdfConfigReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetCdfConfig(ctx, getCdfConfigReq)
+		sdkReq := &getCdfConfigReq
+		response, err := w.Postgres.GetCdfConfig(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.CdfConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2717,13 +2743,12 @@ Get a change data feed configuration.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getCdfStatusOverrides []func(
 	*cobra.Command,
-	*postgres.GetCdfStatusRequest,
+	*sdkpostgres.GetCdfStatusRequest,
 )
 
 func newGetCdfStatus() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getCdfStatusReq postgres.GetCdfStatusRequest
+	var getCdfStatusReq sdkpostgres.GetCdfStatusRequest
 
 	cmd.Use = "get-cdf-status NAME"
 	cmd.Short = `*Beta* Get a change data feed status.`
@@ -2751,15 +2776,21 @@ Get a change data feed status.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getCdfStatusReq.Name = args[0]
+		getCdfStatusReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetCdfStatus(ctx, getCdfStatusReq)
+		sdkReq := &getCdfStatusReq
+		response, err := w.Postgres.GetCdfStatus(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.CdfStatusFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2780,13 +2811,12 @@ Get a change data feed status.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDataApiOverrides []func(
 	*cobra.Command,
-	*postgres.GetDataApiRequest,
+	*sdkpostgres.GetDataApiRequest,
 )
 
 func newGetDataApi() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDataApiReq postgres.GetDataApiRequest
+	var getDataApiReq sdkpostgres.GetDataApiRequest
 
 	cmd.Use = "get-data-api NAME"
 	cmd.Short = `Get Data API configuration.`
@@ -2814,15 +2844,21 @@ func newGetDataApi() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDataApiReq.Name = args[0]
+		getDataApiReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetDataApi(ctx, getDataApiReq)
+		sdkReq := &getDataApiReq
+		response, err := w.Postgres.GetDataApi(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.DataApiFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2843,13 +2879,12 @@ func newGetDataApi() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDatabaseOverrides []func(
 	*cobra.Command,
-	*postgres.GetDatabaseRequest,
+	*sdkpostgres.GetDatabaseRequest,
 )
 
 func newGetDatabase() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDatabaseReq postgres.GetDatabaseRequest
+	var getDatabaseReq sdkpostgres.GetDatabaseRequest
 
 	cmd.Use = "get-database NAME"
 	cmd.Short = `Get a Database.`
@@ -2872,15 +2907,21 @@ func newGetDatabase() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getDatabaseReq.Name = args[0]
+		getDatabaseReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetDatabase(ctx, getDatabaseReq)
+		sdkReq := &getDatabaseReq
+		response, err := w.Postgres.GetDatabase(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.DatabaseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2901,13 +2942,12 @@ func newGetDatabase() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getEndpointOverrides []func(
 	*cobra.Command,
-	*postgres.GetEndpointRequest,
+	*sdkpostgres.GetEndpointRequest,
 )
 
 func newGetEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getEndpointReq postgres.GetEndpointRequest
+	var getEndpointReq sdkpostgres.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
 	cmd.Short = `Get an Endpoint.`
@@ -2933,15 +2973,21 @@ func newGetEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getEndpointReq.Name = args[0]
+		getEndpointReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetEndpoint(ctx, getEndpointReq)
+		sdkReq := &getEndpointReq
+		response, err := w.Postgres.GetEndpoint(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.EndpointFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2962,13 +3008,12 @@ func newGetEndpoint() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOperationOverrides []func(
 	*cobra.Command,
-	*postgres.GetOperationRequest,
+	*sdkpostgres.GetBranchRequest,
 )
 
 func newGetOperation() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getOperationReq postgres.GetOperationRequest
+	var getOperationReq sdkpostgres.GetBranchRequest
 
 	cmd.Use = "get-operation NAME"
 	cmd.Short = `Get an Operation.`
@@ -2992,15 +3037,21 @@ func newGetOperation() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getOperationReq.Name = args[0]
+		getOperationReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetOperation(ctx, getOperationReq)
+		sdkReq := &getOperationReq
+		response, err := w.Postgres.GetBranch(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.BranchFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3021,13 +3072,12 @@ func newGetOperation() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getProjectOverrides []func(
 	*cobra.Command,
-	*postgres.GetProjectRequest,
+	*sdkpostgres.GetProjectRequest,
 )
 
 func newGetProject() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getProjectReq postgres.GetProjectRequest
+	var getProjectReq sdkpostgres.GetProjectRequest
 
 	cmd.Use = "get-project NAME"
 	cmd.Short = `Get a Project.`
@@ -3052,15 +3102,21 @@ func newGetProject() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getProjectReq.Name = args[0]
+		getProjectReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetProject(ctx, getProjectReq)
+		sdkReq := &getProjectReq
+		response, err := w.Postgres.GetProject(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.ProjectFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3081,13 +3137,12 @@ func newGetProject() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getRoleOverrides []func(
 	*cobra.Command,
-	*postgres.GetRoleRequest,
+	*sdkpostgres.GetRoleRequest,
 )
 
 func newGetRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getRoleReq postgres.GetRoleRequest
+	var getRoleReq sdkpostgres.GetRoleRequest
 
 	cmd.Use = "get-role NAME"
 	cmd.Short = `Get a Postgres Role for a Branch.`
@@ -3113,15 +3168,21 @@ func newGetRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getRoleReq.Name = args[0]
+		getRoleReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetRole(ctx, getRoleReq)
+		sdkReq := &getRoleReq
+		response, err := w.Postgres.GetRole(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.RoleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3142,13 +3203,12 @@ func newGetRole() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSnapshotOverrides []func(
 	*cobra.Command,
-	*postgres.GetSnapshotRequest,
+	*sdkpostgres.GetSnapshotRequest,
 )
 
 func newGetSnapshot() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSnapshotReq postgres.GetSnapshotRequest
+	var getSnapshotReq sdkpostgres.GetSnapshotRequest
 
 	cmd.Use = "get-snapshot NAME"
 	cmd.Short = `*Beta* Get a Snapshot.`
@@ -3175,15 +3235,21 @@ Get a Snapshot.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSnapshotReq.Name = args[0]
+		getSnapshotReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetSnapshot(ctx, getSnapshotReq)
+		sdkReq := &getSnapshotReq
+		response, err := w.Postgres.GetSnapshot(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.SnapshotFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3204,13 +3270,12 @@ Get a Snapshot.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSnapshotScheduleOverrides []func(
 	*cobra.Command,
-	*postgres.GetSnapshotScheduleRequest,
+	*sdkpostgres.GetSnapshotScheduleRequest,
 )
 
 func newGetSnapshotSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSnapshotScheduleReq postgres.GetSnapshotScheduleRequest
+	var getSnapshotScheduleReq sdkpostgres.GetSnapshotScheduleRequest
 
 	cmd.Use = "get-snapshot-schedule NAME"
 	cmd.Short = `*Beta* Get a Snapshot Schedule.`
@@ -3238,15 +3303,21 @@ Get a Snapshot Schedule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSnapshotScheduleReq.Name = args[0]
+		getSnapshotScheduleReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetSnapshotSchedule(ctx, getSnapshotScheduleReq)
+		sdkReq := &getSnapshotScheduleReq
+		response, err := w.Postgres.GetSnapshotSchedule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.SnapshotScheduleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3267,13 +3338,12 @@ Get a Snapshot Schedule.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getSyncedTableOverrides []func(
 	*cobra.Command,
-	*postgres.GetSyncedTableRequest,
+	*sdkpostgres.GetSyncedTableRequest,
 )
 
 func newGetSyncedTable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getSyncedTableReq postgres.GetSyncedTableRequest
+	var getSyncedTableReq sdkpostgres.GetSyncedTableRequest
 
 	cmd.Use = "get-synced-table NAME"
 	cmd.Short = `Get a Synced Database Table.`
@@ -3299,15 +3369,21 @@ func newGetSyncedTable() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getSyncedTableReq.Name = args[0]
+		getSyncedTableReq.Name = new(args[0])
 
-		response, err := w.Postgres.GetSyncedTable(ctx, getSyncedTableReq)
+		sdkReq := &getSyncedTableReq
+		response, err := w.Postgres.GetSyncedTable(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := postgres.SyncedTableFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -3333,21 +3409,21 @@ var listBranchesOverrides []func(
 
 func newListBranches() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listBranchesReq postgres.ListBranchesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listBranchesLimit int
 
-	cmd.Flags().IntVar(&listBranchesReq.PageSize, "page-size", listBranchesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().BoolVar(&listBranchesReq.ShowDeleted, "show-deleted", listBranchesReq.ShowDeleted, `Whether to include soft-deleted branches in the response.`)
+	flags.IntPtrVar(cmd.Flags(), &listBranchesReq.PageSize, "page-size", `Upper bound for items returned.`)
+	flags.BoolPtrVar(cmd.Flags(), &listBranchesReq.ShowDeleted, "show-deleted", `Whether to include soft-deleted branches in the response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listBranchesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listBranchesReq.PageToken, "page-token", listBranchesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listBranchesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-branches PARENT"
@@ -3373,18 +3449,22 @@ func newListBranches() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listBranchesReq.Parent = args[0]
+		listBranchesReq.Parent = new(args[0])
 
-		response := w.Postgres.ListBranches(ctx, listBranchesReq)
+		sdkReq, err := postgres.ListBranchesRequestToSDK(&listBranchesReq)
+		if err != nil {
+			return err
+		}
 		if listBranchesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listBranchesLimit)
 		}
 		if listBranchesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listBranchesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListBranchesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.BranchFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3410,20 +3490,20 @@ var listCdfConfigsOverrides []func(
 
 func newListCdfConfigs() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listCdfConfigsReq postgres.ListCdfConfigsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listCdfConfigsLimit int
 
-	cmd.Flags().IntVar(&listCdfConfigsReq.PageSize, "page-size", listCdfConfigsReq.PageSize, `Maximum number of CdfConfigs to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listCdfConfigsReq.PageSize, "page-size", `Maximum number of CdfConfigs to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listCdfConfigsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listCdfConfigsReq.PageToken, "page-token", listCdfConfigsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listCdfConfigsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-cdf-configs PARENT"
@@ -3453,18 +3533,22 @@ List change data feed configurations.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listCdfConfigsReq.Parent = args[0]
+		listCdfConfigsReq.Parent = new(args[0])
 
-		response := w.Postgres.ListCdfConfigs(ctx, listCdfConfigsReq)
+		sdkReq, err := postgres.ListCdfConfigsRequestToSDK(&listCdfConfigsReq)
+		if err != nil {
+			return err
+		}
 		if listCdfConfigsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCdfConfigsLimit)
 		}
 		if listCdfConfigsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listCdfConfigsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListCdfConfigsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.CdfConfigFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3490,20 +3574,20 @@ var listCdfStatusesOverrides []func(
 
 func newListCdfStatuses() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listCdfStatusesReq postgres.ListCdfStatusesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listCdfStatusesLimit int
 
-	cmd.Flags().IntVar(&listCdfStatusesReq.PageSize, "page-size", listCdfStatusesReq.PageSize, `Maximum number of CdfStatuses to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listCdfStatusesReq.PageSize, "page-size", `Maximum number of CdfStatuses to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listCdfStatusesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listCdfStatusesReq.PageToken, "page-token", listCdfStatusesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listCdfStatusesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-cdf-statuses PARENT"
@@ -3533,18 +3617,22 @@ List change data feed statuses.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listCdfStatusesReq.Parent = args[0]
+		listCdfStatusesReq.Parent = new(args[0])
 
-		response := w.Postgres.ListCdfStatuses(ctx, listCdfStatusesReq)
+		sdkReq, err := postgres.ListCdfStatusesRequestToSDK(&listCdfStatusesReq)
+		if err != nil {
+			return err
+		}
 		if listCdfStatusesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCdfStatusesLimit)
 		}
 		if listCdfStatusesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listCdfStatusesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListCdfStatusesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.CdfStatusFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3570,20 +3658,20 @@ var listDatabasesOverrides []func(
 
 func newListDatabases() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listDatabasesReq postgres.ListDatabasesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDatabasesLimit int
 
-	cmd.Flags().IntVar(&listDatabasesReq.PageSize, "page-size", listDatabasesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listDatabasesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDatabasesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDatabasesReq.PageToken, "page-token", listDatabasesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listDatabasesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-databases PARENT"
@@ -3609,18 +3697,22 @@ func newListDatabases() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listDatabasesReq.Parent = args[0]
+		listDatabasesReq.Parent = new(args[0])
 
-		response := w.Postgres.ListDatabases(ctx, listDatabasesReq)
+		sdkReq, err := postgres.ListDatabasesRequestToSDK(&listDatabasesReq)
+		if err != nil {
+			return err
+		}
 		if listDatabasesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabasesLimit)
 		}
 		if listDatabasesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listDatabasesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListDatabasesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.DatabaseFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3646,20 +3738,20 @@ var listEndpointsOverrides []func(
 
 func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listEndpointsReq postgres.ListEndpointsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listEndpointsReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listEndpointsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
@@ -3685,18 +3777,22 @@ func newListEndpoints() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listEndpointsReq.Parent = args[0]
+		listEndpointsReq.Parent = new(args[0])
 
-		response := w.Postgres.ListEndpoints(ctx, listEndpointsReq)
+		sdkReq, err := postgres.ListEndpointsRequestToSDK(&listEndpointsReq)
+		if err != nil {
+			return err
+		}
 		if listEndpointsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
 		}
 		if listEndpointsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListEndpointsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.EndpointFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3722,21 +3818,21 @@ var listProjectsOverrides []func(
 
 func newListProjects() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listProjectsReq postgres.ListProjectsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listProjectsLimit int
 
-	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().BoolVar(&listProjectsReq.ShowDeleted, "show-deleted", listProjectsReq.ShowDeleted, `Whether to include soft-deleted projects in the response.`)
+	flags.IntPtrVar(cmd.Flags(), &listProjectsReq.PageSize, "page-size", `Upper bound for items returned.`)
+	flags.BoolPtrVar(cmd.Flags(), &listProjectsReq.ShowDeleted, "show-deleted", `Whether to include soft-deleted projects in the response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listProjectsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listProjectsReq.PageToken, "page-token", listProjectsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listProjectsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-projects"
@@ -3759,16 +3855,20 @@ func newListProjects() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Postgres.ListProjects(ctx, listProjectsReq)
+		sdkReq, err := postgres.ListProjectsRequestToSDK(&listProjectsReq)
+		if err != nil {
+			return err
+		}
 		if listProjectsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listProjectsLimit)
 		}
 		if listProjectsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listProjectsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListProjectsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.ProjectFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3794,20 +3894,20 @@ var listRolesOverrides []func(
 
 func newListRoles() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listRolesReq postgres.ListRolesRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listRolesLimit int
 
-	cmd.Flags().IntVar(&listRolesReq.PageSize, "page-size", listRolesReq.PageSize, `Upper bound for items returned.`)
+	flags.IntPtrVar(cmd.Flags(), &listRolesReq.PageSize, "page-size", `Upper bound for items returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listRolesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listRolesReq.PageToken, "page-token", listRolesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listRolesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-roles PARENT"
@@ -3833,18 +3933,22 @@ func newListRoles() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listRolesReq.Parent = args[0]
+		listRolesReq.Parent = new(args[0])
 
-		response := w.Postgres.ListRoles(ctx, listRolesReq)
+		sdkReq, err := postgres.ListRolesRequestToSDK(&listRolesReq)
+		if err != nil {
+			return err
+		}
 		if listRolesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRolesLimit)
 		}
 		if listRolesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listRolesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListRolesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.RoleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3870,20 +3974,20 @@ var listSnapshotsOverrides []func(
 
 func newListSnapshots() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listSnapshotsReq postgres.ListSnapshotsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listSnapshotsLimit int
 
-	cmd.Flags().IntVar(&listSnapshotsReq.PageSize, "page-size", listSnapshotsReq.PageSize, `Maximum number of snapshots to return per page.`)
+	flags.IntPtrVar(cmd.Flags(), &listSnapshotsReq.PageSize, "page-size", `Maximum number of snapshots to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSnapshotsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listSnapshotsReq.PageToken, "page-token", listSnapshotsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listSnapshotsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-snapshots PARENT"
@@ -3910,18 +4014,22 @@ List Snapshots.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listSnapshotsReq.Parent = args[0]
+		listSnapshotsReq.Parent = new(args[0])
 
-		response := w.Postgres.ListSnapshots(ctx, listSnapshotsReq)
+		sdkReq, err := postgres.ListSnapshotsRequestToSDK(&listSnapshotsReq)
+		if err != nil {
+			return err
+		}
 		if listSnapshotsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSnapshotsLimit)
 		}
 		if listSnapshotsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listSnapshotsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Postgres.ListSnapshotsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, postgres.SnapshotFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -3947,7 +4055,6 @@ var undeleteBranchOverrides []func(
 
 func newUndeleteBranch() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var undeleteBranchReq postgres.UndeleteBranchRequest
 
 	var undeleteBranchSkipWait bool
@@ -3987,28 +4094,27 @@ func newUndeleteBranch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		undeleteBranchReq.Name = args[0]
+		undeleteBranchReq.Name = new(args[0])
 
+		sdkReq, err := postgres.UndeleteBranchRequestToSDK(&undeleteBranchReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case undeleteBranchSkipWait:
-			wait, err := w.Postgres.UndeleteBranch(ctx, undeleteBranchReq)
+			wait, err := w.Postgres.UndeleteBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UndeleteBranch(ctx, undeleteBranchReq)
+			wait, err := w.Postgres.UndeleteBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4018,13 +4124,14 @@ func newUndeleteBranch() *cobra.Command {
 			sp.Update("Waiting for undelete-branch to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(undeleteBranchTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(undeleteBranchTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -4052,7 +4159,6 @@ var undeleteProjectOverrides []func(
 
 func newUndeleteProject() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var undeleteProjectReq postgres.UndeleteProjectRequest
 
 	var undeleteProjectSkipWait bool
@@ -4091,28 +4197,27 @@ Undelete a Project.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		undeleteProjectReq.Name = args[0]
+		undeleteProjectReq.Name = new(args[0])
 
+		sdkReq, err := postgres.UndeleteProjectRequestToSDK(&undeleteProjectReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case undeleteProjectSkipWait:
-			wait, err := w.Postgres.UndeleteProject(ctx, undeleteProjectReq)
+			wait, err := w.Postgres.UndeleteProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UndeleteProject(ctx, undeleteProjectReq)
+			wait, err := w.Postgres.UndeleteProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4122,13 +4227,14 @@ Undelete a Project.
 			sp.Update("Waiting for undelete-project to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(undeleteProjectTimeout)
-
-			err = wait.Wait(ctx, opts)
+			response := struct{}{}
+			err = wait.Wait(ctx, lro.WithTimeout(undeleteProjectTimeout))
 			if err != nil {
-				return err
+				return &cmdgen.WaitError{Err: err}
 			}
 			sp.Close()
+
+			_ = response
 			return nil
 		}
 	}
@@ -4156,9 +4262,9 @@ var updateBranchOverrides []func(
 
 func newUpdateBranch() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateBranchReq postgres.UpdateBranchRequest
-	updateBranchReq.Branch = postgres.Branch{}
+	updateBranchReq.Branch = &postgres.Branch{}
+
 	var updateBranchJson flags.JsonFlag
 
 	var updateBranchSkipWait bool
@@ -4169,7 +4275,7 @@ func newUpdateBranch() *cobra.Command {
 
 	cmd.Flags().Var(&updateBranchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateBranchReq.Branch.Name, "name", updateBranchReq.Branch.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &updateBranchReq.Branch.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4203,6 +4309,7 @@ func newUpdateBranch() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateBranchJson.Unmarshal(&updateBranchReq.Branch)
@@ -4216,31 +4323,28 @@ func newUpdateBranch() *cobra.Command {
 				}
 			}
 		}
-		updateBranchReq.Name = args[0]
+		updateBranchReq.Branch.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateBranchReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateBranchReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateBranchRequestToSDK(&updateBranchReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateBranchSkipWait:
-			wait, err := w.Postgres.UpdateBranch(ctx, updateBranchReq)
+			wait, err := w.Postgres.UpdateBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateBranch(ctx, updateBranchReq)
+			wait, err := w.Postgres.UpdateBranch(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4250,13 +4354,17 @@ func newUpdateBranch() *cobra.Command {
 			sp.Update("Waiting for update-branch to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateBranchTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateBranchTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.BranchFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4283,9 +4391,9 @@ var updateDataApiOverrides []func(
 
 func newUpdateDataApi() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDataApiReq postgres.UpdateDataApiRequest
-	updateDataApiReq.DataApi = postgres.DataApi{}
+	updateDataApiReq.DataApi = &postgres.DataApi{}
+
 	var updateDataApiJson flags.JsonFlag
 
 	var updateDataApiSkipWait bool
@@ -4296,7 +4404,7 @@ func newUpdateDataApi() *cobra.Command {
 
 	cmd.Flags().Var(&updateDataApiJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDataApiReq.DataApi.Name, "name", updateDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDataApiReq.DataApi.Name, "name", `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4332,6 +4440,7 @@ func newUpdateDataApi() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDataApiJson.Unmarshal(&updateDataApiReq.DataApi)
@@ -4345,31 +4454,28 @@ func newUpdateDataApi() *cobra.Command {
 				}
 			}
 		}
-		updateDataApiReq.Name = args[0]
+		updateDataApiReq.DataApi.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateDataApiReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateDataApiReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateDataApiRequestToSDK(&updateDataApiReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateDataApiSkipWait:
-			wait, err := w.Postgres.UpdateDataApi(ctx, updateDataApiReq)
+			wait, err := w.Postgres.UpdateDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateDataApi(ctx, updateDataApiReq)
+			wait, err := w.Postgres.UpdateDataApi(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4379,13 +4485,17 @@ func newUpdateDataApi() *cobra.Command {
 			sp.Update("Waiting for update-data-api to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateDataApiTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateDataApiTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.DataApiFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4412,9 +4522,9 @@ var updateDatabaseOverrides []func(
 
 func newUpdateDatabase() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateDatabaseReq postgres.UpdateDatabaseRequest
-	updateDatabaseReq.Database = postgres.Database{}
+	updateDatabaseReq.Database = &postgres.Database{}
+
 	var updateDatabaseJson flags.JsonFlag
 
 	var updateDatabaseSkipWait bool
@@ -4425,7 +4535,7 @@ func newUpdateDatabase() *cobra.Command {
 
 	cmd.Flags().Var(&updateDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDatabaseReq.Database.Name, "name", updateDatabaseReq.Database.Name, `The resource name of the database.`)
+	flags.StringPtrVar(cmd.Flags(), &updateDatabaseReq.Database.Name, "name", `The resource name of the database.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4456,6 +4566,7 @@ func newUpdateDatabase() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateDatabaseJson.Unmarshal(&updateDatabaseReq.Database)
@@ -4469,31 +4580,28 @@ func newUpdateDatabase() *cobra.Command {
 				}
 			}
 		}
-		updateDatabaseReq.Name = args[0]
+		updateDatabaseReq.Database.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateDatabaseReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateDatabaseReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateDatabaseRequestToSDK(&updateDatabaseReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateDatabaseSkipWait:
-			wait, err := w.Postgres.UpdateDatabase(ctx, updateDatabaseReq)
+			wait, err := w.Postgres.UpdateDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateDatabase(ctx, updateDatabaseReq)
+			wait, err := w.Postgres.UpdateDatabase(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4503,13 +4611,17 @@ func newUpdateDatabase() *cobra.Command {
 			sp.Update("Waiting for update-database to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateDatabaseTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateDatabaseTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.DatabaseFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4536,9 +4648,9 @@ var updateEndpointOverrides []func(
 
 func newUpdateEndpoint() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateEndpointReq postgres.UpdateEndpointRequest
-	updateEndpointReq.Endpoint = postgres.Endpoint{}
+	updateEndpointReq.Endpoint = &postgres.Endpoint{}
+
 	var updateEndpointJson flags.JsonFlag
 
 	var updateEndpointSkipWait bool
@@ -4549,7 +4661,7 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &updateEndpointReq.Endpoint.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4583,6 +4695,7 @@ func newUpdateEndpoint() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateEndpointJson.Unmarshal(&updateEndpointReq.Endpoint)
@@ -4596,31 +4709,28 @@ func newUpdateEndpoint() *cobra.Command {
 				}
 			}
 		}
-		updateEndpointReq.Name = args[0]
+		updateEndpointReq.Endpoint.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateEndpointReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateEndpointReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateEndpointRequestToSDK(&updateEndpointReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateEndpointSkipWait:
-			wait, err := w.Postgres.UpdateEndpoint(ctx, updateEndpointReq)
+			wait, err := w.Postgres.UpdateEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateEndpoint(ctx, updateEndpointReq)
+			wait, err := w.Postgres.UpdateEndpoint(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4630,13 +4740,17 @@ func newUpdateEndpoint() *cobra.Command {
 			sp.Update("Waiting for update-endpoint to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateEndpointTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateEndpointTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.EndpointFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4663,9 +4777,9 @@ var updateProjectOverrides []func(
 
 func newUpdateProject() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateProjectReq postgres.UpdateProjectRequest
-	updateProjectReq.Project = postgres.Project{}
+	updateProjectReq.Project = &postgres.Project{}
+
 	var updateProjectJson flags.JsonFlag
 
 	var updateProjectSkipWait bool
@@ -4678,7 +4792,7 @@ func newUpdateProject() *cobra.Command {
 
 	// TODO: complex arg: initial_branch_spec
 	// TODO: complex arg: initial_endpoint_spec
-	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &updateProjectReq.Project.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4711,6 +4825,7 @@ func newUpdateProject() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateProjectJson.Unmarshal(&updateProjectReq.Project)
@@ -4724,31 +4839,28 @@ func newUpdateProject() *cobra.Command {
 				}
 			}
 		}
-		updateProjectReq.Name = args[0]
+		updateProjectReq.Project.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateProjectReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateProjectReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateProjectRequestToSDK(&updateProjectReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateProjectSkipWait:
-			wait, err := w.Postgres.UpdateProject(ctx, updateProjectReq)
+			wait, err := w.Postgres.UpdateProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateProject(ctx, updateProjectReq)
+			wait, err := w.Postgres.UpdateProject(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4758,13 +4870,17 @@ func newUpdateProject() *cobra.Command {
 			sp.Update("Waiting for update-project to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateProjectTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateProjectTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.ProjectFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4791,9 +4907,9 @@ var updateRoleOverrides []func(
 
 func newUpdateRole() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateRoleReq postgres.UpdateRoleRequest
-	updateRoleReq.Role = postgres.Role{}
+	updateRoleReq.Role = &postgres.Role{}
+
 	var updateRoleJson flags.JsonFlag
 
 	var updateRoleSkipWait bool
@@ -4804,7 +4920,7 @@ func newUpdateRole() *cobra.Command {
 
 	cmd.Flags().Var(&updateRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateRoleReq.Role.Name, "name", updateRoleReq.Role.Name, `Output only.`)
+	flags.StringPtrVar(cmd.Flags(), &updateRoleReq.Role.Name, "name", `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -4837,6 +4953,7 @@ func newUpdateRole() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRoleJson.Unmarshal(&updateRoleReq.Role)
@@ -4850,31 +4967,28 @@ func newUpdateRole() *cobra.Command {
 				}
 			}
 		}
-		updateRoleReq.Name = args[0]
+		updateRoleReq.Role.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateRoleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateRoleReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateRoleRequestToSDK(&updateRoleReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateRoleSkipWait:
-			wait, err := w.Postgres.UpdateRole(ctx, updateRoleReq)
+			wait, err := w.Postgres.UpdateRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateRole(ctx, updateRoleReq)
+			wait, err := w.Postgres.UpdateRole(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -4884,13 +4998,17 @@ func newUpdateRole() *cobra.Command {
 			sp.Update("Waiting for update-role to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateRoleTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateRoleTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.RoleFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 
@@ -4917,9 +5035,9 @@ var updateSnapshotScheduleOverrides []func(
 
 func newUpdateSnapshotSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var updateSnapshotScheduleReq postgres.UpdateSnapshotScheduleRequest
-	updateSnapshotScheduleReq.SnapshotSchedule = postgres.SnapshotSchedule{}
+	updateSnapshotScheduleReq.SnapshotSchedule = &postgres.SnapshotSchedule{}
+
 	var updateSnapshotScheduleJson flags.JsonFlag
 
 	var updateSnapshotScheduleSkipWait bool
@@ -4930,7 +5048,7 @@ func newUpdateSnapshotSchedule() *cobra.Command {
 
 	cmd.Flags().Var(&updateSnapshotScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSnapshotScheduleReq.SnapshotSchedule.Name, "name", updateSnapshotScheduleReq.SnapshotSchedule.Name, `The resource name of the branch's snapshot schedule.`)
+	flags.StringPtrVar(cmd.Flags(), &updateSnapshotScheduleReq.SnapshotSchedule.Name, "name", `The resource name of the branch's snapshot schedule.`)
 	// TODO: array: schedule
 
 	cmd.Use = "update-snapshot-schedule NAME UPDATE_MASK"
@@ -4966,6 +5084,7 @@ Update a Snapshot Schedule.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateSnapshotScheduleJson.Unmarshal(&updateSnapshotScheduleReq.SnapshotSchedule)
@@ -4979,31 +5098,28 @@ Update a Snapshot Schedule.
 				}
 			}
 		}
-		updateSnapshotScheduleReq.Name = args[0]
+		updateSnapshotScheduleReq.SnapshotSchedule.Name = new(args[0])
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateSnapshotScheduleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateSnapshotScheduleReq.UpdateMask = new(args[1])
 		}
 
+		sdkReq, err := postgres.UpdateSnapshotScheduleRequestToSDK(&updateSnapshotScheduleReq)
+		if err != nil {
+			return err
+		}
 		// Determine which mode to execute based on flags.
 		switch {
 		case updateSnapshotScheduleSkipWait:
-			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, updateSnapshotScheduleReq)
+			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
 
 			// Return operation immediately without waiting.
-			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
-				Name: wait.Name(),
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
+			return cmdio.Render(ctx, map[string]any{"name": wait.Name()})
 
 		default:
-			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, updateSnapshotScheduleReq)
+			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, *sdkReq)
 			if err != nil {
 				return err
 			}
@@ -5013,13 +5129,17 @@ Update a Snapshot Schedule.
 			sp.Update("Waiting for update-snapshot-schedule to complete...")
 
 			// Wait for completion.
-			opts := api.WithTimeout(updateSnapshotScheduleTimeout)
-			response, err := wait.Wait(ctx, opts)
+			response, err := wait.Wait(ctx, lro.WithTimeout(updateSnapshotScheduleTimeout))
+			if err != nil {
+				return &cmdgen.WaitError{Err: err}
+			}
+			sp.Close()
+
+			out, err := postgres.SnapshotScheduleFromSDK(response)
 			if err != nil {
 				return err
 			}
-			sp.Close()
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, out)
 		}
 	}
 

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -62,7 +62,7 @@ func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) erro
 	return nil
 }
 
-func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
+func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *sdkclients.Clients, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
 	privateKeyBytes, err := GetSecret(ctx, client, secretScopeName, privateKeyName)
 	if err != nil {
 		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()

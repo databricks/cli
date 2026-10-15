@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,20 +18,17 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/sdk-go/aigateway/v1"
 )
 
 const (
@@ -117,7 +115,7 @@ func agentByName(name string) (agentSpec, bool) {
 	return agentSpec{}, false
 }
 
-func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+func RunAgentShim(ctx context.Context, client *sdkclients.Clients, agentName string, agentArgs []string) (retErr error) {
 	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
 	// from here too. Each failing step sets outcome.errorCategory; the returned error is
 	// picked up via the named return.
@@ -296,24 +294,25 @@ type gatewayProbe struct {
 	resourceAvailable bool
 }
 
-func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) error {
+func probeAIGateway(ctx context.Context, wsclient *sdkclients.Clients) error {
 	host := strings.TrimRight(wsclient.Config.Host, "/")
 
-	// build a client with retries disabled so a transient 429/503 fails fast
-	// instead of looping on the SDK's default 5-minute retry budget before the
-	// slow first-run bootstrap even starts.
-	apiClient, err := newProbeAPIClient(wsclient.Config)
+	// disable retries so a transient 429/503 fails fast instead of looping on
+	// the default 5-minute retry budget before the slow first-run bootstrap
+	// even starts.
+	ctx = apiclient.WithMaxAttempts(ctx, 1)
+	apiClient, err := apiclient.New(wsclient.Config)
 	if err != nil {
 		// this probe is best effort, so don't block
 		log.Debugf(ctx, "Skipping Unity AI Gateway check: %s", err)
 		return nil
 	}
 
-	modelSvc := probeModelServices(ctx, apiClient)
+	modelSvc := probeModelServices(ctx, wsclient)
 	// A 401 (or a 400 "invalid token") can't be rescued by trying another API,
 	// so surface it before the fallback probe.
 	if !modelSvc.reachable && looksLikeDefinitiveAuthFailure(modelSvc.err) {
-		return aiGatewayAuthError(host, modelSvc.err.Error())
+		return aiGatewayAuthError(host, apierrs.ErrorString(modelSvc.err))
 	}
 	if modelSvc.resourceAvailable {
 		return nil
@@ -333,65 +332,49 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 		// unconfirmed "empty".
 		return nil
 	case looksLikeDefinitiveAuthFailure(legacy.err):
-		return aiGatewayAuthError(host, legacy.err.Error())
+		return aiGatewayAuthError(host, apierrs.ErrorString(legacy.err))
 	case looksLikeScopeFailure(modelSvc.err):
-		return aiGatewayScopeError(host, modelSvc.err.Error())
+		return aiGatewayScopeError(host, apierrs.ErrorString(modelSvc.err))
 	case looksLikeScopeFailure(legacy.err):
-		return aiGatewayScopeError(host, legacy.err.Error())
+		return aiGatewayScopeError(host, apierrs.ErrorString(legacy.err))
 	case looksLikeTransient(modelSvc.err) || looksLikeTransient(legacy.err):
 		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
 		// rather than sending them to the enablement docs.
 		return categorize(protos.SshAgentShimErrorCategoryGatewayTransientError, versionNeutralGatewayError(
-			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
+			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, apierrs.ErrorString(modelSvc.err), apierrs.ErrorString(legacy.err)),
 		))
-	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
+	case apierrs.Is(modelSvc.err, apierrs.ErrPermissionDenied):
 		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
-			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
+			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, apierrs.ErrorString(modelSvc.err), apierrs.ErrorString(legacy.err)),
 		))
-	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
+	case apierrs.Is(legacy.err, apierrs.ErrPermissionDenied):
 		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
-			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
+			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, apierrs.ErrorString(legacy.err), apierrs.ErrorString(modelSvc.err)),
 		))
 	default:
 		return categorize(protos.SshAgentShimErrorCategoryGatewayNotEnabled, versionNeutralGatewayError(
-			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.err.Error(), legacy.err.Error(), aiGatewayDocsURL),
+			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, apierrs.ErrorString(modelSvc.err), apierrs.ErrorString(legacy.err), aiGatewayDocsURL),
 		))
 	}
 }
 
-// newProbeAPIClient builds a low-level client from cfg with the SDK's retries
-// turned off, so the gateway preflight is one-shot. Clearing ErrorRetriable and
-// TransientErrors makes a retriable status (429, 503, ...) surface on the first
-// attempt rather than looping until the retry budget expires; it mirrors
-// client.New, which builds the retrying client the rest of the CLI uses.
-func newProbeAPIClient(cfg *config.Config) (*client.DatabricksClient, error) {
-	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-	clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
-	clientCfg.TransientErrors = nil
-	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
-}
-
-func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
-	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
-	_, err := it.Next(ctx)
-	if err != nil {
-		if err == listing.ErrNoMoreItems {
-			// endpoint is reachable but there are no results
-			return gatewayProbe{reachable: true}
+func probeModelServices(ctx context.Context, w *sdkclients.Clients) gatewayProbe {
+	// The first model service is enough; a page error before it is a probe failure.
+	for _, err := range w.AiGateway.ListModelServicesIter(ctx, aigateway.ListModelServicesRequest{PageSize: new(modelServiceProbePageSize)}) {
+		if err != nil {
+			return gatewayProbe{err: err}
 		}
-		return gatewayProbe{err: err}
+		return gatewayProbe{reachable: true, resourceAvailable: true}
 	}
-	return gatewayProbe{reachable: true, resourceAvailable: true}
+	// endpoint is reachable but there are no results
+	return gatewayProbe{reachable: true}
 }
 
 type legacyEndpointsResponse struct {
 	Endpoints []any `json:"endpoints"`
 }
 
-func probeLegacyEndpoints(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
+func probeLegacyEndpoints(ctx context.Context, apiClient *apiclient.Client) gatewayProbe {
 	var resp legacyEndpointsResponse
 	err := apiClient.Do(ctx, http.MethodGet, legacyEndpointsPath, auth.WorkspaceIDHeaders(apiClient.Config), map[string]any{
 		"page_size": "1",
@@ -422,25 +405,27 @@ func versionNeutralGatewayError(reason string) error {
 // preflight still tries the fallback before giving up.
 func looksLikeDefinitiveAuthFailure(err error) bool {
 	// HTTP 401
-	if errors.Is(err, apierr.ErrUnauthenticated) {
+	if apierrs.Is(err, apierrs.ErrUnauthenticated) {
 		return true
 	}
-	return errors.Is(err, apierr.ErrBadRequest) && strings.Contains(strings.ToLower(err.Error()), "invalid token")
+	return apierrs.Is(err, apierrs.ErrBadRequest) && strings.Contains(strings.ToLower(apierrs.ErrorString(err)), "invalid token")
 }
 
 // matches a 403 that reports the OAuth token is missing a required scope (which
 // re-login can fix), as opposed to a plain permission 403.
 func looksLikeScopeFailure(err error) bool {
 	reason := strings.ToLower(err.Error())
-	return errors.Is(err, apierr.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
+	return apierrs.Is(err, apierrs.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
 }
 
 func looksLikeTransient(err error) bool {
-	return strings.HasPrefix(err.Error(), "network error") ||
-		errors.Is(err, apierr.ErrTooManyRequests) || // HTTP 429
-		errors.Is(err, apierr.ErrInternalError) || // HTTP 500
-		errors.Is(err, apierr.ErrTemporarilyUnavailable) || // HTTP 503
-		errors.Is(err, apierr.ErrDeadlineExceeded) // HTTP 504
+	// Transport failures (DNS, connection reset, ...) surface as *url.Error.
+	_, isNetworkError := errors.AsType[*url.Error](err)
+	return isNetworkError ||
+		apierrs.Is(err, apierrs.ErrTooManyRequests) || // HTTP 429
+		apierrs.Is(err, apierrs.ErrInternalError) || // HTTP 500
+		apierrs.Is(err, apierrs.ErrTemporarilyUnavailable) || // HTTP 503
+		apierrs.Is(err, apierrs.ErrDeadlineExceeded) // HTTP 504
 }
 
 func aiGatewayAuthError(host, reason string) error {

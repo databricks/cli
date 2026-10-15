@@ -10,9 +10,9 @@ import (
 	"net/textproto"
 	"path"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/databricks-sdk-go"
-	databricksclient "github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // SnapshotInfo holds the result of a successful snapshot upload.
@@ -32,8 +32,8 @@ type ACLEntry struct {
 
 // SnapshotClient implements the /api/2.0/repos/snapshots endpoint.
 type SnapshotClient struct {
-	workspaceClient *databricks.WorkspaceClient
-	client          *databricksclient.DatabricksClient
+	workspaceClient *sdkclients.Clients
+	client          *apiclient.Client
 }
 
 // snapshotUploadResponse mirrors the /api/2.0/repos/snapshots response body.
@@ -48,8 +48,8 @@ type snapshotRootPathResponse struct {
 }
 
 // NewSnapshotClient creates a SnapshotClient backed by /api/2.0/repos/snapshots.
-func NewSnapshotClient(w *databricks.WorkspaceClient) (*SnapshotClient, error) {
-	c, err := databricksclient.New(w.Config)
+func NewSnapshotClient(w *sdkclients.Clients) (*SnapshotClient, error) {
+	c, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}

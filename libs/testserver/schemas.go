@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	schemas "github.com/databricks/cli/libs/sdktypes/uc/schemas/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
@@ -20,7 +21,7 @@ const schemaNameManagedDefaults = "schema_managed_defaults"
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var schema catalog.SchemaInfo
+	var schema schemas.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schema); err != nil {
 		return Response{
@@ -30,28 +31,28 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	}
 
 	// UC normalizes schema names to lowercase.
-	schema.Name = strings.ToLower(schema.Name)
+	schema.Name = utils.NonZero(strings.ToLower(utils.Deref(schema.Name)))
 	// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
-	schema.StorageRoot = strings.TrimRight(schema.StorageRoot, "/")
-	schema.FullName = schema.CatalogName + "." + schema.Name
-	schema.ForceSendFields = []string{"BrowseOnly"}
+	schema.StorageRoot = utils.NonZero(strings.TrimRight(utils.Deref(schema.StorageRoot), "/"))
+	schema.FullName = utils.NonZero(utils.Deref(schema.CatalogName) + "." + utils.Deref(schema.Name))
+	schema.BrowseOnly = new(false)
 	schema.CatalogType = "MANAGED_CATALOG"
-	schema.CreatedAt = nowMilli()
+	schema.CreatedAt = utils.NonZero(nowMilli())
 	schema.UpdatedAt = schema.CreatedAt
 	schema.CreatedBy = s.CurrentUser().UserName
 	schema.UpdatedBy = s.CurrentUser().UserName
-	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
-		InheritedFromName: testMetastoreName,
-		InheritedFromType: catalog.EffectivePredictiveOptimizationFlagInheritedFromType("METASTORE"),
+	schema.EffectivePredictiveOptimizationFlag = &schemas.EffectivePredictiveOptimizationFlag{
+		InheritedFromName: utils.NonZero(testMetastoreName),
+		InheritedFromType: new("METASTORE"),
 		// Mirror the real test metastore, which inherits ENABLE, so a single
 		// golden stays valid for both local and cloud runs.
-		Value: catalog.EnablePredictiveOptimizationEnable,
+		Value: new("ENABLE"),
 	}
-	schema.EnablePredictiveOptimization = catalog.EnablePredictiveOptimizationInherit
+	schema.EnablePredictiveOptimization = new("INHERIT")
 	schema.MetastoreId = TestMetastore.MetastoreId
 	schema.Owner = s.CurrentUser().UserName
-	schema.SchemaId = nextUUID()
-	if schema.Properties == nil && schema.Name == schemaNameManagedDefaults {
+	schema.SchemaId = utils.NonZero(nextUUID())
+	if schema.Properties == nil && utils.Deref(schema.Name) == schemaNameManagedDefaults {
 		// Mirror UC behavior: managed system defaults are populated when the user
 		// doesn't specify any properties. Required to cover backend-default drift.
 		schema.Properties = map[string]string{
@@ -64,7 +65,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 			"unity.catalog.managed.delta.defaults.delta.feature.catalogManaged":              "supported",
 		}
 	}
-	s.Schemas[schema.FullName] = schema
+	s.Schemas[utils.Deref(schema.FullName)] = schema
 
 	return Response{
 		Body: schema,
@@ -86,7 +87,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		return *errResponse
 	}
 
-	var schemaUpdate catalog.SchemaInfo
+	var schemaUpdate schemas.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
 		return Response{
@@ -97,7 +98,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 
 	applyUpdatedFields(&existing, schemaUpdate, fields)
 
-	existing.UpdatedAt = nowMilli()
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.Schemas[name] = existing

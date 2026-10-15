@@ -2,36 +2,35 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	registeredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	sdkregisteredmodels "github.com/databricks/sdk-go/uc/registeredmodels/v1"
 )
 
 type ResourceRegisteredModel struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
-func (*ResourceRegisteredModel) New(client *databricks.WorkspaceClient) *ResourceRegisteredModel {
+func (*ResourceRegisteredModel) New(client *sdkclients.Clients) *ResourceRegisteredModel {
 	return &ResourceRegisteredModel{
 		client: client,
 	}
 }
 
-func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *catalog.CreateRegisteredModelRequest {
+func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *registeredmodels.CreateRegisteredModelRequest {
 	return &input.CreateRegisteredModelRequest
 }
 
-func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	return &catalog.CreateRegisteredModelRequest{
+func (*ResourceRegisteredModel) RemapState(model *registeredmodels.RegisteredModelInfo) *registeredmodels.CreateRegisteredModelRequest {
+	return &registeredmodels.CreateRegisteredModelRequest{
 		CatalogName:     model.CatalogName,
 		Comment:         model.Comment,
 		Name:            model.Name,
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
-		ForceSendFields: utils.FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
@@ -48,41 +47,48 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 	}
 }
 
-func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
-	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
-		FullName:        id,
-		IncludeAliases:  false,
-		IncludeBrowse:   false,
-		ForceSendFields: nil,
+func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*registeredmodels.RegisteredModelInfo, error) {
+	info, err := r.client.RegisteredModels.GetRegisteredModel(ctx, sdkregisteredmodels.GetRegisteredModelRequest{
+		FullNameArg:    new(id),
+		IncludeAliases: nil, // Not set by DABs
+		IncludeBrowse:  nil, // Not set by DABs
 	})
+	if err != nil {
+		return nil, err
+	}
+	return registeredmodels.RegisteredModelInfoFromSDK(info)
 }
 
-func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
-	response, err := r.client.RegisteredModels.Create(ctx, *config)
+func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *registeredmodels.CreateRegisteredModelRequest) (string, *registeredmodels.RegisteredModelInfo, error) {
+	request, err := registeredmodels.CreateRegisteredModelRequestToSDK(config)
 	if err != nil {
 		return "", nil, err
 	}
-
-	return response.FullName, response, nil
+	response, err := r.client.RegisteredModels.CreateRegisteredModel(ctx, *request)
+	if err != nil {
+		return "", nil, err
+	}
+	info, err := registeredmodels.RegisteredModelInfoFromSDK(response)
+	if err != nil {
+		return "", nil, err
+	}
+	return utils.Deref(info.FullName), info, nil
 }
 
-// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
-var registeredModelForceSend = []string{"Comment"}
-
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
-	updateRequest := catalog.UpdateRegisteredModelRequest{
-		FullName:        id,
-		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *registeredmodels.CreateRegisteredModelRequest, _ *PlanEntry) (*registeredmodels.RegisteredModelInfo, error) {
+	request, err := registeredmodels.UpdateRegisteredModelRequestToSDK(&registeredmodels.UpdateRegisteredModelRequest{
+		FullNameArg: new(id),
+		// Always sent, see ResourceSchema.DoUpdate. Verified against a real workspace: {"comment": ""} clears it.
+		Comment: orZero(config.Comment),
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
 		// change to it is silently dropped rather than applied.
-		Owner: "",
+		Owner: nil,
 
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.
 		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
-		NewName: "",
+		NewName: nil,
 
 		Aliases:         config.Aliases,
 		BrowseOnly:      config.BrowseOnly,
@@ -95,18 +101,22 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		StorageLocation: config.StorageLocation,
 		Name:            config.Name,
 		CatalogName:     config.CatalogName,
-	}
-
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+		FullName:        nil,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return response, nil
+	response, err := r.client.RegisteredModels.UpdateRegisteredModel(ctx, *request)
+	if err != nil {
+		return nil, err
+	}
+	return registeredmodels.RegisteredModelInfoFromSDK(response)
 }
 
-func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) error {
-	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
-		FullName: id,
+func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *registeredmodels.CreateRegisteredModelRequest) error {
+	_, err := r.client.RegisteredModels.DeleteRegisteredModel(ctx, sdkregisteredmodels.DeleteRegisteredModelRequest{
+		FullNameArg: new(id),
 	})
+	return err
 }

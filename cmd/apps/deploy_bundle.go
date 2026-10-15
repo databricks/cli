@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
@@ -66,8 +65,8 @@ func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOpt
 
 // BundleDeployOverrideWithWrapper creates a deploy override function that uses
 // the provided error wrapper for API fallback errors.
-func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.CreateAppDeploymentRequest) {
-	return func(deployCmd *cobra.Command, deployReq *apps.CreateAppDeploymentRequest) {
+func BundleDeployOverrideWithWrapper[R any](wrapError ErrorWrapper) func(*cobra.Command, *R) {
+	return func(deployCmd *cobra.Command, _ *R) {
 		var opts bundleDeployOptions
 
 		deployCmd.Flags().BoolVar(&opts.force, "force", false, "Force-override Git branch validation.")
@@ -96,7 +95,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 			}
 
 			err := originalRunE(cmd, args)
-			return wrapError(cmd, deployReq.AppName, err)
+			return wrapError(cmd, appNameArg(args), err)
 		}
 
 		deployCmd.Long = `Create an app deployment.

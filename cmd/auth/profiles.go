@@ -14,9 +14,9 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -94,11 +94,11 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 
 	switch configType {
 	case config.AccountConfig:
-		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+		a, err := sdkclients.New(ctx, cfg)
 		if err != nil {
 			return
 		}
-		_, err = a.Workspaces.List(callCtx)
+		_, err = listWorkspaces(callCtx, a)
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
@@ -106,11 +106,11 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		}
 		c.Valid = true
 	case config.WorkspaceConfig:
-		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		w, err := sdkclients.New(ctx, cfg)
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(callCtx, iam.MeRequest{})
+		_, err = w.Scim.Me(callCtx, sdkscim.MeRequest{})
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {

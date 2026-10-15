@@ -13,6 +13,8 @@
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "catalog_grants_[UNIQUE_NAME]",
+    "securable_type": "catalog"
   }
 }

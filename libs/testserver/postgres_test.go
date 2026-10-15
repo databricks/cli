@@ -6,8 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +31,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 
 	var createOp postgres.Operation
 	require.NoError(t, json.NewDecoder(createResp.Body).Decode(&createOp))
-	assert.True(t, createOp.Done)
+	assert.True(t, utils.Deref(createOp.Done))
 	createResp.Body.Close()
 
 	// Get project
@@ -41,7 +43,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 
 	var project postgres.Project
 	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&project))
-	assert.Equal(t, "projects/test-project", project.Name)
+	assert.Equal(t, "projects/test-project", utils.Deref(project.Name))
 	getResp.Body.Close()
 
 	// List projects
@@ -144,7 +146,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 
 	var branch postgres.Branch
 	require.NoError(t, json.NewDecoder(getBranchResp.Body).Decode(&branch))
-	assert.Equal(t, "projects/branch-test-project/branches/main", branch.Name)
+	assert.Equal(t, "projects/branch-test-project/branches/main", utils.Deref(branch.Name))
 	getBranchResp.Body.Close()
 
 	// List branches
@@ -225,7 +227,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 
 	var endpoint postgres.Endpoint
 	require.NoError(t, json.NewDecoder(getEpResp.Body).Decode(&endpoint))
-	assert.Equal(t, "projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", endpoint.Name)
+	assert.Equal(t, "projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", utils.Deref(endpoint.Name))
 	getEpResp.Body.Close()
 
 	// List endpoints
@@ -293,11 +295,11 @@ func TestPostgresDatabaseCRUD(t *testing.T) {
 
 	var database postgres.Database
 	require.NoError(t, json.NewDecoder(getDbResp.Body).Decode(&database))
-	assert.Equal(t, "projects/database-test-project/branches/main/databases/my-db", database.Name)
-	assert.Equal(t, "projects/database-test-project/branches/main", database.Parent)
+	assert.Equal(t, "projects/database-test-project/branches/main/databases/my-db", utils.Deref(database.Name))
+	assert.Equal(t, "projects/database-test-project/branches/main", utils.Deref(database.Parent))
 	require.NotNil(t, database.Status)
-	assert.Equal(t, "my_db", database.Status.PostgresDatabase)
-	assert.NotEmpty(t, database.Status.Role)
+	assert.Equal(t, "my_db", utils.Deref(database.Status.PostgresDatabase))
+	assert.NotEmpty(t, utils.Deref(database.Status.Role))
 	getDbResp.Body.Close()
 
 	// List databases
@@ -331,7 +333,7 @@ func TestPostgresDatabaseCRUD(t *testing.T) {
 	var database2 postgres.Database
 	require.NoError(t, json.NewDecoder(getDbResp2.Body).Decode(&database2))
 	require.NotNil(t, database2.Status)
-	assert.Equal(t, "my_db_renamed", database2.Status.PostgresDatabase)
+	assert.Equal(t, "my_db_renamed", utils.Deref(database2.Status.PostgresDatabase))
 	getDbResp2.Body.Close()
 
 	// Delete database
@@ -405,8 +407,8 @@ func TestPostgresDatabaseUpdateMaskPreservesUnmaskedFields(t *testing.T) {
 	getResp.Body.Close()
 
 	require.NotNil(t, database.Status)
-	assert.Equal(t, "renamed_db", database.Status.PostgresDatabase, "masked field should be updated")
-	assert.Equal(t, "projects/mask-db-project/branches/main/roles/owner", database.Status.Role, "field absent from update_mask should be preserved")
+	assert.Equal(t, "renamed_db", utils.Deref(database.Status.PostgresDatabase), "masked field should be updated")
+	assert.Equal(t, "projects/mask-db-project/branches/main/roles/owner", utils.Deref(database.Status.Role), "field absent from update_mask should be preserved")
 }
 
 func TestPostgresDatabaseCreateDuplicateReturns400(t *testing.T) {
@@ -506,10 +508,10 @@ func TestPostgresRoleCRUD(t *testing.T) {
 
 	var role postgres.Role
 	require.NoError(t, json.NewDecoder(getRoleResp.Body).Decode(&role))
-	assert.Equal(t, "projects/role-test-project/branches/main/roles/my-role", role.Name)
-	assert.Equal(t, "projects/role-test-project/branches/main", role.Parent)
+	assert.Equal(t, "projects/role-test-project/branches/main/roles/my-role", utils.Deref(role.Name))
+	assert.Equal(t, "projects/role-test-project/branches/main", utils.Deref(role.Parent))
 	require.NotNil(t, role.Status)
-	assert.Equal(t, "my_role", role.Status.PostgresRole)
+	assert.Equal(t, "my_role", utils.Deref(role.Status.PostgresRole))
 	getRoleResp.Body.Close()
 
 	// List roles
@@ -543,7 +545,7 @@ func TestPostgresRoleCRUD(t *testing.T) {
 	var role2 postgres.Role
 	require.NoError(t, json.NewDecoder(getRoleResp2.Body).Decode(&role2))
 	require.NotNil(t, role2.Status)
-	assert.Equal(t, "my_role_renamed", role2.Status.PostgresRole)
+	assert.Equal(t, "my_role_renamed", utils.Deref(role2.Status.PostgresRole))
 	getRoleResp2.Body.Close()
 
 	// Delete role
@@ -594,8 +596,8 @@ func TestPostgresRoleUpdateMaskPreservesUnmaskedFields(t *testing.T) {
 
 	require.NotNil(t, role.Status)
 	require.NotNil(t, role.Status.Attributes)
-	assert.True(t, role.Status.Attributes.Createdb, "masked field should be updated")
-	assert.Equal(t, "app_role", role.Status.PostgresRole, "field absent from update_mask should be preserved")
+	assert.True(t, utils.Deref(role.Status.Attributes.Createdb), "masked field should be updated")
+	assert.Equal(t, "app_role", utils.Deref(role.Status.PostgresRole), "field absent from update_mask should be preserved")
 }
 
 func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {

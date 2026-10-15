@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
@@ -46,9 +48,9 @@ func (m *initializeVolumePaths) Apply(_ context.Context, b *bundle.Bundle) diag.
 			}
 
 			// Resolve references to compute the path only; the field values in v are left untouched.
-			vol.CatalogName = resolveResourceReference(root, vol.CatalogName)
-			vol.SchemaName = resolveResourceReference(root, vol.SchemaName)
-			vol.Name = resolveResourceReference(root, vol.Name)
+			vol.CatalogName = new(resolveResourceReference(root, utils.Deref(vol.CatalogName)))
+			vol.SchemaName = new(resolveResourceReference(root, utils.Deref(vol.SchemaName)))
+			vol.Name = new(resolveResourceReference(root, utils.Deref(vol.Name)))
 
 			return dyn.Set(v, "volume_path", dyn.V(vol.ComputeVolumePath()))
 		})

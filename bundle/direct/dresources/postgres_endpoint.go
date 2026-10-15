@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/apierrs"
+	"github.com/databricks/cli/libs/sdkclients"
+	postgres "github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
 )
 
 // endpointReconciliationTimeout is the maximum time to wait for endpoint reconciliation.
@@ -32,27 +32,17 @@ type PostgresEndpointRemote struct {
 	Name       string                   `json:"name,omitempty"`
 	Status     *postgres.EndpointStatus `json:"status,omitempty"`
 	Uid        string                   `json:"uid,omitempty"`
-	CreateTime *sdktime.Time            `json:"create_time,omitempty"`
-	UpdateTime *sdktime.Time            `json:"update_time,omitempty"`
-}
-
-// Custom marshaler needed because embedded EndpointSpec has its own MarshalJSON
-// which would otherwise take over and ignore the additional fields.
-func (s *PostgresEndpointRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s PostgresEndpointRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+	CreateTime *types.Time              `json:"create_time,omitempty"`
+	UpdateTime *types.Time              `json:"update_time,omitempty"`
 }
 
 type ResourcePostgresEndpoint struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 }
 
 type PostgresEndpointState = resources.PostgresEndpointConfig
 
-func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *ResourcePostgresEndpoint {
+func (*ResourcePostgresEndpoint) New(client *sdkclients.Clients) *ResourcePostgresEndpoint {
 	return &ResourcePostgresEndpoint{client: client}
 }
 
@@ -82,29 +72,33 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_endpoints.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
-func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
+func makePostgresEndpointRemote(resp *sdkpostgres.Endpoint) (*PostgresEndpointRemote, error) {
+	endpoint, err := postgres.EndpointFromSDK(resp)
+	if err != nil {
+		return nil, err
+	}
 	var spec postgres.EndpointSpec
 	if endpoint.Spec != nil {
 		spec = *endpoint.Spec
 	}
 	return &PostgresEndpointRemote{
 		EndpointSpec: spec,
-		EndpointId:   endpoint.EndpointId,
-		Parent:       endpoint.Parent,
-		Name:         endpoint.Name,
+		EndpointId:   utils.Deref(endpoint.EndpointId),
+		Parent:       utils.Deref(endpoint.Parent),
+		Name:         utils.Deref(endpoint.Name),
 		Status:       endpoint.Status,
-		Uid:          endpoint.Uid,
+		Uid:          utils.Deref(endpoint.Uid),
 		CreateTime:   endpoint.CreateTime,
 		UpdateTime:   endpoint.UpdateTime,
-	}
+	}, nil
 }
 
 func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string) (*PostgresEndpointRemote, error) {
-	endpoint, err := r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: id})
+	endpoint, err := r.client.Postgres.GetEndpoint(ctx, sdkpostgres.GetEndpointRequest{Name: new(id)})
 	if err != nil {
 		return nil, err
 	}
-	return makePostgresEndpointRemote(endpoint), nil
+	return makePostgresEndpointRemote(endpoint)
 }
 
 // waitForReconciliation polls the endpoint until PendingState is empty.
@@ -113,14 +107,14 @@ func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string) (*Post
 func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, name string) (*PostgresEndpointRemote, error) {
 	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
-		endpoint, err := r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
+		endpoint, err := r.client.Postgres.GetEndpoint(ctx, sdkpostgres.GetEndpointRequest{Name: new(name)})
 		if err != nil {
 			return nil, err
 		}
 
 		// If there's no pending state, reconciliation is complete
 		if endpoint.Status == nil || endpoint.Status.PendingState == "" {
-			return makePostgresEndpointRemote(endpoint), nil
+			return makePostgresEndpointRemote(endpoint)
 		}
 
 		// Check if we've exceeded the timeout
@@ -138,25 +132,26 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 }
 
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
-	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
-		EndpointId: config.EndpointId,
-		Parent:     config.Parent,
-		Endpoint: postgres.Endpoint{
-			Spec: &config.EndpointSpec,
-
-			// Output-only fields.
-			EndpointId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+	// Only spec is set; the other Endpoint fields are output-only.
+	request, err := postgres.CreateEndpointRequestToSDK(&postgres.CreateEndpointRequest{
+		EndpointId: nonEmpty(config.EndpointId),
+		Parent:     nonEmpty(config.Parent),
+		Endpoint: &postgres.Endpoint{
+			Spec:       &config.EndpointSpec,
+			CreateTime: nil, // Not set by DABs
+			EndpointId: nil, // Not set by DABs
+			Name:       nil, // Not set by DABs
+			Parent:     nil, // Not set by DABs
+			Status:     nil, // Not set by DABs
+			Uid:        nil, // Not set by DABs
+			UpdateTime: nil, // Not set by DABs
 		},
-		ReplaceExisting: config.ReplaceExisting,
-		ForceSendFields: nil,
+		ReplaceExisting: trueOrNil(config.ReplaceExisting),
 	})
+	if err != nil {
+		return "", nil, err
+	}
+	waiter, err := r.client.Postgres.CreateEndpoint(ctx, *request)
 	if err != nil {
 		return "", nil, err
 	}
@@ -168,7 +163,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	}
 
 	// Wait for reconciliation to complete
-	remote, err := r.waitForReconciliation(ctx, result.Name)
+	remote, err := r.waitForReconciliation(ctx, utils.Deref(result.Name))
 	if err != nil {
 		return "", nil, err
 	}
@@ -176,8 +171,8 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-// no_suspension and suspend_timeout_duration are two sides of one oneof, which the API
-// accepts in update_mask only under the group name; see branchOneofGroups.
+// no_suspension and suspend_timeout_duration are two sides of one oneof, and the API
+// accepts them in update_mask only under the group name "suspension".
 var endpointOneofGroups = map[string]string{
 	"no_suspension":            "suspension",
 	"suspend_timeout_duration": "suspension",
@@ -190,31 +185,17 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
 
-	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
-		Endpoint: postgres.Endpoint{
-			Spec: &config.EndpointSpec,
-
-			// Output-only fields.
-			EndpointId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
-		},
-		Name: id,
-		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
-		},
+	// Only spec is set; the other Endpoint fields are output-only.
+	_, err := updatePostgres[postgres.Endpoint](ctx, r.client, id, strings.Join(fieldPaths, ","), &postgres.Endpoint{
+		Spec:       &config.EndpointSpec,
+		CreateTime: nil, // Not set by DABs
+		EndpointId: nil, // Not set by DABs
+		Name:       nil, // Not set by DABs
+		Parent:     nil, // Not set by DABs
+		Status:     nil, // Not set by DABs
+		Uid:        nil, // Not set by DABs
+		UpdateTime: nil, // Not set by DABs
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for the update to complete
-	_, err = waiter.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -227,13 +208,12 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string, _ *P
 	// Retry loop to handle "Endpoint reconciliation still in progress" errors
 	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
-		waiter, err := r.client.Postgres.DeleteEndpoint(ctx, postgres.DeleteEndpointRequest{
-			Name: id,
+		waiter, err := r.client.Postgres.DeleteEndpoint(ctx, sdkpostgres.DeleteEndpointRequest{
+			Name: new(id),
 		})
 		if err != nil {
 			// Check if this is a reconciliation in progress error
-			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusConflict &&
-				strings.Contains(apiErr.Message, "reconciliation") {
+			if apierrs.StatusCode(err) == http.StatusConflict && strings.Contains(apierrs.Message(err), "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {
 					return errors.New("timeout waiting for endpoint reconciliation to complete before delete")

@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/python"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +47,7 @@ func TestRunningBlueprintEchoProfileWrongOverride(t *testing.T) {
 	ctx := devEnvContext(t)
 	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "echo", "--profile", "workspace-profile")
 	_, _, err := r.Run()
-	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+	assert.ErrorContains(t, err, "invalid Databricks Account configuration")
 }
 
 func TestRunningCommand(t *testing.T) {

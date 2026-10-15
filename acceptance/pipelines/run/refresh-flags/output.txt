@@ -26,6 +26,7 @@ Pipeline configurations for this update:
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
+    "pipeline_id": "[UUID]",
     "refresh_selection": [
       "table1",
       "table2"
@@ -53,7 +54,8 @@ Pipeline configurations for this update:
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
-    "full_refresh": true
+    "full_refresh": true,
+    "pipeline_id": "[UUID]"
   }
 }
 
@@ -80,7 +82,8 @@ Pipeline configurations for this update:
     "full_refresh_selection": [
       "table1",
       "table2"
-    ]
+    ],
+    "pipeline_id": "[UUID]"
   }
 }
 
@@ -108,6 +111,7 @@ Pipeline configurations for this update:
       "table1",
       "table2"
     ],
+    "pipeline_id": "[UUID]",
     "refresh_selection": [
       "table3",
       "table4"

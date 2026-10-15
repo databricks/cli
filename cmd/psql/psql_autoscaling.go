@@ -8,10 +8,12 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/listing"
 	libpsql "github.com/databricks/cli/libs/psql"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/utils"
+	postgres "github.com/databricks/sdk-go/postgres/v1"
+	sdkscim "github.com/databricks/sdk-go/scim/v1"
 )
 
 // autoscalingDefaultDatabase is the default database for Lakebase Autoscaling projects.
@@ -38,7 +40,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return err
 	}
 
-	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	user, err := w.Scim.Me(ctx, sdkscim.MeRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
@@ -47,7 +49,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return errors.New("endpoint status is not available")
 	}
 
-	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
+	if endpoint.Status.Hosts == nil || utils.Deref(endpoint.Status.Hosts.Host) == "" {
 		return errors.New("endpoint host information is not available")
 	}
 
@@ -60,9 +62,9 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 
 	var endpointType string
 	switch endpoint.Status.EndpointType {
-	case postgres.EndpointTypeEndpointTypeReadWrite:
+	case postgres.EndpointType_EndpointTypeReadWrite:
 		endpointType = "read-write"
-	case postgres.EndpointTypeEndpointTypeReadOnly:
+	case postgres.EndpointType_EndpointTypeReadOnly:
 		endpointType = "read-only"
 	default:
 		endpointType = string(endpoint.Status.EndpointType)
@@ -71,9 +73,9 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 	state := endpoint.Status.CurrentState
 	var suffix string
 	switch state {
-	case postgres.EndpointStatusStateActive:
+	case postgres.EndpointStatus_State_Active:
 		// No need to inform the user that the endpoint is active.
-	case postgres.EndpointStatusStateIdle:
+	case postgres.EndpointStatus_State_Idle:
 		suffix = " (idle, waking up)"
 	default:
 		return errors.New("endpoint is not ready for accepting connections")
@@ -82,9 +84,9 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint%s...", endpointType, suffix))
 
 	return libpsql.Connect(ctx, libpsql.ConnectOptions{
-		Host:            endpoint.Status.Hosts.Host,
-		Username:        user.UserName,
-		Password:        cred.Token,
+		Host:            utils.Deref(endpoint.Status.Hosts.Host),
+		Username:        utils.Deref(user.UserName),
+		Password:        utils.Deref(cred.Token),
 		DefaultDatabase: autoscalingDefaultDatabase,
 		ExtraArgs:       extraArgs,
 	}, retryConfig)
@@ -92,7 +94,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 
 // resolveEndpoint resolves a partial specification to a full endpoint.
 // Uses interactive selection when components are missing.
-func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
+func resolveEndpoint(ctx context.Context, w *sdkclients.Clients, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
 	// If project not specified, select one
 	if projectID == "" {
 		var err error
@@ -103,26 +105,26 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	}
 
 	// Get project to display its name
-	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: "projects/" + projectID})
+	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: new("projects/" + projectID)})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project: %w", err)
 	}
 	projectDisplayName := projectID
-	if project.Status != nil && project.Status.DisplayName != "" {
-		projectDisplayName = project.Status.DisplayName
+	if project.Status != nil && utils.Deref(project.Status.DisplayName) != "" {
+		projectDisplayName = utils.Deref(project.Status.DisplayName)
 	}
 	cmdio.LogString(ctx, "Project: "+projectDisplayName)
 
 	// If branch not specified, select one
 	if branchID == "" {
-		branchID, err = selectBranchID(ctx, w, project.Name)
+		branchID, err = selectBranchID(ctx, w, utils.Deref(project.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to select branch: %w", err)
 		}
 	}
 
 	// Get branch to validate it exists
-	branch, err := w.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: project.Name + "/branches/" + branchID})
+	branch, err := w.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: new(utils.Deref(project.Name) + "/branches/" + branchID)})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get branch: %w", err)
 	}
@@ -130,14 +132,14 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 
 	// If endpoint not specified, select one
 	if endpointID == "" {
-		endpointID, err = selectEndpointID(ctx, w, branch.Name)
+		endpointID, err = selectEndpointID(ctx, w, utils.Deref(branch.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to select endpoint: %w", err)
 		}
 	}
 
 	// Get endpoint to validate and return it
-	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: branch.Name + "/endpoints/" + endpointID})
+	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: new(utils.Deref(branch.Name) + "/endpoints/" + endpointID)})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoint: %w", err)
 	}
@@ -148,10 +150,10 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 
 // selectProjectID auto-selects if there's only one project, otherwise prompts user to select.
 // Returns the project ID (not the full project object).
-func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func selectProjectID(ctx context.Context, w *sdkclients.Clients) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading projects...")
-	projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
+	projects, err := listing.Collect(w.Postgres.ListProjectsIter(ctx, postgres.ListProjectsRequest{}))
 	sp.Close()
 	if err != nil {
 		return "", err
@@ -163,16 +165,16 @@ func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string
 
 	// Auto-select if there's only one project
 	if len(projects) == 1 {
-		return extractIDFromName(projects[0].Name, "projects"), nil
+		return extractIDFromName(utils.Deref(projects[0].Name), "projects"), nil
 	}
 
 	// Multiple projects, prompt user to select
 	var items []cmdio.Tuple
 	for _, project := range projects {
-		projectID := extractIDFromName(project.Name, "projects")
+		projectID := extractIDFromName(utils.Deref(project.Name), "projects")
 		displayName := projectID
-		if project.Status != nil && project.Status.DisplayName != "" {
-			displayName = project.Status.DisplayName
+		if project.Status != nil && utils.Deref(project.Status.DisplayName) != "" {
+			displayName = utils.Deref(project.Status.DisplayName)
 		}
 		items = append(items, cmdio.Tuple{Name: displayName, Id: projectID})
 	}
@@ -182,12 +184,12 @@ func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string
 
 // selectBranchID auto-selects if there's only one branch, otherwise prompts user to select.
 // Returns the branch ID (not the full branch object).
-func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (string, error) {
+func selectBranchID(ctx context.Context, w *sdkclients.Clients, projectName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading branches...")
-	branches, err := w.Postgres.ListBranchesAll(ctx, postgres.ListBranchesRequest{
-		Parent: projectName,
-	})
+	branches, err := listing.Collect(w.Postgres.ListBranchesIter(ctx, postgres.ListBranchesRequest{
+		Parent: new(projectName),
+	}))
 	sp.Close()
 	if err != nil {
 		return "", err
@@ -199,13 +201,13 @@ func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectN
 
 	// Auto-select if there's only one branch
 	if len(branches) == 1 {
-		return extractIDFromName(branches[0].Name, "branches"), nil
+		return extractIDFromName(utils.Deref(branches[0].Name), "branches"), nil
 	}
 
 	// Multiple branches, prompt user to select
 	var items []cmdio.Tuple
 	for _, branch := range branches {
-		branchID := extractIDFromName(branch.Name, "branches")
+		branchID := extractIDFromName(utils.Deref(branch.Name), "branches")
 		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
 	}
 
@@ -214,12 +216,12 @@ func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectN
 
 // selectEndpointID auto-selects if there's only one endpoint, otherwise prompts user to select.
 // Returns the endpoint ID (not the full endpoint object).
-func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (string, error) {
+func selectEndpointID(ctx context.Context, w *sdkclients.Clients, branchName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading endpoints...")
-	endpoints, err := w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{
-		Parent: branchName,
-	})
+	endpoints, err := listing.Collect(w.Postgres.ListEndpointsIter(ctx, postgres.ListEndpointsRequest{
+		Parent: new(branchName),
+	}))
 	sp.Close()
 	if err != nil {
 		return "", err
@@ -231,13 +233,13 @@ func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branch
 
 	// Auto-select if there's only one endpoint
 	if len(endpoints) == 1 {
-		return extractIDFromName(endpoints[0].Name, "endpoints"), nil
+		return extractIDFromName(utils.Deref(endpoints[0].Name), "endpoints"), nil
 	}
 
 	// Multiple endpoints, prompt user to select
 	var items []cmdio.Tuple
 	for _, endpoint := range endpoints {
-		endpointID := extractIDFromName(endpoint.Name, "endpoints")
+		endpointID := extractIDFromName(utils.Deref(endpoint.Name), "endpoints")
 		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
 	}
 

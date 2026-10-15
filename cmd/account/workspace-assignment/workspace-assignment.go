@@ -9,8 +9,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -51,13 +53,12 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*iam.DeleteWorkspaceAssignmentRequest,
+	*sdkaccessmanagement.DeleteWorkspacePermissionAssignmentRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq iam.DeleteWorkspaceAssignmentRequest
+	var deleteReq sdkaccessmanagement.DeleteWorkspacePermissionAssignmentRequest
 
 	cmd.Use = "delete WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Delete permissions assignment.`
@@ -83,21 +84,28 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		var deleteWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &deleteWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-
-		_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
+		deleteReq.WorkspaceId = &deleteWorkspaceIdArg
+		var deletePrincipalIdArg int64
+		_, err = fmt.Sscan(args[1], &deletePrincipalIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
+		deleteReq.PrincipalId = &deletePrincipalIdArg
 
-		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := a.AccessManagement.DeleteWorkspacePermissionAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -119,13 +127,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*iam.GetWorkspaceAssignmentRequest,
+	*sdkaccessmanagement.ListWorkspacePermissionsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq iam.GetWorkspaceAssignmentRequest
+	var getReq sdkaccessmanagement.ListWorkspacePermissionsRequest
 
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `List workspace permissions.`
@@ -149,18 +156,26 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		var getWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &getWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		getReq.WorkspaceId = &getWorkspaceIdArg
 
-		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := a.AccessManagement.ListWorkspacePermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.ListWorkspacePermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -181,13 +196,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*iam.ListWorkspaceAssignmentRequest,
+	*sdkaccessmanagement.ListWorkspacePermissionAssignmentsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq sdkaccessmanagement.ListWorkspacePermissionAssignmentsRequest
 
-	var listReq iam.ListWorkspaceAssignmentRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -221,13 +236,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
+		var listWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &listWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		listReq.WorkspaceId = &listWorkspaceIdArg
 
-		response := a.WorkspaceAssignment.List(ctx, listReq)
+		sdkReq := &listReq
+		response, err := a.AccessManagement.ListWorkspacePermissionAssignments(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
@@ -235,7 +257,11 @@ func newList() *cobra.Command {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
 
-		return cmdio.RenderIterator(ctx, response)
+		out, err := accessmanagement.ListWorkspacePermissionAssignmentsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out.PermissionAssignments)
 	}
 
 	// Disable completions since they are not applicable.
@@ -256,13 +282,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.UpdateWorkspaceAssignments,
+	*accessmanagement.UpdateWorkspacePermissionAssignmentRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq accessmanagement.UpdateWorkspacePermissionAssignmentRequest
 
-	var updateReq iam.UpdateWorkspaceAssignments
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -293,6 +319,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -306,22 +333,33 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		var updateWorkspaceIdArg int64
+		_, err = fmt.Sscan(args[0], &updateWorkspaceIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-
-		_, err = fmt.Sscan(args[1], &updateReq.PrincipalId)
+		updateReq.WorkspaceId = &updateWorkspaceIdArg
+		var updatePrincipalIdArg int64
+		_, err = fmt.Sscan(args[1], &updatePrincipalIdArg)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
+		updateReq.PrincipalId = &updatePrincipalIdArg
 
-		response, err := a.WorkspaceAssignment.Update(ctx, updateReq)
+		sdkReq, err := accessmanagement.UpdateWorkspacePermissionAssignmentRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.AccessManagement.UpdateWorkspacePermissionAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := accessmanagement.WorkspacePermissionAssignmentOutputFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

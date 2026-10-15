@@ -12,13 +12,11 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/httpfixtures"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -85,18 +83,13 @@ func TestResolveProfileFromHostFlag(t *testing.T) {
 
 func TestGetWorkspaceAuthStatus(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	m := fakeClients(t, httpfixtures.Fixtures{{Method: "GET", Resource: "/api/2.0/preview/scim/v2/Me", Response: `{"userName":"test-user"}`}})
+	ctx = cmdctx.SetWorkspaceClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
 	showSensitive := false
-
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{
-		UserName: "test-user",
-	}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -107,7 +100,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "my-profile",
 	}
-	m.WorkspaceClient.Config = cfg
+	m.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	err = config.ConfigAttributes.Configure(cfg)
 	require.NoError(t, err)
@@ -143,8 +136,8 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 
 func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	m := fakeClients(t, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -160,7 +153,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "my-profile",
 	}
-	m.WorkspaceClient.Config = cfg
+	m.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	err = config.ConfigAttributes.Configure(cfg)
 	require.NoError(t, err)
@@ -192,8 +185,8 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 
 func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	m := fakeClients(t, nil)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -209,7 +202,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "my-profile",
 	}
-	m.WorkspaceClient.Config = cfg
+	m.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	err = config.ConfigAttributes.Configure(cfg)
 	require.NoError(t, err)
@@ -237,8 +230,8 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 
 func TestGetAccountAuthStatus(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockAccountClient(t)
-	ctx = cmdctx.SetAccountClient(ctx, m.AccountClient)
+	m := fakeClients(t, httpfixtures.Fixtures{{Method: "GET", Resource: "/api/2.0/accounts/test-account-id/workspaces", Response: `[]`}})
+	ctx = cmdctx.SetAccountClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -254,13 +247,10 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "my-profile",
 	}
-	m.AccountClient.Config = cfg
+	m.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	err = config.ConfigAttributes.Configure(cfg)
 	require.NoError(t, err)
-
-	wsApi := m.GetMockWorkspacesAPI()
-	wsApi.EXPECT().List(mock.Anything).Return(nil, nil)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
@@ -366,14 +356,11 @@ func TestStorageSourceLabel_NonConfigDelegatesToSource(t *testing.T) {
 
 func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	m := fakeClients(t, httpfixtures.Fixtures{{Method: "GET", Resource: "/api/2.0/preview/scim/v2/Me", Response: `{"userName":"u2m-user"}`}})
+	ctx = cmdctx.SetWorkspaceClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -381,7 +368,7 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	cmd.Flag("profile").Changed = true
 
 	cfg := &config.Config{Profile: "u2m-profile"}
-	m.WorkspaceClient.Config = cfg
+	m.Config = cfg
 	t.Setenv(storage.EnvVar, "secure")
 	t.Setenv("DATABRICKS_CONFIG_FILE", t.TempDir()+"/.databrickscfg")
 	require.NoError(t, config.ConfigAttributes.Configure(cfg))
@@ -433,28 +420,26 @@ func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus i
 	return server
 }
 
-// newDescribeWorkspaceCmd wires a mocked workspace client whose Me call fails
+// newDescribeWorkspaceCmd wires a fake workspace client whose Me call fails
 // with meErr, with cfg as its resolved configuration.
-func newDescribeWorkspaceCmd(t *testing.T, cfg *config.Config, meErr error) *cobra.Command {
+func newDescribeWorkspaceCmd(t *testing.T, cfg *config.Config, meErr apiError) *cobra.Command {
 	t.Helper()
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = cfg
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, meErr)
+	m := fakeClients(t, httpfixtures.Fixtures{meErr.fixture("GET", "/api/2.0/preview/scim/v2/Me")})
+	m.Config = cfg
 	cmd := newHostProfileCmd(t)
-	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), m))
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
 	return cmd
 }
 
-// newDescribeAccountCmd wires a mocked account client whose Workspaces.List
+// newDescribeAccountCmd wires a fake account client whose Workspaces.List
 // call fails with listErr, with cfg as its resolved configuration.
-func newDescribeAccountCmd(t *testing.T, cfg *config.Config, listErr error) *cobra.Command {
+func newDescribeAccountCmd(t *testing.T, cfg *config.Config, accountID string, listErr apiError) *cobra.Command {
 	t.Helper()
-	m := mocks.NewMockAccountClient(t)
-	m.AccountClient.Config = cfg
-	m.GetMockWorkspacesAPI().EXPECT().List(mock.Anything).Return(nil, listErr)
+	m := fakeClients(t, httpfixtures.Fixtures{listErr.fixture("GET", "/api/2.0/accounts/"+accountID+"/workspaces")})
+	m.Config = cfg
 	cmd := newHostProfileCmd(t)
-	cmd.SetContext(cmdctx.SetAccountClient(t.Context(), m.AccountClient))
+	cmd.SetContext(cmdctx.SetAccountClient(t.Context(), m))
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
 	return cmd
 }
@@ -478,7 +463,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 	tests := []struct {
 		name          string
 		isAccount     bool
-		primaryErr    *apierr.APIError
+		primaryErr    apiError
 		meStatus      int
 		listStatus    int
 		accountID     string
@@ -488,7 +473,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 	}{
 		{
 			name:          "workspace check fails, account check succeeds",
-			primaryErr:    &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			primaryErr:    apiError{http.StatusBadRequest, "Unable to load OAuth Config"},
 			meStatus:      http.StatusNotFound,
 			listStatus:    http.StatusOK,
 			accountID:     "test-acct",
@@ -497,13 +482,13 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "no second call without an account id",
-			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			primaryErr: apiError{http.StatusBadRequest, "Unable to load OAuth Config"},
 			wantStatus: "error",
 		},
 		{
 			name:         "account check fails, workspace check succeeds",
 			isAccount:    true,
-			primaryErr:   &apierr.APIError{StatusCode: http.StatusForbidden, Message: "This API is disabled for users without account admin status"},
+			primaryErr:   apiError{http.StatusForbidden, "This API is disabled for users without account admin status"},
 			meStatus:     http.StatusOK,
 			listStatus:   http.StatusNotFound,
 			accountID:    "test-acct",
@@ -512,7 +497,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "workspace branch, both checks fail",
-			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			primaryErr: apiError{http.StatusBadRequest, "Unable to load OAuth Config"},
 			meStatus:   http.StatusNotFound,
 			listStatus: http.StatusUnauthorized,
 			accountID:  "test-acct",
@@ -521,7 +506,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		{
 			name:       "account branch, both checks fail",
 			isAccount:  true,
-			primaryErr: &apierr.APIError{StatusCode: http.StatusUnauthorized, Message: "credentials expired"},
+			primaryErr: apiError{http.StatusUnauthorized, "credentials expired"},
 			meStatus:   http.StatusUnauthorized,
 			listStatus: http.StatusNotFound,
 			accountID:  "test-acct",
@@ -536,7 +521,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 			cfg := &config.Config{}
 			var cmd *cobra.Command
 			if tc.isAccount {
-				cmd = newDescribeAccountCmd(t, cfg, tc.primaryErr)
+				cmd = newDescribeAccountCmd(t, cfg, tc.accountID, tc.primaryErr)
 			} else {
 				cmd = newDescribeWorkspaceCmd(t, cfg, tc.primaryErr)
 			}
@@ -555,7 +540,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 			assert.Equal(t, tc.wantUsername, status.Username)
 			assert.Equal(t, tc.wantAccountID, status.AccountID)
 			if tc.wantStatus == "error" {
-				assert.ErrorIs(t, status.Error, tc.primaryErr)
+				assert.ErrorContains(t, status.Error, tc.primaryErr.message)
 			}
 		})
 	}
@@ -563,20 +548,17 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 
 func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	m := fakeClients(t, httpfixtures.Fixtures{{Method: "GET", Resource: "/api/2.0/preview/scim/v2/Me", Response: `{"userName":"pat-user"}`}})
+	ctx = cmdctx.SetWorkspaceClient(ctx, m)
 
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
 
 	cfg := &config.Config{}
-	m.WorkspaceClient.Config = cfg
+	m.Config = cfg
 	require.NoError(t, config.ConfigAttributes.Configure(cfg))
 
 	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
@@ -590,4 +572,30 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, status)
 	assert.Nil(t, status.TokenStorage)
+}
+
+// fakeClients returns clients that send requests to a server for fixtures.
+// Tests replace the returned Config with the config under test; the clients
+// keep authenticating against the fixture server.
+func fakeClients(t *testing.T, fixtures httpfixtures.Fixtures) *sdkclients.Clients {
+	t.Helper()
+	cfg, _ := fixtures.Config(t)
+	w, err := sdkclients.New(t.Context(), cfg)
+	require.NoError(t, err)
+	return w
+}
+
+// apiError is an API error response a fixture returns.
+type apiError struct {
+	status  int
+	message string
+}
+
+func (e apiError) fixture(method, resource string) httpfixtures.Fixture {
+	return httpfixtures.Fixture{
+		Method:   method,
+		Resource: resource,
+		Status:   e.status,
+		Response: map[string]string{"error_code": "TEST_ERROR", "message": e.message},
+	}
 }

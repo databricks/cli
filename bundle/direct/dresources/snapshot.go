@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/snapshot"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 type ResourceSnapshot struct {
@@ -35,7 +35,7 @@ type SnapshotRemote struct {
 	FullPath     string `json:"full_path"`
 }
 
-func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnapshot {
+func (s *ResourceSnapshot) New(client *sdkclients.Clients) *ResourceSnapshot {
 	// Return a zero-value instance when client is nil (e.g. refschema introspection).
 	if client == nil {
 		return &ResourceSnapshot{

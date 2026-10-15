@@ -6,9 +6,12 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/sdkclients"
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/utils"
+	sdkaccessmanagement "github.com/databricks/sdk-go/accessmanagement/v1"
 )
 
 // GetAPIRequestObjectType is used by direct to construct a request to permissions API:
@@ -33,7 +36,7 @@ var permissionResourceToObjectType = map[string]string{
 }
 
 type ResourcePermissions struct {
-	client *databricks.WorkspaceClient
+	client *sdkclients.Clients
 
 	// objectType is the permissions API prefix of the parent resource, e.g. "/jobs/".
 	objectType string
@@ -44,10 +47,10 @@ type ResourcePermissions struct {
 
 // StatePermission represents a permission entry in deployment state.
 type StatePermission struct {
-	Level                iam.PermissionLevel `json:"level,omitempty"`
-	UserName             string              `json:"user_name,omitempty"`
-	ServicePrincipalName string              `json:"service_principal_name,omitempty"`
-	GroupName            string              `json:"group_name,omitempty"`
+	Level                resources.PermissionLevel `json:"level,omitempty"`
+	UserName             string                    `json:"user_name,omitempty"`
+	ServicePrincipalName string                    `json:"service_principal_name,omitempty"`
+	GroupName            string                    `json:"group_name,omitempty"`
 }
 
 // Note __embed__ name is not enforced by libs/structs, it's a convention we follow here.
@@ -74,7 +77,7 @@ var permissionIDFields = map[string]string{
 
 const defaultPermissionIDField = "id"
 
-func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
+func (*ResourcePermissions) New(client *sdkclients.Clients) *ResourcePermissions {
 	return &ResourcePermissions{client: client, objectType: "", idField: ""}
 }
 
@@ -137,7 +140,7 @@ func toStatePermissions(ps any) ([]StatePermission, error) {
 	for i := range v.Len() {
 		elem := v.Index(i)
 		result[i] = StatePermission{
-			Level:                iam.PermissionLevel(elem.FieldByName("Level").String()),
+			Level:                resources.PermissionLevel(elem.FieldByName("Level").String()),
 			UserName:             elem.FieldByName("UserName").String(),
 			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
 			GroupName:            elem.FieldByName("GroupName").String(),
@@ -194,10 +197,14 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 		return nil, err
 	}
 
-	acl, err := r.client.Permissions.Get(ctx, iam.GetPermissionRequest{
-		RequestObjectId:   extractedID,
-		RequestObjectType: extractedType,
+	resp, err := r.client.AccessManagement.GetObjectPermissions(ctx, sdkaccessmanagement.GetObjectPermissionsRequest{
+		RequestObjectId:   new(extractedID),
+		RequestObjectType: new(extractedType),
 	})
+	if err != nil {
+		return nil, err
+	}
+	acl, err := accessmanagement.PermissionsResponseFromSDK(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -210,14 +217,14 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 	for _, accessControl := range acl.AccessControlList {
 		for _, permission := range accessControl.AllPermissions {
 			// Inherited permissions can be ignored, as they are not set by the user (following TF)
-			if permission.Inherited {
+			if utils.Deref(permission.Inherited) {
 				continue
 			}
 			result.EmbeddedSlice = append(result.EmbeddedSlice, StatePermission{
-				Level:                permission.PermissionLevel,
-				GroupName:            accessControl.GroupName,
-				UserName:             accessControl.UserName,
-				ServicePrincipalName: accessControl.ServicePrincipalName,
+				Level:                resources.PermissionLevel(permission.PermissionLevel),
+				GroupName:            utils.Deref(accessControl.GroupName),
+				UserName:             utils.Deref(accessControl.UserName),
+				ServicePrincipalName: utils.Deref(accessControl.ServicePrincipalName),
 			})
 		}
 	}
@@ -244,23 +251,25 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 		return nil, err
 	}
 
-	acl := make([]iam.AccessControlRequest, len(newState.EmbeddedSlice))
+	acl := make([]accessmanagement.AccessControlRequest, len(newState.EmbeddedSlice))
 	for i, p := range newState.EmbeddedSlice {
-		acl[i] = iam.AccessControlRequest{
-			PermissionLevel:      p.Level,
-			UserName:             p.UserName,
-			ServicePrincipalName: p.ServicePrincipalName,
-			GroupName:            p.GroupName,
-			ForceSendFields:      nil,
+		acl[i] = accessmanagement.AccessControlRequest{
+			PermissionLevel:      accessmanagement.PermissionLevel(p.Level),
+			UserName:             nonEmpty(p.UserName),
+			ServicePrincipalName: nonEmpty(p.ServicePrincipalName),
+			GroupName:            nonEmpty(p.GroupName),
 		}
 	}
 
-	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
-		RequestObjectId:   extractedID,
-		RequestObjectType: extractedType,
+	request, err := accessmanagement.SetObjectPermissionsRequestToSDK(&accessmanagement.SetObjectPermissionsRequest{
+		RequestObjectId:   new(extractedID),
+		RequestObjectType: new(extractedType),
 		AccessControlList: acl,
 	})
-
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.client.AccessManagement.SetObjectPermissions(ctx, *request)
 	return nil, err
 }
 

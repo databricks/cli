@@ -6,8 +6,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	scim "github.com/databricks/cli/libs/sdktypes/scim/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -47,16 +49,15 @@ This API allows retrieving information about currently authenticated user or
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var meOverrides []func(
 	*cobra.Command,
-	*iam.MeRequest,
+	*scim.MeRequest,
 )
 
 func newMe() *cobra.Command {
 	cmd := &cobra.Command{}
+	var meReq scim.MeRequest
 
-	var meReq iam.MeRequest
-
-	cmd.Flags().StringVar(&meReq.Attributes, "attributes", meReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().StringVar(&meReq.ExcludedAttributes, "excluded-attributes", meReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
+	flags.StringPtrVar(cmd.Flags(), &meReq.Attributes, "attributes", `Comma-separated list of attributes to return in response.`)
+	flags.StringPtrVar(cmd.Flags(), &meReq.ExcludedAttributes, "excluded-attributes", `Comma-separated list of attributes to exclude in response.`)
 
 	cmd.Use = "me"
 	cmd.Short = `*Public Preview* Get current user info.`
@@ -79,13 +80,22 @@ Get current user info.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.CurrentUser.Me(ctx, meReq)
+		sdkReq, err := scim.MeRequestToSDK(&meReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Scim.Me(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := scim.UserFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

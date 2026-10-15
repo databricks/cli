@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +30,7 @@ func TestServerSupportsResumeGivesUpOnAStalledServer(t *testing.T) {
 	defer server.Close()
 	defer close(stalled)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
+	client, err := sdkclients.New(t.Context(), &config.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
 	require.NoError(t, err)
 
 	done := make(chan bool, 1)

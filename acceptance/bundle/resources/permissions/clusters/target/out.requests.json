@@ -33,6 +33,8 @@
         "permission_level": "CAN_MANAGE",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[UUID]",
+    "request_object_type": "clusters"
   }
 }

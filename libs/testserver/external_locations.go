@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	externallocations "github.com/databricks/cli/libs/sdktypes/uc/externallocations/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createRequest catalog.CreateExternalLocation
+	var createRequest externallocations.CreateExternalLocationRequest
 	if err := json.Unmarshal(req.Body, &createRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -19,14 +20,14 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		}
 	}
 
-	if createRequest.Url == "" {
+	if utils.Deref(createRequest.Url) == "" {
 		return Response{
 			Body:       "CreateExternalLocation Missing required field: url",
 			StatusCode: http.StatusBadRequest,
 		}
 	}
 
-	locationInfo := catalog.ExternalLocationInfo{
+	locationInfo := externallocations.ExternalLocationInfo{
 		Name:              createRequest.Name,
 		Url:               createRequest.Url,
 		CredentialName:    createRequest.CredentialName,
@@ -36,15 +37,15 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		Fallback:          createRequest.Fallback,
 		EncryptionDetails: createRequest.EncryptionDetails,
 		FileEventQueue:    createRequest.FileEventQueue,
-		CreatedAt:         nowMilli(),
+		CreatedAt:         utils.NonZero(nowMilli()),
 		CreatedBy:         s.CurrentUser().UserName,
 		UpdatedBy:         s.CurrentUser().UserName,
-		MetastoreId:       nextUUID(),
+		MetastoreId:       utils.NonZero(nextUUID()),
 		Owner:             s.CurrentUser().UserName,
 	}
 	locationInfo.UpdatedAt = locationInfo.CreatedAt
 
-	s.ExternalLocations[createRequest.Name] = locationInfo
+	s.ExternalLocations[utils.Deref(createRequest.Name)] = locationInfo
 	return Response{
 		Body: locationInfo,
 	}
@@ -66,7 +67,7 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		return *errResponse
 	}
 
-	var updateRequest catalog.UpdateExternalLocation
+	var updateRequest externallocations.UpdateExternalLocationRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -82,15 +83,15 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 	existing.EnableFileEvents = updateRequest.EnableFileEvents
 	existing.Fallback = updateRequest.Fallback
 
-	if updateRequest.NewName != "" {
+	if utils.Deref(updateRequest.NewName) != "" {
 		existing.Name = updateRequest.NewName
 
 		// Delete the old entry and create with new name
 		delete(s.ExternalLocations, name)
-		name = updateRequest.NewName
+		name = utils.Deref(updateRequest.NewName)
 	}
 
-	existing.UpdatedAt = nowMilli()
+	existing.UpdatedAt = utils.NonZero(nowMilli())
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.ExternalLocations[name] = existing

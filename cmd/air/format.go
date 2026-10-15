@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v3"
 )
@@ -88,8 +89,8 @@ var gpuDisplayNames = map[string]string{
 // isRunning reports whether a run is currently executing (lifecycle RUNNING), as
 // opposed to pending, terminal, or state-unknown. Only a running run has a
 // meaningful remaining-time estimate.
-func isRunning(run *jobs.Run) bool {
-	return run.State != nil && run.State.LifeCycleState == jobs.RunLifeCycleStateRunning
+func isRunning(run *jobs.GetRunResponse) bool {
+	return run.State != nil && run.State.LifeCycleState == jobs.RunLifeCycleState_RunLifeCycleState_Running
 }
 
 // runStatus returns the single status word to show for a run. The backend
@@ -103,7 +104,7 @@ func runStatus(state *jobs.RunState) string {
 	return statusWord(string(state.LifeCycleState), string(state.ResultState))
 }
 
-func displayRunStatus(run *jobs.Run) string {
+func displayRunStatus(run *jobs.GetRunResponse) string {
 	status := runStatus(run.State)
 	if runWaitingForCompute(run) {
 		return "PENDING"
@@ -111,26 +112,26 @@ func displayRunStatus(run *jobs.Run) string {
 	return status
 }
 
-func runWaitingForCompute(run *jobs.Run) bool {
+func runWaitingForCompute(run *jobs.GetRunResponse) bool {
 	if run.State == nil || run.State.ResultState != "" {
 		return false
 	}
-	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
+	if run.State.LifeCycleState == jobs.RunLifeCycleState_RunLifeCycleState_Pending {
 		return true
 	}
-	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
+	if run.State.LifeCycleState != jobs.RunLifeCycleState_RunLifeCycleState_Running || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
 		return false
 	}
 	switch run.Tasks[0].State.LifeCycleState {
-	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
-		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
+	case jobs.RunLifeCycleState_RunLifeCycleState_Pending, jobs.RunLifeCycleState_RunLifeCycleState_Queued,
+		jobs.RunLifeCycleState_RunLifeCycleState_WaitingForRetry, jobs.RunLifeCycleState_RunLifeCycleState_Blocked:
 		return true
 	default:
 		return false
 	}
 }
 
-func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
+func detailedDisplayRunStatus(run *jobs.GetRunResponse, statusMessage string) string {
 	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
 		return statusMessage
 	}
@@ -140,23 +141,23 @@ func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
 	return displayRunStatus(run)
 }
 
-func terminationReason(run *jobs.Run) *string {
+func terminationReason(run *jobs.GetRunResponse) *string {
 	status := runStatus(run.State)
 	if status != "FAILED" && status != "TIMEDOUT" && status != "INTERNAL_ERROR" {
 		return nil
 	}
 	if run.Status != nil && run.Status.TerminationDetails != nil {
-		if message := strings.TrimSpace(run.Status.TerminationDetails.Message); message != "" {
+		if message := strings.TrimSpace(utils.Deref(run.Status.TerminationDetails.Message)); message != "" {
 			return &message
 		}
 	}
 	if run.State != nil {
-		if message := strings.TrimSpace(run.State.StateMessage); message != "" {
+		if message := strings.TrimSpace(utils.Deref(run.State.StateMessage)); message != "" {
 			return &message
 		}
 	}
 	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
-		if message := strings.TrimSpace(run.Tasks[0].State.StateMessage); message != "" {
+		if message := strings.TrimSpace(utils.Deref(run.Tasks[0].State.StateMessage)); message != "" {
 			return &message
 		}
 	}
@@ -179,15 +180,15 @@ func statusWord(lifeCycle, result string) string {
 // preferring the last task's window over the run-level times so a retried run
 // reports its latest attempt. Mirrors Python's _reported_attempt_timing
 // (cli_display.py:78-87).
-func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
-	startMillis, endMillis = run.StartTime, run.EndTime
+func reportedTiming(run *jobs.GetRunResponse) (startMillis, endMillis int64) {
+	startMillis, endMillis = utils.Deref(run.StartTime), utils.Deref(run.EndTime)
 	if n := len(run.Tasks); n > 0 {
 		last := run.Tasks[n-1]
-		if last.StartTime > 0 {
-			startMillis = last.StartTime
+		if utils.Deref(last.StartTime) > 0 {
+			startMillis = utils.Deref(last.StartTime)
 		}
-		if last.EndTime > 0 {
-			endMillis = last.EndTime
+		if utils.Deref(last.EndTime) > 0 {
+			endMillis = utils.Deref(last.EndTime)
 		}
 	}
 	return startMillis, endMillis
@@ -196,7 +197,7 @@ func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
 // startedAt returns the run's start time as a Python-isoformat string ("+00:00",
 // not "Z"; microseconds only when non-zero, cli_entrypoint.py:1899), or nil if it
 // hasn't started.
-func startedAt(run *jobs.Run) *string {
+func startedAt(run *jobs.GetRunResponse) *string {
 	startMillis, _ := reportedTiming(run)
 	if startMillis == 0 {
 		return nil
@@ -221,7 +222,7 @@ func isoFormat(t time.Time) string {
 // "2006-01-02 15:04 UTC", or "N/A" if it hasn't started. Mirrors Python's
 // _format_timestamp (cli_display.py); we render in UTC for stable output rather
 // than the local zone Python uses.
-func submittedDisplay(run *jobs.Run) string {
+func submittedDisplay(run *jobs.GetRunResponse) string {
 	startMillis, _ := reportedTiming(run)
 	if startMillis == 0 {
 		return na
@@ -232,7 +233,7 @@ func submittedDisplay(run *jobs.Run) string {
 // durationSeconds returns how long the run has taken, in whole seconds, or nil
 // if it has not started. For a finished run this is the elapsed time of the
 // reported attempt; for a still-running run it is the time since it started.
-func durationSeconds(run *jobs.Run) *int64 {
+func durationSeconds(run *jobs.GetRunResponse) *int64 {
 	startMillis, endMillis := reportedTiming(run)
 	if startMillis == 0 {
 		return nil
@@ -281,26 +282,26 @@ func formatDuration(totalSeconds int64) string {
 
 // latestAttemptNumber returns the retry count of the run's most recent task.
 // Tasks start at attempt 0, so a value of 0 means the run has not been retried.
-func latestAttemptNumber(run *jobs.Run) int {
+func latestAttemptNumber(run *jobs.GetRunResponse) int {
 	if len(run.Tasks) == 0 {
 		return 0
 	}
-	return run.Tasks[len(run.Tasks)-1].AttemptNumber
+	return utils.Deref(run.Tasks[len(run.Tasks)-1].AttemptNumber)
 }
 
 // experimentName returns the MLflow experiment name for the run, or nil if there
 // isn't one. Experiment names are often stored under a user's home folder (e.g.
 // "/Users/me@example.com/my-experiment"); we strip that prefix so users see just
 // the experiment name they chose.
-func experimentName(run *jobs.Run) *string {
+func experimentName(run *jobs.GetRunResponse) *string {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
 	task := run.Tasks[0].GenAiComputeTask
-	if task == nil || task.MlflowExperimentName == "" {
+	if task == nil || utils.Deref(task.MlflowExperimentName) == "" {
 		return nil
 	}
-	name := stripExperimentUserPrefix(task.MlflowExperimentName)
+	name := stripExperimentUserPrefix(utils.Deref(task.MlflowExperimentName))
 	return &name
 }
 
@@ -321,7 +322,7 @@ func stripExperimentUserPrefix(name string) string {
 
 // accelerators returns a short description of the GPUs the run uses, such as
 // "8x H100", or an empty string if the run has no GPU compute attached.
-func accelerators(run *jobs.Run) string {
+func accelerators(run *jobs.GetRunResponse) string {
 	if len(run.Tasks) == 0 {
 		return ""
 	}
@@ -329,7 +330,7 @@ func accelerators(run *jobs.Run) string {
 	if task == nil || task.Compute == nil {
 		return ""
 	}
-	return acceleratorLabel(task.Compute.GpuType, task.Compute.NumGpus)
+	return acceleratorLabel(utils.Deref(task.Compute.GpuType), utils.Deref(task.Compute.NumGpus))
 }
 
 // acceleratorLabel renders a GPU count and type as "8x H100", "" for none, or
@@ -355,13 +356,13 @@ func gpuDisplayName(gpuType string) string {
 
 // maxRetries returns the configured retry limit for the run's latest task as a
 // display string: "unlimited" for the backend's -1, otherwise the count.
-func maxRetries(run *jobs.Run) string {
+func maxRetries(run *jobs.GetRunResponse) string {
 	if len(run.Tasks) == 0 {
 		return "0"
 	}
 	n := run.Tasks[len(run.Tasks)-1].MaxRetries
-	if n < 0 {
+	if utils.Deref(n) < 0 {
 		return "unlimited"
 	}
-	return strconv.Itoa(n)
+	return strconv.Itoa(utils.Deref(n))
 }

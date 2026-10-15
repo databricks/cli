@@ -5,14 +5,15 @@ package workspace_iam_v2
 import (
 	"errors"
 	"fmt"
-	"strings"
+
+	"maps"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/service/iamv2"
 	"github.com/spf13/cobra"
 )
 
@@ -91,14 +92,20 @@ These APIs are used to manage identities and the workspace access of these
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createDirectGroupMemberProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateDirectGroupMemberProxyRequest,
+	*map[string]any,
 )
 
 func newCreateDirectGroupMemberProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createDirectGroupMemberProxyReq map[string]any
+	createDirectGroupMemberProxyReq = map[string]any{}
+	var createDirectGroupMemberProxyGroupIdRaw int64
+	var createDirectGroupMemberProxyDisplayNameRaw string
+	var createDirectGroupMemberProxyExternalIdRaw string
+	var createDirectGroupMemberProxyMembershipSourceRaw string
+	var createDirectGroupMemberProxyPrincipalIdRaw int64
+	var createDirectGroupMemberProxyPrincipalTypeRaw string
 
-	var createDirectGroupMemberProxyReq iamv2.CreateDirectGroupMemberProxyRequest
-	createDirectGroupMemberProxyReq.DirectGroupMember = iamv2.DirectGroupMember{}
 	var createDirectGroupMemberProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createDirectGroupMemberProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -135,9 +142,10 @@ Create a direct group membership.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createDirectGroupMemberProxyJson.Unmarshal(&createDirectGroupMemberProxyReq.DirectGroupMember)
+			diags := createDirectGroupMemberProxyJson.Unmarshal(&createDirectGroupMemberProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -148,24 +156,47 @@ Create a direct group membership.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createDirectGroupMemberProxyReq.GroupId)
+		_, err = fmt.Sscan(args[0], &createDirectGroupMemberProxyGroupIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
 		}
-
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createDirectGroupMemberProxyReq.DirectGroupMember.PrincipalId)
+			_, err = fmt.Sscan(args[1], &createDirectGroupMemberProxyPrincipalIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 			}
-
 		}
 
-		response, err := w.WorkspaceIamV2.CreateDirectGroupMemberProxy(ctx, createDirectGroupMemberProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("display-name") || createDirectGroupMemberProxyDisplayNameRaw != "" {
+			createDirectGroupMemberProxyReq["display_name"] = createDirectGroupMemberProxyDisplayNameRaw
+		}
+		if cmd.Flags().Changed("external-id") || createDirectGroupMemberProxyExternalIdRaw != "" {
+			createDirectGroupMemberProxyReq["external_id"] = createDirectGroupMemberProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("group-id") || createDirectGroupMemberProxyGroupIdRaw != 0 {
+			createDirectGroupMemberProxyReq["group_id"] = createDirectGroupMemberProxyGroupIdRaw
+		}
+		if cmd.Flags().Changed("membership-source") || createDirectGroupMemberProxyMembershipSourceRaw != "" {
+			createDirectGroupMemberProxyReq["membership_source"] = createDirectGroupMemberProxyMembershipSourceRaw
+		}
+		if cmd.Flags().Changed("principal-id") || createDirectGroupMemberProxyPrincipalIdRaw != 0 {
+			createDirectGroupMemberProxyReq["principal_id"] = createDirectGroupMemberProxyPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || createDirectGroupMemberProxyPrincipalTypeRaw != "" {
+			createDirectGroupMemberProxyReq["principal_type"] = createDirectGroupMemberProxyPrincipalTypeRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s/direct-members", fmt.Sprint(createDirectGroupMemberProxyGroupIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createDirectGroupMemberProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -187,20 +218,24 @@ Create a direct group membership.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateGroupProxyRequest,
+	*map[string]any,
 )
 
 func newCreateGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createGroupProxyReq map[string]any
+	createGroupProxyReq = map[string]any{}
+	var createGroupProxyAccountIdRaw string
+	var createGroupProxyExternalIdRaw string
+	var createGroupProxyGroupIdRaw string
+	var createGroupProxyGroupNameRaw string
 
-	var createGroupProxyReq iamv2.CreateGroupProxyRequest
-	createGroupProxyReq.Group = iamv2.Group{}
 	var createGroupProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createGroupProxyReq.Group.ExternalId, "external-id", createGroupProxyReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
-	cmd.Flags().StringVar(&createGroupProxyReq.Group.GroupName, "group-name", createGroupProxyReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&createGroupProxyExternalIdRaw, "external-id", createGroupProxyExternalIdRaw, `ExternalId of the group in the customer's IdP.`)
+	cmd.Flags().StringVar(&createGroupProxyGroupNameRaw, "group-name", createGroupProxyGroupNameRaw, `Display name of the group.`)
 
 	cmd.Use = "create-group-proxy"
 	cmd.Short = `*Beta* Create a group in the account.`
@@ -231,9 +266,10 @@ Create a group in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createGroupProxyJson.Unmarshal(&createGroupProxyReq.Group)
+			diags := createGroupProxyJson.Unmarshal(&createGroupProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -245,11 +281,30 @@ Create a group in the account.
 			}
 		}
 
-		response, err := w.WorkspaceIamV2.CreateGroupProxy(ctx, createGroupProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || createGroupProxyAccountIdRaw != "" {
+			createGroupProxyReq["account_id"] = createGroupProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("external-id") || createGroupProxyExternalIdRaw != "" {
+			createGroupProxyReq["external_id"] = createGroupProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("group-id") || createGroupProxyGroupIdRaw != "" {
+			createGroupProxyReq["group_id"] = createGroupProxyGroupIdRaw
+		}
+		if cmd.Flags().Changed("group-name") || createGroupProxyGroupNameRaw != "" {
+			createGroupProxyReq["group_name"] = createGroupProxyGroupNameRaw
+		}
+		rawPath := "/api/2.0/identity/groups"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createGroupProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -271,19 +326,25 @@ Create a group in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newCreateServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createServicePrincipalProxyReq map[string]any
+	createServicePrincipalProxyReq = map[string]any{}
+	var createServicePrincipalProxyAccountIdRaw string
+	var createServicePrincipalProxyAccountSpStatusRaw string
+	var createServicePrincipalProxyApplicationIdRaw string
+	var createServicePrincipalProxyDisplayNameRaw string
+	var createServicePrincipalProxyExternalIdRaw string
+	var createServicePrincipalProxyServicePrincipalIdRaw string
 
-	var createServicePrincipalProxyReq iamv2.CreateServicePrincipalProxyRequest
-	createServicePrincipalProxyReq.ServicePrincipal = iamv2.ServicePrincipal{}
 	var createServicePrincipalProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&createServicePrincipalProxyExternalIdRaw, "external-id", createServicePrincipalProxyExternalIdRaw, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "create-service-principal-proxy DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Create a service principal in the account.`
@@ -326,9 +387,10 @@ Create a service principal in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createServicePrincipalProxyJson.Unmarshal(&createServicePrincipalProxyReq.ServicePrincipal)
+			diags := createServicePrincipalProxyJson.Unmarshal(&createServicePrincipalProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -340,21 +402,42 @@ Create a service principal in the account.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createServicePrincipalProxyReq.ServicePrincipal.DisplayName = args[0]
+			createServicePrincipalProxyDisplayNameRaw = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createServicePrincipalProxyReq.ServicePrincipal.AccountSpStatus)
-			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[1])
-			}
-
+			createServicePrincipalProxyAccountSpStatusRaw = args[1]
 		}
 
-		response, err := w.WorkspaceIamV2.CreateServicePrincipalProxy(ctx, createServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || createServicePrincipalProxyAccountIdRaw != "" {
+			createServicePrincipalProxyReq["account_id"] = createServicePrincipalProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("account-sp-status") || createServicePrincipalProxyAccountSpStatusRaw != "" {
+			createServicePrincipalProxyReq["account_sp_status"] = createServicePrincipalProxyAccountSpStatusRaw
+		}
+		if cmd.Flags().Changed("application-id") || createServicePrincipalProxyApplicationIdRaw != "" {
+			createServicePrincipalProxyReq["application_id"] = createServicePrincipalProxyApplicationIdRaw
+		}
+		if cmd.Flags().Changed("display-name") || createServicePrincipalProxyDisplayNameRaw != "" {
+			createServicePrincipalProxyReq["display_name"] = createServicePrincipalProxyDisplayNameRaw
+		}
+		if cmd.Flags().Changed("external-id") || createServicePrincipalProxyExternalIdRaw != "" {
+			createServicePrincipalProxyReq["external_id"] = createServicePrincipalProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("service-principal-id") || createServicePrincipalProxyServicePrincipalIdRaw != "" {
+			createServicePrincipalProxyReq["service_principal_id"] = createServicePrincipalProxyServicePrincipalIdRaw
+		}
+		rawPath := "/api/2.0/identity/service-principals"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createServicePrincipalProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -376,19 +459,24 @@ Create a service principal in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateUserProxyRequest,
+	*map[string]any,
 )
 
 func newCreateUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createUserProxyReq map[string]any
+	createUserProxyReq = map[string]any{}
+	var createUserProxyAccountIdRaw string
+	var createUserProxyAccountUserStatusRaw string
+	var createUserProxyExternalIdRaw string
+	var createUserProxyUserIdRaw string
+	var createUserProxyUsernameRaw string
 
-	var createUserProxyReq iamv2.CreateUserProxyRequest
-	createUserProxyReq.User = iamv2.User{}
 	var createUserProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createUserProxyReq.User.ExternalId, "external-id", createUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&createUserProxyExternalIdRaw, "external-id", createUserProxyExternalIdRaw, `ExternalId of the user in the customer's IdP.`)
 
 	cmd.Use = "create-user-proxy USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Create a user in the account.`
@@ -432,9 +520,10 @@ Create a user in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createUserProxyJson.Unmarshal(&createUserProxyReq.User)
+			diags := createUserProxyJson.Unmarshal(&createUserProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -446,28 +535,42 @@ Create a user in the account.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createUserProxyReq.User.Username = args[0]
+			createUserProxyUsernameRaw = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createUserProxyReq.User.FullName)
-			if err != nil {
-				return fmt.Errorf("invalid FULL_NAME: %s", args[1])
-			}
-
+			createUserProxyReq["full_name"] = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createUserProxyReq.User.AccountUserStatus)
-			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[2])
-			}
-
+			createUserProxyAccountUserStatusRaw = args[2]
 		}
 
-		response, err := w.WorkspaceIamV2.CreateUserProxy(ctx, createUserProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || createUserProxyAccountIdRaw != "" {
+			createUserProxyReq["account_id"] = createUserProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("account-user-status") || createUserProxyAccountUserStatusRaw != "" {
+			createUserProxyReq["account_user_status"] = createUserProxyAccountUserStatusRaw
+		}
+		if cmd.Flags().Changed("external-id") || createUserProxyExternalIdRaw != "" {
+			createUserProxyReq["external_id"] = createUserProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("user-id") || createUserProxyUserIdRaw != "" {
+			createUserProxyReq["user_id"] = createUserProxyUserIdRaw
+		}
+		if cmd.Flags().Changed("username") || createUserProxyUsernameRaw != "" {
+			createUserProxyReq["username"] = createUserProxyUsernameRaw
+		}
+		rawPath := "/api/2.0/identity/users"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createUserProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -489,14 +592,18 @@ Create a user in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createWorkspaceAssignmentDetailProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateWorkspaceAssignmentDetailProxyRequest,
+	*map[string]any,
 )
 
 func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createWorkspaceAssignmentDetailProxyReq map[string]any
+	createWorkspaceAssignmentDetailProxyReq = map[string]any{}
+	var createWorkspaceAssignmentDetailProxyAccountIdRaw string
+	var createWorkspaceAssignmentDetailProxyPrincipalIdRaw int64
+	var createWorkspaceAssignmentDetailProxyPrincipalTypeRaw string
+	var createWorkspaceAssignmentDetailProxyWorkspaceIdRaw int64
 
-	var createWorkspaceAssignmentDetailProxyReq iamv2.CreateWorkspaceAssignmentDetailProxyRequest
-	createWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail = iamv2.WorkspaceAssignmentDetail{}
 	var createWorkspaceAssignmentDetailProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -537,9 +644,10 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createWorkspaceAssignmentDetailProxyJson.Unmarshal(&createWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail)
+			diags := createWorkspaceAssignmentDetailProxyJson.Unmarshal(&createWorkspaceAssignmentDetailProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -551,18 +659,36 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &createWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail.PrincipalId)
+			_, err = fmt.Sscan(args[0], &createWorkspaceAssignmentDetailProxyPrincipalIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 			}
-
 		}
 
-		response, err := w.WorkspaceIamV2.CreateWorkspaceAssignmentDetailProxy(ctx, createWorkspaceAssignmentDetailProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || createWorkspaceAssignmentDetailProxyAccountIdRaw != "" {
+			createWorkspaceAssignmentDetailProxyReq["account_id"] = createWorkspaceAssignmentDetailProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("principal-id") || createWorkspaceAssignmentDetailProxyPrincipalIdRaw != 0 {
+			createWorkspaceAssignmentDetailProxyReq["principal_id"] = createWorkspaceAssignmentDetailProxyPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || createWorkspaceAssignmentDetailProxyPrincipalTypeRaw != "" {
+			createWorkspaceAssignmentDetailProxyReq["principal_type"] = createWorkspaceAssignmentDetailProxyPrincipalTypeRaw
+		}
+		if cmd.Flags().Changed("workspace-id") || createWorkspaceAssignmentDetailProxyWorkspaceIdRaw != 0 {
+			createWorkspaceAssignmentDetailProxyReq["workspace_id"] = createWorkspaceAssignmentDetailProxyWorkspaceIdRaw
+		}
+		rawPath := "/api/2.0/identity/workspace-assignment-details"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createWorkspaceAssignmentDetailProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -584,14 +710,18 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createWorkspaceAssignmentProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.CreateWorkspaceAssignmentProxyRequest,
+	*map[string]any,
 )
 
 func newCreateWorkspaceAssignmentProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createWorkspaceAssignmentProxyReq map[string]any
+	createWorkspaceAssignmentProxyReq = map[string]any{}
+	var createWorkspaceAssignmentProxyAccountIdRaw string
+	var createWorkspaceAssignmentProxyPrincipalIdRaw int64
+	var createWorkspaceAssignmentProxyPrincipalTypeRaw string
+	var createWorkspaceAssignmentProxyWorkspaceIdRaw int64
 
-	var createWorkspaceAssignmentProxyReq iamv2.CreateWorkspaceAssignmentProxyRequest
-	createWorkspaceAssignmentProxyReq.WorkspaceAssignment = iamv2.WorkspaceAssignment{}
 	var createWorkspaceAssignmentProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&createWorkspaceAssignmentProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -634,9 +764,10 @@ Create a workspace assignment for a workspace.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := createWorkspaceAssignmentProxyJson.Unmarshal(&createWorkspaceAssignmentProxyReq.WorkspaceAssignment)
+			diags := createWorkspaceAssignmentProxyJson.Unmarshal(&createWorkspaceAssignmentProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -648,18 +779,36 @@ Create a workspace assignment for a workspace.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[0], &createWorkspaceAssignmentProxyReq.WorkspaceAssignment.PrincipalId)
+			_, err = fmt.Sscan(args[0], &createWorkspaceAssignmentProxyPrincipalIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 			}
-
 		}
 
-		response, err := w.WorkspaceIamV2.CreateWorkspaceAssignmentProxy(ctx, createWorkspaceAssignmentProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || createWorkspaceAssignmentProxyAccountIdRaw != "" {
+			createWorkspaceAssignmentProxyReq["account_id"] = createWorkspaceAssignmentProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("principal-id") || createWorkspaceAssignmentProxyPrincipalIdRaw != 0 {
+			createWorkspaceAssignmentProxyReq["principal_id"] = createWorkspaceAssignmentProxyPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || createWorkspaceAssignmentProxyPrincipalTypeRaw != "" {
+			createWorkspaceAssignmentProxyReq["principal_type"] = createWorkspaceAssignmentProxyPrincipalTypeRaw
+		}
+		if cmd.Flags().Changed("workspace-id") || createWorkspaceAssignmentProxyWorkspaceIdRaw != 0 {
+			createWorkspaceAssignmentProxyReq["workspace_id"] = createWorkspaceAssignmentProxyWorkspaceIdRaw
+		}
+		rawPath := "/api/2.0/identity/workspace-assignments"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, createWorkspaceAssignmentProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -681,13 +830,15 @@ Create a workspace assignment for a workspace.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteDirectGroupMemberProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteDirectGroupMemberProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteDirectGroupMemberProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteDirectGroupMemberProxyReq iamv2.DeleteDirectGroupMemberProxyRequest
+	var deleteDirectGroupMemberProxyReq map[string]any
+	deleteDirectGroupMemberProxyReq = map[string]any{}
+	var deleteDirectGroupMemberProxyGroupIdRaw int64
+	var deleteDirectGroupMemberProxyPrincipalIdRaw int64
 
 	cmd.Use = "delete-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
 	cmd.Short = `*Beta* Delete a direct group membership.`
@@ -714,18 +865,26 @@ Delete a direct group membership.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &deleteDirectGroupMemberProxyReq.GroupId)
+		_, err = fmt.Sscan(args[0], &deleteDirectGroupMemberProxyGroupIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
 		}
-
-		_, err = fmt.Sscan(args[1], &deleteDirectGroupMemberProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[1], &deleteDirectGroupMemberProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
-		err = w.WorkspaceIamV2.DeleteDirectGroupMemberProxy(ctx, deleteDirectGroupMemberProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s/direct-members/%s", fmt.Sprint(deleteDirectGroupMemberProxyGroupIdRaw), fmt.Sprint(deleteDirectGroupMemberProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, deleteDirectGroupMemberProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -750,13 +909,14 @@ Delete a direct group membership.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteGroupProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteGroupProxyReq iamv2.DeleteGroupProxyRequest
+	var deleteGroupProxyReq map[string]any
+	deleteGroupProxyReq = map[string]any{}
+	var deleteGroupProxyGroupIdRaw string
 
 	cmd.Use = "delete-group-proxy GROUP_ID"
 	cmd.Short = `*Beta* Delete a group in the account.`
@@ -783,10 +943,19 @@ Delete a group in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteGroupProxyReq.GroupId = args[0]
+		deleteGroupProxyGroupIdRaw = args[0]
 
-		err = w.WorkspaceIamV2.DeleteGroupProxy(ctx, deleteGroupProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s", fmt.Sprint(deleteGroupProxyGroupIdRaw))
+
+		maps.Copy(rawQuery, deleteGroupProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -811,13 +980,14 @@ Delete a group in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteServicePrincipalProxyReq iamv2.DeleteServicePrincipalProxyRequest
+	var deleteServicePrincipalProxyReq map[string]any
+	deleteServicePrincipalProxyReq = map[string]any{}
+	var deleteServicePrincipalProxyServicePrincipalIdRaw string
 
 	cmd.Use = "delete-service-principal-proxy SERVICE_PRINCIPAL_ID"
 	cmd.Short = `*Beta* Delete a service principal in the account.`
@@ -844,10 +1014,19 @@ Delete a service principal in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteServicePrincipalProxyReq.ServicePrincipalId = args[0]
+		deleteServicePrincipalProxyServicePrincipalIdRaw = args[0]
 
-		err = w.WorkspaceIamV2.DeleteServicePrincipalProxy(ctx, deleteServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/service-principals/%s", fmt.Sprint(deleteServicePrincipalProxyServicePrincipalIdRaw))
+
+		maps.Copy(rawQuery, deleteServicePrincipalProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -872,13 +1051,14 @@ Delete a service principal in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteUserProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteUserProxyReq iamv2.DeleteUserProxyRequest
+	var deleteUserProxyReq map[string]any
+	deleteUserProxyReq = map[string]any{}
+	var deleteUserProxyUserIdRaw string
 
 	cmd.Use = "delete-user-proxy USER_ID"
 	cmd.Short = `*Beta* Delete a user in the account.`
@@ -905,10 +1085,19 @@ Delete a user in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteUserProxyReq.UserId = args[0]
+		deleteUserProxyUserIdRaw = args[0]
 
-		err = w.WorkspaceIamV2.DeleteUserProxy(ctx, deleteUserProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/users/%s", fmt.Sprint(deleteUserProxyUserIdRaw))
+
+		maps.Copy(rawQuery, deleteUserProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -933,13 +1122,14 @@ Delete a user in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteWorkspaceAssignmentDetailProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteWorkspaceAssignmentDetailProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteWorkspaceAssignmentDetailProxyReq iamv2.DeleteWorkspaceAssignmentDetailProxyRequest
+	var deleteWorkspaceAssignmentDetailProxyReq map[string]any
+	deleteWorkspaceAssignmentDetailProxyReq = map[string]any{}
+	var deleteWorkspaceAssignmentDetailProxyPrincipalIdRaw int64
 
 	cmd.Use = "delete-workspace-assignment-detail-proxy PRINCIPAL_ID"
 	cmd.Short = `Delete a workspace assignment detail for a workspace.`
@@ -971,13 +1161,22 @@ func newDeleteWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentDetailProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentDetailProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		err = w.WorkspaceIamV2.DeleteWorkspaceAssignmentDetailProxy(ctx, deleteWorkspaceAssignmentDetailProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignment-details/%s", fmt.Sprint(deleteWorkspaceAssignmentDetailProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, deleteWorkspaceAssignmentDetailProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -1002,13 +1201,14 @@ func newDeleteWorkspaceAssignmentDetailProxy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteWorkspaceAssignmentProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.DeleteWorkspaceAssignmentProxyRequest,
+	*map[string]any,
 )
 
 func newDeleteWorkspaceAssignmentProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteWorkspaceAssignmentProxyReq iamv2.DeleteWorkspaceAssignmentProxyRequest
+	var deleteWorkspaceAssignmentProxyReq map[string]any
+	deleteWorkspaceAssignmentProxyReq = map[string]any{}
+	var deleteWorkspaceAssignmentProxyPrincipalIdRaw int64
 
 	cmd.Use = "delete-workspace-assignment-proxy PRINCIPAL_ID"
 	cmd.Short = `*Beta* Delete a workspace assignment for a workspace.`
@@ -1038,13 +1238,22 @@ Delete a workspace assignment for a workspace.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &deleteWorkspaceAssignmentProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		err = w.WorkspaceIamV2.DeleteWorkspaceAssignmentProxy(ctx, deleteWorkspaceAssignmentProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignments/%s", fmt.Sprint(deleteWorkspaceAssignmentProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, deleteWorkspaceAssignmentProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		err = api.Do(ctx, "DELETE", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -1069,13 +1278,15 @@ Delete a workspace assignment for a workspace.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDirectGroupMemberProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetDirectGroupMemberProxyRequest,
+	*map[string]any,
 )
 
 func newGetDirectGroupMemberProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getDirectGroupMemberProxyReq iamv2.GetDirectGroupMemberProxyRequest
+	var getDirectGroupMemberProxyReq map[string]any
+	getDirectGroupMemberProxyReq = map[string]any{}
+	var getDirectGroupMemberProxyGroupIdRaw int64
+	var getDirectGroupMemberProxyPrincipalIdRaw int64
 
 	cmd.Use = "get-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
 	cmd.Short = `*Beta* Get a direct group member.`
@@ -1103,22 +1314,30 @@ Get a direct group member.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getDirectGroupMemberProxyReq.GroupId)
+		_, err = fmt.Sscan(args[0], &getDirectGroupMemberProxyGroupIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
 		}
-
-		_, err = fmt.Sscan(args[1], &getDirectGroupMemberProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[1], &getDirectGroupMemberProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
-		response, err := w.WorkspaceIamV2.GetDirectGroupMemberProxy(ctx, getDirectGroupMemberProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s/direct-members/%s", fmt.Sprint(getDirectGroupMemberProxyGroupIdRaw), fmt.Sprint(getDirectGroupMemberProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, getDirectGroupMemberProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1140,13 +1359,14 @@ Get a direct group member.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExternalGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetExternalGroupProxyRequest,
+	*map[string]any,
 )
 
 func newGetExternalGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExternalGroupProxyReq iamv2.GetExternalGroupProxyRequest
+	var getExternalGroupProxyReq map[string]any
+	getExternalGroupProxyReq = map[string]any{}
+	var getExternalGroupProxyNameRaw string
 
 	cmd.Use = "get-external-group-proxy NAME"
 	cmd.Short = `*Beta* Get an external group in the account.`
@@ -1176,14 +1396,23 @@ Get an external group in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExternalGroupProxyReq.Name = args[0]
+		getExternalGroupProxyNameRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetExternalGroupProxy(ctx, getExternalGroupProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/%s", fmt.Sprint(getExternalGroupProxyNameRaw))
+
+		maps.Copy(rawQuery, getExternalGroupProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1205,13 +1434,14 @@ Get an external group in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExternalServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetExternalServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newGetExternalServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExternalServicePrincipalProxyReq iamv2.GetExternalServicePrincipalProxyRequest
+	var getExternalServicePrincipalProxyReq map[string]any
+	getExternalServicePrincipalProxyReq = map[string]any{}
+	var getExternalServicePrincipalProxyNameRaw string
 
 	cmd.Use = "get-external-service-principal-proxy NAME"
 	cmd.Short = `*Beta* Get an external service principal in the account.`
@@ -1242,14 +1472,23 @@ Get an external service principal in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExternalServicePrincipalProxyReq.Name = args[0]
+		getExternalServicePrincipalProxyNameRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetExternalServicePrincipalProxy(ctx, getExternalServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/%s", fmt.Sprint(getExternalServicePrincipalProxyNameRaw))
+
+		maps.Copy(rawQuery, getExternalServicePrincipalProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1271,13 +1510,14 @@ Get an external service principal in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getExternalUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetExternalUserProxyRequest,
+	*map[string]any,
 )
 
 func newGetExternalUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getExternalUserProxyReq iamv2.GetExternalUserProxyRequest
+	var getExternalUserProxyReq map[string]any
+	getExternalUserProxyReq = map[string]any{}
+	var getExternalUserProxyNameRaw string
 
 	cmd.Use = "get-external-user-proxy NAME"
 	cmd.Short = `*Beta* Get an external user in the account.`
@@ -1307,14 +1547,23 @@ Get an external user in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getExternalUserProxyReq.Name = args[0]
+		getExternalUserProxyNameRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetExternalUserProxy(ctx, getExternalUserProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/%s", fmt.Sprint(getExternalUserProxyNameRaw))
+
+		maps.Copy(rawQuery, getExternalUserProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1336,13 +1585,14 @@ Get an external user in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetGroupProxyRequest,
+	*map[string]any,
 )
 
 func newGetGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getGroupProxyReq iamv2.GetGroupProxyRequest
+	var getGroupProxyReq map[string]any
+	getGroupProxyReq = map[string]any{}
+	var getGroupProxyGroupIdRaw string
 
 	cmd.Use = "get-group-proxy GROUP_ID"
 	cmd.Short = `*Beta* Get a group in the account.`
@@ -1369,14 +1619,23 @@ Get a group in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getGroupProxyReq.GroupId = args[0]
+		getGroupProxyGroupIdRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetGroupProxy(ctx, getGroupProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s", fmt.Sprint(getGroupProxyGroupIdRaw))
+
+		maps.Copy(rawQuery, getGroupProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1398,13 +1657,14 @@ Get a group in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newGetServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getServicePrincipalProxyReq iamv2.GetServicePrincipalProxyRequest
+	var getServicePrincipalProxyReq map[string]any
+	getServicePrincipalProxyReq = map[string]any{}
+	var getServicePrincipalProxyServicePrincipalIdRaw string
 
 	cmd.Use = "get-service-principal-proxy SERVICE_PRINCIPAL_ID"
 	cmd.Short = `*Beta* Get a service principal in the account.`
@@ -1431,14 +1691,23 @@ Get a service principal in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getServicePrincipalProxyReq.ServicePrincipalId = args[0]
+		getServicePrincipalProxyServicePrincipalIdRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetServicePrincipalProxy(ctx, getServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/service-principals/%s", fmt.Sprint(getServicePrincipalProxyServicePrincipalIdRaw))
+
+		maps.Copy(rawQuery, getServicePrincipalProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1460,13 +1729,14 @@ Get a service principal in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetUserProxyRequest,
+	*map[string]any,
 )
 
 func newGetUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getUserProxyReq iamv2.GetUserProxyRequest
+	var getUserProxyReq map[string]any
+	getUserProxyReq = map[string]any{}
+	var getUserProxyUserIdRaw string
 
 	cmd.Use = "get-user-proxy USER_ID"
 	cmd.Short = `*Beta* Get a user in the account.`
@@ -1493,14 +1763,23 @@ Get a user in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getUserProxyReq.UserId = args[0]
+		getUserProxyUserIdRaw = args[0]
 
-		response, err := w.WorkspaceIamV2.GetUserProxy(ctx, getUserProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/users/%s", fmt.Sprint(getUserProxyUserIdRaw))
+
+		maps.Copy(rawQuery, getUserProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1522,15 +1801,17 @@ Get a user in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceAccessDetailLocalOverrides []func(
 	*cobra.Command,
-	*iamv2.GetWorkspaceAccessDetailLocalRequest,
+	*map[string]any,
 )
 
 func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getWorkspaceAccessDetailLocalReq map[string]any
+	getWorkspaceAccessDetailLocalReq = map[string]any{}
+	var getWorkspaceAccessDetailLocalPrincipalIdRaw int64
+	var getWorkspaceAccessDetailLocalViewRaw string
 
-	var getWorkspaceAccessDetailLocalReq iamv2.GetWorkspaceAccessDetailLocalRequest
-
-	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
+	flags.EnumVar(cmd.Flags(), &getWorkspaceAccessDetailLocalViewRaw, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`, "WorkspaceAccessDetailView", "BASIC", "FULL")
 
 	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
 	cmd.Short = `*Beta* Get workspace access details for a principal.`
@@ -1562,17 +1843,29 @@ Get workspace access details for a principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAccessDetailLocalReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &getWorkspaceAccessDetailLocalPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := w.WorkspaceIamV2.GetWorkspaceAccessDetailLocal(ctx, getWorkspaceAccessDetailLocalReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("view") || getWorkspaceAccessDetailLocalViewRaw != "" {
+			rawQuery["view"] = getWorkspaceAccessDetailLocalViewRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-access-details/%s", fmt.Sprint(getWorkspaceAccessDetailLocalPrincipalIdRaw))
+
+		maps.Copy(rawQuery, getWorkspaceAccessDetailLocalReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1594,13 +1887,14 @@ Get workspace access details for a principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceAssignmentDetailProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetWorkspaceAssignmentDetailProxyRequest,
+	*map[string]any,
 )
 
 func newGetWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getWorkspaceAssignmentDetailProxyReq iamv2.GetWorkspaceAssignmentDetailProxyRequest
+	var getWorkspaceAssignmentDetailProxyReq map[string]any
+	getWorkspaceAssignmentDetailProxyReq = map[string]any{}
+	var getWorkspaceAssignmentDetailProxyPrincipalIdRaw int64
 
 	cmd.Use = "get-workspace-assignment-detail-proxy PRINCIPAL_ID"
 	cmd.Short = `Get workspace assignment details for a principal.`
@@ -1628,17 +1922,26 @@ func newGetWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentDetailProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentDetailProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := w.WorkspaceIamV2.GetWorkspaceAssignmentDetailProxy(ctx, getWorkspaceAssignmentDetailProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignment-details/%s", fmt.Sprint(getWorkspaceAssignmentDetailProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, getWorkspaceAssignmentDetailProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1660,13 +1963,14 @@ func newGetWorkspaceAssignmentDetailProxy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceAssignmentProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.GetWorkspaceAssignmentProxyRequest,
+	*map[string]any,
 )
 
 func newGetWorkspaceAssignmentProxy() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getWorkspaceAssignmentProxyReq iamv2.GetWorkspaceAssignmentProxyRequest
+	var getWorkspaceAssignmentProxyReq map[string]any
+	getWorkspaceAssignmentProxyReq = map[string]any{}
+	var getWorkspaceAssignmentProxyPrincipalIdRaw int64
 
 	cmd.Use = "get-workspace-assignment-proxy PRINCIPAL_ID"
 	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
@@ -1693,17 +1997,26 @@ Get a workspace assignment for a principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &getWorkspaceAssignmentProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := w.WorkspaceIamV2.GetWorkspaceAssignmentProxy(ctx, getWorkspaceAssignmentProxyReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignments/%s", fmt.Sprint(getWorkspaceAssignmentProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, getWorkspaceAssignmentProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1725,13 +2038,14 @@ Get a workspace assignment for a principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getWorkspaceIdentityDetailOverrides []func(
 	*cobra.Command,
-	*iamv2.GetWorkspaceIdentityDetailRequest,
+	*map[string]any,
 )
 
 func newGetWorkspaceIdentityDetail() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getWorkspaceIdentityDetailReq iamv2.GetWorkspaceIdentityDetailRequest
+	var getWorkspaceIdentityDetailReq map[string]any
+	getWorkspaceIdentityDetailReq = map[string]any{}
+	var getWorkspaceIdentityDetailPrincipalIdRaw int64
 
 	cmd.Use = "get-workspace-identity-detail PRINCIPAL_ID"
 	cmd.Short = `*Beta* Get workspace identity details for a principal.`
@@ -1758,17 +2072,26 @@ Get workspace identity details for a principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &getWorkspaceIdentityDetailReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &getWorkspaceIdentityDetailPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := w.WorkspaceIamV2.GetWorkspaceIdentityDetail(ctx, getWorkspaceIdentityDetailReq)
+		rawQuery := map[string]any{}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-identity-details/%s", fmt.Sprint(getWorkspaceIdentityDetailPrincipalIdRaw))
+
+		maps.Copy(rawQuery, getWorkspaceIdentityDetailReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1790,25 +2113,29 @@ Get workspace identity details for a principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listDirectGroupMembersProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListDirectGroupMembersProxyRequest,
+	*map[string]any,
 )
 
 func newListDirectGroupMembersProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listDirectGroupMembersProxyReq map[string]any
+	listDirectGroupMembersProxyReq = map[string]any{}
+	var listDirectGroupMembersProxyGroupIdRaw int64
+	var listDirectGroupMembersProxyPageSizeRaw int
+	var listDirectGroupMembersProxyPageTokenRaw string
 
-	var listDirectGroupMembersProxyReq iamv2.ListDirectGroupMembersProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listDirectGroupMembersProxyLimit int
 
-	cmd.Flags().IntVar(&listDirectGroupMembersProxyReq.PageSize, "page-size", listDirectGroupMembersProxyReq.PageSize, `The maximum number of members to return.`)
+	cmd.Flags().IntVar(&listDirectGroupMembersProxyPageSizeRaw, "page-size", listDirectGroupMembersProxyPageSizeRaw, `The maximum number of members to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listDirectGroupMembersProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listDirectGroupMembersProxyReq.PageToken, "page-token", listDirectGroupMembersProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listDirectGroupMembersProxyPageTokenRaw, "page-token", listDirectGroupMembersProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-direct-group-members-proxy GROUP_ID"
@@ -1837,21 +2164,36 @@ List direct group members.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &listDirectGroupMembersProxyReq.GroupId)
+		_, err = fmt.Sscan(args[0], &listDirectGroupMembersProxyGroupIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid GROUP_ID: %s", args[0])
 		}
 
-		response := w.WorkspaceIamV2.ListDirectGroupMembersProxy(ctx, listDirectGroupMembersProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-size") || listDirectGroupMembersProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listDirectGroupMembersProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listDirectGroupMembersProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listDirectGroupMembersProxyPageTokenRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s/direct-members", fmt.Sprint(listDirectGroupMembersProxyGroupIdRaw))
+
+		maps.Copy(rawQuery, listDirectGroupMembersProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listDirectGroupMembersProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDirectGroupMembersProxyLimit)
 		}
-		if listDirectGroupMembersProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listDirectGroupMembersProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1872,26 +2214,30 @@ List direct group members.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listGroupsProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListGroupsProxyRequest,
+	*map[string]any,
 )
 
 func newListGroupsProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listGroupsProxyReq map[string]any
+	listGroupsProxyReq = map[string]any{}
+	var listGroupsProxyFilterRaw string
+	var listGroupsProxyPageSizeRaw int
+	var listGroupsProxyPageTokenRaw string
 
-	var listGroupsProxyReq iamv2.ListGroupsProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listGroupsProxyLimit int
 
-	cmd.Flags().StringVar(&listGroupsProxyReq.Filter, "filter", listGroupsProxyReq.Filter, `Optional.`)
-	cmd.Flags().IntVar(&listGroupsProxyReq.PageSize, "page-size", listGroupsProxyReq.PageSize, `The maximum number of groups to return.`)
+	cmd.Flags().StringVar(&listGroupsProxyFilterRaw, "filter", listGroupsProxyFilterRaw, `Optional.`)
+	cmd.Flags().IntVar(&listGroupsProxyPageSizeRaw, "page-size", listGroupsProxyPageSizeRaw, `The maximum number of groups to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listGroupsProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listGroupsProxyReq.PageToken, "page-token", listGroupsProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listGroupsProxyPageTokenRaw, "page-token", listGroupsProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-groups-proxy"
@@ -1916,16 +2262,34 @@ List groups in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.WorkspaceIamV2.ListGroupsProxy(ctx, listGroupsProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("filter") || listGroupsProxyFilterRaw != "" {
+			rawQuery["filter"] = listGroupsProxyFilterRaw
+		}
+		if cmd.Flags().Changed("page-size") || listGroupsProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listGroupsProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listGroupsProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listGroupsProxyPageTokenRaw
+		}
+		rawPath := "/api/2.0/identity/groups"
+
+		maps.Copy(rawQuery, listGroupsProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listGroupsProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listGroupsProxyLimit)
 		}
-		if listGroupsProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listGroupsProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1946,26 +2310,30 @@ List groups in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listServicePrincipalsProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListServicePrincipalsProxyRequest,
+	*map[string]any,
 )
 
 func newListServicePrincipalsProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listServicePrincipalsProxyReq map[string]any
+	listServicePrincipalsProxyReq = map[string]any{}
+	var listServicePrincipalsProxyFilterRaw string
+	var listServicePrincipalsProxyPageSizeRaw int
+	var listServicePrincipalsProxyPageTokenRaw string
 
-	var listServicePrincipalsProxyReq iamv2.ListServicePrincipalsProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listServicePrincipalsProxyLimit int
 
-	cmd.Flags().StringVar(&listServicePrincipalsProxyReq.Filter, "filter", listServicePrincipalsProxyReq.Filter, `Optional.`)
-	cmd.Flags().IntVar(&listServicePrincipalsProxyReq.PageSize, "page-size", listServicePrincipalsProxyReq.PageSize, `The maximum number of SPs to return.`)
+	cmd.Flags().StringVar(&listServicePrincipalsProxyFilterRaw, "filter", listServicePrincipalsProxyFilterRaw, `Optional.`)
+	cmd.Flags().IntVar(&listServicePrincipalsProxyPageSizeRaw, "page-size", listServicePrincipalsProxyPageSizeRaw, `The maximum number of SPs to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listServicePrincipalsProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listServicePrincipalsProxyReq.PageToken, "page-token", listServicePrincipalsProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listServicePrincipalsProxyPageTokenRaw, "page-token", listServicePrincipalsProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-service-principals-proxy"
@@ -1991,16 +2359,34 @@ List service principals in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.WorkspaceIamV2.ListServicePrincipalsProxy(ctx, listServicePrincipalsProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("filter") || listServicePrincipalsProxyFilterRaw != "" {
+			rawQuery["filter"] = listServicePrincipalsProxyFilterRaw
+		}
+		if cmd.Flags().Changed("page-size") || listServicePrincipalsProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listServicePrincipalsProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listServicePrincipalsProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listServicePrincipalsProxyPageTokenRaw
+		}
+		rawPath := "/api/2.0/identity/service-principals"
+
+		maps.Copy(rawQuery, listServicePrincipalsProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listServicePrincipalsProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listServicePrincipalsProxyLimit)
 		}
-		if listServicePrincipalsProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listServicePrincipalsProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2021,16 +2407,19 @@ List service principals in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listTransitiveParentGroupsProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListTransitiveParentGroupsProxyRequest,
+	*map[string]any,
 )
 
 func newListTransitiveParentGroupsProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listTransitiveParentGroupsProxyReq map[string]any
+	listTransitiveParentGroupsProxyReq = map[string]any{}
+	var listTransitiveParentGroupsProxyPageSizeRaw int
+	var listTransitiveParentGroupsProxyPageTokenRaw string
+	var listTransitiveParentGroupsProxyPrincipalIdRaw int64
 
-	var listTransitiveParentGroupsProxyReq iamv2.ListTransitiveParentGroupsProxyRequest
-
-	cmd.Flags().IntVar(&listTransitiveParentGroupsProxyReq.PageSize, "page-size", listTransitiveParentGroupsProxyReq.PageSize, `The maximum number of parent groups to return.`)
-	cmd.Flags().StringVar(&listTransitiveParentGroupsProxyReq.PageToken, "page-token", listTransitiveParentGroupsProxyReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
+	cmd.Flags().IntVar(&listTransitiveParentGroupsProxyPageSizeRaw, "page-size", listTransitiveParentGroupsProxyPageSizeRaw, `The maximum number of parent groups to return.`)
+	cmd.Flags().StringVar(&listTransitiveParentGroupsProxyPageTokenRaw, "page-token", listTransitiveParentGroupsProxyPageTokenRaw, `A page token, received from a previous ListTransitiveParentGroups call.`)
 
 	cmd.Use = "list-transitive-parent-groups-proxy PRINCIPAL_ID"
 	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
@@ -2057,17 +2446,32 @@ List all transitive parent groups of a principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		_, err = fmt.Sscan(args[0], &listTransitiveParentGroupsProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &listTransitiveParentGroupsProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := w.WorkspaceIamV2.ListTransitiveParentGroupsProxy(ctx, listTransitiveParentGroupsProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-size") || listTransitiveParentGroupsProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listTransitiveParentGroupsProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listTransitiveParentGroupsProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listTransitiveParentGroupsProxyPageTokenRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/principals/%s/transitive-parent-groups", fmt.Sprint(listTransitiveParentGroupsProxyPrincipalIdRaw))
+
+		maps.Copy(rawQuery, listTransitiveParentGroupsProxyReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2089,26 +2493,30 @@ List all transitive parent groups of a principal.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listUsersProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListUsersProxyRequest,
+	*map[string]any,
 )
 
 func newListUsersProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listUsersProxyReq map[string]any
+	listUsersProxyReq = map[string]any{}
+	var listUsersProxyFilterRaw string
+	var listUsersProxyPageSizeRaw int
+	var listUsersProxyPageTokenRaw string
 
-	var listUsersProxyReq iamv2.ListUsersProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listUsersProxyLimit int
 
-	cmd.Flags().StringVar(&listUsersProxyReq.Filter, "filter", listUsersProxyReq.Filter, `Optional.`)
-	cmd.Flags().IntVar(&listUsersProxyReq.PageSize, "page-size", listUsersProxyReq.PageSize, `The maximum number of users to return.`)
+	cmd.Flags().StringVar(&listUsersProxyFilterRaw, "filter", listUsersProxyFilterRaw, `Optional.`)
+	cmd.Flags().IntVar(&listUsersProxyPageSizeRaw, "page-size", listUsersProxyPageSizeRaw, `The maximum number of users to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listUsersProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listUsersProxyReq.PageToken, "page-token", listUsersProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listUsersProxyPageTokenRaw, "page-token", listUsersProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-users-proxy"
@@ -2133,16 +2541,34 @@ List users in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.WorkspaceIamV2.ListUsersProxy(ctx, listUsersProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("filter") || listUsersProxyFilterRaw != "" {
+			rawQuery["filter"] = listUsersProxyFilterRaw
+		}
+		if cmd.Flags().Changed("page-size") || listUsersProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listUsersProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listUsersProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listUsersProxyPageTokenRaw
+		}
+		rawPath := "/api/2.0/identity/users"
+
+		maps.Copy(rawQuery, listUsersProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listUsersProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listUsersProxyLimit)
 		}
-		if listUsersProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listUsersProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2163,25 +2589,28 @@ List users in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listWorkspaceAssignmentDetailsProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListWorkspaceAssignmentDetailsProxyRequest,
+	*map[string]any,
 )
 
 func newListWorkspaceAssignmentDetailsProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listWorkspaceAssignmentDetailsProxyReq map[string]any
+	listWorkspaceAssignmentDetailsProxyReq = map[string]any{}
+	var listWorkspaceAssignmentDetailsProxyPageSizeRaw int
+	var listWorkspaceAssignmentDetailsProxyPageTokenRaw string
 
-	var listWorkspaceAssignmentDetailsProxyReq iamv2.ListWorkspaceAssignmentDetailsProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listWorkspaceAssignmentDetailsProxyLimit int
 
-	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsProxyReq.PageSize, "page-size", listWorkspaceAssignmentDetailsProxyReq.PageSize, `The maximum number of workspace assignment details to return.`)
+	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsProxyPageSizeRaw, "page-size", listWorkspaceAssignmentDetailsProxyPageSizeRaw, `The maximum number of workspace assignment details to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsProxyReq.PageToken, "page-token", listWorkspaceAssignmentDetailsProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsProxyPageTokenRaw, "page-token", listWorkspaceAssignmentDetailsProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-assignment-details-proxy"
@@ -2209,16 +2638,31 @@ func newListWorkspaceAssignmentDetailsProxy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.WorkspaceIamV2.ListWorkspaceAssignmentDetailsProxy(ctx, listWorkspaceAssignmentDetailsProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-size") || listWorkspaceAssignmentDetailsProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listWorkspaceAssignmentDetailsProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listWorkspaceAssignmentDetailsProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listWorkspaceAssignmentDetailsProxyPageTokenRaw
+		}
+		rawPath := "/api/2.0/identity/workspace-assignment-details"
+
+		maps.Copy(rawQuery, listWorkspaceAssignmentDetailsProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listWorkspaceAssignmentDetailsProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceAssignmentDetailsProxyLimit)
 		}
-		if listWorkspaceAssignmentDetailsProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listWorkspaceAssignmentDetailsProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2239,25 +2683,28 @@ func newListWorkspaceAssignmentDetailsProxy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listWorkspaceAssignmentsProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ListWorkspaceAssignmentsProxyRequest,
+	*map[string]any,
 )
 
 func newListWorkspaceAssignmentsProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listWorkspaceAssignmentsProxyReq map[string]any
+	listWorkspaceAssignmentsProxyReq = map[string]any{}
+	var listWorkspaceAssignmentsProxyPageSizeRaw int
+	var listWorkspaceAssignmentsProxyPageTokenRaw string
 
-	var listWorkspaceAssignmentsProxyReq iamv2.ListWorkspaceAssignmentsProxyRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listWorkspaceAssignmentsProxyLimit int
 
-	cmd.Flags().IntVar(&listWorkspaceAssignmentsProxyReq.PageSize, "page-size", listWorkspaceAssignmentsProxyReq.PageSize, `The maximum number of workspace assignments to return.`)
+	cmd.Flags().IntVar(&listWorkspaceAssignmentsProxyPageSizeRaw, "page-size", listWorkspaceAssignmentsProxyPageSizeRaw, `The maximum number of workspace assignments to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listWorkspaceAssignmentsProxyLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listWorkspaceAssignmentsProxyReq.PageToken, "page-token", listWorkspaceAssignmentsProxyReq.PageToken, `Pagination token.`)
+	cmd.Flags().StringVar(&listWorkspaceAssignmentsProxyPageTokenRaw, "page-token", listWorkspaceAssignmentsProxyPageTokenRaw, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-assignments-proxy"
@@ -2284,16 +2731,31 @@ List workspace assignments for a workspace.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.WorkspaceIamV2.ListWorkspaceAssignmentsProxy(ctx, listWorkspaceAssignmentsProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("page-size") || listWorkspaceAssignmentsProxyPageSizeRaw != 0 {
+			rawQuery["page_size"] = listWorkspaceAssignmentsProxyPageSizeRaw
+		}
+		if cmd.Flags().Changed("page-token") || listWorkspaceAssignmentsProxyPageTokenRaw != "" {
+			rawQuery["page_token"] = listWorkspaceAssignmentsProxyPageTokenRaw
+		}
+		rawPath := "/api/2.0/identity/workspace-assignments"
+
+		maps.Copy(rawQuery, listWorkspaceAssignmentsProxyReq)
+		api, err := apiclient.New(w.Config)
+		if err != nil {
+			return err
+		}
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		if listWorkspaceAssignmentsProxyLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceAssignmentsProxyLimit)
 		}
-		if listWorkspaceAssignmentsProxyLimit > 0 {
-			ctx = cmdio.WithLimit(ctx, listWorkspaceAssignmentsProxyLimit)
-		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2314,13 +2776,15 @@ List workspace assignments for a workspace.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var resolveGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ResolveGroupProxyRequest,
+	*map[string]any,
 )
 
 func newResolveGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var resolveGroupProxyReq map[string]any
+	resolveGroupProxyReq = map[string]any{}
+	var resolveGroupProxyExternalIdRaw string
 
-	var resolveGroupProxyReq iamv2.ResolveGroupProxyRequest
 	var resolveGroupProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&resolveGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2359,6 +2823,7 @@ Resolve an external group in the Databricks account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := resolveGroupProxyJson.Unmarshal(&resolveGroupProxyReq)
@@ -2373,14 +2838,24 @@ Resolve an external group in the Databricks account.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			resolveGroupProxyReq.ExternalId = args[0]
+			resolveGroupProxyExternalIdRaw = args[0]
 		}
 
-		response, err := w.WorkspaceIamV2.ResolveGroupProxy(ctx, resolveGroupProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("external-id") || resolveGroupProxyExternalIdRaw != "" {
+			resolveGroupProxyReq["external_id"] = resolveGroupProxyExternalIdRaw
+		}
+		rawPath := "/api/2.0/identity/groups/resolve-by-external-id"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, resolveGroupProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2402,13 +2877,15 @@ Resolve an external group in the Databricks account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var resolveServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ResolveServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newResolveServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var resolveServicePrincipalProxyReq map[string]any
+	resolveServicePrincipalProxyReq = map[string]any{}
+	var resolveServicePrincipalProxyExternalIdRaw string
 
-	var resolveServicePrincipalProxyReq iamv2.ResolveServicePrincipalProxyRequest
 	var resolveServicePrincipalProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&resolveServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2447,6 +2924,7 @@ Resolve an external service principal in the Databricks account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := resolveServicePrincipalProxyJson.Unmarshal(&resolveServicePrincipalProxyReq)
@@ -2461,14 +2939,24 @@ Resolve an external service principal in the Databricks account.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			resolveServicePrincipalProxyReq.ExternalId = args[0]
+			resolveServicePrincipalProxyExternalIdRaw = args[0]
 		}
 
-		response, err := w.WorkspaceIamV2.ResolveServicePrincipalProxy(ctx, resolveServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("external-id") || resolveServicePrincipalProxyExternalIdRaw != "" {
+			resolveServicePrincipalProxyReq["external_id"] = resolveServicePrincipalProxyExternalIdRaw
+		}
+		rawPath := "/api/2.0/identity/service-principals/resolve-by-external-id"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, resolveServicePrincipalProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2490,13 +2978,15 @@ Resolve an external service principal in the Databricks account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var resolveUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.ResolveUserProxyRequest,
+	*map[string]any,
 )
 
 func newResolveUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var resolveUserProxyReq map[string]any
+	resolveUserProxyReq = map[string]any{}
+	var resolveUserProxyExternalIdRaw string
 
-	var resolveUserProxyReq iamv2.ResolveUserProxyRequest
 	var resolveUserProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&resolveUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2534,6 +3024,7 @@ Resolve an external user in the Databricks account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := resolveUserProxyJson.Unmarshal(&resolveUserProxyReq)
@@ -2548,14 +3039,24 @@ Resolve an external user in the Databricks account.
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			resolveUserProxyReq.ExternalId = args[0]
+			resolveUserProxyExternalIdRaw = args[0]
 		}
 
-		response, err := w.WorkspaceIamV2.ResolveUserProxy(ctx, resolveUserProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("external-id") || resolveUserProxyExternalIdRaw != "" {
+			resolveUserProxyReq["external_id"] = resolveUserProxyExternalIdRaw
+		}
+		rawPath := "/api/2.0/identity/users/resolve-by-external-id"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "POST", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, resolveUserProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2577,20 +3078,25 @@ Resolve an external user in the Databricks account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateGroupProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateGroupProxyRequest,
+	*map[string]any,
 )
 
 func newUpdateGroupProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateGroupProxyReq map[string]any
+	updateGroupProxyReq = map[string]any{}
+	var updateGroupProxyGroupIdRaw string
+	var updateGroupProxyUpdateMaskRaw string
+	var updateGroupProxyAccountIdRaw string
+	var updateGroupProxyExternalIdRaw string
+	var updateGroupProxyGroupNameRaw string
 
-	var updateGroupProxyReq iamv2.UpdateGroupProxyRequest
-	updateGroupProxyReq.Group = iamv2.Group{}
 	var updateGroupProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateGroupProxyReq.Group.ExternalId, "external-id", updateGroupProxyReq.Group.ExternalId, `ExternalId of the group in the customer's IdP.`)
-	cmd.Flags().StringVar(&updateGroupProxyReq.Group.GroupName, "group-name", updateGroupProxyReq.Group.GroupName, `Display name of the group.`)
+	cmd.Flags().StringVar(&updateGroupProxyExternalIdRaw, "external-id", updateGroupProxyExternalIdRaw, `ExternalId of the group in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateGroupProxyGroupNameRaw, "group-name", updateGroupProxyGroupNameRaw, `Display name of the group.`)
 
 	cmd.Use = "update-group-proxy GROUP_ID UPDATE_MASK"
 	cmd.Short = `*Beta* Update a group in the account.`
@@ -2624,9 +3130,10 @@ Update a group in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateGroupProxyJson.Unmarshal(&updateGroupProxyReq.Group)
+			diags := updateGroupProxyJson.Unmarshal(&updateGroupProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -2637,14 +3144,36 @@ Update a group in the account.
 				}
 			}
 		}
-		updateGroupProxyReq.GroupId = args[0]
-		updateGroupProxyReq.UpdateMask = args[1]
+		updateGroupProxyGroupIdRaw = args[0]
+		updateGroupProxyUpdateMaskRaw = args[1]
 
-		response, err := w.WorkspaceIamV2.UpdateGroupProxy(ctx, updateGroupProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("update-mask") || updateGroupProxyUpdateMaskRaw != "" {
+			rawQuery["update_mask"] = updateGroupProxyUpdateMaskRaw
+		}
+		if cmd.Flags().Changed("account-id") || updateGroupProxyAccountIdRaw != "" {
+			updateGroupProxyReq["account_id"] = updateGroupProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("external-id") || updateGroupProxyExternalIdRaw != "" {
+			updateGroupProxyReq["external_id"] = updateGroupProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("group-id") || updateGroupProxyGroupIdRaw != "" {
+			updateGroupProxyReq["group_id"] = updateGroupProxyGroupIdRaw
+		}
+		if cmd.Flags().Changed("group-name") || updateGroupProxyGroupNameRaw != "" {
+			updateGroupProxyReq["group_name"] = updateGroupProxyGroupNameRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/groups/%s", fmt.Sprint(updateGroupProxyGroupIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateGroupProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2666,19 +3195,26 @@ Update a group in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateServicePrincipalProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateServicePrincipalProxyRequest,
+	*map[string]any,
 )
 
 func newUpdateServicePrincipalProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateServicePrincipalProxyReq map[string]any
+	updateServicePrincipalProxyReq = map[string]any{}
+	var updateServicePrincipalProxyServicePrincipalIdRaw string
+	var updateServicePrincipalProxyUpdateMaskRaw string
+	var updateServicePrincipalProxyAccountIdRaw string
+	var updateServicePrincipalProxyAccountSpStatusRaw string
+	var updateServicePrincipalProxyApplicationIdRaw string
+	var updateServicePrincipalProxyDisplayNameRaw string
+	var updateServicePrincipalProxyExternalIdRaw string
 
-	var updateServicePrincipalProxyReq iamv2.UpdateServicePrincipalProxyRequest
-	updateServicePrincipalProxyReq.ServicePrincipal = iamv2.ServicePrincipal{}
 	var updateServicePrincipalProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateServicePrincipalProxyExternalIdRaw, "external-id", updateServicePrincipalProxyExternalIdRaw, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "update-service-principal-proxy SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
 	cmd.Short = `*Beta* Update a service principal in the account.`
@@ -2721,9 +3257,10 @@ Update a service principal in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateServicePrincipalProxyJson.Unmarshal(&updateServicePrincipalProxyReq.ServicePrincipal)
+			diags := updateServicePrincipalProxyJson.Unmarshal(&updateServicePrincipalProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -2734,24 +3271,48 @@ Update a service principal in the account.
 				}
 			}
 		}
-		updateServicePrincipalProxyReq.ServicePrincipalId = args[0]
-		updateServicePrincipalProxyReq.UpdateMask = args[1]
+		updateServicePrincipalProxyServicePrincipalIdRaw = args[0]
+		updateServicePrincipalProxyUpdateMaskRaw = args[1]
 		if !cmd.Flags().Changed("json") {
-			updateServicePrincipalProxyReq.ServicePrincipal.DisplayName = args[2]
+			updateServicePrincipalProxyDisplayNameRaw = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateServicePrincipalProxyReq.ServicePrincipal.AccountSpStatus)
-			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_SP_STATUS: %s", args[3])
-			}
-
+			updateServicePrincipalProxyAccountSpStatusRaw = args[3]
 		}
 
-		response, err := w.WorkspaceIamV2.UpdateServicePrincipalProxy(ctx, updateServicePrincipalProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("update-mask") || updateServicePrincipalProxyUpdateMaskRaw != "" {
+			rawQuery["update_mask"] = updateServicePrincipalProxyUpdateMaskRaw
+		}
+		if cmd.Flags().Changed("account-id") || updateServicePrincipalProxyAccountIdRaw != "" {
+			updateServicePrincipalProxyReq["account_id"] = updateServicePrincipalProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("account-sp-status") || updateServicePrincipalProxyAccountSpStatusRaw != "" {
+			updateServicePrincipalProxyReq["account_sp_status"] = updateServicePrincipalProxyAccountSpStatusRaw
+		}
+		if cmd.Flags().Changed("application-id") || updateServicePrincipalProxyApplicationIdRaw != "" {
+			updateServicePrincipalProxyReq["application_id"] = updateServicePrincipalProxyApplicationIdRaw
+		}
+		if cmd.Flags().Changed("display-name") || updateServicePrincipalProxyDisplayNameRaw != "" {
+			updateServicePrincipalProxyReq["display_name"] = updateServicePrincipalProxyDisplayNameRaw
+		}
+		if cmd.Flags().Changed("external-id") || updateServicePrincipalProxyExternalIdRaw != "" {
+			updateServicePrincipalProxyReq["external_id"] = updateServicePrincipalProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("service-principal-id") || updateServicePrincipalProxyServicePrincipalIdRaw != "" {
+			updateServicePrincipalProxyReq["service_principal_id"] = updateServicePrincipalProxyServicePrincipalIdRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/service-principals/%s", fmt.Sprint(updateServicePrincipalProxyServicePrincipalIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateServicePrincipalProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2773,19 +3334,25 @@ Update a service principal in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateUserProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateUserProxyRequest,
+	*map[string]any,
 )
 
 func newUpdateUserProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateUserProxyReq map[string]any
+	updateUserProxyReq = map[string]any{}
+	var updateUserProxyUpdateMaskRaw string
+	var updateUserProxyUserIdRaw string
+	var updateUserProxyAccountIdRaw string
+	var updateUserProxyAccountUserStatusRaw string
+	var updateUserProxyExternalIdRaw string
+	var updateUserProxyUsernameRaw string
 
-	var updateUserProxyReq iamv2.UpdateUserProxyRequest
-	updateUserProxyReq.User = iamv2.User{}
 	var updateUserProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateUserProxyReq.User.ExternalId, "external-id", updateUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
+	cmd.Flags().StringVar(&updateUserProxyExternalIdRaw, "external-id", updateUserProxyExternalIdRaw, `ExternalId of the user in the customer's IdP.`)
 
 	cmd.Use = "update-user-proxy USER_ID UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
 	cmd.Short = `*Beta* Update a user in the account.`
@@ -2830,9 +3397,10 @@ Update a user in the account.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateUserProxyJson.Unmarshal(&updateUserProxyReq.User)
+			diags := updateUserProxyJson.Unmarshal(&updateUserProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -2843,31 +3411,48 @@ Update a user in the account.
 				}
 			}
 		}
-		updateUserProxyReq.UserId = args[0]
-		updateUserProxyReq.UpdateMask = args[1]
+		updateUserProxyUserIdRaw = args[0]
+		updateUserProxyUpdateMaskRaw = args[1]
 		if !cmd.Flags().Changed("json") {
-			updateUserProxyReq.User.Username = args[2]
+			updateUserProxyUsernameRaw = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateUserProxyReq.User.FullName)
-			if err != nil {
-				return fmt.Errorf("invalid FULL_NAME: %s", args[3])
-			}
-
+			updateUserProxyReq["full_name"] = args[3]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &updateUserProxyReq.User.AccountUserStatus)
-			if err != nil {
-				return fmt.Errorf("invalid ACCOUNT_USER_STATUS: %s", args[4])
-			}
-
+			updateUserProxyAccountUserStatusRaw = args[4]
 		}
 
-		response, err := w.WorkspaceIamV2.UpdateUserProxy(ctx, updateUserProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("update-mask") || updateUserProxyUpdateMaskRaw != "" {
+			rawQuery["update_mask"] = updateUserProxyUpdateMaskRaw
+		}
+		if cmd.Flags().Changed("account-id") || updateUserProxyAccountIdRaw != "" {
+			updateUserProxyReq["account_id"] = updateUserProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("account-user-status") || updateUserProxyAccountUserStatusRaw != "" {
+			updateUserProxyReq["account_user_status"] = updateUserProxyAccountUserStatusRaw
+		}
+		if cmd.Flags().Changed("external-id") || updateUserProxyExternalIdRaw != "" {
+			updateUserProxyReq["external_id"] = updateUserProxyExternalIdRaw
+		}
+		if cmd.Flags().Changed("user-id") || updateUserProxyUserIdRaw != "" {
+			updateUserProxyReq["user_id"] = updateUserProxyUserIdRaw
+		}
+		if cmd.Flags().Changed("username") || updateUserProxyUsernameRaw != "" {
+			updateUserProxyReq["username"] = updateUserProxyUsernameRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/users/%s", fmt.Sprint(updateUserProxyUserIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateUserProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2889,14 +3474,18 @@ Update a user in the account.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateWorkspaceAssignmentDetailProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateWorkspaceAssignmentDetailProxyRequest,
+	*map[string]any,
 )
 
 func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateWorkspaceAssignmentDetailProxyReq map[string]any
+	updateWorkspaceAssignmentDetailProxyReq = map[string]any{}
+	var updateWorkspaceAssignmentDetailProxyPrincipalIdRaw int64
+	var updateWorkspaceAssignmentDetailProxyAccountIdRaw string
+	var updateWorkspaceAssignmentDetailProxyPrincipalTypeRaw string
+	var updateWorkspaceAssignmentDetailProxyWorkspaceIdRaw int64
 
-	var updateWorkspaceAssignmentDetailProxyReq iamv2.UpdateWorkspaceAssignmentDetailProxyRequest
-	updateWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail = iamv2.WorkspaceAssignmentDetail{}
 	var updateWorkspaceAssignmentDetailProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -2941,9 +3530,10 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateWorkspaceAssignmentDetailProxyJson.Unmarshal(&updateWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail)
+			diags := updateWorkspaceAssignmentDetailProxyJson.Unmarshal(&updateWorkspaceAssignmentDetailProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -2954,28 +3544,44 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentDetailProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentDetailProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
-
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateWorkspaceAssignmentDetailProxyReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateWorkspaceAssignmentDetailProxyReq["update_mask"] = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentDetailProxyReq.WorkspaceAssignmentDetail.PrincipalId)
+			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentDetailProxyPrincipalIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
 			}
-
 		}
 
-		response, err := w.WorkspaceIamV2.UpdateWorkspaceAssignmentDetailProxy(ctx, updateWorkspaceAssignmentDetailProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || updateWorkspaceAssignmentDetailProxyAccountIdRaw != "" {
+			updateWorkspaceAssignmentDetailProxyReq["account_id"] = updateWorkspaceAssignmentDetailProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("principal-id") || updateWorkspaceAssignmentDetailProxyPrincipalIdRaw != 0 {
+			updateWorkspaceAssignmentDetailProxyReq["principal_id"] = updateWorkspaceAssignmentDetailProxyPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || updateWorkspaceAssignmentDetailProxyPrincipalTypeRaw != "" {
+			updateWorkspaceAssignmentDetailProxyReq["principal_type"] = updateWorkspaceAssignmentDetailProxyPrincipalTypeRaw
+		}
+		if cmd.Flags().Changed("workspace-id") || updateWorkspaceAssignmentDetailProxyWorkspaceIdRaw != 0 {
+			updateWorkspaceAssignmentDetailProxyReq["workspace_id"] = updateWorkspaceAssignmentDetailProxyWorkspaceIdRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignment-details/%s", fmt.Sprint(updateWorkspaceAssignmentDetailProxyPrincipalIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateWorkspaceAssignmentDetailProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2997,14 +3603,18 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateWorkspaceAssignmentProxyOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateWorkspaceAssignmentProxyRequest,
+	*map[string]any,
 )
 
 func newUpdateWorkspaceAssignmentProxy() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateWorkspaceAssignmentProxyReq map[string]any
+	updateWorkspaceAssignmentProxyReq = map[string]any{}
+	var updateWorkspaceAssignmentProxyPrincipalIdRaw int64
+	var updateWorkspaceAssignmentProxyAccountIdRaw string
+	var updateWorkspaceAssignmentProxyPrincipalTypeRaw string
+	var updateWorkspaceAssignmentProxyWorkspaceIdRaw int64
 
-	var updateWorkspaceAssignmentProxyReq iamv2.UpdateWorkspaceAssignmentProxyRequest
-	updateWorkspaceAssignmentProxyReq.WorkspaceAssignment = iamv2.WorkspaceAssignment{}
 	var updateWorkspaceAssignmentProxyJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -3048,9 +3658,10 @@ Update a workspace assignment for a workspace.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateWorkspaceAssignmentProxyJson.Unmarshal(&updateWorkspaceAssignmentProxyReq.WorkspaceAssignment)
+			diags := updateWorkspaceAssignmentProxyJson.Unmarshal(&updateWorkspaceAssignmentProxyReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -3061,28 +3672,44 @@ Update a workspace assignment for a workspace.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentProxyReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &updateWorkspaceAssignmentProxyPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
-
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateWorkspaceAssignmentProxyReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateWorkspaceAssignmentProxyReq["update_mask"] = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentProxyReq.WorkspaceAssignment.PrincipalId)
+			_, err = fmt.Sscan(args[2], &updateWorkspaceAssignmentProxyPrincipalIdRaw)
 			if err != nil {
 				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
 			}
-
 		}
 
-		response, err := w.WorkspaceIamV2.UpdateWorkspaceAssignmentProxy(ctx, updateWorkspaceAssignmentProxyReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("account-id") || updateWorkspaceAssignmentProxyAccountIdRaw != "" {
+			updateWorkspaceAssignmentProxyReq["account_id"] = updateWorkspaceAssignmentProxyAccountIdRaw
+		}
+		if cmd.Flags().Changed("principal-id") || updateWorkspaceAssignmentProxyPrincipalIdRaw != 0 {
+			updateWorkspaceAssignmentProxyReq["principal_id"] = updateWorkspaceAssignmentProxyPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || updateWorkspaceAssignmentProxyPrincipalTypeRaw != "" {
+			updateWorkspaceAssignmentProxyReq["principal_type"] = updateWorkspaceAssignmentProxyPrincipalTypeRaw
+		}
+		if cmd.Flags().Changed("workspace-id") || updateWorkspaceAssignmentProxyWorkspaceIdRaw != 0 {
+			updateWorkspaceAssignmentProxyReq["workspace_id"] = updateWorkspaceAssignmentProxyWorkspaceIdRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-assignments/%s", fmt.Sprint(updateWorkspaceAssignmentProxyPrincipalIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateWorkspaceAssignmentProxyReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -3104,19 +3731,23 @@ Update a workspace assignment for a workspace.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateWorkspaceIdentityDetailOverrides []func(
 	*cobra.Command,
-	*iamv2.UpdateWorkspaceIdentityDetailRequest,
+	*map[string]any,
 )
 
 func newUpdateWorkspaceIdentityDetail() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateWorkspaceIdentityDetailReq map[string]any
+	updateWorkspaceIdentityDetailReq = map[string]any{}
+	var updateWorkspaceIdentityDetailPrincipalIdRaw int64
+	var updateWorkspaceIdentityDetailAssignmentTypeRaw string
+	var updateWorkspaceIdentityDetailPrincipalTypeRaw string
+	var updateWorkspaceIdentityDetailWorkspaceIdentityStatusRaw string
 
-	var updateWorkspaceIdentityDetailReq iamv2.UpdateWorkspaceIdentityDetailRequest
-	updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail = iamv2.WorkspaceIdentityDetail{}
 	var updateWorkspaceIdentityDetailJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateWorkspaceIdentityDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail.WorkspaceIdentityStatus, "workspace-identity-status", `The activity status of an identity in a Databricks workspace. Supported values: [ACTIVE, INACTIVE]`)
+	flags.EnumVar(cmd.Flags(), &updateWorkspaceIdentityDetailWorkspaceIdentityStatusRaw, "workspace-identity-status", `The activity status of an identity in a Databricks workspace. Supported values: [ACTIVE, INACTIVE]`, "State", "ACTIVE", "INACTIVE")
 
 	cmd.Use = "update-workspace-identity-detail PRINCIPAL_ID UPDATE_MASK"
 	cmd.Short = `*Beta* Update workspace identity details for a principal.`
@@ -3143,9 +3774,10 @@ Update workspace identity details for a principal.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
-			diags := updateWorkspaceIdentityDetailJson.Unmarshal(&updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail)
+			diags := updateWorkspaceIdentityDetailJson.Unmarshal(&updateWorkspaceIdentityDetailReq)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -3156,21 +3788,38 @@ Update workspace identity details for a principal.
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateWorkspaceIdentityDetailReq.PrincipalId)
+		_, err = fmt.Sscan(args[0], &updateWorkspaceIdentityDetailPrincipalIdRaw)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[0])
 		}
-
 		if args[1] != "" {
-			updateMaskArray := strings.Split(args[1], ",")
-			updateWorkspaceIdentityDetailReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			updateWorkspaceIdentityDetailReq["update_mask"] = args[1]
 		}
 
-		response, err := w.WorkspaceIamV2.UpdateWorkspaceIdentityDetail(ctx, updateWorkspaceIdentityDetailReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("assignment-type") || updateWorkspaceIdentityDetailAssignmentTypeRaw != "" {
+			updateWorkspaceIdentityDetailReq["assignment_type"] = updateWorkspaceIdentityDetailAssignmentTypeRaw
+		}
+		if cmd.Flags().Changed("principal-id") || updateWorkspaceIdentityDetailPrincipalIdRaw != 0 {
+			updateWorkspaceIdentityDetailReq["principal_id"] = updateWorkspaceIdentityDetailPrincipalIdRaw
+		}
+		if cmd.Flags().Changed("principal-type") || updateWorkspaceIdentityDetailPrincipalTypeRaw != "" {
+			updateWorkspaceIdentityDetailReq["principal_type"] = updateWorkspaceIdentityDetailPrincipalTypeRaw
+		}
+		if cmd.Flags().Changed("workspace-identity-status") || updateWorkspaceIdentityDetailWorkspaceIdentityStatusRaw != "" {
+			updateWorkspaceIdentityDetailReq["workspace_identity_status"] = updateWorkspaceIdentityDetailWorkspaceIdentityStatusRaw
+		}
+		rawPath := fmt.Sprintf("/api/2.0/identity/workspace-identity-details/%s", fmt.Sprint(updateWorkspaceIdentityDetailPrincipalIdRaw))
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateWorkspaceIdentityDetailReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

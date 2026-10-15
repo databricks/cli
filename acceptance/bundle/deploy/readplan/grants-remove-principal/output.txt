@@ -30,7 +30,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.myschema",
+    "securable_type": "schema"
   }
 }
 
@@ -67,7 +69,9 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.myschema",
+    "securable_type": "schema"
   }
 }
 The following resources will be deleted:

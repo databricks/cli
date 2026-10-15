@@ -10,8 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+
+	workspaceapi "github.com/databricks/cli/libs/workspaceapi"
 )
 
 // Slice with functions to override default command behavior.
@@ -62,13 +63,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*workspace.Delete,
+	*workspaceapi.Delete,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq workspaceapi.Delete
 
-	var deleteReq workspace.Delete
 	var deleteJson flags.JsonFlag
 
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -103,13 +104,15 @@ func newDelete() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
@@ -122,26 +125,9 @@ func newDelete() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
-				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have the absolute path of the notebook or directory")
-			}
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteReq.Path = args[0]
-
 		}
 
 		err = w.Workspace.Delete(ctx, deleteReq)
@@ -169,13 +155,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var exportOverrides []func(
 	*cobra.Command,
-	*workspace.ExportRequest,
+	*workspaceapi.ExportRequest,
 )
 
 func newExport() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var exportReq workspace.ExportRequest
+	var exportReq workspaceapi.ExportRequest
 
 	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file. Supported values: [
   AUTO,
@@ -208,35 +193,23 @@ func newExport() *cobra.Command {
 	cmd.Annotations["launch_stage"] = "GA"
 	cmd.Annotations["launch_stage_display"] = "GA"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
-			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return errors.New("expected to have the absolute path of the object or directory")
-		}
 		exportReq.Path = args[0]
 
 		response, err := w.Workspace.Export(ctx, exportReq)
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -258,13 +231,12 @@ func newExport() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*workspace.GetWorkspaceObjectPermissionLevelsRequest,
+	*workspaceapi.GetWorkspaceObjectPermissionLevelsRequest,
 )
 
 func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionLevelsReq workspace.GetWorkspaceObjectPermissionLevelsRequest
+	var getPermissionLevelsReq workspaceapi.GetWorkspaceObjectPermissionLevelsRequest
 
 	cmd.Use = "get-permission-levels WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permission levels.`
@@ -291,6 +263,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		getPermissionLevelsReq.WorkspaceObjectType = args[0]
 		getPermissionLevelsReq.WorkspaceObjectId = args[1]
@@ -299,7 +272,6 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -321,13 +293,12 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.GetWorkspaceObjectPermissionsRequest,
+	*workspaceapi.GetWorkspaceObjectPermissionsRequest,
 )
 
 func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPermissionsReq workspace.GetWorkspaceObjectPermissionsRequest
+	var getPermissionsReq workspaceapi.GetWorkspaceObjectPermissionsRequest
 
 	cmd.Use = "get-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permissions.`
@@ -355,6 +326,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		getPermissionsReq.WorkspaceObjectType = args[0]
 		getPermissionsReq.WorkspaceObjectId = args[1]
@@ -363,7 +335,6 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -385,13 +356,12 @@ func newGetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getStatusOverrides []func(
 	*cobra.Command,
-	*workspace.GetStatusRequest,
+	*workspaceapi.GetStatusRequest,
 )
 
 func newGetStatus() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getStatusReq workspace.GetStatusRequest
+	var getStatusReq workspaceapi.GetStatusRequest
 
 	cmd.Use = "get-status PATH"
 	cmd.Short = `Get status.`
@@ -416,6 +386,7 @@ func newGetStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		getStatusReq.Path = args[0]
 
@@ -423,7 +394,6 @@ func newGetStatus() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -445,13 +415,13 @@ func newGetStatus() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var importOverrides []func(
 	*cobra.Command,
-	*workspace.Import,
+	*workspaceapi.Import,
 )
 
 func newImport() *cobra.Command {
 	cmd := &cobra.Command{}
+	var importReq workspaceapi.Import
 
-	var importReq workspace.Import
 	var importJson flags.JsonFlag
 
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -504,6 +474,7 @@ func newImport() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := importJson.Unmarshal(&importReq)
@@ -546,13 +517,13 @@ func newImport() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*workspace.ListWorkspaceRequest,
+	*workspaceapi.ListWorkspaceRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq workspaceapi.ListWorkspaceRequest
 
-	var listReq workspace.ListWorkspaceRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -589,6 +560,7 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		listReq.Path = args[0]
 
@@ -599,8 +571,7 @@ func newList() *cobra.Command {
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderListing(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -621,13 +592,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var mkdirsOverrides []func(
 	*cobra.Command,
-	*workspace.Mkdirs,
+	*workspaceapi.Mkdirs,
 )
 
 func newMkdirs() *cobra.Command {
 	cmd := &cobra.Command{}
+	var mkdirsReq workspaceapi.Mkdirs
 
-	var mkdirsReq workspace.Mkdirs
 	var mkdirsJson flags.JsonFlag
 
 	cmd.Flags().Var(&mkdirsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -660,13 +631,15 @@ func newMkdirs() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := mkdirsJson.Unmarshal(&mkdirsReq)
@@ -679,24 +652,8 @@ func newMkdirs() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
-				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The absolute path of the directory")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return errors.New("expected to have the absolute path of the directory")
-			}
+		}
+		if !cmd.Flags().Changed("json") {
 			mkdirsReq.Path = args[0]
 		}
 
@@ -725,13 +682,13 @@ func newMkdirs() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setPermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.WorkspaceObjectPermissionsRequest,
+	*workspaceapi.WorkspaceObjectPermissionsRequest,
 )
 
 func newSetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setPermissionsReq workspaceapi.WorkspaceObjectPermissionsRequest
 
-	var setPermissionsReq workspace.WorkspaceObjectPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -765,6 +722,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
@@ -785,7 +743,6 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -807,13 +764,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePermissionsOverrides []func(
 	*cobra.Command,
-	*workspace.WorkspaceObjectPermissionsRequest,
+	*workspaceapi.WorkspaceObjectPermissionsRequest,
 )
 
 func newUpdatePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePermissionsReq workspaceapi.WorkspaceObjectPermissionsRequest
 
-	var updatePermissionsReq workspace.WorkspaceObjectPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -846,6 +803,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
@@ -866,7 +824,6 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
 		return cmdio.Render(ctx, response)
 	}
 

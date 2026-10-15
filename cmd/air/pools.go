@@ -11,12 +11,13 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -120,11 +121,11 @@ func poolAPIError(ctx context.Context, cmd *cobra.Command, action string, err er
 	// where it is not yet rolled out. That is a permanent state for the
 	// workspace, not a retryable failure — and its explicit error code is more
 	// specific than the generic 403 it may arrive as, so check it first.
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "FEATURE_DISABLED" {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apierrs.ErrorCode(apiErr) == "FEATURE_DISABLED" {
 		return renderError(ctx, cmd, "FEATURE_DISABLED", "PERMANENT", false,
 			errors.New("the GPU pools API is not enabled for this workspace"))
 	}
-	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+	if apierrs.Is(err, apierrs.ErrUnauthenticated) || apierrs.Is(err, apierrs.ErrPermissionDenied) {
 		return authError(ctx, cmd, err)
 	}
 	return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
@@ -132,8 +133,8 @@ func poolAPIError(ctx context.Context, cmd *cobra.Command, action string, err er
 }
 
 // listPools pages the list endpoint fully.
-func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]provisionedCapacity, error) {
-	apiClient, err := client.New(w.Config)
+func listPools(ctx context.Context, w *sdkclients.Clients) ([]provisionedCapacity, error) {
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -163,8 +164,8 @@ func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]provisione
 }
 
 // getPool fetches one pool, including its usage summary.
-func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*provisionedCapacity, error) {
-	apiClient, err := client.New(w.Config)
+func getPool(ctx context.Context, w *sdkclients.Clients, id string) (*provisionedCapacity, error) {
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -272,7 +273,7 @@ func newGetPoolCommand() *cobra.Command {
 		pool, err := getPool(ctx, w, id)
 		if err != nil {
 			// ErrNotFound covers a plain 404 as well as RESOURCE_DOES_NOT_EXIST.
-			if errors.Is(err, apierr.ErrNotFound) {
+			if apierrs.Is(err, apierrs.ErrNotFound) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 					fmt.Errorf("GPU pool %q not found: check the id with `air pools list`", id))
 			}
@@ -293,7 +294,7 @@ func newGetPoolCommand() *cobra.Command {
 // resolveSolePoolID returns the id of the workspace's only pool, for `air pools
 // get` with no argument. It errors (with the ids to choose from) when there is
 // not exactly one, so the convenience never silently picks among several.
-func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *databricks.WorkspaceClient) (string, error) {
+func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *sdkclients.Clients) (string, error) {
 	pools, err := listPools(ctx, w)
 	if err != nil {
 		return "", poolAPIError(ctx, cmd, "list GPU pools", err)

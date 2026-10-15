@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ func TestBundleDeployOverrideWithWrapper(t *testing.T) {
 		return err
 	}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	assert.NotNil(t, overrideFunc)
 
 	cmd := &cobra.Command{}
@@ -35,7 +35,7 @@ func TestBundleDeployOverrideFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	deployReq := &apps.CreateAppDeploymentRequest{}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	overrideFunc(cmd, deployReq)
 
 	tests := []struct {
@@ -71,7 +71,7 @@ func TestBundleDeployOverrideDeprecatedAndHiddenFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	deployReq := &apps.CreateAppDeploymentRequest{}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	overrideFunc(cmd, deployReq)
 
 	computeID := cmd.Flags().Lookup("compute-id")
@@ -91,7 +91,7 @@ func TestBundleDeployOverrideClusterIDShorthand(t *testing.T) {
 	cmd := &cobra.Command{}
 	deployReq := &apps.CreateAppDeploymentRequest{}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	overrideFunc(cmd, deployReq)
 
 	flag := cmd.Flags().Lookup("cluster-id")
@@ -107,7 +107,7 @@ func TestBundleDeployOverrideHelpText(t *testing.T) {
 	cmd := &cobra.Command{}
 	deployReq := &apps.CreateAppDeploymentRequest{}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	overrideFunc(cmd, deployReq)
 
 	assert.NotEmpty(t, cmd.Long)
@@ -202,7 +202,7 @@ func TestApplyDeployFlags(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := &cobra.Command{Use: "deploy"}
-			BundleDeployOverrideWithWrapper(noopWrapper)(cmd, &apps.CreateAppDeploymentRequest{})
+			BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](noopWrapper)(cmd, &apps.CreateAppDeploymentRequest{})
 			require.NoError(t, cmd.ParseFlags(tc.args))
 
 			b := &bundle.Bundle{}
@@ -229,9 +229,9 @@ func TestBundleDeployOverrideErrorWrapping(t *testing.T) {
 			return errors.New("api error")
 		},
 	}
-	deployReq := &apps.CreateAppDeploymentRequest{AppName: "test-app"}
+	deployReq := &apps.CreateAppDeploymentRequest{AppName: new("test-app")}
 
-	overrideFunc := BundleDeployOverrideWithWrapper(mockWrapper)
+	overrideFunc := BundleDeployOverrideWithWrapper[apps.CreateAppDeploymentRequest](mockWrapper)
 	overrideFunc(cmd, deployReq)
 
 	err := cmd.RunE(cmd, []string{"test-app"})

@@ -30,6 +30,7 @@
         }
       }
     ],
-    "name": "test-pipeline"
+    "name": "test-pipeline",
+    "pipeline_id": "[NEW_PIPELINE_ID]"
   }
 }

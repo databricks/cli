@@ -11,11 +11,14 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/qualitymonitors"
+	"github.com/databricks/cli/libs/sdktypes/alerts/v2"
+	"github.com/databricks/cli/libs/sdktypes/experiments/v1"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/modelregistry/v1"
+	"github.com/databricks/cli/libs/sdktypes/warehouses/v1"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type applyPresets struct{}
@@ -59,7 +62,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if j == nil {
 			continue
 		}
-		j.Name = prefix + j.Name
+		j.Name = addPrefix(prefix, j.Name)
 		if len(tags) > 0 {
 			if j.Tags == nil {
 				// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
@@ -71,13 +74,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				}
 			}
 		}
-		if j.MaxConcurrentRuns == 0 {
-			j.MaxConcurrentRuns = t.JobsMaxConcurrentRuns
+		if utils.Deref(j.MaxConcurrentRuns) == 0 && t.JobsMaxConcurrentRuns != 0 {
+			j.MaxConcurrentRuns = new(t.JobsMaxConcurrentRuns)
 		}
 		if t.TriggerPauseStatus != "" {
-			paused := jobs.PauseStatusPaused
+			paused := jobs.SchedulePauseStatus_Paused
 			if t.TriggerPauseStatus == config.Unpaused {
-				paused = jobs.PauseStatusUnpaused
+				// sdk-go models UNPAUSED as the enum's zero value; the API accepts
+				// the explicit value and the bundle configuration keeps it.
+				paused = jobs.SchedulePauseStatus("UNPAUSED")
 			}
 
 			if j.Schedule != nil && j.Schedule.PauseStatus == "" {
@@ -97,14 +102,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if p == nil {
 			continue
 		}
-		p.Name = prefix + p.Name
+		p.Name = addPrefix(prefix, p.Name)
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
 			//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-			p.Development = true
+			p.Development = new(true)
 		}
 		if t.TriggerPauseStatus == config.Paused {
 			//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-			p.Continuous = false
+			if utils.Deref(p.Continuous) {
+				p.Continuous = nil
+			}
 		}
 
 		if len(tags) > 0 {
@@ -125,14 +132,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		m.Name = prefix + m.Name
+		m.Name = addPrefix(prefix, m.Name)
 		for _, t := range tags {
-			exists := slices.ContainsFunc(m.Tags, func(modelTag ml.ModelTag) bool {
-				return modelTag.Key == t.Key
+			exists := slices.ContainsFunc(m.Tags, func(modelTag modelregistry.RegisteredModelTag) bool {
+				return utils.Deref(modelTag.Key) == t.Key
 			})
 			if !exists {
 				// Only add this tag if the resource didn't include any tag that overrides its value.
-				m.Tags = append(m.Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
+				m.Tags = append(m.Tags, modelregistry.RegisteredModelTag{Key: new(t.Key), Value: new(t.Value)})
 			}
 		}
 	}
@@ -142,24 +149,24 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
-		filepath := e.Name
+		filepath := utils.Deref(e.Name)
 		dir := path.Dir(filepath)
 		base := path.Base(filepath)
 		if dir == "." {
-			e.Name = prefix + base
+			e.Name = addPrefix(prefix, new(base))
 		} else {
-			e.Name = dir + "/" + prefix + base
+			e.Name = new(dir + "/" + prefix + base)
 		}
 		for _, t := range tags {
 			exists := false
 			for _, experimentTag := range e.Tags {
-				if experimentTag.Key == t.Key {
+				if utils.Deref(experimentTag.Key) == t.Key {
 					exists = true
 					break
 				}
 			}
 			if !exists {
-				e.Tags = append(e.Tags, ml.ExperimentTag{Key: t.Key, Value: t.Value})
+				e.Tags = append(e.Tags, experiments.ExperimentTag{Key: new(t.Key), Value: new(t.Value)})
 			}
 		}
 	}
@@ -169,7 +176,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
-		e.Name = normalizePrefix(prefix) + e.Name
+		e.Name = addPrefix(normalizePrefix(prefix), e.Name)
 
 		// As of 2024-06, model serving endpoints don't yet support tags
 	}
@@ -179,7 +186,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if m == nil {
 			continue
 		}
-		m.Name = normalizePrefix(prefix) + m.Name
+		m.Name = addPrefix(normalizePrefix(prefix), m.Name)
 
 		// As of 2024-06, registered models don't yet support tags
 	}
@@ -193,7 +200,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
 			// Quality monitors might support the "pause" property in the future, so at the
 			// CLI level we do respect that property if it is set to "unpaused."
-			if q.Schedule != nil && q.Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
+			if q.Schedule != nil && q.Schedule.PauseStatus != qualitymonitors.MonitorCronSchedulePauseStatusUnpaused {
 				q.Schedule = nil
 			}
 		}
@@ -208,7 +215,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if s == nil {
 			continue
 		}
-		s.Name = normalizePrefix(prefix) + s.Name
+		s.Name = addPrefix(normalizePrefix(prefix), s.Name)
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
 	}
@@ -218,7 +225,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if c == nil {
 			continue
 		}
-		c.ClusterName = prefix + c.ClusterName
+		c.ClusterName = addPrefix(prefix, c.ClusterName)
 		if len(tags) > 0 {
 			if c.CustomTags == nil {
 				c.CustomTags = make(map[string]string, len(tags))
@@ -238,7 +245,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if pool == nil {
 			continue
 		}
-		pool.InstancePoolName = prefix + pool.InstancePoolName
+		pool.InstancePoolName = addPrefix(prefix, pool.InstancePoolName)
 		if len(tags) > 0 {
 			if pool.CustomTags == nil {
 				pool.CustomTags = make(map[string]string, len(tags))
@@ -276,14 +283,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if a == nil {
 			continue
 		}
-		a.DisplayName = prefix + a.DisplayName
+		a.DisplayName = addPrefix(prefix, a.DisplayName)
 		if t.TriggerPauseStatus != "" {
-			paused := sql.SchedulePauseStatusPaused
+			paused := alerts.SchedulePauseStatus_Paused
 			if t.TriggerPauseStatus == config.Unpaused {
-				paused = sql.SchedulePauseStatusUnpaused
+				paused = alerts.SchedulePauseStatus_Unpaused
 			}
 			// Only set pause status if a schedule is defined and pause status is not already set
-			if a.Schedule.QuartzCronSchedule != "" && a.Schedule.PauseStatus == "" {
+			if a.Schedule != nil && utils.Deref(a.Schedule.QuartzCronSchedule) != "" && a.Schedule.PauseStatus == "" {
 				a.Schedule.PauseStatus = paused
 			}
 		}
@@ -294,10 +301,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if w == nil {
 			continue
 		}
-		w.Name = prefix + w.Name
+		w.Name = addPrefix(prefix, w.Name)
 		if len(tags) > 0 {
 			if w.Tags == nil {
-				w.Tags = &sql.EndpointTags{}
+				w.Tags = &warehouses.EndpointTags{}
 			}
 			for _, tag := range tags {
 				normalisedKey := b.Tagging.NormalizeKey(tag.Key)
@@ -306,16 +313,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				// Check if the tag already exists
 				exists := false
 				for _, t := range w.Tags.CustomTags {
-					if t.Key == normalisedKey {
+					if utils.Deref(t.Key) == normalisedKey {
 						exists = true
 						break
 					}
 				}
 
 				if !exists {
-					w.Tags.CustomTags = append(w.Tags.CustomTags, sql.EndpointTagPair{
-						Key:   normalisedKey,
-						Value: normalisedValue,
+					w.Tags.CustomTags = append(w.Tags.CustomTags, warehouses.EndpointTagPair{
+						Key:   new(normalisedKey),
+						Value: new(normalisedValue),
 					})
 				}
 			}
@@ -329,7 +336,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if cp == nil {
 			continue
 		}
-		cp.Name = prefix + cp.Name
+		cp.Name = addPrefix(prefix, cp.Name)
 	}
 
 	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
@@ -354,6 +361,15 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 		Severity:  diag.Error,
 		Locations: []diag.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 	}}
+}
+
+// addPrefix returns name with prefix prepended. A missing name stays missing
+// when there is no prefix, so the preset does not materialize an empty name.
+func addPrefix(prefix string, name *string) *string {
+	if prefix == "" {
+		return name
+	}
+	return new(prefix + utils.Deref(name))
 }
 
 // toTagArray converts a map of tags to an array of tags.

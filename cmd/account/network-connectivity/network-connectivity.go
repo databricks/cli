@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
+
+	networking "github.com/databricks/cli/libs/sdktypes/networking/v1"
+	sdknetworking "github.com/databricks/sdk-go/networking/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -64,14 +67,14 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createNetworkConnectivityConfigurationOverrides []func(
 	*cobra.Command,
-	*settings.CreateNetworkConnectivityConfigRequest,
+	*networking.CreateNetworkConnectivityConfigRequest,
 )
 
 func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createNetworkConnectivityConfigurationReq networking.CreateNetworkConnectivityConfigRequest
+	createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig = &networking.CreateNetworkConnectivityConfiguration{}
 
-	var createNetworkConnectivityConfigurationReq settings.CreateNetworkConnectivityConfigRequest
-	createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig = settings.CreateNetworkConnectivityConfiguration{}
 	var createNetworkConnectivityConfigurationJson flags.JsonFlag
 
 	cmd.Flags().Var(&createNetworkConnectivityConfigurationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -122,6 +125,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig)
@@ -136,18 +140,26 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Name = args[0]
+			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Region = args[1]
+			createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig.Region = new(args[1])
 		}
 
-		response, err := a.NetworkConnectivity.CreateNetworkConnectivityConfiguration(ctx, createNetworkConnectivityConfigurationReq)
+		sdkReq, err := networking.CreateNetworkConnectivityConfigRequestToSDK(&createNetworkConnectivityConfigurationReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateNetworkConnectivityConfigPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NetworkConnectivityConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -168,24 +180,24 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createPrivateEndpointRuleOverrides []func(
 	*cobra.Command,
-	*settings.CreatePrivateEndpointRuleRequest,
+	*networking.CreateNccPrivateEndpointRuleRequest,
 )
 
 func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createPrivateEndpointRuleReq networking.CreateNccPrivateEndpointRuleRequest
+	createPrivateEndpointRuleReq.PrivateEndpointRule = &networking.CreatePrivateEndpointRule{}
 
-	var createPrivateEndpointRuleReq settings.CreatePrivateEndpointRuleRequest
-	createPrivateEndpointRuleReq.PrivateEndpointRule = settings.CreatePrivateEndpointRule{}
 	var createPrivateEndpointRuleJson flags.JsonFlag
 
 	cmd.Flags().Var(&createPrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
+	flags.StringPtrVar(cmd.Flags(), &createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
+	flags.StringPtrVar(cmd.Flags(), &createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", ``)
 	// TODO: complex arg: gcp_endpoint
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services.`)
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource.`)
+	flags.StringPtrVar(cmd.Flags(), &createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", `Not used by customer-managed private endpoint services.`)
+	flags.StringPtrVar(cmd.Flags(), &createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", `The Azure resource ID of the target resource.`)
 	// TODO: array: resource_names
 
 	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID"
@@ -219,6 +231,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq.PrivateEndpointRule)
@@ -232,14 +245,22 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 				}
 			}
 		}
-		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
+		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = new(args[0])
 
-		response, err := a.NetworkConnectivity.CreatePrivateEndpointRule(ctx, createPrivateEndpointRuleReq)
+		sdkReq, err := networking.CreateNccPrivateEndpointRuleRequestToSDK(&createPrivateEndpointRuleReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.CreateNccPrivateEndpointRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NccPrivateEndpointRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -260,13 +281,12 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteNetworkConnectivityConfigurationOverrides []func(
 	*cobra.Command,
-	*settings.DeleteNetworkConnectivityConfigurationRequest,
+	*sdknetworking.DeleteNetworkConnectivityConfigRequest,
 )
 
 func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteNetworkConnectivityConfigurationReq settings.DeleteNetworkConnectivityConfigurationRequest
+	var deleteNetworkConnectivityConfigurationReq sdknetworking.DeleteNetworkConnectivityConfigRequest
 
 	cmd.Use = "delete-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Delete a network connectivity configuration.`
@@ -290,10 +310,12 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
+		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = new(args[0])
 
-		err = a.NetworkConnectivity.DeleteNetworkConnectivityConfiguration(ctx, deleteNetworkConnectivityConfigurationReq)
+		sdkReq := &deleteNetworkConnectivityConfigurationReq
+		err = a.Networking.DeleteNetworkConnectivityConfigPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -318,13 +340,12 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deletePrivateEndpointRuleOverrides []func(
 	*cobra.Command,
-	*settings.DeletePrivateEndpointRuleRequest,
+	*sdknetworking.DeleteNccPrivateEndpointRuleRequest,
 )
 
 func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deletePrivateEndpointRuleReq settings.DeletePrivateEndpointRuleRequest
+	var deletePrivateEndpointRuleReq sdknetworking.DeleteNccPrivateEndpointRuleRequest
 
 	cmd.Use = "delete-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Delete a private endpoint rule.`
@@ -354,16 +375,22 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		deletePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
-		deletePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
+		deletePrivateEndpointRuleReq.NetworkConnectivityConfigId = new(args[0])
+		deletePrivateEndpointRuleReq.PrivateEndpointRuleId = new(args[1])
 
-		response, err := a.NetworkConnectivity.DeletePrivateEndpointRule(ctx, deletePrivateEndpointRuleReq)
+		sdkReq := &deletePrivateEndpointRuleReq
+		response, err := a.Networking.DeleteNccPrivateEndpointRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NccPrivateEndpointRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -384,13 +411,12 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getNetworkConnectivityConfigurationOverrides []func(
 	*cobra.Command,
-	*settings.GetNetworkConnectivityConfigurationRequest,
+	*sdknetworking.GetNetworkConnectivityConfigRequest,
 )
 
 func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getNetworkConnectivityConfigurationReq settings.GetNetworkConnectivityConfigurationRequest
+	var getNetworkConnectivityConfigurationReq sdknetworking.GetNetworkConnectivityConfigRequest
 
 	cmd.Use = "get-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Get a network connectivity configuration.`
@@ -414,15 +440,21 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
+		getNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = new(args[0])
 
-		response, err := a.NetworkConnectivity.GetNetworkConnectivityConfiguration(ctx, getNetworkConnectivityConfigurationReq)
+		sdkReq := &getNetworkConnectivityConfigurationReq
+		response, err := a.Networking.GetNetworkConnectivityConfigPublic(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NetworkConnectivityConfigFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -443,13 +475,12 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPrivateEndpointRuleOverrides []func(
 	*cobra.Command,
-	*settings.GetPrivateEndpointRuleRequest,
+	*sdknetworking.GetNccPrivateEndpointRuleRequest,
 )
 
 func newGetPrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getPrivateEndpointRuleReq settings.GetPrivateEndpointRuleRequest
+	var getPrivateEndpointRuleReq sdknetworking.GetNccPrivateEndpointRuleRequest
 
 	cmd.Use = "get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Gets a private endpoint rule.`
@@ -474,16 +505,22 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		getPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
-		getPrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
+		getPrivateEndpointRuleReq.NetworkConnectivityConfigId = new(args[0])
+		getPrivateEndpointRuleReq.PrivateEndpointRuleId = new(args[1])
 
-		response, err := a.NetworkConnectivity.GetPrivateEndpointRule(ctx, getPrivateEndpointRuleReq)
+		sdkReq := &getPrivateEndpointRuleReq
+		response, err := a.Networking.GetNccPrivateEndpointRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NccPrivateEndpointRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -504,13 +541,13 @@ func newGetPrivateEndpointRule() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listNetworkConnectivityConfigurationsOverrides []func(
 	*cobra.Command,
-	*settings.ListNetworkConnectivityConfigurationsRequest,
+	*networking.ListNetworkConnectivityConfigsRequest,
 )
 
 func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listNetworkConnectivityConfigurationsReq networking.ListNetworkConnectivityConfigsRequest
 
-	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -520,7 +557,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.Flags().IntVar(&listNetworkConnectivityConfigurationsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listNetworkConnectivityConfigurationsReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-network-connectivity-configurations"
@@ -542,16 +579,20 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
+		sdkReq, err := networking.ListNetworkConnectivityConfigsRequestToSDK(&listNetworkConnectivityConfigurationsReq)
+		if err != nil {
+			return err
+		}
 		if listNetworkConnectivityConfigurationsLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listNetworkConnectivityConfigurationsLimit)
 		}
 		if listNetworkConnectivityConfigurationsLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listNetworkConnectivityConfigurationsLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Networking.ListNetworkConnectivityConfigsPublicIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, networking.NetworkConnectivityConfigFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -572,13 +613,13 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listPrivateEndpointRulesOverrides []func(
 	*cobra.Command,
-	*settings.ListPrivateEndpointRulesRequest,
+	*networking.ListNccPrivateEndpointRulesRequest,
 )
 
 func newListPrivateEndpointRules() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listPrivateEndpointRulesReq networking.ListNccPrivateEndpointRulesRequest
 
-	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -588,7 +629,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.Flags().IntVar(&listPrivateEndpointRulesLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listPrivateEndpointRulesReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
@@ -613,18 +654,22 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
-		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
+		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = new(args[0])
 
-		response := a.NetworkConnectivity.ListPrivateEndpointRules(ctx, listPrivateEndpointRulesReq)
+		sdkReq, err := networking.ListNccPrivateEndpointRulesRequestToSDK(&listPrivateEndpointRulesReq)
+		if err != nil {
+			return err
+		}
 		if listPrivateEndpointRulesLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPrivateEndpointRulesLimit)
 		}
 		if listPrivateEndpointRulesLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listPrivateEndpointRulesLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := a.Networking.ListNccPrivateEndpointRulesIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, networking.NccPrivateEndpointRuleFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -645,21 +690,21 @@ func newListPrivateEndpointRules() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updatePrivateEndpointRuleOverrides []func(
 	*cobra.Command,
-	*settings.UpdateNccPrivateEndpointRuleRequest,
+	*networking.UpdateNccPrivateEndpointRuleRequest,
 )
 
 func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updatePrivateEndpointRuleReq networking.UpdateNccPrivateEndpointRuleRequest
+	updatePrivateEndpointRuleReq.PrivateEndpointRule = &networking.UpdatePrivateEndpointRule{}
 
-	var updatePrivateEndpointRuleReq settings.UpdateNccPrivateEndpointRuleRequest
-	updatePrivateEndpointRuleReq.PrivateEndpointRule = settings.UpdatePrivateEndpointRule{}
 	var updatePrivateEndpointRuleJson flags.JsonFlag
 
 	cmd.Flags().Var(&updatePrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Update this field to activate/deactivate this private endpoint to allow egress access from serverless compute resources.`)
-	cmd.Flags().StringVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
+	flags.BoolPtrVar(cmd.Flags(), &updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", `Update this field to activate/deactivate this private endpoint to allow egress access from serverless compute resources.`)
+	flags.StringPtrVar(cmd.Flags(), &updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", ``)
 	// TODO: complex arg: gcp_endpoint
 	// TODO: array: resource_names
 
@@ -694,6 +739,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
+		_ = a
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePrivateEndpointRuleJson.Unmarshal(&updatePrivateEndpointRuleReq.PrivateEndpointRule)
@@ -707,16 +753,24 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 				}
 			}
 		}
-		updatePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
-		updatePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
-		updatePrivateEndpointRuleReq.UpdateMask = args[2]
+		updatePrivateEndpointRuleReq.NetworkConnectivityConfigId = new(args[0])
+		updatePrivateEndpointRuleReq.PrivateEndpointRuleId = new(args[1])
+		updatePrivateEndpointRuleReq.UpdateMask = new(args[2])
 
-		response, err := a.NetworkConnectivity.UpdatePrivateEndpointRule(ctx, updatePrivateEndpointRuleReq)
+		sdkReq, err := networking.UpdateNccPrivateEndpointRuleRequestToSDK(&updatePrivateEndpointRuleReq)
+		if err != nil {
+			return err
+		}
+		response, err := a.Networking.UpdateNccPrivateEndpointRule(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := networking.NccPrivateEndpointRuleFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

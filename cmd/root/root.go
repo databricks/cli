@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -165,7 +166,7 @@ Stack Trace:
 		if cmdctx.HasWorkspaceClient(cmd.Context()) {
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
+		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", apierrs.ErrorString(err))
 	}
 
 	// Log exit status and error

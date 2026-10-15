@@ -5,11 +5,14 @@ package enhanced_security_monitoring
 import (
 	"errors"
 
+	"maps"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apiclient"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -55,15 +58,16 @@ Controls whether enhanced security monitoring is enabled for the current
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetEnhancedSecurityMonitoringSettingRequest,
+	*map[string]any,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq map[string]any
+	getReq = map[string]any{}
+	var getEtagRaw string
 
-	var getReq settings.GetEnhancedSecurityMonitoringSettingRequest
-
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getEtagRaw, "etag", getEtagRaw, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `*Public Preview* Get the enhanced security monitoring setting.`
@@ -86,12 +90,24 @@ Get the enhanced security monitoring setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.Settings.EnhancedSecurityMonitoring().Get(ctx, getReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("etag") || getEtagRaw != "" {
+			rawQuery["etag"] = getEtagRaw
+		}
+		rawPath := "/api/2.0/settings/types/shield_esm_enablement_ws_db/names/default"
+
+		maps.Copy(rawQuery, getReq)
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "GET", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, nil, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 
@@ -113,13 +129,16 @@ Get the enhanced security monitoring setting.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEnhancedSecurityMonitoringSettingRequest,
+	*map[string]any,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq map[string]any
+	updateReq = map[string]any{}
+	var updateAllowMissingRaw bool
+	var updateFieldMaskRaw string
 
-	var updateReq settings.UpdateEnhancedSecurityMonitoringSettingRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -144,6 +163,7 @@ Update the enhanced security monitoring setting.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -160,11 +180,24 @@ Update the enhanced security monitoring setting.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EnhancedSecurityMonitoring().Update(ctx, updateReq)
+		rawQuery := map[string]any{}
+		if cmd.Flags().Changed("allow-missing") || updateAllowMissingRaw != false {
+			updateReq["allow_missing"] = updateAllowMissingRaw
+		}
+		if cmd.Flags().Changed("field-mask") || updateFieldMaskRaw != "" {
+			updateReq["field_mask"] = updateFieldMaskRaw
+		}
+		rawPath := "/api/2.0/settings/types/shield_esm_enablement_ws_db/names/default"
+
+		api, err := apiclient.New(w.Config)
 		if err != nil {
 			return err
 		}
-
+		var response any
+		err = api.Do(ctx, "PATCH", rawPath, auth.WorkspaceIDHeaders(w.Config), rawQuery, updateReq, &response)
+		if err != nil {
+			return err
+		}
 		return cmdio.Render(ctx, response)
 	}
 

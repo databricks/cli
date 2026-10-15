@@ -2,16 +2,16 @@ package aircmd
 
 import (
 	"io"
+	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 // asciiPalette returns a palette whose styles emit no escape codes, so render
@@ -21,14 +21,25 @@ func asciiPalette(t *testing.T) palette {
 	return newPalette(r)
 }
 
+// exportServer serves the workspace export of a single file.
+func exportServer(t *testing.T, path, content string) *sdkclients.Clients {
+	t.Helper()
+	return fakeWorkspace(t, map[string]http.HandlerFunc{
+		"GET /api/2.0/workspace/export": func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, path, r.URL.Query().Get("path"))
+			_, _ = w.Write([]byte(content))
+		},
+	})
+}
+
 func TestConfigYAML(t *testing.T) {
 	ctx := t.Context()
 
 	t.Run("inline parameters include the command as a block literal", func(t *testing.T) {
 		task := &jobs.GenAiComputeTask{
-			YamlParameters: "experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: \"for i in $(seq 1 3); do echo $i; done\\n\"\n",
+			YamlParameters: new("experiment_name: my-exp\ncompute:\n  accelerator_type: a10\n  num_accelerators: 1\ncommand: \"for i in $(seq 1 3); do echo $i; done\\n\"\n"),
 		}
-		got := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
+		got := configYAML(ctx, fakeWorkspace(t, nil), task)
 		assert.Contains(t, got, "experiment_name: my-exp")
 		assert.Contains(t, got, "accelerator_type: a10")
 		assert.Contains(t, got, "command: |")
@@ -36,20 +47,17 @@ func TestConfigYAML(t *testing.T) {
 	})
 
 	t.Run("downloads the parameters file when there are no inline parameters", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockWorkspaceAPI().EXPECT().
-			Download(mock.Anything, "/Workspace/cfg.yaml").
-			Return(io.NopCloser(strings.NewReader("experiment_name: from-file\n")), nil)
-		task := &jobs.GenAiComputeTask{YamlParametersFilePath: "/Workspace/cfg.yaml"}
-		assert.Equal(t, "experiment_name: from-file", configYAML(ctx, m.WorkspaceClient, task))
+		w := exportServer(t, "/Workspace/cfg.yaml", "experiment_name: from-file\n")
+		task := &jobs.GenAiComputeTask{YamlParametersFilePath: new("/Workspace/cfg.yaml")}
+		assert.Equal(t, "experiment_name: from-file", configYAML(ctx, w, task))
 	})
 
 	t.Run("falls back to a synthesized config", func(t *testing.T) {
 		task := &jobs.GenAiComputeTask{
-			MlflowExperimentName: "/Users/me@example.com/exp",
-			Compute:              &jobs.ComputeConfig{GpuType: "a10", NumGpus: 1},
+			MlflowExperimentName: new("/Users/me@example.com/exp"),
+			Compute:              &jobs.ComputeConfig{GpuType: new("a10"), NumGpus: new(1)},
 		}
-		got := configYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, task)
+		got := configYAML(ctx, fakeWorkspace(t, nil), task)
 		assert.Contains(t, got, "experiment_name: exp")
 		assert.NotContains(t, got, "command")
 	})
@@ -59,33 +67,30 @@ func TestResolveConfigYAML(t *testing.T) {
 	ctx := t.Context()
 
 	t.Run("downloads the training config path for new runs", func(t *testing.T) {
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockWorkspaceAPI().EXPECT().
-			Download(mock.Anything, "/Workspace/run/training_config.yaml").
-			Return(io.NopCloser(strings.NewReader("experiment_name: from-air\n")), nil)
-		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
+		w := exportServer(t, "/Workspace/run/training_config.yaml", "experiment_name: from-air\n")
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}
 		data := &getData{TrainingConfigPath: "/Workspace/run/training_config.yaml"}
-		assert.Equal(t, "experiment_name: from-air", resolveConfigYAML(ctx, m.WorkspaceClient, run, data))
+		assert.Equal(t, "experiment_name: from-air", resolveConfigYAML(ctx, w, run, data))
 	})
 
 	t.Run("falls back to the legacy task when no path is set", func(t *testing.T) {
-		run := &jobs.Run{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
-			MlflowExperimentName: "/Users/me@example.com/exp",
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{GenAiComputeTask: &jobs.GenAiComputeTask{
+			MlflowExperimentName: new("/Users/me@example.com/exp"),
 		}}}}
-		got := resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{})
+		got := resolveConfigYAML(ctx, fakeWorkspace(t, nil), run, &getData{})
 		assert.Contains(t, got, "experiment_name: exp")
 	})
 
 	t.Run("empty when neither source is present", func(t *testing.T) {
-		run := &jobs.Run{Tasks: []jobs.RunTask{{}}}
-		assert.Empty(t, resolveConfigYAML(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient, run, &getData{}))
+		run := &jobs.GetRunResponse{Tasks: []jobs.RunTask{{}}}
+		assert.Empty(t, resolveConfigYAML(ctx, fakeWorkspace(t, nil), run, &getData{}))
 	})
 }
 
 func TestSynthConfigYAML(t *testing.T) {
 	task := &jobs.GenAiComputeTask{
-		MlflowExperimentName: "/Users/me@example.com/stream-latency-test",
-		Compute:              &jobs.ComputeConfig{GpuType: "a10", NumGpus: 1},
+		MlflowExperimentName: new("/Users/me@example.com/stream-latency-test"),
+		Compute:              &jobs.ComputeConfig{GpuType: new("a10"), NumGpus: new(1)},
 	}
 	// The accelerator_type uses the raw GPU type; the command is omitted because
 	// it lives only in the run parameters.

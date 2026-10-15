@@ -3,7 +3,7 @@ package prompt
 import (
 	"context"
 
-	"github.com/databricks/databricks-sdk-go/listing"
+	"github.com/databricks/cli/libs/listing"
 )
 
 const (

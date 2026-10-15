@@ -7,7 +7,8 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
+	jobs "github.com/databricks/sdk-go/jobs/v2"
 	flag "github.com/spf13/pflag"
 )
 
@@ -90,13 +91,13 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 
 			found := false
 			for _, t := range job.Tasks {
-				if t.TaskKey == task {
+				if utils.Deref(t.TaskKey) == task {
 					found = true
 					break
 				}
 			}
 			if !found {
-				return fmt.Errorf("task %#v not found in job %#v", task, job.Name)
+				return fmt.Errorf("task %#v not found in job %#v", task, utils.Deref(job.Name))
 			}
 		}
 	}
@@ -104,7 +105,7 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 	return nil
 }
 
-func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParams, error) {
+func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParameters, error) {
 	if len(o.pipelineParams) == 0 {
 		return nil, nil
 	}
@@ -120,14 +121,16 @@ func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParams, error) {
 		return nil, defaultErr
 	}
 
-	pipelineParams := &jobs.PipelineParams{
-		FullRefresh: b,
+	// full_refresh=false is the API default, so it is not sent.
+	pipelineParams := &jobs.PipelineParameters{}
+	if b {
+		pipelineParams.FullRefresh = new(true)
 	}
 
 	return pipelineParams, nil
 }
 
-func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNow, error) {
+func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNowRequest, error) {
 	if err := o.Validate(job); err != nil {
 		return nil, err
 	}
@@ -137,8 +140,8 @@ func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNow, e
 		return nil, err
 	}
 
-	payload := &jobs.RunNow{
-		JobId: jobID,
+	payload := &jobs.RunNowRequest{
+		JobId: new(jobID),
 
 		DbtCommands:       o.dbtCommands,
 		JarParams:         o.jarParams,

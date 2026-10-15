@@ -13,8 +13,9 @@ import (
 	cliauth "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,7 @@ func TestNewFilesAPIClientDoesNotResolveAmbientConfig(t *testing.T) {
 		return ""
 	})
 
-	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+	workspaceClient, err := sdkclients.New(t.Context(), &config.Config{
 		Host:        server.URL,
 		Token:       "resolved-token",
 		WorkspaceID: profile.WorkspaceIDNone,
@@ -89,7 +90,7 @@ func deleteDirectoryWithError(t *testing.T, statusCode int, errorCode, reason st
 	})
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -120,7 +121,7 @@ func newTestFilesClient(t *testing.T) Filer {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})

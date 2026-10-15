@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,10 +22,10 @@ func TestNormalizePaths(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {JobSettings: jobs.JobSettings{
-						Tasks: []jobs.Task{
+						Tasks: []jobs.TaskSettings{
 							{
 								NotebookTask: &jobs.NotebookTask{
-									NotebookPath: "../src/notebook.py",
+									NotebookPath: new("../src/notebook.py"),
 								},
 							},
 						},

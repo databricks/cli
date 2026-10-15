@@ -6,9 +6,9 @@
       "action": "create",
       "new_state": {
         "value": {
-          "comment": "mycomment",
+          "parent": "schemas/main.myschema",
           "mcp_service_id": "myservice",
-          "parent": "schemas/main.myschema"
+          "comment": "mycomment"
         }
       }
     },

@@ -9,6 +9,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -17,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -74,8 +75,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 			Workspace: config.Workspace{
 				StatePath: "/state",
 				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "test-user",
+					User: &scim.User{
+						UserName: new("test-user"),
 					},
 				},
 			},

@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -16,10 +18,9 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,26 +65,26 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 					"job": {
 						JobSettings: jobs.JobSettings{
 							GitSource: &jobs.GitSource{
-								GitBranch:   "somebranch",
-								GitCommit:   "somecommit",
-								GitProvider: "github",
-								GitTag:      "sometag",
-								GitUrl:      "https://github.com/someuser/somerepo",
+								GitBranch:   new("somebranch"),
+								GitCommit:   new("somecommit"),
+								GitProvider: new("github"),
+								GitTag:      new("sometag"),
+								GitUrl:      new("https://github.com/someuser/somerepo"),
 							},
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "my_job_notebook.py",
+										NotebookPath: new("my_job_notebook.py"),
 									},
 								},
 								{
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "foo",
+										PackageName: new("foo"),
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "my_python_file.py",
+										PythonFile: new("my_python_file.py"),
 									},
 								},
 							},
@@ -102,17 +103,17 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	assert.Equal(
 		t,
 		"my_job_notebook.py",
-		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		"foo",
-		b.Config.Resources.Jobs["job"].Tasks[1].PythonWheelTask.PackageName,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].PythonWheelTask.PackageName),
 	)
 	assert.Equal(
 		t,
 		"my_python_file.py",
-		b.Config.Resources.Jobs["job"].Tasks[2].SparkPythonTask.PythonFile,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[2].SparkPythonTask.PythonFile),
 	)
 }
 
@@ -136,52 +137,52 @@ func TestTranslatePaths(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./my_job_notebook.py",
+										NotebookPath: new("./my_job_notebook.py"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/task.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/task.whl")},
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "/Users/jane.doe@databricks.com/doesnt_exist.py",
+										NotebookPath: new("/Users/jane.doe@databricks.com/doesnt_exist.py"),
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./my_job_notebook.py",
+										NotebookPath: new("./my_job_notebook.py"),
 									},
-									Libraries: []compute.Library{
-										{Requirements: "./requirements.txt"},
+									Libraries: []jobs.Library{
+										{Requirements: new("./requirements.txt")},
 									},
 								},
 								{
 									PythonWheelTask: &jobs.PythonWheelTask{
-										PackageName: "foo",
+										PackageName: new("foo"),
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./my_python_file.py",
+										PythonFile: new("./my_python_file.py"),
 									},
 								},
 								{
 									SparkJarTask: &jobs.SparkJarTask{
-										MainClassName: "HelloWorld",
+										MainClassName: new("HelloWorld"),
 									},
-									Libraries: []compute.Library{
-										{Jar: "./dist/task.jar"},
+									Libraries: []jobs.Library{
+										{Jar: new("./dist/task.jar")},
 									},
 								},
 								{
 									SparkJarTask: &jobs.SparkJarTask{
-										MainClassName: "HelloWorldRemote",
+										MainClassName: new("HelloWorldRemote"),
 									},
-									Libraries: []compute.Library{
-										{Jar: "dbfs:/bundle/dist/task_remote.jar"},
+									Libraries: []jobs.Library{
+										{Jar: new("dbfs:/bundle/dist/task_remote.jar")},
 									},
 								},
 							},
@@ -190,29 +191,29 @@ func TestTranslatePaths(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./my_pipeline_notebook.py",
+										Path: new("./my_pipeline_notebook.py"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "/Users/jane.doe@databricks.com/doesnt_exist.py",
+										Path: new("/Users/jane.doe@databricks.com/doesnt_exist.py"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./my_pipeline_notebook.py",
+										Path: new("./my_pipeline_notebook.py"),
 									},
 								},
 								{
-									Jar: "foo",
+									Jar: new("foo"),
 								},
 								{
-									File: &pipelines.FileLibrary{
-										Path: "./my_python_file.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./my_python_file.py"),
 									},
 								},
 							},
@@ -232,64 +233,64 @@ func TestTranslatePaths(t *testing.T) {
 	assert.Equal(
 		t,
 		"/bundle/my_job_notebook",
-		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		"dist/task.whl",
-		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl),
 	)
 	assert.Equal(
 		t,
 		"/Users/jane.doe@databricks.com/doesnt_exist.py",
-		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		"/bundle/my_job_notebook",
-		b.Config.Resources.Jobs["job"].Tasks[2].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[2].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		"/bundle/requirements.txt",
-		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements),
 	)
 	assert.Equal(
 		t,
 		"/bundle/my_python_file.py",
-		b.Config.Resources.Jobs["job"].Tasks[4].SparkPythonTask.PythonFile,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[4].SparkPythonTask.PythonFile),
 	)
 	assert.Equal(
 		t,
 		"dist/task.jar",
-		b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar),
 	)
 	assert.Equal(
 		t,
 		"dbfs:/bundle/dist/task_remote.jar",
-		b.Config.Resources.Jobs["job"].Tasks[6].Libraries[0].Jar,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[6].Libraries[0].Jar),
 	)
 
 	// Assert that the path in the libraries now refer to the artifact.
 	assert.Equal(
 		t,
 		"/bundle/my_pipeline_notebook",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path),
 	)
 	assert.Equal(
 		t,
 		"/Users/jane.doe@databricks.com/doesnt_exist.py",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path),
 	)
 	assert.Equal(
 		t,
 		"/bundle/my_pipeline_notebook",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path),
 	)
 	assert.Equal(
 		t,
 		"/bundle/my_python_file.py",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[4].File.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[4].File.Path),
 	)
 }
 
@@ -314,35 +315,35 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./my_python_file.py",
+										PythonFile: new("./my_python_file.py"),
 									},
 								},
 								{
 									SparkJarTask: &jobs.SparkJarTask{
-										MainClassName: "HelloWorld",
+										MainClassName: new("HelloWorld"),
 									},
-									Libraries: []compute.Library{
-										{Jar: "./dist/task.jar"},
+									Libraries: []jobs.Library{
+										{Jar: new("./dist/task.jar")},
 									},
 								},
 								{
 									SqlTask: &jobs.SqlTask{
 										File: &jobs.SqlTaskFile{
-											Path: "./my_sql_file.sql",
+											Path: new("./my_sql_file.sql"),
 										},
 									},
 								},
 								{
 									DbtTask: &jobs.DbtTask{
-										ProjectDirectory: "./my_dbt_project",
+										ProjectDirectory: new("./my_dbt_project"),
 									},
 								},
 								{
 									AlertTask: &jobs.AlertTask{
-										WorkspacePath: "./my_alert.dbalert.json",
+										WorkspacePath: new("./my_alert.dbalert.json"),
 									},
 								},
 							},
@@ -351,11 +352,11 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
-									File: &pipelines.FileLibrary{
-										Path: "./my_python_file.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./my_python_file.py"),
 									},
 								},
 							},
@@ -375,33 +376,33 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	assert.Equal(
 		t,
 		"/bundle/job/my_python_file.py",
-		b.Config.Resources.Jobs["job"].Tasks[0].SparkPythonTask.PythonFile,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].SparkPythonTask.PythonFile),
 	)
 	assert.Equal(
 		t,
 		"job/dist/task.jar",
-		b.Config.Resources.Jobs["job"].Tasks[1].Libraries[0].Jar,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].Libraries[0].Jar),
 	)
 	assert.Equal(
 		t,
 		"/bundle/job/my_sql_file.sql",
-		b.Config.Resources.Jobs["job"].Tasks[2].SqlTask.File.Path,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[2].SqlTask.File.Path),
 	)
 	assert.Equal(
 		t,
 		"/bundle/job/my_dbt_project",
-		b.Config.Resources.Jobs["job"].Tasks[3].DbtTask.ProjectDirectory,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[3].DbtTask.ProjectDirectory),
 	)
 	assert.Equal(
 		t,
 		"/bundle/job/my_alert.dbalert.json",
-		b.Config.Resources.Jobs["job"].Tasks[4].AlertTask.WorkspacePath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[4].AlertTask.WorkspacePath),
 	)
 
 	assert.Equal(
 		t,
 		"/bundle/pipeline/my_python_file.py",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[0].File.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[0].File.Path),
 	)
 }
 
@@ -420,10 +421,10 @@ func TestTranslatePathsOutsideSyncRoot(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./my_python_file.py",
+										PythonFile: new("./my_python_file.py"),
 									},
 								},
 							},
@@ -452,10 +453,10 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./doesnt_exist.py",
+										NotebookPath: new("./doesnt_exist.py"),
 									},
 								},
 							},
@@ -484,10 +485,10 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./doesnt_exist.py",
+										PythonFile: new("./doesnt_exist.py"),
 									},
 								},
 							},
@@ -515,11 +516,11 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./doesnt_exist.py",
+										Path: new("./doesnt_exist.py"),
 									},
 								},
 							},
@@ -560,11 +561,11 @@ func TestPipelineNotebookDoesNotExistErrorWithoutExtension(t *testing.T) {
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
 							"pipeline": {
-								CreatePipeline: pipelines.CreatePipeline{
+								CreatePipelineRequest: pipelines.CreatePipelineRequest{
 									Libraries: []pipelines.PipelineLibrary{
 										{
 											Notebook: &pipelines.NotebookLibrary{
-												Path: "./foo",
+												Path: new("./foo"),
 											},
 										},
 									},
@@ -601,11 +602,11 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
-									File: &pipelines.FileLibrary{
-										Path: "./doesnt_exist.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./doesnt_exist.py"),
 									},
 								},
 							},
@@ -638,10 +639,10 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./my_notebook.py",
+										PythonFile: new("./my_notebook.py"),
 									},
 								},
 							},
@@ -674,10 +675,10 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./my_file.py",
+										NotebookPath: new("./my_file.py"),
 									},
 								},
 							},
@@ -709,11 +710,11 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./my_file.py",
+										Path: new("./my_file.py"),
 									},
 								},
 							},
@@ -745,11 +746,11 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
-									File: &pipelines.FileLibrary{
-										Path: "./my_notebook.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("./my_notebook.py"),
 									},
 								},
 							},
@@ -782,7 +783,7 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							Environments: []jobs.JobEnvironment{
 								{
-									Spec: &compute.Environment{
+									Spec: &jobs.Environment{
 										Dependencies: []string{
 											"./dist/env1.whl",
 											"../dist/env2.whl",
@@ -837,9 +838,9 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
-									TaskKey: "test",
+									TaskKey: new("test"),
 								},
 							},
 						},
@@ -872,7 +873,7 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 	assert.Equal(
 		t,
 		"variables/local/whl.whl",
-		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl),
 	)
 }
 
@@ -901,47 +902,47 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "my_job_notebook.py",
+										NotebookPath: new("my_job_notebook.py"),
 									},
-									Libraries: []compute.Library{
-										{Whl: "./dist/task.whl"},
+									Libraries: []jobs.Library{
+										{Whl: new("./dist/task.whl")},
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "/Users/jane.doe@databricks.com/absolute_remote.py",
+										NotebookPath: new("/Users/jane.doe@databricks.com/absolute_remote.py"),
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "my_job_notebook.py",
+										NotebookPath: new("my_job_notebook.py"),
 									},
-									Libraries: []compute.Library{
-										{Requirements: "requirements.txt"},
+									Libraries: []jobs.Library{
+										{Requirements: new("requirements.txt")},
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "my_python_file.py",
+										PythonFile: new("my_python_file.py"),
 									},
 								},
 								{
 									SparkJarTask: &jobs.SparkJarTask{
-										MainClassName: "HelloWorld",
+										MainClassName: new("HelloWorld"),
 									},
-									Libraries: []compute.Library{
-										{Jar: "./dist/task.jar"},
+									Libraries: []jobs.Library{
+										{Jar: new("./dist/task.jar")},
 									},
 								},
 								{
 									SparkJarTask: &jobs.SparkJarTask{
-										MainClassName: "HelloWorldRemote",
+										MainClassName: new("HelloWorldRemote"),
 									},
-									Libraries: []compute.Library{
-										{Jar: "dbfs:/bundle/dist/task_remote.jar"},
+									Libraries: []jobs.Library{
+										{Jar: new("dbfs:/bundle/dist/task_remote.jar")},
 									},
 								},
 							},
@@ -950,21 +951,21 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "my_pipeline_notebook.py",
+										Path: new("my_pipeline_notebook.py"),
 									},
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "/Users/jane.doe@databricks.com/absolute_remote.py",
+										Path: new("/Users/jane.doe@databricks.com/absolute_remote.py"),
 									},
 								},
 								{
-									File: &pipelines.FileLibrary{
-										Path: "my_python_file.py",
+									File: &pipelines.NotebookLibrary{
+										Path: new("my_python_file.py"),
 									},
 								},
 							},
@@ -986,54 +987,54 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 	assert.Equal(
 		t,
 		dir+"/my_job_notebook",
-		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		dir+"/requirements.txt",
-		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements),
 	)
 	assert.Equal(
 		t,
 		dir+"/my_python_file.py",
-		b.Config.Resources.Jobs["job"].Tasks[3].SparkPythonTask.PythonFile,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[3].SparkPythonTask.PythonFile),
 	)
 	assert.Equal(
 		t,
 		dir+"/my_pipeline_notebook",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path),
 	)
 	assert.Equal(
 		t,
 		dir+"/my_python_file.py",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[2].File.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[2].File.Path),
 	)
 
 	// left as is
 	assert.Equal(
 		t,
 		"dist/task.whl",
-		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl),
 	)
 	assert.Equal(
 		t,
 		"/Users/jane.doe@databricks.com/absolute_remote.py",
-		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath),
 	)
 	assert.Equal(
 		t,
 		"dist/task.jar",
-		b.Config.Resources.Jobs["job"].Tasks[4].Libraries[0].Jar,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[4].Libraries[0].Jar),
 	)
 	assert.Equal(
 		t,
 		"dbfs:/bundle/dist/task_remote.jar",
-		b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar,
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar),
 	)
 	assert.Equal(
 		t,
 		"/Users/jane.doe@databricks.com/absolute_remote.py",
-		b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
+		utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path),
 	)
 }
 
@@ -1054,15 +1055,15 @@ func TestTranslatePathsWithSkipLocalFileValidation(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./src/notebook.py",
+										NotebookPath: new("./src/notebook.py"),
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./src/main.py",
+										PythonFile: new("./src/main.py"),
 									},
 								},
 							},
@@ -1071,11 +1072,11 @@ func TestTranslatePathsWithSkipLocalFileValidation(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./src/pipeline_notebook.py",
+										Path: new("./src/pipeline_notebook.py"),
 									},
 								},
 							},
@@ -1092,13 +1093,13 @@ func TestTranslatePathsWithSkipLocalFileValidation(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Notebook path should be translated (extension stripped) even though file doesn't exist.
-	assert.Equal(t, "/bundle/src/notebook", b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "/bundle/src/notebook", utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath))
 
 	// File path should be translated even though file doesn't exist.
-	assert.Equal(t, "/bundle/src/main.py", b.Config.Resources.Jobs["job"].Tasks[1].SparkPythonTask.PythonFile)
+	assert.Equal(t, "/bundle/src/main.py", utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].SparkPythonTask.PythonFile))
 
 	// Pipeline notebook path should be translated even though file doesn't exist.
-	assert.Equal(t, "/bundle/src/pipeline_notebook", b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path)
+	assert.Equal(t, "/bundle/src/pipeline_notebook", utils.Deref(b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path))
 }
 
 func TestTranslatePathsWithSkipLocalFileValidationDirectory(t *testing.T) {
@@ -1117,8 +1118,8 @@ func TestTranslatePathsWithSkipLocalFileValidationDirectory(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
-							RootPath: "./pipeline_root",
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
+							RootPath: new("./pipeline_root"),
 						},
 					},
 				},
@@ -1132,7 +1133,7 @@ func TestTranslatePathsWithSkipLocalFileValidationDirectory(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	// Directory path should be translated even though directory doesn't exist.
-	assert.Equal(t, "/bundle/pipeline_root", b.Config.Resources.Pipelines["pipeline"].RootPath)
+	assert.Equal(t, "/bundle/pipeline_root", utils.Deref(b.Config.Resources.Pipelines["pipeline"].RootPath))
 }
 
 // TestTranslatePathsDesignerNotebook verifies that Lakeflow Designer notebooks
@@ -1156,15 +1157,15 @@ func TestTranslatePathsDesignerNotebook(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./src/designer.designer.ipynb",
+										NotebookPath: new("./src/designer.designer.ipynb"),
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./src/regular.py",
+										NotebookPath: new("./src/regular.py"),
 									},
 								},
 							},
@@ -1183,12 +1184,12 @@ func TestTranslatePathsDesignerNotebook(t *testing.T) {
 	// Designer notebook keeps its full ".designer.ipynb" suffix.
 	assert.Equal(t,
 		"/bundle/src/designer.designer.ipynb",
-		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath))
 
 	// Regular notebook still has its extension stripped on import.
 	assert.Equal(t,
 		"/bundle/src/regular",
-		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath))
 }
 
 // TestTranslatePathsDesignerNotebookSkipLocalFileValidation verifies the
@@ -1210,15 +1211,15 @@ func TestTranslatePathsDesignerNotebookSkipLocalFileValidation(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
+							Tasks: []jobs.TaskSettings{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./src/designer.designer.ipynb",
+										NotebookPath: new("./src/designer.designer.ipynb"),
 									},
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./src/regular.ipynb",
+										NotebookPath: new("./src/regular.ipynb"),
 									},
 								},
 							},
@@ -1236,8 +1237,8 @@ func TestTranslatePathsDesignerNotebookSkipLocalFileValidation(t *testing.T) {
 
 	assert.Equal(t,
 		"/bundle/src/designer.designer.ipynb",
-		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath))
 	assert.Equal(t,
 		"/bundle/src/regular",
-		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
+		utils.Deref(b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath))
 }

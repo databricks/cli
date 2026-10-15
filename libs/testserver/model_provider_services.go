@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	aigateway "github.com/databricks/cli/libs/sdktypes/aigateway/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 // ModelProviderServicesCreate fakes POST
@@ -17,7 +18,7 @@ import (
 func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var ms catalog.ModelProviderService
+	var ms aigateway.ModelProviderService
 	if err := json.Unmarshal(req.Body, &ms); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
@@ -28,11 +29,11 @@ func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_provider_service_id")
 
-	ms.Name = "model-provider-services/" + key
+	ms.Name = utils.NonZero("model-provider-services/" + key)
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
-	ms.MetastoreId = nextUUID()
+	ms.MetastoreId = utils.NonZero(nextUUID())
 
 	s.ModelProviderServices[key] = ms
 	return Response{
@@ -51,7 +52,7 @@ func (s *FakeWorkspace) ModelProviderServicesUpdate(req Request, name string) Re
 		}
 	}
 
-	var incoming catalog.ModelProviderService
+	var incoming aigateway.ModelProviderService
 	if err := json.Unmarshal(req.Body, &incoming); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),

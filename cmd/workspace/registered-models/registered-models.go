@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucregisteredmodels "github.com/databricks/cli/libs/sdktypes/uc/registeredmodels/v1"
+	sdkucregisteredmodels "github.com/databricks/sdk-go/uc/registeredmodels/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -82,30 +85,30 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateRegisteredModelRequest,
+	*ucregisteredmodels.CreateRegisteredModelRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucregisteredmodels.CreateRegisteredModelRequest
 
-	var createReq catalog.CreateRegisteredModelRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
-	cmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
-	cmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `The identifier of the user who created the registered model.`)
-	cmd.Flags().StringVar(&createReq.FullName, "full-name", createReq.FullName, `The three-level (fully qualified) name of the registered model.`)
-	cmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `The unique identifier of the metastore.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the registered model.`)
-	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `The identifier of the user who owns the registered model.`)
-	cmd.Flags().StringVar(&createReq.SchemaName, "schema-name", createReq.SchemaName, `The name of the schema where the registered model resides.`)
-	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
-	cmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
-	cmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `The identifier of the user who updated the registered model last time.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CatalogName, "catalog-name", `The name of the catalog where the schema and the registered model reside.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `The comment attached to the registered model.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.CreatedAt, "created-at", `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.CreatedBy, "created-by", `The identifier of the user who created the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.FullName, "full-name", `The three-level (fully qualified) name of the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.MetastoreId, "metastore-id", `The unique identifier of the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Name, "name", `The name of the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Owner, "owner", `The identifier of the user who owns the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.SchemaName, "schema-name", `The name of the schema where the registered model resides.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.StorageLocation, "storage-location", `The storage location on the cloud under which model version data files are stored.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.UpdatedAt, "updated-at", `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.UpdatedBy, "updated-by", `The identifier of the user who updated the registered model last time.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a Registered Model.`
@@ -137,6 +140,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -151,12 +155,20 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.RegisteredModels.Create(ctx, createReq)
+		sdkReq, err := ucregisteredmodels.CreateRegisteredModelRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.CreateRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.RegisteredModelInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -177,13 +189,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteRegisteredModelRequest,
+	*sdkucregisteredmodels.DeleteRegisteredModelRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteRegisteredModelRequest
+	var deleteReq sdkucregisteredmodels.DeleteRegisteredModelRequest
 
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a Registered Model.`
@@ -208,11 +219,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
-			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.RegisteredModels.ListRegisteredModelsIter(ctx, sdkucregisteredmodels.ListRegisteredModelsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -226,12 +238,15 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
-		deleteReq.FullName = args[0]
+		deleteReq.FullNameArg = new(args[0])
 
-		err = w.RegisteredModels.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.RegisteredModels.DeleteRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -253,13 +268,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteAliasOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteAliasRequest,
+	*sdkucregisteredmodels.DeleteRegisteredModelAliasRequest,
 )
 
 func newDeleteAlias() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteAliasReq catalog.DeleteAliasRequest
+	var deleteAliasReq sdkucregisteredmodels.DeleteRegisteredModelAliasRequest
 
 	cmd.Use = "delete-alias FULL_NAME ALIAS"
 	cmd.Short = `Delete a Registered Model Alias.`
@@ -289,14 +303,18 @@ func newDeleteAlias() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteAliasReq.FullName = args[0]
-		deleteAliasReq.Alias = args[1]
+		deleteAliasReq.FullNameArg = new(args[0])
+		deleteAliasReq.AliasArg = new(args[1])
 
-		err = w.RegisteredModels.DeleteAlias(ctx, deleteAliasReq)
+		sdkReq := &deleteAliasReq
+		response, err := w.RegisteredModels.DeleteRegisteredModelAlias(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -318,16 +336,15 @@ func newDeleteAlias() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetRegisteredModelRequest,
+	*ucregisteredmodels.GetRegisteredModelRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq ucregisteredmodels.GetRegisteredModelRequest
 
-	var getReq catalog.GetRegisteredModelRequest
-
-	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include registered model aliases in the response.`)
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeAliases, "include-aliases", `Whether to include registered model aliases in the response.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeBrowse, "include-browse", `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a Registered Model.`
@@ -351,11 +368,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
-			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.RegisteredModels.ListRegisteredModelsIter(ctx, sdkucregisteredmodels.ListRegisteredModelsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -369,14 +387,22 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
-		getReq.FullName = args[0]
+		getReq.FullNameArg = new(args[0])
 
-		response, err := w.RegisteredModels.Get(ctx, getReq)
+		sdkReq, err := ucregisteredmodels.GetRegisteredModelRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.GetRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.RegisteredModelInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -397,28 +423,28 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListRegisteredModelsRequest,
+	*ucregisteredmodels.ListRegisteredModelsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucregisteredmodels.ListRegisteredModelsRequest
 
-	var listReq catalog.ListRegisteredModelsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.CatalogName, "catalog-name", listReq.CatalogName, `The identifier of the catalog under which to list registered models.`)
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Max number of registered models to return.`)
-	cmd.Flags().StringVar(&listReq.SchemaName, "schema-name", listReq.SchemaName, `The identifier of the schema under which to list registered models.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.CatalogName, "catalog-name", `The identifier of the catalog under which to list registered models.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
+	flags.Int64PtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Max number of registered models to return.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.SchemaName, "schema-name", `The identifier of the schema under which to list registered models.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -456,16 +482,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.RegisteredModels.List(ctx, listReq)
+		sdkReq, err := ucregisteredmodels.ListRegisteredModelsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.RegisteredModels.ListRegisteredModelsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucregisteredmodels.RegisteredModelInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -486,13 +516,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setAliasOverrides []func(
 	*cobra.Command,
-	*catalog.SetRegisteredModelAliasRequest,
+	*ucregisteredmodels.SetRegisteredModelAliasRequest,
 )
 
 func newSetAlias() *cobra.Command {
 	cmd := &cobra.Command{}
+	var setAliasReq ucregisteredmodels.SetRegisteredModelAliasRequest
 
-	var setAliasReq catalog.SetRegisteredModelAliasRequest
 	var setAliasJson flags.JsonFlag
 
 	cmd.Flags().Var(&setAliasJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -533,6 +563,7 @@ func newSetAlias() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := setAliasJson.Unmarshal(&setAliasReq)
@@ -546,22 +577,31 @@ func newSetAlias() *cobra.Command {
 				}
 			}
 		}
-		setAliasReq.FullName = args[0]
-		setAliasReq.Alias = args[1]
+		setAliasReq.FullNameArg = new(args[0])
+		setAliasReq.AliasArg = new(args[1])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
+			var setAliasVersionNumArg int64
+			_, err = fmt.Sscan(args[2], &setAliasVersionNumArg)
 			if err != nil {
 				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
 			}
-
+			setAliasReq.VersionNum = &setAliasVersionNumArg
 		}
 
-		response, err := w.RegisteredModels.SetAlias(ctx, setAliasReq)
+		sdkReq, err := ucregisteredmodels.SetRegisteredModelAliasRequestToSDK(&setAliasReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.SetRegisteredModelAlias(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.RegisteredModelAliasInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -582,30 +622,30 @@ func newSetAlias() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateRegisteredModelRequest,
+	*ucregisteredmodels.UpdateRegisteredModelRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucregisteredmodels.UpdateRegisteredModelRequest
 
-	var updateReq catalog.UpdateRegisteredModelRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
-	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
-	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the registered model.`)
-	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the registered model.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the registered model.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the registered model.`)
-	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema where the registered model resides.`)
-	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
-	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
-	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the registered model last time.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CatalogName, "catalog-name", `The name of the catalog where the schema and the registered model reside.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `The comment attached to the registered model.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.CreatedAt, "created-at", `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.CreatedBy, "created-by", `The identifier of the user who created the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.MetastoreId, "metastore-id", `The unique identifier of the metastore.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Name, "name", `The name of the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `The identifier of the user who owns the registered model.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.SchemaName, "schema-name", `The name of the schema where the registered model resides.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.StorageLocation, "storage-location", `The storage location on the cloud under which model version data files are stored.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.UpdatedAt, "updated-at", `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.UpdatedBy, "updated-by", `The identifier of the user who updated the registered model last time.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a Registered Model.`
@@ -632,6 +672,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -648,7 +689,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
-			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.RegisteredModels.ListRegisteredModelsIter(ctx, sdkucregisteredmodels.ListRegisteredModelsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -662,14 +703,22 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
-		updateReq.FullName = args[0]
+		updateReq.FullNameArg = new(args[0])
 
-		response, err := w.RegisteredModels.Update(ctx, updateReq)
+		sdkReq, err := ucregisteredmodels.UpdateRegisteredModelRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.RegisteredModels.UpdateRegisteredModel(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucregisteredmodels.RegisteredModelInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

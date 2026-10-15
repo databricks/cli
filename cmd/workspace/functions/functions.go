@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucfunctions "github.com/databricks/cli/libs/sdktypes/uc/functions/v1"
+	sdkucfunctions "github.com/databricks/sdk-go/uc/functions/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -57,13 +60,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateFunctionRequest,
+	*ucfunctions.CreateFunctionRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucfunctions.CreateFunctionRequest
 
-	var createReq catalog.CreateFunctionRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -88,6 +91,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -104,12 +108,20 @@ func newCreate() *cobra.Command {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Functions.Create(ctx, createReq)
+		sdkReq, err := ucfunctions.CreateFunctionRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Functions.CreateFunction(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucfunctions.FunctionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -130,15 +142,14 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteFunctionRequest,
+	*ucfunctions.DeleteFunctionRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
+	var deleteReq ucfunctions.DeleteFunctionRequest
 
-	var deleteReq catalog.DeleteFunctionRequest
-
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
+	flags.BoolPtrVar(cmd.Flags(), &deleteReq.Force, "force", `Force deletion even if the function is notempty.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a function.`
@@ -163,11 +174,12 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
-			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Functions.ListFunctionsIter(ctx, sdkucfunctions.ListFunctionsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -181,12 +193,18 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 		}
-		deleteReq.Name = args[0]
+		deleteReq.FullNameArg = new(args[0])
 
-		err = w.Functions.Delete(ctx, deleteReq)
+		sdkReq, err := ucfunctions.DeleteFunctionRequestToSDK(&deleteReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.Functions.DeleteFunction(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -208,15 +226,14 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetFunctionRequest,
+	*ucfunctions.GetFunctionRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
+	var getReq ucfunctions.GetFunctionRequest
 
-	var getReq catalog.GetFunctionRequest
-
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &getReq.IncludeBrowse, "include-browse", `Whether to include functions in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a function.`
@@ -242,11 +259,12 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
-			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Functions.ListFunctionsIter(ctx, sdkucfunctions.ListFunctionsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -260,14 +278,22 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
-		getReq.Name = args[0]
+		getReq.FullNameArg = new(args[0])
 
-		response, err := w.Functions.Get(ctx, getReq)
+		sdkReq, err := ucfunctions.GetFunctionRequestToSDK(&getReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Functions.GetFunction(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucfunctions.FunctionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -288,27 +314,27 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListFunctionsRequest,
+	*ucfunctions.ListFunctionsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucfunctions.ListFunctionsRequest
 
-	var listReq catalog.ListFunctionsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IncludeBrowse, "include-browse", `Whether to include functions in the response for which the principal can only access selective metadata for.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of functions to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
@@ -348,19 +374,23 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.CatalogName = args[0]
-		listReq.SchemaName = args[1]
+		listReq.CatalogName = new(args[0])
+		listReq.SchemaName = new(args[1])
 
-		response := w.Functions.List(ctx, listReq)
+		sdkReq, err := ucfunctions.ListFunctionsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Functions.ListFunctionsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucfunctions.FunctionInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -381,18 +411,18 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateFunction,
+	*ucfunctions.UpdateFunctionRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucfunctions.UpdateFunctionRequest
 
-	var updateReq catalog.UpdateFunction
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the function.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of current owner of the function.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a function.`
@@ -419,6 +449,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -435,7 +466,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
-			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Functions.ListFunctionsIter(ctx, sdkucfunctions.ListFunctionsRequest{}), []string{"Name"}, []string{"FullName"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -449,14 +480,22 @@ func newUpdate() *cobra.Command {
 		if len(args) != 1 {
 			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
-		updateReq.Name = args[0]
+		updateReq.FullNameArg = new(args[0])
 
-		response, err := w.Functions.Update(ctx, updateReq)
+		sdkReq, err := ucfunctions.UpdateFunctionRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Functions.UpdateFunction(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucfunctions.FunctionInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

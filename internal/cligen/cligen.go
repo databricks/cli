@@ -71,6 +71,17 @@ func Generate(jsonPath, targetDir string) ([]string, error) {
 	if err := batch.Resolve(); err != nil {
 		return nil, fmt.Errorf("%s: %w", jsonPath, err)
 	}
+	idx, err := loadSdkIndex(targetDir)
+	if err != nil {
+		return nil, err
+	}
+	legacy, err := loadLegacy(targetDir)
+	if err != nil {
+		return nil, err
+	}
+	if err := bindAll(batch, idx, legacy); err != nil {
+		return nil, err
+	}
 
 	var filenames []string
 

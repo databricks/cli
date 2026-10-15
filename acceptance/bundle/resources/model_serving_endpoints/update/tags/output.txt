@@ -61,7 +61,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
         "key": "team",
         "value": "my-team-two"
       }
-    ]
+    ],
+    "name": "[ENDPOINT_ID]"
   }
 }
 

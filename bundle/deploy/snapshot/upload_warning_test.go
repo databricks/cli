@@ -3,10 +3,11 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -14,22 +15,22 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestClient(t *testing.T) *databricks.WorkspaceClient {
+func setupTestClient(t *testing.T) *sdkclients.Clients {
 	t.Helper()
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:               server.URL,
-		Token:              "testtoken",
-		RateLimitPerSecond: math.MaxInt,
+	client, err := sdkclients.New(t.Context(), &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
 	})
 	require.NoError(t, err)
 	return client
@@ -55,7 +56,7 @@ func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
 			Sync: config.Sync{Paths: []string{"."}},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
-					User: &iam.User{UserName: "test@example.test"},
+					User: &scim.User{UserName: new("test@example.test")},
 				},
 			},
 		},

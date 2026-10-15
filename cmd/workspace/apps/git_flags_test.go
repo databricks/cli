@@ -3,7 +3,8 @@ package apps
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,8 +49,8 @@ func TestGitRepositoryFlags(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, target)
-		assert.Equal(t, "https://github.com/databricks/git_app_repo.git", target.Url)
-		assert.Equal(t, "gitHub", target.Provider)
+		assert.Equal(t, "https://github.com/databricks/git_app_repo.git", utils.Deref(target.Url))
+		assert.Equal(t, "gitHub", utils.Deref(target.Provider))
 	})
 
 	t.Run("url without provider errors", func(t *testing.T) {
@@ -73,11 +74,11 @@ func TestGitRepositoryFlags(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, target)
-		assert.True(t, target.AutoDeploy)
-		assert.Equal(t, int64(93488329053511), target.CallerCredentialId)
+		assert.True(t, utils.Deref(target.AutoDeploy))
+		assert.Equal(t, int64(93488329053511), utils.Deref(target.CallerCredentialId))
 	})
 
-	t.Run("auto-deploy=false is force-sent", func(t *testing.T) {
+	t.Run("auto-deploy=false is sent", func(t *testing.T) {
 		target, err := runGitRepositoryFlags(t, []string{
 			"--git-url", "https://github.com/x/y",
 			"--git-provider", "gitHub",
@@ -85,10 +86,10 @@ func TestGitRepositoryFlags(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, target)
-		assert.False(t, target.AutoDeploy)
+		require.NotNil(t, target.AutoDeploy)
+		assert.False(t, *target.AutoDeploy)
 		// Otherwise omitempty would drop the field and the server could not
 		// distinguish "disable auto-deploy" from "unset".
-		assert.Contains(t, target.ForceSendFields, "AutoDeploy")
 	})
 
 	t.Run("auto-deploy without url and provider errors", func(t *testing.T) {
@@ -225,15 +226,15 @@ func TestRequireRepoForGitSourceOnCreate(t *testing.T) {
 
 func TestApplyPreservedAutoDeploy(t *testing.T) {
 	t.Run("carries a currently-enabled auto_deploy forward", func(t *testing.T) {
-		repo := &apps.GitRepository{Url: "https://github.com/x/y", Provider: "gitHub"}
+		repo := &apps.GitRepository{Url: new("https://github.com/x/y"), Provider: new("gitHub")}
 		applyPreservedAutoDeploy(repo, true)
-		assert.True(t, repo.AutoDeploy)
+		assert.True(t, utils.Deref(repo.AutoDeploy))
 	})
 
 	t.Run("leaves a currently-disabled auto_deploy off", func(t *testing.T) {
-		repo := &apps.GitRepository{Url: "https://github.com/x/y", Provider: "gitHub"}
+		repo := &apps.GitRepository{Url: new("https://github.com/x/y"), Provider: new("gitHub")}
 		applyPreservedAutoDeploy(repo, false)
-		assert.False(t, repo.AutoDeploy)
+		assert.Nil(t, repo.AutoDeploy)
 	})
 
 	t.Run("nil repo is a no-op", func(t *testing.T) {
@@ -256,25 +257,25 @@ func TestPreserveAutoDeployOnUpdate_Guards(t *testing.T) {
 	// Each guard returns before the GetApp call, so no client is needed. If a
 	// guard failed to short-circuit, WorkspaceClient(ctx) would panic here.
 	t.Run("skips when --json is set", func(t *testing.T) {
-		req := &apps.UpdateAppRequest{}
+		req := &apps.UpdateAppRequest{App: &apps.App{}}
 		cmd := newPreserveCmd(t, req, []string{"--json", "{}", "--git-url", "https://github.com/x/y", "--git-provider", "gitHub"})
 		require.NoError(t, preserveAutoDeployOnUpdate(req)(cmd, []string{"my-app"}))
 	})
 
 	t.Run("skips when --git-auto-deploy was passed", func(t *testing.T) {
-		req := &apps.UpdateAppRequest{}
+		req := &apps.UpdateAppRequest{App: &apps.App{}}
 		cmd := newPreserveCmd(t, req, []string{"--git-url", "https://github.com/x/y", "--git-provider", "gitHub", "--git-auto-deploy"})
 		require.NoError(t, preserveAutoDeployOnUpdate(req)(cmd, []string{"my-app"}))
 	})
 
 	t.Run("skips when no repository change is being sent", func(t *testing.T) {
-		req := &apps.UpdateAppRequest{}
+		req := &apps.UpdateAppRequest{App: &apps.App{}}
 		cmd := newPreserveCmd(t, req, nil) // GitRepository stays nil
 		require.NoError(t, preserveAutoDeployOnUpdate(req)(cmd, []string{"my-app"}))
 	})
 
 	t.Run("skips when no app name is available", func(t *testing.T) {
-		req := &apps.UpdateAppRequest{}
+		req := &apps.UpdateAppRequest{App: &apps.App{}}
 		cmd := newPreserveCmd(t, req, []string{"--git-url", "https://github.com/x/y", "--git-provider", "gitHub"})
 		require.NoError(t, preserveAutoDeployOnUpdate(req)(cmd, nil))
 	})
@@ -291,9 +292,9 @@ func TestGitSourceFlags(t *testing.T) {
 		target, err := runGitSourceFlags(t, []string{"--git-branch", "main"})
 		require.NoError(t, err)
 		require.NotNil(t, target)
-		assert.Equal(t, "main", target.Branch)
-		assert.Empty(t, target.Tag)
-		assert.Empty(t, target.Commit)
+		assert.Equal(t, "main", utils.Deref(target.Branch))
+		assert.Nil(t, target.Tag)
+		assert.Nil(t, target.Commit)
 	})
 
 	t.Run("commit with source-code-path populates both", func(t *testing.T) {
@@ -303,8 +304,8 @@ func TestGitSourceFlags(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, target)
-		assert.Equal(t, "abc123", target.Commit)
-		assert.Equal(t, "my-app", target.SourceCodePath)
+		assert.Equal(t, "abc123", utils.Deref(target.Commit))
+		assert.Equal(t, "my-app", utils.Deref(target.SourceCodePath))
 	})
 
 	t.Run("source-code-path without a ref errors", func(t *testing.T) {

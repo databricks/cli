@@ -11,8 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/listing"
+
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

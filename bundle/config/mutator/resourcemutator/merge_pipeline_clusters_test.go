@@ -4,12 +4,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,20 +21,20 @@ func TestMergePipelineClusters(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Clusters: []pipelines.PipelineCluster{
 								{
-									NodeTypeId: "i3.xlarge",
-									NumWorkers: 2,
-									PolicyId:   "1234",
+									NodeTypeId: new("i3.xlarge"),
+									NumWorkers: new(2),
+									PolicyId:   new("1234"),
 								},
 								{
-									Label:      "maintenance",
-									NodeTypeId: "i3.2xlarge",
+									Label:      new("maintenance"),
+									NodeTypeId: new("i3.2xlarge"),
 								},
 								{
-									NodeTypeId: "i3.2xlarge",
-									NumWorkers: 4,
+									NodeTypeId: new("i3.2xlarge"),
+									NumWorkers: new(4),
 								},
 							},
 						},
@@ -48,18 +50,18 @@ func TestMergePipelineClusters(t *testing.T) {
 	p := b.Config.Resources.Pipelines["foo"]
 
 	assert.Len(t, p.Clusters, 2)
-	assert.Equal(t, "default", p.Clusters[0].Label)
-	assert.Equal(t, "maintenance", p.Clusters[1].Label)
+	assert.Equal(t, "default", utils.Deref(p.Clusters[0].Label))
+	assert.Equal(t, "maintenance", utils.Deref(p.Clusters[1].Label))
 
 	// The default cluster was merged with a subsequent one.
 	pc0 := p.Clusters[0]
-	assert.Equal(t, "i3.2xlarge", pc0.NodeTypeId)
-	assert.Equal(t, 4, pc0.NumWorkers)
-	assert.Equal(t, "1234", pc0.PolicyId)
+	assert.Equal(t, "i3.2xlarge", utils.Deref(pc0.NodeTypeId))
+	assert.Equal(t, 4, utils.Deref(pc0.NumWorkers))
+	assert.Equal(t, "1234", utils.Deref(pc0.PolicyId))
 
 	// The maintenance cluster was left untouched.
 	pc1 := p.Clusters[1]
-	assert.Equal(t, "i3.2xlarge", pc1.NodeTypeId)
+	assert.Equal(t, "i3.2xlarge", utils.Deref(pc1.NodeTypeId))
 }
 
 func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
@@ -68,15 +70,15 @@ func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {
-						CreatePipeline: pipelines.CreatePipeline{
+						CreatePipelineRequest: pipelines.CreatePipelineRequest{
 							Clusters: []pipelines.PipelineCluster{
 								{
-									Label:      "default",
-									NumWorkers: 2,
+									Label:      new("default"),
+									NumWorkers: new(2),
 								},
 								{
-									Label:      "DEFAULT",
-									NumWorkers: 4,
+									Label:      new("DEFAULT"),
+									NumWorkers: new(4),
 								},
 							},
 						},
@@ -94,8 +96,8 @@ func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
 
 	// The default cluster was merged with a subsequent one.
 	pc0 := p.Clusters[0]
-	assert.Equal(t, "default", strings.ToLower(pc0.Label))
-	assert.Equal(t, 4, pc0.NumWorkers)
+	assert.Equal(t, "default", strings.ToLower(utils.Deref(pc0.Label)))
+	assert.Equal(t, 4, utils.Deref(pc0.NumWorkers))
 }
 
 func TestMergePipelineClustersNilPipelines(t *testing.T) {

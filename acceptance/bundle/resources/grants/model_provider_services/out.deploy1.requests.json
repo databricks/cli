@@ -12,6 +12,8 @@
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.myschema.myservice",
+    "securable_type": "model_provider_service"
   }
 }

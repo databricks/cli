@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,7 +120,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 
 	t.Run("only returns sql files", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
-		w := &databricks.WorkspaceClient{}
+		w := &sdkclients.Clients{}
 
 		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
@@ -183,7 +183,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 
 	t.Run("returns error for invalid path", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
-		w := &databricks.WorkspaceClient{}
+		w := &sdkclients.Clients{}
 
 		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}

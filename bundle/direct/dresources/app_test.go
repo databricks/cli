@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/apps/v1"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,9 +35,9 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 			}
 		}
 		return apps.App{
-			Name: "test-app",
+			Name: new("test-app"),
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
+				State: apps.ComputeStatus_ComputeState_Active,
 			},
 		}
 	})
@@ -44,16 +45,16 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
 		getCallCount++
 		return apps.App{
-			Name: req.Vars["name"],
+			Name: new(req.Vars["name"]),
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateDeleting,
+				State: apps.ComputeStatus_ComputeState_Deleting,
 			},
 		}
 	})
 
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -61,7 +62,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: new("test-app")})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -89,9 +90,9 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 			}
 		}
 		return apps.App{
-			Name: "test-app",
+			Name: new("test-app"),
 			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
+				State: apps.ComputeStatus_ComputeState_Active,
 			},
 		}
 	})
@@ -109,7 +110,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -117,7 +118,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{Name: new("test-app")})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -173,35 +174,28 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	}
 }
 
-// TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
-// appRequestBody removes SourceCodePath from ForceSendFields even when the plan
-// JSON round-trip has forced it in — reproduces the v1.14.0 regression where
-// "source_code_path": "" was sent in the UpdateApp body, causing a 400.
-func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
+// TestAppRequestBody_StripsDeployOnlyFields verifies that appRequestBody removes
+// source_code_path and git_source, which DABs applies through the Deploy API, so
+// that they never reach the create/update body (a "source_code_path": "" in the
+// UpdateApp body caused a 400 in v1.14.0).
+func TestAppRequestBody_StripsDeployOnlyFields(t *testing.T) {
 	config := &AppState{
-		Name:           "my-app",
-		SourceCodePath: "/Workspace/Users/me/app",
-		// Simulate ForceSendFields as populated by marshal.Unmarshal when the
-		// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
-		// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
-		// every basic-type field present in the JSON to ForceSendFields).
-		ForceSendFields: []string{"Name", "SourceCodePath"},
+		Name:           new("my-app"),
+		SourceCodePath: new("/Workspace/Users/me/app"),
+		GitSource:      &apps.GitSource{Branch: new("main")},
 	}
 
 	body := appRequestBody(config)
 
-	// SourceCodePath must be cleared and absent from ForceSendFields so that
-	// the SDK's marshal.Marshal omits it from the request body.
-	assert.Empty(t, body.SourceCodePath)
-	assert.NotContains(t, body.ForceSendFields, "SourceCodePath")
+	assert.Nil(t, body.SourceCodePath)
+	assert.Nil(t, body.GitSource)
+	// The config itself is not modified.
+	assert.Equal(t, "/Workspace/Users/me/app", *config.SourceCodePath)
 
-	// Verify the field is absent from the marshaled JSON (the root cause of the 400).
 	data, err := json.Marshal(body)
 	require.NoError(t, err)
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(data, &m))
 	assert.NotContains(t, m, "source_code_path", "source_code_path must not appear in the UpdateApp request body")
-
-	// Other ForceSendFields entries must be preserved.
-	assert.Contains(t, body.ForceSendFields, "Name")
+	assert.Equal(t, "my-app", m["name"])
 }

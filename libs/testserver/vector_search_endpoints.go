@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
+	vectorsearch "github.com/databricks/cli/libs/sdktypes/vectorsearch/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var createReq vectorsearch.CreateEndpoint
+	var createReq vectorsearch.CreateEndpointRequest
 	if err := json.Unmarshal(req.Body, &createReq); err != nil {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
@@ -19,24 +20,24 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchEndpoints[createReq.Name]; exists {
+	if _, exists := s.VectorSearchEndpoints[utils.Deref(createReq.Name)]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", utils.Deref(createReq.Name))},
 		}
 	}
 
-	endpoint := vectorsearch.EndpointInfo{
+	endpoint := vectorsearch.Endpoint{
 		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
-		CreationTimestamp:       nowMilli(),
+		CreationTimestamp:       utils.NonZero(nowMilli()),
 		EndpointType:            createReq.EndpointType,
-		Id:                      nextUUID(),
+		Id:                      utils.NonZero(nextUUID()),
 		LastUpdatedUser:         s.CurrentUser().UserName,
 		Name:                    createReq.Name,
 		EndpointStatus: &vectorsearch.EndpointStatus{
-			State: vectorsearch.EndpointStatusStateOnline, // initial create is no-op, returns ONLINE immediately
+			State: vectorsearch.EndpointStatus_State_Online, // initial create is no-op, returns ONLINE immediately
 		},
 		ScalingInfo: &vectorsearch.EndpointScalingInfo{
 			RequestedTargetQps: createReq.TargetQps,
@@ -44,7 +45,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
 
-	s.VectorSearchEndpoints[createReq.Name] = endpoint
+	s.VectorSearchEndpoints[utils.Deref(createReq.Name)] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -72,7 +73,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 
 	endpoint.BudgetPolicyId = patchReq.BudgetPolicyId
 	endpoint.EffectiveBudgetPolicyId = patchReq.BudgetPolicyId // assume it always becomes the effective policy
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint
@@ -107,7 +108,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
 	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
-	endpoint.LastUpdatedTimestamp = nowMilli()
+	endpoint.LastUpdatedTimestamp = utils.NonZero(nowMilli())
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
 	s.VectorSearchEndpoints[endpointName] = endpoint

@@ -20,9 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -393,9 +394,9 @@ func TestAgentSystemContext(t *testing.T) {
 	assert.Contains(t, agentSystemContext(""), "working directory is the user's Databricks workspace home directory")
 }
 
-func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
+func newProbeClient(t *testing.T, host string) *sdkclients.Clients {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+	w, err := sdkclients.New(t.Context(), (&config.Config{
 		Host:  host,
 		Token: "test-token",
 		// The fake gateway server has no /.well-known/databricks-config, so skip
@@ -556,9 +557,7 @@ func TestProbeModelServicesPageError(t *testing.T) {
 	}, nil)
 	defer srv.Close()
 
-	apiClient, err := newProbeAPIClient(newProbeClient(t, srv.URL).Config)
-	require.NoError(t, err)
-	probe := probeModelServices(t.Context(), apiClient)
+	probe := probeModelServices(apiclient.WithMaxAttempts(t.Context(), 1), newProbeClient(t, srv.URL))
 	assert.False(t, probe.reachable)
 	assert.False(t, probe.resourceAvailable)
 	assert.Error(t, probe.err)

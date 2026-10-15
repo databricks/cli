@@ -4,27 +4,20 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/postgres/v1"
+	sdkpostgres "github.com/databricks/sdk-go/postgres/v1"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type PostgresCatalogConfig struct {
-	postgres.CatalogCatalogSpec
+	postgres.Catalog_CatalogSpec
 
 	// CatalogId is the user-specified UC catalog name. Becomes the trailing
 	// component of the server-assigned Name: "catalogs/{catalog_id}".
 	CatalogId string `json:"catalog_id"`
-}
-
-func (c *PostgresCatalogConfig) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresCatalogConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 type PostgresCatalog struct {
@@ -33,16 +26,8 @@ type PostgresCatalog struct {
 	PostgresCatalogConfig
 }
 
-func (c *PostgresCatalog) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, c)
-}
-
-func (c PostgresCatalog) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
-}
-
-func (c *PostgresCatalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: name})
+func (c *PostgresCatalog) Exists(ctx context.Context, w *sdkclients.Clients, name string) (bool, error) {
+	_, err := w.Postgres.GetCatalog(ctx, sdkpostgres.GetCatalogRequest{Name: new(name)})
 	if err != nil {
 		log.Debugf(ctx, "postgres catalog %s does not exist", name)
 		return false, err

@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,13 +12,13 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/workspaceapi"
 	"github.com/spf13/cobra"
 )
 
@@ -31,18 +30,19 @@ type exportDirOptions struct {
 
 // isFileSizeError checks if the error is due to file size limits.
 func isFileSizeError(err error) bool {
-	aerr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok || aerr.StatusCode != http.StatusBadRequest {
+	aerr, ok := apierrs.Get(err)
+	if !ok || aerr.HTTPStatusCode() != http.StatusBadRequest {
 		return false
 	}
 
-	// Check ErrorCode field
-	if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
+	// Check error_code field
+	code := apierrs.ErrorCode(err)
+	if code == "MAX_NOTEBOOK_SIZE_EXCEEDED" || code == "MAX_READ_SIZE_EXCEEDED" {
 		return true
 	}
 
 	// Check ErrorInfo.Reason field
-	details := aerr.ErrorDetails()
+	details := aerr.Details()
 	if details.ErrorInfo != nil {
 		reason := details.ErrorInfo.Reason
 		if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
@@ -55,15 +55,15 @@ func isFileSizeError(err error) bool {
 
 // Object types that cannot be exported via the workspace export API.
 // These will be skipped with a warning during export-dir.
-var nonExportableTypes = []workspace.ObjectType{
-	workspace.ObjectTypeLibrary,
-	workspace.ObjectTypeRepo,
+var nonExportableTypes = []workspaceapi.ObjectType{
+	workspaceapi.ObjectTypeLibrary,
+	workspaceapi.ObjectTypeRepo,
 	// MLFLOW_EXPERIMENT is not defined as a constant in the SDK
-	workspace.ObjectType("MLFLOW_EXPERIMENT"),
+	workspaceapi.ObjectType("MLFLOW_EXPERIMENT"),
 }
 
 // isNonExportable checks if an object type cannot be exported.
-func isNonExportable(objectType workspace.ObjectType) bool {
+func isNonExportable(objectType workspaceapi.ObjectType) bool {
 	return slices.Contains(nonExportableTypes, objectType)
 }
 
@@ -92,7 +92,7 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		if err != nil {
 			return err
 		}
-		objectInfo := info.Sys().(workspace.ObjectInfo)
+		objectInfo := info.Sys().(workspaceapi.ObjectInfo)
 
 		// Skip non-exportable objects (e.g., MLFLOW_EXPERIMENT, LIBRARY)
 		if isNonExportable(objectInfo.ObjectType) {

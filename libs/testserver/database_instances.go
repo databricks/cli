@@ -3,16 +3,19 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"slices"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/service/database"
+	database "github.com/databricks/cli/libs/sdktypes/database/v1"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/sdk-go/core/types"
 )
 
-var ForceSendFields []string = []string{
-	"EffectiveEnableReadableSecondaries",
-	"EffectiveStopped",
-	"EffectiveEnablePgNativeLogin",
+// setEffectiveBools makes the effective_* booleans always serialize, false
+// included, as the real API returns them.
+func setEffectiveBools(d *database.DatabaseInstance) {
+	d.EffectiveEnableReadableSecondaries = new(utils.Deref(d.EffectiveEnableReadableSecondaries))
+	d.EffectiveStopped = new(utils.Deref(d.EffectiveStopped))
+	d.EffectiveEnablePgNativeLogin = new(utils.Deref(d.EffectiveEnablePgNativeLogin))
 }
 
 func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
@@ -28,21 +31,20 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	}
 
 	// set default fields:
-	databaseInstance.Uid = nextUUID()
-	databaseInstance.State = database.DatabaseInstanceStateAvailable
-	databaseInstance.PgVersion = "PG_VERSION_16"
-	databaseInstance.EffectiveNodeCount = 1
-	databaseInstance.EffectiveRetentionWindowInDays = 7
+	databaseInstance.Uid = utils.NonZero(nextUUID())
+	databaseInstance.State = database.DatabaseInstance_State_Available
+	databaseInstance.PgVersion = utils.NonZero("PG_VERSION_16")
+	databaseInstance.EffectiveNodeCount = utils.NonZero(1)
+	databaseInstance.EffectiveRetentionWindowInDays = utils.NonZero(7)
 	databaseInstance.EffectiveCapacity = databaseInstance.Capacity
 	databaseInstance.Creator = req.Workspace.CurrentUser().UserName
-	databaseInstance.CreationTime = time.Now().UTC().Format(time.RFC3339)
-	databaseInstance.EffectiveEnableReadableSecondaries = false
-	databaseInstance.EffectiveStopped = false
-	databaseInstance.EffectiveEnablePgNativeLogin = false
+	databaseInstance.CreationTime = types.NewFromTime(time.Now().UTC().Truncate(time.Second))
+	databaseInstance.EffectiveEnableReadableSecondaries = nil
+	databaseInstance.EffectiveStopped = nil
+	databaseInstance.EffectiveEnablePgNativeLogin = nil
+	setEffectiveBools(&databaseInstance)
 
-	databaseInstance.ForceSendFields = slices.Clone(ForceSendFields)
-
-	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
+	s.DatabaseInstances[utils.Deref(databaseInstance.Name)] = databaseInstance
 
 	return Response{
 		Body: databaseInstance,
@@ -61,7 +63,7 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 		}
 	}
 
-	value.ForceSendFields = slices.Clone(ForceSendFields)
+	setEffectiveBools(&value)
 
 	return Response{
 		Body: value,
@@ -91,25 +93,25 @@ func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Respons
 	}
 
 	// Update the instance with new values while preserving system-managed fields
-	updated := updateReq.DatabaseInstance
+	updated := utils.Deref(updateReq.DatabaseInstance)
 	updated.Uid = existing.Uid                   // Preserve UID
 	updated.Creator = existing.Creator           // Preserve creator
 	updated.CreationTime = existing.CreationTime // Preserve creation time
 	updated.State = existing.State               // Preserve state
 
 	// Set defaults for effective fields if not specified
-	if updated.EffectiveNodeCount == 0 {
+	if utils.Deref(updated.EffectiveNodeCount) == 0 {
 		updated.EffectiveNodeCount = existing.EffectiveNodeCount
 	}
-	if updated.EffectiveRetentionWindowInDays == 0 {
+	if utils.Deref(updated.EffectiveRetentionWindowInDays) == 0 {
 		updated.EffectiveRetentionWindowInDays = existing.EffectiveRetentionWindowInDays
 	}
-	if updated.PgVersion == "" {
+	if utils.Deref(updated.PgVersion) == "" {
 		updated.PgVersion = existing.PgVersion
 	}
 
-	// Set ForceSendFields to ensure consistent serialization with DatabaseInstanceMapGet
-	updated.ForceSendFields = slices.Clone(ForceSendFields)
+	// Ensure consistent serialization with DatabaseInstanceMapGet
+	setEffectiveBools(&updated)
 
 	// Update the stored instance
 	s.DatabaseInstances[name] = updated

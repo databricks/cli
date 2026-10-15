@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/apierrs"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -62,7 +63,7 @@ func WarningFromErr(err error) Diagnostics {
 	return []Diagnostic{
 		{
 			Severity: Warning,
-			Summary:  err.Error(),
+			Summary:  apierrs.ErrorString(err),
 		},
 	}
 }

@@ -51,7 +51,8 @@
   "method": "PATCH",
   "path": "/api/2.0/repos/[REPO_ID]",
   "body": {
-    "branch": "update-by-path"
+    "branch": "update-by-path",
+    "id": [REPO_ID]
   }
 }
 {

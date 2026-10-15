@@ -60,7 +60,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	switch srcv.Kind() {
 	case reflect.Struct:
 		// Handle SDK native types using JSON marshaling.
-		if slices.Contains(sdkNativeTypes, srcv.Type()) {
+		if isSDKNativeType(srcv.Type()) {
 			v, err = fromTypedSDKNative(srcv, ref, options...)
 		} else {
 			v, err = fromTypedStruct(srcv, ref, options...)
@@ -111,7 +111,6 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	for _, fieldval := range info.FieldValues(src) {
 		k := fieldval.Key
 		v := fieldval.Value
-		isForced := fieldval.IsForced
 		pair, ok := refm.GetPairByString(k)
 		refloc := pair.Key.Locations()
 		refv := pair.Value
@@ -133,24 +132,16 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			return dyn.InvalidValue, err
 		}
 
-		// Either if the key was set in the reference, the field is not zero-valued, OR it's forced
-		if ok || nv.Kind() != dyn.KindNil || isForced {
+		// Either if the key was set in the reference or the field is not zero-valued
+		if ok || nv.Kind() != dyn.KindNil {
 			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
-			// BUT: always include if it's forced
-			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !isForced {
-				continue
-			}
-
-			// If the field is forced but nv is nil, convert it to the appropriate zero value
-			if isForced && nv.Kind() == dyn.KindNil {
-				// Convert the zero value using proper recursive conversion instead of dyn.V() directly
-				// This prevents "not handled" panics for complex types like structs, slices, maps, etc.
-				// Use refv to preserve location information from the original reference
-				var err error
-				nv, err = fromTyped(v.Interface(), refv, includeZeroValues)
-				if err != nil {
-					return dyn.InvalidValue, err
+			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] {
+				// A zero scalar that was explicitly set in the reference (e.g. `name: ""`)
+				// is kept, so that typed round trips do not drop it.
+				if !ok || !info.KeepExplicitZero[k] || !isZeroScalar(refv) {
+					continue
 				}
+				nv = refv
 			}
 
 			out.SetLoc(k, refloc, nv)
@@ -359,4 +350,13 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
+}
+
+func isZeroScalar(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat:
+		return v.IsZero()
+	default:
+		return false
+	}
 }

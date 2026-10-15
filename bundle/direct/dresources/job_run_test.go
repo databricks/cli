@@ -11,10 +11,12 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/sdkclients"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,11 +24,11 @@ import (
 // jobRunClientFor returns a client talking to server. Call it after the test
 // registers its own handlers: first registration wins, so the defaults added here
 // only fill the gaps.
-func jobRunClientFor(t *testing.T, server *testserver.Server) *databricks.WorkspaceClient {
+func jobRunClientFor(t *testing.T, server *testserver.Server) *sdkclients.Clients {
 	t.Helper()
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -36,7 +38,7 @@ func jobRunClientFor(t *testing.T, server *testserver.Server) *databricks.Worksp
 
 // jobRunServer returns a client whose runs/get is the given handler, so a wait can
 // be driven without a real run.
-func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *databricks.WorkspaceClient {
+func jobRunServer(t *testing.T, getRun testserver.HandlerFunc) *sdkclients.Clients {
 	t.Helper()
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", getRun)
@@ -51,16 +53,16 @@ const (
 )
 
 // jobRunClient returns a client whose GetRun always reports the given run state.
-func jobRunClient(t *testing.T, state *jobs.RunState) *databricks.WorkspaceClient {
+func jobRunClient(t *testing.T, state *jobs.RunState) *sdkclients.Clients {
 	t.Helper()
 	return jobRunServer(t, func(req testserver.Request) any {
-		return jobs.Run{RunId: 123, JobId: 456, State: state, RunPageUrl: testRunPageURL}
+		return jobs.GetRunResponse{RunId: new(int64(123)), JobId: new(int64(456)), State: state, RunPageUrl: new(testRunPageURL)}
 	})
 }
 
 // waitForTestRun drives the framework hook, so it covers parsing the id the
 // framework hands back from DoCreate along with the wait itself.
-func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient) (*JobRunRemote, error) {
+func waitForTestRun(t *testing.T, ctx context.Context, client *sdkclients.Clients) (*JobRunRemote, error) {
 	t.Helper()
 	r := (&ResourceJobRun{}).New(client)
 	return r.WaitAfterCreate(ctx, "123", &JobRunState{})
@@ -68,9 +70,9 @@ func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.Worksp
 
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateFailed,
-		StateMessage:   "task failed",
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+		ResultState:    jobs.RunResultState_RunResultState_Failed,
+		StateMessage:   new("task failed"),
 	})
 
 	_, err := waitForTestRun(t, t.Context(), client)
@@ -83,35 +85,35 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 func TestJobRunWaitReportsFailedTaskWithoutDeprecatedState(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
+		return jobs.GetRunResponse{
+			RunId: new(int64(123)),
+			JobId: new(int64(456)),
 			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateFailed,
+				LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+				ResultState:    jobs.RunResultState_RunResultState_Failed,
 			},
 			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 999, Status: &jobs.RunStatus{
-					State: jobs.RunLifecycleStateV2StateTerminated,
+				{TaskKey: new("main"), RunId: new(int64(999)), Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2_State_Terminated,
 					TerminationDetails: &jobs.TerminationDetails{
-						Type:    jobs.TerminationTypeTypeClientError,
-						Code:    jobs.TerminationCodeCodeRunExecutionError,
-						Message: "Workload failed, see run output for details",
+						Type:    jobs.TerminationType_Type_ClientError,
+						Code:    jobs.TerminationCode_Code_RunExecutionError,
+						Message: new("Workload failed, see run output for details"),
 					},
 				}},
 				// Never ran, so it has no error of its own to report.
-				{TaskKey: "downstream", RunId: 1000, Status: &jobs.RunStatus{
-					State: jobs.RunLifecycleStateV2StateTerminated,
+				{TaskKey: new("downstream"), RunId: new(int64(1000)), Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2_State_Terminated,
 					TerminationDetails: &jobs.TerminationDetails{
-						Type: jobs.TerminationTypeTypeClientError,
-						Code: jobs.TerminationCodeCodeSkipped,
+						Type: jobs.TerminationType_Type_ClientError,
+						Code: jobs.TerminationCode_Code_Skipped,
 					},
 				}},
 			},
 		}
 	})
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "RuntimeError: intentional failure"}
+		return jobs.GetRunOutputResponse{Error: new("RuntimeError: intentional failure")}
 	})
 
 	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
@@ -124,27 +126,27 @@ func TestJobRunWaitReportsFailedTaskWithoutDeprecatedState(t *testing.T) {
 func TestJobRunWaitFallsBackToTheTerminationMessage(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
+		return jobs.GetRunResponse{
+			RunId: new(int64(123)),
+			JobId: new(int64(456)),
 			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateFailed,
+				LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+				ResultState:    jobs.RunResultState_RunResultState_Failed,
 			},
 			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 999, Status: &jobs.RunStatus{
-					State: jobs.RunLifecycleStateV2StateTerminated,
+				{TaskKey: new("main"), RunId: new(int64(999)), Status: &jobs.RunStatus{
+					State: jobs.RunLifecycleStateV2_State_Terminated,
 					TerminationDetails: &jobs.TerminationDetails{
-						Type:    jobs.TerminationTypeTypeCloudFailure,
-						Code:    jobs.TerminationCodeCodeCloudFailure,
-						Message: "the cloud provider ran out of capacity",
+						Type:    jobs.TerminationType_Type_CloudFailure,
+						Code:    jobs.TerminationCode_Code_CloudFailure,
+						Message: new("the cloud provider ran out of capacity"),
 					},
 				}},
 			},
 		}
 	})
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{}
+		return jobs.GetRunOutputResponse{}
 	})
 
 	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
@@ -156,24 +158,24 @@ func TestJobRunWaitFallsBackToTheTerminationMessage(t *testing.T) {
 func TestJobRunWaitFallsBackToTheTaskMessage(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
+		return jobs.GetRunResponse{
+			RunId: new(int64(123)),
+			JobId: new(int64(456)),
 			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateFailed,
+				LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+				ResultState:    jobs.RunResultState_RunResultState_Failed,
 			},
 			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 999, State: &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateFailed,
-					StateMessage:   "Workload failed, see run output for details",
+				{TaskKey: new("main"), RunId: new(int64(999)), State: &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+					ResultState:    jobs.RunResultState_RunResultState_Failed,
+					StateMessage:   new("Workload failed, see run output for details"),
 				}},
 			},
 		}
 	})
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{}
+		return jobs.GetRunOutputResponse{}
 	})
 
 	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
@@ -184,7 +186,7 @@ func TestJobRunWaitFallsBackToTheTaskMessage(t *testing.T) {
 func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 	// A skipped run has no result_state, so the lifecycle state is reported.
 	client := jobRunClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateSkipped,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Skipped,
 	})
 
 	_, err := waitForTestRun(t, t.Context(), client)
@@ -194,7 +196,7 @@ func TestJobRunWaitFailsOnSkipped(t *testing.T) {
 
 func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateInternalError,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_InternalError,
 	})
 
 	_, err := waitForTestRun(t, t.Context(), client)
@@ -205,23 +207,23 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 
 func TestJobRunWaitReportsOnlyTheLastAttemptOfATask(t *testing.T) {
 	failed := &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateFailed,
+		LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+		ResultState:    jobs.RunResultState_RunResultState_Failed,
 	}
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
+		return jobs.GetRunResponse{
+			RunId: new(int64(123)),
+			JobId: new(int64(456)),
 			State: failed,
 			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 998, AttemptNumber: 0, State: failed},
-				{TaskKey: "main", RunId: 999, AttemptNumber: 1, State: failed},
+				{TaskKey: new("main"), RunId: new(int64(998)), AttemptNumber: new(0), State: failed},
+				{TaskKey: new("main"), RunId: new(int64(999)), AttemptNumber: new(1), State: failed},
 			},
 		}
 	})
 	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "output of run " + req.URL.Query().Get("run_id")}
+		return jobs.GetRunOutputResponse{Error: new("output of run " + req.URL.Query().Get("run_id"))}
 	})
 
 	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
@@ -245,9 +247,9 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 		if gets.Add(1) >= 2 {
 			cancel()
 		}
-		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateRunning,
-		}, RunPageUrl: testRunPageURL}
+		return jobs.GetRunResponse{RunId: new(int64(123)), JobId: new(int64(456)), State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running,
+		}, RunPageUrl: new(testRunPageURL)}
 	})
 
 	_, err := waitForTestRun(t, ctx, client)
@@ -293,9 +295,9 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
-	for _, outcome := range []jobs.RunResultState{
-		jobs.RunResultStateSuccess,
-		jobs.RunResultStateFailed,
+	for _, outcome := range []jobs.RunResultState_RunResultState{
+		jobs.RunResultState_RunResultState_Success,
+		jobs.RunResultState_RunResultState_Failed,
 		// A run still going, and a SKIPPED one, report no result at all.
 		"",
 	} {
@@ -317,12 +319,12 @@ func TestJobRunIgnoresEveryRequestField(t *testing.T) {
 	require.NoError(t, err)
 	ignored := adapters["job_runs"].ResourceConfig().IgnoreRemoteChanges
 
-	for field := range reflect.TypeFor[jobs.RunNow]().Fields() {
+	for field := range reflect.TypeFor[jobs.RunNowRequest]().Fields() {
 		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if name == "" || name == "-" {
 			continue
 		}
-		assert.True(t, ignoresRemoteChanges(ignored, name), "jobs.RunNow field %q is not in job_runs ignore_remote_changes", name)
+		assert.True(t, ignoresRemoteChanges(ignored, name), "jobs.RunNowRequest field %q is not in job_runs ignore_remote_changes", name)
 	}
 
 	assert.False(t, ignoresRemoteChanges(ignored, "result_state"), "result_state must stay comparable against the remote")
@@ -339,13 +341,13 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	var gets atomic.Int32
 	client := jobRunServer(t, func(req testserver.Request) any {
 		if gets.Add(1) <= 2 {
-			return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateRunning,
+			return jobs.GetRunResponse{RunId: new(int64(123)), JobId: new(int64(456)), State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Running,
 			}}
 		}
-		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
+		return jobs.GetRunResponse{RunId: new(int64(123)), JobId: new(int64(456)), State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleState_RunLifeCycleState_Terminated,
+			ResultState:    jobs.RunResultState_RunResultState_Success,
 		}}
 	})
 
@@ -354,7 +356,7 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 
 	// SUCCESS is only reachable by polling past the RUNNING reads.
 	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
+	assert.Equal(t, jobs.RunResultState_RunResultState_Success, remote.State.ResultState)
 	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
 }
 
@@ -362,13 +364,13 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	var tokens []string
 	server := testserver.New(t)
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
-		var body jobs.RunNow
+		var body jobs.RunNowRequest
 		require.NoError(t, json.Unmarshal(req.Body, &body))
-		tokens = append(tokens, body.IdempotencyToken)
-		return jobs.RunNowResponse{RunId: int64(123 + len(tokens))}
+		tokens = append(tokens, utils.Deref(body.IdempotencyToken))
+		return jobs.RunNowResponse{RunId: new(int64(123 + len(tokens)))}
 	})
 	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
-	config := &JobRunState{JobId: 456}
+	config := &JobRunState{JobId: new(int64(456))}
 
 	for range 2 {
 		_, _, err := r.DoCreate(t.Context(), config)
@@ -379,7 +381,7 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.NotEmpty(t, tokens[0])
 	assert.NotEqual(t, tokens[0], tokens[1])
 	// Token must not leak into persisted state.
-	assert.Empty(t, config.IdempotencyToken)
+	assert.Empty(t, utils.Deref(config.IdempotencyToken))
 }
 
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
@@ -492,7 +494,7 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		{
 			name:   "result_state with unreadable remote",
 			path:   "result_state",
-			old:    jobs.RunResultStateSuccess,
+			old:    jobs.RunResultState_RunResultState_Success,
 			new:    nil,
 			action: deployplan.Recreate,
 			reason: "",

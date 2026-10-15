@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucsystemschemas "github.com/databricks/cli/libs/sdktypes/uc/systemschemas/v1"
+	sdkucsystemschemas "github.com/databricks/sdk-go/uc/systemschemas/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,13 +56,12 @@ A system schema is a schema that lives within the system catalog. A system
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var disableOverrides []func(
 	*cobra.Command,
-	*catalog.DisableRequest,
+	*sdkucsystemschemas.DisableSystemSchemaRequest,
 )
 
 func newDisable() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var disableReq catalog.DisableRequest
+	var disableReq sdkucsystemschemas.DisableSystemSchemaRequest
 
 	cmd.Use = "disable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `*Public Preview* Disable a system schema.`
@@ -87,14 +89,18 @@ Disable a system schema.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		disableReq.MetastoreId = args[0]
-		disableReq.SchemaName = args[1]
+		disableReq.MetastoreId = new(args[0])
+		disableReq.Schema = new(args[1])
 
-		err = w.SystemSchemas.Disable(ctx, disableReq)
+		sdkReq := &disableReq
+		response, err := w.SystemSchemas.DisableSystemSchema(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -116,18 +122,18 @@ Disable a system schema.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var enableOverrides []func(
 	*cobra.Command,
-	*catalog.EnableRequest,
+	*ucsystemschemas.EnableSystemSchemaRequest,
 )
 
 func newEnable() *cobra.Command {
 	cmd := &cobra.Command{}
+	var enableReq ucsystemschemas.EnableSystemSchemaRequest
 
-	var enableReq catalog.EnableRequest
 	var enableJson flags.JsonFlag
 
 	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
+	flags.StringPtrVar(cmd.Flags(), &enableReq.CatalogName, "catalog-name", `the catalog for which the system schema is to enabled in.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `*Public Preview* Enable a system schema.`
@@ -155,6 +161,7 @@ Enable a system schema.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := enableJson.Unmarshal(&enableReq)
@@ -168,13 +175,19 @@ Enable a system schema.
 				}
 			}
 		}
-		enableReq.MetastoreId = args[0]
-		enableReq.SchemaName = args[1]
+		enableReq.MetastoreId = new(args[0])
+		enableReq.Schema = new(args[1])
 
-		err = w.SystemSchemas.Enable(ctx, enableReq)
+		sdkReq, err := ucsystemschemas.EnableSystemSchemaRequestToSDK(&enableReq)
 		if err != nil {
 			return err
 		}
+		response, err := w.SystemSchemas.EnableSystemSchema(ctx, *sdkReq)
+		if err != nil {
+			return err
+		}
+
+		_ = response
 		return nil
 	}
 
@@ -196,13 +209,13 @@ Enable a system schema.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListSystemSchemasRequest,
+	*ucsystemschemas.ListSystemSchemasRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucsystemschemas.ListSystemSchemasRequest
 
-	var listReq catalog.ListSystemSchemasRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -212,9 +225,9 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of schemas to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list METASTORE_ID"
@@ -250,18 +263,22 @@ List system schemas.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.MetastoreId = args[0]
+		listReq.MetastoreId = new(args[0])
 
-		response := w.SystemSchemas.List(ctx, listReq)
+		sdkReq, err := ucsystemschemas.ListSystemSchemasRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.SystemSchemas.ListSystemSchemasIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucsystemschemas.SystemSchemaInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

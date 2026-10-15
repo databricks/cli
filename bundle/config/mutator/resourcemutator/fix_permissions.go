@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
@@ -220,7 +222,7 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if b.Config.Workspace.CurrentUser == nil {
 		return nil
 	}
-	currentUser := b.Config.Workspace.CurrentUser.UserName
+	currentUser := utils.Deref(b.Config.Workspace.CurrentUser.UserName)
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		// Use MapByPattern to directly process permissions arrays

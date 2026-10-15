@@ -7,8 +7,9 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	uccredentials "github.com/databricks/cli/libs/sdktypes/uc/credentials/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -63,19 +64,19 @@ Temporary Volume Credentials are short-lived, downscoped credentials used to
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var generateTemporaryVolumeCredentialsOverrides []func(
 	*cobra.Command,
-	*catalog.GenerateTemporaryVolumeCredentialRequest,
+	*uccredentials.GenerateTemporaryVolumeCredentialRequest,
 )
 
 func newGenerateTemporaryVolumeCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
+	var generateTemporaryVolumeCredentialsReq uccredentials.GenerateTemporaryVolumeCredentialRequest
 
-	var generateTemporaryVolumeCredentialsReq catalog.GenerateTemporaryVolumeCredentialRequest
 	var generateTemporaryVolumeCredentialsJson flags.JsonFlag
 
 	cmd.Flags().Var(&generateTemporaryVolumeCredentialsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&generateTemporaryVolumeCredentialsReq.Operation, "operation", `The operation performed against the volume data, either READ_VOLUME or WRITE_VOLUME. Supported values: [READ_VOLUME, WRITE_VOLUME]`)
-	cmd.Flags().StringVar(&generateTemporaryVolumeCredentialsReq.VolumeId, "volume-id", generateTemporaryVolumeCredentialsReq.VolumeId, `Id of the volume to read or write.`)
+	flags.EnumVar(cmd.Flags(), &generateTemporaryVolumeCredentialsReq.Operation, "operation", `The operation performed against the volume data, either READ_VOLUME or WRITE_VOLUME. Supported values: [READ_VOLUME, WRITE_VOLUME]`, "VolumeOperation", "READ_VOLUME", "WRITE_VOLUME")
+	flags.StringPtrVar(cmd.Flags(), &generateTemporaryVolumeCredentialsReq.VolumeId, "volume-id", `Id of the volume to read or write.`)
 
 	cmd.Use = "generate-temporary-volume-credentials"
 	cmd.Short = `*Public Preview* Generate a temporary volume credential.`
@@ -101,6 +102,7 @@ Generate a temporary volume credential.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := generateTemporaryVolumeCredentialsJson.Unmarshal(&generateTemporaryVolumeCredentialsReq)
@@ -115,12 +117,20 @@ Generate a temporary volume credential.
 			}
 		}
 
-		response, err := w.TemporaryVolumeCredentials.GenerateTemporaryVolumeCredentials(ctx, generateTemporaryVolumeCredentialsReq)
+		sdkReq, err := uccredentials.GenerateTemporaryVolumeCredentialRequestToSDK(&generateTemporaryVolumeCredentialsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Credentials.GenerateTemporaryVolumeCredential(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := uccredentials.GenerateTemporaryVolumeCredentialResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

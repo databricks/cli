@@ -12,8 +12,9 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/sdktypes/scim/v1"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"golang.org/x/mod/semver"
 )
 
@@ -198,32 +199,32 @@ func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsCont
 	r.SetPath(cfg.DatabricksCliPath, "[DATABRICKS_CLI_PATH]")
 }
 
-func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {
+func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u scim.User) {
 	t.Helper()
 	// There could be exact matches or overlap between different name fields, so sort them by length
 	// to ensure we match the largest one first and map them all to the same token
 
-	r.Set(u.UserName, testerName)
-	r.Set(u.DisplayName, testerName)
+	r.Set(utils.Deref(u.UserName), testerName)
+	r.Set(utils.Deref(u.DisplayName), testerName)
 	if u.Name != nil {
-		r.Set(u.Name.FamilyName, testerName)
-		r.Set(u.Name.GivenName, testerName)
+		r.Set(utils.Deref(u.Name.FamilyName), testerName)
+		r.Set(utils.Deref(u.Name.GivenName), testerName)
 	}
 
 	for _, val := range u.Emails {
-		r.Set(val.Value, testerName)
+		r.Set(utils.Deref(val.Value), testerName)
 	}
 
 	r.Set(iamutil.GetShortUserName(&u), testerName)
 
 	for _, val := range u.Groups {
-		r.Set(val.Value, "[USERGROUP]")
+		r.Set(utils.Deref(val.Value), "[USERGROUP]")
 	}
 
-	r.Set(u.Id, "[USERID]")
+	r.Set(utils.Deref(u.Id), "[USERID]")
 
 	for _, val := range u.Roles {
-		r.Set(val.Value, "[USERROLE]")
+		r.Set(utils.Deref(val.Value), "[USERROLE]")
 	}
 }
 

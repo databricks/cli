@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/apiclient"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // serverlessPoliciesPath is the workspace-scoped ListBudgetPolicies endpoint on
@@ -50,8 +50,8 @@ type usagePoliciesResponse struct {
 // The filter key is spelled with its dotted proto path rather than as a nested
 // map: the SDK only flattens nesting for struct-typed query values, and would
 // format a nested map with %v into a useless "map[...]" literal.
-func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, policyName string) ([]usagePolicy, error) {
-	apiClient, err := client.New(w.Config)
+func listUsagePolicies(ctx context.Context, w *sdkclients.Clients, policyName string) ([]usagePolicy, error) {
+	apiClient, err := apiclient.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
@@ -103,7 +103,7 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 // user-created policy the two are the same, so the distinction only surfaces for
 // the system defaults; a user who supplies a display name that isn't a
 // policy_name gets the not-found error with the real names as candidates.
-func resolveUsagePolicyIDByName(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+func resolveUsagePolicyIDByName(ctx context.Context, w *sdkclients.Clients, name string) (string, error) {
 	target := strings.TrimSpace(name)
 	// Guard the contract independently of the YAML validator: an empty filter would
 	// otherwise list (then reject against) every policy in the workspace.

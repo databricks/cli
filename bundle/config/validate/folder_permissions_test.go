@@ -8,12 +8,46 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/stretchr/testify/mock"
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/testserver"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/require"
 )
+
+// folderPermissionsClients returns clients for a workspace in which the paths
+// in existing are directories with the given object IDs and every other path
+// does not exist. Directory 1234 has the given access control list.
+func folderPermissionsClients(t *testing.T, existing map[string]int64, acl []map[string]any) *sdkclients.Clients {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		path := req.URL.Query().Get("path")
+		id, ok := existing[path]
+		if !ok {
+			return testserver.Response{
+				StatusCode: 404,
+				Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": path + " does not exist"},
+			}
+		}
+		return map[string]any{"object_id": id, "object_type": "DIRECTORY", "path": path}
+	})
+	server.Handle("GET", "/api/2.0/permissions/directories/1234", func(testserver.Request) any {
+		return map[string]any{"object_id": "1234", "access_control_list": acl}
+	})
+	w, err := sdkclients.New(t.Context(), &sdkconfig.Config{
+		Host:    server.URL,
+		Token:   "testtoken",
+		Loaders: []sdkconfig.Loader{sdkconfig.ConfigAttributes},
+	})
+	require.NoError(t, err)
+	return w
+}
+
+func manage(userName string) map[string]any {
+	return map[string]any{
+		"user_name":       userName,
+		"all_permissions": []map[string]any{{"permission_level": "CAN_MANAGE"}},
+	}
+}
 
 func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	b := &bundle.Bundle{
@@ -30,44 +64,10 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 			},
 		},
 	}
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.test/artifacts").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.test").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace").Return(&workspace.ObjectInfo{
-		ObjectId: 1234,
-	}, nil)
 
-	api.EXPECT().GetPermissions(mock.Anything, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   "1234",
-		WorkspaceObjectType: "directories",
-	}).Return(&workspace.WorkspaceObjectPermissions{
-		ObjectId: "1234",
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "foo@bar.test",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
-				},
-			},
-		},
-	}, nil)
-
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(folderPermissionsClients(t, map[string]int64{"/Workspace": 1234}, []map[string]any{
+		manage("foo@bar.test"),
+	}))
 	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Empty(t, diags)
 }
@@ -87,34 +87,11 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 			},
 		},
 	}
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(&workspace.ObjectInfo{
-		ObjectId: 1234,
-	}, nil)
 
-	api.EXPECT().GetPermissions(mock.Anything, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   "1234",
-		WorkspaceObjectType: "directories",
-	}).Return(&workspace.WorkspaceObjectPermissions{
-		ObjectId: "1234",
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "foo@bar.test",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
-				},
-			},
-			{
-				UserName: "foo2@bar.test",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
-				},
-			},
-		},
-	}, nil)
-
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(folderPermissionsClients(t, map[string]int64{"/Workspace/Users/foo@bar.test": 1234}, []map[string]any{
+		manage("foo@bar.test"),
+		manage("foo2@bar.test"),
+	}))
 	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
@@ -141,28 +118,10 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 			},
 		},
 	}
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(&workspace.ObjectInfo{
-		ObjectId: 1234,
-	}, nil)
 
-	api.EXPECT().GetPermissions(mock.Anything, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   "1234",
-		WorkspaceObjectType: "directories",
-	}).Return(&workspace.WorkspaceObjectPermissions{
-		ObjectId: "1234",
-		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-			{
-				UserName: "foo2@bar.test",
-				AllPermissions: []workspace.WorkspaceObjectPermission{
-					{PermissionLevel: "CAN_MANAGE"},
-				},
-			},
-		},
-	}, nil)
-
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(folderPermissionsClients(t, map[string]int64{"/Workspace/Users/foo@bar.test": 1234}, []map[string]any{
+		manage("foo2@bar.test"),
+	}))
 	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
@@ -184,18 +143,8 @@ func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 			},
 		},
 	}
-	m := mocks.NewMockWorkspaceClient(t)
-	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/NotExisting").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/").Return(nil, &apierr.APIError{
-		StatusCode: 404,
-		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
-	})
 
-	b.SetWorkpaceClient(m.WorkspaceClient)
+	b.SetWorkpaceClient(folderPermissionsClients(t, nil, nil))
 	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "folder / and its parent folders do not exist", diags[0].Summary)

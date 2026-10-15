@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
+
+	sharing "github.com/databricks/cli/libs/sdktypes/sharing/v1"
+	sdksharing "github.com/databricks/sdk-go/sharing/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -70,24 +73,24 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sharing.CreateRecipient,
+	*sharing.CreateRecipientRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq sharing.CreateRecipientRequest
 
-	var createReq sharing.CreateRecipient
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
-	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient.`)
-	cmd.Flags().Int64Var(&createReq.ExpirationTime, "expiration-time", createReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Comment, "comment", `Description about the recipient.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", `The global Unity Catalog metastore id provided by the data recipient.`)
+	flags.Int64PtrVar(cmd.Flags(), &createReq.ExpirationTime, "expiration-time", `Expiration timestamp of the token, in epoch milliseconds.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.Owner, "owner", `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
-	cmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.SharingCode, "sharing-code", `The one-time sharing code provided by the data recipient.`)
 
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create a share recipient.`
@@ -122,6 +125,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -136,22 +140,26 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.Name = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
-			if err != nil {
-				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
-			}
-
+			createReq.AuthenticationType = sharing.DeltaSharingAuthenticationType(args[1])
 		}
 
-		response, err := w.Recipients.Create(ctx, createReq)
+		sdkReq, err := sharing.CreateRecipientRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.CreateRecipient(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.RecipientInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -172,13 +180,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sharing.DeleteRecipientRequest,
+	*sdksharing.DeleteRecipientRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq sharing.DeleteRecipientRequest
+	var deleteReq sdksharing.DeleteRecipientRequest
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share recipient.`
@@ -203,13 +210,17 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.Name = args[0]
+		deleteReq.Name = new(args[0])
 
-		err = w.Recipients.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Sharing.DeleteRecipient(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -231,13 +242,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sharing.GetRecipientRequest,
+	*sdksharing.GetRecipientRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq sharing.GetRecipientRequest
+	var getReq sdksharing.GetRecipientRequest
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share recipient.`
@@ -263,15 +273,21 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.Name = args[0]
+		getReq.Name = new(args[0])
 
-		response, err := w.Recipients.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Sharing.GetRecipient(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.RecipientInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -297,22 +313,22 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
-
 	var listReq sharing.ListRecipientsRequest
+
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", `If not provided, all recipients will be returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of recipients to return.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Maximum number of recipients to return.`)
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
@@ -337,16 +353,20 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.Recipients.List(ctx, listReq)
+		sdkReq, err := sharing.ListRecipientsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Sharing.ListRecipientsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, sharing.RecipientInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -367,13 +387,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var rotateTokenOverrides []func(
 	*cobra.Command,
-	*sharing.RotateRecipientToken,
+	*sharing.RotateRecipientTokenRequest,
 )
 
 func newRotateToken() *cobra.Command {
 	cmd := &cobra.Command{}
+	var rotateTokenReq sharing.RotateRecipientTokenRequest
 
-	var rotateTokenReq sharing.RotateRecipientToken
 	var rotateTokenJson flags.JsonFlag
 
 	cmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -412,6 +432,7 @@ func newRotateToken() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := rotateTokenJson.Unmarshal(&rotateTokenReq)
@@ -425,21 +446,30 @@ func newRotateToken() *cobra.Command {
 				}
 			}
 		}
-		rotateTokenReq.Name = args[0]
+		rotateTokenReq.Name = new(args[0])
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &rotateTokenReq.ExistingTokenExpireInSeconds)
+			var rotateTokenExistingTokenExpireInSecondsArg int64
+			_, err = fmt.Sscan(args[1], &rotateTokenExistingTokenExpireInSecondsArg)
 			if err != nil {
 				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
 			}
-
+			rotateTokenReq.ExistingTokenExpireInSeconds = &rotateTokenExistingTokenExpireInSecondsArg
 		}
 
-		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
+		sdkReq, err := sharing.RotateRecipientTokenRequestToSDK(&rotateTokenReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.RotateRecipientToken(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.RecipientInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -460,16 +490,15 @@ func newRotateToken() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var sharePermissionsOverrides []func(
 	*cobra.Command,
-	*sharing.SharePermissionsRequest,
+	*sharing.ListRecipientSharePermissionsRequest,
 )
 
 func newSharePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
+	var sharePermissionsReq sharing.ListRecipientSharePermissionsRequest
 
-	var sharePermissionsReq sharing.SharePermissionsRequest
-
-	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
-	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	flags.IntPtrVar(cmd.Flags(), &sharePermissionsReq.MaxResults, "max-results", `Maximum number of permissions to return.`)
+	flags.StringPtrVar(cmd.Flags(), &sharePermissionsReq.PageToken, "page-token", `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get recipient share permissions.`
@@ -495,15 +524,24 @@ func newSharePermissions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		sharePermissionsReq.Name = args[0]
+		sharePermissionsReq.Name = new(args[0])
 
-		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
+		sdkReq, err := sharing.ListRecipientSharePermissionsRequestToSDK(&sharePermissionsReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.ListRecipientSharePermissions(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.GetRecipientSharePermissionsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -524,22 +562,22 @@ func newSharePermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sharing.UpdateRecipient,
+	*sharing.UpdateRecipientRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq sharing.UpdateRecipientRequest
 
-	var updateReq sharing.UpdateRecipient
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
-	cmd.Flags().Int64Var(&updateReq.ExpirationTime, "expiration-time", updateReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Comment, "comment", `Description about the recipient.`)
+	flags.Int64PtrVar(cmd.Flags(), &updateReq.ExpirationTime, "expiration-time", `Expiration timestamp of the token, in epoch milliseconds.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.NewName, "new-name", `New name for the recipient.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.Owner, "owner", `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
 
 	cmd.Use = "update NAME"
@@ -566,6 +604,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -579,14 +618,22 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		updateReq.NameArg = new(args[0])
 
-		response, err := w.Recipients.Update(ctx, updateReq)
+		sdkReq, err := sharing.UpdateRecipientRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Sharing.UpdateRecipient(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := sharing.RecipientInfoFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

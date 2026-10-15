@@ -57,7 +57,7 @@ func TestPrepareInputConfigPassthrough(t *testing.T) {
 	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
 	require.NoError(t, err)
 
-	input := &resources.Schema{Name: "myschema"}
+	input := &resources.Schema{Name: new("myschema")}
 	sv, err := adapter.PrepareInputConfig(input, "resources.schemas.foo")
 	require.NoError(t, err)
 

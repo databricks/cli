@@ -9,26 +9,24 @@
       "new_state": {
         "value": {
           "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
-          "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
-          "published": true,
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
-          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+          "published": true
         }
       },
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
-        "embed_credentials": false,
         "etag": "[ETAG]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
         "path": "/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources/test bundle-deploy-dashboard [UNIQUE_NAME].lvdash.json",
-        "published": false,
-        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}",
         "update_time": "[TIMESTAMP]",
-        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}",
+        "published": false
       },
       "changes": {
         "create_time": {

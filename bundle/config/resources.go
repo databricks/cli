@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 )
 
 // Resources defines Databricks resources associated with the bundle.
@@ -58,7 +58,7 @@ type Resources struct {
 type ConfigResource interface {
 	// Exists returns true if the resource exists in the workspace configured in
 	// the input workspace client.
-	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
+	Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error)
 
 	// ResourceDescription returns a struct containing strings describing a resource
 	ResourceDescription() resources.ResourceDescription

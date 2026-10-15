@@ -23,8 +23,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][0],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -33,15 +31,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [A_ID],
         "max_concurrent_runs": 1,
         "name": "aa",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [A_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {
@@ -92,8 +92,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][1],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -102,15 +100,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [B_ID],
         "max_concurrent_runs": 1,
         "name": "bb",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][1],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [B_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {
@@ -161,8 +161,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][2],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -171,15 +169,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [C_ID],
         "max_concurrent_runs": 1,
         "name": "cc",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][2],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [C_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {
@@ -230,8 +230,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][3],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -240,15 +238,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [D_ID],
         "max_concurrent_runs": 1,
         "name": "dd",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][3],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [D_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {
@@ -299,8 +299,6 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][4],
-        "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -309,15 +307,17 @@
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
         "format": "MULTI_TASK",
-        "job_id": [E_ID],
         "max_concurrent_runs": 1,
         "name": "ee",
         "queue": {
           "enabled": true
         },
-        "run_as_user_name": "[USERNAME]",
         "timeout_seconds": 0,
-        "webhook_notifications": {}
+        "webhook_notifications": {},
+        "created_time": [UNIX_TIME_MILLIS][4],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [E_ID],
+        "run_as_user_name": "[USERNAME]"
       },
       "changes": {
         "description": {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	jobs "github.com/databricks/cli/libs/sdktypes/jobs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +48,7 @@ func TestJsonLoader(t *testing.T) {
 	v, err := LoadJSON([]byte(jsonData), "(inline)")
 	assert.NoError(t, err)
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err = convert.ToTyped(&r, v)
 	assert.NoError(t, err)
 }
@@ -153,9 +153,9 @@ func TestJsonLoaderMixedNumbersToTyped(t *testing.T) {
 	v, err := LoadJSON([]byte(mixedNumbersData), "(inline)")
 	require.NoError(t, err)
 
-	var r jobs.ResetJob
+	var r jobs.ResetJobRequest
 	err = convert.ToTyped(&r, v)
 	require.NoError(t, err)
-	assert.Equal(t, int64(123456789012345678), r.JobId)
-	assert.Equal(t, 100, r.NewSettings.TimeoutSeconds)
+	assert.Equal(t, new(int64(123456789012345678)), r.JobId)
+	assert.Equal(t, new(100), r.NewSettings.TimeoutSeconds)
 }

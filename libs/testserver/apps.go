@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	accessmanagement "github.com/databricks/cli/libs/sdktypes/accessmanagement/v1"
+	apps "github.com/databricks/cli/libs/sdktypes/apps/v1"
+	"github.com/databricks/cli/libs/utils"
 )
 
 const (
@@ -22,8 +23,8 @@ const (
 // securable types get none. See https://github.com/databricks/cli/issues/6342
 func setUcSecurableKinds(app *apps.App) {
 	for _, res := range app.Resources {
-		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurableUcSecurableTypeTable {
-			res.UcSecurable.SecurableKind = "TABLE_DELTA"
+		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurable_UcSecurableType_Table {
+			res.UcSecurable.SecurableKind = utils.NonZero("TABLE_DELTA")
 		}
 	}
 }
@@ -85,7 +86,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
-		for field := range strings.SplitSeq(updateReq.UpdateMask, ",") {
+		for field := range strings.SplitSeq(utils.Deref(updateReq.UpdateMask), ",") {
 			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
 				existingMap[strings.TrimSpace(field)] = v
 			}
@@ -104,8 +105,8 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 
 	return Response{
 		Body: apps.AppUpdate{
-			Status: &apps.AppUpdateUpdateStatus{
-				State: apps.AppUpdateUpdateStatusUpdateStateSucceeded,
+			Status: &apps.AppUpdate_UpdateStatus{
+				State: apps.AppUpdate_UpdateStatus_UpdateState_Succeeded,
 			},
 		},
 	}
@@ -121,8 +122,8 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 
 	return Response{
 		Body: apps.AppUpdate{
-			Status: &apps.AppUpdateUpdateStatus{
-				State: apps.AppUpdateUpdateStatusUpdateStateSucceeded,
+			Status: &apps.AppUpdate_UpdateStatus{
+				State: apps.AppUpdate_UpdateStatus_UpdateState_Succeeded,
 			},
 		},
 	}
@@ -141,10 +142,10 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
 	}
 
-	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+	deployment.DeploymentId = utils.NonZero(fmt.Sprintf("deploy-%d", nextID()))
 	deployment.Status = &apps.AppDeploymentStatus{
-		State:   apps.AppDeploymentStateSucceeded,
-		Message: "Deployment succeeded",
+		State:   apps.AppDeployment_State_Succeeded,
+		Message: utils.NonZero("Deployment succeeded"),
 	}
 
 	app.ActiveDeployment = &deployment
@@ -162,7 +163,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 		return Response{StatusCode: 404}
 	}
 
-	if app.ActiveDeployment == nil || app.ActiveDeployment.DeploymentId != deploymentID {
+	if app.ActiveDeployment == nil || utils.Deref(app.ActiveDeployment.DeploymentId) != deploymentID {
 		return Response{StatusCode: 404}
 	}
 
@@ -190,13 +191,13 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	}
 
 	app.ComputeStatus = &apps.ComputeStatus{
-		State:   apps.ComputeStateActive,
-		Message: "App compute is active.",
+		State:   apps.ComputeStatus_ComputeState_Active,
+		Message: utils.NonZero("App compute is active."),
 	}
 	// Starting the compute brings the application up.
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "RUNNING",
-		Message: appStatusRunningMessage,
+		Message: utils.NonZero(appStatusRunningMessage),
 	}
 	s.Apps[name] = app
 
@@ -212,13 +213,13 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	}
 
 	app.ComputeStatus = &apps.ComputeStatus{
-		State:   apps.ComputeStateStopped,
-		Message: "Start the app compute to deploy the app.",
+		State:   apps.ComputeStatus_ComputeState_Stopped,
+		Message: utils.NonZero("Start the app compute to deploy the app."),
 	}
 	// Stopping the compute takes the application down.
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "UNAVAILABLE",
-		Message: appStatusUnavailableMessage,
+		Message: utils.NonZero(appStatusUnavailableMessage),
 	}
 	// The backend clears both deployments on stop for the apps these fixtures use,
 	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
@@ -256,7 +257,7 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 		return Response{StatusCode: 404}
 	}
 
-	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStatus_ComputeState_Deleting {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -269,16 +270,16 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 	}
 
 	app.ComputeStatus = &apps.ComputeStatus{
-		State:   apps.ComputeStateDeleting,
-		Message: "App is being deleted.",
+		State:   apps.ComputeStatus_ComputeState_Deleting,
+		Message: utils.NonZero("App is being deleted."),
 	}
 	app.AppStatus = &apps.ApplicationStatus{
 		State:   "UNAVAILABLE",
-		Message: appStatusUnavailableMessage,
+		Message: utils.NonZero(appStatusUnavailableMessage),
 	}
 	s.Apps[name] = app
 
-	return Response{}
+	return Response{Body: app}
 }
 
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
@@ -301,7 +302,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			}
 		}
 	} else {
-		name = app.Name
+		name = utils.Deref(app.Name)
 		if name == "" {
 			return Response{
 				StatusCode: 400,
@@ -325,39 +326,39 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	if req.URL.Query().Get("no_compute") == "true" {
 		app.AppStatus = &apps.ApplicationStatus{
 			State:   "UNAVAILABLE",
-			Message: appStatusUnavailableMessage,
+			Message: utils.NonZero(appStatusUnavailableMessage),
 		}
 		app.ComputeStatus = &apps.ComputeStatus{
-			State:   apps.ComputeStateStopped,
-			Message: "App compute is stopped.",
+			State:   apps.ComputeStatus_ComputeState_Stopped,
+			Message: utils.NonZero("App compute is stopped."),
 		}
 	} else {
 		app.AppStatus = &apps.ApplicationStatus{
 			State:   "RUNNING",
-			Message: "Application is running.",
+			Message: utils.NonZero("Application is running."),
 		}
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
-			Message: "App compute is active.",
+			Message: utils.NonZero("App compute is active."),
 		}
 
 		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
 		deployment := apps.AppDeployment{
-			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+			SourceCodePath: utils.NonZero("/Workspace/Users/tester@databricks.com/" + name),
 		}
 
-		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+		deployment.DeploymentId = utils.NonZero(fmt.Sprintf("deploy-%d", nextID()))
 		deployment.Status = &apps.AppDeploymentStatus{
-			State:   apps.AppDeploymentStateSucceeded,
-			Message: "Deployment succeeded",
+			State:   apps.AppDeployment_State_Succeeded,
+			Message: utils.NonZero("Deployment succeeded"),
 		}
 
 		app.ActiveDeployment = &deployment
 		app.DefaultSourceCodePath = deployment.SourceCodePath
 	}
 
-	app.Url = name + "-123.cloud.databricksapps.com"
-	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+	app.Url = utils.NonZero(name + "-123.cloud.databricksapps.com")
+	app.Id = utils.NonZero(strconv.Itoa(len(s.Apps) + 1000))
 
 	if app.ComputeSize == "" {
 		app.ComputeSize = "MEDIUM"
@@ -365,13 +366,13 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	// The platform enables user access token forwarding regardless of what the
 	// request asked for, so the remote always reports true.
-	app.ForwardUserAccessToken = true
+	app.ForwardUserAccessToken = utils.NonZero(true)
 
 	// Assign a service principal to the app, mimicking the real platform.
-	if app.ServicePrincipalClientId == "" {
-		app.ServicePrincipalClientId = nextUUID()
-		app.ServicePrincipalId = nextID()
-		app.ServicePrincipalName = "app-" + name
+	if utils.Deref(app.ServicePrincipalClientId) == "" {
+		app.ServicePrincipalClientId = utils.NonZero(nextUUID())
+		app.ServicePrincipalId = utils.NonZero(nextID())
+		app.ServicePrincipalName = utils.NonZero("app-" + name)
 	}
 
 	// Simulate the apps platform side effect: when an app references a job
@@ -381,11 +382,11 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		if res.Job == nil {
 			continue
 		}
-		s.upsertPermission("/jobs/"+res.Job.Id, iam.AccessControlResponse{
+		s.upsertPermission("/jobs/"+utils.Deref(res.Job.Id), accessmanagement.AccessControlResponse{
 			ServicePrincipalName: app.ServicePrincipalName,
-			AllPermissions: []iam.Permission{{
-				PermissionLevel: iam.PermissionLevel(res.Job.Permission),
-				ForceSendFields: []string{"Inherited"},
+			AllPermissions: []accessmanagement.Permission{{
+				PermissionLevel: accessmanagement.PermissionLevel(res.Job.Permission),
+				Inherited:       new(false),
 			}},
 		})
 	}

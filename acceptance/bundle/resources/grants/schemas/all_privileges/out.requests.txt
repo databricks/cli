@@ -9,6 +9,8 @@
         ],
         "principal": "deco-test-user@databricks.com"
       }
-    ]
+    ],
+    "securable_full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
+    "securable_type": "schema"
   }
 }

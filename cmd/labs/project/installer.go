@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,16 +18,16 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	compute "github.com/databricks/sdk-go/clusters/v2"
+	sql "github.com/databricks/sdk-go/warehouses/v1"
 	"github.com/spf13/cobra"
 )
 
 const ownerRWXworldRX = 0o755
 
-type whTypes []sql.EndpointInfoWarehouseType
+type whTypes []sql.WarehouseType
 
 type hook struct {
 	*Entrypoint              `yaml:",inline"`
@@ -96,7 +98,7 @@ func (i *installer) Install(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		w, err = sdkclients.New(ctx, cfg)
 		if err != nil {
 			return fmt.Errorf("no ~/.databrickscfg: %w", err)
 		}
@@ -168,7 +170,7 @@ func (i *installer) recordVersion(ctx context.Context) error {
 	return i.writeVersionFile(ctx, i.version)
 }
 
-func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, error) {
+func (i *installer) login(ctx context.Context) (*sdkclients.Clients, error) {
 	cfg, err := i.metaEntrypoint(ctx).validLogin(i.cmd)
 	if errors.Is(err, ErrNoLoginConfig) {
 		cfg, err = i.Installer.envAwareConfig(ctx)
@@ -220,7 +222,7 @@ func (i *installer) downloadAndUnpackZipball(ctx context.Context, libTarget stri
 	return zipball.UnpackTo(libTarget)
 }
 
-func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databricks.WorkspaceClient) error {
+func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *sdkclients.Clients) error {
 	if !i.HasPython() {
 		return nil
 	}
@@ -245,15 +247,15 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	}
 	if i.Installer != nil && i.Installer.RequireDatabricksConnect {
 		sp.Update("Determining Databricks Connect version")
-		cluster, err := w.Clusters.Get(ctx, compute.GetClusterRequest{
-			ClusterId: w.Config.ClusterID,
+		cluster, err := w.Clusters.GetCluster(ctx, compute.GetClusterRequest{
+			ClusterId: new(w.Config.ClusterID),
 		})
 		if err != nil {
 			return fmt.Errorf("cluster: %w", err)
 		}
 		runtimeVersion, ok := cfgpickers.GetRuntimeVersion(*cluster)
 		if !ok {
-			return fmt.Errorf("unsupported runtime: %s", cluster.SparkVersion)
+			return fmt.Errorf("unsupported runtime: %s", utils.Deref(cluster.SparkVersion))
 		}
 		sp.Update("Installing Databricks Connect v" + runtimeVersion)
 		pipSpec := "databricks-connect==" + runtimeVersion

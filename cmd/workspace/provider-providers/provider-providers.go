@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -54,13 +57,13 @@ Providers are entities that manage assets in Marketplace.`,
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateProviderRequest,
+	*marketplaces.CreateProviderRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq marketplaces.CreateProviderRequest
 
-	var createReq marketplace.CreateProviderRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -81,6 +84,7 @@ Create a provider.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
@@ -97,12 +101,20 @@ Create a provider.
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ProviderProviders.Create(ctx, createReq)
+		sdkReq, err := marketplaces.CreateProviderRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.CreateProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.CreateProviderResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -123,13 +135,12 @@ Create a provider.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteProviderRequest,
+	*sdkmarketplaces.DeleteProviderRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq marketplace.DeleteProviderRequest
+	var deleteReq sdkmarketplaces.DeleteProviderRequest
 
 	cmd.Use = "delete ID"
 	cmd.Short = `*Public Preview* Delete provider.`
@@ -147,11 +158,12 @@ Delete provider.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Provider Providers drop-down.")
-			names, err := w.ProviderProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListProvidersIter(ctx, sdkmarketplaces.ListProvidersRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -165,12 +177,15 @@ Delete provider.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		deleteReq.Id = args[0]
+		deleteReq.Id = new(args[0])
 
-		err = w.ProviderProviders.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		response, err := w.Marketplaces.DeleteProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
+
+		_ = response
 		return nil
 	}
 
@@ -192,13 +207,12 @@ Delete provider.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetProviderRequest,
+	*sdkmarketplaces.GetProviderRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq marketplace.GetProviderRequest
+	var getReq sdkmarketplaces.GetProviderRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `*Public Preview* Get provider.`
@@ -216,11 +230,12 @@ Get provider.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Provider Providers drop-down.")
-			names, err := w.ProviderProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListProvidersIter(ctx, sdkmarketplaces.ListProvidersRequest{}), []string{"Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -234,14 +249,19 @@ Get provider.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.ProviderProviders.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Marketplaces.GetProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetProviderResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -262,25 +282,25 @@ Get provider.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListProvidersRequest,
+	*marketplaces.ListProvidersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListProvidersRequest
 
-	var listReq marketplace.ListProvidersRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -304,16 +324,20 @@ List providers.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ProviderProviders.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListProvidersRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListProvidersIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ProviderInfoFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -334,13 +358,13 @@ List providers.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateProviderRequest,
+	*marketplaces.UpdateProviderRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq marketplaces.UpdateProviderRequest
 
-	var updateReq marketplace.UpdateProviderRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -366,6 +390,7 @@ Update provider.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq)
@@ -381,14 +406,22 @@ Update provider.
 		} else {
 			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Id = args[0]
+		updateReq.Id = new(args[0])
 
-		response, err := w.ProviderProviders.Update(ctx, updateReq)
+		sdkReq, err := marketplaces.UpdateProviderRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.UpdateProvider(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.UpdateProviderResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

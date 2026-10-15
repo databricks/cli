@@ -39,6 +39,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "description": "",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/resources",
     "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\",\"content\":[\"Summarize sales revenue by month\"]}]}}\n",
+    "space_id": "[MY_SPACE_ID]",
     "title": "test genie space",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

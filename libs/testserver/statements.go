@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"strconv"
 
+	statementexecution "github.com/databricks/cli/libs/sdktypes/statementexecution/v1"
+	"github.com/databricks/cli/libs/utils"
+
 	"github.com/databricks/cli/libs/testserver/testsql"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // HandleSQL registers a matcher that runs fn when a submitted statement equals
@@ -27,11 +29,11 @@ func (s *Server) HandleSQLPattern(re *regexp.Regexp, fn func(testsql.Request) te
 // terminates as FAILED comes back as HTTP 200 with state=FAILED; the engine
 // builds that response and this HTTP layer is just transport.
 func (s *Server) sqlExecuteStatement(req Request) any {
-	var r sql.ExecuteStatementRequest
+	var r statementexecution.ExecuteStatementRequest
 	if err := json.Unmarshal(req.Body, &r); err != nil {
 		return Response{StatusCode: http.StatusBadRequest, Body: fmt.Sprintf("invalid execute statement request: %s", err)}
 	}
-	return s.sqlHandler.Submit(r.Statement, r.WaitTimeout, r.Parameters)
+	return s.sqlHandler.Submit(utils.Deref(r.Statement), utils.Deref(r.WaitTimeout), r.Parameters)
 }
 
 // sqlGetStatement handles GET /api/2.0/sql/statements/{statement_id}.

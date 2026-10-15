@@ -8,9 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+
+	marketplaces "github.com/databricks/cli/libs/sdktypes/marketplaces/v1"
+	sdkmarketplaces "github.com/databricks/sdk-go/marketplaces/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -53,13 +57,12 @@ Listings are the core entities in the Marketplace. They represent the products
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var batchGetOverrides []func(
 	*cobra.Command,
-	*marketplace.BatchGetListingsRequest,
+	*marketplaces.BatchGetListingsRequest,
 )
 
 func newBatchGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var batchGetReq marketplace.BatchGetListingsRequest
+	var batchGetReq marketplaces.BatchGetListingsRequest
 
 	// TODO: array: ids
 
@@ -85,13 +88,22 @@ Get one batch of listings. One may specify up to 50 IDs per request.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response, err := w.ConsumerListings.BatchGet(ctx, batchGetReq)
+		sdkReq, err := marketplaces.BatchGetListingsRequestToSDK(&batchGetReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.Marketplaces.BatchGetListings(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.BatchGetListingsResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -112,13 +124,12 @@ Get one batch of listings. One may specify up to 50 IDs per request.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingRequest,
+	*sdkmarketplaces.GetPublishedListingForConsumerRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq marketplace.GetListingRequest
+	var getReq sdkmarketplaces.GetPublishedListingForConsumerRequest
 
 	cmd.Use = "get ID"
 	cmd.Short = `*Public Preview* Get listing.`
@@ -137,11 +148,12 @@ Get listing.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No ID argument specified. Loading names for Consumer Listings drop-down.")
-			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListPublishedListingsForConsumerIter(ctx, sdkmarketplaces.ListPublishedListingsForConsumerRequest{}), []string{"Summary", "Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -155,14 +167,19 @@ Get listing.
 		if len(args) != 1 {
 			return errors.New("expected to have ")
 		}
-		getReq.Id = args[0]
+		getReq.Id = new(args[0])
 
-		response, err := w.ConsumerListings.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.Marketplaces.GetPublishedListingForConsumer(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := marketplaces.GetPublishedListingForConsumerResponseFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -183,13 +200,13 @@ Get listing.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListListingsRequest,
+	*marketplaces.ListPublishedListingsForConsumerRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq marketplaces.ListPublishedListingsForConsumerRequest
 
-	var listReq marketplace.ListListingsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -197,10 +214,10 @@ func newList() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
-	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free.`)
-	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
-	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IsFree, "is-free", `Filters each listing based on if it is free.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IsPrivateExchange, "is-private-exchange", `Filters each listing based on if it is a private exchange.`)
+	flags.BoolPtrVar(cmd.Flags(), &listReq.IsStaffPick, "is-staff-pick", `Filters each listing based on whether it is a staff pick.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.PageSize, "page-size", ``)
 	// TODO: array: provider_ids
 	// TODO: complex arg: tags
 
@@ -208,7 +225,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
@@ -233,16 +250,20 @@ List listings.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		response := w.ConsumerListings.List(ctx, listReq)
+		sdkReq, err := marketplaces.ListPublishedListingsForConsumerRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.ListPublishedListingsForConsumerIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ListingFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -263,13 +284,13 @@ List listings.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var searchOverrides []func(
 	*cobra.Command,
-	*marketplace.SearchListingsRequest,
+	*marketplaces.SearchPublishedListingsForConsumerRequest,
 )
 
 func newSearch() *cobra.Command {
 	cmd := &cobra.Command{}
+	var searchReq marketplaces.SearchPublishedListingsForConsumerRequest
 
-	var searchReq marketplace.SearchListingsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
@@ -277,16 +298,16 @@ func newSearch() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
-	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, ``)
-	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, ``)
-	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, ``)
+	flags.BoolPtrVar(cmd.Flags(), &searchReq.IsFree, "is-free", ``)
+	flags.BoolPtrVar(cmd.Flags(), &searchReq.IsPrivateExchange, "is-private-exchange", ``)
+	flags.IntPtrVar(cmd.Flags(), &searchReq.PageSize, "page-size", ``)
 	// TODO: array: provider_ids
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&searchLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &searchReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search QUERY"
@@ -310,11 +331,12 @@ Search listings.
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if len(args) == 0 {
 			sp := cmdio.NewSpinner(ctx)
 			sp.Update("No QUERY argument specified. Loading names for Consumer Listings drop-down.")
-			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
+			names, err := cmdgen.NamedIdMap(ctx, w.Marketplaces.ListPublishedListingsForConsumerIter(ctx, sdkmarketplaces.ListPublishedListingsForConsumerRequest{}), []string{"Summary", "Name"}, []string{"Id"})
 			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -328,17 +350,20 @@ Search listings.
 		if len(args) != 1 {
 			return errors.New("expected to have fuzzy matches query")
 		}
-		searchReq.Query = args[0]
+		searchReq.Query = new(args[0])
 
-		response := w.ConsumerListings.Search(ctx, searchReq)
+		sdkReq, err := marketplaces.SearchPublishedListingsForConsumerRequestToSDK(&searchReq)
+		if err != nil {
+			return err
+		}
 		if searchLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchLimit)
 		}
 		if searchLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, searchLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.Marketplaces.SearchPublishedListingsForConsumerIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, marketplaces.ListingFromSDK))
 	}
 
 	// Disable completions since they are not applicable.

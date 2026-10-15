@@ -7,6 +7,8 @@
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
       }
-    ]
+    ],
+    "request_object_id": "[FOO_ID]",
+    "request_object_type": "jobs"
   }
 }

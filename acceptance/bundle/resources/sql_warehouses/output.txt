@@ -88,6 +88,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "cluster_size": "X-Large",
     "enable_photon": true,
     "enable_serverless_compute": true,
+    "id": "[UUID]",
     "max_num_clusters": 1,
     "min_num_clusters": 1,
     "name": "sql_warehouse_name_2",

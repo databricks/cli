@@ -19,9 +19,8 @@
         }
       },
       "remote_state": {
-        "create_time": "[TIMESTAMP]",
-        "name": "projects/test-pg-proj-[UNIQUE_NAME]",
         "project_id": "test-pg-proj-[UNIQUE_NAME]",
+        "name": "projects/test-pg-proj-[UNIQUE_NAME]",
         "status": {
           "branch_logical_size_limit_bytes": [BRANCH_SIZE_LIMIT],
           "default_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
@@ -39,6 +38,7 @@
           "synthetic_storage_size_bytes": 0
         },
         "uid": "[UUID]",
+        "create_time": "[TIMESTAMP]",
         "update_time": "[TIMESTAMP]"
       },
       "changes": {

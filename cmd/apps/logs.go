@@ -21,8 +21,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/apps"
+	apps "github.com/databricks/sdk-go/apps/v1"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/cobra"
 )
@@ -104,15 +105,15 @@ Examples:
 
 			name := args[0]
 			w := cmdctx.WorkspaceClient(ctx)
-			app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
+			app, err := w.Apps.GetApp(ctx, apps.GetAppRequest{Name: new(name)})
 			if err != nil {
 				return err
 			}
-			if app.Url == "" {
+			if utils.Deref(app.Url) == "" {
 				return fmt.Errorf("app %s does not have a public URL; deploy and start it before streaming logs", name)
 			}
 
-			wsURL, err := buildLogsURL(app.Url)
+			wsURL, err := buildLogsURL(*app.Url)
 			if err != nil {
 				return err
 			}
@@ -141,7 +142,7 @@ Examples:
 			}
 
 			appStatusChecker := func(ctx context.Context) error {
-				app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
+				app, err := w.Apps.GetApp(ctx, apps.GetAppRequest{Name: new(name)})
 				if err != nil {
 					return err
 				}
@@ -150,7 +151,7 @@ Examples:
 				}
 				// Check if app is in a terminal/stopped state
 				switch app.ComputeStatus.State {
-				case apps.ComputeStateStopped, apps.ComputeStateDeleting, apps.ComputeStateError:
+				case apps.ComputeStatus_ComputeState_Stopped, apps.ComputeStatus_ComputeState_Deleting, apps.ComputeStatus_ComputeState_Error:
 					return fmt.Errorf("app is %s", app.ComputeStatus.State)
 				default:
 					// App is running or transitioning - continue streaming
@@ -181,7 +182,7 @@ Examples:
 			return logstream.Run(ctx, logstream.Config{
 				Dialer:           newLogStreamDialer(cfg),
 				URL:              wsURL,
-				Origin:           normalizeOrigin(app.Url),
+				Origin:           normalizeOrigin(utils.Deref(app.Url)),
 				Token:            initialToken.AccessToken,
 				TokenProvider:    tokenProvider,
 				AppStatusChecker: appStatusChecker,

@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/cli/libs/apierrs"
+
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,24 +45,20 @@ func TestEnrichAuthError_NonAPIError(t *testing.T) {
 
 func TestEnrichAuthError_NonAuthStatusCode(t *testing.T) {
 	cfg := &config.Config{Profile: "test", Host: "https://example.com"}
-	original := &apierr.APIError{StatusCode: 404, Message: "not found"}
+	original := apierr.FromHTTPError(404, nil, []byte(`{"message":"not found"}`))
 	result := EnrichAuthError(t.Context(), cfg, original)
 	assert.Equal(t, original, result)
 }
 
 func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
 	cfg := &config.Config{Host: "https://example.com", AuthType: "pat"}
-	original := &apierr.APIError{
-		StatusCode: 403,
-		ErrorCode:  "PERMISSION_DENIED",
-		Message:    "User does not have permission",
-	}
+	original := apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED","message":"User does not have permission"}`))
 	result := EnrichAuthError(t.Context(), cfg, original)
 
 	var unwrapped *apierr.APIError
 	require.ErrorAs(t, result, &unwrapped)
-	assert.Equal(t, 403, unwrapped.StatusCode)
-	assert.Equal(t, "PERMISSION_DENIED", unwrapped.ErrorCode)
+	assert.Equal(t, 403, unwrapped.HTTPStatusCode())
+	assert.Equal(t, "PERMISSION_DENIED", apierrs.ErrorCode(unwrapped))
 }
 
 func TestEnrichAuthError(t *testing.T) {
@@ -250,14 +248,11 @@ func TestEnrichAuthError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			original := &apierr.APIError{
-				StatusCode: tt.statusCode,
-				ErrorCode:  "TEST_ERROR",
-				Message:    "test error message",
-			}
+			original := apierr.FromHTTPError(tt.statusCode, nil, []byte(`{"error_code":"TEST_ERROR","message":"test error message"}`))
 
 			result := EnrichAuthError(t.Context(), tt.cfg, original)
-			assert.Equal(t, tt.wantMsg, result.Error())
+			// The enrichment is appended to the original error's own text.
+			assert.Equal(t, strings.Replace(tt.wantMsg, "test error message", original.Error(), 1), result.Error())
 		})
 	}
 }
@@ -303,18 +298,18 @@ func TestAppendAccountHostHint(t *testing.T) {
 
 func TestAppendAccountHostHintPreservesErrorChain(t *testing.T) {
 	cfg := &config.Config{Host: "https://accounts.test", Profile: "acc"}
-	original := &apierr.APIError{StatusCode: 400, Message: "Unable to load OAuth Config"}
+	original := apierr.FromHTTPError(400, nil, []byte(`{"message":"Unable to load OAuth Config"}`))
 
 	result := AppendAccountHostHint(cfg, original)
 
 	var unwrapped *apierr.APIError
 	require.ErrorAs(t, result, &unwrapped)
-	assert.Equal(t, 400, unwrapped.StatusCode)
+	assert.Equal(t, 400, unwrapped.HTTPStatusCode())
 }
 
 func TestAppendAccountHostHintComposesWithEnrichAuthError(t *testing.T) {
 	cfg := &config.Config{Host: "https://accounts.test", Profile: "acc", AuthType: AuthTypePat}
-	original := &apierr.APIError{StatusCode: 403, Message: "permission denied"}
+	original := apierr.FromHTTPError(403, nil, []byte(`{"message":"permission denied"}`))
 
 	// Same composition order as cmd/root.Execute: enrichment first, hint last.
 	result := AppendAccountHostHint(cfg, EnrichAuthError(t.Context(), cfg, original))

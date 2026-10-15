@@ -13,6 +13,8 @@
           "ALL_PRIVILEGES"
         ]
       }
-    ]
+    ],
+    "securable_full_name": "main.schema_grants_[UNIQUE_NAME]",
+    "securable_type": "schema"
   }
 }

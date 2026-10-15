@@ -4,17 +4,19 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/sdkclients"
+	"github.com/databricks/cli/libs/sdktypes/pipelines/v2"
+	"github.com/databricks/cli/libs/utils"
+	sdkpipelines "github.com/databricks/sdk-go/pipelines/v2"
+
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 type Pipeline struct {
 	BaseResource
-	pipelines.CreatePipeline        //nolint:govet // CreatePipeline.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
-	ID                       string `json:"id,omitempty" bundle:"readonly"`
+	pipelines.CreatePipelineRequest        //nolint:govet // CreatePipeline.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
+	ID                              string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []PipelinePermission `json:"permissions,omitempty"`
 
@@ -24,17 +26,9 @@ type Pipeline struct {
 	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
 }
 
-func (p *Pipeline) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, p)
-}
-
-func (p Pipeline) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(p)
-}
-
-func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	_, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{
-		PipelineId: id,
+func (p *Pipeline) Exists(ctx context.Context, w *sdkclients.Clients, id string) (bool, error) {
+	_, err := w.Pipelines.Get(ctx, sdkpipelines.GetPipelineRequest{
+		PipelineId: new(id),
 	})
 	if err != nil {
 		log.Debugf(ctx, "pipeline %s does not exist", id)
@@ -60,5 +54,5 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 }
 
 func (p *Pipeline) GetName() string {
-	return p.Name
+	return utils.Deref(p.Name)
 }

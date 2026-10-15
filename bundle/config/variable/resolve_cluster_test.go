@@ -3,42 +3,29 @@ package variable
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResolveCluster_ResolveSuccess(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockClustersAPI()
-	api.EXPECT().
-		ListAll(mock.Anything, mock.Anything).
-		Return([]compute.ClusterDetails{
-			{ClusterId: "1234", ClusterName: "cluster1"},
-			{ClusterId: "2345", ClusterName: "cluster2"},
-		}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/clusters/list": map[string]any{"clusters": []map[string]any{
+			{"cluster_id": "1234", "cluster_name": "cluster1"},
+			{"cluster_id": "2345", "cluster_name": "cluster2"},
+		}},
+	})
 	l := resolveCluster{name: "cluster2"}
-	result, err := l.Resolve(ctx, m.WorkspaceClient)
+	result, err := l.Resolve(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, "2345", result)
 }
 
 func TestResolveCluster_ResolveNotFound(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-
-	api := m.GetMockClustersAPI()
-	api.EXPECT().
-		ListAll(mock.Anything, mock.Anything).
-		Return([]compute.ClusterDetails{}, nil)
-
-	ctx := t.Context()
+	w := newTestClients(t, map[string]any{
+		"GET /api/2.1/clusters/list": map[string]any{},
+	})
 	l := resolveCluster{name: "cluster"}
-	_, err := l.Resolve(ctx, m.WorkspaceClient)
+	_, err := l.Resolve(t.Context(), w)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cluster named 'cluster' does not exist")
 }

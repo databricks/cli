@@ -8,10 +8,13 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgen"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
+
+	ucentitytagassignments "github.com/databricks/cli/libs/sdktypes/uc/entitytagassignments/v1"
+	sdkucentitytagassignments "github.com/databricks/sdk-go/uc/entitytagassignments/v1"
 )
 
 // Slice with functions to override default command behavior.
@@ -56,19 +59,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateEntityTagAssignmentRequest,
+	*ucentitytagassignments.CreateEntityTagAssignmentRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var createReq ucentitytagassignments.CreateEntityTagAssignmentRequest
+	createReq.TagAssignment = &ucentitytagassignments.EntityTagAssignment{}
 
-	var createReq catalog.CreateEntityTagAssignmentRequest
-	createReq.TagAssignment = catalog.EntityTagAssignment{}
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.TagAssignment.TagValue, "tag-value", createReq.TagAssignment.TagValue, `The value of the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &createReq.TagAssignment.TagValue, "tag-value", `The value of the tag.`)
 
 	cmd.Use = "create ENTITY_NAME TAG_KEY ENTITY_TYPE"
 	cmd.Short = `Create an entity tag assignment.`
@@ -111,6 +114,7 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq.TagAssignment)
@@ -125,21 +129,29 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.TagAssignment.EntityName = args[0]
+			createReq.TagAssignment.EntityName = new(args[0])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.TagAssignment.TagKey = args[1]
+			createReq.TagAssignment.TagKey = new(args[1])
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.TagAssignment.EntityType = args[2]
+			createReq.TagAssignment.EntityType = new(args[2])
 		}
 
-		response, err := w.EntityTagAssignments.Create(ctx, createReq)
+		sdkReq, err := ucentitytagassignments.CreateEntityTagAssignmentRequestToSDK(&createReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.EntityTagAssignments.CreateEntityTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucentitytagassignments.EntityTagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -160,13 +172,12 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteEntityTagAssignmentRequest,
+	*sdkucentitytagassignments.DeleteEntityTagAssignmentRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var deleteReq catalog.DeleteEntityTagAssignmentRequest
+	var deleteReq sdkucentitytagassignments.DeleteEntityTagAssignmentRequest
 
 	cmd.Use = "delete ENTITY_TYPE ENTITY_NAME TAG_KEY"
 	cmd.Short = `Delete an entity tag assignment.`
@@ -202,12 +213,14 @@ func newDelete() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		deleteReq.EntityType = args[0]
-		deleteReq.EntityName = args[1]
-		deleteReq.TagKey = args[2]
+		deleteReq.EntityType = new(args[0])
+		deleteReq.EntityName = new(args[1])
+		deleteReq.TagKey = new(args[2])
 
-		err = w.EntityTagAssignments.Delete(ctx, deleteReq)
+		sdkReq := &deleteReq
+		err = w.EntityTagAssignments.DeleteEntityTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
@@ -232,13 +245,12 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetEntityTagAssignmentRequest,
+	*sdkucentitytagassignments.GetEntityTagAssignmentRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
-
-	var getReq catalog.GetEntityTagAssignmentRequest
+	var getReq sdkucentitytagassignments.GetEntityTagAssignmentRequest
 
 	cmd.Use = "get ENTITY_TYPE ENTITY_NAME TAG_KEY"
 	cmd.Short = `Get an entity tag assignment.`
@@ -264,17 +276,23 @@ func newGet() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		getReq.EntityType = args[0]
-		getReq.EntityName = args[1]
-		getReq.TagKey = args[2]
+		getReq.EntityType = new(args[0])
+		getReq.EntityName = new(args[1])
+		getReq.TagKey = new(args[2])
 
-		response, err := w.EntityTagAssignments.Get(ctx, getReq)
+		sdkReq := &getReq
+		response, err := w.EntityTagAssignments.GetEntityTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucentitytagassignments.EntityTagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.
@@ -295,25 +313,25 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*catalog.ListEntityTagAssignmentsRequest,
+	*ucentitytagassignments.ListEntityTagAssignmentsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	var listReq ucentitytagassignments.ListEntityTagAssignmentsRequest
 
-	var listReq catalog.ListEntityTagAssignmentsRequest
 	// Registered for all paginated methods. Validated at call time in the
 	// method-call template. Paginated list methods never have Wait or LRO
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Optional.`)
+	flags.IntPtrVar(cmd.Flags(), &listReq.MaxResults, "max-results", `Optional.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	flags.StringPtrVar(cmd.Flags(), &listReq.PageToken, "page-token", `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list ENTITY_TYPE ENTITY_NAME"
@@ -344,19 +362,23 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
-		listReq.EntityType = args[0]
-		listReq.EntityName = args[1]
+		listReq.EntityType = new(args[0])
+		listReq.EntityName = new(args[1])
 
-		response := w.EntityTagAssignments.List(ctx, listReq)
+		sdkReq, err := ucentitytagassignments.ListEntityTagAssignmentsRequestToSDK(&listReq)
+		if err != nil {
+			return err
+		}
 		if listLimit < 0 {
 			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
 		}
 		if listLimit > 0 {
 			ctx = cmdio.WithLimit(ctx, listLimit)
 		}
-
-		return cmdio.RenderIterator(ctx, response)
+		response := w.EntityTagAssignments.ListEntityTagAssignmentsIter(ctx, *sdkReq)
+		return cmdio.RenderIterator(ctx, cmdgen.MapSeq(response, ucentitytagassignments.EntityTagAssignmentFromSDK))
 	}
 
 	// Disable completions since they are not applicable.
@@ -377,19 +399,19 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*catalog.UpdateEntityTagAssignmentRequest,
+	*ucentitytagassignments.UpdateEntityTagAssignmentRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
+	var updateReq ucentitytagassignments.UpdateEntityTagAssignmentRequest
+	updateReq.TagAssignment = &ucentitytagassignments.EntityTagAssignment{}
 
-	var updateReq catalog.UpdateEntityTagAssignmentRequest
-	updateReq.TagAssignment = catalog.EntityTagAssignment{}
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.TagAssignment.TagValue, "tag-value", updateReq.TagAssignment.TagValue, `The value of the tag.`)
+	flags.StringPtrVar(cmd.Flags(), &updateReq.TagAssignment.TagValue, "tag-value", `The value of the tag.`)
 
 	cmd.Use = "update ENTITY_TYPE ENTITY_NAME TAG_KEY UPDATE_MASK"
 	cmd.Short = `Update an entity tag assignment.`
@@ -436,6 +458,7 @@ func newUpdate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+		_ = w
 
 		if cmd.Flags().Changed("json") {
 			diags := updateJson.Unmarshal(&updateReq.TagAssignment)
@@ -449,17 +472,25 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.EntityType = args[0]
-		updateReq.EntityName = args[1]
-		updateReq.TagKey = args[2]
-		updateReq.UpdateMask = args[3]
+		updateReq.TagAssignment.EntityType = new(args[0])
+		updateReq.TagAssignment.EntityName = new(args[1])
+		updateReq.TagAssignment.TagKey = new(args[2])
+		updateReq.UpdateMask = new(args[3])
 
-		response, err := w.EntityTagAssignments.Update(ctx, updateReq)
+		sdkReq, err := ucentitytagassignments.UpdateEntityTagAssignmentRequestToSDK(&updateReq)
+		if err != nil {
+			return err
+		}
+		response, err := w.EntityTagAssignments.UpdateEntityTagAssignment(ctx, *sdkReq)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, response)
+		out, err := ucentitytagassignments.EntityTagAssignmentFromSDK(response)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, out)
 	}
 
 	// Disable completions since they are not applicable.

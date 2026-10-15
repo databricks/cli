@@ -18,7 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sqlexec"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	sql "github.com/databricks/sdk-go/statementexecution/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +64,7 @@ func newQueryCmd() *cobra.Command {
 	var outputFormat string
 	var concurrency int
 	var paramFlags []string
-	var params []sql.StatementParameterListItem
+	var params []sql.StatementParameter
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]...",
@@ -239,7 +239,7 @@ func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []stri
 // rejecting incompatible output formats before invoking this.
 //
 // params, if non-nil, are applied to every statement in the batch.
-func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) error {
+func runBatch(ctx context.Context, cmd *cobra.Command, api sqlexec.API, warehouseID string, sqls []string, params []sql.StatementParameter, concurrency int) error {
 	results := executeBatch(ctx, api, warehouseID, sqls, params, concurrency)
 	if err := renderBatchJSON(cmd.OutOrStdout(), results); err != nil {
 		return err
@@ -269,7 +269,7 @@ func resolveWarehouseID(ctx context.Context, w any, flagValue string) (string, e
 
 // executeAndPoll submits a SQL statement asynchronously and polls until completion.
 // It shows a spinner in interactive mode and supports Ctrl+C cancellation.
-func executeAndPoll(ctx context.Context, client *sqlexec.Client, statement string, params []sql.StatementParameterListItem) (*sqlexec.Statement, error) {
+func executeAndPoll(ctx context.Context, client *sqlexec.Client, statement string, params []sql.StatementParameter) (*sqlexec.Statement, error) {
 	// Submit asynchronously to get the statement ID immediately for cancellation.
 	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {
@@ -360,7 +360,7 @@ func presentQueryError(err error) error {
 	}
 
 	switch se.State {
-	case sql.StatementStateFailed:
+	case sql.StatementStatus_State_Failed:
 		msg := "query failed"
 		// The engine populates Code only when the backend returned a
 		// ServiceError; otherwise Message is a synthesized state string we
@@ -373,9 +373,9 @@ func presentQueryError(err error) error {
 			}
 		}
 		return errors.New(msg)
-	case sql.StatementStateCanceled:
+	case sql.StatementStatus_State_Canceled:
 		return errors.New("query was cancelled")
-	case sql.StatementStateClosed:
+	case sql.StatementStatus_State_Closed:
 		return errors.New("query was closed before results could be fetched")
 	default:
 		return err

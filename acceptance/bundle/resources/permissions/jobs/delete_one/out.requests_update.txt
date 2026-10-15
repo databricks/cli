@@ -6,3 +6,5 @@ json.body.access_control_list[1].permission_level = "CAN_VIEW";
 json.body.access_control_list[1].user_name = "test-dabs-2@databricks.com";
 json.body.access_control_list[2].permission_level = "IS_OWNER";
 json.body.access_control_list[2].service_principal_name = "[USERNAME]";
+json.body.request_object_id = "[JOB_WITH_PERMISSIONS_ID]";
+json.body.request_object_type = "jobs";

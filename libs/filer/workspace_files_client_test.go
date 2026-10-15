@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/sdkclients"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	workspace "github.com/databricks/cli/libs/workspaceapi"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,7 +88,7 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			w := &WorkspaceFilesClient{
-				workspaceClient: &databricks.WorkspaceClient{
+				workspaceClient: &sdkclients.Clients{
 					Config: &config.Config{
 						WorkspaceID: tc.workspaceID,
 					},
@@ -113,17 +113,17 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 	tests := []struct {
 		name            string
 		mode            []WriteMode
-		apiErr          *apierr.APIError
+		apiErr          apiErrorSpec
 		expectErrTarget any
 	}{
 		{
 			name:            "404 without create-parent maps to noSuchDirectoryError",
-			apiErr:          &apierr.APIError{StatusCode: http.StatusNotFound, Message: "not found"},
+			apiErr:          apiErrorSpec{StatusCode: http.StatusNotFound, Message: "not found"},
 			expectErrTarget: noSuchDirectoryError{},
 		},
 		{
 			name: "400 RESOURCE_ALREADY_EXISTS maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
+			apiErr: apiErrorSpec{
 				StatusCode: http.StatusBadRequest,
 				ErrorCode:  "RESOURCE_ALREADY_EXISTS",
 				Message:    "/dir/file.txt already exists. Please pass overwrite=true to overwrite it.",
@@ -132,7 +132,7 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 		},
 		{
 			name: "409 ALREADY_EXISTS (concurrent contention) maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
+			apiErr: apiErrorSpec{
 				StatusCode: http.StatusConflict,
 				ErrorCode:  "ALREADY_EXISTS",
 				Message:    "Node with name /dir/file.txt already exists. Please pass overwrite=true to update it.",
@@ -143,7 +143,7 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			// A 409 carrying no error_code unwraps to ErrResourceConflict only,
 			// not to ErrAlreadyExists; the testserver returns exactly this shape.
 			name: "409 without error_code maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
+			apiErr: apiErrorSpec{
 				StatusCode: http.StatusConflict,
 				Message:    "Node with name /dir/file.txt already exists.",
 			},
@@ -151,7 +151,7 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 		},
 		{
 			name: "400 INVALID_PARAMETER_VALUE other message passes through",
-			apiErr: &apierr.APIError{
+			apiErr: apiErrorSpec{
 				StatusCode: http.StatusBadRequest,
 				ErrorCode:  "INVALID_PARAMETER_VALUE",
 				Message:    "some other validation failure",
@@ -160,12 +160,12 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 		},
 		{
 			name:            "403 maps to permissionError",
-			apiErr:          &apierr.APIError{StatusCode: http.StatusForbidden, Message: "denied"},
+			apiErr:          apiErrorSpec{StatusCode: http.StatusForbidden, Message: "denied"},
 			expectErrTarget: permissionError{},
 		},
 		{
 			name:            "500 passes through",
-			apiErr:          &apierr.APIError{StatusCode: http.StatusInternalServerError, Message: "boom"},
+			apiErr:          apiErrorSpec{StatusCode: http.StatusInternalServerError, Message: "boom"},
 			expectErrTarget: nil,
 		},
 	}
@@ -184,7 +184,7 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			})
 			testserver.AddDefaultHandlers(server)
 
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+			client, err := sdkclients.New(t.Context(), &config.Config{
 				Host:  server.URL,
 				Token: "testtoken",
 			})
@@ -207,11 +207,18 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 				// and the message names the file that failed to upload.
 				var aerr *apierr.APIError
 				require.ErrorAs(t, err, &aerr)
-				assert.Equal(t, tc.apiErr.StatusCode, aerr.StatusCode)
+				assert.Equal(t, tc.apiErr.StatusCode, aerr.HTTPStatusCode())
 				assert.Contains(t, err.Error(), "/dir/file.txt")
 			}
 		})
 	}
+}
+
+// apiErrorSpec describes an error response for a test server to return.
+type apiErrorSpec struct {
+	StatusCode int
+	ErrorCode  string
+	Message    string
 }
 
 // writeWithImportError exercises Write through a real HTTP roundtrip so the
@@ -230,7 +237,7 @@ func writeWithImportError(t *testing.T, body map[string]any) error {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -281,7 +288,7 @@ func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
 	})
 	var aerr *apierr.APIError
 	require.ErrorAs(t, err, &aerr)
-	assert.Equal(t, http.StatusBadRequest, aerr.StatusCode)
+	assert.Equal(t, http.StatusBadRequest, aerr.HTTPStatusCode())
 }
 
 // Confirms a workspace get-status payload unmarshals into wsfsFileInfo and that
@@ -338,7 +345,7 @@ func statWithError(t *testing.T, statusCode int, errorCode string) error {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+	client, err := sdkclients.New(t.Context(), &config.Config{
 		Host:  server.URL,
 		Token: "testtoken",
 	})
@@ -358,7 +365,7 @@ func TestWorkspaceFilesClientStatForbidden(t *testing.T) {
 	err := statWithError(t, 403, "PERMISSION_DENIED")
 	var apiErr *apierr.APIError
 	require.ErrorAs(t, err, &apiErr)
-	assert.Equal(t, 403, apiErr.StatusCode)
+	assert.Equal(t, 403, apiErr.HTTPStatusCode())
 }
 
 // Confirms a 500 from get-status surfaces as an APIError and is not treated as
@@ -367,7 +374,7 @@ func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
 	err := statWithError(t, 500, "INTERNAL_ERROR")
 	var apiErr *apierr.APIError
 	require.ErrorAs(t, err, &apiErr)
-	assert.Equal(t, 500, apiErr.StatusCode)
+	assert.Equal(t, 500, apiErr.HTTPStatusCode())
 }
 
 // Confirms RESOURCE_DOES_NOT_EXIST maps to fs.ErrNotExist so the filer plugs
