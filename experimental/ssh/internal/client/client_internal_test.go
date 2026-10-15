@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,7 +23,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -863,38 +865,56 @@ func TestMetadataResponseError(t *testing.T) {
 func TestCheckPortForwardingToServerless(t *testing.T) {
 	tests := []struct {
 		name    string
-		setting *settingsv2.Setting
-		readErr error
+		status  int
+		body    string
 		wantErr error
 	}{
 		{
 			name:    "disabled",
-			setting: &settingsv2.Setting{EffectiveBooleanVal: &settingsv2.BooleanMessage{Value: false}},
+			status:  http.StatusOK,
+			body:    `{"effective_boolean_val": {"value": false}}`,
 			wantErr: errPortForwardingDisabled,
 		},
 		{
-			name:    "enabled",
-			setting: &settingsv2.Setting{EffectiveBooleanVal: &settingsv2.BooleanMessage{Value: true}},
+			name:   "enabled",
+			status: http.StatusOK,
+			body:   `{"effective_boolean_val": {"value": true}}`,
 		},
 		{
-			name:    "no effective value",
-			setting: &settingsv2.Setting{},
+			name:   "no effective value",
+			status: http.StatusOK,
+			body:   `{}`,
 		},
 		{
 			// Production does not serve the setting through the public API yet.
-			name:    "read fails",
-			readErr: errors.New("Setting port_fwd_serverless_enabled is not enabled for public API"),
+			name:   "read fails",
+			status: http.StatusBadRequest,
+			body:   `{"error_code": "INVALID_PARAMETER_VALUE", "message": "Setting port_fwd_serverless_enabled is not enabled for public API"}`,
+		},
+		{
+			// A retriable status is not retried, so a throttled service cannot hold up the connection.
+			name:   "throttled",
+			status: http.StatusTooManyRequests,
+			body:   `{"error_code": "TOO_MANY_REQUESTS", "message": "slow down"}`,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(t.Context())
-			m := mocks.NewMockWorkspaceClient(t)
-			m.GetMockWorkspaceSettingsV2API().EXPECT().
-				GetPublicWorkspaceSetting(mock.Anything, settingsv2.GetPublicWorkspaceSettingRequest{Name: portFwdServerlessSetting}).
-				Return(tc.setting, tc.readErr)
+			var reads atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/2.1/settings/"+portFwdServerlessSetting {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				reads.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
 
-			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, m.WorkspaceClient))
+			ctx := cmdio.MockDiscard(t.Context())
+			assert.Equal(t, tc.wantErr, checkPortForwardingToServerless(ctx, newProbeClient(t, srv.URL)))
+			assert.Equal(t, int32(1), reads.Load())
 		})
 	}
 }
