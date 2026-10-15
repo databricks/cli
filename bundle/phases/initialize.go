@@ -175,11 +175,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// required fields (no omitempty) still error if empty.
 		mutator.DropEmptyStrings(),
 
-		// Resolve --select selectors against the materialized resources: normalize
-		// each to its "type.name" form and validate it exists. Runs after all resource
-		// mutations so that dynamically added resources are visible. This does not
-		// filter resources; the direct engine selects against the resolved keys later.
-		mutator.ResolveSelect(),
+		// Record in telemetry whether --select was used. Selectors are validated once
+		// state is open (process.go) and resolved against the computed plan
+		// (Plan.FilterToSelected), so resources removed from config and planned for
+		// deletion are selectable too.
+		mutator.MarkSelectUsed(),
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.

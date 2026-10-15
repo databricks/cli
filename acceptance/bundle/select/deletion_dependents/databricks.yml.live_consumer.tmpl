@@ -1,0 +1,14 @@
+bundle:
+  name: select-deldep-$UNIQUE_NAME
+
+resources:
+  jobs:
+    keep:
+      name: keep-$UNIQUE_NAME
+
+    consumer:
+      name: consumer-$UNIQUE_NAME
+      tasks:
+        - task_key: run_producer
+          run_job_task:
+            job_id: ${resources.jobs.producer.id}
