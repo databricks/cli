@@ -8,7 +8,7 @@ Raw skills track the latest published skills release for the newest CLI range. P
 
 ```json
 {
-  "1.22.0": { "appkit": "0.84.0", "skills": "latest", "skills_fallback": "0.2.30" },
+  "1.22.0": { "appkit": "0.84.0", "skills": "0.2.30", "skills_track_latest": true },
   "1.20.0": { "appkit": "0.84.0", "skills": "0.2.30" },
   "1.0.0": { "appkit": "0.76.1", "skills": "0.2.10" },
   "0.299.2": { "appkit": "0.24.0", "skills": "0.1.5" }
@@ -17,15 +17,17 @@ Raw skills track the latest published skills release for the newest CLI range. P
 
 Each key is a CLI version in semver format. Each entry defines a **range floor**: it applies to that CLI version and all versions above it, up to (but not including) the next entry. The manifest should be **sparse** — not every CLI version needs its own entry. Only add a new entry when a compatibility boundary changes.
 
-`skills: "latest"` resolves through the skills repository's latest published GitHub release. A concrete `skills` version is an exact pin for that CLI range, not a minimum. `skills_fallback` retains a concrete version for embedded fallback resolution when the latest-release lookup fails or the selected skills manifest is not found. It does not pin normal online installs. Older CLIs ignore the additional field and retain their existing embedded fallbacks.
+`skills` is an exact pin for its CLI range. With `skills_track_latest: true`, the CLI installs the skills repository's latest published GitHub release instead, and uses `skills` as the fallback when the latest-release lookup fails or the selected skills manifest is missing. The CLI reads that fallback from its embedded manifest only, so changing it takes effect in the next CLI build. Released binaries keep the fallback they shipped with.
 
-Latest tracking starts at CLI `1.22.0`, which supports `skills_fallback`. CLI `1.20.x` and `1.21.x` stay pinned to `0.2.30`: switching those released binaries to latest could restore their older embedded skills when the release lookup fails.
+Every entry must keep a concrete `skills` version. CLIs before `1.6.0` reject the whole manifest when any entry uses `"latest"` as its skills version, even an entry they never resolve to.
+
+Latest tracking starts at CLI `1.22.0`, the first release that reads `skills_track_latest`. CLI `1.20.x` and `1.21.x` ignore the flag and stay pinned.
 
 For example, with the manifest above:
 - CLI `0.299.5` → uses `0.299.2` entry (appkit `0.24.0`)
 - CLI `1.19.0` → uses `1.0.0` entry (appkit `0.76.1`)
 - CLI `1.21.0` → uses `1.20.0` entry (appkit `0.84.0`, skills `0.2.30`)
-- CLI `1.22.0` → uses `1.22.0` entry (appkit `0.84.0`, latest skills)
+- CLI `1.22.0` → uses `1.22.0` entry (appkit `0.84.0`, latest skills with fallback `0.2.30`)
 - CLI `0.0.0-dev+abc` → uses `1.22.0` entry (dev builds use the highest versioned entry)
 
 ## How the CLI resolves versions
@@ -49,14 +51,14 @@ Set `DATABRICKS_FORCE_EMBEDDED_COMPAT=true` to skip all tiers and use only the e
 
 ## When to update
 
-The goal is to **keep the manifest sparse** — only add entries at compatibility boundaries. Routine skills releases do not require a manifest update: keep the newest range on `skills: "latest"`.
+The goal is to **keep the manifest sparse** — only add entries at compatibility boundaries. Routine skills releases do not require a manifest update: keep `skills_track_latest: true` on the newest range.
 
 When updating AppKit or recording a tested skills fallback:
 
 1. **Run evals** on the new AppKit version. If there is no regression, proceed.
 2. **Open a PR** to update `cli-compat.json`. The change depends on the type of release:
-   - **No breaking changes**: update the highest entry's `appkit` or `skills_fallback` in-place, leaving `skills: "latest"`. Do NOT add a new versioned key.
-   - **Breaking changes** (the new AppKit templates require specific `apps init` features, or the new skills version requires CLI commands that older CLIs lack): add a new entry keyed to the **minimum CLI version** that supports the new features. Keep the newest entry on `skills: "latest"` with a concrete `skills_fallback`. Pin the affected older ranges to their last compatible skills release; preserve unrelated AppKit and skills compatibility boundaries.
+   - **No breaking changes**: update the highest entry's `appkit` or `skills` fallback in-place, keeping `skills_track_latest: true`. Do NOT add a new versioned key.
+   - **Breaking changes** (the new AppKit templates require specific `apps init` features, or the new skills version requires CLI commands that older CLIs lack): add a new entry keyed to the **minimum CLI version** that supports the new features. Set `skills_track_latest: true` on the new entry. If skills compatibility changed, remove the flag from the affected older ranges and pin their `skills` to the last compatible release. Preserve unrelated AppKit and skills compatibility boundaries.
 
 This process is manual for now but can be automated as part of the release workflow in the future. Use the `/bump-cli-compat` Claude Code skill to automate the update and PR creation.
 
@@ -68,7 +70,7 @@ The manifest is validated by Go tests in `libs/clicompat/`:
 go test ./libs/clicompat/... -run TestEmbeddedManifest -v
 ```
 
-This checks: valid JSON, at least one entry, valid semver keys and versions, latest skills for the newest CLI range, and a concrete embedded skills fallback.
+This checks: valid JSON, at least one entry, valid semver keys and versions, a concrete `skills` version in every entry, and `skills_track_latest` on the newest CLI range.
 
 ## Pruning policy
 

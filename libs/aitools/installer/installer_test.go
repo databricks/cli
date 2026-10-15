@@ -19,6 +19,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
@@ -1059,22 +1060,30 @@ func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
 }
 
 func TestGetSkillsRefDefaultManifest(t *testing.T) {
+	var m clicompat.Manifest
+	require.NoError(t, json.Unmarshal(build.CLICompatManifestJSON, &m))
+
+	// The table only records which CLI versions track latest. Pins come from
+	// the embedded manifest so routine skills bumps need no test changes.
 	tests := []struct {
-		version  string
-		wantRef  string
-		explicit bool
+		version string
+		latest  bool
 	}{
-		{version: "0.299.2", wantRef: "v0.1.5", explicit: true},
-		{version: "1.0.0", wantRef: "v0.2.10", explicit: true},
-		{version: "1.19.9", wantRef: "v0.2.10", explicit: true},
-		{version: "1.20.0", wantRef: "v0.2.30", explicit: true},
-		{version: "1.21.0", wantRef: "v0.2.30", explicit: true},
-		{version: "1.21.9", wantRef: "v0.2.30", explicit: true},
-		{version: "1.22.0", wantRef: "v9.9.9"},
-		{version: "1.23.0", wantRef: "v9.9.9"},
-		{version: "0.0.0-dev+test", wantRef: "v9.9.9"},
+		{version: "0.299.2"},
+		{version: "1.0.0"},
+		{version: "1.19.9"},
+		{version: "1.20.0"},
+		{version: "1.21.0"},
+		{version: "1.21.9"},
+		{version: "1.22.0", latest: true},
+		{version: "1.23.0", latest: true},
+		{version: "0.0.0-dev+test", latest: true},
 	}
 	for _, tc := range tests {
+		entry, err := clicompat.Resolve(m, tc.version)
+		require.NoError(t, err)
+		pinnedRef := "v" + entry.AgentSkills
+
 		for _, offline := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/offline=%t", tc.version, offline), func(t *testing.T) {
 				t.Setenv("DATABRICKS_SKILLS_REF", "")
@@ -1082,20 +1091,19 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 				cacheDir := t.TempDir()
 				t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
 				require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), build.CLICompatManifestJSON, 0o600))
-				wantRef := tc.wantRef
+				wantRef := pinnedRef
 				var latestErr error
 				if offline {
 					latestErr = errors.New("network down")
-					if !tc.explicit {
-						wantRef = "v0.2.30"
-					}
+				} else if tc.latest {
+					wantRef = "v9.9.9"
 				}
 				stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 
 				ref, explicit, err := GetSkillsRef(t.Context())
 				require.NoError(t, err)
 				assert.Equal(t, wantRef, ref)
-				assert.Equal(t, tc.explicit, explicit)
+				assert.Equal(t, !tc.latest, explicit)
 			})
 		}
 	}
@@ -1105,18 +1113,22 @@ func TestGetSkillsRefLatestReleaseFallsBackToEmbeddedPin(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	withCachedCompat(t, skillsLatestSentinel)
 	stubLatestSkillsReleaseRef(t, "", errors.New("network down"))
+	embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "v0.2.30", ref)
+	assert.Equal(t, "v"+embedded, ref)
 	assert.False(t, explicit, "an embedded fallback is not a user pin")
 }
 
 func TestFetchSkillsManifestWithFallback(t *testing.T) {
-	const (
-		missingRef  = "v9.9.9"
-		fallbackRef = "v0.2.30"
-	)
+	const missingRef = "v9.9.9"
+	setBuildVersion(t, "1.22.0")
+	embedded, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
+	require.NoError(t, err)
+	fallbackRef := "v" + embedded
+
 	tests := []struct {
 		name          string
 		status        int
@@ -1130,7 +1142,6 @@ func TestFetchSkillsManifestWithFallback(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			setBuildVersion(t, "1.22.0")
 			body, err := json.Marshal(testManifest())
 			require.NoError(t, err)
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

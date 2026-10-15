@@ -64,7 +64,7 @@ If any tag doesn't exist, report the error and stop.
 
 ### Step 3: Read current manifest
 
-Read `internal/build/cli-compat.json`. Note the current versions and the list of versioned entries. The newest CLI range tracks `skills: "latest"`; its `skills_fallback` is the tested version used by embedded fallback resolution. Only CLI `1.22.0` and newer support this fallback field; keep older released ranges pinned. Routine skills releases need no manifest bump.
+Read `internal/build/cli-compat.json`. Note the current versions and the list of versioned entries. The newest CLI range sets `skills_track_latest: true`; its `skills` value is the tested fallback embedded in CLI builds. Every entry keeps a concrete `skills` version because CLIs before `1.6.0` reject a manifest that uses `"latest"`. Only CLI `1.22.0` and newer read the flag; keep older released ranges pinned. Routine skills releases need no manifest bump.
 
 ### Step 4: Determine update type
 
@@ -81,7 +81,7 @@ Ask the user:
 
 ### Step 4a: No breaking changes (update in-place)
 
-Update the **highest versioned entry** to the new `appkit` and `skills_fallback` versions, preserving `skills: "latest"`. Do NOT replace `"latest"` with a concrete skills pin or add new versioned keys. The manifest is range-based: updating the highest entry automatically covers all CLI versions in that range.
+Update the **highest versioned entry** to the new `appkit` and `skills` versions, keeping `skills_track_latest: true`. Do NOT write `"latest"` as a skills version or add new versioned keys. The manifest is range-based: updating the highest entry automatically covers all CLI versions in that range.
 
 Write the updated `internal/build/cli-compat.json`.
 
@@ -89,7 +89,7 @@ Write the updated `internal/build/cli-compat.json`.
 
 Ask the user for the **minimum CLI version** that supports the new features.
 
-Add a new entry keyed to that CLI version with the new `appkit`, `skills: "latest"`, and a concrete `skills_fallback`. If skills compatibility changed, pin the affected older ranges to their last compatible skills release and remove their `skills_fallback`. Preserve unrelated AppKit and skills compatibility boundaries.
+Add a new entry keyed to that CLI version with the new `appkit`, the new `skills` version, and `skills_track_latest: true`. If skills compatibility changed, remove the flag from the affected older ranges and pin their `skills` to the last compatible release. Preserve unrelated AppKit and skills compatibility boundaries.
 
 Write the updated `internal/build/cli-compat.json`.
 

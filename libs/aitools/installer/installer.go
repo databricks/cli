@@ -95,12 +95,12 @@ const skillsLatestSentinel = clicompat.AgentSkillsLatest
 // pinned (as opposed to tracking latest).
 //
 // By default we track the latest skills release tag, not the skills repo's main
-// branch. cli-compat.json is the remote control for this: it normally reports
-// "latest", but if a future change makes a skills release incompatible with
-// older CLIs, it can be edited remotely to pin those CLIs to the last compatible
-// version with no CLI release. DATABRICKS_SKILLS_REF overrides everything for
-// eval/reproducibility. (AppKit version resolution is unaffected; cli-compat
-// still manages it via its own field.)
+// branch. cli-compat.json is the remote control for this: its newest range
+// normally tracks latest, but if a future change makes a skills release
+// incompatible with older CLIs, it can be edited remotely to pin those CLIs to
+// the last compatible version with no CLI release. DATABRICKS_SKILLS_REF
+// overrides everything for eval/reproducibility. (AppKit version resolution is
+// unaffected; cli-compat still manages it via its own field.)
 func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil

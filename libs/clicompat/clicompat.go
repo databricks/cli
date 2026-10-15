@@ -57,8 +57,9 @@ type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
 
-	// Preserve a concrete embedded fallback without pinning runtime installs.
-	AgentSkillsFallback string `json:"skills_fallback,omitempty"`
+	// AgentSkillsTrackLatest tracks the latest skills release and keeps AgentSkills
+	// as the concrete embedded fallback. CLIs before 1.22.0 ignore it.
+	AgentSkillsTrackLatest bool `json:"skills_track_latest,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -178,9 +179,6 @@ func ResolveEmbeddedAgentSkillsVersion() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest resolve: %w", err)
 	}
-	if entry.AgentSkills == AgentSkillsLatest {
-		return entry.AgentSkillsFallback, nil
-	}
 	return entry.AgentSkills, nil
 }
 
@@ -282,10 +280,14 @@ func ResolveAppKitVersion(ctx context.Context) (string, error) {
 }
 
 // ResolveAgentSkillsVersion resolves the Agent Skills version for the current CLI.
+// It returns AgentSkillsLatest when the entry tracks the latest skills release.
 func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 	entry, err := resolveEntry(ctx, build.GetInfo().Version)
 	if err != nil {
 		return "", err
+	}
+	if entry.AgentSkillsTrackLatest {
+		return AgentSkillsLatest, nil
 	}
 	return entry.AgentSkills, nil
 }
@@ -399,6 +401,9 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 // AgentSkillsLatest is the sentinel value the skills field may take instead of a
 // concrete version, meaning "track the latest skills" rather than pinning a
 // release. The aitools installer maps it to the skills repo's latest release tag.
+//
+// CLIs before 1.6.0 reject the whole manifest if any entry uses this value, so
+// cli-compat.json sets skills_track_latest instead.
 const AgentSkillsLatest = "latest"
 
 func parseManifest(data []byte) (Manifest, error) {
@@ -426,9 +431,6 @@ func parseManifest(data []byte) (Manifest, error) {
 		}
 		if entry.AgentSkills != AgentSkillsLatest && !semver.IsValid("v"+entry.AgentSkills) {
 			return nil, fmt.Errorf("manifest entry %q has invalid skills version %q", k, entry.AgentSkills)
-		}
-		if entry.AgentSkillsFallback != "" && !semver.IsValid("v"+entry.AgentSkillsFallback) {
-			return nil, fmt.Errorf("manifest entry %q has invalid skills fallback version %q", k, entry.AgentSkillsFallback)
 		}
 	}
 	return m, nil

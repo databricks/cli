@@ -297,6 +297,32 @@ func TestResolveEntry_RemoteFailUsesEmbedded(t *testing.T) {
 	assert.NotEmpty(t, entry.AppKit)
 }
 
+func TestResolveAgentSkillsVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		manifest string
+		want     string
+	}{
+		{name: "pinned", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30"}}`, want: "0.2.30"},
+		{name: "track latest", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"0.2.30","skills_track_latest":true}}`, want: AgentSkillsLatest},
+		{name: "latest sentinel", manifest: `{"0.0.0":{"appkit":"0.84.0","skills":"latest"}}`, want: AgentSkillsLatest},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := testContext(t)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(tc.manifest))
+			}))
+			defer srv.Close()
+			redirectToServer(t, srv)
+
+			v, err := ResolveAgentSkillsVersion(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, v)
+		})
+	}
+}
+
 // --- ResolveEmbeddedAppKitVersion ---
 
 func TestResolveEmbeddedAppKitVersion(t *testing.T) {
@@ -309,7 +335,7 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 func TestResolveEmbeddedAgentSkillsVersion(t *testing.T) {
 	v, err := ResolveEmbeddedAgentSkillsVersion()
 	require.NoError(t, err)
-	assert.True(t, semver.IsValid("v"+v), "embedded skills fallback must be a concrete version")
+	assert.True(t, semver.IsValid("v"+v), "embedded skills version must be concrete")
 }
 
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
@@ -331,12 +357,17 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 		return semver.Compare("v"+a, "v"+b)
 	})
 
-	assert.Equal(t, AgentSkillsLatest, m[keys[len(keys)-1]].AgentSkills,
+	// Pinning the newest range (e.g. after a breaking skills release) must
+	// update this assertion in the same change.
+	assert.True(t, m[keys[len(keys)-1]].AgentSkillsTrackLatest,
 		"the newest CLI range must track the latest skills release")
 	for k, entry := range m {
-		if entry.AgentSkills == AgentSkillsLatest {
-			assert.True(t, semver.IsValid("v"+entry.AgentSkillsFallback),
-				"entry %q must retain a concrete embedded skills fallback", k)
+		// CLIs before 1.6.0 reject the whole manifest if any entry uses "latest".
+		assert.True(t, semver.IsValid("v"+entry.AgentSkills),
+			"entry %q must use a concrete skills version", k)
+		if entry.AgentSkillsTrackLatest {
+			assert.GreaterOrEqual(t, semver.Compare("v"+k, "v1.22.0"), 0,
+				"entry %q: CLIs before 1.22.0 ignore skills_track_latest", k)
 		}
 	}
 
@@ -425,36 +456,6 @@ func TestParseManifest_InvalidSkillsSemver(t *testing.T) {
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid skills version")
-}
-
-func TestParseManifest_SkillsFallback(t *testing.T) {
-	tests := []struct {
-		name     string
-		fallback string
-		wantErr  bool
-	}{
-		{name: "omitted for older manifests"},
-		{name: "concrete version", fallback: "0.2.27"},
-		{name: "latest is not a concrete fallback", fallback: AgentSkillsLatest, wantErr: true},
-		{name: "invalid version", fallback: "invalid", wantErr: true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			data, err := json.Marshal(Manifest{
-				"1.20.0": {AppKit: "0.84.0", AgentSkills: AgentSkillsLatest, AgentSkillsFallback: tc.fallback},
-			})
-			require.NoError(t, err)
-
-			m, err := parseManifest(data)
-			if tc.wantErr {
-				require.ErrorContains(t, err, "invalid skills fallback version")
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, AgentSkillsLatest, m["1.20.0"].AgentSkills)
-			assert.Equal(t, tc.fallback, m["1.20.0"].AgentSkillsFallback)
-		})
-	}
 }
 
 func TestParseManifest_InvalidKey(t *testing.T) {
