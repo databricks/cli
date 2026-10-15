@@ -1,19 +1,20 @@
 
 >>> [CLI] bundle validate -o json
-Error: file .databricks/bundle/default/src/main.py not found
+Warning: unknown field: unknown_field
+  at resources.jobs.my_job.tasks[0]
+  in <variable-overrides>:4:6
 
-
-Exit code: 1
+Warn: unable to get spark version for cluster 0123-456789-abcdefgh, err: Not Found
 [
   {
     "existing_cluster_id": "0123-456789-abcdefgh",
     "libraries": [
       {
-        "whl": ".databricks/bundle/default/src/lib.whl"
+        "whl": "src/lib.whl"
       }
     ],
     "spark_python_task": {
-      "python_file": ".databricks/bundle/default/src/main.py"
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/main.py"
     },
     "task_key": "main"
   }
