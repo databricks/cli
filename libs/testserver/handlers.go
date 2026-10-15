@@ -551,6 +551,10 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcToken(req)
 	})
 
+	server.Handle("POST", "/oidc/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
 		return map[string]any{
 			"errors":          []string{},
