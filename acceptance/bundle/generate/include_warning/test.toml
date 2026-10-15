@@ -8,8 +8,7 @@ Response.Body = '''
         "git_source": {
             "git_url":      "https://git.databricks.com",
             "git_provider": "github",
-            "git_branch":   "main",
-            "git_commit":   "abcdef"
+            "git_branch":   "main"
         },
         "tasks": [
             {

@@ -3,7 +3,10 @@
 package bundledeployments
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/sdk-go/core/types"
 )
@@ -935,4 +938,29 @@ type WorkspaceInfo struct {
 	// Whether files are served directly from the source sync root instead of
 	// being copied into file_path.
 	SourceLinked bool `json:"source_linked,omitempty"`
+}
+
+// UnmarshalJSON accepts sequence_id as a JSON string, which is how the service
+// encodes int64 values, as well as a number.
+func (o *Operation) UnmarshalJSON(data []byte) error {
+	type operation Operation
+	var raw struct {
+		*operation
+		SequenceId json.Number `json:"sequence_id,omitempty"`
+	}
+	raw.operation = (*operation)(o)
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return err
+	}
+	o.SequenceId = 0
+	if raw.SequenceId != "" {
+		n, err := strconv.ParseInt(raw.SequenceId.String(), 10, 64)
+		if err != nil {
+			return fmt.Errorf("sequence_id: %w", err)
+		}
+		o.SequenceId = n
+	}
+	return nil
 }

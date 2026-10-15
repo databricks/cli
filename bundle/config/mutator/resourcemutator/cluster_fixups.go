@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sdktypes/clusters/v2"
 	"github.com/databricks/cli/libs/sdktypes/jobs/v2"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 )
 
@@ -21,9 +22,20 @@ func (m *jobClustersFixups) Name() string {
 }
 
 func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	for _, job := range b.Config.Resources.Jobs {
+	var diags diag.Diagnostics
+	for key, job := range b.Config.Resources.Jobs {
 		if job == nil {
 			continue
+		}
+		for i, task := range job.Tasks {
+			if task.NewCluster != nil && dropNumWorkersWithAutoscale(&task.NewCluster.Autoscale, &task.NewCluster.NumWorkers) {
+				diags = diags.Append(numWorkersIgnored(b, "resources", "jobs", key, "tasks", i, "new_cluster", "num_workers"))
+			}
+		}
+		for i, jc := range job.JobClusters {
+			if jc.NewCluster != nil && dropNumWorkersWithAutoscale(&jc.NewCluster.Autoscale, &jc.NewCluster.NumWorkers) {
+				diags = diags.Append(numWorkersIgnored(b, "resources", "jobs", key, "job_clusters", i, "new_cluster", "num_workers"))
+			}
 		}
 		// TODO: we should raise a warning when user specify both InstancePoolId and NodeTypeId since it's illegal.
 		// Once we remove TF backend and had warning for some time, we can remove this transformation, the backend
@@ -31,7 +43,7 @@ func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		prepareJobSettingsForUpdate(&job.JobSettings)
 	}
 
-	return nil
+	return diags
 }
 
 type clusterFixups struct{}
@@ -45,16 +57,41 @@ func (m *clusterFixups) Name() string {
 }
 
 func (m *clusterFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	for _, cluster := range b.Config.Resources.Clusters {
+	var diags diag.Diagnostics
+	for key, cluster := range b.Config.Resources.Clusters {
 		if cluster == nil {
 			continue
+		}
+		if dropNumWorkersWithAutoscale(&cluster.Autoscale, &cluster.NumWorkers) {
+			diags = diags.Append(numWorkersIgnored(b, "resources", "clusters", key, "num_workers"))
 		}
 		// TODO: we should raise a warning when user specify both InstancePoolId and NodeTypeId since it's illegal.
 		// Once we remove TF backend and had warning for some time, we can remove this transformation, the backend
 		// will reject such configs.
 		ModifyRequestOnInstancePool(&cluster.CreateClusterRequest)
 	}
-	return nil
+	return diags
+}
+
+// dropNumWorkersWithAutoscale clears num_workers when autoscale is also set and
+// reports whether it did. The API treats the two as alternatives (a oneof) and
+// autoscale takes precedence.
+func dropNumWorkersWithAutoscale[A any](autoscale **A, numWorkers **int) bool {
+	if *autoscale == nil || *numWorkers == nil {
+		return false
+	}
+	*numWorkers = nil
+	return true
+}
+
+func numWorkersIgnored(b *bundle.Bundle, parts ...any) diag.Diagnostic {
+	path := structpath.NewPath(nil, parts...)
+	return diag.Diagnostic{
+		Severity:  diag.Warning,
+		Summary:   "num_workers is ignored because autoscale is set",
+		Locations: b.Config.GetLocationsOf(path),
+		Paths:     []*structpath.PathNode{path},
+	}
 }
 
 // Copied from
