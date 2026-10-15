@@ -15,4 +15,7 @@ title "CLI ssh connect\n"
 musterr $CLI ssh connect --name feature-disabled --releases-dir="$PWD/releases" -- "echo 'Connection successful'" >out.connect.txt 2>&1
 add_repl "$(grep -o 'run ID: [0-9]*' out.connect.txt | grep -o '[0-9]*$')" RUN_ID
 
+title "Reported error category\n"
+trace jq -r 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category' "$OUT_REQUESTS"
+
 trace print_requests.py //api/2.2/jobs/runs/cancel
