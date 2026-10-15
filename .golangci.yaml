@@ -34,6 +34,7 @@ linters:
     - asciicheck
     - reassign
     - modernize
+    - makezero
   settings:
     modernize:
       # omitzero changes JSON wire format for nested structs (unlike omitempty),
