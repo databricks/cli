@@ -62,8 +62,16 @@ After generation, you can deploy this alert to other targets using:
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := cmd.Context()
+		if !logdiag.IsSetup(ctx) {
+			ctx = logdiag.InitContext(ctx)
+			cmd.SetContext(ctx)
+		}
+
+		// Ensure workspace client is initialized for template materialization
+		if err := ensureWorkspaceClient(cmd); err != nil {
+			return err
+		}
 
 		_, err := ensureGenerateBundle(cmd, nil)
 		if err != nil {

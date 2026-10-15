@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"github.com/databricks/cli/cmd/bundle/generate"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -46,9 +45,6 @@ Use --init-bare to automatically initialize a bare bundle skeleton if one doesn'
 	cmd.AddCommand(generate.NewGenerateGenieSpaceCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
 	cmd.PersistentFlags().BoolVar(&initBare, "init-bare", false, `automatically initialize a bare bundle skeleton if one doesn't exist`)
-
-	// Initialize workspace client so template materialization can access workspace helpers (workspace_host, user, etc.)
-	cmd.PersistentPreRunE = root.MustWorkspaceClient
 
 	return cmd
 }

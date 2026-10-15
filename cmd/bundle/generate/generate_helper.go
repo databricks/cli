@@ -8,12 +8,27 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/spf13/cobra"
 )
+
+// ensureWorkspaceClient ensures a workspace client is initialized on the command context.
+// This is needed for template materialization which uses workspace_host and other context helpers.
+// It is called from subcommands that need workspace client access.
+func ensureWorkspaceClient(cmd *cobra.Command) error {
+	// If workspace client is already set, nothing to do
+	if cmdctx.HasWorkspaceClient(cmd.Context()) {
+		return nil
+	}
+
+	// Initialize workspace client via root.MustWorkspaceClient
+	// root.MustWorkspaceClient now checks if logdiag is already initialized to avoid double-initialization
+	return root.MustWorkspaceClient(cmd, nil)
+}
 
 // ensureGenerateBundle configures a bundle for generation. If no bundle exists and
 // --init-bare is set, it materializes a bare template first. If no bundle exists

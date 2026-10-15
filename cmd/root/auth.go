@@ -333,8 +333,12 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
+	ctx := cmd.Context()
+	// Only initialize logdiag if it hasn't been initialized yet
+	if !logdiag.IsSetup(ctx) {
+		ctx = logdiag.InitContext(ctx)
+		cmd.SetContext(ctx)
+	}
 
 	cfg := &config.Config{}
 	liteswap.Apply(ctx, cfg)

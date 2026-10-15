@@ -75,6 +75,11 @@ After generation, you can deploy this job to other targets using:
 			cmd.SetContext(ctx)
 		}
 
+		// Ensure workspace client is initialized for template materialization
+		if err := ensureWorkspaceClient(cmd); err != nil {
+			return err
+		}
+
 		_, err := ensureGenerateBundle(cmd, nil)
 		if err != nil {
 			return err

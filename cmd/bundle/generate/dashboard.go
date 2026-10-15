@@ -400,14 +400,18 @@ func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
+	// Ensure workspace client is initialized for template materialization
+	if err := ensureWorkspaceClient(cmd); err != nil {
+		return err
+	}
 
 	// For dashboard, --resource and --watch require an existing bundle, so error if --init-bare is used
 	_, err := ensureGenerateBundle(cmd, errors.New("dashboard generate requires an existing bundle (either run in a bundle directory or use a different generator)"))
 	if err != nil {
 		return err
 	}
+
+	ctx := cmd.Context()
 
 	b := root.MustConfigureBundle(cmd)
 	if b == nil || logdiag.HasError(ctx) {

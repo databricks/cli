@@ -65,8 +65,16 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := cmd.Context()
+		if !logdiag.IsSetup(ctx) {
+			ctx = logdiag.InitContext(ctx)
+			cmd.SetContext(ctx)
+		}
+
+		// Ensure workspace client is initialized for template materialization
+		if err := ensureWorkspaceClient(cmd); err != nil {
+			return err
+		}
 
 		_, err := ensureGenerateBundle(cmd, nil)
 		if err != nil {
